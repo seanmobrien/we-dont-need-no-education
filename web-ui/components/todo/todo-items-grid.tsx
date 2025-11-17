@@ -26,6 +26,7 @@ import {
 } from '@/lib/hooks/use-todo';
 import type { Todo } from '@/data-models/api/todo';
 import type { SxProps, Theme } from '@mui/material/styles';
+import { useConfirmationDialog } from '@/components/general/confirmation-dialog';
 
 const stableSx = {
   containerBase: {
@@ -74,6 +75,8 @@ export default function TodoItemsGrid({
   listId,
 }: TodoItemsGridProps) {
   const { data: list, isLoading, refetch } = useTodoList(listId);
+  const confirm = useConfirmationDialog();
+  
   const createTodoItem = useCreateTodoItem(listId, {
     onSuccess: () => {
       refetch();
@@ -91,12 +94,19 @@ export default function TodoItemsGrid({
   });
 
   const handleDelete = useCallback(
-    (itemId: string) => {
-      if (confirm('Are you sure you want to delete this item?')) {
+    async (itemId: string) => {
+      const confirmed = await confirm.show({
+        title: 'Delete Todo Item',
+        message: 'Are you sure you want to delete this item?',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+      });
+      
+      if (confirmed) {
         deleteTodoItem.mutate(itemId);
       }
     },
-    [deleteTodoItem],
+    [deleteTodoItem, confirm],
   );
 
   const handleToggleComplete = useCallback(
@@ -110,24 +120,39 @@ export default function TodoItemsGrid({
     [updateTodoItem],
   );
 
-  const handleCreateItem = useCallback(() => {
-    const title = prompt('Enter todo item title:');
-    if (title) {
+  const handleCreateItem = useCallback(async () => {
+    const title = await confirm.show({
+      title: 'Create Todo Item',
+      showInput: true,
+      inputLabel: 'Item Title',
+      confirmText: 'Create',
+      cancelText: 'Cancel',
+    });
+    
+    if (title && typeof title === 'string') {
       createTodoItem.mutate({ title });
     }
-  }, [createTodoItem]);
+  }, [createTodoItem, confirm]);
 
   const handleEditItem = useCallback(
-    (item: Todo) => {
-      const title = prompt('Edit todo item title:', item.title);
-      if (title && title !== item.title) {
+    async (item: Todo) => {
+      const title = await confirm.show({
+        title: 'Edit Todo Item',
+        showInput: true,
+        inputLabel: 'Item Title',
+        inputDefaultValue: item.title,
+        confirmText: 'Save',
+        cancelText: 'Cancel',
+      });
+      
+      if (title && typeof title === 'string' && title !== item.title) {
         updateTodoItem.mutate({
           itemId: item.id,
           title,
         });
       }
     },
-    [updateTodoItem],
+    [updateTodoItem, confirm],
   );
 
   const columns: GridColDef<Todo>[] = useMemo(
@@ -239,59 +264,62 @@ export default function TodoItemsGrid({
   }
 
   return (
-    <Box sx={stableSx.containerBase}>
-      <Box sx={{ mb: 2 }}>
-        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
-          <MuiLink
-            component={NextLink}
-            underline="hover"
-            color="inherit"
-            href="/messages/todo-lists"
-          >
-            <ArrowBackIcon sx={{ mr: 0.5, verticalAlign: 'middle' }} />
-            All Lists
-          </MuiLink>
-          <Typography color="text.primary">{list.title}</Typography>
-        </Breadcrumbs>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-          <Box>
-            <Typography variant="h4">{list.title}</Typography>
-            {list.description && (
-              <Typography variant="body2" color="text.secondary">
-                {list.description}
-              </Typography>
-            )}
+    <>
+      <Box sx={stableSx.containerBase}>
+        <Box sx={{ mb: 2 }}>
+          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
+            <MuiLink
+              component={NextLink}
+              underline="hover"
+              color="inherit"
+              href="/messages/todo-lists"
+            >
+              <ArrowBackIcon sx={{ mr: 0.5, verticalAlign: 'middle' }} />
+              All Lists
+            </MuiLink>
+            <Typography color="text.primary">{list.title}</Typography>
+          </Breadcrumbs>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Box>
+              <Typography variant="h4">{list.title}</Typography>
+              {list.description && (
+                <Typography variant="body2" color="text.secondary">
+                  {list.description}
+                </Typography>
+              )}
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleCreateItem}
+            >
+              New Item
+            </Button>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleCreateItem}
-          >
-            New Item
-          </Button>
         </Box>
+        <DataGrid
+          rows={list.todos}
+          columns={columns}
+          loading={isLoading}
+          getRowId={(row) => row.id}
+          initialState={{
+            pagination: {
+              paginationModel: { pageSize: 25, page: 0 },
+            },
+            sorting: {
+              sortModel: [{ field: 'completed', sort: 'asc' }],
+            },
+          }}
+          pageSizeOptions={[10, 25, 50, 100]}
+          disableRowSelectionOnClick
+          sx={{
+            '& .MuiDataGrid-row': {
+              cursor: 'default',
+            },
+          }}
+        />
       </Box>
-      <DataGrid
-        rows={list.todos}
-        columns={columns}
-        loading={isLoading}
-        getRowId={(row) => row.id}
-        initialState={{
-          pagination: {
-            paginationModel: { pageSize: 25, page: 0 },
-          },
-          sorting: {
-            sortModel: [{ field: 'completed', sort: 'asc' }],
-          },
-        }}
-        pageSizeOptions={[10, 25, 50, 100]}
-        disableRowSelectionOnClick
-        sx={{
-          '& .MuiDataGrid-row': {
-            cursor: 'default',
-          },
-        }}
-      />
-    </Box>
+      <confirm.Dialog />
+    </>
   );
 }
