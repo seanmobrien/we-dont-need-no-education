@@ -129,7 +129,6 @@
     "zodex": "^3.0.0"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
     "@jest/globals": "^29.0.0",
     "@playwright/test": "^1.55.0",
     "@tanstack/react-query-devtools": "^5.80.10",
@@ -181,9 +180,13 @@
   },
   "resolutions": {
     "axios": ">=1.8.2",
+    "js-yaml": ">=4.1.1",
     "esbuild": ">=0.25.0",
     "@textea/json-viewer/**/@mui/material": "^7.1.0",
     "@textea/json-viewer/**/react": "^19.0.0",
-    "@textea/json-viewer/**/react-dom": "^19.0.0"
+    "@textea/json-viewer/**/react-dom": "^19.0.0",
+    " > @textea/json-viewer/**/@mui/material": "^7.1.0",
+    " > @textea/json-viewer/**/react": "^19.0.0",
+    " > @textea/json-viewer/**/react-dom": "^19.0.0"
   }
 }

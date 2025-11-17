@@ -38,6 +38,21 @@ const eslintConfig = [
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
+  // Custom rule to restrict imports from '@mui/*' to specific sub-packages
+  {
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              regex: '^@mui/[^/]+$',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
 
 export default eslintConfig;
