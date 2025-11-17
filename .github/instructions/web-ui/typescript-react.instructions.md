@@ -361,7 +361,7 @@ export class MCPToolCache {
 
 ### Logging Best Practices / Error Handling
 
-Use structured logging and performance metrics to take advantage of open telemetry and monitoring systems. Open Telemetry tracing is defined in instrument/[endpoint].js; eg instrument/node for node, instrument/browser for ui, etc. Always use the LoggedError.isTurtlesAllTheWayDown pattern for error logging. Implement robust error handling with logging and user feedback. Always use the LoggedError.isTurtlesAllTheWayDown pattern for consistent error logging:
+Use structured logging and performance metrics to take advantage of open telemetry and monitoring systems. Open Telemetry tracing is defined in instrument/[endpoint].js; eg instrument/node for node, instrument/browser for ui, etc. Implement robust error handling with logging and user feedback. **Always** use the LoggedError.isTurtlesAllTheWayDownBaby pattern for consistent error logging:
 
 ```typescript
 const useDocumentProcessor = () => {
@@ -386,9 +386,9 @@ const useDocumentProcessor = () => {
       const result = await documentApi.process(documentId);
       return result;
     } catch (err) {
-      const processingError = LoggedError.isTurtlesAllTheWayDown(err, {
-        log: true,
-        source: 'DocumentProcessor',
+      const processingError = LoggedError.isTurtlesAllTheWayDownBaby(err, {
+        log: true, // Should be true unless logging should be suppressed
+        source: 'DocumentProcessor.processDocument', // Should be the class+function where the error was caught.
       });
       span!.recordException(processingError);
       span!.setStatus({
