@@ -217,9 +217,7 @@ export class TodoManager {
    */
   async getTodoList(
     id: string,
-    {
-      session,
-    }: { completed?: boolean; session?: Session | null },
+    { session }: { completed?: boolean; session?: Session | null },
   ): Promise<TodoList | undefined> {
     await TodoManager.validateTodoId({ check: id, session });
     return this.storage.getTodoList(id).then((x) => x ?? undefined);
@@ -439,6 +437,30 @@ export class TodoManager {
         return true;
       }
       return false;
+    } catch (err) {
+      LoggedError.isTurtlesAllTheWayDownBaby(err, {
+        log: true,
+        source: 'TodoManager.deleteTodo',
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Delete a todo by ID.
+   */
+  async deleteTodoList(
+    id: string,
+    { session }: { session?: Session | null } = {},
+  ): Promise<boolean> {
+    try {
+      // First validate we have access to this item
+      await TodoManager.validateTodoId({
+        check: id,
+        session,
+      });
+
+      return this.storage.deleteTodoList(id);
     } catch (err) {
       LoggedError.isTurtlesAllTheWayDownBaby(err, {
         log: true,
@@ -861,18 +883,24 @@ export const getTodoManager = async (
     provider.delete(managerKey);
   }
 
-  return await globalSingletonAsync('@noeducation/ai/TodoManager', async () => {
-    if (strategy) {
-      log((l) => l.debug('TodoManager singleton instance created'));
-      return new TodoManager(strategy);
-    }
-    const storageStrategy = await createStorageStrategy(
-      status.strategy,
-      status.config,
-      InMemoryStorageStrategy.Instance,
-    );
-    return new TodoManager(storageStrategy);
-  });
+  return await globalSingletonAsync(
+    '@noeducation/ai/TodoManager',
+    async () => {
+      if (strategy) {
+        log((l) => l.debug('TodoManager singleton instance created'));
+        return new TodoManager(strategy);
+      }
+      const storageStrategy = await createStorageStrategy(
+        status.strategy,
+        status.config,
+        InMemoryStorageStrategy.Instance,
+      );
+      return new TodoManager(storageStrategy);
+    },
+    {
+      weakRef: true,
+    },
+  );
 };
 
 /**

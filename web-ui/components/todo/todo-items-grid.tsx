@@ -26,8 +26,9 @@ import {
 } from '@/lib/hooks/use-todo';
 import type { Todo } from '@/data-models/api/todo';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { useConfirmDialog } from '@/components/general/dialogs/confirm';
+import { useConfirmationDialog } from '@/components/general/dialogs/confirm';
 import { usePromptDialog } from '@/components/general/dialogs/prompt';
+import siteBuilder from '@/lib/site-util/url-builder';
 
 const stableSx = {
   containerBase: {
@@ -72,13 +73,11 @@ type TodoItemsGridProps = {
   listId: string;
 };
 
-export default function TodoItemsGrid({
-  listId,
-}: TodoItemsGridProps) {
+export default function TodoItemsGrid({ listId }: TodoItemsGridProps) {
   const { data: list, isLoading, refetch } = useTodoList(listId);
-  const confirm = useConfirmDialog();
+  const confirm = useConfirmationDialog();
   const prompt = usePromptDialog();
-  
+
   const createTodoItem = useCreateTodoItem(listId, {
     onSuccess: () => {
       refetch();
@@ -104,7 +103,7 @@ export default function TodoItemsGrid({
         confirmColor: 'error',
         cancelText: 'Cancel',
       });
-      
+
       if (confirmed) {
         deleteTodoItem.mutate(itemId);
       }
@@ -131,7 +130,7 @@ export default function TodoItemsGrid({
       cancelText: 'Cancel',
       required: true,
     });
-    
+
     if (title) {
       createTodoItem.mutate({ title });
     }
@@ -147,7 +146,7 @@ export default function TodoItemsGrid({
         cancelText: 'Cancel',
         required: true,
       });
-      
+
       if (title && title !== item.title) {
         updateTodoItem.mutate({
           itemId: item.id,
@@ -272,10 +271,13 @@ export default function TodoItemsGrid({
         <Box sx={{ mb: 2 }}>
           <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
             <MuiLink
-              component={NextLink}
+              component={
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                NextLink<any>
+              }
               underline="hover"
               color="inherit"
-              href="/messages/todo-lists"
+              href={siteBuilder.messages.page('todo-lists')}
             >
               <ArrowBackIcon sx={{ mr: 0.5, verticalAlign: 'middle' }} />
               All Lists

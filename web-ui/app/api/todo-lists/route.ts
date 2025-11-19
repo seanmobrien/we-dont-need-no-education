@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { log } from '@/lib/logger';
 import { getTodoManager } from '@/lib/ai/tools/todo/todo-manager';
 import {
   validateCreateTodoList,
@@ -16,31 +15,19 @@ export const dynamic = 'force-dynamic';
  * @returns {Promise<NextResponse>} A JSON response containing the list of todo lists
  */
 export const GET = wrapRouteRequest(async () => {
-  try {
-    const todoManager = await getTodoManager();
-    const lists = await todoManager.getTodoLists({});
+  // NOTE: No try-catch here since wrapRouteRequest handles it
+  const todoManager = await getTodoManager();
+  const lists = await todoManager.getTodoLists({});
 
-    // Add computed fields
-    const listsWithCounts = lists.map((list) => ({
-      ...list,
-      totalItems: list.todos.length,
-      completedItems: list.todos.filter((t) => t.completed).length,
-      pendingItems: list.todos.filter((t) => !t.completed).length,
-    }));
+  // Add computed fields
+  const listsWithCounts = lists.map((list) => ({
+    ...list,
+    totalItems: list.todos.length,
+    completedItems: list.todos.filter((t) => t.completed).length,
+    pendingItems: list.todos.filter((t) => !t.completed).length,
+  }));
 
-    return NextResponse.json({ data: listsWithCounts }, { status: 200 });
-  } catch (error) {
-    log((l) =>
-      l.error({
-        source: 'GET /api/todo-lists',
-        error,
-      }),
-    );
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 },
-    );
-  }
+  return NextResponse.json({ data: listsWithCounts }, { status: 200 });
 });
 
 /**
@@ -81,16 +68,8 @@ export const POST = wrapRouteRequest(
       if (ValidationError.isValidationError(error)) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
-      log((l) =>
-        l.error({
-          source: 'POST /api/todo-lists',
-          error,
-        }),
-      );
-      return NextResponse.json(
-        { error: 'Internal Server Error' },
-        { status: 500 },
-      );
+      // Rethrow and let wrapRouteRequest handle logging
+      throw error;
     }
   },
 );
@@ -115,7 +94,10 @@ export const PUT = wrapRouteRequest(
       }
 
       const todoManager = await getTodoManager();
-      const existingList = await todoManager.getTodoList(validated.data.listId, {});
+      const existingList = await todoManager.getTodoList(
+        validated.data.listId,
+        {},
+      );
 
       if (!existingList) {
         return NextResponse.json(
@@ -143,16 +125,7 @@ export const PUT = wrapRouteRequest(
       if (ValidationError.isValidationError(error)) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
-      log((l) =>
-        l.error({
-          source: 'PUT /api/todo-lists',
-          error,
-        }),
-      );
-      return NextResponse.json(
-        { error: 'Internal Server Error' },
-        { status: 500 },
-      );
+      throw error;
     }
   },
 );
@@ -165,58 +138,28 @@ export const PUT = wrapRouteRequest(
  */
 export const DELETE = wrapRouteRequest(
   async (req: NextRequest): Promise<NextResponse> => {
-    try {
-      const { listId } = await req.json();
+    const { listId } = await req.json();
 
-      if (!listId) {
-        return NextResponse.json(
-          { error: 'List ID is required' },
-          { status: 400 },
-        );
-      }
-
-      const todoManager = await getTodoManager();
-      const list = await todoManager.getTodoList(listId, {});
-
-      if (!list) {
-        return NextResponse.json(
-          { error: 'Todo list not found' },
-          { status: 404 },
-        );
-      }
-
-      // Delete all todos in the list first
-      for (const todo of list.todos) {
-        await todoManager.deleteTodo(todo.id, {});
-      }
-
-      // Since TodoManager doesn't have a deleteList method, we need to clear the list
-      // by upserting with empty todos array (effectively removing it from active lists)
-      await todoManager.upsertTodoList({
-        id: listId,
-        title: list.title,
-        description: list.description,
-        status: list.status,
-        priority: list.priority,
-        todos: [],
-        createdAt: list.createdAt,
-      });
-
+    if (!listId) {
       return NextResponse.json(
-        { message: 'Todo list deleted successfully' },
-        { status: 200 },
-      );
-    } catch (error) {
-      log((l) =>
-        l.error({
-          source: 'DELETE /api/todo-lists',
-          error,
-        }),
-      );
-      return NextResponse.json(
-        { error: 'Internal Server Error' },
-        { status: 500 },
+        { error: 'List ID is required' },
+        { status: 400 },
       );
     }
+
+    const todoManager = await getTodoManager();
+    const deleted = await todoManager.deleteTodoList(listId, {});
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: 'Todo list not found' },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json(
+      { message: 'Todo list deleted successfully' },
+      { status: 200 },
+    );
   },
 );

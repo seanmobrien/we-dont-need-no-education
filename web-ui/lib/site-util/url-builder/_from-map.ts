@@ -288,6 +288,10 @@ export interface MappedUrlBuilder extends IUrlBuilder {
        */
       detail: MappedPageOverloads;
     };
+    /**
+     * URL builder for todo lists.
+     */
+    todoLists: MappedPageOverloads;
   };
 }
 
@@ -417,6 +421,10 @@ export const mappedUrlBuilderFactory = (): MappedUrlBuilder => {
   ret.messages = ret.child('messages') as MappedUrlBuilder['messages'];
   ret.messages.import = mappedPageOverloadFactory(ret.messages, 'import');
   ret.messages.email = mappedPageOverloadFactory(ret.messages, 'email');
+  ret.messages.todoLists = mappedPageOverloadFactory(
+    ret.messages,
+    'todo-lists',
+  );
   ret.messages.chat = ret
     .child('messages')
     .child('chat') as MappedUrlBuilder['messages']['chat'];

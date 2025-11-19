@@ -22,6 +22,7 @@ import { config } from './common';
 import AfterManager from '@/lib/site-util/after';
 import UrlFilteredSpanExporter from './url-filter/url-filter-trace-exporter';
 import UrlFilteredLogExporter from './url-filter/url-filtered-log-exporter';
+import { GlobalWithMyGlobal } from '@/lib/typescript/singleton-provider/types';
 
 enum KnownSeverityLevel {
   Verbose = 'Verbose',
@@ -33,31 +34,38 @@ enum KnownSeverityLevel {
 
 // Global symbol keys for singleton registry
 const NODE_SDK_KEY = Symbol.for('@noeducation/instrumentation:nodeSdk');
-const REGISTERED_KEY = Symbol.for('@noeducation/instrumentation:registered');
+const REGISTERED_KEY = Symbol.for(
+  '@noeducation/instrumentation/nodeSdk:registered',
+);
+
+type GlobalWithNodeSdk = GlobalWithMyGlobal<
+  NodeSDK | undefined,
+  typeof NODE_SDK_KEY
+>;
+type GlobalWithNodeRegistered = GlobalWithMyGlobal<
+  boolean,
+  typeof REGISTERED_KEY
+>;
 
 // Global registry accessors for NodeSDK singleton
 const getNodeSdk = (): NodeSDK | undefined => {
-  type GlobalReg = { [k: symbol]: NodeSDK | undefined };
-  const g = globalThis as unknown as GlobalReg;
+  const g = globalThis as GlobalWithNodeSdk;
   return g[NODE_SDK_KEY];
 };
 
 const setNodeSdk = (value: NodeSDK | undefined): void => {
-  type GlobalReg = { [k: symbol]: NodeSDK | undefined };
-  const g = globalThis as unknown as GlobalReg;
+  const g = globalThis as GlobalWithNodeSdk;
   g[NODE_SDK_KEY] = value;
 };
 
 // Global registry accessors for registered flag singleton
 const getRegistered = (): boolean => {
-  type GlobalReg = { [k: symbol]: boolean };
-  const g = globalThis as unknown as GlobalReg;
+  const g = globalThis as GlobalWithNodeRegistered;
   return g[REGISTERED_KEY] ?? false;
 };
 
 const setRegistered = (value: boolean): void => {
-  type GlobalReg = { [k: symbol]: boolean };
-  const g = globalThis as unknown as GlobalReg;
+  const g = globalThis as GlobalWithNodeRegistered;
   g[REGISTERED_KEY] = value;
 };
 

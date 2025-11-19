@@ -99,7 +99,7 @@ export class SingletonProvider {
 
   getOrCreate<T, S extends string | symbol = string>(
     symbol: S,
-    factory: () => IsNotNull<T>,
+    factory: () => IsNotNull<T> | undefined,
     config: SingletonConfig = {},
   ): T {
     const key = this.#toStorageKey(symbol);
@@ -122,7 +122,7 @@ export class SingletonProvider {
 
   async getOrCreateAsync<T, S extends string | symbol = string>(
     symbol: S,
-    factory: () => Promise<IsNotNull<T>>,
+    factory: () => Promise<IsNotNull<T> | undefined>,
     config: SingletonConfig = {},
   ): Promise<T> {
     const key = this.#toStorageKey(symbol);

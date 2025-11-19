@@ -7,7 +7,6 @@ import {
 } from '@/lib/api/todo/todo-validation';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { extractParams } from '@/lib/nextjs-util/utils';
-import { LoggedError } from '@/lib/react-util';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,15 +74,8 @@ export const POST = wrapRouteRequest(
       if (ValidationError.isValidationError(error)) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
-      LoggedError.isTurtlesAllTheWayDownBaby(error, {
-        log: true,
-        source: 'POST /api/todo-lists/[listId]/items',
-        data: { listId },
-      });
-      return NextResponse.json(
-        { error: 'Internal Server Error' },
-        { status: 500 },
-      );
+      // rethrow and wrapper will take care of proper logging and 500 response
+      throw error;
     }
   },
 );
@@ -158,15 +150,7 @@ export const PUT = wrapRouteRequest(
       if (ValidationError.isValidationError(error)) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
-      LoggedError.isTurtlesAllTheWayDownBaby(error, {
-        log: true,
-        source: 'PUT /api/todo-lists/[listId]/items',
-        data: { listId },
-      });
-      return NextResponse.json(
-        { error: 'Internal Server Error' },
-        { status: 500 },
-      );
+      throw error;
     }
   },
 );
@@ -181,10 +165,12 @@ export const PUT = wrapRouteRequest(
 export const DELETE = wrapRouteRequest(
   async (
     req: NextRequest,
-    withParams: { params: Promise<{ listId: string }> },
+    // withParams: { params: Promise<{ listId: string }> },
   ): Promise<NextResponse> => {
-    const { listId } = await extractParams<{ listId: string }>(withParams);
+    //const { listId } = await extractParams<{ listId: string }>(withParams);
 
+    // NOTE: wrapRouteRequest already handles proper error handling so we don't need
+    // a try/catch here unless we want custom behavior (eg handling ValidationError differently)
     /*
     if (!listId) {
       return NextResponse.json(
@@ -193,51 +179,38 @@ export const DELETE = wrapRouteRequest(
       );
     }
     */
+    const { itemId } = await req.json();
 
-    try {
-      const { itemId } = await req.json();
-
-      if (!itemId) {
-        return NextResponse.json(
-          { error: 'Item ID is required' },
-          { status: 400 },
-        );
-      }
-
-      const todoManager = await getTodoManager();
-      /* Let the deleteTodo api handle verifying the item and its list
-      const list = await todoManager.getTodoList(listId, {});
-
-      if (!list) {
-        return NextResponse.json(
-          { error: 'Todo list not found' },
-          { status: 404 },
-        );
-      }
-      */
-      const deleted = await todoManager.deleteTodo(itemId);
-
-      if (!deleted) {
-        return NextResponse.json(
-          { error: 'Todo item not found' },
-          { status: 404 },
-        );
-      }
-
+    if (!itemId) {
       return NextResponse.json(
-        { message: 'Todo item deleted successfully' },
-        { status: 200 },
-      );
-    } catch (error) {
-      LoggedError.isTurtlesAllTheWayDownBaby(error, {
-        log: true,
-        source: 'DELETE /api/todo-lists/[listId]/items',
-        data: { listId },
-      });
-      return NextResponse.json(
-        { error: 'Internal Server Error' },
-        { status: 500 },
+        { error: 'Item ID is required' },
+        { status: 400 },
       );
     }
+
+    const todoManager = await getTodoManager();
+    /* Let the deleteTodo api handle verifying the item and its list
+    const list = await todoManager.getTodoList(listId, {});
+
+    if (!list) {
+      return NextResponse.json(
+        { error: 'Todo list not found' },
+        { status: 404 },
+      );
+    }
+    */
+    const deleted = await todoManager.deleteTodo(itemId);
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: 'Todo item not found' },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json(
+      { message: 'Todo item deleted successfully' },
+      { status: 200 },
+    );
   },
 );

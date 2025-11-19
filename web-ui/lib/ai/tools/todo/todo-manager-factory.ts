@@ -163,6 +163,8 @@ export const createStorageStrategyFromFlags =
     };
     try {
       const strategyFlag = await wellKnownFlag('todo_storage_strategy');
+      const rawValue = await strategyFlag.forceRefresh();
+      console.log('[feature-flag] Refreshed todo_storage_strategy:', rawValue);
       const strategyValue = normalizeStrategyType(strategyFlag.value);
       result.stale = false;
       if (LastStrategy !== strategyValue) {

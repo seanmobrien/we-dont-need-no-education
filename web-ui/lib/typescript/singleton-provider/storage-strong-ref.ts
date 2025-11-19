@@ -12,141 +12,69 @@
  * @see {@link SingletonStorageStrategy} for the interface this implements
  */
 
+import { log } from '@/lib/logger';
 import {
   GlobalWithMyGlobal,
   SingletonStorageKey,
   SingletonStorageStrategy,
 } from './types';
+import { getStackTrace } from '@/lib/nextjs-util';
 
+const STORED_MAP_KEY = Symbol.for(
+  '@no-education/typescript/SingletonProvider/StrongReferenceStorage/GlobalMap',
+);
+type StoredMapKeyType = typeof STORED_MAP_KEY;
 
 export class StrongReferenceStorage implements SingletonStorageStrategy {
-  /**
-   * Internal set tracking all keys that have been set.
-   * Used for efficient clear() operations and to prevent memory leaks.
-   * @private
-   */
   #keys: Set<SingletonStorageKey> = new Set();
 
-  /**
-   * Reference to the global object with proper typing.
-   * Stores singleton instances directly on globalThis.
-   * @private
-   */
-  #global = globalThis as GlobalWithMyGlobal<unknown, SingletonStorageKey>;
-
-  /**
-   * Retrieves a singleton instance from storage.
-   *
-   * @param {SingletonStorageKey} key - The unique key (typically a Symbol) identifying the singleton
-   * @returns {unknown | undefined} The stored instance, or undefined if not found
-   *
-   * @example
-   * const myKey = Symbol('myService');
-   * storage.set(myKey, myService);
-   * const instance = storage.get(myKey); // Returns myService
-   * const missing = storage.get(Symbol('notFound')); // Returns undefined
-   */
-  get(key: SingletonStorageKey): unknown | undefined {
-    return this.#global[key];
+  get #global() {
+    const globalThat = globalThis as GlobalWithMyGlobal<
+      Map<SingletonStorageKey, unknown>,
+      StoredMapKeyType
+    >;
+    if (!globalThat[STORED_MAP_KEY]) {
+      globalThat[STORED_MAP_KEY] = new Map<SingletonStorageKey, unknown>();
+    }
+    return globalThat[STORED_MAP_KEY];
   }
 
-  /**
-   * Stores a singleton instance with strong reference semantics.
-   *
-   * The instance is stored directly on the global object and will not be garbage
-   * collected until explicitly deleted. The key is tracked internally for cleanup operations.
-   *
-   * @param {SingletonStorageKey} key - The unique key (typically a Symbol) to store the instance under
-   * @param {unknown} value - The singleton instance to store
-   * @returns {void}
-   *
-   * @example
-   * const myKey = Symbol('myService');
-   * const myService = new MyService();
-   * storage.set(myKey, myService); // Stores with strong reference
-   *
-   * @example
-   * // Updating an existing singleton
-   * storage.set(myKey, oldInstance);
-   * storage.set(myKey, newInstance); // Replaces the old instance
-   */
+  get(key: SingletonStorageKey): unknown | undefined {
+    if (!Symbol.keyFor(key)) {
+      log((l) =>
+        l.warn(
+          `StrongReferenceStorage.get called with non-global symbol key: ${String(key)}\n${getStackTrace({ skip: 2, myCodeOnly: true })}`,
+        ),
+      );
+    }
+    return this.#global.get(key);
+  }
+
   set(key: SingletonStorageKey, value: unknown): void {
-    this.#global[key] = value;
+    if (!Symbol.keyFor(key)) {
+      log((l) =>
+        l.warn(
+          `StrongReferenceStorage.get called with non-global symbol key: ${String(key)}\n${getStackTrace({ skip: 2, myCodeOnly: true })}`,
+        ),
+      );
+    }
+    this.#global.set(key, value);
     this.#keys.add(key);
   }
 
-  /**
-   * Checks if a singleton instance exists in storage.
-   *
-   * @param {SingletonStorageKey} key - The key to check
-   * @returns {boolean} True if an instance exists for the key, false otherwise
-   *
-   * @example
-   * const myKey = Symbol('myService');
-   * storage.has(myKey); // false
-   * storage.set(myKey, myService);
-   * storage.has(myKey); // true
-   * storage.delete(myKey);
-   * storage.has(myKey); // false
-   *
-   * @note Returns false for keys that were set to undefined
-   */
   has(key: SingletonStorageKey): boolean {
-    return this.#global[key] !== undefined;
+    return this.#global.has(key);
   }
 
-  /**
-   * Removes a singleton instance from storage.
-   *
-   * Deletes the instance from the global object and removes the key from internal tracking.
-   * After deletion, the instance may be garbage collected if no other references exist.
-   *
-   * @param {SingletonStorageKey} key - The key of the singleton to remove
-   * @returns {void}
-   *
-   * @example
-   * const myKey = Symbol('myService');
-   * storage.set(myKey, myService);
-   * storage.delete(myKey); // Removes the singleton
-   * storage.get(myKey); // Returns undefined
-   *
-   * @example
-   * // Safe to call on non-existent keys
-   * storage.delete(Symbol('nonExistent')); // No error, no-op
-   */
   delete(key: SingletonStorageKey): void {
-    delete this.#global[key];
+    this.#global.delete(key);
     this.#keys.delete(key);
   }
 
-  /**
-   * Removes all tracked singleton instances from storage.
-   *
-   * Iterates through all keys that have been set and removes them from the global object.
-   * This is useful for cleanup in testing environments or when resetting application state.
-   *
-   * @returns {void}
-   *
-   * @example
-   * // Cleanup all singletons
-   * storage.set(Symbol('service1'), service1);
-   * storage.set(Symbol('service2'), service2);
-   * storage.set(Symbol('service3'), service3);
-   * storage.clear(); // Removes all three services
-   *
-   * @example
-   * // Common pattern in test cleanup
-   * afterEach(() => {
-   *   storage.clear(); // Reset singleton state between tests
-   * });
-   *
-   * @note Only removes keys that were tracked by this storage instance.
-   * Does not affect other global properties.
-   */
   clear(): void {
-    for (const key of this.#keys) {
-      delete this.#global[key];
-    }
-    this.#keys.clear();
+    [...Array.from(this.#keys)].forEach((key) => {
+      this.#global.delete(key);
+      this.#keys.delete(key);
+    });
   }
 }

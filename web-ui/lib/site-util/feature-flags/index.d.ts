@@ -8,12 +8,6 @@ import type {
 
 import type { FeatureFlagsApi, defaultFlags } from './context';
 
-import type {
-  getFeatureFlag,
-  getAllFeatureFlags,
-  flagsmithServer,
-} from './server';
-
 declare module '@/lib/site-util/feature-flags' {
   /**
    * @module lib/site-util/feature-flags
@@ -101,6 +95,4 @@ declare module '@/lib/site-util/feature-flags' {
    * @returns All feature flags as AllFeatureFlagStatus
    */
   export function useAIFeatureFlags(): AllFeatureFlagStatus;
-
-  export type { getFeatureFlag, getAllFeatureFlags, flagsmithServer };
 }

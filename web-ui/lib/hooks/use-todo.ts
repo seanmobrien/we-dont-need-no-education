@@ -1,10 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type {
-  TodoList,
-  TodoListSummary,
-  TodoListWithItems,
-  TodoItem,
-} from '@/data-models/api/todo';
+import type { Todo, TodoList, TodoListSummary } from '@/data-models/api/todo';
+
 import { LoggedError } from '@/lib/react-util';
 
 // Query keys for todo-related queries
@@ -59,7 +55,7 @@ export const useTodoList = (
 ) => {
   return useQuery({
     queryKey: listId ? todoKeys.list(listId) : [],
-    queryFn: async (): Promise<TodoListWithItems> => {
+    queryFn: async (): Promise<TodoList> => {
       if (!listId) {
         throw new Error('List ID is required');
       }
@@ -235,7 +231,7 @@ export const useDeleteTodoList = (options?: {
 export const useCreateTodoItem = (
   listId: string,
   options?: {
-    onSuccess?: (data: TodoItem) => void;
+    onSuccess?: (data: Todo) => void;
     onError?: (error: unknown) => void;
   },
 ) => {
@@ -248,7 +244,7 @@ export const useCreateTodoItem = (
       completed?: boolean;
       status?: 'pending' | 'active' | 'complete';
       priority?: 'high' | 'medium' | 'low';
-    }): Promise<TodoItem> => {
+    }): Promise<Todo> => {
       try {
         const response = await fetch(`/api/todo-lists/${listId}/items`, {
           method: 'POST',
@@ -289,7 +285,7 @@ export const useCreateTodoItem = (
 export const useUpdateTodoItem = (
   listId: string,
   options?: {
-    onSuccess?: (data: TodoItem) => void;
+    onSuccess?: (data: Todo) => void;
     onError?: (error: unknown) => void;
   },
 ) => {
@@ -303,7 +299,7 @@ export const useUpdateTodoItem = (
       completed?: boolean;
       status?: 'pending' | 'active' | 'complete';
       priority?: 'high' | 'medium' | 'low';
-    }): Promise<TodoItem> => {
+    }): Promise<Todo> => {
       try {
         const response = await fetch(`/api/todo-lists/${listId}/items`, {
           method: 'PUT',

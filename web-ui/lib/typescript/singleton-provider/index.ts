@@ -55,13 +55,13 @@ export { SingletonProvider } from './provider';
 
 export const globalSingleton = <T, S extends string | symbol = string>(
   symbol: S,
-  factory: () => IsNotNull<T>,
+  factory: () => IsNotNull<T> | undefined,
   config: SingletonConfig = {},
 ): T => SingletonProvider.Instance.getOrCreate<T, S>(symbol, factory, config);
 
 export const globalSingletonAsync = <T, S extends string | symbol = string>(
   symbol: S,
-  factory: () => Promise<IsNotNull<T>>,
+  factory: () => Promise<IsNotNull<T> | undefined>,
   config: SingletonConfig = {},
 ): Promise<T> =>
   SingletonProvider.Instance.getOrCreateAsync<T, S>(symbol, factory, config);

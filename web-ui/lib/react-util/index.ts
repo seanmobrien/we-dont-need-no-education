@@ -7,3 +7,4 @@
 export * from './utility-methods';
 export * from './errors';
 export * from './hooks';
+export * from './ClientWrapper';

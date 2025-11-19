@@ -24,20 +24,18 @@ export const createStorageStrategy = async (
   try {
     switch (strategyType) {
       case 'in-memory':
-        log((l) => l.debug('Creating in-memory storage strategy'));
-        return new InMemoryStorageStrategy(config);
-
+        // Return global in-memory instance
+        return InMemoryStorageStrategy.Instance;
       case 'redis':
+        // Redis is the bomb!
         log((l) => l.debug('Creating Redis storage strategy'));
         const redisStrategy = new RedisStorageStrategy(config);
-
         // If fallback is enabled and a fallback strategy is provided, wrap with fallback
         if (config.enableFallback && fallbackStrategy) {
           return createFallbackStrategy(redisStrategy, fallbackStrategy);
         }
-
         return redisStrategy;
-
+      // And thot's all we know how to do right now...
       default:
         throw new Error(`Unknown storage strategy type: ${strategyType}`);
     }

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { getTodoManager } from '@/lib/ai/tools/todo/todo-manager';
 import { extractParams } from '@/lib/nextjs-util/utils';
-import { LoggedError } from '@/lib/react-util';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,27 +26,17 @@ export const GET = wrapRouteRequest(
       );
     }
 
-    try {
-      const todoManager = await getTodoManager();
-      const list = await todoManager.getTodoList(listId, {});
+    // NOTE: No try-catch here since wrapRouteRequest handles it
+    const todoManager = await getTodoManager();
+    const list = await todoManager.getTodoList(listId, {});
 
-      if (!list) {
-        return NextResponse.json(
-          { error: 'Todo list not found' },
-          { status: 404 },
-        );
-      }
-
-      return NextResponse.json({ data: list }, { status: 200 });
-    } catch (error) {
-      LoggedError.isTurtlesAllTheWayDownBaby(error, {
-        log: true,
-        source: 'GET /api/todo-lists/[listId]',
-      });
+    if (!list) {
       return NextResponse.json(
-        { error: 'Internal Server Error' },
-        { status: 500 },
+        { error: 'Todo list not found' },
+        { status: 404 },
       );
     }
+
+    return NextResponse.json({ data: list }, { status: 200 });
   },
 );

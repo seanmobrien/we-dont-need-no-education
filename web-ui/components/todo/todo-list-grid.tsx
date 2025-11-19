@@ -1,9 +1,8 @@
 'use client';
 
 import { useMemo, useCallback } from 'react';
-import { DataGrid, GridColDef, GridRowParams } from '@mui/x-data-grid';
+import { GridColDef } from '@mui/x-data-grid';
 import { Box, Button, IconButton, Chip } from '@mui/material';
-import { useRouter } from 'next/navigation';
 import NextLink from 'next/link';
 import Link from '@mui/material/Link';
 import AddIcon from '@mui/icons-material/Add';
@@ -17,8 +16,11 @@ import {
 } from '@/lib/hooks/use-todo';
 import type { TodoListSummary } from '@/data-models/api/todo';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { useConfirmDialog } from '@/components/general/dialogs/confirm';
+import { useConfirmationDialog } from '@/components/general/dialogs/confirm';
 import { usePromptDialog } from '@/components/general/dialogs/prompt';
+import siteBuilder from '@/lib/site-util/url-builder';
+import { DataGridPro } from '@mui/x-data-grid-pro/DataGridPro';
+import { StableLargePageSizeOptions } from '@/lib/components/mui/data-grid/default-values';
 
 const stableSx = {
   containerBase: {
@@ -26,6 +28,11 @@ const stableSx = {
     flexDirection: 'column',
     width: 1,
     height: 600,
+  } satisfies SxProps<Theme>,
+  containedBox: {
+    mb: 2,
+    display: 'flex',
+    justifyContent: 'space-between',
   } satisfies SxProps<Theme>,
   titleLink: {
     color: 'primary.main',
@@ -37,7 +44,26 @@ const stableSx = {
       outlineOffset: 2,
     },
   } satisfies SxProps<Theme>,
+  grid: {
+    '& .MuiDataGrid-row': {
+      cursor: 'pointer',
+    } satisfies SxProps<Theme>,
+  },
 } as const;
+
+const stableInitialState = {
+  pagination: {
+    paginationModel: { pageSize: 25, page: 0 },
+  },
+  sorting: {
+    sortModel: [{ field: 'updatedAt', sort: 'desc' }] satisfies Array<{
+      field: string;
+      sort: 'asc' | 'desc';
+    }>,
+  },
+};
+
+const getRowId = (row: TodoListSummary) => row.id;
 
 const getStatusColor = (
   status: string,
@@ -69,12 +95,11 @@ const getPriorityColor = (
   }
 };
 
-export default function TodoListGrid() {
-  const router = useRouter();
+export const TodoListGrid = () => {
   const { data: lists = [], isLoading, refetch } = useTodoLists();
-  const confirm = useConfirmDialog();
+  const confirm = useConfirmationDialog();
   const prompt = usePromptDialog();
-  
+
   const deleteTodoList = useDeleteTodoList({
     onSuccess: () => {
       refetch();
@@ -91,12 +116,13 @@ export default function TodoListGrid() {
     async (listId: string) => {
       const confirmed = await confirm.show({
         title: 'Delete Todo List',
-        message: 'Are you sure you want to delete this todo list? This action cannot be undone.',
+        message:
+          'Are you sure you want to delete this todo list? This action cannot be undone.',
         confirmText: 'Delete',
         confirmColor: 'error',
         cancelText: 'Cancel',
       });
-      
+
       if (confirmed) {
         deleteTodoList.mutate(listId);
       }
@@ -112,7 +138,7 @@ export default function TodoListGrid() {
       cancelText: 'Cancel',
       required: true,
     });
-    
+
     if (title) {
       createTodoList.mutate({ title });
     }
@@ -149,7 +175,9 @@ export default function TodoListGrid() {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               NextLink<any>
             }
-            href={`/messages/todo-lists/${params.row.id}`}
+            href={siteBuilder.messages.todoLists(
+              encodeURIComponent(params.row.id),
+            )}
             title="View todo list"
             aria-label={`Open todo list: ${params.value}`}
             sx={stableSx.titleLink}
@@ -224,17 +252,10 @@ export default function TodoListGrid() {
     [handleDelete],
   );
 
-  const handleRowClick = useCallback(
-    (params: GridRowParams<TodoListSummary>) => {
-      router.push(`/messages/todo-lists/${params.row.id}`);
-    },
-    [router],
-  );
-
   return (
     <>
       <Box sx={stableSx.containerBase}>
-        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between' }}>
+        <Box sx={stableSx.containedBox}>
           <h2>Todo Lists</h2>
           <Button
             variant="contained"
@@ -244,31 +265,21 @@ export default function TodoListGrid() {
             New List
           </Button>
         </Box>
-        <DataGrid
+        <DataGridPro
           rows={lists}
           columns={columns}
           loading={isLoading}
-          getRowId={(row) => row.id}
-          onRowClick={handleRowClick}
-          initialState={{
-            pagination: {
-              paginationModel: { pageSize: 25, page: 0 },
-            },
-            sorting: {
-              sortModel: [{ field: 'updatedAt', sort: 'desc' }],
-            },
-          }}
-          pageSizeOptions={[10, 25, 50, 100]}
+          getRowId={getRowId}
+          initialState={stableInitialState}
+          pageSizeOptions={StableLargePageSizeOptions}
           disableRowSelectionOnClick
-          sx={{
-            '& .MuiDataGrid-row': {
-              cursor: 'pointer',
-            },
-          }}
+          sx={stableSx.grid}
         />
       </Box>
       <confirm.Dialog />
       <prompt.Dialog />
     </>
   );
-}
+};
+
+export default TodoListGrid;

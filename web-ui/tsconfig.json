@@ -13,7 +13,7 @@
       "dom",
       "dom.iterable",
       "es6",
-      "esnext",
+      "esnext"
     ],
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -23,7 +23,7 @@
     "noFallthroughCasesInSwitch": true,
     "plugins": [
       {
-        "name": "ts-node",
+        "name": "ts-node"
       },
       {
         "name": "next"
@@ -47,16 +47,17 @@
     ],
     "strict": true,
     "strictNullChecks": true,
-    "target": "ESNext",
+    "target": "ESNext"
   },
   "include": [
-    "./*.ts",
-    "next-env.d.ts",
     "**/*.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/types/**/*.d.ts",
+    "./*.ts",
+    "next-env.d.ts",
+    ".next/types/**/*.ts"
+    // ".next/types/**/*.ts",
+    //".next/types/**/*.d.ts",
   ],
   "exclude": [
     "node_modules",

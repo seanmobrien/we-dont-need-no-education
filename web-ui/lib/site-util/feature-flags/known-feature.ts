@@ -114,3 +114,25 @@ export type FeatureFlagValueType<K extends KnownFeatureType> =
   K extends keyof AllFeatureFlagDefaultType
     ? Pick<AllFeatureFlagDefaultType, K>[K]
     : never;
+
+/**
+ * Native flag value types supported by Flagsmith.
+ */
+type NativeFlagValue = string | number | boolean | undefined;
+/**
+ * A Flagsmith feature. It has an enabled/disabled state, and an optional {@link FlagValue}.
+ */
+export type NativeFlag = {
+  /**
+   * Indicates whether this feature is enabled.
+   */
+  enabled: boolean;
+  /**
+   * An optional {@link FlagValue} for this feature.
+   */
+  value: NativeFlagValue;
+  /**
+   * If true, the state for this feature was determined by a default flag handler
+   */
+  isDefault: boolean;
+};
