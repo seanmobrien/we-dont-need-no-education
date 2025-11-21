@@ -8,3 +8,4 @@ export const StableDefaultInitialState = {
   },
 };
 export const StableDefaultPageSizeOptions = [5, 10, 25];
+export const StableLargePageSizeOptions = [10, 25, 50, 100];

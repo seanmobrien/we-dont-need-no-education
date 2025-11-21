@@ -99,7 +99,7 @@ export class SingletonProvider {
 
   getOrCreate<T, S extends string | symbol = string>(
     symbol: S,
-    factory: () => IsNotNull<T>,
+    factory: () => IsNotNull<T> | undefined,
     config: SingletonConfig = {},
   ): T {
     const key = this.#toStorageKey(symbol);
@@ -109,7 +109,10 @@ export class SingletonProvider {
     }
 
     const value = factory();
-    if (value === undefined || value === null) {
+    if (value === undefined) {
+      return value as T;
+    }
+    if (value === null) {
       throw new TypeError(
         'Factory for global singleton cannot return null or undefined.',
       );
@@ -122,7 +125,7 @@ export class SingletonProvider {
 
   async getOrCreateAsync<T, S extends string | symbol = string>(
     symbol: S,
-    factory: () => Promise<IsNotNull<T>>,
+    factory: () => Promise<IsNotNull<T> | undefined>,
     config: SingletonConfig = {},
   ): Promise<T> {
     const key = this.#toStorageKey(symbol);

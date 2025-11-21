@@ -3,6 +3,10 @@ import type { Todo, TodoList } from '../types';
 import type { TodoStorageStrategy, StorageStrategyConfig } from './types';
 import { globalSingleton, SingletonProvider } from '@/lib/typescript';
 
+const GLOBAL_INSTANCE: symbol = Symbol.for(
+  '@noeducation/ai/InMemoryStorageStrategy',
+);
+
 /**
  * In-memory storage strategy for todo-lists.
  *
@@ -13,23 +17,21 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
   private todos: Map<string, Todo> = new Map();
   private todoLists: Map<string, TodoList> = new Map();
   private todoToList: Map<string, string> = new Map();
-  private config: StorageStrategyConfig;
-  private static readonly GLOBAL_INSTANCE: unique symbol = Symbol(
-    '@noeducation/ai/InMemoryStorageStrategy',
-  );
 
   static get Instance(): InMemoryStorageStrategy {
     return globalSingleton(
-      InMemoryStorageStrategy.GLOBAL_INSTANCE,
+      GLOBAL_INSTANCE,
       () => new InMemoryStorageStrategy(),
     );
   }
   static resetInstance(): void {
-    SingletonProvider.Instance.delete(this.GLOBAL_INSTANCE);
+    SingletonProvider.Instance.delete(GLOBAL_INSTANCE);
   }
 
-  constructor(config: StorageStrategyConfig = {}) {
-    this.config = config;
+  constructor({}: StorageStrategyConfig = {}) {
+    log((l) =>
+      l.warn('InMemoryStorageStrategy initialized with empty storage.'),
+    );
   }
 
   async upsertTodoList(list: TodoList): Promise<TodoList> {

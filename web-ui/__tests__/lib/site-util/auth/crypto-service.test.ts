@@ -60,7 +60,7 @@ describe('CryptoService', () => {
 
   test('missing RSA keys should error on encrypt', async () => {
     process.env.AUTH_CRYPTO_ALG = 'RSA';
-    delete process.env.CRYPTO_KEYS_RSA_4096_PUBLIC6_PUBLIC;
+    delete process.env.CRYPTO_KEYS_RSA_4096_PUBLIC;
     const svc = new CryptoService();
     await expect(svc.encrypt('x')).rejects.toThrow(/RSA public key missing/);
   });

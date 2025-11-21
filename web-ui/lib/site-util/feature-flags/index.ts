@@ -83,14 +83,14 @@ export function useFlag(
 }
 
 // Re-export server helpers (server-side Flagsmith usage)
-export { getFeatureFlag, getAllFeatureFlags, flagsmithServer } from './server';
-
+/*
 // Re-export auto-refresh feature flag
 export {
   type AutoRefreshFeatureFlag,
   createAutoRefreshFeatureFlagSync,
   createAutoRefreshFeatureFlag,
 } from './feature-flag-with-refresh';
+*/
 
 export function useAIFeatureFlags(): AllFeatureFlagStatus {
   const flags = useFeatureFlags();
