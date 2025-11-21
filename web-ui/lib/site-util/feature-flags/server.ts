@@ -11,13 +11,13 @@ import {
   isKnownFeatureType,
   FeatureFlagValueType,
 } from './known-feature';
-import { globalSingletonAsync, isKeyOf } from '@/lib/typescript';
+import { globalSingleton, isKeyOf } from '@/lib/typescript';
 import { env } from '../env';
 import { LoggedError } from '@/lib/react-util';
-import { LRUCache } from 'lru-cache';
+// import { LRUCache } from 'lru-cache';
 
 const FLAGSMITH_SERVER_SINGLETON_KEY = '@noeducation/flagsmith-server';
-const REFRESH_INTERVAL = 1000 * 60 * 5; // Refresh every 5 minutes
+// const REFRESH_INTERVAL = 1000 * 60 * 5; // Refresh every 5 minutes
 
 /**
  * Type guard to check if a value is a NativeFlag.
@@ -35,9 +35,12 @@ const asNativeFlag = <
   TFeature extends KnownFeatureType,
   TValueType extends FeatureFlagValueType<TFeature>,
 >(
-  flag: TValueType | TFeature,
+  flag: TValueType | TFeature | NativeFlag,
   { isDefault }: { isDefault?: true } = {},
 ): NativeFlag => {
+  if (isNativeFlag(flag)) {
+    return flag;
+  }
   const sourceValue = isKnownFeatureType(flag)
     ? (AllFeatureFlagsDefault[flag] as TValueType)
     : flag;
@@ -61,34 +64,35 @@ const asNativeFlag = <
   };
 };
 
-const createFlagsmithServerInstance = async () => {
-  return new Flagsmith({
-    environmentKey: env('FLAGSMITH_SDK_KEY'),
-    apiUrl: env('NEXT_PUBLIC_FLAGSMITH_API_URL'),
-    enableAnalytics: true,
-    enableLocalEvaluation: false,
-    requestTimeoutSeconds: 45,
-    defaultFlagHandler: (flagKey) =>
-      isKnownFeatureType(flagKey)
-        ? asNativeFlag(flagKey, { isDefault: true })
-        : { enabled: false, value: undefined, isDefault: true },
-  });
-};
-
 // Server-bound Flagsmith instance used for server-side flag evaluation.
-export const flagsmithServer = async (): Promise<Flagsmith> => {
-  return globalSingletonAsync(FLAGSMITH_SERVER_SINGLETON_KEY, async () => {
-    try {
-      return await createFlagsmithServerInstance();
-    } catch (error) {
-      LoggedError.isTurtlesAllTheWayDownBaby(error, {
-        source: 'Flagsmith::createFlagsmithServerInstance',
-        log: true,
-      });
-      return Promise.resolve(undefined);
-    }
-  });
-};
+export const flagsmithServer = (): Flagsmith | undefined =>
+  globalSingleton(
+    FLAGSMITH_SERVER_SINGLETON_KEY,
+    () => {
+      try {
+        return new Flagsmith({
+          environmentKey: env('FLAGSMITH_SDK_KEY'),
+          apiUrl: env('NEXT_PUBLIC_FLAGSMITH_API_URL'),
+          enableAnalytics: true,
+          enableLocalEvaluation: false,
+          requestTimeoutSeconds: 45,
+          defaultFlagHandler: (flagKey) =>
+            isKnownFeatureType(flagKey)
+              ? asNativeFlag(flagKey, { isDefault: true })
+              : { enabled: false, value: undefined, isDefault: true },
+        });
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          source: 'Flagsmith::createFlagsmithServerInstance',
+          log: true,
+        });
+        return undefined;
+      }
+    },
+    {
+      weakRef: true,
+    },
+  );
 
 const identify = async ({ userId }: { userId?: string }): Promise<Flags> => {
   try {
@@ -99,9 +103,7 @@ const identify = async ({ userId }: { userId?: string }): Promise<Flags> => {
         userId = 'server';
       }
     }
-    const server = await flagsmithServer();
-    const flags = server.getIdentityFlags(userId);
-    return await server.getIdentityFlags(userId);
+    return flagsmithServer()?.getIdentityFlags(userId) ?? ({} as Flags);
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       source: 'Flagsmith::identify',
@@ -119,7 +121,6 @@ export const getFeatureFlag = async <T extends KnownFeatureType>(
   try {
     const flags = await identify({ userId });
     const serverValue = flags.getFeatureValue(flagKey);
-    console.log(`[feature-flag] Retrieved flag ${flagKey}:`, serverValue);
     return !!serverValue
       ? (serverValue as (typeof AllFeatureFlagsDefault)[T])
       : (defaultValue ?? AllFeatureFlagsDefault[flagKey]);

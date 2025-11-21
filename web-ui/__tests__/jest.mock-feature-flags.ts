@@ -249,6 +249,35 @@ jest.mock('flagsmith/isomorphic', () => ({
   }),
 }));
 
+// Mock flagsmith-nodejs for server-side feature flags
+jest.mock('flagsmith-nodejs', () => {
+  return {
+    __esModule: true,
+    Flagsmith: jest.fn().mockImplementation(() => {
+      const mockFlags = {
+        getFeatureValue: jest.fn((key: string) => {
+          // Return default values for common flags
+          const defaults: Record<string, any> = {
+            health_memory_cache_ttl: 60,
+            health_memory_cache_error_ttl: 10,
+            health_memory_cache_warning_ttl: 30,
+            health_database_cache_ttl: 60,
+            health_startup_failure_threshold: 10,
+          };
+          return defaults[key] ?? false;
+        }),
+        isFeatureEnabled: jest.fn(() => false),
+        getAllFlags: jest.fn(() => ({})),
+      };
+      return {
+        getIdentityFlags: jest.fn(() => Promise.resolve(mockFlags)),
+        getEnvironmentFlags: jest.fn(() => Promise.resolve(mockFlags)),
+      };
+    }),
+    Flags: jest.fn(),
+  };
+});
+
 const createAutoRefreshFlagImpl = (options: AutoRefreshFeatureFlagOptions) => {
   mockFlagsmithInstance =
     mockFlagsmithInstance ?? mockFlagsmithInstanceFactory();

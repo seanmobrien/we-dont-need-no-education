@@ -1,4 +1,4 @@
-import type { IFlagsmith } from 'flagsmith';
+import type { Flagsmith } from 'flagsmith-nodejs';
 import {
   AllFeatureFlagsDefault,
   type KnownFeatureType,
@@ -38,7 +38,7 @@ declare module '@/lib/site-util/feature-flags/server' {
    * const isEnabled = await client.hasFeature('my-feature');
    * ```
    */
-  export function flagsmithServer(): Promise<IFlagsmith<string, string>>;
+  export function flagsmithServer(): Flagsmith;
 
   /**
    * Resolve a single typed feature flag for a user.

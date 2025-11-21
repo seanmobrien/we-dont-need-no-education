@@ -109,7 +109,10 @@ export class SingletonProvider {
     }
 
     const value = factory();
-    if (value === undefined || value === null) {
+    if (value === undefined) {
+      return value as T;
+    }
+    if (value === null) {
       throw new TypeError(
         'Factory for global singleton cannot return null or undefined.',
       );
