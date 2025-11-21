@@ -78,7 +78,7 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
     key,
     userId,
     initialValue = undefined,
-    load = false,
+    load = true,
     ttl = DEFAULT_TTL_MS,
   }: {
     key: T;
@@ -97,7 +97,12 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
 
     // If no initial value provided, fetch immediately
     if (load || initialValue === undefined) {
-      await instance.refreshValue();
+      await instance.refreshValue().catch((error) => {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: `FeatureFlag:${key}/refresh-value`,
+        });
+      });
     }
     return instance;
   }
@@ -109,7 +114,13 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
 
     // Trigger refresh asynchronously without blocking
     if (this.isStale && !this._pendingRefresh) {
-      this.refreshValue();
+      this.refreshValue().catch((error) => {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: `FeatureFlag:${this.key}/refresh-value`,
+        });
+        return Promise.resolve(this._value);
+      });
     }
 
     return this._value;
@@ -254,8 +265,8 @@ export const wellKnownFlag = <T extends KnownFeatureType>(
   if (!isKnownFeatureType(key)) {
     throw new TypeError(`Invalid KnownFeatureType key: ${String(key)}`);
   }
-  const sym = Symbol(
-    `@no-education/features-flags/auto-refresh/${key}::${salt ?? '--no-salt--'}`,
+  const sym = Symbol.for(
+    `@no-education/features-flags/auto-refresh/${key}::${salt ?? '--no-salt--'}`.toString(),
   );
   const provider = SingletonProvider.Instance;
   return provider.getOrCreate(sym, () =>
@@ -278,96 +289,17 @@ export const wellKnownFlagSync = <T extends KnownFeatureType>(
     `@no-education/features-flags/auto-refresh/${key}::${salt ?? '--no-salt--'}`,
   );
   const provider = SingletonProvider.Instance;
-  return provider.getOrCreate(sym, () =>
-    createAutoRefreshFeatureFlagSync<T>({
-      key: key,
-      userId: salt ?? 'server',
-      initialValue: AllFeatureFlagsDefault[key] as FeatureFlagValueType<T>,
-    }),
+  return provider.getOrCreate(
+    sym,
+    () =>
+      createAutoRefreshFeatureFlagSync<T>({
+        key: key,
+        userId: salt ?? 'server',
+        initialValue: AllFeatureFlagsDefault[key] as FeatureFlagValueType<T>,
+        load: true,
+      }),
+    {
+      weakRef: true,
+    },
   );
 };
-
-/*
-While a neat idea, it's a bit magical, and being honest crashed the server,
-so lets keep it commented out for now XD
-
-export const wellKnownSymbol = <T extends KnownFeatureType>(
-  key: T,
-  salt?: string,
-) => {
-  if (!isKnownFeatureType(key)) {
-    throw new TypeError(`Invalid KnownFeatureType key: ${String(key)}`);
-  }
-  return Symbol(
-    `@no-education/features-flags/auto-refresh/${key}${salt ? `::${salt}` : ''}`,
-  );
-};
-
-export type WellKnownAutoRefreshSymbol<T extends KnownFeatureType> = ReturnType<
-  typeof wellKnownSymbol<T>
->;
-
-export const flagFromWellKnownSymbol = <K extends KnownFeatureType>(
-  key: WellKnownAutoRefreshSymbol<K>,
-  withSalt: boolean = false,
-): typeof withSalt extends true
-  ? [KnownFeatureType, string | undefined]
-  : KnownFeatureType => {
-  const [source, salt] = key.description?.substring(42)?.split('::', 2) ?? [];
-
-  if (!isKnownFeatureType(source)) {
-    throw new TypeError(
-      `Invalid WellKnownAutoRefreshSymbol key: ${String(key)}`,
-    );
-  }
-  const tuple = [
-    source as KnownFeatureType,
-    salt as string | undefined,
-  ] as const;
-  return withSalt ? (tuple as any) : (source as K);
-};
-
-export const wellKnownFlag = <T extends KnownFeatureType>(
-  key: WellKnownAutoRefreshSymbol<T> | T,
-): Promise<AutoRefreshFeatureFlag<T>> => {
-  const [source, salt] =
-    typeof key === 'symbol'
-      ? flagFromWellKnownSymbol(key, true)
-      : [key, undefined];
-  if (!isKnownFeatureType(source)) {
-    throw new TypeError(
-      `Invalid WellKnownAutoRefreshSymbol key: ${String(key)}`,
-    );
-  }
-  const provider = SingletonProvider.Instance;
-  return provider.getOrCreate(wellKnownSymbol(source, salt), () =>
-    createAutoRefreshFeatureFlag<T>({
-      key: source as T,
-      userId: salt ?? 'server',
-      initialValue: AllFeatureFlagsDefault[source] as FeatureFlagValueType<T>,
-    }),
-  );
-};
-
-export const wellKnownFlagSync = <T extends KnownFeatureType>(
-  key: WellKnownAutoRefreshSymbol<T> | T,
-): AutoRefreshFeatureFlag<T> => {
-  const [source, salt] =
-    typeof key === 'symbol'
-      ? flagFromWellKnownSymbol(key, true)
-      : [key, undefined];
-  if (!isKnownFeatureType(source)) {
-    throw new TypeError(
-      `Invalid WellKnownAutoRefreshSymbol key: ${String(key)}`,
-    );
-  }
-  const provider = SingletonProvider.Instance;
-  return provider.getOrCreate(wellKnownSymbol(source, salt), () =>
-    createAutoRefreshFeatureFlagSync<T>({
-      key: source as T,
-      userId: salt ?? 'server',
-      initialValue: AllFeatureFlagsDefault[source] as FeatureFlagValueType<T>,
-    }),
-  );
-};
-*/

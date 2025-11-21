@@ -18,10 +18,11 @@
  * - No breaking changes
  */
 
-import { flagsmithServer } from './server';
-import { LoggedError } from '@/lib/react-util';
-import { log } from '@/lib/logger/core';
-import fastEqual from 'fast-deep-equal/es6';
+import {
+  AutoRefreshFeatureFlag,
+  wellKnownFlagSync,
+} from './feature-flag-with-refresh';
+import { AllFeatureFlagsDefault } from './known-feature';
 
 export type FetchConfig = {
   fetch_concurrency?: number;
@@ -35,231 +36,107 @@ export type FetchConfig = {
   fetch_stream_max_total_bytes?: number;
 };
 
-const DEFAULTS: Required<FetchConfig> = {
-  fetch_concurrency: 8,
-  fetch_stream_detect_buffer: 4 * 1024,
-  fetch_stream_buffer_max: 64 * 1024,
-  fetch_cache_ttl: 300,
-  enhanced: true,
-  trace_level: 'warn',
-  stream_enabled: true,
-  fetch_stream_max_chunks: 1024,
-  fetch_stream_max_total_bytes: 1024 * 1024, // 1MB
-};
-
-const TTL_MS = 5 * 60 * 1000; // 5 minutes (matches old behavior)
-
-/**
- * Helper: Extract number from various Flagsmith value formats.
- * Handles: number, string, {detect: n}, {max: n}, {value: {detect/max: n}}
- */
-const extractNum = (v: unknown): number | undefined => {
-  if (v == null) return undefined;
-  if (typeof v === 'number') return v;
-  if (typeof v === 'string') {
-    const parsed = Number(v);
-    return Number.isFinite(parsed) ? parsed : undefined;
-  }
-
-  try {
-    const obj = v as Record<string, unknown> | undefined;
-    if (obj && typeof obj === 'object') {
-      if (typeof obj.detect === 'number') return obj.detect;
-      if (typeof obj.max === 'number') return obj.max;
-
-      const val = obj.value as Record<string, unknown> | undefined;
-      if (val && typeof val === 'object') {
-        if (typeof val.detect === 'number') return val.detect;
-        if (typeof val.max === 'number') return val.max;
-      }
-    }
-  } catch {
-    /* ignore parsing errors */
-  }
-
-  return undefined;
-};
-
 /**
  * FetchConfigManager - Manages fetch configuration with auto-refresh
  * Inspired by AutoRefreshFeatureFlag but adapted for composite config object
  */
 class FetchConfigManager {
-  private _value: Required<FetchConfig> = DEFAULTS;
-  private _refreshAt: number = 0;
-  private _pendingRefresh: Promise<Required<FetchConfig>> | null = null;
-  private _lastError: Error | null = null;
+  readonly #models_fetch_concurrency: AutoRefreshFeatureFlag<'models_fetch_concurrency'>;
+  readonly #fetch_cache_ttl: AutoRefreshFeatureFlag<'models_fetch_cache_ttl'>;
+  readonly #models_fetch_enhanced: AutoRefreshFeatureFlag<'models_fetch_enhanced'>;
+  readonly #models_fetch_trace_level: AutoRefreshFeatureFlag<'models_fetch_trace_level'>;
+  readonly #models_fetch_stream_buffer: AutoRefreshFeatureFlag<'models_fetch_stream_buffer'>;
+  readonly #fetch_stream_max_chunks: AutoRefreshFeatureFlag<'models_fetch_stream_max_chunks'>;
+  readonly #fetch_stream_max_total_bytes: AutoRefreshFeatureFlag<'models_fetch_stream_max_total_bytes'>;
+
+  constructor() {
+    this.#models_fetch_concurrency =
+      wellKnownFlagSync<'models_fetch_concurrency'>('models_fetch_concurrency');
+    this.#fetch_cache_ttl = wellKnownFlagSync<'models_fetch_cache_ttl'>(
+      'models_fetch_cache_ttl',
+    );
+    this.#models_fetch_enhanced = wellKnownFlagSync<'models_fetch_enhanced'>(
+      'models_fetch_enhanced',
+    );
+    this.#models_fetch_trace_level =
+      wellKnownFlagSync<'models_fetch_trace_level'>('models_fetch_trace_level');
+    this.#models_fetch_stream_buffer =
+      wellKnownFlagSync<'models_fetch_stream_buffer'>(
+        'models_fetch_stream_buffer',
+      );
+    this.#fetch_stream_max_chunks =
+      wellKnownFlagSync<'models_fetch_stream_max_chunks'>(
+        'models_fetch_stream_max_chunks',
+      );
+    this.#fetch_stream_max_total_bytes =
+      wellKnownFlagSync<'models_fetch_stream_max_total_bytes'>(
+        'models_fetch_stream_max_total_bytes',
+      );
+  }
+
+  get #flags() {
+    return [
+      this.#models_fetch_concurrency,
+      this.#fetch_cache_ttl,
+      this.#models_fetch_enhanced,
+      this.#models_fetch_trace_level,
+      this.#models_fetch_stream_buffer,
+      this.#fetch_stream_max_chunks,
+      this.#fetch_stream_max_total_bytes,
+    ];
+  }
 
   get value(): Required<FetchConfig> {
-    // Trigger async refresh if stale (lazy evaluation)
-    if (this.isStale && !this._pendingRefresh) {
-      this.refreshValue();
-    }
-    return this._value;
+    const streamBuffer =
+      this.#models_fetch_stream_buffer.value ??
+      AllFeatureFlagsDefault.models_fetch_stream_buffer.value;
+
+    return {
+      fetch_concurrency: this.#models_fetch_concurrency.value,
+      stream_enabled: streamBuffer.enabled,
+      fetch_stream_buffer_max: streamBuffer.value!.max,
+      fetch_stream_detect_buffer: streamBuffer.value!.detect,
+      fetch_cache_ttl: this.#fetch_cache_ttl.value,
+      enhanced: this.#models_fetch_enhanced.value,
+      trace_level: this.#models_fetch_trace_level.value,
+      fetch_stream_max_chunks: this.#fetch_stream_max_chunks.value,
+      fetch_stream_max_total_bytes: this.#fetch_stream_max_total_bytes.value,
+    };
   }
 
   get isStale(): boolean {
-    return Date.now() > this._refreshAt;
+    return this.#flags.some((flag) => flag.isStale);
   }
 
   get lastError(): Error | null {
-    return this._lastError;
+    return this.#flags.find((x) => x.lastError !== null)?.lastError || null;
   }
 
   get ttlRemaining(): number {
-    return Math.max(0, this._refreshAt - Date.now());
+    return this.#flags.reduce((min, flag) => {
+      return Math.min(min, flag.ttlRemaining);
+    }, Infinity);
   }
 
   get isInitialized(): boolean {
-    return this._refreshAt > 0;
-  }
-
-  /**
-   * Refresh configuration value from Flagsmith
-   */
-  private async refreshValue(): Promise<Required<FetchConfig>> {
-    // Deduplicate concurrent refreshes
-    if (this._pendingRefresh) {
-      return this._pendingRefresh;
-    }
-
-    this._lastError = null;
-
-    this._pendingRefresh = this.loadFromFlagsmith()
-      .then((newValue) => {
-        this._refreshAt = Date.now() + TTL_MS;
-
-        // Only update if value actually changed (deep equality check)
-        if (!fastEqual(this._value, newValue)) {
-          this._value = newValue;
-          log((l) =>
-            l.verbose('FetchConfig: Configuration refreshed', { newValue }),
-          );
-        }
-
-        return this._value;
-      })
-      .catch((error) => {
-        const loggedError = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-          log: true,
-          source: 'flagsmith:fetch-config',
-          message: `Failed to refresh fetch config: ${error.message}`,
-        });
-
-        this._lastError = loggedError;
-
-        // Return current value on error (don't throw)
-        return this._value;
-      })
-      .finally(() => {
-        this._pendingRefresh = null;
-      });
-
-    return this._pendingRefresh;
-  }
-
-  /**
-   * Load configuration from Flagsmith
-   */
-  private async loadFromFlagsmith(): Promise<Required<FetchConfig>> {
-    const server = await flagsmithServer();
-    const raw = await server.getAllFlags();
-    const r = raw as unknown as Record<string, unknown>;
-
-    return {
-      fetch_concurrency:
-        Number(r.models_fetch_concurrency) || DEFAULTS.fetch_concurrency,
-
-      fetch_stream_detect_buffer:
-        extractNum(r.models_fetch_stream_buffer) ??
-        DEFAULTS.fetch_stream_detect_buffer,
-
-      fetch_stream_buffer_max:
-        extractNum(r.models_fetch_stream_buffer) ??
-        DEFAULTS.fetch_stream_buffer_max,
-
-      fetch_cache_ttl:
-        Number(r.models_fetch_cache_ttl) || DEFAULTS.fetch_cache_ttl,
-
-      enhanced:
-        typeof r.models_fetch_enhanced === 'boolean'
-          ? r.models_fetch_enhanced
-          : Boolean(r.models_fetch_enhanced ?? DEFAULTS.enhanced),
-
-      trace_level: String(r.models_fetch_trace_level ?? DEFAULTS.trace_level),
-
-      stream_enabled: (() => {
-        const buf = r.models_fetch_stream_buffer;
-        if (buf && typeof buf === 'object') {
-          const b = buf as Record<string, unknown>;
-          if (b.enabled === true) return true;
-          if (typeof b.enabled === 'boolean') return Boolean(b.enabled);
-        }
-        return Boolean(r.models_fetch_stream_buffer ?? true);
-      })(),
-
-      fetch_stream_max_chunks:
-        Number(r.models_fetch_stream_max_chunks) ||
-        DEFAULTS.fetch_stream_max_chunks,
-
-      fetch_stream_max_total_bytes:
-        Number(r.models_fetch_stream_max_total_bytes) ||
-        DEFAULTS.fetch_stream_max_total_bytes,
-    };
+    return this.#flags.every((flag) => flag.expiresAt > 0);
   }
 
   /**
    * Force immediate refresh (for testing or manual refresh)
    */
   async forceRefresh(): Promise<Required<FetchConfig>> {
-    const value = await this.refreshValue();
-    this._refreshAt = Date.now() + TTL_MS;
-    return value;
+    await Promise.all(this.#flags.map((flag) => flag.forceRefresh()));
+    return this.value;
   }
 
   /**
    * Initialize with first load
    */
   async initialize(): Promise<Required<FetchConfig>> {
-    try {
-      const value = await this.loadFromFlagsmith();
-      this._value = value;
-      this._refreshAt = Date.now() + TTL_MS;
-
-      log((l) =>
-        l.info('FetchConfig: Initial load complete', { value }),
-      );
-
-      return value;
-    } catch (error) {
-      LoggedError.isTurtlesAllTheWayDownBaby(error, {
-        source: 'flagsmith:fetch-config',
-        log: true,
-      });
-      return DEFAULTS;
-    }
+    return this.forceRefresh();
   }
 }
-
-// Singleton instance (stored in global registry)
-const MANAGER_KEY = Symbol.for('@noeducation/fetch-config-manager');
-
-type GlobalRegistry = {
-  [k: symbol]: FetchConfigManager | undefined;
-};
-
-/**
- * Get or create the singleton FetchConfigManager
- */
-const getManager = (): FetchConfigManager => {
-  const globalRegistry = globalThis as unknown as GlobalRegistry;
-
-  if (!globalRegistry[MANAGER_KEY]) {
-    globalRegistry[MANAGER_KEY] = new FetchConfigManager();
-  }
-
-  return globalRegistry[MANAGER_KEY]!;
-};
 
 /**
  * Fetch configuration (async).
@@ -276,15 +153,7 @@ const getManager = (): FetchConfigManager => {
  * @returns Promise resolving to fetch configuration
  */
 export const fetchConfig = async (): Promise<Required<FetchConfig>> => {
-  const manager = getManager();
-
-  // If never initialized, do it now
-  if (!manager.isInitialized) {
-    return manager.initialize();
-  }
-
-  // Return current value (will trigger async refresh if stale)
-  return Promise.resolve(manager.value);
+  return new FetchConfigManager().forceRefresh();
 };
 
 /**
@@ -296,8 +165,7 @@ export const fetchConfig = async (): Promise<Required<FetchConfig>> => {
  * @returns Cached fetch configuration or defaults
  */
 export const fetchConfigSync = (): Required<FetchConfig> => {
-  const manager = getManager();
-  return manager.value;
+  return new FetchConfigManager().value;
 };
 
 /**
@@ -306,23 +174,12 @@ export const fetchConfigSync = (): Required<FetchConfig> => {
  *
  * @returns Promise resolving to refreshed configuration
  */
-export const forceRefreshFetchConfig = async (): Promise<Required<FetchConfig>> => {
-  const manager = getManager();
-  return manager.forceRefresh();
-};
-
+export const forceRefreshFetchConfig = async (): Promise<
+  Required<FetchConfig>
+> => fetchConfig();
 /**
  * Get manager status for monitoring/debugging
  */
-export const getFetchConfigStatus = () => {
-  const manager = getManager();
-  return {
-    isInitialized: manager.isInitialized,
-    isStale: manager.isStale,
-    ttlRemaining: manager.ttlRemaining,
-    lastError: manager.lastError,
-    currentValue: manager.value,
-  };
-};
+export const getFetchConfigStatus = () => new FetchConfigManager();
 
 export default fetchConfig;

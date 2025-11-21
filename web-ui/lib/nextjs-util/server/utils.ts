@@ -18,6 +18,7 @@ import {
 import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
 import { makeJsonResponse } from './response';
+import { SessionTokenKey } from '@/lib/auth/utilities';
 
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');
 
@@ -382,15 +383,18 @@ export const unauthorizedServiceResponse = ({
   req,
   scopes = [],
 }: {
-  req: NextRequest;
+  req?: NextRequest;
   scopes?: Array<string>;
-}) => {
-  const { nextUrl } = req;
+} = {}) => {
+  const { nextUrl = new URL(env('NEXT_PUBLIC_HOSTNAME')) } = req ?? {
+    nextUrl: undefined,
+  };
+  const isAuthenticated = !!req?.cookies?.get(SessionTokenKey())?.value?.length;
   const resourceMetadataPath = `/.well-known/oauth-protected-resource${nextUrl.pathname}`;
   return makeJsonResponse(
     { error: 'Unauthorized', message: 'Active session required.' },
     {
-      status: 401,
+      status: isAuthenticated ? 403 : 401,
       headers: {
         'WWW-Authenticate': `Bearer resource_metadata="${resourceMetadataPath}"${scopes && scopes.length > 0 ? ` scope="${scopes.join(' ')}"` : ''}`,
       },

@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
-import { ChatMessageDisplay } from '@/components/chat/chat-message-display';
+import { ChatMessageDisplay } from '@/components/ai/chat/chat-message-display';
 import {
   mockChatMessage,
   mockAssistantMessage,

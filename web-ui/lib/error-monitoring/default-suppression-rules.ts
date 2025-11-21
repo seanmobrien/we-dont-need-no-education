@@ -12,7 +12,7 @@ export const DEFAULT_SUPPRESSION_RULES: ErrorSuppressionRule[] = [
   },
   {
     id: 'ai-content-track-metric-undefined',
-    pattern: /.*undefined \(reading .trackMetric.\)/i,
+    pattern: /undefined \(reading .trackMetric.\)/i,
     suppressCompletely: true,
     reload: true,
     reason:
