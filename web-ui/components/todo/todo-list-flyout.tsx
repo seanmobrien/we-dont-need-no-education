@@ -6,8 +6,6 @@ import {
   ListItemIcon,
   ListItemText,
   Menu,
-  CircularProgress,
-  Box,
   Typography,
 } from '@mui/material';
 import ChecklistIcon from '@mui/icons-material/Checklist';
