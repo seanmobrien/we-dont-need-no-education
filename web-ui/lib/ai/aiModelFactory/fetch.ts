@@ -18,7 +18,7 @@ import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider'
 import { CacheStrategies } from './cache-strategies';
 import { StreamingStrategy } from './streaming-strategy';
 import { BufferingStrategy } from './buffering-strategy';
-import type { CachedValue } from './fetch-types';
+import type { CachedValue } from '../../nextjs-util/fetch/fetch-types';
 
 const FETCH_MANAGER_SINGLETON_KEY = '@noeducation/fetch-manager';
 

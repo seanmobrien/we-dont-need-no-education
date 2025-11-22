@@ -183,7 +183,6 @@ const stableRetryDelay = (attemptIndex: number) =>
  */
 const stableQueryKey = ['memoryHealth'] as const;
 
-
 export const useMemoryHealth = (): MemoryStatusHookResult => {
   const query = useQuery<MemoryHealthData, Error>({
     queryKey: stableQueryKey,

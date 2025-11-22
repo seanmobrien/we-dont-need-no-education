@@ -17,7 +17,7 @@ import {
   makeStreamResponse,
   nodeStreamToReadableStream,
 } from '@/lib/nextjs-util/server/response';
-import type { StreamingStrategyDeps } from './fetch-types';
+import type { StreamingStrategyDeps } from '../../nextjs-util/fetch/fetch-types';
 import type { EventEmitter } from 'events';
 import type { Readable } from 'stream';
 

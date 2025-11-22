@@ -107,7 +107,6 @@ const stableRetryDelay = (attemptIndex: number) =>
  */
 const stableQueryKey = ['chatHealth'] as const;
 
-
 export const useChatHealth = (): ChatHealthHookResponse => {
   const query = useQuery<ChatHealthData, Error>({
     queryKey: stableQueryKey,

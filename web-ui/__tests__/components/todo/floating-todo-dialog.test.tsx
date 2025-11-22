@@ -11,20 +11,24 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // Mock Draggable and ResizableBox components
 jest.mock('react-draggable', () => ({
   __esModule: true,
-  default: ({ children }: { children: React.ReactNode }) => <div data-testid="draggable">{children}</div>,
+  default: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="draggable">{children}</div>
+  ),
 }));
 
 jest.mock('react-resizable', () => ({
-  ResizableBox: ({ children }: { children: React.ReactNode }) => <div data-testid="resizable-box">{children}</div>,
+  ResizableBox: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="resizable-box">{children}</div>
+  ),
 }));
 
 // Mock the hooks
-jest.mock('@/lib/hooks/use-todo-lists', () => ({
+jest.mock('@/lib/hooks/use-todo', () => ({
   useTodoList: jest.fn(),
   useToggleTodo: jest.fn(),
 }));
 
-import { useTodoList, useToggleTodo } from '@/lib/hooks/use-todo-lists';
+import { useTodoList, useToggleTodo } from '@/lib/hooks/use-todo';
 
 describe('FloatingTodoDialog', () => {
   const mockOnClose = jest.fn();
@@ -39,7 +43,7 @@ describe('FloatingTodoDialog', () => {
       },
     });
     jest.clearAllMocks();
-    
+
     (useToggleTodo as jest.Mock).mockReturnValue({
       mutate: mockMutate,
     });
@@ -48,11 +52,7 @@ describe('FloatingTodoDialog', () => {
   const renderComponent = (listId: string | null = 'list-1', open = true) => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <FloatingTodoDialog
-          listId={listId}
-          open={open}
-          onClose={mockOnClose}
-        />
+        <FloatingTodoDialog listId={listId} open={open} onClose={mockOnClose} />
       </QueryClientProvider>,
     );
   };
@@ -76,7 +76,7 @@ describe('FloatingTodoDialog', () => {
     });
 
     renderComponent();
-    
+
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
     expect(screen.getByText('Loading...')).toBeInTheDocument();
   });
@@ -89,7 +89,7 @@ describe('FloatingTodoDialog', () => {
     });
 
     renderComponent();
-    
+
     expect(screen.getByText('Failed to load todo list')).toBeInTheDocument();
   });
 
@@ -105,7 +105,7 @@ describe('FloatingTodoDialog', () => {
     });
 
     renderComponent();
-    
+
     expect(screen.getByText('Empty List')).toBeInTheDocument();
     expect(screen.getByText('No items in this list')).toBeInTheDocument();
   });
@@ -135,7 +135,7 @@ describe('FloatingTodoDialog', () => {
     });
 
     renderComponent();
-    
+
     expect(screen.getByText('Work Tasks')).toBeInTheDocument();
     expect(screen.getByText('Task 1')).toBeInTheDocument();
     expect(screen.getByText('Description 1')).toBeInTheDocument();
@@ -167,13 +167,13 @@ describe('FloatingTodoDialog', () => {
     });
 
     renderComponent();
-    
+
     const checkbox = screen.getByRole('checkbox');
     fireEvent.click(checkbox);
 
     await waitFor(() => {
       expect(mockMutate).toHaveBeenCalledWith({
-        id: 'todo-1',
+        itemId: 'todo-1',
         completed: true,
       });
     });
@@ -197,7 +197,7 @@ describe('FloatingTodoDialog', () => {
     });
 
     renderComponent();
-    
+
     const taskText = screen.getByText('Completed Task');
     expect(taskText).toHaveStyle({ textDecoration: 'line-through' });
   });
@@ -214,7 +214,7 @@ describe('FloatingTodoDialog', () => {
     });
 
     renderComponent();
-    
+
     const closeButton = screen.getByLabelText('Close dialog');
     fireEvent.click(closeButton);
 

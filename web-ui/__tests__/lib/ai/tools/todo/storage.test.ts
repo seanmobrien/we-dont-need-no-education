@@ -9,9 +9,10 @@ import {
   createFallbackStrategy,
 } from '@/lib/ai/tools/todo/storage/factory';
 import type { Todo, TodoList } from '@/lib/ai/tools/todo/types';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 const idPrefix = `todo::user-test-user-id::`;
-
+const consoleSpy = hideConsoleOutput();
 describe('InMemoryStorageStrategy', () => {
   let storage: InMemoryStorageStrategy;
 
@@ -742,6 +743,7 @@ describe('Storage Factory', () => {
   });
 
   it.skip('should use fallback when primary fails', async () => {
+    consoleSpy.setup();
     // This test is skipped because it requires mocking LoggedError
     // The fallback mechanism is tested in integration tests
     const fallback = new InMemoryStorageStrategy();

@@ -12,7 +12,8 @@ import {
 } from '@mui/material';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { useTodoLists } from '@/lib/hooks/use-todo-lists';
+import { useTodoLists } from '@/lib/hooks/use-todo';
+import { Loading } from '../general/loading';
 
 export interface TodoListFlyoutProps {
   onSelectList: (listId: string) => void;
@@ -20,19 +21,19 @@ export interface TodoListFlyoutProps {
 
 /**
  * TodoListFlyout - A submenu that appears on hover/click for selecting todo lists
- * 
+ *
  * Displays a fly-out menu of available todo lists. When a list is selected,
  * it calls onSelectList with the list ID.
  */
 export const TodoListFlyout: React.FC<TodoListFlyoutProps> = ({
   onSelectList,
 }) => {
+  const AUTOCLOSE_DELAY_MS = 500;
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuItemRef = useRef<HTMLLIElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { data: listsData, isLoading } = useTodoLists();
-  const lists = listsData?.lists || [];
+  const { data: lists = [], isLoading } = useTodoLists();
 
   const handleMouseEnter = useCallback(() => {
     if (timeoutRef.current) {
@@ -46,7 +47,7 @@ export const TodoListFlyout: React.FC<TodoListFlyoutProps> = ({
   const handleMouseLeave = useCallback(() => {
     timeoutRef.current = setTimeout(() => {
       setAnchorEl(null);
-    }, 300);
+    }, AUTOCLOSE_DELAY_MS);
   }, []);
 
   const handleSubmenuEnter = useCallback(() => {
@@ -58,7 +59,7 @@ export const TodoListFlyout: React.FC<TodoListFlyoutProps> = ({
   const handleSubmenuLeave = useCallback(() => {
     timeoutRef.current = setTimeout(() => {
       setAnchorEl(null);
-    }, 300);
+    }, AUTOCLOSE_DELAY_MS);
   }, []);
 
   const handleListClick = useCallback(
@@ -115,11 +116,7 @@ export const TodoListFlyout: React.FC<TodoListFlyoutProps> = ({
           },
         }}
       >
-        {isLoading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-            <CircularProgress size={24} />
-          </Box>
-        )}
+        <Loading loading={isLoading} />
 
         {!isLoading && lists.length === 0 && (
           <MenuItem disabled>
@@ -138,7 +135,7 @@ export const TodoListFlyout: React.FC<TodoListFlyoutProps> = ({
             >
               <ListItemText
                 primary={list.title}
-                secondary={`${list.todos.length} item${list.todos.length !== 1 ? 's' : ''}`}
+                secondary={`${list.totalItems ?? 0} item${(list.totalItems ?? 0) !== 1 ? 's' : ''}`}
               />
             </MenuItem>
           ))}

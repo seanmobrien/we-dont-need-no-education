@@ -9,11 +9,11 @@ import { TodoListFlyout } from '@/components/todo/todo-list-flyout';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock the useTodoLists hook
-jest.mock('@/lib/hooks/use-todo-lists', () => ({
+jest.mock('@/lib/hooks/use-todo', () => ({
   useTodoLists: jest.fn(),
 }));
 
-import { useTodoLists } from '@/lib/hooks/use-todo-lists';
+import { useTodoLists } from '@/lib/hooks/use-todo';
 
 describe('TodoListFlyout', () => {
   const mockOnSelectList = jest.fn();
@@ -39,12 +39,12 @@ describe('TodoListFlyout', () => {
 
   it('renders the todo lists menu item', () => {
     (useTodoLists as jest.Mock).mockReturnValue({
-      data: { lists: [] },
+      data: [],
       isLoading: false,
     });
 
     renderComponent();
-    
+
     expect(screen.getByTestId('menu-item-todo-lists')).toBeInTheDocument();
     expect(screen.getByText('To-do lists')).toBeInTheDocument();
   });
@@ -56,7 +56,7 @@ describe('TodoListFlyout', () => {
     });
 
     renderComponent();
-    
+
     // Hover over the menu item to open submenu
     const menuItem = screen.getByTestId('menu-item-todo-lists');
     fireEvent.mouseEnter(menuItem);
@@ -68,12 +68,12 @@ describe('TodoListFlyout', () => {
 
   it('shows empty state when no lists are available', async () => {
     (useTodoLists as jest.Mock).mockReturnValue({
-      data: { lists: [] },
+      data: [],
       isLoading: false,
     });
 
     renderComponent();
-    
+
     const menuItem = screen.getByTestId('menu-item-todo-lists');
     fireEvent.mouseEnter(menuItem);
 
@@ -84,30 +84,31 @@ describe('TodoListFlyout', () => {
 
   it('displays todo lists when available', async () => {
     (useTodoLists as jest.Mock).mockReturnValue({
-      data: {
-        lists: [
-          {
-            id: 'list-1',
-            title: 'Work Tasks',
-            todos: [
-              { id: 'todo-1', title: 'Task 1', completed: false },
-              { id: 'todo-2', title: 'Task 2', completed: false },
-            ],
-          },
-          {
-            id: 'list-2',
-            title: 'Personal Tasks',
-            todos: [
-              { id: 'todo-3', title: 'Task 3', completed: true },
-            ],
-          },
-        ],
-      },
+      data: [
+        {
+          id: 'list-1',
+          title: 'Work Tasks',
+          totalItems: 2,
+          status: 'active',
+          priority: 'medium',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'list-2',
+          title: 'Personal Tasks',
+          totalItems: 1,
+          status: 'active',
+          priority: 'medium',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
       isLoading: false,
     });
 
     renderComponent();
-    
+
     const menuItem = screen.getByTestId('menu-item-todo-lists');
     fireEvent.mouseEnter(menuItem);
 
@@ -121,20 +122,22 @@ describe('TodoListFlyout', () => {
 
   it('calls onSelectList when a list is clicked', async () => {
     (useTodoLists as jest.Mock).mockReturnValue({
-      data: {
-        lists: [
-          {
-            id: 'list-1',
-            title: 'Work Tasks',
-            todos: [],
-          },
-        ],
-      },
+      data: [
+        {
+          id: 'list-1',
+          title: 'Work Tasks',
+          totalItems: 0,
+          status: 'active',
+          priority: 'medium',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
       isLoading: false,
     });
 
     renderComponent();
-    
+
     const menuItem = screen.getByTestId('menu-item-todo-lists');
     fireEvent.mouseEnter(menuItem);
 
@@ -150,20 +153,22 @@ describe('TodoListFlyout', () => {
 
   it('closes submenu when mouse leaves', async () => {
     (useTodoLists as jest.Mock).mockReturnValue({
-      data: {
-        lists: [
-          {
-            id: 'list-1',
-            title: 'Work Tasks',
-            todos: [],
-          },
-        ],
-      },
+      data: [
+        {
+          id: 'list-1',
+          title: 'Work Tasks',
+          totalItems: 0,
+          status: 'active',
+          priority: 'medium',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
       isLoading: false,
     });
 
     renderComponent();
-    
+
     const menuItem = screen.getByTestId('menu-item-todo-lists');
     fireEvent.mouseEnter(menuItem);
 

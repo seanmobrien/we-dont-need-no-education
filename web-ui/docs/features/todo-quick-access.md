@@ -15,6 +15,7 @@ The "To-do lists" menu item appears in the Chat Panel menu, positioned between "
 When hovering over or tapping "To-do lists", a submenu appears showing all available todo lists with their item counts.
 
 **Features:**
+
 - Appears on hover with 300ms delay
 - Shows list title and item count
 - Disappears when mouse leaves (with 300ms delay)
@@ -26,6 +27,7 @@ When hovering over or tapping "To-do lists", a submenu appears showing all avail
 Clicking on a list opens a draggable, resizable dialog window with checkboxes for each item.
 
 **Features:**
+
 - Draggable by clicking and dragging the title bar
 - Resizable from the bottom-right corner
 - Minimum size: 300x200 pixels
@@ -38,15 +40,22 @@ Clicking on a list opens a draggable, resizable dialog window with checkboxes fo
 
 ### API Endpoints
 
-- **GET /api/todo/lists** - Returns all todo lists for the authenticated user
-- **GET /api/todo/lists/[id]** - Returns a specific todo list by ID
-- **PATCH /api/todo/items/[id]** - Updates a todo item's completion status
+- **GET /api/todo-lists** - Returns all todo lists for the authenticated user
+- **GET /api/todo-lists/[listId]** - Returns a specific todo list by ID
+- **PUT /api/todo-lists/[listId]/items** - Updates a todo item (including completion status)
+- **POST /api/todo-lists/[listId]/items** - Creates a new todo item
+- **DELETE /api/todo-lists/[listId]/items** - Deletes a todo item
 
 ### React Hooks
 
-- **useTodoLists(options)** - Fetches all todo lists with optional completion filter
-- **useTodoList(id, options)** - Fetches a specific todo list
-- **useToggleTodo()** - Mutation hook with optimistic UI updates
+All hooks are located in `@/lib/hooks/use-todo`:
+
+- **useTodoLists(options)** - Fetches all todo lists (returns `TodoListSummary[]`)
+- **useTodoList(listId, options)** - Fetches a specific todo list with items
+- **useToggleTodo(listId)** - Mutation hook for toggling completion with optimistic UI updates
+- **useCreateTodoItem(listId)** - Creates a new todo item
+- **useUpdateTodoItem(listId)** - Updates an existing todo item
+- **useDeleteTodoItem(listId)** - Deletes a todo item
 
 ### Components
 

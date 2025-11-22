@@ -17,9 +17,10 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import Draggable from 'react-draggable';
 import { ResizableBox } from 'react-resizable';
-import { useTodoList, useToggleTodo } from '@/lib/hooks/use-todo-lists';
-import type { TodoItem } from '@/components/todo/types';
+import { useTodoList, useToggleTodo } from '@/lib/hooks/use-todo';
+import type { Todo } from '@/data-models/api/todo';
 import 'react-resizable/css/styles.css';
+import { ClientWrapper } from '@/lib/react-util';
 
 export interface FloatingTodoDialogProps {
   listId: string | null;
@@ -29,7 +30,7 @@ export interface FloatingTodoDialogProps {
 
 /**
  * FloatingTodoDialog - A draggable, resizable dialog for displaying and completing todo items
- * 
+ *
  * Reuses the floating dialog pattern from the chat panel. Users can:
  * - View all items in a todo list
  * - Toggle item completion with optimistic updates
@@ -43,18 +44,24 @@ export const FloatingTodoDialog: React.FC<FloatingTodoDialogProps> = ({
   const [size, setSize] = useState({ width: 400, height: 500 });
 
   const { data: list, isLoading, error } = useTodoList(listId);
-  const { mutate: toggleTodo } = useToggleTodo();
+  const { mutate: toggleTodo } = useToggleTodo(listId || '');
 
   const handleToggle = useCallback(
-    (todo: TodoItem) => {
-      toggleTodo({ id: todo.id, completed: !todo.completed });
+    (todo: Todo) => {
+      toggleTodo({ itemId: todo.id, completed: !todo.completed });
     },
     [toggleTodo],
   );
 
-  const handleResize = useCallback((_event: React.SyntheticEvent, { size: newSize }: { size: { width: number; height: number } }) => {
-    setSize(newSize);
-  }, []);
+  const handleResize = useCallback(
+    (
+      _event: React.SyntheticEvent,
+      { size: newSize }: { size: { width: number; height: number } },
+    ) => {
+      setSize(newSize);
+    },
+    [],
+  );
 
   if (!open) return null;
 
@@ -116,7 +123,9 @@ export const FloatingTodoDialog: React.FC<FloatingTodoDialogProps> = ({
 
         {list && list.todos.length === 0 && (
           <Box sx={{ p: 2 }}>
-            <Typography color="text.secondary">No items in this list</Typography>
+            <Typography color="text.secondary">
+              No items in this list
+            </Typography>
           </Box>
         )}
 
@@ -164,26 +173,28 @@ export const FloatingTodoDialog: React.FC<FloatingTodoDialogProps> = ({
   );
 
   return (
-    <Draggable handle=".drag-handle" bounds="body">
-      <Box
-        sx={{
-          position: 'fixed',
-          top: 100,
-          left: 100,
-          zIndex: 1300,
-        }}
-      >
-        <ResizableBox
-          width={size.width}
-          height={size.height}
-          onResize={handleResize}
-          minConstraints={[300, 200]}
-          maxConstraints={[800, 800]}
-          resizeHandles={['se']}
+    <ClientWrapper>
+      <Draggable handle=".drag-handle" bounds="body">
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 100,
+            left: 100,
+            zIndex: 1300,
+          }}
         >
-          {dialogContent}
-        </ResizableBox>
-      </Box>
-    </Draggable>
+          <ResizableBox
+            width={size.width}
+            height={size.height}
+            onResize={handleResize}
+            minConstraints={[300, 200]}
+            maxConstraints={[800, 800]}
+            resizeHandles={['se']}
+          >
+            {dialogContent}
+          </ResizableBox>
+        </Box>
+      </Draggable>
+    </ClientWrapper>
   );
 };

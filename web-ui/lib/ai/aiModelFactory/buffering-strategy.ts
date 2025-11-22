@@ -21,7 +21,10 @@ import {
   nodeStreamToReadableStream,
 } from '@/lib/nextjs-util/server/response';
 import { log } from '@/lib/logger';
-import type { BufferingStrategyDeps, CachedValue } from './fetch-types';
+import type {
+  BufferingStrategyDeps,
+  CachedValue,
+} from '../../nextjs-util/fetch/fetch-types';
 import type { EventEmitter } from 'events';
 import type { Readable } from 'stream';
 

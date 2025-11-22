@@ -1,4 +1,3 @@
- 
 /**
  * @jest-environment jsdom
  */
@@ -19,7 +18,17 @@ Object.defineProperty(window, 'open', { value: mockOpen, writable: true });
 
 // For window.location, we need to delete and recreate since it can't be redefined
 delete (window as any).location;
-(window as any).location = { reload: mockReload };
+(window as any).location = {
+  reload: mockReload,
+  href: {
+    get() {
+      return 'http://localhost/test-page';
+    },
+    set(value: string) {
+      // no-op
+    },
+  },
+};
 
 // Ensure global window is set for typeof checks
 (global as any).window = window;
@@ -30,6 +39,7 @@ Object.defineProperty(navigator, 'onLine', {
   configurable: true,
 });
 
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 // Now import the module after setting up mocks
 import {
   classifyError,
@@ -51,9 +61,15 @@ Object.defineProperty(window, 'caches', {
   },
 });
 
+const consoleSpy = hideConsoleOutput();
+
 describe('Error Classification', () => {
-  beforeEach(() => {});
-  afterEach(() => {});
+  beforeEach(() => {
+    consoleSpy.setup();
+  });
+  afterEach(() => {
+    consoleSpy[Symbol.dispose]();
+  });
 
   describe('classifyError', () => {
     it('should classify network errors correctly', () => {
@@ -173,6 +189,7 @@ describe('Error Classification', () => {
 describe('Recovery Actions', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
+    consoleSpy.setup();
   });
 
   describe('getRecoveryActions', () => {
@@ -290,6 +307,7 @@ describe('Recovery Actions', () => {
 describe('Recovery Action Execution', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
+    consoleSpy.setup();
   });
 
   describe('Network Error Actions', () => {
@@ -387,10 +405,12 @@ describe('Automatic Recovery', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
     jest.useFakeTimers();
+    consoleSpy.setup();
   });
 
   afterEach(() => {
     jest.useRealTimers();
+    consoleSpy[Symbol.dispose]();
   });
 
   describe('attemptAutoRecovery', () => {
@@ -474,6 +494,14 @@ describe('Automatic Recovery', () => {
 });
 
 describe('Recovery Strategy Configuration', () => {
+  beforeEach(() => {
+    consoleSpy.setup();
+  });
+
+  afterEach(() => {
+    consoleSpy[Symbol.dispose]();
+  });
+
   it('should have valid configuration for all strategies', () => {
     recoveryStrategies.forEach((strategy) => {
       expect(strategy.errorType).toBeDefined();
@@ -519,6 +547,14 @@ describe('Recovery Strategy Configuration', () => {
 });
 
 describe('Edge Cases', () => {
+  beforeEach(() => {
+    consoleSpy.setup();
+  });
+
+  afterEach(() => {
+    consoleSpy[Symbol.dispose]();
+  });
+
   it('should handle empty error messages', () => {
     const emptyError = new Error('');
     const errorType = classifyError(emptyError);

@@ -13,7 +13,7 @@ import { CacheStrategies } from '@/lib/ai/aiModelFactory/cache-strategies';
 import type {
   CachedValue,
   CacheStrategyDeps,
-} from '@/lib/ai/aiModelFactory/fetch-types';
+} from '@/lib/nextjs-util/fetch/fetch-types';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock Redis client

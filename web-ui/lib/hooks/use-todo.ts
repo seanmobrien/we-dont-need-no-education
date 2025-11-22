@@ -378,3 +378,111 @@ export const useDeleteTodoItem = (
     },
   });
 };
+
+/**
+ * Toggle todo item completion with optimistic updates
+ */
+export const useToggleTodo = (listId: string) => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      itemId,
+      completed,
+    }: {
+      itemId: string;
+      completed: boolean;
+    }): Promise<Todo> => {
+      try {
+        const response = await fetch(`/api/todo-lists/${listId}/items`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            itemId,
+            completed,
+            status: completed ? 'complete' : 'active',
+          }),
+        });
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to update todo item');
+        }
+
+        const result = await response.json();
+        return result.data;
+      } catch (error) {
+        throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'useToggleTodo',
+          data: { listId, itemId, completed },
+        });
+      }
+    },
+    onMutate: async ({ itemId, completed }) => {
+      // Cancel outgoing refetches for this list and all lists
+      await queryClient.cancelQueries({ queryKey: todoKeys.list(listId) });
+      await queryClient.cancelQueries({ queryKey: todoKeys.lists() });
+
+      // Snapshot previous values
+      const previousList = queryClient.getQueryData<TodoList>(
+        todoKeys.list(listId),
+      );
+      const previousLists = queryClient.getQueryData<TodoListSummary[]>(
+        todoKeys.lists(),
+      );
+
+      // Optimistically update the specific list
+      if (previousList) {
+        queryClient.setQueryData<TodoList>(todoKeys.list(listId), {
+          ...previousList,
+          todos: previousList.todos.map((todo) =>
+            todo.id === itemId
+              ? {
+                  ...todo,
+                  completed,
+                  status: completed ? 'complete' : 'active',
+                }
+              : todo,
+          ),
+        });
+      }
+
+      // Optimistically update the lists summary
+      if (previousLists) {
+        queryClient.setQueryData<TodoListSummary[]>(
+          todoKeys.lists(),
+          previousLists.map((list) =>
+            list.id === listId
+              ? {
+                  ...list,
+                  completedItems: completed
+                    ? (list.completedItems ?? 0) + 1
+                    : (list.completedItems ?? 0) - 1,
+                  pendingItems: completed
+                    ? (list.pendingItems ?? 0) - 1
+                    : (list.pendingItems ?? 0) + 1,
+                }
+              : list,
+          ),
+        );
+      }
+
+      return { previousList, previousLists };
+    },
+    onError: (_err, _variables, context) => {
+      // Rollback on error
+      if (context?.previousList) {
+        queryClient.setQueryData(todoKeys.list(listId), context.previousList);
+      }
+      if (context?.previousLists) {
+        queryClient.setQueryData(todoKeys.lists(), context.previousLists);
+      }
+    },
+    onSettled: () => {
+      // Refetch after mutation to ensure consistency
+      queryClient.invalidateQueries({ queryKey: todoKeys.list(listId) });
+      queryClient.invalidateQueries({ queryKey: todoKeys.lists() });
+    },
+  });
+};
