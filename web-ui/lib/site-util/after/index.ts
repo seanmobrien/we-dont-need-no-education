@@ -273,7 +273,6 @@ export default class AfterManager {
           }),
         );
       }
-      console.log(`Signal received: ${signalName}`);
       resolve(); // Replace with actual resolution logic
     });
   }
