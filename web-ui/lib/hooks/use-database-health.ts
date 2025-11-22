@@ -84,7 +84,6 @@ const stableRetryDelay = (attemptIndex: number) =>
  */
 const stableQueryKey = ['databaseHealth'] as const;
 
-
 export const useDatabaseHealth = (): DatabaseHealthResponse => {
   const query = useQuery<RawHealthStatus, Error>({
     queryKey: stableQueryKey,

@@ -20,7 +20,7 @@ import type {
   CacheResult,
   CachedValue,
   SpanLike,
-} from './fetch-types';
+} from '../../nextjs-util/fetch/fetch-types';
 
 /**
  * Cache strategies for multi-layer fetch caching

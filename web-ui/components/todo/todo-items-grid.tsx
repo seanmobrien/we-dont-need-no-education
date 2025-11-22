@@ -29,6 +29,7 @@ import type { SxProps, Theme } from '@mui/material/styles';
 import { useConfirmationDialog } from '@/components/general/dialogs/confirm';
 import { usePromptDialog } from '@/components/general/dialogs/prompt';
 import siteBuilder from '@/lib/site-util/url-builder';
+import { Loading } from '../general/loading';
 
 const stableSx = {
   containerBase: {
@@ -258,7 +259,7 @@ export default function TodoItemsGrid({ listId }: TodoItemsGridProps) {
   );
 
   if (isLoading) {
-    return <Typography>Loading...</Typography>;
+    return <Loading loading={true} />;
   }
 
   if (!list) {

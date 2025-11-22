@@ -1,4 +1,3 @@
- 
 import '@testing-library/jest-dom';
 import {
   render,
@@ -163,6 +162,7 @@ export type MockedConsole = {
   warn?: jest.SpyInstance;
   setup: () => void;
   dispose: () => void;
+  [Symbol.dispose]: () => void;
 };
 
 let lastMockedConsole: MockedConsole | undefined = undefined;
@@ -191,6 +191,9 @@ export const hideConsoleOutput = () => {
       ret.warn ??= jest.spyOn(console, 'warn').mockImplementation(() => {});
     },
     dispose: () => {
+      ret[Symbol.dispose]();
+    },
+    [Symbol.dispose]: () => {
       ret.error?.mockRestore();
       delete ret.error;
       ret.log?.mockRestore();

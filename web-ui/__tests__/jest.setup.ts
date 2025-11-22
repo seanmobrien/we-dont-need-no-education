@@ -11,6 +11,55 @@ jest.mock('@/lib/nextjs-util/client-navigate', () => ({
   clientNavigate: jest.fn().mockImplementation(() => {}),
   clientNavigateSignIn: jest.fn().mockImplementation(() => {}),
 }));
+
+jest.mock('@/lib/hooks/use-todo', () => ({
+  useTodoLists: jest.fn(() => ({
+    data: [],
+    isLoading: false,
+    error: null,
+  })),
+  useTodoList: jest.fn(() => ({
+    data: null,
+    isLoading: false,
+    error: null,
+  })),
+  useToggleTodo: jest.fn(() => ({
+    mutate: jest.fn(),
+    mutateAsync: jest.fn(),
+    isPending: false,
+  })),
+  useCreateTodoList: jest.fn(() => ({
+    mutate: jest.fn(),
+    mutateAsync: jest.fn(),
+    isPending: false,
+  })),
+  useUpdateTodoList: jest.fn(() => ({
+    mutate: jest.fn(),
+    mutateAsync: jest.fn(),
+    isPending: false,
+  })),
+  useDeleteTodoList: jest.fn(() => ({
+    mutate: jest.fn(),
+    mutateAsync: jest.fn(),
+    isPending: false,
+  })),
+  useCreateTodoItem: jest.fn(() => ({
+    mutate: jest.fn(),
+    mutateAsync: jest.fn(),
+    isPending: false,
+  })),
+  useUpdateTodoItem: jest.fn(() => ({
+    mutate: jest.fn(),
+    mutateAsync: jest.fn(),
+    isPending: false,
+  })),
+  useDeleteTodoItem: jest.fn(() => ({
+    mutate: jest.fn(),
+    mutateAsync: jest.fn(),
+    isPending: false,
+  })),
+}));
+
 jest.mock('@/instrument/browser', () => ({
   getReactPlugin: jest.fn(() => ({
     trackEvent: jest.fn(),
@@ -31,7 +80,7 @@ jest.mock('@/instrument/browser', () => ({
 if (typeof window !== 'undefined') {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: jest.fn().mockImplementation(query => ({
+    value: jest.fn().mockImplementation((query) => ({
       matches: false,
       media: query,
       onchange: null,
