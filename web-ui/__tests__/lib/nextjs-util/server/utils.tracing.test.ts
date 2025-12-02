@@ -48,7 +48,7 @@ describe('wrapRouteRequest tracing', () => {
           parent: any,
           fn: (span: any) => Promise<Response> | Response,
         ) => {
-          return await fn(mockSpan);
+          return await ((fn ?? options)(mockSpan));
         },
       );
     const getTracerSpy = jest
@@ -121,7 +121,7 @@ describe('wrapRouteRequest tracing', () => {
           parent: any,
           fn: (span: any) => Promise<Response> | Response,
         ) => {
-          return await fn(mockSpan);
+          return await ((fn ?? options)(mockSpan));
         },
       );
     const getTracerSpy = jest

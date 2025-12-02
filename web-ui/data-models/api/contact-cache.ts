@@ -1,5 +1,6 @@
 import { forOneOrMany, OneOrMany } from '@/lib/typescript';
 import {
+  globalRequiredSingleton,
   globalSingleton,
   SingletonProvider,
 } from '@/lib/typescript/singleton-provider';
@@ -22,7 +23,7 @@ const CONTACT_CACHE_KEY = '@noeducation/data-models/api/ContactCache';
 
 class ContactCacheImpl implements ContactCache {
   static get globalCache(): ContactCache {
-    return globalSingleton(CONTACT_CACHE_KEY, () => new ContactCacheImpl(), {
+    return globalRequiredSingleton(CONTACT_CACHE_KEY, () => new ContactCacheImpl(), {
       weakRef: true,
     });
   }

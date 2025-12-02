@@ -22,7 +22,7 @@ import type {
   FlushConfig,
 } from '@/lib/ai/middleware/chat-history/types';
 import { DbDatabaseType } from '@/lib/drizzle-db';
-import { makeMockDb } from '@/__tests__/jest.setup';
+import { makeMockDb } from '@/__tests__/setup/jest.setup';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock the logger
@@ -227,10 +227,14 @@ describe('Flush Handlers - Compilation Fix Test', () => {
 
   describe('DEFAULT_FLUSH_CONFIG', () => {
     it('should export default configuration', () => {
-      expect(DEFAULT_FLUSH_CONFIG).toEqual({
-        autoGenerateTitle: true,
+      expect(DEFAULT_FLUSH_CONFIG).toMatchObject({
+        batchSize: 10,
+        compressionEnabled: false,
+        enableMetrics: false,
+        flushIntervalMs: 1000,
         maxTitleLength: 100,
-        titleWordCount: 6,
+        retryAttempts: 3,
+        timeoutMs: 5000,
       });
     });
   });

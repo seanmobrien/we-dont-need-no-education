@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@/lib/nextjs-util/server/fetch';
 import {
   AllUsers,
   ProjectOptions,

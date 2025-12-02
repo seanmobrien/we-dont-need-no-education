@@ -5,9 +5,8 @@ import { log } from '@/lib/logger';
 import { UrlFilterEngine } from './url-filter-engine';
 import { UrlFilterOptions } from './url-filter-rules';
 import { LRUCache } from 'lru-cache';
-import { globalSingleton } from '@/lib/typescript/singleton-provider';
+import { globalRequiredSingleton, globalSingleton } from '@/lib/typescript/singleton-provider';
 import { env } from '@/lib/site-util/env';
-import { result } from 'lodash';
 
 /*
  * Global LRU cache tracking filtered span IDs.
@@ -15,7 +14,7 @@ import { result } from 'lodash';
  * Child spans check this cache to see if any ancestor was filtered.
  */
 const getFilteredSpansCache = () => {
-  return globalSingleton<LRUCache<string, boolean>>(
+  return globalRequiredSingleton<LRUCache<string, boolean>>(
     'url-filtered-spans-cache',
     () =>
       new LRUCache<string, boolean>({
@@ -27,8 +26,7 @@ const getFilteredSpansCache = () => {
 
 export class UrlFilteredSpanExporter
   extends UrlFilterEngine
-  implements SpanExporter
-{
+  implements SpanExporter {
   readonly #inner: SpanExporter;
   readonly #cache: LRUCache<string, boolean>;
 

@@ -20,14 +20,24 @@ export type ConnectableToolProvider = {
   get_mcpClient: () => MCPClient;
   get_isConnected: () => boolean;
   readonly tools: ToolSet;
-  dispose: () => Promise<void>;
-  connect: ({}: { allowWrite?: boolean }) => Promise<ConnectableToolProvider>;
+  [Symbol.dispose]: () => void;
+  addDisposeListener: (listener: () => void) => void;
+  removeDisposeListener: (listener: () => void) => void;
+  connect: ({ }: { allowWrite?: boolean }) => Promise<ConnectableToolProvider>;
 };
 
 export type ToolProviderSet = {
   readonly isHealthy: boolean;
   readonly tools: ToolSet;
   providers: Array<ConnectableToolProvider>;
+  [Symbol.dispose]: () => void;
+  addDisposeListener: (listener: () => void) => void;
+  removeDisposeListener: (listener: () => void) => void;
+  /**
+   * Disposes of the tool provider set and all its providers.
+   * @deprecated Use [Symbol.dispose] instead
+   * @returns A promise that resolves when disposal is complete
+   */
   dispose: () => Promise<void>;
 };
 

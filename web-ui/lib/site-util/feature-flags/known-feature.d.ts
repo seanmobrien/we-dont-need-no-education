@@ -10,7 +10,7 @@ declare module '@/lib/site-util/feature-flags/known-feature' {
    * - Known feature flag identifiers (KnownFeatureValues, KnownFeature)
    * - Type-safe flag value representations (FeatureFlagStatus)
    * - Default flag configurations (AllFeatureFlagsDefault)
-   * - Utility types for type-safe flag access (FeatureFlagValueType)
+   * - Utility types for type-safe flag access (KnownFeatureValueType)
    *
    * Feature flags are used throughout the application to enable/disable features,
    * control model availability (Azure, OpenAI, Google), and manage feature rollouts
@@ -135,7 +135,7 @@ declare module '@/lib/site-util/feature-flags/known-feature' {
    * ```typescript
    * if (isKnownFeatureType(maybeKey)) {
    *   // TypeScript now knows maybeKey is a KnownFeatureType
-   *   const val: FeatureFlagValueType<typeof maybeKey> = await getFeatureFlag(maybeKey);
+   *   const val: KnownFeatureValueType<typeof maybeKey> = await getFeatureFlag(maybeKey);
    * }
    * ```
    *
@@ -291,7 +291,7 @@ declare module '@/lib/site-util/feature-flags/known-feature' {
    * more precise type inference throughout the application.
    *
    * Primarily used internally for deriving other utility types like
-   * FeatureFlagValueType, but can also be useful for ensuring exact type matching
+   * KnownFeatureValueType, but can also be useful for ensuring exact type matching
    * in tests or type assertions.
    *
    * @example
@@ -333,17 +333,17 @@ declare module '@/lib/site-util/feature-flags/known-feature' {
    * @example
    * ```typescript
    * // Extract boolean type
-   * type AzureType = FeatureFlagValueType<'models_azure'>;
+   * type AzureType = KnownFeatureValueType<'models_azure'>;
    * // Result: true (literal type from defaults)
    *
    * // Extract complex object type
-   * type DefaultsType = FeatureFlagValueType<'models_defaults'>;
+   * type DefaultsType = KnownFeatureValueType<'models_defaults'>;
    * // Result: { enabled: true, value: { openai: 'lofi', ... } }
    *
    * // Use in generic functions
    * async function getTypedFlag<K extends KnownFeatureType>(
    *   key: K
-   * ): Promise<FeatureFlagValueType<K>> {
+   * ): Promise<KnownFeatureValueType<K>> {
    *   return await getFeatureFlag(key);
    * }
    *
@@ -351,14 +351,14 @@ declare module '@/lib/site-util/feature-flags/known-feature' {
    * // Type is inferred as: true | false (boolean from defaults)
    *
    * // Compile error for invalid key
-   * type Invalid = FeatureFlagValueType<'nonexistent'>;
+   * type Invalid = KnownFeatureValueType<'nonexistent'>;
    * // Result: never
    * ```
    *
    * @template K - The feature flag key (must extend KnownFeatureType)
-   * @typedef {K extends keyof AllFeatureFlagDefaultType ? Pick<AllFeatureFlagDefaultType, K>[K] : never} FeatureFlagValueType
+   * @typedef {K extends keyof AllFeatureFlagDefaultType ? Pick<AllFeatureFlagDefaultType, K>[K] : never} KnownFeatureValueType
    */
-  export type FeatureFlagValueType<K extends KnownFeatureType> =
+  export type KnownFeatureValueType<K extends KnownFeatureType> =
     K extends keyof AllFeatureFlagDefaultType
       ? Pick<AllFeatureFlagDefaultType, K>[K]
       : never;

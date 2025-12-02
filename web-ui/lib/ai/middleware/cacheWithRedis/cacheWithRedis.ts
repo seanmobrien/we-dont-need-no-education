@@ -13,20 +13,12 @@ import { handleResponseCaching } from './cacheStrategy';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { newUuid } from '@/lib/typescript/_record-decorators';
 import { MiddlewareStateManager } from '../state-management';
+import { log } from '@/lib/logger';
 
 // Enterprise configuration and metrics
 const config = getCacheConfig();
 validateCacheConfig(config);
 
-/**
- * Enterprise-grade Redis caching middleware for AI language models (Original Implementation)
- * - Configurable via environment variables
- * - Comprehensive metrics collection
- * - Caches successful responses immediately
- * - Uses "cache jail" for problematic responses (content-filter, other, warnings)
- * - Promotes jailed responses to cache after configurable threshold
- * - Never caches error responses
- */
 const originalCacheWithRedis: LanguageModelV2Middleware = {
   wrapGenerate: async ({ doGenerate, params, model }) => {
     const cacheKey = createCacheKey(params, model?.modelId);
@@ -75,6 +67,7 @@ const originalCacheWithRedis: LanguageModelV2Middleware = {
     const cacheKey = createCacheKey(params, model?.modelId);
 
     try {
+      log(l => l.verbose('=== Cache with redis stream start ==='));
       if (cacheKey.length === 0) {
         throw new Error('Cache key is empty, cannot proceed with caching.');
       }
@@ -156,16 +149,12 @@ const originalCacheWithRedis: LanguageModelV2Middleware = {
         console.error('Redis cache error in wrapStream:', error);
       }
       return await doStream();
+    } finally {
+      log(l => l.verbose('=== Cache with redis stream end ==='));
     }
   },
 };
 
-/**
- * Cache with Redis Middleware with State Management Support
- *
- * This middleware supports the state management protocol and can participate
- * in state collection and restoration operations.
- */
 export const cacheWithRedis =
   MiddlewareStateManager.Instance.basicMiddlewareWrapper({
     middlewareId: 'cache-with-redis',

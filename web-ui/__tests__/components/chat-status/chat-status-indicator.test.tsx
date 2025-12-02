@@ -6,22 +6,28 @@
 import React from 'react';
 import { render, screen } from '@/__tests__/test-utils';
 import { ChatStatusIndicator } from '@/components/health/chat-status/chat-status-indicator';
-import { useChatHealth } from '@/lib/hooks/use-chat-health';
+import { useHealth } from '@/components/health/health-provider/health-context';
 
-const mockUseChatHealth = useChatHealth as jest.Mock;
+jest.mock('@/components/health/health-provider/health-context');
+const mockUseHealth = useHealth as jest.Mock;
 
 describe('ChatStatusIndicator', () => {
   it('renders with default props when healthy', () => {
-    mockUseChatHealth.mockReturnValue({
-      healthStatus: 'ok',
+    mockUseHealth.mockReturnValue({
+      health: {
+        chat: {
+          status: 'healthy',
+          subsystems: {
+            cache: 'healthy',
+            queue: 'healthy',
+            tools: 'healthy',
+          },
+        },
+      },
       isLoading: false,
       isError: false,
       error: null,
       refreshInterval: 180000,
-      subsystems: {
-        cache: 'ok',
-        queue: 'ok',
-      },
     });
 
     render(<ChatStatusIndicator />);
@@ -29,18 +35,22 @@ describe('ChatStatusIndicator', () => {
     // Should render the icon (CheckCircle icon for ok status)
     expect(screen.getByTestId('CheckCircleIcon')).toBeInTheDocument();
   });
-
   it('renders with label when showLabel is true', () => {
-    mockUseChatHealth.mockReturnValue({
-      healthStatus: 'ok',
+    mockUseHealth.mockReturnValue({
+      health: {
+        chat: {
+          status: 'healthy',
+          subsystems: {
+            cache: 'healthy',
+            queue: 'healthy',
+            tools: 'healthy',
+          },
+        },
+      },
       isLoading: false,
       isError: false,
       error: null,
       refreshInterval: 180000,
-      subsystems: {
-        cache: 'ok',
-        queue: 'ok',
-      },
     });
 
     render(<ChatStatusIndicator showLabel />);
@@ -50,16 +60,14 @@ describe('ChatStatusIndicator', () => {
   });
 
   it('shows loading state', () => {
-    mockUseChatHealth.mockReturnValue({
-      healthStatus: 'warning',
+    mockUseHealth.mockReturnValue({
+      health: {
+        chat: undefined,
+      },
       isLoading: true,
       isError: false,
       error: null,
       refreshInterval: 30000,
-      subsystems: {
-        cache: 'ok',
-        queue: 'warning',
-      },
     });
 
     render(<ChatStatusIndicator />);
@@ -69,16 +77,21 @@ describe('ChatStatusIndicator', () => {
   });
 
   it('shows warning status correctly', () => {
-    mockUseChatHealth.mockReturnValue({
-      healthStatus: 'warning',
+    mockUseHealth.mockReturnValue({
+      health: {
+        chat: {
+          status: 'warning',
+          subsystems: {
+            cache: 'healthy',
+            queue: 'warning',
+            tools: 'healthy',
+          },
+        },
+      },
       isLoading: false,
       isError: false,
       error: null,
       refreshInterval: 30000,
-      subsystems: {
-        cache: 'ok',
-        queue: 'warning',
-      },
     });
 
     render(<ChatStatusIndicator showLabel />);
@@ -87,16 +100,21 @@ describe('ChatStatusIndicator', () => {
   });
 
   it('shows error status correctly', () => {
-    mockUseChatHealth.mockReturnValue({
-      healthStatus: 'error',
+    mockUseHealth.mockReturnValue({
+      health: {
+        chat: {
+          status: 'error',
+          subsystems: {
+            cache: 'error',
+            queue: 'error',
+            tools: 'healthy',
+          },
+        },
+      },
       isLoading: false,
       isError: false,
       error: null,
       refreshInterval: 5000,
-      subsystems: {
-        cache: 'error',
-        queue: 'error',
-      },
     });
 
     render(<ChatStatusIndicator showLabel />);
@@ -106,16 +124,21 @@ describe('ChatStatusIndicator', () => {
 
   it('handles error state appropriately', () => {
     const mockError = new Error('Connection failed');
-    mockUseChatHealth.mockReturnValue({
-      healthStatus: 'error',
+    mockUseHealth.mockReturnValue({
+      health: {
+        chat: {
+          status: 'error',
+          subsystems: {
+            cache: 'error',
+            queue: 'error',
+            tools: 'healthy',
+          },
+        },
+      },
       isLoading: false,
       isError: true,
       error: mockError,
       refreshInterval: 5000,
-      subsystems: {
-        cache: 'error',
-        queue: 'error',
-      },
     });
 
     render(<ChatStatusIndicator />);
@@ -125,16 +148,21 @@ describe('ChatStatusIndicator', () => {
   });
 
   it('applies small size variant correctly', () => {
-    mockUseChatHealth.mockReturnValue({
-      healthStatus: 'ok',
+    mockUseHealth.mockReturnValue({
+      health: {
+        chat: {
+          status: 'healthy',
+          subsystems: {
+            cache: 'healthy',
+            tools: 'healthy',
+            queue: 'healthy',
+          },
+        },
+      },
       isLoading: false,
       isError: false,
       error: null,
       refreshInterval: 180000,
-      subsystems: {
-        cache: 'ok',
-        queue: 'ok',
-      },
     });
 
     render(<ChatStatusIndicator size="small" showLabel />);
@@ -144,16 +172,21 @@ describe('ChatStatusIndicator', () => {
   });
 
   it('provides appropriate tooltip content', () => {
-    mockUseChatHealth.mockReturnValue({
-      healthStatus: 'ok',
+    mockUseHealth.mockReturnValue({
+      health: {
+        chat: {
+          status: 'healthy',
+          subsystems: {
+            cache: 'healthy',
+            queue: 'healthy',
+            tools: 'healthy',
+          },
+        },
+      },
       isLoading: false,
       isError: false,
       error: null,
       refreshInterval: 180000,
-      subsystems: {
-        cache: 'ok',
-        queue: 'ok',
-      },
     });
 
     const { container } = render(<ChatStatusIndicator />);
@@ -168,16 +201,21 @@ describe('ChatStatusIndicator', () => {
   });
 
   it('shows subsystem details in tooltip when services are degraded', () => {
-    mockUseChatHealth.mockReturnValue({
-      healthStatus: 'warning',
+    mockUseHealth.mockReturnValue({
+      health: {
+        chat: {
+          status: 'warning',
+          subsystems: {
+            cache: 'healthy',
+            queue: 'warning',
+            tools: 'healthy',
+          },
+        },
+      },
       isLoading: false,
       isError: false,
       error: null,
       refreshInterval: 30000,
-      subsystems: {
-        cache: 'ok',
-        queue: 'warning',
-      },
     });
 
     const { container } = render(<ChatStatusIndicator />);

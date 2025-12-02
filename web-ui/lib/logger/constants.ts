@@ -38,6 +38,7 @@ export enum KnownSeverityLevel {
   /** Critical */
   Critical = 'Critical',
 }
+
 export const asKnownSeverityLevel = (input: unknown): KnownSeverityLevel => {
   if (typeof input === 'number') {
     if (input < 5) {

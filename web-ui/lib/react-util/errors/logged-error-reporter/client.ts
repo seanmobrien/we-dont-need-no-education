@@ -10,12 +10,14 @@ class LoggedErrorReporter {
   static #instance: ErrorReporterInterface | undefined;
   static get Instance(): ErrorReporterInterface {
     if (!LoggedErrorReporter.#instance) {
-      LoggedErrorReporter.#instance = ErrorReporter.createInstance({
+      const instance = ErrorReporter.createInstance({
         enableStandardLogging: true,
         enableConsoleLogging: true,
         enableExternalReporting: true,
         enableLocalStorage: true,
       });
+      instance.subscribeToErrorReports();
+      LoggedErrorReporter.#instance = instance;
     }
     if (!LoggedErrorReporter.#instance) {
       throw new TypeError(

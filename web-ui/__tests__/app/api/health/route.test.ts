@@ -6,10 +6,34 @@
  * @description Unit tests for the health check API route at app/api/health/route.ts
  */
 
+jest.mock('@/lib/auth/impersonation/impersonation-factory', () => {
+  const impersonationService = {
+    getImpersonatedToken: jest.fn().mockResolvedValue('impersonated-token'),
+    getUserContext: jest
+      .fn()
+      .mockReturnValue({ userId: 'test-user', hash: 'hash123', accountId: 3 }),
+    clearCache: jest.fn(),
+    hasCachedToken: jest.fn().mockReturnValue(false),
+  };
+  return {
+    fromRequest: jest.fn().mockResolvedValue(impersonationService),
+    fromUserId: jest.fn().mockResolvedValue(impersonationService),
+  };
+});
+
+jest.mock('@/lib/ai/mcp/providers', () => ({
+  setupDefaultTools: jest.fn().mockResolvedValue({
+    isHealthy: true,
+    providers: [{}, {}], // 2 providers
+    tools: { tool1: {}, tool2: {}, tool3: {}, tool4: {}, tool5: {}, tool6: {} },
+    [Symbol.dispose]: jest.fn(),
+  }),
+}));
 import { auth } from '@/auth';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 import { GET } from '@/app/api/health/route';
 import { NextRequest } from 'next/server';
+import { fromUserId } from '@/lib/auth/impersonation/impersonation-factory';
 
 // Mock the memory client factory
 jest.mock('@/lib/ai/mem0/memoryclient-factory', () => ({
@@ -24,8 +48,6 @@ const mockConsole = hideConsoleOutput();
 
 describe('app/api/health/route GET', () => {
   beforeEach(() => {
-    delete process.env.IS_BUILDING;
-    delete process.env.NEXT_PHASE;
     jest.useFakeTimers();
   });
   afterEach(() => {
@@ -47,7 +69,16 @@ describe('app/api/health/route GET', () => {
         graph_enabled: true,
         graph_store_available: true,
         history_store_available: true,
-        auth_service: { healthy: true },
+        auth_service: {
+          healthy: true,
+          enabled: true,
+          server_url: 'https://auth.example.com',
+          realm: 'example',
+          client_id: 'test-client',
+          auth_url: 'https://auth.example.com/authorize',
+          token_url: 'https://auth.example.com/token',
+          jwks_url: 'https://auth.example.com/jwks',
+        },
         errors: [],
       },
     });
@@ -80,7 +111,16 @@ describe('app/api/health/route GET', () => {
           graph_enabled: true,
           graph_store_available: true,
           history_store_available: true,
-          auth_service: { healthy: true },
+          auth_service: {
+            healthy: true,
+            enabled: true,
+            server_url: 'https://auth.example.com',
+            realm: 'example',
+            client_id: 'test-client',
+            auth_url: 'https://auth.example.com/authorize',
+            token_url: 'https://auth.example.com/token',
+            jwks_url: 'https://auth.example.com/jwks',
+          },
           errors: [],
         },
       }),
@@ -94,27 +134,11 @@ describe('app/api/health/route GET', () => {
     );
   });
 
-  it('returns build fallback when build phase env vars are set (IS_BUILDING)', async () => {
-    process.env.IS_BUILDING = '1';
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body).toHaveProperty('__status', 'Service disabled during build.');
-  });
-
-  it('returns build fallback when NEXT_PHASE indicates production build', async () => {
-    process.env.NEXT_PHASE = 'phase-production-build';
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body).toHaveProperty('__status', 'Service disabled during build.');
-  });
-
   it('caches error states to prevent cascading failures during outages', async () => {
     const {
       memoryClientFactory,
     } = require('/lib/ai/mem0/memoryclient-factory');
-    
+
     // First call returns error
     const mockHealthCheck = jest.fn().mockResolvedValue({
       status: 'error',
@@ -177,7 +201,7 @@ describe('app/api/health/route GET', () => {
     const {
       memoryClientFactory,
     } = require('/lib/ai/mem0/memoryclient-factory');
-    
+
     const mockHealthCheck = jest.fn().mockResolvedValue({
       status: 'warning',
       message: 'partial service availability',

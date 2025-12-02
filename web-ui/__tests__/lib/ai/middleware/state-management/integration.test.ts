@@ -1,6 +1,6 @@
- 
+
 /** @jest-environment node */
- 
+
 /**
  * @fileoverview Integration Tests for State Management Protocol
  *
@@ -51,24 +51,38 @@ const makeMockModel = (stateManager?: MiddlewareStateManager) => {
   };
   return stateManager
     ? stateManager.initializeModel({
-        model,
-      })
+      model,
+    })
     : model;
 };
+
+jest.mock('@/lib/ai/aiModelFactory');
+const mockAiModelFactory = aiModelFactory as jest.MockedFunction<typeof aiModelFactory>;
 
 describe('State Management Protocol Integration', () => {
   let actualModel: any;
   let mockDoGenerate: jest.SpyInstance;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     const setupImpersonationMock =
       require('@/__tests__/jest.mock-impersonation').setupImpersonationMock;
     const setupMaps =
-      require('@/__tests__/jest.mock-provider-model-maps').setupMaps;
+      require('@/__tests__/setup/jest.mock-provider-model-maps').setupMaps;
 
     setupImpersonationMock();
     setupMaps();
-    actualModel = aiModelFactory('lofi');
+
+    const mockModel = {
+      modelId: 'test-model',
+      provider: 'test',
+      specificationVersion: 'v1',
+      doGenerate: jest.fn(),
+      doStream: jest.fn(),
+      defaultObjectGenerationMode: 'json',
+    };
+    mockAiModelFactory.mockResolvedValue(mockModel as any);
+
+    actualModel = await aiModelFactory('lofi');
   });
 
   beforeAll(async () => {
@@ -128,10 +142,10 @@ describe('State Management Protocol Integration', () => {
               typeof options.params.prompt === 'string'
                 ? options.params.prompt
                 : options.params.prompt
-                    .flatMap((msg: any) =>
-                      msg.content.map((part: any) => part.text),
-                    )
-                    .join('\n');
+                  .flatMap((msg: any) =>
+                    msg.content.map((part: any) => part.text),
+                  )
+                  .join('\n');
             return await options.doGenerate();
           },
           serializeState: () => {

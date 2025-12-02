@@ -6,11 +6,11 @@ import {
 } from '@ai-sdk/provider-utils';
 import { MCPTransport, MCPClientError } from 'ai';
 import { JSONRPCMessage, JSONRPCMessageSchema } from './json-rpc-message';
-import { fetch } from '@/lib/nextjs-util/fetch';
 import { log, safeSerialize } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { isAbortError } from '@/lib/react-util/utility-methods';
 import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
+import { fetch } from '@/lib/nextjs-util/server/fetch';
 import type { Span } from '@opentelemetry/api';
 
 export class SseMCPTransport implements MCPTransport {
@@ -229,18 +229,17 @@ export class SseMCPTransport implements MCPTransport {
         const processEvents = async () => {
           try {
             log((l) => l.info('SSE Transport: Entering event processing loop'));
-            let lastMessage: EventSourceMessage | undefined;
             while (true) {
               log((l) => l.verbose('SSE Transport: Waiting for next event'));
               const { done, value } = await reader.read();
-              lastMessage = value;
-
               log((l) =>
-                l.info('SSE Transport: Received event', {
-                  done,
-                  hasValue: !!value,
-                  event: value?.event,
-                  dataLength: value?.data?.length,
+                l.info(`SSE Transport (Done: ${done}): Received [${safeSerialize(value?.event)}] event.\n\tData: ${safeSerialize(value?.data)}`, {
+                  attribs: {
+                    done,
+                    hasValue: !!value,
+                    event: safeSerialize(value?.event),
+                    dataLength: value?.data?.length,
+                  }
                 }),
               );
 
@@ -249,8 +248,7 @@ export class SseMCPTransport implements MCPTransport {
                   this.connected = false;
                   log((l) =>
                     l.warn(
-                      'SSE connection closed unexpectedly; last message: ',
-                      JSON.stringify(lastMessage),
+                      `SSE connection closed unexpectedly!`,
                     ),
                   );
                 }
@@ -292,6 +290,10 @@ export class SseMCPTransport implements MCPTransport {
                   const message = JSONRPCMessageSchema.parse(JSON.parse(data));
                   this.onmessage?.(message);
                 } catch (error) {
+                  LoggedError.isTurtlesAllTheWayDownBaby(error, {
+                    log: true,
+                    source: 'MCP SSE Transport::processEvents',
+                  });
                   const e = new MCPClientError({
                     message: 'MCP SSE Transport Error: Failed to parse message',
                     cause: error,

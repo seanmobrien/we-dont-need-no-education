@@ -1,7 +1,3 @@
-/**
- * @fileoverview Main cache strategy orchestrator
- */
-
 import type { CacheableResponse } from './types';
 import {
   isSuccessfulResponse,
@@ -14,14 +10,6 @@ import { log } from '@/lib/logger';
 
 const config = getCacheConfig();
 
-/**
- * Handles the caching strategy for any response based on its classification
- *
- * @param redis - Redis client instance
- * @param cacheKey - The cache key for the response
- * @param response - The AI response to process
- * @param context - Optional context string for logging
- */
 export const handleResponseCaching = async (
   redis: Awaited<ReturnType<typeof getRedisClient>>,
   cacheKey: string,

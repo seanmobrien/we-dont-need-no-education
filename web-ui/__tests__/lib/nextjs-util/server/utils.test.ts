@@ -19,7 +19,14 @@ import { NextRequest } from 'next/dist/server/web/spec-extension/request';
 // Mock external dependencies
 jest.mock('@opentelemetry/api', () => ({
   trace: {
-    getTracer: jest.fn(),
+    getTracer: jest.fn(() => ({
+      startActiveSpan: jest.fn(async (name, fn2, ctx, fn) => await ((fn ?? fn2)({
+        setAttribute: jest.fn(),
+        setStatus: jest.fn(),
+        recordException: jest.fn(),
+        end: jest.fn(),
+      }))),
+    })),
     setSpan: jest.fn(),
   },
   context: {
@@ -75,19 +82,6 @@ jest.mock('@/lib/nextjs-util/server/error-response', () => ({
 }));
 
 describe('Server Utils', () => {
-  // Mock process for build fallback tests
-  const originalProcess = global.process;
-  beforeEach(() => {
-    // jest.clearAllMocks();
-    // Reset environment
-    delete global.process.env.IS_BUILDING;
-    delete global.process.env.NEXT_PHASE;
-  });
-
-  afterEach(() => {
-    global.process = originalProcess;
-  });
-
   describe('Constants', () => {
     test('EnableOnBuild is a unique symbol', () => {
       expect(typeof EnableOnBuild).toBe('symbol');
@@ -349,7 +343,7 @@ describe('Server Utils', () => {
       (trace.getTracer as jest.Mock).mockReturnValue(mockTracer);
       mockTracer.startActiveSpan.mockImplementation(
         async (name, options, parentCtx, fn) => {
-          return await fn(mockSpan);
+          return await ((fn ?? options)(mockSpan));
         },
       );
       (otelContext.active as jest.Mock).mockReturnValue({});
@@ -379,31 +373,9 @@ describe('Server Utils', () => {
     });
 
     describe('build fallback scenarios', () => {
-      beforeAll(() => {
-        // Polyfill Response.json if not available
-        /*
-        if (!globalThis.Response.json) {
-          globalThis.Response.json = (data: any, init?: ResponseInit) => {
-            return new Response(JSON.stringify(data), {
-              ...init,
-              headers: {
-                'content-type': 'application/json',
-                ...(init?.headers || {}),
-              },
-            });
-          };
-        }
-        */
-      });
-
       test('handles build fallback when IS_BUILDING is set', async () => {
         // Use Object.defineProperty to ensure it can't be overwritten
-        Object.defineProperty(process.env, 'IS_BUILDING', {
-          value: '1',
-          writable: true,
-          enumerable: true,
-          configurable: true,
-        });
+        process.env.IS_BUILDING = '1';
 
         // Mock startActiveSpan to add debug logging
         mockTracer.startActiveSpan.mockImplementation(
@@ -433,19 +405,10 @@ describe('Server Utils', () => {
           'http.status_code',
           200,
         );
-
-        // Clean up
-        delete process.env.IS_BUILDING;
       });
 
       test('handles build fallback when NEXT_PHASE is production-build', async () => {
-        // Use Object.defineProperty to ensure it can't be overwritten
-        Object.defineProperty(process.env, 'NEXT_PHASE', {
-          value: 'phase-production-build',
-          writable: true,
-          enumerable: true,
-          configurable: true,
-        });
+        process.env.NEXT_PHASE = 'phase-production-build';
 
         const handler = wrapRouteRequest(async (_req: Request) => {
           throw new Error('Handler should not execute during build');
@@ -462,9 +425,6 @@ describe('Server Utils', () => {
           'http.status_code',
           200,
         );
-
-        // Clean up
-        delete process.env.NEXT_PHASE;
       });
     });
 
@@ -531,35 +491,21 @@ describe('Server Utils', () => {
 
     test('does not log in production', async () => {
       // Temporarily set NODE_ENV to production
-      const originalEnv = process.env.NODE_ENV;
-      Object.defineProperty(process.env, 'NODE_ENV', {
-        value: 'production',
-        writable: true,
-        configurable: true,
+      // @ts-ignore
+      process.env.NODE_ENV = 'production';
+      const handler = wrapRouteRequest(async (_req: Request) => {
+        return new Response('success');
       });
 
-      try {
-        const handler = wrapRouteRequest(async (_req: Request) => {
-          return new Response('success');
-        });
+      const mockRequest = {
+        url: 'https://example.com/test',
+        method: 'GET',
+        headers: new Map(),
+      } as any;
 
-        const mockRequest = {
-          url: 'https://example.com/test',
-          method: 'GET',
-          headers: new Map(),
-        } as any;
+      await handler(mockRequest);
 
-        await handler(mockRequest);
-
-        expect(log).not.toHaveBeenCalled();
-      } finally {
-        // Restore original environment
-        Object.defineProperty(process.env, 'NODE_ENV', {
-          value: originalEnv,
-          writable: true,
-          configurable: true,
-        });
-      }
+      expect(log).not.toHaveBeenCalled();
     });
 
     test('handles custom error callback', async () => {

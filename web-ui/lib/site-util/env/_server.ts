@@ -225,6 +225,7 @@ const serverEnvSchema = z
       .describe(
         'Azure AI Search index name for storing document vectors and metadata. Example: documents-prod',
       ),
+
     AZURE_OPENAI_DEPLOYMENT_CHAT: z
       .string()
       .optional()
@@ -245,12 +246,14 @@ const serverEnvSchema = z
       .describe(
         'Azure OpenAI endpoint URL for embedding services (fallback to main endpoint). Example: https://myembeddings.openai.azure.com/',
       ),
+
     AZURE_OPENAI_KEY_EMBEDDING: z
       .string()
       .default(process.env.AZURE_OPENAI_KEY ?? '')
       .describe(
         'Azure OpenAI API key for embedding services (fallback to main key). Example: embed123key456...',
       ),
+
     AZURE_OPENAI_DEPLOYMENT_HIFI: z
       .string()
       .optional()
@@ -278,6 +281,7 @@ const serverEnvSchema = z
       .describe(
         'Azure OpenAI endpoint URL for completion services (fallback to main endpoint). Example: https://mycompletions.openai.azure.com/',
       ),
+
     AZURE_OPENAI_KEY_COMPLETIONS: z
       .string()
       .default(process.env.AZURE_OPENAI_KEY ?? '')
@@ -372,6 +376,7 @@ const serverEnvSchema = z
       .describe(
         'Google Generative AI API key for Gemini model access (optional). Example: AIzaSyA1234567890abcdef...',
       ),
+
     GOOGLE_GENERATIVE_AI_BASE_URL: ZodProcessors.url()
       .default('https://generativelanguage.googleapis.com/v1beta')
       .describe(
@@ -398,6 +403,7 @@ const serverEnvSchema = z
       .describe(
         'Google Generative AI embedding model name. Default: google-embedding. Example: text-embedding-004',
       ),
+
     AUTH_KEYCLOAK_CLIENT_ID: z
       .string()
       .min(1)
@@ -516,6 +522,7 @@ const serverEnvSchema = z
       .describe(
         'OpenAI API key for direct OpenAI service access (optional - Azure OpenAI preferred). Example: sk-1234567890abcdef...',
       ),
+
     OPENAI_HIFI: z
       .string()
       .optional()

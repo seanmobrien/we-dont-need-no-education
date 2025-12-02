@@ -4,7 +4,7 @@ import { log, logEvent } from '@/lib/logger';
 import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
 import { ApiRequestError } from '@/lib/send-api-request';
 import {
-  globalSingletonAsync,
+  globalRequiredSingletonAsync,
   SingletonProvider,
 } from '@/lib/typescript/singleton-provider';
 import { NextResponse } from 'next/server';
@@ -64,8 +64,8 @@ export class TodoManager {
   ): Promise<Todo> {
     const list = await (options?.listId
       ? this.getTodoList(options.listId, {
-          session: options?.session,
-        })
+        session: options?.session,
+      })
       : this.ensureDefaultList({ session: options?.session }));
     if (!list) {
       throw new ApiRequestError(
@@ -883,7 +883,7 @@ export const getTodoManager = async (
     provider.delete(managerKey);
   }
 
-  return await globalSingletonAsync(
+  return await globalRequiredSingletonAsync(
     '@noeducation/ai/TodoManager',
     async () => {
       if (strategy) {

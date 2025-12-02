@@ -1,6 +1,6 @@
 import InMemoryCache from './base-cache';
-import type { MemoryHealthCheckResponse } from '@/lib/ai/mem0/types/health-check';
-import { globalSingletonAsync } from '@/lib/typescript/singleton-provider';
+import type { HealthDetails, HealthStatus, MemoryHealthCheckResponse } from '@/lib/ai/mem0/types/health-check';
+import { globalRequiredSingletonAsync } from '@/lib/typescript/singleton-provider';
 import {
   wellKnownFlag,
   type AutoRefreshFeatureFlag,
@@ -23,11 +23,11 @@ export class MemoryHealthCache extends InMemoryCache<MemoryHealthCheckResponse> 
   constructor(config?: {
     ttlMs?: number | AutoRefreshFeatureFlag<'health_memory_cache_ttl'>;
     errorTtlMs?:
-      | number
-      | AutoRefreshFeatureFlag<'health_memory_cache_error_ttl'>;
+    | number
+    | AutoRefreshFeatureFlag<'health_memory_cache_error_ttl'>;
     warningTtlMs?:
-      | number
-      | AutoRefreshFeatureFlag<'health_memory_cache_warning_ttl'>;
+    | number
+    | AutoRefreshFeatureFlag<'health_memory_cache_warning_ttl'>;
   }) {
     // Handle both number and AutoRefreshFeatureFlag for each TTL
     const getTtlValue = (
@@ -82,7 +82,7 @@ export class MemoryHealthCache extends InMemoryCache<MemoryHealthCheckResponse> 
 }
 
 export const getMemoryHealthCache = (): Promise<MemoryHealthCache> =>
-  globalSingletonAsync(
+  globalRequiredSingletonAsync(
     'memory-health-cache',
     async () => {
       try {
@@ -101,7 +101,56 @@ export const getMemoryHealthCache = (): Promise<MemoryHealthCache> =>
         return new MemoryHealthCache();
       }
     },
-    { weakRef: true },
+    //{ weakRef: true },
   );
+
+
+type SubsystemHealthBag = Record<string, { status: HealthStatus } | HealthStatus>
+
+export const getSubsystemHealth = (subsystem: SubsystemHealthBag) => (
+  Object.values(subsystem)
+    .reduce((acc, x) => {
+      const check = typeof x === 'string' ? x : x.status;
+      switch (check) {
+        case 'healthy':
+          return acc;
+        case 'warning':
+          return acc === 'error' ? acc : check;
+        case 'error':
+          return check;
+        default:
+          return acc === 'healthy' ? 'warning' : acc;
+      }
+    }, 'healthy')
+);
+
+/**
+ * Determines the overall health status based on the health check details
+ */
+export const determineHealthStatus = (details: HealthDetails): HealthStatus => {
+  // Error if client is not active
+  if (!details.client_active) {
+    return 'error';
+  }
+
+  // Check if any critical services are unavailable
+  const criticalServices = [
+    details.system_db_available,
+    details.vector_store_available,
+    details.graph_store_available,
+    details.history_store_available,
+    details.auth_service.healthy,
+  ];
+
+  const unavailableServices = criticalServices.filter((service) => !service);
+
+  // Warning if one or more services are unavailable
+  if (unavailableServices.length > 0) {
+    return 'warning';
+  }
+
+  // Healthy if all services are available
+  return 'healthy';
+};
 
 export default getMemoryHealthCache;

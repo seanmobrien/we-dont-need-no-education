@@ -1,5 +1,5 @@
- 
- 
+
+
 /**
  * @fileoverview Unit tests for selectForGrid utility function
  *
@@ -61,7 +61,7 @@ import {
 import { buildDrizzleQueryFilter as buildDrizzleFilter } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleFilter';
 import { buildDrizzleOrderBy as buildDrizzleOrder } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
 import { buildDrizzlePagination as buildDrizzlePage } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzlePagination';
-import { makeMockDb } from '@/__tests__/jest.setup';
+import { makeMockDb } from '@/__tests__/setup/jest.setup';
 
 // Import and mock the countQueryFactory
 import * as selectForGridModule from '@/lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid';

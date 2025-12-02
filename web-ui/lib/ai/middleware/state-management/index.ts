@@ -1,10 +1,3 @@
-/**
- * @fileoverview State Management Module Exports
- *
- * This module provides middleware state management capabilities including
- * state collection, restoration, and persistence protocol support.
- */
-
 // Core types and interfaces
 export {
   STATE_PROTOCOL,

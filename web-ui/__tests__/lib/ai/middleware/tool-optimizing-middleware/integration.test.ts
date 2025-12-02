@@ -1,4 +1,4 @@
- 
+
 /**
  * @jest-environment node
  * @fileoverview Integration tests for tool optimizing middleware
@@ -9,7 +9,7 @@
  * @module __tests__/lib/ai/middleware/tool-optimizing-middleware/integration.test.ts
  */
 
- 
+
 
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();

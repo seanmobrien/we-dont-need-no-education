@@ -7,14 +7,20 @@ import { isRunningOnServer } from '@/lib/site-util/env';
  */
 export class FetchResponse {
   body: Buffer;
+  streamBody: ReadableStream<Uint8Array> | null = null;
   status: number;
   headers: Headers;
 
   constructor(
-    body: Buffer,
+    body: Buffer | ReadableStream<Uint8Array> | null,
     init: { status?: number; headers?: Record<string, string> } = {},
   ) {
-    this.body = body || Buffer.alloc(0);
+    if (body instanceof ReadableStream) {
+      this.streamBody = body;
+      this.body = Buffer.alloc(0);
+    } else {
+      this.body = body || Buffer.alloc(0);
+    }
     this.status = init.status ?? 200;
     this.headers = new Headers();
     for (const [k, v] of Object.entries(init.headers ?? {})) {
@@ -22,19 +28,76 @@ export class FetchResponse {
     }
   }
 
+  private _bodyUsed = false;
+
+  get bodyUsed(): boolean {
+    return this._bodyUsed;
+  }
+
   ok() {
     return this.status >= 200 && this.status < 300;
   }
 
+  private async consumeStream(maxSize = 10 * 1024 * 1024): Promise<Uint8Array> {
+    if (this._bodyUsed) {
+      throw new TypeError('Body is unusable');
+    }
+    this._bodyUsed = true;
+    if (!this.streamBody) {
+      return new Uint8Array(0);
+    }
+    const reader = this.streamBody.getReader();
+    const chunks: Uint8Array[] = [];
+    let totalLength = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) {
+          totalLength += value.length;
+          if (totalLength > maxSize) {
+            throw new Error(`Body exceeded ${maxSize} limit`);
+          }
+          chunks.push(value);
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of chunks) {
+      result.set(chunk, offset);
+      offset += chunk.length;
+    }
+    return result;
+  }
+
   async text(): Promise<string> {
+    if (this.streamBody) {
+      const result = await this.consumeStream();
+      return new TextDecoder().decode(result);
+    }
+    // For buffers, we don't strictly enforce bodyUsed to maintain backward compatibility
+    // but we should probably set it? Standard Response sets it even for buffers.
+    // Let's set it to be safe and standard-compliant.
+    if (this._bodyUsed) {
+      // Optional: throw if strictly following spec, but existing code might rely on re-reading.
+      // We'll allow re-reading buffers for now as per plan decision.
+    }
+    // this._bodyUsed = true; // Uncomment to enforce strict bodyUsed for buffers
     return this.body.toString('utf8');
   }
 
   async json(): Promise<unknown> {
-    return JSON.parse(this.body.toString('utf8'));
+    return JSON.parse(await this.text());
   }
 
-  arrayBuffer(): ArrayBuffer {
+  async arrayBuffer(): Promise<ArrayBuffer> {
+    if (this.streamBody) {
+      const result = await this.consumeStream();
+      return result.buffer as ArrayBuffer;
+    }
     const buf = this.body;
     return buf.buffer.slice(
       buf.byteOffset,
@@ -42,8 +105,40 @@ export class FetchResponse {
     ) as ArrayBuffer;
   }
 
+  async blob(): Promise<Blob> {
+    const buffer = await this.arrayBuffer();
+    return new Blob([buffer], {
+      type: this.headers.get('Content-Type') || undefined,
+    });
+  }
+
+  clone(): FetchResponse {
+    if (this.streamBody) {
+      if (this._bodyUsed) {
+        throw new TypeError('Cannot clone: body is already used');
+      }
+      const [stream1, stream2] = this.streamBody.tee();
+      this.streamBody = stream1;
+      return new FetchResponse(stream2, {
+        status: this.status,
+        headers: Object.fromEntries(this.headers.entries()),
+      });
+    }
+    return new FetchResponse(Buffer.from(this.body), {
+      status: this.status,
+      headers: Object.fromEntries(this.headers.entries()),
+    });
+  }
+
   // Provide a Web API ReadableStream for callers that prefer streaming the buffered body
   stream(): ReadableStream<Uint8Array> {
+    if (this.streamBody) {
+      if (this._bodyUsed) {
+        throw new TypeError('Body is unusable');
+      }
+      this._bodyUsed = true;
+      return this.streamBody;
+    }
     return new ReadableStream({
       start: (controller) => {
         controller.enqueue(new Uint8Array(this.body));
@@ -167,64 +262,5 @@ export const makeStreamResponse = (
   stream: ReadableStream<Uint8Array>,
   init: { status?: number; headers?: Record<string, string> } = {},
 ): Response => {
-  const headers = new Headers();
-  for (const [k, v] of Object.entries(init.headers ?? {})) headers.append(k, v);
-  const resp: {
-    status: number;
-    headers: Headers;
-    stream: () => ReadableStream<Uint8Array>;
-    text: () => Promise<string>;
-    json: () => Promise<unknown>;
-    arrayBuffer: () => Promise<ArrayBuffer>;
-  } = {
-    status: init.status ?? 200,
-    headers,
-    stream: () => stream,
-    async text() {
-      const reader = stream.getReader();
-      const chunks: Uint8Array[] = [];
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-        }
-      } finally {
-        reader.releaseLock();
-      }
-      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-      const result = new Uint8Array(totalLength);
-      let offset = 0;
-      for (const chunk of chunks) {
-        result.set(chunk, offset);
-        offset += chunk.length;
-      }
-      return new TextDecoder().decode(result);
-    },
-    async json() {
-      return JSON.parse(await this.text());
-    },
-    async arrayBuffer() {
-      const reader = stream.getReader();
-      const chunks: Uint8Array[] = [];
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          chunks.push(value);
-        }
-      } finally {
-        reader.releaseLock();
-      }
-      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-      const result = new Uint8Array(totalLength);
-      let offset = 0;
-      for (const chunk of chunks) {
-        result.set(chunk, offset);
-        offset += chunk.length;
-      }
-      return result.buffer;
-    },
-  };
-  return resp as unknown as Response;
+  return new FetchResponse(stream, init) as unknown as Response;
 };

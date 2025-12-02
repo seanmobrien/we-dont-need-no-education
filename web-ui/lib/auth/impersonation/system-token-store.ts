@@ -46,6 +46,7 @@ import type {
   FormLoginResult,
 } from './impersonation.types';
 import { defaultConfigFromEnv } from './utility';
+import { SingletonProvider } from '@/lib/typescript';
 
 let openIdClientModule: {
   discovery: Function;
@@ -76,6 +77,11 @@ const getOpenIdClientModule = () => {
   };
   return openIdClientModule;
 };
+
+/**
+ * Global key for the singleton registry
+ */
+const REGISTRY_KEY = '@noeducation/auth:SystemTokenStore';
 
 /**
  * SystemTokenStore - Thread-safe singleton for centralized admin token management
@@ -147,52 +153,31 @@ const getOpenIdClientModule = () => {
  * @see {@link CachedTokenData} for internal caching structure
  */
 export class SystemTokenStore {
-  /**
-   * Global symbol key for the singleton registry
-   * @description Uses Symbol.for() to create a global symbol that survives
-   * module reloads and hot module replacement in development environments.
-   * This ensures true singleton behavior across the entire application.
-   */
-  static readonly #REGISTRY_KEY = Symbol.for(
-    '@noeducation/auth:SystemTokenStore',
-  );
-
-  /**
-   * Global symbol key for the shared initialization promise
-   * @description Stores the shared promise for concurrent token acquisition
-   * attempts. This prevents multiple simultaneous token requests from creating
-   * race conditions that could invalidate refresh tokens.
-   */
-  static readonly #INIT_PROMISE_KEY = Symbol.for(
-    '@noeducation/auth:SystemTokenStore:initPromise',
-  );
-
   /** Get the singleton instance from global registry */
   static get #instance(): SystemTokenStore | undefined {
-    type GlobalReg = { [k: symbol]: SystemTokenStore | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    return g[this.#REGISTRY_KEY];
+    return SingletonProvider.Instance.get<SystemTokenStore>(REGISTRY_KEY);
   }
 
   /** Set the singleton instance in global registry */
   static set #instance(value: SystemTokenStore | undefined) {
-    type GlobalReg = { [k: symbol]: SystemTokenStore | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    g[this.#REGISTRY_KEY] = value;
+    if (value === undefined) {
+      SingletonProvider.Instance.delete(REGISTRY_KEY);
+    } else {
+      SingletonProvider.Instance.set(REGISTRY_KEY, value);
+    }
   }
 
-  /** Get the shared initialization promise from global registry */
-  static get #initPromise(): Promise<string> | undefined {
-    type GlobalReg = { [k: symbol]: Promise<string> | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    return g[this.#INIT_PROMISE_KEY];
-  }
-
-  /** Set the shared initialization promise in global registry */
-  static set #initPromise(value: Promise<string> | undefined) {
-    type GlobalReg = { [k: symbol]: Promise<string> | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    g[this.#INIT_PROMISE_KEY] = value;
+  /**
+   * Promise for ongoing token acquisition to prevent concurrent requests.
+   * Note that since SystemTokenStore is a singleton, this instance variable
+   * is effectively glaobal across all usages.
+   */
+  #initPromise: Promise<string> | undefined;
+  /**
+   * Get the ongoing token acquisition promise
+   */
+  protected get initPromise(): Promise<string> | undefined {
+    return this.#initPromise;
   }
 
   /**
@@ -300,10 +285,13 @@ export class SystemTokenStore {
    * @method reset
    * @description Completely resets the SystemTokenStore singleton by clearing
    * the global registry instance and any pending initialization promises.
-   * Primarily intended for testing scenarios to ensure clean state between tests.
+   * Primarily intended for testing scenarios.
    *
    * **⚠️ Warning**: This method should only be used in testing environments.
-   * Calling this in production can cause authentication failures for ongoing operations.
+   * Like all {@link SingletonProvider} singletons, the SystemTokenStore is
+   * automatically reset between tests. This method is provided for legacy
+   * compatibility and mid-test reset scenarios.  Calling this in production
+   * can cause authentication failures for ongoing operations.
    *
    * @example Testing usage
    * ```typescript
@@ -315,7 +303,6 @@ export class SystemTokenStore {
    */
   static reset(): void {
     this.#instance = undefined;
-    this.#initPromise = undefined;
   }
 
   /**
@@ -384,14 +371,14 @@ export class SystemTokenStore {
       span.setAttribute('auth.cache_hit', false);
 
       // Check if there's already a token acquisition in progress
-      if (SystemTokenStore.#initPromise && !forceRefresh) {
+      if (this.#initPromise && !forceRefresh) {
         span.setAttribute('auth.awaiting_concurrent_request', true);
-        return await SystemTokenStore.#initPromise;
+        return await this.#initPromise;
       }
 
       // Create new promise for token acquisition
       const tokenPromise = this.#acquireAdminToken();
-      SystemTokenStore.#initPromise = tokenPromise;
+      this.#initPromise = tokenPromise;
 
       try {
         const token = await tokenPromise;
@@ -402,7 +389,7 @@ export class SystemTokenStore {
         throw error;
       } finally {
         // Clear the promise once completed (success or failure)
-        SystemTokenStore.#initPromise = undefined;
+        this.#initPromise = undefined;
       }
     });
   }
@@ -570,7 +557,7 @@ export class SystemTokenStore {
     this.cachedTokenData = undefined;
 
     // Clear any pending token acquisition promise
-    SystemTokenStore.#initPromise = undefined;
+    this.#initPromise = undefined;
 
     // Clear rate limiter state
     this.rateLimiter.reset();

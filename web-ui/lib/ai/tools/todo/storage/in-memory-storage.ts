@@ -1,7 +1,7 @@
 import { log } from '@/lib/logger';
 import type { Todo, TodoList } from '../types';
 import type { TodoStorageStrategy, StorageStrategyConfig } from './types';
-import { globalSingleton, SingletonProvider } from '@/lib/typescript';
+import { globalRequiredSingleton, SingletonProvider } from '@/lib/typescript';
 
 const GLOBAL_INSTANCE: symbol = Symbol.for(
   '@noeducation/ai/InMemoryStorageStrategy',
@@ -19,7 +19,7 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
   private todoToList: Map<string, string> = new Map();
 
   static get Instance(): InMemoryStorageStrategy {
-    return globalSingleton(
+    return globalRequiredSingleton(
       GLOBAL_INSTANCE,
       () => new InMemoryStorageStrategy(),
     );
@@ -28,7 +28,7 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
     SingletonProvider.Instance.delete(GLOBAL_INSTANCE);
   }
 
-  constructor({}: StorageStrategyConfig = {}) {
+  constructor({ }: StorageStrategyConfig = {}) {
     log((l) =>
       l.warn('InMemoryStorageStrategy initialized with empty storage.'),
     );

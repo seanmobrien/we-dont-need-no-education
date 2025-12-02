@@ -1,5 +1,5 @@
 import type {
-  KnownFeature,
+  KnownFeatureKeyMap,
   AllFeatureFlagsDefault,
   KnownFeatureType,
   FeatureFlagStatus,
@@ -18,7 +18,7 @@ declare module '@/lib/site-util/feature-flags' {
    */
 
   export type {
-    KnownFeature,
+    KnownFeatureKeyMap as KnownFeature,
     AllFeatureFlagsDefault,
     KnownFeatureType,
     FeatureFlagStatus,

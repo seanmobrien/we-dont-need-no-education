@@ -3,10 +3,10 @@
  */
 
 // Mock window methods before importing the module
+// Mock window methods before importing the module
 const mockAlert = jest.fn();
 const mockBack = jest.fn();
 const mockOpen = jest.fn();
-const mockReload = jest.fn();
 
 // Mock the window and navigator objects
 Object.defineProperty(window, 'alert', { value: mockAlert, writable: true });
@@ -15,20 +15,6 @@ Object.defineProperty(window, 'history', {
   writable: true,
 });
 Object.defineProperty(window, 'open', { value: mockOpen, writable: true });
-
-// For window.location, we need to delete and recreate since it can't be redefined
-delete (window as any).location;
-(window as any).location = {
-  reload: mockReload,
-  href: {
-    get() {
-      return 'http://localhost/test-page';
-    },
-    set(value: string) {
-      // no-op
-    },
-  },
-};
 
 // Ensure global window is set for typeof checks
 (global as any).window = window;
@@ -40,6 +26,19 @@ Object.defineProperty(navigator, 'onLine', {
 });
 
 import { hideConsoleOutput } from '@/__tests__/test-utils';
+
+// Mock client-navigate
+jest.mock('@/lib/nextjs-util/client-navigate', () => ({
+  clientReload: jest.fn(),
+  clientNavigateSignIn: jest.fn(),
+  clientNavigate: jest.fn(),
+}));
+
+import {
+  clientReload,
+  clientNavigateSignIn,
+} from '@/lib/nextjs-util/client-navigate';
+
 // Now import the module after setting up mocks
 import {
   classifyError,
@@ -49,7 +48,6 @@ import {
   ErrorType,
   recoveryStrategies,
 } from '@/lib/error-monitoring/recovery-strategies';
-import { clientNavigateSignIn } from '@/lib/nextjs-util/client-navigate';
 
 // Mock caches API
 const mockCacheDelete = jest.fn().mockResolvedValue(true);

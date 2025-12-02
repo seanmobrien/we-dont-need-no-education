@@ -69,7 +69,7 @@ export const keycloakAdminClientFactory = async (
   config: ConnectionConfig,
 ): Promise<KeycloakAdminClient> => {
   const keycloakAdminClientModule =
-    await SingletonProvider.Instance.getOrCreate(
+    await SingletonProvider.Instance.getRequired(
       Symbol.for(
         '@no-education/dynamic-modules/@keycloak/keycloak-admin-client',
       ),
