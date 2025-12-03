@@ -15,6 +15,7 @@ import {
   performKeyValidationWorkflow,
   KEY_VALIDATION_INTERVAL,
 } from '@/lib/site-util/auth/key-validation';
+import { SingletonProvider } from '@/lib/typescript';
 
 // Mock localStorage
 const mockLocalStorage = {
@@ -31,6 +32,7 @@ Object.defineProperty(window, 'localStorage', {
 jest.mock('@/lib/logger', () => ({
   log: jest.fn(),
 }));
+const KEY_VALIDATION_STORAGE_KEY = 'lastKeyValidation';
 
 describe('Key Validation Utilities', () => {
   beforeEach(() => {
@@ -46,14 +48,12 @@ describe('Key Validation Utilities', () => {
       const result = isKeyValidationDue();
 
       expect(result).toBe(true);
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
-        'lastKeyValidation',
-      );
     });
 
     it('should return true when validation timestamp is older than interval', () => {
       const oldTimestamp = Date.now() - KEY_VALIDATION_INTERVAL - 1000; // 1 second past interval
       mockLocalStorage.getItem.mockReturnValue(oldTimestamp.toString());
+      SingletonProvider.Instance.set(KEY_VALIDATION_STORAGE_KEY, oldTimestamp);
 
       const result = isKeyValidationDue();
 
@@ -62,7 +62,11 @@ describe('Key Validation Utilities', () => {
 
     it('should return false when validation is recent', () => {
       const recentTimestamp = Date.now() - 1000; // 1 second ago
-      mockLocalStorage.getItem.mockReturnValue(recentTimestamp.toString());
+      SingletonProvider.Instance.set(
+        KEY_VALIDATION_STORAGE_KEY,
+        recentTimestamp,
+      );
+      // mockLocalStorage.getItem.mockReturnValue(recentTimestamp.toString());
 
       const result = isKeyValidationDue();
 
@@ -94,11 +98,8 @@ describe('Key Validation Utilities', () => {
       jest.spyOn(Date, 'now').mockReturnValue(mockTimestamp);
 
       updateKeyValidationTimestamp();
-
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-        'lastKeyValidation',
-        mockTimestamp.toString(),
-      );
+      const actual = SingletonProvider.Instance.get(KEY_VALIDATION_STORAGE_KEY);
+      expect(actual).toEqual(mockTimestamp);
     });
 
     it('should handle localStorage errors gracefully', () => {

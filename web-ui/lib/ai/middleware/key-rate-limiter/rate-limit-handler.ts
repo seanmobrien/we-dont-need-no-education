@@ -10,12 +10,6 @@ import {
 } from './model-availability';
 import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 
-/**
- * Disables a model based on rate limit headers.
- *
- * @param modelKey - The model key to disable
- * @param retryAfter - The retry after duration in seconds
- */
 export function disableModelFromRateLimit(
   modelKey: string,
   retryAfter: number,
@@ -28,18 +22,6 @@ export function disableModelFromRateLimit(
   rateLimitMetrics.recordError('rate_limit_disable', modelKey);
 }
 
-/**
- * Handles rate limit errors by disabling the current model, attempting fallback,
- * and enqueueing the request for retry if needed.
- *
- * @param error - The error that occurred
- * @param currentModelKey - The current model key that hit the rate limit
- * @param modelClassification - The model classification
- * @param failoverConfig - The failover configuration
- * @param params - The request parameters
- * @param errorContext - Additional context for error types ('generate', 'stream', 'stream_setup')
- * @returns The request ID if enqueued, otherwise rethrows the original error
- */
 export async function handleRateLimitError(
   error: unknown,
   currentModelKey: string,

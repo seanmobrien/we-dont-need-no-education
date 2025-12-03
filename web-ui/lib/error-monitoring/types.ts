@@ -83,6 +83,10 @@ export interface ErrorReporterInterface {
 
   setupGlobalHandlers(): void;
 
+  subscribeToErrorReports(): void;
+
+  unsubscribeFromErrorReports(): void;
+
   getStoredErrors(): ErrorReport[];
 
   clearStoredErrors(): void;

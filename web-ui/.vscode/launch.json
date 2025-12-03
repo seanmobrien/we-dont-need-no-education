@@ -41,7 +41,7 @@
                 "**/.turbo/**",
                 "**/.expo/**",
                 "**/.expo-shared/**",
-                "**/.vscode/**",
+                "**/.vscode/**"
             ],
             "outputCapture": "std",
             "runtimeArgs": [
@@ -58,6 +58,13 @@
             "type": "chrome",
             "request": "launch",
             "url": "http://localhost:3000"
+        },
+        {
+            "name": "Launch Chrome",
+            "request": "launch",
+            "type": "chrome",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}"
         },
         {
             "name": "Next.js: debug full stack",

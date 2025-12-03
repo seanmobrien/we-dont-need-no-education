@@ -18,7 +18,7 @@ import {
   SingletonStorageKey,
   SingletonStorageStrategy,
 } from './types';
-import { getStackTrace } from '@/lib/nextjs-util';
+import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
 
 const STORED_MAP_KEY = Symbol.for(
   '@no-education/typescript/SingletonProvider/StrongReferenceStorage/GlobalMap',

@@ -17,7 +17,7 @@ import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { isAbortError, isTruthy } from '@/lib/react-util/utility-methods';
+import { isTruthy } from '@/lib/react-util/utility-methods';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
@@ -32,27 +32,10 @@ import type { User } from '@auth/core/types';
  * @param toolProviders - The tool provider set to dispose
  */
 const safeDisposeToolProviders = async (
-  user: User | null,
   toolProviders: ToolProviderSet | undefined,
 ): Promise<void> => {
   if (!toolProviders) return;
-  try {
-    // I think we only want to dispose if we created them
-    const flag = await getFeatureFlag('mcp_cache_tools', user?.id);
-    if (!isTruthy(flag)) {
-      await toolProviders.dispose();
-    }
-  } catch (disposalError) {
-    // Suppress AbortErrors during disposal as they're expected during cleanup
-    if (!isAbortError(disposalError)) {
-      LoggedError.isTurtlesAllTheWayDownBaby(disposalError, {
-        log: true,
-        severity: 'warn',
-        source: 'route:ai:chat safeDisposeToolProviders',
-        message: 'Error during tool provider disposal',
-      });
-    }
-  }
+  toolProviders[Symbol.dispose]();
 };
 
 const toolProviderFactory = async ({
@@ -181,7 +164,7 @@ export const POST = (req: NextRequest) => {
         });
 
         // Wrap the base model with chat history middleware
-        const baseModel = aiModelFactory(model);
+        const baseModel = await aiModelFactory(model);
         const modelWithHistory = wrapChatHistoryMiddleware({
           model: baseModel,
           chatHistoryContext,
@@ -223,7 +206,6 @@ export const POST = (req: NextRequest) => {
           },
           stopWhen: [stepCountIs(20), hasToolCall('askConfirmation')],
           onError: async (error) => {
-            // await safeDisposeToolProviders(toolProviders);
             LoggedError.isTurtlesAllTheWayDownBaby(error, {
               log: true,
               source: 'route:ai:chat onError',
@@ -265,9 +247,8 @@ export const POST = (req: NextRequest) => {
           },
           onFinish: async (/*evt*/) => {
             try {
-              // await safeDisposeToolProviders(toolProviders);
               log((l) =>
-                l.verbose({
+                l.info({
                   source: 'route:ai:chat onFinish',
                   message: 'Chat response generated',
                   data: {
@@ -323,6 +304,7 @@ export const POST = (req: NextRequest) => {
               yield chunk as unknown as Record<string, unknown>;
             }
           } finally {
+            log((l) => l.info('mergedChunks finally block', { isRateLimitError, chatHistoryId }));
             // After the SDK stream completes, if we detected a rate limit during
             // streaming, emit a structured data chunk that the client UI can
             // recognize and handle.
@@ -344,17 +326,21 @@ export const POST = (req: NextRequest) => {
         const encoder = new TextEncoder();
         const stream = new ReadableStream<Uint8Array>({
           async start(controller) {
+            log((l) => l.info('Stream started', { chatHistoryId }));
             try {
               for await (const chunk of mergedChunks()) {
                 const payload = JSON.stringify(chunk);
                 controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
               }
+              log((l) => l.info('Stream closing normally', { chatHistoryId }));
               controller.close();
             } catch (err) {
+              log((l) => l.error('Stream error', { error: err, chatHistoryId }));
               controller.error(err as Error);
             }
           },
-          cancel() {
+          cancel(reason) {
+            log((l) => l.warn('Stream cancelled', { reason, chatHistoryId }));
             // noop
           },
         });
@@ -371,7 +357,7 @@ export const POST = (req: NextRequest) => {
           source: 'route:ai:chat',
           severity: 'error',
         });
-        await safeDisposeToolProviders(session?.user, toolProviders);
+        await safeDisposeToolProviders(toolProviders);
         return NextResponse.error();
       }
     },
@@ -380,7 +366,7 @@ export const POST = (req: NextRequest) => {
         role: 'assistant',
         content: "I'm currently disabled for solution rebuild.",
       },
-      errorCallback: () => safeDisposeToolProviders(null, toolProviders),
+      errorCallback: () => safeDisposeToolProviders(toolProviders),
     },
   )(req);
 };

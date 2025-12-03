@@ -95,9 +95,9 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
                 try {
                   // clear runtime callback reference
                   (t as { onerror?: unknown }).onerror = undefined;
-                } catch {}
+                } catch { }
               }
-            } catch {}
+            } catch { }
             try {
               const t = transport as Record<string, unknown>;
               if (typeof t['close'] === 'function') {
@@ -105,7 +105,7 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
               } else if (typeof t['destroy'] === 'function') {
                 (t['destroy'] as (...a: unknown[]) => unknown)();
               }
-            } catch {}
+            } catch { }
           }
           const srvClose =
             serverObj && typeof serverObj['close'] === 'function'
@@ -116,7 +116,7 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
           if (typeof srvClose === 'function') {
             try {
               srvClose.call(serverObj ?? s);
-            } catch {}
+            } catch { }
           }
         } catch {
           /* swallow cleanup errors */
@@ -163,9 +163,9 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
               if ('onerror' in t) {
                 try {
                   (t as { onerror?: unknown }).onerror = undefined;
-                } catch {}
+                } catch { }
               }
-            } catch {}
+            } catch { }
             try {
               const t = transport as Record<string, unknown>;
               if (typeof t['close'] === 'function') {
@@ -173,7 +173,7 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
               } else if (typeof t['destroy'] === 'function') {
                 (t['destroy'] as (...a: unknown[]) => unknown)();
               }
-            } catch {}
+            } catch { }
           }
           const srvClose =
             serverObj && typeof serverObj['close'] === 'function'
@@ -184,7 +184,7 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
           if (typeof srvClose === 'function') {
             try {
               srvClose.call(serverObj ?? s);
-            } catch {}
+            } catch { }
           }
         } catch {
           /* swallow cleanup errors */
@@ -364,7 +364,7 @@ const handler = wrapRouteRequest(
       {},
       {
         redisUrl: process.env.REDIS_URL,
-        basePath: '/api/ai/tools/',
+        basePath: `/api/ai/tools/`,
         maxDuration,
         verboseLogs,
         onEvent: verboseLogs ? onMcpEvent : undefined,

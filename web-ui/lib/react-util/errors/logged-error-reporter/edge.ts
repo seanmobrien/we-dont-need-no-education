@@ -41,18 +41,23 @@ class LoggedErrorReporter {
         return LoggedErrorReporter.makeFakeResult(error);
       };
 
-      LoggedErrorReporter.#instance = {
+      const instance = {
         reportError: mockReport,
         reportBoundaryError: mockReport,
         reportUnhandledRejection: mockReport,
-        setupGlobalHandlers: () => {},
+        setupGlobalHandlers: () => { },
+        subscribeToErrorReports: () => { },
+        unsubscribeFromErrorReports: () => { },
         getStoredErrors: () => [],
-        clearStoredErrors: () => {},
+        clearStoredErrors: () => { },
         generateFingerprint: (error: Error, context: ErrorContext) =>
           errorReporter((x) => x.generateFingerprint(error, context)),
         createErrorReport: (error: unknown) =>
           errorReporter((r) => r.createErrorReport(error)),
       };
+      // technically this is a no-op, but it's good to be consistent
+      instance.subscribeToErrorReports();
+      LoggedErrorReporter.#instance = instance;
     }
     if (!LoggedErrorReporter.#instance) {
       throw new TypeError(

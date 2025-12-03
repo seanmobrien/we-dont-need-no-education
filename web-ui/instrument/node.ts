@@ -145,6 +145,13 @@ const instrumentServer = () => {
         logHook: (span, record) => {
           record.trace_id = span.spanContext().traceId;
           record.span_id = span.spanContext().spanId;
+          if (record.attribs) {
+            Object.entries(record.attribs).forEach(([key, value]) => {
+              if (value) {
+                span.setAttribute(key, String(value));
+              }
+            });
+          }
           if (record.error) {
             record.body =
               record.error.stack ||

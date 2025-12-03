@@ -14,6 +14,7 @@ import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 import { Suspense } from 'react';
 import { cookies } from 'next/headers';
 import { FlagProvider } from '@/components/general/flags/flag-provider';
+import { state } from '@/lib/site-util/app-startup';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -41,15 +42,20 @@ const stableAppRouterOptions = {
 
 export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  // Guard against a shutdown app
+  if (state() === 'done') {
+    return (
+      <html lang="en">
+        <body>App is shutting down</body>
+      </html>
+    );
+  }
   const themeName = await cookies().then((x) =>
     x.get('theme')?.value === 'light' ? 'light' : 'dark',
   );
-  // Server-evaluate feature flags for hydration on the client.
-  // const featureFlags = await getAllFeatureFlags();
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head></head>

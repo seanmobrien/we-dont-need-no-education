@@ -1,41 +1,19 @@
 let testQueryClient: QueryClient | undefined;
 
-/*
-jest.mock('@tanstack/react-query', () => {
-  const originalModule = jest.requireActual('@tanstack/react-query');
-  const useQueryClient = jest.fn(() => {
-    if (!testQueryClient) {
-      testQueryClient = jest.fn(
-        () =>
-          new originalModule.QueryClient({
-            defaultOptions: {
-              queries: { retry: false },
-            },
-          }),
-      )();
-    }
-    return testQueryClient;
-  });
-  const useMutation = jest.fn(() => {
-    originalModule.useMutation();
-  });
-  const useQuery = jest.fn(() => {});
-
-  return {
-    ...originalModule,
-    useQueryClient,
-    useMutation,
-  };
-});
-*/
-
 import React, { JSX, PropsWithChildren } from 'react';
-import { renderHook, waitFor, act, jsonResponse } from '@/__tests__/test-utils';
+import {
+  renderHook,
+  waitFor,
+  act,
+  jsonResponse,
+  hideConsoleOutput,
+} from '@/__tests__/test-utils';
 import {
   QueryClient,
   QueryClientProvider,
   useQueryClient,
 } from '@tanstack/react-query';
+import { fetch } from '@/lib/nextjs-util';
 
 // Load the real hooks inside isolated modules after unmocking the global mock
 const loadHooks = () => {
@@ -48,8 +26,10 @@ const loadHooks = () => {
 };
 
 describe('use-todo real implementation', () => {
-  // Increase Jest timeout for these integration-style hook tests
-  jest.setTimeout(10000);
+  let mockFetch: jest.Mock;
+  beforeEach(() => {
+    mockFetch = fetch as jest.Mock;
+  });
   // Create a test query client and wrapper
   const TestWrapper = ({
     children,
@@ -73,8 +53,6 @@ describe('use-todo real implementation', () => {
   afterEach(() => {
     // jest.restoreAllMocks();
     // jest.resetModules();
-    // Clear any mocked fetch
-    (global.fetch as any) = undefined;
     // Reset the shared test QueryClient so each test gets a fresh cache
     testQueryClient = undefined;
   });
@@ -84,9 +62,7 @@ describe('use-todo real implementation', () => {
     const { useTodoLists } = hooks;
 
     const mockData = [{ id: 'l1', title: 'List 1' }];
-    (global.fetch as any) = jest
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ data: mockData }));
+    mockFetch.mockResolvedValueOnce(jsonResponse({ data: mockData }));
 
     const { result } = renderHook(() => useTodoLists(), {
       wrapper: TestWrapper,
@@ -94,18 +70,15 @@ describe('use-todo real implementation', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(mockData);
-    expect((global.fetch as jest.Mock).mock.calls[0][0]).toBe(
-      '/api/todo-lists',
-    );
-  });
+    expect(mockFetch.mock.calls[0][0]).toBe('/api/todo-lists');
+  }, 10000);
 
   it('useTodoLists surfaces error on failure', async () => {
+    hideConsoleOutput().setup();
     const hooks = loadHooks();
     const { useTodoLists } = hooks;
 
-    (global.fetch as any) = jest
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ error: 'bad' }, 500));
+    mockFetch.mockResolvedValueOnce(jsonResponse({ error: 'bad' }, 500));
 
     const { result } = renderHook(() => useTodoLists(), {
       wrapper: TestWrapper,
@@ -114,7 +87,7 @@ describe('use-todo real implementation', () => {
     await waitFor(() => expect(result.current.isError).toBe(true), {
       timeout: 2000,
     });
-  });
+  }, 10000);
 
   it('useTodoList disabled when listId is null', async () => {
     const hooks = loadHooks();
@@ -126,16 +99,14 @@ describe('use-todo real implementation', () => {
 
     // Query should be idle/disabled
     expect(result.current.isLoading).toBe(false);
-  });
+  }, 10000);
 
   it('useTodoList fetches single list successfully', async () => {
     const hooks = loadHooks();
     const { useTodoList } = hooks;
 
     const payload = { id: 'list-1', title: 'T1', todos: [] };
-    (global.fetch as any) = jest
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ data: payload }));
+    mockFetch.mockResolvedValueOnce(jsonResponse({ data: payload }));
 
     const { result } = renderHook(() => useTodoList('list-1'), {
       wrapper: TestWrapper,
@@ -143,7 +114,7 @@ describe('use-todo real implementation', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(payload);
-  });
+  }, 10000);
 
   it('mutations: create/update/delete list and items return expected results', async () => {
     const hooks = loadHooks();
@@ -158,9 +129,7 @@ describe('use-todo real implementation', () => {
 
     // create list
     const created = { id: 'new', title: 'New List' };
-    (global.fetch as any) = jest
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ data: created }));
+    mockFetch.mockResolvedValue(jsonResponse({ data: created }));
     const { result: createResult } = renderHook(() => useCreateTodoList(), {
       wrapper: TestWrapper,
     });
@@ -172,9 +141,7 @@ describe('use-todo real implementation', () => {
 
     // update list
     const updated = { id: 'new', title: 'Updated' };
-    (global.fetch as any) = jest
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ data: updated }));
+    mockFetch.mockResolvedValue(jsonResponse({ data: updated }));
     const { result: updateResult } = renderHook(() => useUpdateTodoList(), {
       wrapper: TestWrapper,
     });
@@ -188,9 +155,7 @@ describe('use-todo real implementation', () => {
     });
 
     // delete list
-    (global.fetch as any) = jest
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ data: {} }));
+    mockFetch.mockResolvedValue(jsonResponse({ data: {} }));
     const { result: deleteResult } = renderHook(() => useDeleteTodoList(), {
       wrapper: TestWrapper,
     });
@@ -201,9 +166,7 @@ describe('use-todo real implementation', () => {
 
     // create item
     const createdItem = { id: 'i1', title: 'Item 1' };
-    (global.fetch as any) = jest
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ data: createdItem }));
+    mockFetch.mockResolvedValue(jsonResponse({ data: createdItem }));
     const { result: createItemResult } = renderHook(
       () => useCreateTodoItem('list-1'),
       {
@@ -220,9 +183,7 @@ describe('use-todo real implementation', () => {
 
     // update item
     const updatedItem = { id: 'i1', title: 'Item 1 updated' };
-    (global.fetch as any) = jest
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ data: updatedItem }));
+    mockFetch.mockResolvedValue(jsonResponse({ data: updatedItem }));
     const { result: updateItemResult } = renderHook(() =>
       useUpdateTodoItem('list-1'),
     );
@@ -236,9 +197,7 @@ describe('use-todo real implementation', () => {
     });
 
     // delete item
-    (global.fetch as any) = jest
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ data: {} }));
+    mockFetch.mockResolvedValue(jsonResponse({ data: {} }));
     const { result: deleteItemResult } = renderHook(
       () => useDeleteTodoItem('list-1'),
       {
@@ -249,9 +208,10 @@ describe('use-todo real implementation', () => {
     await act(async () => {
       await deleteItemResult.current.mutateAsync('i1');
     });
-  });
+  }, 10000);
 
   it('useToggleTodo optimistic update and rollback on error', async () => {
+    hideConsoleOutput().setup();
     const hooks = loadHooks();
     const { useToggleTodo, todoKeys } = hooks;
 
@@ -288,11 +248,9 @@ describe('use-todo real implementation', () => {
     );
 
     // First, server success -> final state should be completed true
-    (global.fetch as any) = jest
-      .fn()
-      .mockResolvedValueOnce(
-        jsonResponse({ data: { id: 't1', completed: true } }),
-      );
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({ data: { id: 't1', completed: true } }),
+    );
 
     const { result: toggleResult } = renderHook(() => useToggleTodo(listId), {
       wrapper: TestWrapper,
@@ -332,9 +290,7 @@ describe('use-todo real implementation', () => {
       },
     );
 
-    (global.fetch as any) = jest
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ error: 'fail' }, 500));
+    mockFetch.mockResolvedValueOnce(jsonResponse({ error: 'fail' }, 500));
     const { result: toggleResultFail } = renderHook(
       () => useToggleTodo(listId),
       {
@@ -359,5 +315,5 @@ describe('use-todo real implementation', () => {
       (rolled.result.current as any).todos.find((t: any) => t.id === 't1')
         .completed,
     ).toBe(false);
-  });
+  }, 10000);
 });

@@ -1,4 +1,4 @@
- 
+
 
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 

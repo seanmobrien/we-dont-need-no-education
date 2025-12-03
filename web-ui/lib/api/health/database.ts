@@ -2,12 +2,12 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { sql } from '@/lib/drizzle-db/drizzle-sql';
 import { LoggedError } from '@/lib/react-util';
 import InMemoryCache from '@/lib/api/health/base-cache';
-import { globalSingleton } from '@/lib/typescript/singleton-provider';
+import { globalRequiredSingleton } from '@/lib/typescript/singleton-provider';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
 import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
 
 export class DatabaseHealthCache extends InMemoryCache<{
-  status: 'ok' | 'error';
+  status: 'healthy' | 'warning' | 'error';
 }> {
   constructor(config?: { ttlMs?: number }) {
     super(config);
@@ -15,7 +15,7 @@ export class DatabaseHealthCache extends InMemoryCache<{
 }
 
 export const getDatabaseHealthCache = (): DatabaseHealthCache =>
-  globalSingleton(
+  globalRequiredSingleton(
     'database-health-cache',
     () => new DatabaseHealthCache({ ttlMs: 2 * 60 * 1000 }),
   );
@@ -59,7 +59,7 @@ export const ensureDatabaseCacheConfigured = async () => {
  * request volumes.
  */
 export const checkDatabaseHealth = async (): Promise<{
-  status: 'ok' | 'error';
+  status: 'healthy' | 'warning' | 'error';
 }> => {
   await ensureDatabaseCacheConfigured();
   const cache = getDatabaseHealthCache();
@@ -70,10 +70,10 @@ export const checkDatabaseHealth = async (): Promise<{
     // Run a very cheap query - this should be supported by all DBs and
     // is optimized by the server.
     await drizDbWithInit((db) => db.execute(sql`select 1 as ok`));
-    const ok = { status: 'ok' } as const;
+    const ok = { status: 'healthy' } as const;
     try {
       cache.set(ok);
-    } catch {}
+    } catch { }
     return ok;
   } catch (err) {
     // Log structured error for debugging/monitoring and return error state.
@@ -86,7 +86,7 @@ export const checkDatabaseHealth = async (): Promise<{
     const bad = { status: 'error' } as const;
     try {
       cache.set(bad);
-    } catch {}
+    } catch { }
     return bad;
   }
 };

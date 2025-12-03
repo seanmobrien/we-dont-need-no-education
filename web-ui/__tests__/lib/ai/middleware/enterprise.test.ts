@@ -27,7 +27,9 @@ jest.mock('@/lib/site-util/after', () => {
   };
 });
 
-import { resetEnvVariables, withRedisConnection } from '@/__tests__/jest.setup';
+import {
+  /*resetEnvVariables, */ withRedisConnection,
+} from '@/__tests__/setup/jest.setup';
 import {
   getCacheConfig,
   validateCacheConfig,
@@ -53,7 +55,6 @@ describe('Enterprise Cache Features', () => {
   });
 
   beforeEach(async () => {
-    resetEnvVariables();
     withRedisConnection();
     redis = await getRedisClient();
     // Clear test data and reset metrics

@@ -28,7 +28,7 @@ import {
   PROVIDER_ID_AZURE,
   PROVIDER_ID_GOOGLE,
   MODEL_ID_GPT4_NO_QUOTA,
-} from '@/__tests__/jest.mock-provider-model-maps';
+} from '@/__tests__/setup/jest.mock-provider-model-maps';
 import { ModelMap } from '@/lib/ai/services/model-stats/model-map';
 
 const mockRedisClient = {

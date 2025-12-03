@@ -16,7 +16,7 @@ import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
 import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
 import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
 import { shouldSuppressError } from './utility';
-import { LoggedError } from '../react-util';
+import { type ErrorReportArgs, LoggedError } from '@/lib/react-util/errors/logged-error';
 export { ErrorSeverity };
 
 export type {
@@ -82,6 +82,7 @@ const ERROR_REPORTER_SINGLETON_KEY =
   '@noeducation/error-monitoring:ErrorReporter';
 
 export class ErrorReporter implements ErrorReporterInterface {
+  readonly #errorReportHandler: ((args: ErrorReportArgs) => void);
   private config: ErrorReporterConfig;
   private debounceSettings: ErrorReporterConfigDebounceParams;
   private debounceSet = new Map<string, number>();
@@ -92,6 +93,37 @@ export class ErrorReporter implements ErrorReporterInterface {
     this.debounceSettings = config.debounce ?? {
       debounceIntervalMs: 60000,
       debounceCleanupIntervalMs: 300000,
+    };
+    this.#errorReportHandler = (args: ErrorReportArgs) => {
+      let severity: ErrorSeverity | undefined;
+      try {
+        switch (args.severity) {
+          case "Verbose":
+            severity = ErrorSeverity.LOW;
+            break;
+          case "Information":
+            severity = ErrorSeverity.MEDIUM;
+            break;
+          case "Warning":
+            severity = ErrorSeverity.MEDIUM;
+            break;
+          case "Error":
+            severity = ErrorSeverity.HIGH;
+            break;
+          case "Critical":
+            severity = ErrorSeverity.CRITICAL;
+            break;
+          case undefined:
+            severity = undefined;
+            break;
+          default:
+            severity = ErrorSeverity.HIGH;
+            break;
+        }
+        this.reportError(args.error, severity, args.context);
+      } catch (e) {
+        console.error('Failed to report error', e);
+      }
     };
   }
 
@@ -114,7 +146,7 @@ export class ErrorReporter implements ErrorReporterInterface {
   public static getInstance = (
     config?: Partial<ErrorReporterConfig>,
   ): ErrorReporterInterface =>
-    SingletonProvider.Instance.getOrCreate(ERROR_REPORTER_SINGLETON_KEY, () =>
+    SingletonProvider.Instance.getRequired(ERROR_REPORTER_SINGLETON_KEY, () =>
       ErrorReporter.createInstance(config ?? {}),
     );
 
@@ -399,6 +431,9 @@ export class ErrorReporter implements ErrorReporterInterface {
     window.addEventListener('unhandledrejection', (event) => {
       this.reportUnhandledRejection(event.reason, event.promise);
     });
+
+    // LoggedError emitted messages
+    this.subscribeToErrorReports();
   }
 
   /**
@@ -532,6 +567,32 @@ export class ErrorReporter implements ErrorReporterInterface {
       .substring(0, 16);
   }
 
+  public subscribeToErrorReports(): void {
+    try {
+      // Defensively unsubscribe to avoid duplicate registration
+      LoggedError.unsubscribeFromErrorReports(this.#errorReportHandler);
+      LoggedError.subscribeToErrorReports(this.#errorReportHandler);
+    } catch (e) {
+      this.reportError(e, ErrorSeverity.HIGH, {
+        additionalData: {
+          message: 'Failed to subscribe to logged errors',
+        },
+      });
+    }
+  }
+  public unsubscribeFromErrorReports(): void {
+    try {
+      LoggedError.unsubscribeFromErrorReports(this.#errorReportHandler);
+    } catch (e) {
+      this.reportError(e, ErrorSeverity.HIGH, {
+        additionalData: {
+          message: 'Failed to unsubscribe from logged errors',
+        },
+      });
+    }
+  }
+
+
   /**
    * Generate tags for error categorization
    */
@@ -611,7 +672,7 @@ export class ErrorReporter implements ErrorReporterInterface {
       if (
         activeSpan &&
         typeof (activeSpan as { isRecording: () => boolean }).isRecording ===
-          'function' &&
+        'function' &&
         (activeSpan as { isRecording: () => boolean }).isRecording()
       ) {
         try {

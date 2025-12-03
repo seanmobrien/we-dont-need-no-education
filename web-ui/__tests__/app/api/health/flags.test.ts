@@ -93,7 +93,7 @@ describe('health feature-flag driven behavior', () => {
     await ensureDatabaseCacheConfigured();
     const cache = getDatabaseHealthCache();
 
-    cache.set({ status: 'ok' });
+    cache.set({ status: 'healthy' });
     expect(cache.get()).toBeDefined();
 
     jest.advanceTimersByTime(1100);
@@ -110,7 +110,7 @@ describe('health feature-flag driven behavior', () => {
     // Mock DB healthy, memory unhealthy
     jest
       .spyOn(dbModule, 'checkDatabaseHealth')
-      .mockResolvedValue({ status: 'ok' } as any);
+      .mockResolvedValue({ status: 'healthy' } as any);
     jest
       .spyOn(memModule, 'getMemoryHealthCache')
       .mockReturnValue({ get: () => undefined } as any);

@@ -79,7 +79,7 @@ export abstract class UrlFilterEngine implements IFilterRule {
 
   private getCacheKey(input: AnyValue): string {
     const prefix = `v${this.#cacheVersion}:`; // ✅ Include version
-
+    if (!input) return prefix + 'null';
     if (typeof input === 'string') return prefix + input;
     try {
       const json = JSON.stringify(input);

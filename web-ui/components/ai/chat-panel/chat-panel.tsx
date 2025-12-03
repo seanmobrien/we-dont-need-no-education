@@ -40,10 +40,9 @@ import { onClientToolRequest } from '@/lib/ai/client';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { FirstParameter } from '@/lib/typescript';
 import { panelStableStyles } from './styles';
-import {
-  AllFeatureFlagsDefault,
-  useFeatureFlags,
-} from '@/lib/site-util/feature-flags';
+import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
+import type { KnownFeatureValueType } from '@/lib/site-util/feature-flags/types';
+import { useFeatureFlags } from '@/lib/site-util/feature-flags';
 
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
@@ -121,9 +120,12 @@ const ChatPanel = ({ page }: { page: string }) => {
     UIMessage[] | undefined
   >(undefined);
   const { getFlag } = useFeatureFlags();
-  const {
-    value: { provider, chat_model } = { provider: 'azure', chat_model: 'lofi' },
-  } = getFlag('models_defaults', AllFeatureFlagsDefault['models_defaults']);
+  const modelFlag = getFlag(
+    'models_defaults',
+    AllFeatureFlagsDefault['models_defaults'],
+  ) ?? { provider: 'azure', chat_model: 'lofi' };
+  const { provider, chat_model } =
+    modelFlag as KnownFeatureValueType<'models_defaults'>;
   const [activeModelSelection, setActiveModelSelection] =
     useState<ModelSelection>({
       provider: provider as AiProvider,

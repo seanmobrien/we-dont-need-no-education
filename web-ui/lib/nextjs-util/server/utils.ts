@@ -2,6 +2,7 @@ import { errorResponseFactory } from './error-response/index';
 import { env } from '@/lib/site-util/env';
 import { log, safeSerialize } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { startup } from '@/lib/site-util/app-startup';
 import type { NextRequest, NextResponse } from 'next/server';
 import {
   SpanKind,
@@ -17,8 +18,7 @@ import {
 } from '@opentelemetry/api';
 import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
-import { makeJsonResponse } from './response';
-import { SessionTokenKey } from '@/lib/auth/utilities';
+
 
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');
 
@@ -28,15 +28,18 @@ const globalBuildFallback = {
   __status: 'Service disabled during build.',
 } as const;
 
+
+
+
 export const wrapRouteRequest = <
   A extends
-    | []
-    | [NextRequest]
-    | [Request]
-    | [NextRequest, Pick<WrappedResponseContext<TContext>, 'params'>]
-    | [NextRequest, WrappedResponseContext<TContext>]
-    | [Request, Pick<WrappedResponseContext<TContext>, 'params'>]
-    | [Request, WrappedResponseContext<TContext>],
+  | []
+  | [NextRequest]
+  | [Request]
+  | [NextRequest, Pick<WrappedResponseContext<TContext>, 'params'>]
+  | [NextRequest, WrappedResponseContext<TContext>]
+  | [Request, Pick<WrappedResponseContext<TContext>, 'params'>]
+  | [Request, WrappedResponseContext<TContext>],
   TContext extends Record<string, unknown> = Record<string, unknown>,
 >(
   fn: (...args: A) => Promise<Response | NextResponse | undefined>,
@@ -81,6 +84,31 @@ export const wrapRouteRequest = <
             span.setStatus({ code: SpanStatusCode.OK });
             return res;
           }
+
+          const appStartupState = await tracer.startActiveSpan('app.startup.check', async (startupSpan) => {
+            try {
+              const state = await startup();
+              startupSpan.setAttribute('app.startup_state', state);
+              return state;
+            } finally {
+              startupSpan.end();
+            }
+          });
+
+          if (appStartupState === 'done') {
+            const res = Response.json(buildFallback ?? globalBuildFallback, {
+              status: 503,
+              statusText: 'ERR-APP-SHUTDOWN',
+              headers: {
+                'Content-Type': 'application/json',
+                'Retry-After': '60',
+              },
+            });
+            span.setAttribute('http.status_code', res.status);
+            span.setStatus({ code: SpanStatusCode.ERROR });
+            return res;
+          }
+
           if (shouldLog) {
             const extractedParams = await (!!context?.params
               ? context.params
@@ -94,6 +122,7 @@ export const wrapRouteRequest = <
               }),
             );
           }
+
           // Invoke the original handler with the same args shape
           const result = await (
             fn as unknown as (
@@ -314,6 +343,7 @@ export const createInstrumentedSpan = async ({
 
     return {
       parentContext,
+      tracerName: tracerName,
       contextWithSpan,
       span,
       executeWithContext: async <TResult>(
@@ -362,46 +392,23 @@ export const createInstrumentedSpan = async ({
       ): Promise<TResult> => {
         // No-op span for when OpenTelemetry is not available
         const noOpSpan = {
-          setAttributes: () => {},
-          setStatus: () => {},
-          recordException: () => {},
-          end: () => {},
+          setAttributes: () => { },
+          setStatus: () => { },
+          recordException: () => { },
+          end: () => { },
           spanContext: () => ({}) as SpanContext,
-          setAttribute: () => {},
-          addEvent: () => {},
-          addLink: () => {},
-          addLinks: () => {},
+          setAttribute: () => { },
+          addEvent: () => { },
+          addLink: () => { },
+          addLinks: () => { },
           isRecording: () => false,
-          updateName: () => {},
+          updateName: () => { },
         } as unknown as Span;
         return fn(noOpSpan);
       },
     };
   }
 };
-export const unauthorizedServiceResponse = ({
-  req,
-  scopes = [],
-}: {
-  req?: NextRequest;
-  scopes?: Array<string>;
-} = {}) => {
-  const { nextUrl = new URL(env('NEXT_PUBLIC_HOSTNAME')) } = req ?? {
-    nextUrl: undefined,
-  };
-  const isAuthenticated = !!req?.cookies?.get(SessionTokenKey())?.value?.length;
-  const resourceMetadataPath = `/.well-known/oauth-protected-resource${nextUrl.pathname}`;
-  return makeJsonResponse(
-    { error: 'Unauthorized', message: 'Active session required.' },
-    {
-      status: isAuthenticated ? 403 : 401,
-      headers: {
-        'WWW-Authenticate': `Bearer resource_metadata="${resourceMetadataPath}"${scopes && scopes.length > 0 ? ` scope="${scopes.join(' ')}"` : ''}`,
-      },
-    },
-  );
-};
-
 export const reportEvent = async ({
   eventName,
   tracerName = 'noeducation/telemetry',

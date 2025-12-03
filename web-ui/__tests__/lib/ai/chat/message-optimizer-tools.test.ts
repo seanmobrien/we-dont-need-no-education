@@ -17,7 +17,11 @@ import { generateText, generateObject } from 'ai';
 
 // Mock dependencies
 jest.mock('@/lib/ai/aiModelFactory');
-jest.mock('ai');
+jest.mock('ai', () => ({
+  ...jest.requireActual('ai'),
+  generateText: jest.fn(),
+  generateObject: jest.fn(),
+}));
 jest.mock('@/lib/drizzle-db', () => ({
   drizDbWithInit: jest.fn(() => ({
     transaction: jest.fn((callback) =>
@@ -76,7 +80,7 @@ describe('Message Optimizer Tools', () => {
     cacheManager.clear();
 
     // Default mock setup
-    mockAiModelFactory.mockReturnValue('mock-lofi-model' as never);
+    mockAiModelFactory.mockResolvedValue('mock-lofi-model' as never);
     mockGenerateText.mockResolvedValue({
       text: 'Tool executed successfully with optimized results.',
       usage: { completionTokens: 50, promptTokens: 100, totalTokens: 150 },

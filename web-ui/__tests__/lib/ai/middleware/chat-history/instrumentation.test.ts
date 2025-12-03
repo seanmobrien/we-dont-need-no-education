@@ -1,4 +1,4 @@
- 
+
 /**
  * @fileoverview Tests for Chat History OpenTelemetry Instrumentation
  *
@@ -19,6 +19,7 @@ const mockSpan = {
 
 const mockTracer = {
   startSpan: jest.fn(() => mockSpan),
+  startActiveSpan: jest.fn((_name, fn2: any, _ctx, fn: any) => (fn ?? fn2)(mockSpan)),
 };
 
 const mockHistogram = {
