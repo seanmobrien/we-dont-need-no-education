@@ -105,9 +105,12 @@ export const getMemoryHealthCache = (): Promise<MemoryHealthCache> =>
   );
 
 
-type SubsystemHealthBag = Record<string, { status: HealthStatus } | HealthStatus>
+/**
+ * A mapping of subsystem names to their health status or status object.
+ */
+type SubsystemHealthMap = Record<string, { status: HealthStatus } | HealthStatus>
 
-export const getSubsystemHealth = (subsystem: SubsystemHealthBag) => (
+export const getSubsystemHealth = (subsystem: SubsystemHealthMap) => (
   Object.values(subsystem)
     .reduce((acc, x) => {
       const check = typeof x === 'string' ? x : x.status;
