@@ -16,7 +16,7 @@ export const useFeatureFlag = (
   return flag;
 };
 
-export function useFeatureFlags() {
+export const useFeatureFlags = () => {
   const ctx = useFeatureFlagsContext();
   const isEnabled = (key: string) => ctx.isEnabled(key);
   return {
@@ -34,7 +34,7 @@ export function useFeatureFlags() {
     isEnabled,
     getFlagState: (key: KnownFeatureType) => ctx.getFlagState(key),
   };
-}
+};
 
 export const useFlag = (
   key: KnownFeatureType,

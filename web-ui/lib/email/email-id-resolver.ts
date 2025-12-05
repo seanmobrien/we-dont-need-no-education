@@ -112,7 +112,11 @@ export async function resolveEmailId(
 
     return doc?.emailId || null;
   } catch (error) {
-    console.error('Error resolving document ID to email ID:', error);
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'EmailIdResolver.resolveEmailId',
+      critical: true,
+    });
     return null;
   }
 }

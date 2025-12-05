@@ -86,3 +86,4 @@ describe('checkChatHealth', () => {
     expect(result.tools?.status).toBe('warning');
   });
 });
+

@@ -295,25 +295,25 @@ const serverEnvSchema = z
         'Azure AI Search index name for storing policy document vectors and metadata. Example: policies-prod',
       ),
     AZURE_AISEARCH_VECTOR_SIZE_SMALL: z
-      .number()
+      .coerce.number()
       .default(1536)
       .describe(
         'Vector dimension size for small embeddings in Azure AI Search. Default: 1536. Example: 1536',
       ),
     AZURE_AISEARCH_VECTOR_SIZE_LARGE: z
-      .number()
+      .coerce.number()
       .default(3072)
       .describe(
         'Vector dimension size for large embeddings in Azure AI Search. Default: 3072. Example: 3072',
       ),
     AZURE_AISEARCH_DOCUMENT_SPLITTER_OVERLAP: z
-      .number()
+      .coerce.number()
       .default(15)
       .describe(
         'Token overlap count when splitting documents for search indexing. Default: 15. Example: 20',
       ),
     AZURE_AISEARCH_DOCUMENT_SPLITTER_MAX_TOKENS: z
-      .number()
+      .coerce.number()
       .default(512)
       .describe(
         'Maximum tokens per document chunk during splitting for indexing. Default: 512. Example: 512',

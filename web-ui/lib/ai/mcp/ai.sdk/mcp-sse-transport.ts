@@ -13,6 +13,8 @@ import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
 import { fetch } from '@/lib/nextjs-util/server/fetch';
 import type { Span } from '@opentelemetry/api';
 
+const MCP_CONNECTION_TIMEOUT = 5 * 60 * 1000;
+
 export class SseMCPTransport implements MCPTransport {
   /** The discovered endpoint URL for sending messages via POST */
   protected endpoint?: URL;
@@ -110,6 +112,7 @@ export class SseMCPTransport implements MCPTransport {
         const response = await fetch(this.url.href, {
           headers: await this.resolveHeaders(),
           signal: this.abortController?.signal,
+          timeout: MCP_CONNECTION_TIMEOUT,
         });
 
         log((l) =>
@@ -443,6 +446,7 @@ export class SseMCPTransport implements MCPTransport {
           headers,
           body: JSON.stringify(message),
           signal: this.abortController?.signal,
+          timeout: MCP_CONNECTION_TIMEOUT,
         };
 
         const response = await fetch(this.endpoint!, init);

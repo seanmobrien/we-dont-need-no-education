@@ -1,13 +1,12 @@
 import { createFlagsmithInstance } from 'flagsmith/isomorphic';
 import type { IFlagsmith } from 'flagsmith';
-import { isKnownFeatureType } from './known-feature';
+import { type KnownFeatureType, isKnownFeatureType } from './known-feature';
 import { AllFeatureFlagsDefault } from './known-feature-defaults';
 
 import { env } from '../env';
 import { LoggedError } from '@/lib/react-util';
-import {
+import type {
   FeatureFlagValueType,
-  KnownFeatureType,
 } from './types';
 import { extractFlagValue } from './util';
 

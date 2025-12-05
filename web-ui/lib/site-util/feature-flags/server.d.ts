@@ -1,9 +1,7 @@
 import type { Flagsmith } from 'flagsmith-nodejs';
-import {
-  AllFeatureFlagsDefault,
-  type KnownFeatureType,
-  type FeatureFlagStatus,
-} from './known-feature';
+import type { KnownFeatureType } from './known-feature';
+import type { AllFeatureFlagsDefault } from './known-feature-defaults';
+import type { FeatureFlagStatus } from './types';
 
 /**
  * Server-side feature flag helpers using Flagsmith.

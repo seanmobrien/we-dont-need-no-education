@@ -6,22 +6,22 @@
 }
 
 /* Dark theme CSS variables */
-[data-theme="dark"] {
+[data-theme='dark'] {
   --background: #0a0a0a;
   --foreground: #ededed;
-  
+
   /* Primary colors (main brand/UI elements) */
   --color-primary-main: #19bfcf;
   --color-primary-light: #19c4ce;
   --color-primary-accent: #18b9b6;
   --color-primary-dark: #1898a8;
-  
+
   /* Secondary colors (alternative actions/elements) */
   --color-secondary-main: #d05697;
   --color-secondary-light: #d05799;
   --color-secondary-accent: #ff7ac4;
   --color-secondary-dark: #a8456f;
-  
+
   /* Highlight colors (focus states, important callouts) */
   --color-highlight-main: #ffda3e;
   --color-highlight-light: #ffd73f;
@@ -31,7 +31,7 @@
   --color-highlight-alt-3: #ffda40;
   --color-highlight-alt-4: #ffd73d;
   --color-highlight-alt-5: #ffd73e;
-  
+
   /* Surface colors (backgrounds, cards, papers) */
   --color-surface-primary: #000000;
   /*--color-surface-primary: #23393d;*/
@@ -39,7 +39,7 @@
   --color-surface-tertiary: #234541;
   --color-surface-elevated: #234148;
   --color-surface-overlay: #23324b;
-  
+
   /* Border colors */
   --color-border-main: #19bfcf;
   --color-border-secondary: #ffaafb;
@@ -47,21 +47,21 @@
 }
 
 /* light theme CSS variables */
-[data-theme="light"] {
+[data-theme='light'] {
   --background: #ffffff;
   --foreground: #000000;
-  
+
   /* Primary colors (main brand/UI elements) */
   --color-primary-main: #1abbf9;
   --color-primary-light: #5ecdfb;
   --color-primary-accent: #1abbf9;
   --color-primary-dark: #118bd6;
-  
+
   /* Secondary colors (alternative actions/elements) */
   --color-secondary-main: #ff79f9;
   --color-secondary-light: #ffaafb;
   --color-secondary-dark: #d647d6;
-  
+
   /* Highlight colors (focus states, important callouts) */
   --color-highlight-main: #1abbf9;
   --color-highlight-light: #5ecdfb;
@@ -71,36 +71,34 @@
   --color-highlight-alt-3: #1abbf9;
   --color-highlight-alt-4: #5ecdfb;
   --color-highlight-alt-5: #1abbf9;
-  
+
   /* Surface colors (backgrounds, cards, papers) */
   --color-surface-primary: #ffffff;
   --color-surface-secondary: #ffaafb;
   --color-surface-tertiary: #5ecdfb;
   --color-surface-elevated: #ededed;
   --color-surface-overlay: rgba(26, 187, 249, 0.12);
-  
+
   /* Border colors */
   --color-border-main: #f5a9b8;
   --color-border-secondary: rgba(245, 169, 184, 0.5);
   --color-border-subtle: rgba(245, 169, 184, 0.3);
-  
+
   /* Legacy variables for backward compatibility */
   --primary: #1abbf9;
   --secondary: #ff79f9;
   --accent: #f5a9b8;
-
 }
 
-
-select,
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="date"],
-input[type="datetime"],
-input[type="datetime-local"],
-input[type="number"],
-textarea {
+select:not(.MuiInputBase-input),
+input[type='text']:not(.MuiInputBase-input),
+input[type='email']:not(.MuiInputBase-input),
+input[type='password']:not(.MuiInputBase-input),
+input[type='date']:not(.MuiInputBase-input),
+input[type='datetime']:not(.MuiInputBase-input),
+input[type='datetime-local']:not(.MuiInputBase-input),
+input[type='number']:not(.MuiInputBase-input),
+textarea:not(.MuiInputBase-input) {
   padding: 0.5rem 1rem;
   border: 1px solid #d1d5db;
   border-radius: 0.375rem;
@@ -110,74 +108,74 @@ textarea {
   width: 100%;
 }
 
-select:focus,
-input[type="text"]:focus,
-input[type="email"]:focus,
-input[type="password"]:focus,
-input[type="date"]:focus,
-input[type="datetime"]:focus,
-input[type="datetime-local"]:focus,
-input[type="number"]:focus,
-textarea:focus {
+select:not(.MuiInputBase-input):focus,
+input[type='text']:not(.MuiInputBase-input):focus,
+input[type='email']:not(.MuiInputBase-input):focus,
+input[type='password']:not(.MuiInputBase-input):focus,
+input[type='date']:not(.MuiInputBase-input):focus,
+input[type='datetime']:not(.MuiInputBase-input):focus,
+input[type='datetime-local']:not(.MuiInputBase-input):focus,
+input[type='number']:not(.MuiInputBase-input):focus,
+textarea:not(.MuiInputBase-input):focus {
   outline: 2px solid transparent;
   outline-offset: 2px;
   box-shadow: 0 0 0 2px #3b82f6;
   border-color: #3b82f6;
 }
 
-
 /* Dark theme input styles */
-[data-theme="dark"] select,
-[data-theme="dark"] input[type="text"],
-[data-theme="dark"] input[type="email"],
-[data-theme="dark"] input[type="password"],
-[data-theme="dark"] input[type="date"],
-[data-theme="dark"] input[type="datetime"],
-[data-theme="dark"] input[type="datetime-local"],
-[data-theme="dark"] input[type="number"],
-[data-theme="dark"] textarea {
+[data-theme='dark'] select:not(.MuiInputBase-input),
+[data-theme='dark'] input[type='text']:not(.MuiInputBase-input),
+[data-theme='dark'] input[type='email']:not(.MuiInputBase-input),
+[data-theme='dark'] input[type='password']:not(.MuiInputBase-input),
+[data-theme='dark'] input[type='date']:not(.MuiInputBase-input),
+[data-theme='dark'] input[type='datetime']:not(.MuiInputBase-input),
+[data-theme='dark'] input[type='datetime-local']:not(.MuiInputBase-input),
+[data-theme='dark'] input[type='number']:not(.MuiInputBase-input),
+[data-theme='dark'] textarea:not(.MuiInputBase-input) {
   background-color: var(--color-surface-primary);
   color: #e5e7eb;
   border-color: var(--color-primary-accent);
 }
 
-[data-theme="dark"] select:focus,
-[data-theme="dark"] input[type="text"]:focus,
-[data-theme="dark"] input[type="email"]:focus,
-[data-theme="dark"] input[type="password"]:focus,
-[data-theme="dark"] input[type="date"]:focus,
-[data-theme="dark"] input[type="datetime"]:focus,
-[data-theme="dark"] input[type="datetime-local"]:focus,
-[data-theme="dark"] input[type="number"]:focus,
-[data-theme="dark"] textarea:focus {
+[data-theme='dark'] select:not(.MuiInputBase-input):focus,
+[data-theme='dark'] input[type='text']:not(.MuiInputBase-input):focus,
+[data-theme='dark'] input[type='email']:not(.MuiInputBase-input):focus,
+[data-theme='dark'] input[type='password']:not(.MuiInputBase-input):focus,
+[data-theme='dark'] input[type='date']:not(.MuiInputBase-input):focus,
+[data-theme='dark'] input[type='datetime']:not(.MuiInputBase-input):focus,
+[data-theme='dark'] input[type='datetime-local']:not(.MuiInputBase-input):focus,
+[data-theme='dark'] input[type='number']:not(.MuiInputBase-input):focus,
+[data-theme='dark'] textarea:not(.MuiInputBase-input):focus {
   box-shadow: 0 0 0 2px var(--color-highlight-main);
   border-color: var(--color-highlight-main);
 }
 
 /* light theme input styles */
-[data-theme="light"] select,
-[data-theme="light"] input[type="text"],
-[data-theme="light"] input[type="email"],
-[data-theme="light"] input[type="password"],
-[data-theme="light"] input[type="date"],
-[data-theme="light"] input[type="datetime"],
-[data-theme="light"] input[type="datetime-local"],
-[data-theme="light"] input[type="number"],
-[data-theme="light"] textarea {
+[data-theme='light'] select:not(.MuiInputBase-input),
+[data-theme='light'] input[type='text']:not(.MuiInputBase-input),
+[data-theme='light'] input[type='email']:not(.MuiInputBase-input),
+[data-theme='light'] input[type='password']:not(.MuiInputBase-input),
+[data-theme='light'] input[type='date']:not(.MuiInputBase-input),
+[data-theme='light'] input[type='datetime']:not(.MuiInputBase-input),
+[data-theme='light'] input[type='datetime-local']:not(.MuiInputBase-input),
+[data-theme='light'] input[type='number']:not(.MuiInputBase-input),
+[data-theme='light'] textarea:not(.MuiInputBase-input) {
   background-color: var(--color-surface-primary);
   color: #111827;
   border-color: var(--color-border-subtle);
 }
 
-[data-theme="light"] select:focus,
-[data-theme="light"] input[type="text"]:focus,
-[data-theme="light"] input[type="email"]:focus,
-[data-theme="light"] input[type="password"]:focus,
-[data-theme="light"] input[type="date"]:focus,
-[data-theme="light"] input[type="datetime"]:focus,
-[data-theme="light"] input[type="datetime-local"]:focus,
-[data-theme="light"] input[type="number"]:focus,
-[data-theme="light"] textarea:focus {
+[data-theme='light'] select:not(.MuiInputBase-input):focus,
+[data-theme='light'] input[type='text']:not(.MuiInputBase-input):focus,
+[data-theme='light'] input[type='email']:not(.MuiInputBase-input):focus,
+[data-theme='light'] input[type='password']:not(.MuiInputBase-input):focus,
+[data-theme='light'] input[type='date']:not(.MuiInputBase-input):focus,
+[data-theme='light'] input[type='datetime']:not(.MuiInputBase-input):focus,
+[data-theme='light']
+  input[type='datetime-local']:not(.MuiInputBase-input):focus,
+[data-theme='light'] input[type='number']:not(.MuiInputBase-input):focus,
+[data-theme='light'] textarea:not(.MuiInputBase-input):focus {
   box-shadow: 0 0 0 2px var(--color-highlight-light);
   border-color: var(--color-highlight-main);
 }
@@ -189,11 +187,11 @@ body {
 }
 
 .bg-white {
-  color: var(--background)
+  color: var(--background);
 }
 
 /* Button components */
-input[type="datetime-local"] {
+input[type='datetime-local'] {
   max-width: 240px;
 }
 
@@ -232,7 +230,6 @@ input[type="datetime-local"] {
   background-color: #dc2626;
 }
 
-
-[data-theme="dark"] .react-resizable-handle {
-background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 6' style='background-color:%23ffffff00' x='0px' y='0px' width='6px' height='6px'%3E%3Cg opacity='0.302'%3E%3Cpath d='M 6 6 L 0 6 L 0 4.2 L 4 4.2 L 4.2 4.2 L 4.2 0 L 6 0 L 6 6 L 6 6 Z' fill='%23ffda3e'/%3E%3C/g%3E%3C/svg%3E");
+[data-theme='dark'] .react-resizable-handle {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 6' style='background-color:%23ffffff00' x='0px' y='0px' width='6px' height='6px'%3E%3Cg opacity='0.302'%3E%3Cpath d='M 6 6 L 0 6 L 0 4.2 L 4 4.2 L 4.2 4.2 L 4.2 0 L 6 0 L 6 6 L 6 6 Z' fill='%23ffda3e'/%3E%3C/g%3E%3C/svg%3E");
 }

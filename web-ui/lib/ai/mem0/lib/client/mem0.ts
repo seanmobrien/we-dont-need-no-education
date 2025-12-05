@@ -97,8 +97,10 @@ export default class MemoryClient {
       (!this.organizationName && !!this.projectName) ||
       (!!this.organizationName && !this.projectName)
     ) {
-      console.warn(
-        'Warning: Both organizationName and projectName must be provided together when using either. This will be removed from version 1.0.40. Note that organizationName/projectName are being deprecated in favor of organizationId/projectId.',
+      log((l) =>
+        l.silly(
+          'Warning: Both organizationName and projectName must be provided together when using either. This will be removed from version 1.0.40. Note that organizationName/projectName are being deprecated in favor of organizationId/projectId.',
+        ),
       );
     }
   }
@@ -175,7 +177,10 @@ export default class MemoryClient {
         keys: args.length ? args[0] : [],
       },
     }).catch((error: any) => {
-      console.error('Failed to capture event:', error);
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'captureClientEvent',
+      });
     });
   }
   /**
@@ -273,9 +278,9 @@ export default class MemoryClient {
 
     const requestUrl = isSwaggerDocs
       ? new URL(
-          relativePath.replace(/^\/+/, ''),
-          env('MEM0_API_HOST'),
-        ).toString()
+        relativePath.replace(/^\/+/, ''),
+        env('MEM0_API_HOST'),
+      ).toString()
       : new URL(effectivePath, this.host).toString();
     const response = await fetch(requestUrl, {
       ...options,

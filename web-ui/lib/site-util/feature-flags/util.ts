@@ -2,10 +2,10 @@ import { LoggedError } from '@/lib/react-util';
 import {
   isKnownFeatureBooleanType,
   isKnownFeatureObjectType,
+  type KnownFeatureType,
 } from './known-feature';
 import type {
   FeatureFlagValueType,
-  KnownFeatureType,
   NativeFlag,
 } from './types';
 

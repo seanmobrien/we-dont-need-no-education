@@ -19,11 +19,49 @@
  */
 
 import {
-  AutoRefreshFeatureFlag,
   wellKnownFlagSync,
 } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+//import { isFlagsmithServerReady } from '@/lib/site-util/feature-flags/known-feature-defaults';
+
+import type { AutoRefreshFeatureFlag, MinimalNodeFlagsmith } from '@/lib/site-util/feature-flags/types';
+import type { FetchConfig } from './fetch-types';
 import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
-import { FetchConfig } from './fetch-types';
+import { flagsmithServerFactory } from '@/lib/site-util/feature-flags/server';
+import { LoggedError } from '@/lib/react-util';
+
+const FETCH_CONFIG_SALT = 'fetch-config-v1' as const;
+const FETCH_CONFIG_SERVER_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+export const FETCH_MANAGER_SINGLETON_KEY = '@noeducation/fetch-manager';
+
+let fetchConfigFlagsmith: MinimalNodeFlagsmith | undefined = undefined;
+const fetchConfigFlagsmithFactory = (): MinimalNodeFlagsmith => {
+  // If a fetchmanager-specific server already exists, reuse it
+  if (fetchConfigFlagsmith) {
+    return fetchConfigFlagsmith!;
+  }
+  // Otherwise, we need to create a special flagsmith instance that uses
+  // a version of fetch that is not provided by ServerFetchManager or we
+  // wind up with a circular dependency and stack-busting horribleness.
+  fetchConfigFlagsmith = flagsmithServerFactory({
+    fetch: globalThis.fetch,
+  });
+  // And schedule cleanup after timeout  expires
+  setTimeout(async () => {
+    const thisServer = fetchConfigFlagsmith;
+    fetchConfigFlagsmith = undefined;
+    try {
+      if (thisServer) {
+        await thisServer.close();
+      }
+    } catch (error) {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        source: 'fetch-config:flagsmith:close',
+        log: true,
+      });
+    }
+  }, FETCH_CONFIG_SERVER_TIMEOUT);
+  return fetchConfigFlagsmith;
+};
 
 /**
  * FetchConfigManager - Manages fetch configuration with auto-refresh
@@ -41,30 +79,62 @@ class FetchConfigManager {
 
   constructor() {
     this.#models_fetch_concurrency =
-      wellKnownFlagSync<'models_fetch_concurrency'>('models_fetch_concurrency');
+      wellKnownFlagSync<'models_fetch_concurrency'>('models_fetch_concurrency', {
+        load: false,
+        salt: FETCH_CONFIG_SALT,
+        flagsmith: fetchConfigFlagsmithFactory
+      });
     this.#fetch_cache_ttl = wellKnownFlagSync<'models_fetch_cache_ttl'>(
-      'models_fetch_cache_ttl',
+      'models_fetch_cache_ttl', {
+      load: false,
+      salt: FETCH_CONFIG_SALT,
+      flagsmith: fetchConfigFlagsmithFactory
+    }
     );
     this.#models_fetch_enhanced = wellKnownFlagSync<'models_fetch_enhanced'>(
-      'models_fetch_enhanced',
+      'models_fetch_enhanced', {
+      load: false,
+      salt: FETCH_CONFIG_SALT,
+      flagsmith: fetchConfigFlagsmithFactory
+    }
     );
     this.#models_fetch_trace_level =
-      wellKnownFlagSync<'models_fetch_trace_level'>('models_fetch_trace_level');
+      wellKnownFlagSync<'models_fetch_trace_level'>('models_fetch_trace_level', {
+        load: false,
+        salt: FETCH_CONFIG_SALT,
+        flagsmith: fetchConfigFlagsmithFactory
+      });
     this.#models_fetch_stream_buffer =
       wellKnownFlagSync<'models_fetch_stream_buffer'>(
-        'models_fetch_stream_buffer',
+        'models_fetch_stream_buffer', {
+        load: false,
+        salt: FETCH_CONFIG_SALT,
+        flagsmith: fetchConfigFlagsmithFactory
+      }
       );
     this.#fetch_stream_max_chunks =
       wellKnownFlagSync<'models_fetch_stream_max_chunks'>(
-        'models_fetch_stream_max_chunks',
+        'models_fetch_stream_max_chunks', {
+        load: false,
+        salt: FETCH_CONFIG_SALT,
+        flagsmith: fetchConfigFlagsmithFactory
+      }
       );
     this.#fetch_stream_max_total_bytes =
       wellKnownFlagSync<'models_fetch_stream_max_total_bytes'>(
-        'models_fetch_stream_max_total_bytes',
+        'models_fetch_stream_max_total_bytes', {
+        load: false,
+        salt: FETCH_CONFIG_SALT,
+        flagsmith: fetchConfigFlagsmithFactory
+      }
       );
     this.#fetch_dedup_writerequests =
       wellKnownFlagSync<'models_fetch_dedup_writerequests'>(
-        'models_fetch_dedup_writerequests',
+        'models_fetch_dedup_writerequests', {
+        load: false,
+        salt: FETCH_CONFIG_SALT,
+        flagsmith: fetchConfigFlagsmithFactory
+      }
       );
   }
 
@@ -161,7 +231,8 @@ export const fetchConfig = async (): Promise<Required<FetchConfig>> => {
  * Fetch configuration (sync).
  *
  * Returns cached value immediately, or defaults if not yet loaded.
- * Does NOT trigger refresh.
+ * Stale data will be refreshed asynchronously in order to be available
+ * on next call.
  *
  * @returns Cached fetch configuration or defaults
  */

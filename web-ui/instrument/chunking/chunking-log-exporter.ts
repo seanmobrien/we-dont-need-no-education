@@ -13,6 +13,7 @@ import type {
 import type { AnyValueMap } from '@opentelemetry/api-logs';
 import type { ExportResult } from '@opentelemetry/core';
 import { LoggedError } from '@/lib/react-util';
+import { log } from '@/lib/logger';
 
 export type LogChunkingOptions = {
   /** Maximum characters allowed in any single property or body before chunking */
@@ -87,6 +88,7 @@ export class ChunkingLogExporter implements LogRecordExporter {
         } catch (innerError) {
           // Unable to update body - exporting this record will likely fail / be skipped, so write details out to console
           // so that it's not completely invisible.
+          // NOTE: log methods would feed into the same process, which would cause infinite recursion
           console.warn(`Unable to update log record body - ${LoggedError.buildMessage(innerError)}.  Full record: ${base.body ?? '<null>'}`)
         }
       }

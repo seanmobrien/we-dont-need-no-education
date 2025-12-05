@@ -65,9 +65,7 @@ export const ChatExportMenu: React.FC<ChatExportMenuProps> = ({
       exportToCsv(turns, selectedItems, chatTitle);
       onSetExportMenuClosed();
     } catch (error) {
-      console.error('Failed to export CSV:', error);
-      // In a real app, you'd want to show a proper error message to the user
-      alert(error instanceof Error ? error.message : 'Failed to export CSV');
+      reportError(error);
     }
   };
 
@@ -76,11 +74,7 @@ export const ChatExportMenu: React.FC<ChatExportMenuProps> = ({
       exportToMarkdown(turns, selectedItems, chatTitle, chatCreatedAt);
       onSetExportMenuClosed();
     } catch (error) {
-      console.error('Failed to export Markdown:', error);
-      // In a real app, you'd want to show a proper error message to the user
-      alert(
-        error instanceof Error ? error.message : 'Failed to export Markdown',
-      );
+      reportError(error);
     }
   };
 

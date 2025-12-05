@@ -164,7 +164,7 @@ export type RequestInit = {
   /** A string indicating whether credentials will be sent with the request always, never, or only when sent to a same-origin URL. Sets request's credentials. */
   credentials?: RequestCredentials;
   /** A Headers object, an object literal, or an array of two-item arrays to set request's headers. */
-  headers?: Record<string, string> | Headers | [string, string][];
+  headers?: Record<string, string | string[]> | Headers | [string, string | string[]][];
   /** A cryptographic hash of the resource to be fetched by request. Sets request's integrity. */
   integrity?: string;
   /** A boolean to set request's keepalive. */
@@ -188,6 +188,18 @@ export type RequestInit = {
   window?: null;
 };
 
+/**
+ * Normalized RequestInit ready for use by got with valid Headers
+ * instance
+ */
 export type NormalizedRequestInit = Omit<RequestInit, 'headers'> & {
-  headers: Headers;
+  headers?: Record<string, string | string[]>;
 };
+
+/**
+ * Scaled-down minimalist interface for server-based FetchManager instances
+ */
+export type ServerFetchManager = {
+  fetch: (url: RequestInfo, init?: RequestInit) => Promise<Response>;
+  [Symbol.dispose](): void;
+}

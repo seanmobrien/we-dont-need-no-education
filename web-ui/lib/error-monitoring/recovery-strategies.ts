@@ -51,9 +51,9 @@ const uiOnly = (
   const recoveryAction =
     typeof action === 'string'
       ? {
-          id: action,
-          label: `Action ${action} not found.`,
-        }
+        id: action,
+        label: `Action ${action} not found.`,
+      }
       : action;
   if (typeof window !== 'undefined' && !isRunningOnEdge()) {
     return doIt;
@@ -317,7 +317,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         description: 'Clear the form and start over',
         action: () => {
           // This would need to be implemented per form
-          console.log('Reset form action');
+          log((l) => l.info('Reset form action'));
         },
       },
     ],
@@ -420,6 +420,7 @@ export async function attemptAutoRecovery(error: Error): Promise<boolean> {
     await defaultAction.action();
     return true;
   } catch (recoveryError) {
+    // NOTE: Using console.error here to avoid infinite recursion (log -> report -> attemptAutoRecovery -> log)
     console.error('Auto-recovery failed:', recoveryError);
     return false;
   }

@@ -103,7 +103,6 @@ export const useChatFetchWrapper = (): {
       throw new Error('No readable stream');
     }
     while (true) {
-      console.log('reading chunk from stream');
       const { done, value } = await reader.read();
       // Removed debug logging of chunk data to avoid cluttering logs and leaking sensitive data
       if (done) break;
@@ -156,7 +155,6 @@ export const useChatFetchWrapper = (): {
           }
         },
       });
-      console.log('completed readable stream as chunks');
       return new Response(readableStream, {
         headers: {
           'Content-Type': 'text/plain',

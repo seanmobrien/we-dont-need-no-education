@@ -304,7 +304,6 @@ export const POST = (req: NextRequest) => {
               yield chunk as unknown as Record<string, unknown>;
             }
           } finally {
-            log((l) => l.info('mergedChunks finally block', { isRateLimitError, chatHistoryId }));
             // After the SDK stream completes, if we detected a rate limit during
             // streaming, emit a structured data chunk that the client UI can
             // recognize and handle.
@@ -326,17 +325,25 @@ export const POST = (req: NextRequest) => {
         const encoder = new TextEncoder();
         const stream = new ReadableStream<Uint8Array>({
           async start(controller) {
-            log((l) => l.info('Stream started', { chatHistoryId }));
             try {
               for await (const chunk of mergedChunks()) {
                 const payload = JSON.stringify(chunk);
                 controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
               }
-              log((l) => l.info('Stream closing normally', { chatHistoryId }));
+              log((l) => l.verbose('Chat: Stream closing normally', { chatHistoryId }));
               controller.close();
             } catch (err) {
-              log((l) => l.error('Stream error', { error: err, chatHistoryId }));
-              controller.error(err as Error);
+              controller.error(LoggedError.isTurtlesAllTheWayDownBaby(err, {
+                log: true,
+                source: 'route:ai:chat mergedChunks',
+                severity: 'error',
+                data: {
+                  chatHistoryId,
+                  model,
+                  isRateLimitError,
+                  retryAfter,
+                },
+              }));
             }
           },
           cancel(reason) {

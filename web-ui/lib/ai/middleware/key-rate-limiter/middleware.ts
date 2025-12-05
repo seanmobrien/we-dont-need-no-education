@@ -93,8 +93,10 @@ export const retryRateLimitMiddlewareFactory = async (
       const startTime = Date.now();
       const modelClassification = rateLimitContext.modelClass;
 
-      console.log('Advanced rate limit middleware - doGenerate called');
-      console.log(`Model classification: ${modelClassification}`);
+      log((l) =>
+        l.info('Advanced rate limit middleware - doGenerate called'),
+      );
+      log((l) => l.info(`Model classification: ${modelClassification}`));
 
       // Check if current model is available, attempt fallback if not
       const currentProvider = getCurrentProvider();
@@ -126,7 +128,6 @@ export const retryRateLimitMiddlewareFactory = async (
         const result = await doGenerate();
 
         recordRequestMetrics(startTime, modelClassification, 'generate');
-        console.log('doGenerate finished successfully');
         return result;
       } catch (error) {
         recordRequestMetrics(startTime, modelClassification, 'generate');
@@ -206,8 +207,10 @@ export const retryRateLimitMiddlewareFactory = async (
                   rateLimitErrorInfo?.isRetry &&
                   rateLimitErrorInfo.retryAfter
                 ) {
-                  console.log(
-                    `Stream rate limit detected: ${rateLimitErrorInfo.retryAfter}s`,
+                  log((l) =>
+                    l.info(
+                      `Stream rate limit detected: ${rateLimitErrorInfo.retryAfter}s`,
+                    ),
                   );
                   disableModelFromRateLimit(
                     currentModelKey,
@@ -227,8 +230,10 @@ export const retryRateLimitMiddlewareFactory = async (
               recordRequestMetrics(startTime, modelClassification, 'stream');
 
               if (!hasError) {
-                console.log('doStream finished successfully');
-                console.log(`Generated text length: ${generatedText.length}`);
+                log((l) => l.info('doStream finished successfully'));
+                log((l) =>
+                  l.info(`Generated text length: ${generatedText.length}`),
+                );
               }
             },
           });
@@ -263,7 +268,6 @@ export const retryRateLimitMiddlewareFactory = async (
     },
 
     transformParams: async ({ params }) => {
-      console.log('transformParams called - checking model availability');
 
       const modelClassification = rateLimitContext.modelClass;
       const currentProvider =

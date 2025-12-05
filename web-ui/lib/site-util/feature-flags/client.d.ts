@@ -1,9 +1,7 @@
 import type { IFlagsmith } from 'flagsmith';
-import {
-  AllFeatureFlagsDefault,
-  type KnownFeatureType,
-  type FeatureFlagStatus,
-} from './known-feature';
+import type { KnownFeatureType } from './known-feature';
+import type { FeatureFlagStatus } from './types';
+import type { AllFeatureFlagsDefault } from './known-feature-defaults';
 
 /**
  * @module lib/site-util/feature-flags/client

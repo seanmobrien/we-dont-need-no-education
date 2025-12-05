@@ -4,7 +4,8 @@ import type {
   ProviderV2,
 } from '@ai-sdk/provider';
 import { isAiProviderType, type AiModelType, type AiProviderType } from '@/lib/ai/core';
-import { wellKnownFlag, type AutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import type { AutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/types';
+import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 import { KnownFeatureType } from '@/lib/site-util/feature-flags';
 import { LoggedError } from '@/lib/react-util/errors/logged-error/logged-error-class';
 import { log } from '@/lib/logger';
@@ -23,12 +24,12 @@ export const asAutoRefreshFlagKey = <P extends AiProviderType>(
   provider: P,
 ): AutoRefreshFlagKey<P> => AutoRefreshProviderFlagKeyMap[provider];
 
-export const getModelFlag = <P extends AiProviderType>(
+export const getModelFlag = async <P extends AiProviderType>(
   provider: P,
 ): Promise<AutoRefreshFeatureFlag<AutoRefreshFlagKey<P>>> => {
   if (isAiProviderType(provider)) {
     const flagType = asAutoRefreshFlagKey(provider);
-    return wellKnownFlag(flagType);
+    return await wellKnownFlag(flagType, { load: true });
   }
   throw new TypeError(`Invalid provider for model flag: ${provider}`);
 };
@@ -157,7 +158,7 @@ export const initializeProviderConfig = async (): Promise<void> => {
     // Each supported provider has it's own feature flag
     // that controls it's availability, model selection,
     // and provider configuration.
-    ...SupportedProviders.map(p => refreshFlag(p, getModelFlag(p))),
+    // ...SupportedProviders.map(p => refreshFlag(p, getModelFlag(p))),
     // In addition to the model configuration flags, there
     // are a handful of MCP-related flags that need to be 
     // resolved and available for optimal functionality.
