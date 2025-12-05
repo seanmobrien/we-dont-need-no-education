@@ -80,4 +80,6 @@ export interface ChatPanelContextValue {
   };
   dockPanel: HTMLDivElement | null;
   setDockPanel: (panel: HTMLDivElement | null) => void;
+  lastCompletionTime: Date | null;
+  setLastCompletionTime: Dispatch<SetStateAction<Date | null>>;
 }

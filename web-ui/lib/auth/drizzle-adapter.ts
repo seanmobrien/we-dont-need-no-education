@@ -1,4 +1,5 @@
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
+import { log } from '@/lib/logger';
 import { schema, drizDbWithInit } from '@/lib/drizzle-db';
 import { AdapterAccount } from '@auth/core/adapters';
 import { and, sql } from 'drizzle-orm';
@@ -19,7 +20,7 @@ export const setupDrizzleAdapter = () =>
     ret.linkAccount = async function (data: AdapterAccount) {
       // base impl:
       // await client.insert(accountsTable).values(data)
-      console.log('linkAccount', JSON.stringify(data));
+      log((l) => l.debug('linkAccount', JSON.stringify(data)));
       await db
         .insert(schema.accounts)
         .values({ ...data, userId: Number(data.userId) })

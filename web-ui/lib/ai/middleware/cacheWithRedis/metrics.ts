@@ -1,4 +1,5 @@
 import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util';
 import { appMeters } from '@/lib/site-util/metrics';
 
 // OpenTelemetry Metrics - Enterprise observability
@@ -385,7 +386,10 @@ class MetricsCollector {
       try {
         hook(metrics);
       } catch (error) {
-        console.error('Error in metrics hook:', error);
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'metricsCollector',
+        });
       }
     });
   }
@@ -395,7 +399,10 @@ class MetricsCollector {
       try {
         hook(event);
       } catch (error) {
-        console.error('Error in event hook:', error);
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'metricsCollector',
+        });
       }
     });
   }
@@ -411,8 +418,8 @@ export function setupConsoleMetrics(): () => void {
       log((l) =>
         l.info(
           `📊 Cache Metrics - Hit Rate: ${(metrics.hitRate * 100).toFixed(1)}%, ` +
-            `Hits: ${metrics.cacheHits}, Misses: ${metrics.cacheMisses}, ` +
-            `Jail Promotions: ${metrics.jailPromotions}, Errors: ${metrics.cacheErrors}`,
+          `Hits: ${metrics.cacheHits}, Misses: ${metrics.cacheMisses}, ` +
+          `Jail Promotions: ${metrics.jailPromotions}, Errors: ${metrics.cacheErrors}`,
         ),
       );
     }

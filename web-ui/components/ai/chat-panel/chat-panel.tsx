@@ -144,6 +144,7 @@ const ChatPanel = ({ page }: { page: string }) => {
     isFloating,
     setFloating,
     debounced: { setSize: debouncedSetSize },
+    setLastCompletionTime,
   } = useChatPanelContext();
 
   // Using ref for input element in order to minimize renders on text change
@@ -209,7 +210,11 @@ const ChatPanel = ({ page }: { page: string }) => {
     onToolCall: ({ toolCall }) => {
       onClientToolRequest({ toolCall, addToolResult });
     },
-    onFinish: stable_onFinish,
+    onFinish: (message) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      stable_onFinish(message as any);
+      setLastCompletionTime(new Date());
+    },
     onData: (data) => {
       if (isAnnotatedRetryMessage(data)) {
         onModelTimeout(data);
@@ -440,7 +445,9 @@ const ChatPanel = ({ page }: { page: string }) => {
           timeoutIds.push(
             setTimeout(() => {
               onRateLimitTimeout(thisModel);
-              console.warn('Rate limit timeout expired, resending message.');
+              log((l) =>
+                l.warn('Rate limit timeout expired, resending message.'),
+              );
               regenerate();
             }, rateLimitExpires),
           );

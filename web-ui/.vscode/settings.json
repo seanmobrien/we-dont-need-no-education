@@ -12,12 +12,10 @@
       "file": ".github/copilot/instructions/vercel-ai.md",
       "name": "vercel-ai",
       "description": "Use this instruction file for Vercel AI projects to get tailored code suggestions"
-    },
+    }
   ],
   "editor.tabSize": 2,
-  "typescript.preferences.autoImportSpecifierExcludeRegexes": [
-    "^@mui/[^/]+$"
-  ],
+  "typescript.preferences.autoImportSpecifierExcludeRegexes": ["^@mui/[^/]+$"],
   "debug.hideLauncherWhileDebugging": true,
   "launch": {
     "configurations": [],
@@ -38,13 +36,12 @@
     "(rsc)/**": true
   },
   "explorer.excludeGitIgnore": true,
-  "jest.disabledWorkspaceFolders": [
-    ".upsort"
-  ],
+  "jest.disabledWorkspaceFolders": [".upsort"],
   "jest.useJest30": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "testing.automaticallyOpenTestResults": "neverOpen",
   "[typescript]": {
     "editor.defaultFormatter": "vscode.typescript-language-features"
   },
+  "debug.javascript.autoAttachFilter": "onlyWithFlag"
 }

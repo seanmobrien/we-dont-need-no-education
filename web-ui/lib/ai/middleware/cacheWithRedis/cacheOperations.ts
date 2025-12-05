@@ -150,7 +150,10 @@ export const handleCacheJail = async (
       metricsCollector.recordError(cacheKey, String(jailError));
     }
     if (config.enableLogging) {
-      console.error(`Error managing ${context}cache jail:`, jailError);
+      LoggedError.isTurtlesAllTheWayDownBaby(jailError, {
+        log: true,
+        source: 'cacheWithRedis',
+      });
     }
   }
 };

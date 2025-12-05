@@ -238,22 +238,22 @@ const checkAccess = async (req: NextRequest) => {
     resource_access: { [key: string]: string[] } | undefined,
   ) => {
     if (!resource_access) {
-      console.log('No resource access found in session');
+      log((l) => l.warn('No resource access found in session'));
       return false;
     }
     const mcpToolAccess = resource_access['mcp-tool'];
     if (!mcpToolAccess) {
-      console.log('No mcp-tool access found in session resource access');
+      log((l) => l.warn('No mcp-tool access found in session resource access'));
       return false;
     }
     if (
       !mcpToolAccess.includes(KnownScopeValues[KnownScopeIndex.ToolRead]) &&
       !mcpToolAccess.includes(KnownScopeValues[KnownScopeIndex.ToolReadWrite])
     ) {
-      console.log(
+      log((l) => l.warn(
         'tool-read or tool-write scope not found in mcp-tool access',
         mcpToolAccess,
-      );
+      ));;
       return false;
     }
     return true;
@@ -261,7 +261,7 @@ const checkAccess = async (req: NextRequest) => {
   const checkSession = async () => {
     const session: Session | null = await auth();
     if (!session) {
-      console.log('No session found');
+      log((l) => l.warn('No session found'));
       return false;
     }
     return checkResource(session.resource_access);
@@ -269,7 +269,7 @@ const checkAccess = async (req: NextRequest) => {
   const checkToken = async () => {
     const token = await extractToken(req);
     if (!token) {
-      console.log('No token found');
+      log((l) => l.warn('No token found'));
       return false;
     }
     return checkResource(token.resource_access);
@@ -319,7 +319,7 @@ const handler = wrapRouteRequest(
             serverInfo: safeSerialize.serverDescriptor(server),
           }),
         );
-        console.log('=== Registering MCP tools ===');
+        log((l) => l.info('=== Registering MCP tools ==='));
         server.registerTool(
           'playPingPong',
           pingPongToolConfig,

@@ -30,6 +30,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 
 import { CookieJar } from 'tough-cookie';
+import { log } from '@/lib/logger';
 import { got } from 'got';
 import { parse as parseHtml } from 'node-html-parser';
 import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
@@ -426,8 +427,10 @@ export class SystemTokenStore {
         issuerUrl.protocol === 'http:' &&
         !issuerUrl.hostname.includes('localhost')
       ) {
-        console.warn(
-          'SystemTokenStore: Using HTTP in production is not recommended',
+        log((l) =>
+          l.warn(
+            'SystemTokenStore: Using HTTP in production is not recommended',
+          ),
         );
       }
     } catch {

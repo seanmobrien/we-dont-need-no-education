@@ -47,11 +47,11 @@ describe('FetchResponse', () => {
   // ... (rest of file)
 
   describe('constructor', () => {
-    it('should create a response with default values', () => {
+    it('should create a response with default values', async () => {
       const response = new FetchResponse(Buffer.from('test'));
 
-      expect(response.body).toBeInstanceOf(Buffer);
-      expect(response.body.toString()).toBe('test');
+      expect(response.body).toBeInstanceOf(ReadableStream);
+      expect(await response.text()).toBe('test');
       expect(response.status).toBe(200);
       expect(response.headers).toBeInstanceOf(Headers);
     });
@@ -74,15 +74,13 @@ describe('FetchResponse', () => {
     it('should handle empty body', () => {
       const response = new FetchResponse(Buffer.alloc(0));
 
-      expect(response.body).toBeInstanceOf(Buffer);
-      expect(response.body.length).toBe(0);
+      expect(response.body).toBeNull();
     });
 
     it('should handle null body by allocating empty buffer', () => {
       const response = new FetchResponse(null as any);
 
-      expect(response.body).toBeInstanceOf(Buffer);
-      expect(response.body.length).toBe(0);
+      expect(response.body).toBeNull();
     });
   });
 
@@ -708,8 +706,7 @@ describe('FetchResponse with ReadableStream', () => {
     const stream = createReadableStream(['stream', ' ', 'data']);
     const response = new FetchResponse(stream);
 
-    expect(response.body).toBeInstanceOf(Buffer);
-    expect(response.body.length).toBe(0);
+    expect(response.body).toBeInstanceOf(ReadableStream);
     expect((response as any).streamBody).toBe(stream);
 
     const text = await response.text();

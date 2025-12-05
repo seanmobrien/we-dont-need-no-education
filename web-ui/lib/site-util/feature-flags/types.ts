@@ -8,6 +8,14 @@ import type {
   ObjectFeatureFlagType,
   StringFeatureFlagType,
 } from './known-feature';
+import type { Flagsmith } from 'flagsmith-nodejs';
+
+export type MinimalNodeFlagsmith = Pick<Flagsmith, 'getIdentityFlags' | 'close'>;
+
+export type GetFeatureFlagOptions = {
+  flagsmith?: () => MinimalNodeFlagsmith;
+  userId?: string | 'server';
+};
 
 export type { KnownFeatureType } from './known-feature';
 
@@ -120,3 +128,42 @@ export type NativeFlag = {
    */
   isDefault?: boolean;
 };
+
+export type AutoRefreshFeatureFlag<T extends KnownFeatureType> = {
+  get value(): KnownFeatureValueType<T>;
+  get lastError(): Error | null;
+  get expiresAt(): number;
+  get ttlRemaining(): number;
+  get isStale(): boolean;
+  get isEnabled(): boolean;
+  get userId(): string;
+  get isDisposed(): boolean;
+  get isInitialized(): boolean;
+
+  addOnChangedListener(listener: () => void): void;
+  removeOnChangedListener(listener: () => void): void;
+  addOnDisposedListener(listener: () => void): void;
+  removeOnDisposedListener(listener: () => void): void;
+  forceRefresh(): Promise<KnownFeatureValueType<T>>;
+  [Symbol.dispose]: () => void;
+};
+
+export type AutoRefreshFeatureFlagOptions<T extends KnownFeatureType> = {
+  key: T;
+  userId?: string | 'server';
+  initialValue?: KnownFeatureValueType<T>;
+  ttl?: number;
+  load?: boolean;
+  flagsmith?: () => MinimalNodeFlagsmith;
+};
+
+export type WellKnownFlagOptions = {
+  salt?: string;
+  userId?: string | 'server';
+  flagsmith?: () => MinimalNodeFlagsmith;
+  load?: boolean;
+  ttl?: number;
+};
+
+export type WellKnownFlagBrand =
+  `@no-education/features-flags/auto-refresh/${KnownFeatureType}::${string}`;

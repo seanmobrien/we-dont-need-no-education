@@ -1,4 +1,4 @@
-import got, { Response as GotResponse, OptionsOfBufferResponseBody } from 'got';
+import got, { Response as GotResponse, OptionsInit, OptionsOfBufferResponseBody } from 'got';
 import type { Readable } from 'stream';
 import type { IncomingMessage } from 'http';
 import { EventEmitter } from 'events';
@@ -10,7 +10,7 @@ import {
 type Handler = (...args: unknown[]) => void;
 import { getRedisClient } from '@/lib/redis-client';
 import { makeResponse } from '../response';
-import fetchConfig, { fetchConfigSync } from './fetch-config';
+import { fetchConfig, fetchConfigSync, FETCH_MANAGER_SINGLETON_KEY } from './fetch-config';
 import { LoggedError } from '@/lib/react-util';
 import { createInstrumentedSpan } from '../utils';
 import { log } from '@/lib/logger';
@@ -18,18 +18,14 @@ import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider'
 import { CacheStrategies } from './cache-strategies';
 import { StreamingStrategy } from './streaming-strategy';
 import { BufferingStrategy } from './buffering-strategy';
-import type { CachedValue, NormalizedRequestInit, RequestInfo, RequestInit } from './fetch-types';
-import { deprecate } from '../../utils';
-
-const FETCH_MANAGER_SINGLETON_KEY = '@noeducation/fetch-manager';
-
+import type { CachedValue, RequestInfo, RequestInit, ServerFetchManager } from './fetch-types';
 
 const DEFAULT_CONCURRENCY = 8;
 const DEFAULT_CACHE_SIZE = 500;
 const DEFAULT_STREAM_DETECT_BUFFER = 4 * 1024;
 const DEFAULT_STREAM_BUFFER_MAX = 64 * 1024;
 const DEFAULT_MAX_RESPONSE_SIZE = 10 * 1024 * 1024; // 10MB
-const DEFAULT_REQUEST_TIMEOUT = 30000; // 30 seconds
+const DEFAULT_REQUEST_TIMEOUT = 60 * 1000; // 60 seconds
 
 /**
  * Configuration options for FetchManager
@@ -58,7 +54,143 @@ const DEFAULT_CONFIG: FetchManagerConfig = {
   requestTimeout: DEFAULT_REQUEST_TIMEOUT,
 };
 
-export class FetchManager {
+
+
+const mergeHeaders = (
+  target: Record<string, string | string[] | undefined>,
+  source: Headers | Record<string, string | string[]> | [string, string | string[]][] | undefined
+) => {
+  if (!source) return;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const getMatchingKey = (obj: Record<string, any>, key: string) => {
+    const lower = key.toLowerCase();
+    return Object.keys(obj).find((k) => k.toLowerCase() === lower) || key;
+  };
+
+  const processEntry = (key: string, value: string | string[] | undefined | null) => {
+    if (value === undefined || value === null) return;
+
+    const matchingKey = getMatchingKey(target, key);
+    const existing = target[matchingKey];
+
+    if (matchingKey.toLowerCase() === 'user-agent') {
+      const existingStr = Array.isArray(existing)
+        ? existing.join(' ')
+        : (existing as string | undefined);
+      const newStr = Array.isArray(value) ? value.join(' ') : value;
+      if (existingStr) {
+        target[matchingKey] = `${existingStr} ${newStr}`;
+      } else {
+        target[matchingKey] = newStr;
+      }
+      return;
+    }
+
+    if (existing !== undefined) {
+      if (Array.isArray(existing)) {
+        if (Array.isArray(value)) {
+          target[matchingKey] = [...existing, ...value];
+        } else {
+          target[matchingKey] = [...existing, value];
+        }
+      } else {
+        // Existing is string
+        if (Array.isArray(value)) {
+          target[matchingKey] = [existing as string, ...value];
+        } else {
+          // Both strings -> convert to array
+          target[matchingKey] = [existing as string, value];
+        }
+      }
+    } else {
+      target[matchingKey] = value;
+    }
+  };
+
+  if (source instanceof Headers) {
+    source.forEach((v, k) => processEntry(k, v));
+  } else if (Array.isArray(source)) {
+    source.forEach(([k, v]) => processEntry(k, v));
+  } else {
+    Object.entries(source).forEach(([k, v]) => processEntry(k, v));
+  }
+};
+
+export const normalizeRequestInit = ({
+  requestInfo,
+  requestInit,
+  defaults,
+  overrides,
+}: {
+  requestInfo: RequestInfo;
+  requestInit: RequestInit | undefined;
+  defaults?: Partial<OptionsInit>;
+  overrides?: Partial<OptionsInit>;
+}): [string, OptionsInit] => {
+  let url: string;
+  let init: RequestInit = requestInit || {};
+
+  if (!requestInfo) {
+    throw new Error('Invalid requestInfo');
+  }
+
+  if (typeof requestInfo === 'string') {
+    url = requestInfo;
+  } else if (requestInfo instanceof URL) {
+    url = requestInfo.toString();
+  } else if ('url' in requestInfo) {
+    url = requestInfo.url;
+    init = { ...requestInfo, ...init };
+  } else {
+    throw new Error('Invalid requestInfo');
+  }
+
+  const options: OptionsInit = {
+    method: 'GET',
+    ...defaults,
+    ...init,
+    ...overrides,
+  } as OptionsInit;
+
+  // Handle body: null -> undefined
+  if (options.body === null) {
+    options.body = undefined;
+  }
+
+  const headers: Record<string, string | string[] | undefined> = {};
+
+  if (defaults?.headers) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mergeHeaders(headers, defaults.headers as any);
+  }
+
+  if (init.headers) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mergeHeaders(headers, init.headers as any);
+  }
+
+  if (overrides?.headers) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mergeHeaders(headers, overrides.headers as any);
+  }
+
+  options.headers = headers;
+
+  const cleanOptions: OptionsInit = {};
+  for (const [k, v] of Object.entries(options)) {
+    if (v !== undefined && v !== null) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (cleanOptions as any)[k] = v;
+    }
+  }
+
+  return [url, cleanOptions];
+};
+
+
+
+export class FetchManager implements ServerFetchManager {
   private cache: LRUCache<string, Promise<CachedValue>>;
   private inflight = new Map<string, Promise<CachedValue>>();
   private semManager: SemaphoreManager;
@@ -149,65 +281,13 @@ export class FetchManager {
       fetchConfig: fetchConfigSync,
       releaseSemaphore: () => this.semManager.sem.release(),
     });
-    this.dispose = deprecate(
-      () => {
-        this[Symbol.dispose]();
-      },
-      'FetchManager.dispose() is deprecated. Please use FetchManager[Symbol.dispose]() instead.',
-      'DEP0002',
-    );
   }
-
-  private normalizeRequestInit(requestInit: RequestInit | undefined): RequestInit | undefined {
-    if (!requestInit) return requestInit;
-    const { headers: headersFromInit } = requestInit ?? {};
-    const headers = new Headers();
-    const append = (key: unknown | [string, string], value: string | number) => {
-      if (Array.isArray(key)) {
-        if (key.length >= 2) {
-          let idx = 0;
-          while (idx * 2 < key.length) {
-            append(key[idx * 2], key[idx * 2 + 1]);
-            idx++;
-          }
-        } else {
-          append(String(key[0]), value);
-        }
-        return;
-      }
-      if (value === null || value === undefined || value === '') { return; }
-      const normalKey = String(key).toLowerCase().trim();
-      switch (normalKey) {
-        case 'user-agent':
-          const current = headers.get(normalKey);
-          headers.set(normalKey, current ? `${current} ${value}` : String(value));
-          break;
-        default:
-          headers.append(normalKey, String(value));
-          break;
-      }
-    };
-    if (headersFromInit) {
-      if (Array.isArray(headersFromInit) && headersFromInit.length) {
-        headersFromInit.forEach(([k, v]) => append(k, v));
-      } else if ('forEach' in headersFromInit && typeof headersFromInit.forEach === 'function') {
-        headersFromInit.forEach(([k, v]) => append(k, v))
-      } else {
-        Object.entries(headersFromInit).forEach(([k, v]) => append(k, v));
-      }
-    }
-    return {
-      ...requestInit,
-      headers,
-    } satisfies NormalizedRequestInit;
-  }
-
   /**
    * Lazy refresh of configuration (AutoRefreshFeatureFlag pattern).
    * Called on each fetch() to check if config needs refreshing.
    * Triggers async refresh if stale, returns immediately.
    */
-  private refreshConfigIfStale(): void {
+  private async refreshConfigIfStale(): Promise<void> {
     // Really all the "refresh" does is validate flags have performed an initial
     // load, so OK to call frequently.  Deduplication occurs at the flag level
     // within the config manager.
@@ -223,6 +303,7 @@ export class FetchManager {
           this._pendingConfigRefresh = null;
         });
     }
+    await this._pendingConfigRefresh;
   }
 
   /**
@@ -263,46 +344,49 @@ export class FetchManager {
     this.dedupWriteRequests = cfg.dedup_writerequests;
   }
 
-  dispose(): void {
-    this[Symbol.dispose]();
-  }
-
   [Symbol.dispose](): void {
     this.cache.clear();
     this.inflight.clear();
     log((l) => l.info('[fetch] FetchManager disposed'));
   }
 
-  private normalizeUrl(input: RequestInfo): string {
-    if (typeof input === 'string' || input instanceof URL) return String(input);
-    const reqLike = input as unknown as { url?: string };
-    if (reqLike && reqLike.url) return reqLike.url;
-    throw new Error('Unsupported RequestInfo type');
-  }
-
   private async doGotFetch(url: string, init?: RequestInit) {
-    const normalInit = this.normalizeRequestInit(init);
-    const method = (normalInit?.method || 'GET').toUpperCase();
-    const headers =
-      normalInit?.headers && !(normalInit.headers instanceof Headers)
-        ? (normalInit.headers as Record<string, string>)
-        : undefined;
-    const gotOptions: Record<string, unknown> = {
-      method,
-      headers,
-      timeout: normalInit?.timeout,
-      isStream: false,
-      retry: { limit: 1 },
-      throwHttpErrors: false,
-      responseType: 'buffer',
-    };
-    if (normalInit?.body != null) gotOptions.body = normalInit.body;
-
+    const [, gotOptions] = normalizeRequestInit({
+      requestInfo: url,
+      requestInit: init,
+      defaults: {
+        method: 'GET',
+        isStream: false,
+        retry: { limit: 1 },
+        throwHttpErrors: false,
+        responseType: 'buffer',
+      }
+    });
+    log((l) => l.info(`GOT Fetch: About to read [${url}] using - ${JSON.stringify(gotOptions)}`));
     await this.semManager.sem.acquire();
     try {
+      // Normalize timeout to object format for got
+      const timeoutVal = gotOptions.timeout;
+      let requestTimeout = this.config.requestTimeout;
+      if (typeof timeoutVal === 'number') {
+        requestTimeout = timeoutVal;
+      } else if (timeoutVal && typeof timeoutVal === 'object' && !Array.isArray(timeoutVal)) {
+        // Cast to any to access potential 'request' property safely
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const t = timeoutVal as any;
+        requestTimeout = t.request ?? requestTimeout;
+      }
+
+      const safeOptions = {
+        ...gotOptions,
+        timeout: {
+          request: requestTimeout
+        }
+      };
+
       const res: GotResponse<Buffer> = await got(
         url,
-        gotOptions as unknown as OptionsOfBufferResponseBody,
+        safeOptions as unknown as OptionsOfBufferResponseBody,
       );
       const headersObj: Record<string, string> = {};
       for (const [k, v] of Object.entries(res.headers || {})) {
@@ -324,19 +408,19 @@ export class FetchManager {
    * Direct streaming fetch without caching
    */
   async fetchStream(input: RequestInfo, init?: RequestInit) {
-    const normalInit = this.normalizeRequestInit(init);
-    const url = this.normalizeUrl(input);
-    const method = (normalInit?.method || 'GET').toUpperCase();
-    const options: Record<string, unknown> = {
-      method,
-      headers: normalInit?.headers,
-      timeout: normalInit?.timeout,
-      isStream: true,
-      retry: { limit: 1 },
-    };
+    const [normalizedUrl, options] = normalizeRequestInit({
+      requestInfo: input,
+      requestInit: init,
+      defaults: {
+        method: 'GET',
+        isStream: true as const,
+        retry: { limit: 1 },
+      }
+    });
     await this.semManager.sem.acquire();
     try {
-      const stream = got.stream(url, options);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const stream = got.stream(normalizedUrl, options as any);
       const releaseOnce = () => {
         try {
           this.semManager.sem.release();
@@ -357,29 +441,33 @@ export class FetchManager {
    * See main JSDoc on exported `fetch` function for full documentation.
    */
   async fetch(input: RequestInfo, init?: RequestInit) {
-    const normalInit = this.normalizeRequestInit(init);
+    const [url, normalInit] = normalizeRequestInit({
+      requestInfo: input,
+      requestInit: init,
+    });
     // Lazy refresh: check if config is stale and trigger async refresh
-    this.refreshConfigIfStale();
+    await this.refreshConfigIfStale();
 
     try {
       const cfg = fetchConfigSync();
       if (!cfg.enhanced) {
-        const domFetch = (globalThis as unknown as { fetch?: unknown })
-          .fetch as unknown;
+        const domFetch = globalThis.fetch;
         if (typeof domFetch === 'function') {
-          return (domFetch as (...args: unknown[]) => Promise<Response>)(
-            input as unknown,
-            normalInit as unknown,
+          return domFetch(
+            input,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            init as any,
           );
         }
       }
-    } catch {
+    } catch (e) {
       /* continue with enhanced */
+      LoggedError.isTurtlesAllTheWayDownBaby(e, {
+        source: 'fetch:config-sync-fail',
+        log: true,
+      });
     }
-
-    const url = this.normalizeUrl(input);
-    const method = (normalInit?.method || 'GET').toUpperCase();
-
+    const method = (normalInit.method || 'GET').toUpperCase();
     if (method === 'GET') {
       const cacheKey = `${method}:${url}`;
       const instrumented = await createInstrumentedSpan({
@@ -411,20 +499,20 @@ export class FetchManager {
         await this.semManager.sem.acquire();
         let gotStream: Readable;
         try {
-          const headersForGot =
-            normalInit?.headers && !(normalInit.headers instanceof Headers)
-              ? (normalInit.headers as Record<string, string>)
-              : undefined;
-
-          // Apply timeout from config or init parameter
-          const timeout = normalInit?.timeout ?? this.config.requestTimeout;
+          const timeoutVal = normalInit.timeout;
+          let requestTimeout = this.config.requestTimeout;
+          if (typeof timeoutVal === 'number') {
+            requestTimeout = timeoutVal;
+          } else if (timeoutVal && typeof timeoutVal === 'object') {
+            requestTimeout = timeoutVal.request ?? requestTimeout;
+          }
 
           gotStream = got.stream(url, {
             method: 'GET',
-            headers: headersForGot,
+            headers: normalInit.headers,
             retry: { limit: 1 },
             timeout: {
-              request: timeout,
+              request: requestTimeout,
             },
           });
 
@@ -508,7 +596,7 @@ export class FetchManager {
       attributes: { 'http.method': method, 'http.url': url },
     });
     return await instrumented.executeWithContext(async (span) => {
-      const v = await this.doGotFetch(url, normalInit);
+      const v = await this.doGotFetch(url, normalInit as unknown as RequestInit);
       span.setAttribute('http.status_code', v.statusCode);
       return makeResponse(v);
     });
@@ -535,7 +623,7 @@ export const resetFetchManager = (): void => {
     FETCH_MANAGER_SINGLETON_KEY,
   );
   if (existing) {
-    existing.dispose();
+    existing[Symbol.dispose]();
   }
   SingletonProvider.Instance.delete(FETCH_MANAGER_SINGLETON_KEY);
 };

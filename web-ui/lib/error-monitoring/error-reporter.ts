@@ -122,6 +122,7 @@ export class ErrorReporter implements ErrorReporterInterface {
         }
         this.reportError(args.error, severity, args.context);
       } catch (e) {
+        // console.error is needed here to avoid infinite recursion
         console.error('Failed to report error', e);
       }
     };
@@ -407,7 +408,7 @@ export class ErrorReporter implements ErrorReporterInterface {
   public setupGlobalHandlers(): void {
     if (typeof window === 'undefined') return;
     if (isRunningOnEdge()) {
-      console.log('setupGlobalHandlers::edge');
+      log((l) => l.info('setupGlobalHandlers::edge'));
     }
 
     // Unhandled errors

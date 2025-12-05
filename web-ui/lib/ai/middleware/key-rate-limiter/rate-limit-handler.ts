@@ -15,8 +15,10 @@ export function disableModelFromRateLimit(
   retryAfter: number,
 ): void {
   const disableDurationMs = Math.max(retryAfter * 1000, 60000); // At least 1 minute
-  console.warn(
-    `Rate limit detected for ${modelKey}, disabling for ${disableDurationMs}ms`,
+  log((l) =>
+    l.warn(
+      `Rate limit detected for ${modelKey}, disabling for ${disableDurationMs}ms`,
+    ),
   );
   temporarilyDisableModel(modelKey, disableDurationMs);
   rateLimitMetrics.recordError('rate_limit_disable', modelKey);
@@ -47,7 +49,7 @@ export async function handleRateLimitError(
         modelClassification,
       );
       if (fallbackModelKey && fallbackModelKey !== currentModelKey) {
-        console.log(`Attempting fallback to: ${fallbackModelKey}`);
+        log((l) => l.info(`Attempting fallback to: ${fallbackModelKey}`));
         // Note: Would need to retry with fallback model here
         // For now, enqueue for later processing
       }

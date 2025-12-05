@@ -1,4 +1,5 @@
 import { config } from './common';
+import { log } from '@/lib/logger';
 import { env } from '@/lib/site-util/env';
 import {
   ApplicationInsights,
@@ -150,7 +151,8 @@ const getAppInsights = () => {
 export { getAppInsights, getReactPlugin, getClickPlugin };
 
 const instrument = () => {
-  console.log(
+  // Logging is not availalbe until after instrumentation is complete
+  console.info(
     'Instrumentation is not supported in the browser environment....nothing to do.',
   );
   return Promise.resolve(void 0);

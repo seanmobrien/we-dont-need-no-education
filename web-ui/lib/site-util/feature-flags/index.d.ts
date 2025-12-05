@@ -1,10 +1,13 @@
 import type {
   KnownFeatureKeyMap,
-  AllFeatureFlagsDefault,
   KnownFeatureType,
+} from './known-feature';
+
+import type {
+  AllFeatureFlagType,
   FeatureFlagStatus,
   AllFeatureFlagStatus,
-} from './known-feature';
+} from './types';
 
 import type { FeatureFlagsApi, defaultFlags } from './context';
 
@@ -19,7 +22,7 @@ declare module '@/lib/site-util/feature-flags' {
 
   export type {
     KnownFeatureKeyMap as KnownFeature,
-    AllFeatureFlagsDefault,
+    AllFeatureFlagType as AllFeatureFlagsDefault,
     KnownFeatureType,
     FeatureFlagStatus,
     AllFeatureFlagStatus,

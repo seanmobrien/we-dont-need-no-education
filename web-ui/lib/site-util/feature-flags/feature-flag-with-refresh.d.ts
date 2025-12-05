@@ -702,4 +702,6 @@ declare module '@/lib/site-util/feature-flags/feature-flag-with-refresh' {
   export function createAutoRefreshFeatureFlagSync<T extends KnownFeatureType>(
     options: AutoRefreshFeatureFlagOptions<T> & { load?: boolean },
   ): AutoRefreshFeatureFlag<T>;
+
+  export const FLAGSMITH_SERVER_SINGLETON_KEY: '@noeducation/flagsmith-server';
 }

@@ -6,7 +6,7 @@ import { isRunningOnServer } from '@/lib/site-util/env';
  * Provides text(), json(), arrayBuffer(), headers and status.
  */
 export class FetchResponse {
-  body: Buffer;
+  private _buffer: Buffer;
   streamBody: ReadableStream<Uint8Array> | null = null;
   status: number;
   headers: Headers;
@@ -17,9 +17,9 @@ export class FetchResponse {
   ) {
     if (body instanceof ReadableStream) {
       this.streamBody = body;
-      this.body = Buffer.alloc(0);
+      this._buffer = Buffer.alloc(0);
     } else {
-      this.body = body || Buffer.alloc(0);
+      this._buffer = body || Buffer.alloc(0);
     }
     this.status = init.status ?? 200;
     this.headers = new Headers();
@@ -32,6 +32,21 @@ export class FetchResponse {
 
   get bodyUsed(): boolean {
     return this._bodyUsed;
+  }
+
+  get body(): ReadableStream<Uint8Array> | null {
+    if (this.streamBody) {
+      return this.streamBody;
+    }
+    if (this._buffer && this._buffer.length > 0) {
+      return new ReadableStream({
+        start: (controller) => {
+          controller.enqueue(new Uint8Array(this._buffer));
+          controller.close();
+        },
+      });
+    }
+    return null;
   }
 
   ok() {
@@ -86,7 +101,7 @@ export class FetchResponse {
       // We'll allow re-reading buffers for now as per plan decision.
     }
     // this._bodyUsed = true; // Uncomment to enforce strict bodyUsed for buffers
-    return this.body.toString('utf8');
+    return this._buffer.toString('utf8');
   }
 
   async json(): Promise<unknown> {
@@ -98,7 +113,7 @@ export class FetchResponse {
       const result = await this.consumeStream();
       return result.buffer as ArrayBuffer;
     }
-    const buf = this.body;
+    const buf = this._buffer;
     return buf.buffer.slice(
       buf.byteOffset,
       buf.byteOffset + buf.byteLength,
@@ -124,7 +139,7 @@ export class FetchResponse {
         headers: Object.fromEntries(this.headers.entries()),
       });
     }
-    return new FetchResponse(Buffer.from(this.body), {
+    return new FetchResponse(Buffer.from(this._buffer), {
       status: this.status,
       headers: Object.fromEntries(this.headers.entries()),
     });
@@ -141,7 +156,7 @@ export class FetchResponse {
     }
     return new ReadableStream({
       start: (controller) => {
-        controller.enqueue(new Uint8Array(this.body));
+        controller.enqueue(new Uint8Array(this._buffer));
         controller.close();
       },
     });

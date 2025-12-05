@@ -146,7 +146,10 @@ const originalCacheWithRedis: LanguageModelV2Middleware = {
         metricsCollector.recordError(cacheKey, String(error));
       }
       if (config.enableLogging) {
-        console.error('Redis cache error in wrapStream:', error);
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'cacheWithRedis',
+        });
       }
       return await doStream();
     } finally {

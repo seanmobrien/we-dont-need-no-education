@@ -296,19 +296,19 @@ const ResizableDraggableDialog = ({
     let newHeight = height;
     let newWidth = width;
     if (height < minConstraints[1]) {
-      console.warn(`initialHeight ${height} is outside constraints`);
+      log((l) => l.warn(`initialHeight ${height} is outside constraints`));
       newHeight = minConstraints[1];
     }
     if (height > window.innerHeight - 20) {
-      console.warn(`initialHeight ${height} is outside constraints`);
+      log((l) => l.warn(`initialHeight ${height} is outside constraints`));
       newHeight = window.innerHeight - 20;
     }
     if (width < minConstraints[0]) {
-      console.warn(`initialWidth ${width} is outside constraints`);
+      log((l) => l.warn(`initialWidth ${width} is outside constraints`));
       newWidth = minConstraints[0];
     }
     if (width > window.innerWidth - 20) {
-      console.warn(`initialWidth ${width} is outside constraints`);
+      log((l) => l.warn(`initialWidth ${width} is outside constraints`));
       newWidth = window.innerWidth - 20;
     }
     if (!onResize) {

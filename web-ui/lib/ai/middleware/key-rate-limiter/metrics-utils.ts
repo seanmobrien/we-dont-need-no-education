@@ -1,4 +1,5 @@
 import { rateLimitMetrics } from './metrics';
+import { log } from '@/lib/logger';
 import type { ModelClassification } from './types';
 
 export function recordRequestMetrics(
@@ -8,8 +9,12 @@ export function recordRequestMetrics(
 ): void {
   const duration = Date.now() - startTime;
   rateLimitMetrics.recordProcessingDuration(duration, modelClassification);
-  
-  console.log(`${operationType} finished successfully in ${duration}ms for model ${modelClassification}`);
+
+  log((l) =>
+    l.info(
+      `${operationType} finished successfully in ${duration}ms for model ${modelClassification}`,
+    ),
+  );
 }
 
 export function getCurrentProvider(modelKey?: string): 'azure' | 'google' {

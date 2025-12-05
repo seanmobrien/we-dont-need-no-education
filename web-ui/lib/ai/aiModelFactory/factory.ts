@@ -30,10 +30,10 @@ import {
   SingletonProvider,
 } from '@/lib/typescript';
 import {
-  type AutoRefreshFeatureFlag,
   isAutoRefreshFeatureFlag,
 } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 import type {
+  AutoRefreshFeatureFlag,
   KnownFeatureType,
   ModelProviderFactoryConfig,
   ModelServerConfig,
@@ -114,14 +114,6 @@ const getGuardedProvider = async <
 
   log(l => l.warn(`AiModelFactory: Unexpected null provider returned from factory for provider ${provider}; models will not be available.`));
   return undefined;
-  /*
-  const sym = Symbol.for(
-    `@noeducation/aiModelFactory/provider:${String(provider)}`,
-  );
-  return globalRequiredSingleton(sym, async () => {
-    
-  });
-  */
 };
 
 type OptionsFactoryProps = Omit<ModelServerConfig, 'model'> & {
@@ -170,7 +162,7 @@ const customProviderFactory = async <
     model: T,
   ): ModelFromDeploymentId<T> => {
     const merged = {
-      apiKey,
+      ...(apiKey ? { apiKey } : {}),
       ...(baselineFactory(model) ?? {}),
       ...(config['default'] ?? {}),
       ...(model === undefined ? (config.fallback ?? {}) : {}),
@@ -231,64 +223,14 @@ const getAzureProvider = async () => {
     optionsFactory: (merged: OptionsFactoryProps) => ({
       baseURL: merged.base,
       apiKey: merged.apiKey,
-      apiVersion: merged.version,
-      useDeploymentBasedUrls: merged.deployBased,
+      ...(merged.deployBased ? {
+        ...(merged.version ? { apiVersion: merged.version } : {}),
+        useDeploymentBasedUrls: true,
+      } : {
+        useDeploymentBasedUrls: false,
+      }),
     }),
   });
-  /*
-  const modelFactory = <T extends string | undefined>(
-    config: ModelProviderFactoryConfig,
-    model: T,
-  ): ModelFromDeploymentId<T> => {
-    const baseline =
-      model === 'embedding'
-        ? {
-          model,
-          version: '2025-04-01-preview',
-          base: env('AZURE_OPENAI_ENDPOINT_EMBEDDING'),
-          apiKey: env('AZURE_OPENAI_KEY_EMBEDDING'),
-        }
-        : {
-          model,
-          version: '2025-04-01-preview',
-          apiKey: env('AZURE_API_KEY'),
-          base: env('AZURE_OPENAI_ENDPOINT'),
-        };
-    const merged = {
-      ...baseline,
-      ...config.default,
-      ...(model === undefined ? (config.fallback ?? {}) : {}),
-      ...(model ? (config.named?.[model] ?? {}) : {}),
-    };
-    const builder = createAzure({
-      baseURL: merged.base,
-      apiKey: merged.apiKey,
-      apiVersion: merged.version,
-      useDeploymentBasedUrls: merged.deployBased,
-    });
-    if (model === undefined) {
-      return builder as ProviderV2 as ModelFromDeploymentId<T>;
-    }
-    return model === 'embedding'
-      ? (builder.textEmbeddingModel(merged.model!) as ModelFromDeploymentId<T>)
-      : (builder.chat(merged.model!) as ModelFromDeploymentId<T>);
-  };
-  return getGuardedProvider('azure', (cfg) =>
-    customProvider({
-      languageModels: {
-        // Custom aliases for Azure models
-        hifi: setupMiddleware('azure', modelFactory(cfg, 'hifi')),
-        lofi: setupMiddleware('azure', modelFactory(cfg, 'lofi')),
-        completions: setupMiddleware('azure', modelFactory(cfg, 'completions')),
-      },
-      textEmbeddingModels: {
-        embedding: modelFactory(cfg, 'embedding'),
-      },
-      // Fallback to the raw Azure provider for any models not explicitly defined
-      fallbackProvider: modelFactory(cfg, undefined),
-    }),
-  );
-  */
 };
 
 /**
@@ -302,55 +244,6 @@ const getGoogleProvider = async () => {
     providerFactory: createGoogleGenerativeAI,
     apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY')!,
   });
-  /*
-  const modelFactory = <T extends string | undefined>(
-    config: ModelProviderFactoryConfig,
-    model: T,
-  ): ModelFromDeploymentId<T> => {
-    const baseline = {
-      apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-    };
-    const merged = {
-      ...baseline,
-      ...config.default,
-      ...(model === undefined ? (config.fallback ?? {}) : {}),
-      ...(model ? (config.named?.[model] ?? {}) : {}),
-    };
-    const builder = createGoogleGenerativeAI({
-      baseURL: merged.base,
-      apiKey: merged.apiKey,
-    });
-    if (model === undefined) {
-      return builder as ProviderV2 as ModelFromDeploymentId<T>;
-    }
-    return model === 'embedding'
-      ? (builder.textEmbeddingModel(merged.model!) as ModelFromDeploymentId<T>)
-      : (builder.chat(merged.model!) as ModelFromDeploymentId<T>);
-  };
-  return getGuardedProvider('google', (cfg) =>
-    customProvider({
-      languageModels: {
-        // Match Azure aliases with equivalent Google models
-        hifi: setupMiddleware('google', modelFactory(cfg, 'hifi')),
-        lofi: setupMiddleware('google', modelFactory(cfg, 'lofi')),
-        'gemini-2.0-flash': setupMiddleware(
-          'google',
-          modelFactory(cfg, 'gemini-2.0-flash'),
-        ),
-        // Google-specific model aliases
-        'gemini-pro': setupMiddleware(
-          'google',
-          modelFactory(cfg, 'gemini-pro'),
-        ),
-      },
-      textEmbeddingModels: {
-        embedding: modelFactory(cfg, 'embedding'),
-      },
-      // Fallback to the raw Google provider for any models not explicitly defined
-      fallbackProvider: modelFactory(cfg, undefined),
-    }),
-  );
-  */
 };
 
 /**
@@ -364,50 +257,6 @@ const getOpenAIProvider = async () => {
     providerFactory: createOpenAI,
     apiKey: env('OPENAI_API_KEY')!,
   });
-  /*
-  const modelFactory = <T extends string | undefined>(
-    config: ModelProviderFactoryConfig,
-    model: T,
-  ): ModelFromDeploymentId<T> => {
-    const baseline = {
-      apiKey: env('OPENAI_API_KEY'),
-    };
-    const merged = {
-      ...baseline,
-      ...config.default,
-      ...(model === undefined ? (config.fallback ?? {}) : {}),
-      ...(model ? (config.named?.[model] ?? {}) : {}),
-    };
-    const builder = createOpenAI({
-      baseURL: merged.base,
-      apiKey: merged.apiKey,
-    });
-    if (model === undefined) {
-      return builder as ProviderV2 as ModelFromDeploymentId<T>;
-    }
-    return model === 'embedding'
-      ? (builder.textEmbeddingModel(merged.model!) as ModelFromDeploymentId<T>)
-      : (builder.chat(merged.model!) as ModelFromDeploymentId<T>);
-  };
-  return getGuardedProvider('openai', (cfg) =>
-    customProvider({
-      languageModels: {
-        // Match Azure aliases with equivalent OpenAI models
-        hifi: setupMiddleware('openai', modelFactory(cfg, 'hifi')),
-        lofi: setupMiddleware('openai', modelFactory(cfg, 'lofi')),
-        completions: setupMiddleware(
-          'openai',
-          modelFactory(cfg, 'completions'),
-        ),
-      },
-      textEmbeddingModels: {
-        embedding: modelFactory(cfg, 'embedding'),
-      },
-      // Fallback to the raw OpenAI provider for any models not explicitly defined
-      fallbackProvider: modelFactory(cfg, undefined),
-    }),
-  );
-  */
 };
 
 /**
@@ -431,26 +280,43 @@ export const getProviderRegistry = async () => {
               // First, unsubscribe from all flag events - this will prevent memory leaks
               // and ensure we don't continue to emit events to this provider when the new
               // one is available.
-              Array.from(eventHandlers.values()).forEach(([relatedFlag, relatedHandler]) => {
-                relatedFlag.removeOnChangedListener(relatedHandler);
-                relatedFlag.removeOnDisposedListener(relatedHandler);
-                eventHandlers.delete(provider);
-                // As long as we have the flag do a quick pull on it's value - this will
-                // ensure all config settings have been updated when the registry is 
-                // re-created (we hope...otherwise we're converting this whole thing to async)
-                if (!Object.is(f, flag) && relatedFlag.isStale) {
-                  // I know it looks wierd just pulling the value, but this will trigger
-                  // a reload if it's needed and ensure the flag is up to date when we 
-                  // pull the value again in a few seconds.
-                  const check = relatedFlag.value;
-                  if (isPromise(check)) {
-                    check.then(() => relatedFlag.value);
+              Promise.allSettled(
+                Array.from(eventHandlers.values()).map(async ([relatedFlag, relatedHandler]) => {
+                  relatedFlag.removeOnChangedListener(relatedHandler);
+                  relatedFlag.removeOnDisposedListener(relatedHandler);
+                  eventHandlers.delete(provider);
+                  // As long as we have the flag do a quick pull on it's value - this will
+                  // ensure all config settings have been updated when the registry is 
+                  // re-created (we hope...otherwise we're converting this whole thing to async)
+                  if (!Object.is(f, flag) && relatedFlag.isStale) {
+                    // I know it looks wierd just pulling the value, but this will trigger
+                    // a reload if it's needed and ensure the flag is up to date when we 
+                    // pull the value again in a few seconds.
+                    return relatedFlag.forceRefresh().then(() => !relatedFlag.isStale);
                   }
-                }
-              });
-              // Deleting the singleton instance will force a re-creation of the registry
-              // the next time it is requested.
-              SingletonProvider.Instance.delete(GLOBAL_PROVIDER_REGISTRY);
+                  return Promise.resolve(!relatedFlag.isStale);
+                })
+              ).then(promises => {
+                return promises.reduce((acc, v) => {
+                  if (v.status === 'rejected') {
+                    log(l => l.warn(`Failed to refresh provider: ${v.reason}`));
+                  }
+                  return acc && v.status === 'fulfilled';
+                }, true);
+              })
+                .catch(err => {
+                  LoggedError.isTurtlesAllTheWayDownBaby(err, {
+                    source: 'GetProviderRegistry::Provider OnRefresh',
+                    log: true,
+                    throw: true
+                  });
+                  return Promise.resolve(false);
+                })
+                .finally(() => {
+                  // Deleting the singleton instance will force a re-creation of the registry
+                  // the next time it is requested.
+                  SingletonProvider.Instance.delete(GLOBAL_PROVIDER_REGISTRY);
+                })
             };
             if (isAutoRefreshFeatureFlag(f)) {
               // Add the event handler and flag to a map so we can remove all of them
@@ -460,6 +326,8 @@ export const getProviderRegistry = async () => {
               // the registry when the flag is disposed or changed.
               f.addOnDisposedListener(cleanup);
               f.addOnChangedListener(cleanup);
+            } else {
+              log(l => l.warn(`Cleanup called on non-provider ${String(f)}`))
             }
           }
           // Note we really should never be getting a promise here, but somehow we do
@@ -467,7 +335,7 @@ export const getProviderRegistry = async () => {
           // a little defensive programming will get us running and give us flexibility
           // to handle interface changes in the future.
           if (isPromise(flag)) {
-            flag.then(setupChangeEvent);
+            await flag.then(setupChangeEvent);
           } else {
             setupChangeEvent(flag);
           }
@@ -475,12 +343,17 @@ export const getProviderRegistry = async () => {
       ));
     const providers: Record<string, ProviderV2> = {};
     const azure = await getAzureProvider();
-    if (azure) providers.azure = azure;
+    if (azure) {
+      providers.azure = azure;
+    }
     const google = await getGoogleProvider();
-    if (google) providers.google = google;
+    if (google) {
+      providers.google = google;
+    }
     const openai = await getOpenAIProvider();
-    if (openai) providers.openai = openai;
-
+    if (openai) {
+      providers.openai = openai;
+    }
     const providerRegistry = createProviderRegistry(
       providers,
       {

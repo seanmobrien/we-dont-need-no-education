@@ -21,6 +21,7 @@ import { useTodoList, useToggleTodo } from '@/lib/hooks/use-todo';
 import type { Todo } from '@/data-models/api/todo';
 import 'react-resizable/css/styles.css';
 import { ClientWrapper } from '@/lib/react-util';
+import { useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
 
 export interface FloatingTodoDialogProps {
   listId: string | null;
@@ -42,9 +43,16 @@ export const FloatingTodoDialog: React.FC<FloatingTodoDialogProps> = ({
   onClose,
 }) => {
   const [size, setSize] = useState({ width: 400, height: 500 });
+  const { lastCompletionTime } = useChatPanelContext({ required: false });
 
-  const { data: list, isLoading, error } = useTodoList(listId);
+  const { data: list, isLoading, error, refetch } = useTodoList(listId);
   const { mutate: toggleTodo } = useToggleTodo(listId || '');
+
+  React.useEffect(() => {
+    if (lastCompletionTime) {
+      refetch();
+    }
+  }, [lastCompletionTime, refetch]);
 
   const handleToggle = useCallback(
     (todo: Todo) => {
@@ -62,6 +70,8 @@ export const FloatingTodoDialog: React.FC<FloatingTodoDialogProps> = ({
     },
     [],
   );
+
+  const nodeRef = React.useRef<HTMLDivElement>(null);
 
   if (!open) return null;
 
@@ -174,8 +184,9 @@ export const FloatingTodoDialog: React.FC<FloatingTodoDialogProps> = ({
 
   return (
     <ClientWrapper>
-      <Draggable handle=".drag-handle" bounds="body">
+      <Draggable handle=".drag-handle" bounds="body" nodeRef={nodeRef}>
         <Box
+          ref={nodeRef}
           sx={{
             position: 'fixed',
             top: 100,

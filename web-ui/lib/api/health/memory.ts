@@ -3,8 +3,8 @@ import type { HealthDetails, HealthStatus, MemoryHealthCheckResponse } from '@/l
 import { globalRequiredSingletonAsync } from '@/lib/typescript/singleton-provider';
 import {
   wellKnownFlag,
-  type AutoRefreshFeatureFlag,
 } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import type { AutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/types';
 import type { KnownFeatureType } from '@/lib/site-util/feature-flags/known-feature';
 
 // Helper functions to get auto-refresh feature flags for health cache TTLs

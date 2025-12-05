@@ -7,6 +7,7 @@ import type {
   ModelConfig,
   ModelProviderFactoryConfig,
 } from './types';
+import { SingletonProvider } from '@/lib/typescript/singleton-provider';
 
 const DEFAULT_IN_MEMORY_STORAGE_CONFIG =
   {} as const satisfies StorageStrategyConfig;
@@ -119,3 +120,8 @@ export const AllFeatureFlagsDefault: AllFeatureFlagType = {
   todo_storage_in_memory_config: DEFAULT_IN_MEMORY_STORAGE_CONFIG,
   todo_storage_redis_config: DEFAULT_REDIS_STORAGE_CONFIG,
 } as const;
+
+export const FLAGSMITH_SERVER_SINGLETON_KEY = '@noeducation/flagsmith-server' as const;
+
+export const isFlagsmithServerReady = () =>
+  SingletonProvider.Instance.has(FLAGSMITH_SERVER_SINGLETON_KEY);
