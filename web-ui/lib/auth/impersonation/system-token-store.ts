@@ -171,7 +171,7 @@ export class SystemTokenStore {
   /**
    * Promise for ongoing token acquisition to prevent concurrent requests.
    * Note that since SystemTokenStore is a singleton, this instance variable
-   * is effectively glaobal across all usages.
+   * is effectively global across all usages.
    */
   #initPromise: Promise<string> | undefined;
   /**
