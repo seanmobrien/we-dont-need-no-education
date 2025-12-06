@@ -270,7 +270,7 @@ export class ModelMap {
         PromiseWithResolvers<boolean> | undefined
       >
     )[ModelMap.#INIT_KEY];
-    await (init2?.promise ?? Promise.resolve(true)).catch(() => {});
+    await (init2?.promise ?? Promise.resolve(true)).catch(() => { });
     return inst;
   }
 
@@ -744,7 +744,7 @@ export class ModelMap {
    *
    * @example
    * ```typescript
-   * const model = aiModelFactory('hifi');
+   * const model = await aiModelFactory('hifi');
    * const modelInfo = await modelMap.getModelFromLanguageModelV1(model);
    * ```
    */

@@ -3,7 +3,7 @@ import {
   memoryClientFactory,
   type ExtendedMemoryClient,
 } from '@/lib/ai/mem0/memoryclient-factory';
-import { fetch as mockedFetch } from '@/lib/nextjs-util/fetch';
+import { fetch as mockedFetch } from '@/lib/nextjs-util/server/fetch';
 
 jest.mock('@/lib/nextjs-util/server/utils', () => ({
   createInstrumentedSpan: jest.fn(async () => ({

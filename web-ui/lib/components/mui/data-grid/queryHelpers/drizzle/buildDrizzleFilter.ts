@@ -35,6 +35,7 @@ import { isGridFilterModel } from '../../guards';
 import { columnMapFactory, parseFilterOptions } from '../utility';
 import { isTruthy } from '@/lib/react-util/utility-methods';
 import { schema } from '@/lib/drizzle-db';
+import { log } from '@/lib/logger';
 import type {
   BuildDrizzleAttachmentOrEmailFilterProps,
   BuildDrizzleItemFilterProps,
@@ -221,8 +222,10 @@ export const buildDrizzleItemFilter = ({
   const column = getColumn(mappedField);
 
   if (!column) {
-    console.warn(
-      `buildDrizzleItemFilter: Unknown column '${mappedField}' (mapped from '${item.field}')`,
+    log((l) =>
+      l.warn(
+        `buildDrizzleItemFilter: Unknown column '${mappedField}' (mapped from '${item.field}')`,
+      ),
     );
     return undefined;
   }

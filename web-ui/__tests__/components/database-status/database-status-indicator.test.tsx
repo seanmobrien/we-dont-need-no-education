@@ -6,14 +6,15 @@
 import React from 'react';
 import { render, screen } from '@/__tests__/test-utils';
 import { DatabaseStatusIndicator } from '@/components/health/database-status/database-status-indicator';
-import { useDatabaseHealth } from '@/lib/hooks/use-database-health';
+import { useHealth } from '@/components/health/health-provider/health-context';
 
-const mockUseDatabaseHealth = useDatabaseHealth as jest.Mock;
+jest.mock('@/components/health/health-provider/health-context');
+const mockUseHealth = useHealth as jest.Mock;
 
 describe('DatabaseStatusIndicator', () => {
   it('renders with default props when healthy', () => {
-    mockUseDatabaseHealth.mockReturnValue({
-      healthStatus: 'ok',
+    mockUseHealth.mockReturnValue({
+      health: { database: 'healthy' },
       isLoading: false,
       isError: false,
       error: null,
@@ -27,8 +28,8 @@ describe('DatabaseStatusIndicator', () => {
   });
 
   it('renders with label when showLabel is true', () => {
-    mockUseDatabaseHealth.mockReturnValue({
-      healthStatus: 'ok',
+    mockUseHealth.mockReturnValue({
+      health: { database: 'healthy' },
       isLoading: false,
       isError: false,
       error: null,
@@ -42,8 +43,8 @@ describe('DatabaseStatusIndicator', () => {
   });
 
   it('shows loading state', () => {
-    mockUseDatabaseHealth.mockReturnValue({
-      healthStatus: 'warning',
+    mockUseHealth.mockReturnValue({
+      health: { database: undefined },
       isLoading: true,
       isError: false,
       error: null,
@@ -57,8 +58,8 @@ describe('DatabaseStatusIndicator', () => {
   });
 
   it('shows warning status correctly', () => {
-    mockUseDatabaseHealth.mockReturnValue({
-      healthStatus: 'warning',
+    mockUseHealth.mockReturnValue({
+      health: { database: 'warning' },
       isLoading: false,
       isError: false,
       error: null,
@@ -71,8 +72,8 @@ describe('DatabaseStatusIndicator', () => {
   });
 
   it('shows error status correctly', () => {
-    mockUseDatabaseHealth.mockReturnValue({
-      healthStatus: 'error',
+    mockUseHealth.mockReturnValue({
+      health: { database: 'error' },
       isLoading: false,
       isError: false,
       error: null,
@@ -86,8 +87,8 @@ describe('DatabaseStatusIndicator', () => {
 
   it('handles error state appropriately', () => {
     const mockError = new Error('Connection failed');
-    mockUseDatabaseHealth.mockReturnValue({
-      healthStatus: 'error',
+    mockUseHealth.mockReturnValue({
+      health: { database: 'error' },
       isLoading: false,
       isError: true,
       error: mockError,
@@ -101,8 +102,8 @@ describe('DatabaseStatusIndicator', () => {
   });
 
   it('applies small size variant correctly', () => {
-    mockUseDatabaseHealth.mockReturnValue({
-      healthStatus: 'ok',
+    mockUseHealth.mockReturnValue({
+      health: { database: 'healthy' },
       isLoading: false,
       isError: false,
       error: null,
@@ -116,8 +117,8 @@ describe('DatabaseStatusIndicator', () => {
   });
 
   it('provides appropriate tooltip content', () => {
-    mockUseDatabaseHealth.mockReturnValue({
-      healthStatus: 'ok',
+    mockUseHealth.mockReturnValue({
+      health: { database: 'healthy' },
       isLoading: false,
       isError: false,
       error: null,

@@ -6,14 +6,28 @@
 import React from 'react';
 import { render, screen } from '@/__tests__/test-utils';
 import { MemoryStatusIndicator } from '@/components/health/memory-status/memory-status-indicator';
-import { useMemoryHealth } from '@/lib/hooks/use-memory-health';
+import { useHealth } from '@/components/health/health-provider/health-context';
+import { HealthStatus } from '@/lib/hooks/types';
 
-const mockUseMemoryHealth = useMemoryHealth as jest.Mock;
+jest.mock('@/components/health/health-provider/health-context');
+const mockUseHealth = useHealth as jest.Mock;
+const mockMemorySubsystems = (status: HealthStatus) => ({
+  db: status,
+  vectorStore: status,
+  graphStore: status,
+  historyStore: status,
+  authService: status,
+});
 
 describe('MemoryStatusIndicator', () => {
   it('renders with default props when healthy', () => {
-    mockUseMemoryHealth.mockReturnValue({
-      healthStatus: 'healthy',
+    mockUseHealth.mockReturnValue({
+      health: {
+        memory: {
+          status: 'healthy',
+          subsystems: mockMemorySubsystems('healthy'),
+        },
+      },
       isLoading: false,
       isError: false,
       error: null,
@@ -27,8 +41,13 @@ describe('MemoryStatusIndicator', () => {
   });
 
   it('renders with label when showLabel is true', () => {
-    mockUseMemoryHealth.mockReturnValue({
-      healthStatus: 'healthy',
+    mockUseHealth.mockReturnValue({
+      health: {
+        memory: {
+          status: 'healthy',
+          subsystems: mockMemorySubsystems('healthy'),
+        },
+      },
       isLoading: false,
       isError: false,
       error: null,
@@ -42,8 +61,13 @@ describe('MemoryStatusIndicator', () => {
   });
 
   it('shows loading state', () => {
-    mockUseMemoryHealth.mockReturnValue({
-      healthStatus: 'warning',
+    mockUseHealth.mockReturnValue({
+      health: {
+        memory: {
+          status: 'warning',
+          subsystems: mockMemorySubsystems('healthy'),
+        },
+      },
       isLoading: true,
       isError: false,
       error: null,
@@ -57,8 +81,13 @@ describe('MemoryStatusIndicator', () => {
   });
 
   it('shows warning status correctly', () => {
-    mockUseMemoryHealth.mockReturnValue({
-      healthStatus: 'warning',
+    mockUseHealth.mockReturnValue({
+      health: {
+        memory: {
+          status: 'warning',
+          subsystems: mockMemorySubsystems('healthy'),
+        },
+      },
       isLoading: false,
       isError: false,
       error: null,
@@ -71,8 +100,13 @@ describe('MemoryStatusIndicator', () => {
   });
 
   it('shows error status correctly', () => {
-    mockUseMemoryHealth.mockReturnValue({
-      healthStatus: 'error',
+    mockUseHealth.mockReturnValue({
+      health: {
+        memory: {
+          status: 'error',
+          subsystems: mockMemorySubsystems('healthy'),
+        },
+      },
       isLoading: false,
       isError: false,
       error: null,
@@ -86,8 +120,13 @@ describe('MemoryStatusIndicator', () => {
 
   it('handles error state appropriately', () => {
     const mockError = new Error('Connection failed');
-    mockUseMemoryHealth.mockReturnValue({
-      healthStatus: 'error',
+    mockUseHealth.mockReturnValue({
+      health: {
+        memory: {
+          status: 'error',
+          subsystems: mockMemorySubsystems('healthy'),
+        },
+      },
       isLoading: false,
       isError: true,
       error: mockError,
@@ -101,8 +140,13 @@ describe('MemoryStatusIndicator', () => {
   });
 
   it('applies small size variant correctly', () => {
-    mockUseMemoryHealth.mockReturnValue({
-      healthStatus: 'healthy',
+    mockUseHealth.mockReturnValue({
+      health: {
+        memory: {
+          status: 'healthy',
+          subsystems: mockMemorySubsystems('healthy'),
+        },
+      },
       isLoading: false,
       isError: false,
       error: null,
@@ -116,8 +160,13 @@ describe('MemoryStatusIndicator', () => {
   });
 
   it('provides appropriate tooltip content', () => {
-    mockUseMemoryHealth.mockReturnValue({
-      healthStatus: 'healthy',
+    mockUseHealth.mockReturnValue({
+      health: {
+        memory: {
+          status: 'healthy',
+          subsystems: mockMemorySubsystems('healthy'),
+        },
+      },
       isLoading: false,
       isError: false,
       error: null,

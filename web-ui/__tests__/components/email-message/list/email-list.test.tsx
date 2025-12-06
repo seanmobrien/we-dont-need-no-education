@@ -1,9 +1,8 @@
- 
- 
 import React from 'react';
 import { render, screen, fireEvent } from '@/__tests__/test-utils';
 import { useRouter } from 'next/navigation';
 import EmailList from '@/components/email-message/list';
+import siteMap from '@/lib/site-util/url-builder';
 
 jest.mock('@toolpad/core/useNotifications', () => ({
   useNotifications: () => ({ show: jest.fn() }),
@@ -73,9 +72,16 @@ describe('EmailList', () => {
     const useRouterMock = useRouter as unknown as jest.Mock;
     render(<EmailList />);
     fireEvent.click(screen.getByTestId('dbl'));
-    // Access the last router instance created by useRouter and assert push was called
     const lastRouter =
       useRouterMock.mock.results[useRouterMock.mock.results.length - 1].value;
-    expect(lastRouter.push).toHaveBeenCalledWith('/messages/email/999');
+
+    expect(lastRouter.push).toHaveBeenCalledWith(
+      expect.objectContaining({
+        toString: expect.any(Function),
+      }),
+    );
+
+    const pushArg = lastRouter.push.mock.calls[0][0];
+    expect(pushArg.toString()).toBe('/messages/email/999');
   });
 });

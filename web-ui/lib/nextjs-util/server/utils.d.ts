@@ -28,9 +28,10 @@
  * });
  * ```
  */
+import type { Span } from '@opentelemetry/api';
+import type { NextRequest } from 'next/server';
 
 declare module '@/lib/nextjs-util/server/utils' {
-  import type { Span } from '@opentelemetry/api';
 
   /**
    * Sentinel used to explicitly enable a wrapped route/handler during the production build phase.
@@ -260,4 +261,28 @@ declare module '@/lib/nextjs-util/server/utils' {
     tracerName?: string;
     additionalData?: Record<string, unknown>;
   }): Promise<void>;
+}
+
+declare module '@/lib/nextjs-util/server/unauthorized-service-response' {
+  /**
+   * Returns an unauthorized service response with the specified properties.
+   *
+   * @param props - The properties to include in the response
+   * @param props.req - The request object
+   * @param props.scopes - The scopes to include in the response
+   * @returns The unauthorized service response
+   *
+   * @example
+   * ```typescript
+   * // Basic usage
+   * const response = unauthorizedServiceResponse({
+   *   req,
+   *   scopes: ['read', 'write']
+   * });
+   * ```
+   */
+  export const unauthorizedServiceResponse: (props?: {
+    req?: NextRequest;
+    scopes?: Array<string>;
+  }) => Response;
 }

@@ -27,7 +27,7 @@ import { useNotifications } from '@toolpad/core/useNotifications';
 import ServerBoundDataGridPropsSchema from './server-bound-data-grid-props-schema';
 
 const stableWrapperStyles = {
-  box: { width: 'auto', maxWidth: 1 } satisfies SxProps<Theme>,
+  box: { width: 'auto', maxWidth: 0.99 } satisfies SxProps<Theme>,
   paper: { width: 'auto', mb: 2, overflow: 'hidden' } satisfies SxProps<Theme>,
   table: {
     display: 'flex',

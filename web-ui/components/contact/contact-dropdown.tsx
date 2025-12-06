@@ -107,11 +107,13 @@ const ContactDropdown = ({
         css={dropdownStyles.select}
       >
         <option value="-1">Select...</option>
-        {Array.isArray(contacts) ? contacts.filter(filter).map((contact) => (
-          <option key={contact.contactId} value={contact.contactId}>
-            {renderContactOption(contact)}
-          </option>
-        )) : null}
+        {Array.isArray(contacts)
+          ? contacts.filter(filter).map((contact) => (
+              <option key={contact.contactId} value={contact.contactId}>
+                {renderContactOption(contact)}
+              </option>
+            ))
+          : null}
         <option value="add-contact">Add contact</option>
       </select>
       {showContactForm && (

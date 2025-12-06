@@ -22,7 +22,7 @@ import { SerializableLanguageModelMiddleware } from '../state-management/types';
 
 type DoGenerateReturnType = ReturnType<LanguageModelV2['doGenerate']>;
 type DoStreamReturnType = ReturnType<LanguageModelV2['doStream']>;
-type TokenStatsTransformParamsType = LanguageModelV2CallOptions & {
+export type TokenStatsTransformParamsType = LanguageModelV2CallOptions & {
   providerOptions?: LanguageModelV2CallOptions['providerOptions'] & {
     backOffice?: {
       estTokens?: number;
@@ -30,9 +30,6 @@ type TokenStatsTransformParamsType = LanguageModelV2CallOptions & {
   };
 };
 
-/**
- * Extract provider and model name from various model ID formats
- */
 const extractProviderAndModel = async (
   modelId: string | LanguageModelV2,
 ): Promise<{ provider: string; modelName: string }> => {
@@ -306,8 +303,11 @@ const wrapStream = async ({
     if (enableLogging) {
       log((l) =>
         l.verbose('Token stats middleware processing stream request', {
-          provider,
-          modelName,
+          data: {
+            provider,
+            modelName,
+            estimatedTokens,
+          },
         }),
       );
     }
@@ -414,24 +414,20 @@ const wrapStream = async ({
               getInstance()
                 .safeRecordTokenUsage(provider, modelName, tokenUsage)
                 .catch((error: unknown) => {
-                  if (enableLogging) {
-                    log((l) =>
-                      l.error('Failed to record token usage for stream', {
-                        provider,
-                        modelName,
-                        tokenUsage,
-                        error:
-                          error instanceof Error
-                            ? error.message
-                            : String(error),
-                      }),
-                    );
-                  }
+                  LoggedError.isTurtlesAllTheWayDownBaby(error, {
+                    source: 'tokenStatsMiddleware.streamTransform',
+                    log: enableLogging,
+                    data: {
+                      provider,
+                      modelName,
+                      tokenUsage,
+                    },
+                  });
                 });
 
               if (enableLogging) {
                 log((l) =>
-                  l.silly('Stream token usage recorded', {
+                  l.verbose('=== tokenStatsMiddleware: Stream token usage recorded ===', {
                     provider,
                     modelName,
                     tokenUsage,
@@ -469,6 +465,12 @@ const wrapStream = async ({
         estimatedTokens,
       },
     });
+  } finally {
+    if (enableLogging) {
+      log((l) =>
+        l.verbose('Token stats middleware completed'),
+      );
+    }
   }
 };
 
@@ -479,6 +481,7 @@ export const transformParams = async ({
   config: TokenStatsMiddlewareConfig;
   params: TokenStatsTransformParamsType;
 }): Promise<TokenStatsTransformParamsType> => {
+  log((l) => l.verbose('=== TokenStatsMiddleware.transformParams - BEGIN ==='));
   try {
     const tokens = countTokens({ prompt, enableLogging });
     providerMetadata.backOffice = {
@@ -491,6 +494,7 @@ export const transformParams = async ({
       log: enableLogging,
     });
   }
+  log((l) => l.verbose('=== TokenStatsMiddleware.transformParams - END ==='));
   return {
     ...params,
     prompt,
@@ -498,15 +502,6 @@ export const transformParams = async ({
   };
 };
 
-/**
- * Create token statistics tracking middleware
- *
- * This middleware:
- * 1. Checks quotas before making requests (if enforcement is enabled)
- * 2. Records actual token usage after successful requests
- * 3. Logs quota violations and usage statistics
- * 4. Participates in state management protocol
- */
 const createOriginalTokenStatsMiddleware = (
   config: TokenStatsMiddlewareConfig = {},
 ): LanguageModelV2Middleware => {
@@ -559,12 +554,6 @@ const createOriginalTokenStatsMiddleware = (
   return thisInstance;
 };
 
-/**
- * Create token statistics tracking middleware with State Management Support
- *
- * This middleware supports the state management protocol and can participate
- * in state collection and restoration operations.
- */
 export const tokenStatsMiddleware = (
   config: TokenStatsMiddlewareConfig = {},
 ): LanguageModelV2Middleware =>
@@ -573,9 +562,6 @@ export const tokenStatsMiddleware = (
     middleware: createOriginalTokenStatsMiddleware(config),
   });
 
-/**
- * Create token statistics middleware with quota enforcement enabled
- */
 export const tokenStatsWithQuotaMiddleware = (
   config: Omit<TokenStatsMiddlewareConfig, 'enableQuotaEnforcement'> = {},
 ) =>
@@ -585,9 +571,6 @@ export const tokenStatsWithQuotaMiddleware = (
     enableQuotaEnforcement: true,
   });
 
-/**
- * Create token statistics middleware with only logging (no quota enforcement)
- */
 export const tokenStatsLoggingOnlyMiddleware = (
   config: Omit<TokenStatsMiddlewareConfig, 'enableQuotaEnforcement'> = {},
 ) =>

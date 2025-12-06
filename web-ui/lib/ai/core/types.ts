@@ -1,6 +1,10 @@
-import { AiModelType } from './unions';
+import type { AiModelType } from './unions';
 
-export type { AiModelType, AiLanguageModelType } from './unions';
+export type {
+  AiModelType,
+  AiLanguageModelType,
+  AiProviderType,
+} from './unions';
 
 type ValueOf<
   ObjectType,

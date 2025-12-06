@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
- 
+
 
 /**
  * @fileoverview Unit tests for buildDrizzleOrderBy function
@@ -27,9 +27,17 @@ import {
 } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
 import type { DrizzleSelectQuery } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/types';
 import { NextRequest } from 'next/server';
-// Mock console.warn to track warning messages
-const originalConsoleWarn = console.warn;
-const mockConsoleWarn = jest.fn();
+import { log } from '@/lib/logger';
+
+// Mock logger
+const mockLogger = {
+  warn: jest.fn(),
+  info: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+};
+
+jest.mock('@/lib/logger');
 
 // Mock Drizzle imports
 jest.mock('drizzle-orm', () => ({
@@ -116,13 +124,12 @@ describe('buildDrizzleOrderBy', () => {
 
   beforeEach(() => {
     // jest.clearAllMocks();
-    console.warn = mockConsoleWarn;
+    jest.clearAllMocks();
+    (log as jest.Mock).mockImplementation((cb) => cb(mockLogger));
     mockQuery = createMockQuery();
   });
 
-  afterEach(() => {
-    console.warn = originalConsoleWarn;
-  });
+
 
   describe('Basic functionality', () => {
     it('should return original query when no source provided', () => {
@@ -252,10 +259,10 @@ describe('buildDrizzleOrderBy', () => {
         type: 'asc',
         column: mockColumns.name,
       });
-      expect(mockConsoleWarn).toHaveBeenCalledWith(
+      expect(mockLogger.warn).toHaveBeenCalledWith(
         "buildDrizzleOrderBy: Unknown column 'unknown_column' (mapped from 'unknown_column')",
       );
-      expect(mockConsoleWarn).toHaveBeenCalledWith(
+      expect(mockLogger.warn).toHaveBeenCalledWith(
         "buildDrizzleOrderBy: Unknown column 'another_unknown' (mapped from 'another_unknown')",
       );
     });
@@ -275,7 +282,7 @@ describe('buildDrizzleOrderBy', () => {
 
       expect(result).toBe(mockQuery);
       expect(mockQuery.orderBy).not.toHaveBeenCalled();
-      expect(mockConsoleWarn).toHaveBeenCalledTimes(2);
+      expect(mockLogger.warn).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -463,7 +470,7 @@ describe('buildDrizzleOrderBy', () => {
         getColumn,
       });
 
-      expect(mockConsoleWarn).toHaveBeenCalledWith(
+      expect(mockLogger.warn).toHaveBeenCalledWith(
         "buildDrizzleOrderBy: Unknown column 'backend_field' (mapped from 'frontend_field')",
       );
     });
@@ -573,7 +580,7 @@ describe('buildDrizzleOrderBy', () => {
 
       expect(result).toBe(mockQuery);
       expect(mockQuery.orderBy).not.toHaveBeenCalled();
-      expect(mockConsoleWarn).toHaveBeenCalledWith(
+      expect(mockLogger.warn).toHaveBeenCalledWith(
         "buildDrizzleOrderBy: Unknown default sort column 'unknown_column' (mapped from 'unknown_column')",
       );
     });
@@ -650,7 +657,7 @@ describe('buildDrizzleOrderBy', () => {
         type: 'asc',
         column: mockColumns.name,
       });
-      expect(mockConsoleWarn).toHaveBeenCalledWith(
+      expect(mockLogger.warn).toHaveBeenCalledWith(
         "buildDrizzleOrderBy: Unknown column 'invalid' (mapped from 'invalid')",
       );
     });

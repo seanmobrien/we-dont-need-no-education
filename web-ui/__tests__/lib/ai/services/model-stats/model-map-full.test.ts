@@ -8,7 +8,7 @@ import { LanguageModelV2 } from '@ai-sdk/provider';
 import {
   PROVIDER_ID_AZURE,
   setupMaps,
-} from '@/__tests__/jest.mock-provider-model-maps';
+} from '@/__tests__/setup/jest.mock-provider-model-maps';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 const mockConsole = hideConsoleOutput();
 

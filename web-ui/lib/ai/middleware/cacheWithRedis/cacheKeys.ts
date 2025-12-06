@@ -6,9 +6,6 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 const config = getCacheConfig();
 validateCacheConfig(config);
 
-/**
- * Creates a unique cache key from parameters and model information
- */
 export const createCacheKey = (
   params: Record<string, unknown>,
   modelId?: string,
@@ -135,8 +132,5 @@ export const createCacheKey = (
   }
 };
 
-/**
- * Cache jail key for tracking problematic responses
- */
 export const createJailKey = (cacheKey: string): string =>
   `${config.jailKeyPrefix}:${cacheKey.replace(`${config.cacheKeyPrefix}:`, '')}`;

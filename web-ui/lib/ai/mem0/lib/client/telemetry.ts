@@ -1,5 +1,6 @@
 // @ts-nocheck
 import type { TelemetryClient, TelemetryOptions } from './telemetry.types';
+import { log } from '@/lib/logger/core';
 import { fetch } from '@/lib/nextjs-util/fetch';
 
 let version = '2.1.26';
@@ -8,7 +9,7 @@ let version = '2.1.26';
 let MEM0_TELEMETRY = true;
 try {
   MEM0_TELEMETRY = process?.env?.MEM0_TELEMETRY === 'false' ? false : true;
-} catch (error) {}
+} catch (error) { }
 const POSTHOG_API_KEY = 'phc_hgJkUVJFYtmaJqrvf6CYN67TIQ8yhXAkWzUn9AMU4yX';
 const POSTHOG_HOST = 'https://us.i.posthog.com/i/v0/e/';
 
@@ -57,10 +58,16 @@ class UnifiedTelemetry implements TelemetryClient {
       });
 
       if (!response.ok) {
-        console.error('Telemetry event capture failed:', await response.text());
+        LoggedError.isTurtlesAllTheWayDownBaby(response, {
+          log: true,
+          source: 'captureClientEvent',
+        });
       }
-    } catch (error) {
-      console.error('Telemetry event capture failed:', error);
+    } catch (error: unknown) {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'captureClientEvent',
+      });
     }
   }
 
@@ -77,7 +84,7 @@ async function captureClientEvent(
   additionalData = {},
 ) {
   if (!instance.telemetryId) {
-    console.warn('No telemetry ID found for instance');
+    log((l) => l.warn('No telemetry ID found for instance'));
     return;
   }
 

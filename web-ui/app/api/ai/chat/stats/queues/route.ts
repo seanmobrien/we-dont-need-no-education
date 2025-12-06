@@ -6,81 +6,72 @@ import type {
   RateLimitedRequest,
   ModelClassification,
 } from '@/lib/ai/middleware/key-rate-limiter/types';
+import { LoggedError } from '@/lib/react-util';
 
 export const dynamic = 'force-dynamic';
 
 const REDIS_PREFIX = 'rate-limit';
 
 export const GET = wrapRouteRequest(async () => {
-  try {
-    const redis = await getRedisClient();
-    const modelClassifications: ModelClassification[] = [
-      'hifi',
-      'lofi',
-      'completions',
-      'embedding',
-    ];
 
-    const queueInfo = await Promise.all(
-      modelClassifications.map(async (classification) => {
-        const gen1Stats = await getQueueGenerationStats(
-          redis,
-          1,
-          classification,
-        );
-        const gen2Stats = await getQueueGenerationStats(
-          redis,
-          2,
-          classification,
-        );
+  const redis = await getRedisClient();
+  const modelClassifications: ModelClassification[] = [
+    'hifi',
+    'lofi',
+    'completions',
+    'embedding',
+  ];
 
-        return {
-          classification,
-          queues: {
-            generation1: gen1Stats,
-            generation2: gen2Stats,
-          },
-          totalPending: gen1Stats.size + gen2Stats.size,
-        };
-      }),
-    );
+  const queueInfo = await Promise.all(
+    modelClassifications.map(async (classification) => {
+      const gen1Stats = await getQueueGenerationStats(
+        redis,
+        1,
+        classification,
+      );
+      const gen2Stats = await getQueueGenerationStats(
+        redis,
+        2,
+        classification,
+      );
 
-    // Calculate totals
-    const totalPending = queueInfo.reduce(
-      (sum, info) => sum + info.totalPending,
-      0,
-    );
-    const totalGen1 = queueInfo.reduce(
-      (sum, info) => sum + info.queues.generation1.size,
-      0,
-    );
-    const totalGen2 = queueInfo.reduce(
-      (sum, info) => sum + info.queues.generation2.size,
-      0,
-    );
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        summary: {
-          totalPending,
-          totalGen1,
-          totalGen2,
+      return {
+        classification,
+        queues: {
+          generation1: gen1Stats,
+          generation2: gen2Stats,
         },
-        queues: queueInfo,
+        totalPending: gen1Stats.size + gen2Stats.size,
+      };
+    }),
+  );
+
+  // Calculate totals
+  const totalPending = queueInfo.reduce(
+    (sum, info) => sum + info.totalPending,
+    0,
+  );
+  const totalGen1 = queueInfo.reduce(
+    (sum, info) => sum + info.queues.generation1.size,
+    0,
+  );
+  const totalGen2 = queueInfo.reduce(
+    (sum, info) => sum + info.queues.generation2.size,
+    0,
+  );
+
+  return NextResponse.json({
+    success: true,
+    data: {
+      summary: {
+        totalPending,
+        totalGen1,
+        totalGen2,
       },
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('Error fetching queue statistics:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 },
-    );
-  }
+      queues: queueInfo,
+    },
+    timestamp: new Date().toISOString(),
+  });
 });
 
 async function getSampleRequests(
@@ -140,10 +131,10 @@ async function getSampleRequests(
       }
     });
   } catch (error) {
-    console.error(
-      `Error getting sample requests for ${classification} gen${generation}:`,
-      error,
-    );
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'api/ai/chat/stats/queues/route::getSampleRequests',
+    });
     return [];
   }
 }

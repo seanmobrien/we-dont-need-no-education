@@ -1,10 +1,10 @@
 'use client'; // Error boundaries must be Client Components
 
 import * as React from 'react';
-import { useEffect } from 'react';
-import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
 import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
 import { FlagProvider } from '@/components/general/flags/flag-provider';
+import { useProcessedError } from '@/lib/error-monitoring/use-processed-error';
+import Link from 'next/link';
 
 type GlobalErrorProps = {
   error: Error & { digest?: string };
@@ -16,16 +16,14 @@ type GlobalErrorProps = {
  * This is a last resort fallback for critical application errors
  */
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
-  useEffect(() => {
-    // Report the critical error - this is the last line of defense
-    errorReporter.reportBoundaryError(
-      error,
-      {
-        errorBoundary: 'GlobalError',
-      },
-      ErrorSeverity.CRITICAL,
-    );
-  }, [error]);
+  const { processedError } = useProcessedError({
+    error,
+    reset,
+  });
+
+  if (!processedError) {
+    return null;
+  }
 
   return (
     <html lang="en">
@@ -45,10 +43,16 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               backgroundColor: '#fafafa',
             }}
           >
-            <RenderErrorBoundaryFallback
-              error={error}
-              resetErrorBoundary={reset}
-            />
+            {processedError ? (
+              <RenderErrorBoundaryFallback
+                error={processedError}
+                resetErrorBoundary={reset}
+              />
+            ) : (
+              <>
+                <Link href={'/'}>Go to Home</Link>
+              </>
+            )}
           </div>
         </FlagProvider>
       </body>

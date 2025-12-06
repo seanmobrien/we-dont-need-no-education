@@ -4,7 +4,13 @@ import type { User } from '@auth/core/types';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import type { NextRequest } from 'next/server';
 
-const EXPECTED_PROVIDERS = 3;
+import { getMem0EnabledFlag } from '@/lib/ai/mcp/tool-flags';
+
+const getExpectedProviderCount = async () => {
+  const base = 2; // Client + First-party
+  const mem0 = await getMem0EnabledFlag();
+  return base + (mem0.value ? 1 : 0);
+};
 
 const toolProviderFactory = async ({
   req,
@@ -55,9 +61,10 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
   }
   let status, message;
   const totalProviders = toolProviders.providers.length;
-  if (totalProviders < EXPECTED_PROVIDERS) {
+  const expectedProviders = await getExpectedProviderCount();
+  if (totalProviders < expectedProviders) {
     status = 'warning';
-    message = `Only ${totalProviders} of ${EXPECTED_PROVIDERS} expected providers available`;
+    message = `Only ${totalProviders} of ${expectedProviders} expected providers available`;
   } else if (tools.length <= 5) {
     status = 'warning';
     message = `Limited toolset available.`;

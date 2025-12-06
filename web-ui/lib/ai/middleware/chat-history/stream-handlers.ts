@@ -1,15 +1,3 @@
-/**
- * @fileoverview Stream Chunk Handlers for Chat History Middleware
- *
- * This module provides utility functions for handling different types of streaming chunks
- * in the chat history middleware. Each handler is responsible for processing a specific
- * type of stream chunk and updating the database accordingly.
- *
- * @module lib/ai/middleware/chat-history/stream-handlers
- * @version 1.0.0
- * @since 2025-07-17
- */
-
 import type {
   LanguageModelV2ToolResultPart,
   LanguageModelV2StreamPart,
@@ -37,44 +25,14 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 // ---------------------------------------------------------------------------
 // Lightweight per-id buffers for explicit streaming types
 // ---------------------------------------------------------------------------
-/**
- * Unique symbol used to store a Map of open text buffers on the context.
- *
- * The map is keyed by chunk id and stores the accumulated text until a
- * corresponding `text-end` event is received.
- */
 const OPEN_TEXT_SYM = Symbol.for('chat-history.openTextBuffers');
 
-/**
- * Unique symbol used to store a Map of open reasoning buffers on the context.
- *
- * The map is keyed by chunk id and stores the accumulated reasoning content
- * until a corresponding `reasoning-end` event is received.
- */
 const OPEN_REASONING_SYM = Symbol.for('chat-history.openReasoningBuffers');
 
-/**
- * Unique symbol used to store a Map of open tool-input buffers on the context.
- *
- * The map is keyed by chunk id and stores an object containing the tool name
- * (if provided) and the raw input value until `tool-input-end` finalizes it.
- */
 const OPEN_TOOL_INPUT_SYM = Symbol.for('chat-history.openToolInputBuffers');
 
-/**
- * Buffer structure used during streaming to accumulate tool input.
- * - `toolName` may be undefined if not provided by the stream part
- * - `value` contains the raw concatenated input text (possibly JSON)
- */
 type ToolInputBuffer = { toolName?: string; value: string };
 
-/**
- * Gets the per-context map that tracks in-progress text buffers.
- * Creates the map on first access.
- *
- * @param context - Current stream handler context
- * @returns Map keyed by part id with accumulated text
- */
 function getOpenText(context: StreamHandlerContext): Map<string, string> {
   const bag = context as unknown as Record<PropertyKey, unknown>;
   if (!bag[OPEN_TEXT_SYM]) {
@@ -83,13 +41,6 @@ function getOpenText(context: StreamHandlerContext): Map<string, string> {
   return bag[OPEN_TEXT_SYM] as Map<string, string>;
 }
 
-/**
- * Gets the per-context map that tracks in-progress reasoning buffers.
- * Creates the map on first access.
- *
- * @param context - Current stream handler context
- * @returns Map keyed by part id with accumulated reasoning text
- */
 function getOpenReasoning(context: StreamHandlerContext): Map<string, string> {
   const bag = context as unknown as Record<PropertyKey, unknown>;
   if (!bag[OPEN_REASONING_SYM]) {
@@ -98,13 +49,6 @@ function getOpenReasoning(context: StreamHandlerContext): Map<string, string> {
   return bag[OPEN_REASONING_SYM] as Map<string, string>;
 }
 
-/**
- * Gets the per-context map that tracks in-progress tool-input buffers.
- * Creates the map on first access.
- *
- * @param context - Current stream handler context
- * @returns Map keyed by part id with `{ toolName?, value }`
- */
 function getOpenToolInput(
   context: StreamHandlerContext,
 ): Map<string, ToolInputBuffer> {
@@ -115,22 +59,6 @@ function getOpenToolInput(
   return bag[OPEN_TOOL_INPUT_SYM] as Map<string, ToolInputBuffer>;
 }
 
-/**
- * Flushes any generated content parts accumulated in `context.generatedJSON`
- * as a pending assistant message, then resets message state for subsequent parts.
- *
- * Behavior:
- * - Reserves a new `messageId` when one isn't already present (assistant reply
- *   in-progress) and writes a `chatMessages` row with `statusId: 2` (pending/in-progress),
- *   `role: 'assistant'`, and the JSON content.
- * - After a successful transaction, clears `context.messageId`, increments
- *   `context.currentMessageOrder`, and resets `context.generatedJSON`.
- *
- * Errors are captured via `LoggedError.isTurtlesAllTheWayDownBaby` and do not
- * throw out of this function.
- *
- * @param context - Current stream handler context containing accumulated parts
- */
 const flushMessageParts = async ({
   context,
 }: {
@@ -189,21 +117,6 @@ const flushMessageParts = async ({
   context.generatedJSON = [];
 };
 
-/**
- * Marks the specified assistant message as in-progress/complete according to
- * the middleware's status semantics.
- *
- * This updates the `chat_messages` row identified by (chatId, turnId, messageId)
- * and sets `statusId: 2`. Intended to close out a reserved/previous message
- * before attaching results or moving to the next one.
- *
- * @param tx - Active Drizzle transaction
- * @param messageId - The message id to mark as complete/pending
- * @param chatId - Chat identifier
- * @param turnId - Turn identifier
- * @returns Promise resolving to true on successful update
- * @throws Error when `messageId` is not provided
- */
 const completePendingMessage = async ({
   tx,
   messageId,
@@ -234,35 +147,6 @@ const completePendingMessage = async ({
   return true;
 };
 
-/**
- * Handles tool-call stream chunks by creating new tool message records.
- *
- * This function processes tool call chunks from the AI model, creating new
- * message records in the database to track tool invocations and their parameters.
- * Each tool call gets its own message with a complete status.
- *
- * @param chunk - The tool-call stream chunk
- * @param context - The current stream handler context
- * @returns Promise resolving to the updated context and success status
- *
- * @example
- * ```typescript
- * const result = await handleToolCall(
- *   {
- *     type: 'tool-call',
- *     toolName: 'search',
- *     args: { query: 'example' }
- *   },
- *   {
- *     chatId: 'chat-123',
- *     turnId: 1,
- *     currentMessageOrder: 2,
- *     generatedText: 'Hello'
- *   }
- * );
- * console.log(result.currentMessageOrder); // 3
- * ```
- */
 export const handleToolCall = async (
   chunk: Extract<LanguageModelV2ToolCall, { type: 'tool-call' }>,
   context: StreamHandlerContext,
@@ -437,21 +321,6 @@ export const handleToolCall = async (
   }
 };
 
-/**
- * Finds a pending tool call record associated with the given result chunk.
- *
- * Lookup strategy:
- * 1) Check the in-memory `toolCalls` map for `toolCallId`
- * 2) Query the database by `(chatId, providerId)`
- * 3) Fallback: if a `[missing]` placeholder exists in the map and the
- *    `toolName` matches, adopt it and update its `providerId`
- *
- * @param params.chunk - The incoming tool result part
- * @param params.toolCalls - In-memory map of known tool calls by provider id
- * @param params.chatId - Chat id for DB lookup
- * @param params.tx - Database transaction to perform the query
- * @returns The matched pending tool call row, or undefined if not found
- */
 const findPendingToolCall = async ({
   chunk: { toolCallId, toolName },
   toolCalls,
@@ -489,17 +358,6 @@ const findPendingToolCall = async ({
   return pendingCall;
 };
 
-/**
- * Appends a tool error to the current turn and marks the turn as error.
- *
- * Reads the existing `chat_turns` row, extends the `errors` array with the
- * serialized tool result output, and sets `statusId: 3`.
- *
- * @param tx - Database transaction
- * @param chatId - Chat identifier
- * @param turnId - Turn identifier
- * @param chunk - Tool result part containing the error output
- */
 const setTurnError = async ({
   tx,
   chatId,
@@ -552,26 +410,6 @@ const setTurnError = async ({
   }
 };
 
-/**
- * Handles tool-result stream chunks by updating the originating tool call
- * message with the tool's output and any provider metadata, and by setting
- * error status on the turn when appropriate.
- *
- * Steps:
- * - Flush any buffered assistant parts so DB state is consistent
- * - Complete the pending assistant message if one exists
- * - Find the originating tool call (memory or DB fallback)
- * - Update the message `statusId` (2 success, 3 error), `toolResult`,
- *   `metadata`, and append any concurrent generated text to `content`
- * - On error outputs, also record the error on the turn via `setTurnError`
- *
- * Returns a result that clears `currentMessageId` and `generatedText` to
- * prepare for subsequent parts.
- *
- * @param chunk - Tool result part emitted by the provider
- * @param context - Current stream handler context
- * @returns A `StreamHandlerResult` indicating success and updated fields
- */
 export const handleToolResult = async (
   chunk: LanguageModelV2ToolResultPart,
   context: StreamHandlerContext,
@@ -714,37 +552,6 @@ export const handleToolResult = async (
   }
 };
 
-/**
- * Handles finish stream chunks by recording token usage statistics.
- *
- * This function processes the final chunk from the AI model stream, recording
- * token usage statistics including prompt tokens, completion tokens, and total
- * token count for billing and analytics purposes.
- *
- * @param chunk - The finish stream chunk
- * @param context - The current stream handler context
- * @returns Promise resolving to the updated context and success status
- *
- * @example
- * ```typescript
- * const result = await handleFinish(
- *   {
- *     type: 'finish',
- *     usage: {
- *       promptTokens: 50,
- *       completionTokens: 25
- *     }
- *   },
- *   {
- *     chatId: 'chat-123',
- *     turnId: 1,
- *     currentMessageOrder: 3,
- *     generatedText: 'Hello world'
- *   }
- * );
- * console.log(result.success); // true
- * ```
- */
 export async function handleFinish(
   chunk: Extract<LanguageModelV2StreamPart, { type: 'finish' }>,
   context: StreamHandlerContext,
@@ -807,27 +614,6 @@ export async function handleFinish(
   }
 }
 
-/**
- * Main dispatcher function that routes stream chunks to appropriate handlers.
- *
- * This function acts as a central dispatcher, examining the chunk type and
- * routing it to the appropriate specialized handler function. It provides
- * a unified interface for processing all types of stream chunks.
- *
- * @param chunk - The stream chunk to process
- * @param context - The current stream handler context
- * @returns Promise resolving to the updated context and success status
- *
- * @example
- * ```typescript
- * const result = await processStreamChunk(chunk, context);
- * if (result.success) {
- *   // Update context with new values
- *   context.currentMessageOrder = result.currentMessageOrder;
- *   context.generatedText = result.generatedText;
- * }
- * ```
- */
 export async function processStreamChunk(
   chunk: LanguageModelV2StreamPart | LanguageModelV2ToolResultPart,
   context: StreamHandlerContext,

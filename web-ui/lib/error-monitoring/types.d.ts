@@ -505,6 +505,208 @@ declare module '@/lib/error-monitoring/types' {
    */
   export interface ErrorReporterInterface {
     /**
+     * Create a comprehensive error report from an error or error report object.
+     *
+     * This method is the core error report builder that normalizes errors, enriches context,
+     * generates fingerprints, and produces a complete {@link ErrorReport} suitable for logging
+     * and external reporting. It handles various input types including raw errors, error reports,
+     * and non-error thrown values.
+     *
+     * ## Key Features
+     *
+     * - **Error Normalization**: Converts any thrown value into a proper Error object
+     * - **Context Enrichment**: Automatically captures browser/server environment data
+     * - **Custom Enrichment**: Calls {@link IContextEnricher.enrichContext} on errors that implement it
+     * - **Database Error Detection**: Extracts detailed Postgres/Drizzle error information
+     * - **Fingerprint Generation**: Creates unique identifiers for error deduplication
+     * - **Tag Generation**: Builds categorization tags for monitoring systems
+     * - **Defensive Error Handling**: Gracefully handles failures during report creation
+     *
+     * ## Error Type Handling
+     *
+     * The method intelligently handles different input types:
+     *
+     * ### Already an ErrorReport
+     * If the input is already an {@link ErrorReport}, it validates and enriches it:
+     * ```typescript
+     * const existingReport: ErrorReport = {
+     *   error: new Error('Failed'),
+     *   severity: ErrorSeverity.HIGH,
+     *   context: { source: 'ApiClient' }
+     * };
+     * const enhanced = await reporter.createErrorReport(existingReport);
+     * // Result has enriched context, fingerprint, and tags
+     * ```
+     *
+     * ### Standard Error Objects
+     * Native Error instances are wrapped with context and metadata:
+     * ```typescript
+     * const error = new TypeError('Invalid input');
+     * const report = await reporter.createErrorReport(
+     *   error,
+     *   ErrorSeverity.MEDIUM,
+     *   { source: 'ValidationService' }
+     * );
+     * ```
+     *
+     * ### Custom Error Classes
+     * Errors implementing {@link IContextEnricher} can provide additional context:
+     * ```typescript
+     * class ApiError extends Error implements IContextEnricher {
+     *   constructor(message: string, public statusCode: number) {
+     *     super(message);
+     *   }
+     *   async enrichContext(ctx: ErrorContext) {
+     *     return {
+     *       ...ctx,
+     *       additionalData: {
+     *         ...ctx.additionalData,
+     *         statusCode: this.statusCode
+     *       }
+     *     };
+     *   }
+     * }
+     * ```
+     *
+     * ### Non-Error Values
+     * Primitive values or objects thrown without being errors are normalized:
+     * ```typescript
+     * throw "Something failed";  // string
+     * throw { code: 404 };       // object
+     * throw null;                // null/undefined
+     * // All converted to Error instances with descriptive messages
+     * ```
+     *
+     * ## Context Enrichment
+     *
+     * The method automatically enriches context with:
+     *
+     * - **Timestamps**: Current time when error occurred
+     * - **Browser Data**: User agent, current URL (client-side only)
+     * - **Database Errors**: Postgres error codes, SQL state, hints, constraints
+     * - **Custom Enrichment**: Via {@link IContextEnricher.enrichContext} implementation
+     *
+     * ```typescript
+     * // Input context
+     * const context = {
+     *   source: 'DataService',
+     *   userId: 'user-123'
+     * };
+     *
+     * // Enriched context includes
+     * const enriched = {
+     *   source: 'DataService',
+     *   userId: 'user-123',
+     *   timestamp: new Date(),
+     *   userAgent: 'Mozilla/5.0...',
+     *   url: 'https://app.example.com/data',
+     *   // Plus any custom enrichment
+     * };
+     * ```
+     *
+     * ## Database Error Details
+     *
+     * For Postgres/Drizzle errors, extracts comprehensive diagnostic information:
+     *
+     * ```typescript
+     * // Postgres error detection
+     * try {
+     *   await db.query.users.findMany();
+     * } catch (error) {
+     *   const report = await reporter.createErrorReport(error);
+     *   // report.context.dbError contains:
+     *   // - sqlstate: '23505' (unique violation)
+     *   // - codeDescription: 'Unique constraint violation'
+     *   // - constraint: 'users_email_key'
+     *   // - table: 'users'
+     *   // - detail: 'Key (email)=(test@example.com) already exists.'
+     *   // - query: 'INSERT INTO users...' (truncated to 2000 chars)
+     * }
+     * ```
+     *
+     * ## Defensive Error Handling
+     *
+     * If an error occurs during report creation (e.g., in context enrichment),
+     * the method captures the failure and includes it in the report:
+     *
+     * ```typescript
+     * const report = await reporter.createErrorReport(error);
+     * // If enrichment fails:
+     * // report.context.additionalData.reportBuilderError contains details
+     * ```
+     *
+     * @param error - Error object, error report, or any thrown value to create report for
+     * @param severity - Severity level for prioritization (default: {@link ErrorSeverity.MEDIUM})
+     * @param context - Additional context to merge with enriched environment data
+     *
+     * @returns Promise resolving to complete error report with enriched context and metadata
+     *
+     * @example
+     * ```typescript
+     * // Basic error reporting
+     * try {
+     *   await riskyOperation();
+     * } catch (error) {
+     *   const report = await reporter.createErrorReport(error);
+     *   console.log(report.fingerprint); // For deduplication
+     *   console.log(report.tags);        // For categorization
+     * }
+     *
+     * // With severity and context
+     * const report = await reporter.createErrorReport(
+     *   new Error('Payment failed'),
+     *   ErrorSeverity.CRITICAL,
+     *   {
+     *     source: 'PaymentService',
+     *     userId: 'user-456',
+     *     additionalData: {
+     *       amount: 99.99,
+     *       currency: 'USD'
+     *     }
+     *   }
+     * );
+     *
+     * // Enhancing existing report
+     * const existingReport: ErrorReport = {
+     *   error: new Error('Timeout'),
+     *   severity: ErrorSeverity.HIGH,
+     *   context: { source: 'ApiClient' }
+     * };
+     * const enhanced = await reporter.createErrorReport(existingReport);
+     * // Now has fingerprint, tags, and enriched context
+     *
+     * // Handling non-error values
+     * try {
+     *   throw "Invalid state";
+     * } catch (thrown) {
+     *   const report = await reporter.createErrorReport(thrown);
+     *   // report.error is proper Error instance
+     *   // report.error.message === "Non-error thrown: Invalid state"
+     * }
+     * ```
+     *
+     * @see {@link ErrorReport} for the complete report structure
+     * @see {@link ErrorContext} for available context fields
+     * @see {@link IContextEnricher} for custom error enrichment
+     * @see {@link reportError} for reporting with automatic channel routing
+     */
+    createErrorReport(
+      error: Error | unknown,
+      severity?: ErrorSeverity,
+      context?: Partial<ErrorContext>,
+    ): Promise<ErrorReport>;
+    /**
+     * Generate a fingerprint for error deduplication.
+     *
+     * This method creates a unique identifier for an error based on its
+     * properties and context to help with deduplication and grouping.
+     *
+     * @param error - The error object to generate a fingerprint for
+     * @param context - The context in which the error occurred
+     * @returns A string fingerprint uniquely identifying the error
+     */
+    generateFingerprint(error: Error, context: ErrorContext): string;
+    /**
      * Report an error with context and severity to all configured channels.
      *
      * This is the primary method for reporting errors throughout the application.
@@ -531,7 +733,7 @@ declare module '@/lib/error-monitoring/types' {
       error: Error | unknown,
       severity?: ErrorSeverity,
       context?: Partial<ErrorContext>,
-    ): Promise<void>;
+    ): Promise<ErrorReportResult>;
 
     /**
      * Report an error caught by a React error boundary.
@@ -562,7 +764,7 @@ declare module '@/lib/error-monitoring/types' {
       error: Error,
       errorInfo: { componentStack?: string; errorBoundary?: string },
       severity?: ErrorSeverity,
-    ): Promise<void>;
+    ): Promise<ErrorReportResult>;
 
     /**
      * Report an unhandled promise rejection.
@@ -584,7 +786,7 @@ declare module '@/lib/error-monitoring/types' {
     reportUnhandledRejection(
       reason: unknown,
       promise: Promise<unknown>,
-    ): Promise<void>;
+    ): Promise<ErrorReportResult>;
 
     /**
      * Set up global error and rejection handlers.
@@ -684,5 +886,289 @@ declare module '@/lib/error-monitoring/types' {
      * @returns Promise resolving to enriched context
      */
     enrichContext: (context: ErrorContext) => Promise<ErrorContext>;
+  };
+
+  /**
+   * Configuration for error suppression patterns.
+   *
+   * Suppression rules allow selective filtering of errors based on message patterns,
+   * source locations, or other criteria. This is useful for ignoring known issues,
+   * third-party library errors, or false positives that clutter error logs.
+   *
+   * Rules can either completely suppress errors (no logging at all) or just prevent
+   * them from being displayed in the UI while still logging them for analysis.
+   *
+   * @example
+   * ```typescript
+   * // Suppress React hydration warnings in development
+   * const hydrationRule: ErrorSuppressionRule = {
+   *   id: 'react-hydration-dev',
+   *   pattern: /Hydration failed because/,
+   *   source: /node_modules\/react-dom/,
+   *   suppressCompletely: false,
+   *   reason: 'Known issue in development mode, logged but not displayed'
+   * };
+   *
+   * // Completely suppress third-party analytics errors
+   * const analyticsRule: ErrorSuppressionRule = {
+   *   id: 'third-party-analytics',
+   *   pattern: 'ga.js',
+   *   source: /google-analytics/,
+   *   suppressCompletely: true,
+   *   reason: 'Third-party script errors outside our control'
+   * };
+   *
+   * // Suppress specific error message
+   * const knownIssue: ErrorSuppressionRule = {
+   *   id: 'known-resize-observer',
+   *   pattern: 'ResizeObserver loop limit exceeded',
+   *   suppressCompletely: false,
+   *   reason: 'Browser quirk, harmless, tracking for metrics only'
+   * };
+   * ```
+   */
+  export interface ErrorSuppressionRule {
+    /**
+     * Unique identifier for this suppression rule.
+     *
+     * Used for tracking which rule suppressed an error and for managing
+     * rule configuration. Should be descriptive and follow a consistent
+     * naming convention.
+     *
+     * @example 'react-hydration-warning', 'third-party-script-error'
+     */
+    id: string;
+
+    /**
+     * Pattern to match against error messages.
+     *
+     * Can be a string (substring match) or RegExp (pattern match).
+     * String matching is case-sensitive and checks if the error message
+     * contains the pattern. RegExp allows for more complex matching.
+     *
+     * @example
+     * ```typescript
+     * // String matching (contains)
+     * pattern: 'Network request failed'
+     *
+     * // RegExp matching
+     * pattern: /^TypeError: Cannot read property/
+     * pattern: /hydration|mismatch/i  // Case-insensitive
+     * ```
+     */
+    pattern: string | RegExp;
+
+    /**
+     * Optional pattern to match against error source/filename.
+     *
+     * Can be used to suppress errors from specific files, modules, or
+     * third-party libraries. Like pattern, supports both string and RegExp.
+     *
+     * @example
+     * ```typescript
+     * // Suppress errors from node_modules
+     * source: /node_modules/
+     *
+     * // Suppress errors from specific file
+     * source: 'analytics.js'
+     *
+     * // Suppress errors from vendor scripts
+     * source: /vendor\/.*\.js$/
+     * ```
+     */
+    source?: string | RegExp;
+
+    /**
+     * Whether to completely suppress the error or just prevent UI display.
+     *
+     * - **true**: Complete suppression - no logging, no storage, no reporting
+     * - **false** (default): Partial suppression - still logged and stored,
+     *   but not displayed in error UI or sent to external monitoring
+     *
+     * Use complete suppression sparingly, only for truly harmless errors
+     * that provide no diagnostic value.
+     *
+     * @default false
+     */
+    suppressCompletely?: boolean;
+
+    /**
+     * Human-readable description of why this error is suppressed.
+     *
+     * Provides context for future maintainers about why the suppression
+     * rule exists and whether it's still necessary. Should include:
+     * - What the error indicates
+     * - Why it's safe to suppress
+     * - Any conditions for removing the rule
+     *
+     * @example
+     * ```typescript
+     * reason: 'Known React 18 hydration issue in development mode. ' +
+     *         'Will be fixed in React 19. Safe to suppress until upgrade.'
+     *
+     * reason: 'Third-party analytics script errors we cannot control. ' +
+     *         'Users are not affected. Still logged for monitoring trends.'
+     * ```
+     */
+    reason?: string;
+
+    /**
+     * Optional flag indicating if a page reload is recommended after this error.
+     *
+     * When true, suggests that the application state may be compromised
+     * and a reload could help recover. This flag can be used by UI components
+     * to trigger an automatic reload or prompt to the user.
+     *
+     * @example
+     * ```typescript
+     * reload: true
+     * ```
+     */
+    reload?: boolean;
+  }
+
+  /**
+   * Result of evaluating error suppression rules against an error.
+   *
+   * Indicates whether an error should be suppressed, which rule matched,
+   * and the type of suppression to apply. Used internally by the error
+   * reporter to determine how to handle an error.
+   *
+   * @example
+   * ```typescript
+   * const result: SuppressionResult = {
+   *   suppress: true,
+   *   rule: {
+   *     id: 'react-hydration',
+   *     pattern: /Hydration/,
+   *     suppressCompletely: false,
+   *     reason: 'Known dev issue'
+   *   },
+   *   completely: false
+   * };
+   *
+   * if (result.suppress && !result.completely) {
+   *   // Log but don't display
+   *   logger.log(error);
+   * }
+   * ```
+   */
+  export type SuppressionResult = {
+    /**
+     * Whether the error should be suppressed.
+     *
+     * When true, the error matched at least one suppression rule and
+     * should be handled according to the 'completely' flag.
+     */
+    suppress: boolean;
+
+    /**
+     * The suppression rule that matched, if any.
+     *
+     * Undefined when suppress is false. Provides details about which
+     * rule triggered the suppression for logging and debugging.
+     */
+    rule?: ErrorSuppressionRule;
+
+    /**
+     * Whether to completely suppress the error.
+     *
+     * - **true**: No logging, storage, or reporting at all
+     * - **false**: Log and store, but don't display or send to external monitoring
+     * - **undefined**: When suppress is false
+     */
+    completely?: boolean;
+  };
+
+  /**
+   * Detailed result of attempting to report an error.
+   *
+   * Provides comprehensive feedback about how an error was processed,
+   * including which reporting channels were activated and whether any
+   * suppression rules applied. Useful for testing, debugging, and
+   * monitoring the error reporting system itself.
+   *
+   * @example
+   * ```typescript
+   * const result: ErrorReportResult = {
+   *   suppress: false,
+   *   rule: 'none',
+   *   completely: false,
+   *   logged: true,      // Sent to standard logger
+   *   console: true,     // Output to console
+   *   stored: true,      // Saved to localStorage
+   *   reported: true     // Sent to external monitoring
+   * };
+   *
+   * // Check reporting status
+   * if (!result.reported) {
+   *   console.warn('Error not sent to external monitoring');
+   * }
+   *
+   * // Suppressed error example
+   * const suppressed: ErrorReportResult = {
+   *   suppress: true,
+   *   rule: { id: 'known-issue', ... },
+   *   completely: false,
+   *   logged: true,      // Still logged
+   *   console: false,    // Not shown in console
+   *   stored: true,      // Still stored
+   *   reported: false    // Not sent externally
+   * };
+   * ```
+   */
+  export type ErrorReportResult = Omit<SuppressionResult, 'rule'> & {
+    /**
+     * The full error report that was processed.
+     *
+     * Includes error, severity, context, fingerprint, and tags.
+     */
+    report: ErrorReport;
+    /**
+     * Identifier of the suppression rule that matched.
+     *
+     * - String 'none': No suppression rule matched
+     * - String (rule ID): The ID of the matching rule
+     * - ErrorSuppressionRule: The full rule object
+     *
+     * @example 'react-hydration', 'third-party-script', 'none'
+     */
+    rule: string | ErrorSuppressionRule;
+
+    /**
+     * Whether the error was logged via standard application logger.
+     *
+     * True if enableStandardLogging is true and error wasn't completely
+     * suppressed. Logger may integrate with OpenTelemetry tracing and
+     * structured logging systems.
+     */
+    logged: boolean;
+
+    /**
+     * Whether the error was output to the console.
+     *
+     * True if enableConsoleLogging is true and error wasn't completely
+     * suppressed or partially suppressed. Typically enabled only in
+     * development environments.
+     */
+    console: boolean;
+
+    /**
+     * Whether the error was saved to localStorage.
+     *
+     * True if enableLocalStorage is true, localStorage is available,
+     * and error wasn't completely suppressed. Useful for offline
+     * debugging and error review.
+     */
+    stored: boolean;
+
+    /**
+     * Whether the error was sent to external monitoring services.
+     *
+     * True if enableExternalReporting is true and error wasn't
+     * suppressed (either partially or completely). External services
+     * include Application Insights, Google Analytics, Sentry, etc.
+     */
+    reported: boolean;
   };
 }

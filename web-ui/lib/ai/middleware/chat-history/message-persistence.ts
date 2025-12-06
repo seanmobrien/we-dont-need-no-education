@@ -1,14 +1,3 @@
-/**
- * @fileoverview Message Persistence Utilities for Chat History Middleware
- *
- * This module provides shared utilities for handling message persistence across
- * both streaming and text completion modes in the chat history middleware.
- *
- * @module lib/ai/middleware/chat-history/message-persistence
- * @version 1.0.0
- * @since 2025-07-25
- */
-
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 import { JSONValue } from 'ai';
 import { drizDb } from '@/lib/drizzle-db';
@@ -28,22 +17,6 @@ import {
 } from './instrumentation';
 import { generateChatId } from '../../core';
 
-/**
- * Initializes message persistence by creating chat, turn, and message records.
- * This is used by both streaming and text completion modes.
- *
- * @param context - The chat history context
- * @param params - The language model call parameters
- * @returns Promise resolving to the initialized persistence data
- *
- * @example
- * ```typescript
- * const { chatId, turnId, messageId } = await initializeMessagePersistence(
- *   context,
- *   params
- * );
- * ```
- */
 export const initializeMessagePersistence = async (
   context: ChatHistoryContext,
   params: LanguageModelV2CallOptions,
@@ -87,24 +60,6 @@ export const initializeMessagePersistence = async (
   }
 };
 
-/**
- * Completes message persistence by finalizing the message and turn.
- * This is used by both streaming and text completion modes.
- *
- * @param completionContext - The context for completing the message
- * @returns Promise resolving to the flush result
- *
- * @example
- * ```typescript
- * const result = await completeMessagePersistence({
- *   chatId: 'chat-123',
- *   turnId: 1,
- *   messageId: 42,
- *   generatedText: 'Generated response text',
- *   startTime: Date.now() - 1000
- * });
- * ```
- */
 export const completeMessagePersistence = async (
   completionContext: MessageCompletionContext,
 ) => {
@@ -158,14 +113,6 @@ export const completeMessagePersistence = async (
   }
 };
 
-/**
- * Safely handles message persistence initialization with error handling.
- * Returns null if initialization fails to allow continued operation.
- *
- * @param context - The chat history context
- * @param params - The language model call parameters
- * @returns Promise resolving to initialization data or null if failed
- */
 export const safeInitializeMessagePersistence = async (
   context: ChatHistoryContext,
   params: LanguageModelV2CallOptions,
@@ -184,13 +131,6 @@ export const safeInitializeMessagePersistence = async (
   }
 };
 
-/**
- * Safely handles message persistence completion with error handling.
- * Logs errors but doesn't throw to avoid breaking the response flow.
- *
- * @param completionContext - The context for completing the message
- * @returns Promise resolving to flush result or a failure result
- */
 export const safeCompleteMessagePersistence = async (
   completionContext: MessageCompletionContext,
 ) => {

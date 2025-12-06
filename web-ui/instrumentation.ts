@@ -7,6 +7,7 @@ type GlobalWithInstrumentationFlag = typeof globalThis & {
 export const register = async () => {
   const globalWithFlag = globalThis as GlobalWithInstrumentationFlag;
   if (globalWithFlag[REGISTERED_KEY]) {
+    // Logging is not availalbe until after instrumentation is complete
     console.warn('[otel] Instrumentation already registered, skipping.');
     return;
   }
@@ -15,6 +16,7 @@ export const register = async () => {
     process.env.NODE_ENV === 'development' &&
     !process.env.AZURE_MONITOR_CONNECTION_STRING
   ) {
+    // Logging is not availalbe until after instrumentation is complete
     console.log('[otel] Instrumentation disabled for local development');
     return;
   }

@@ -1,8 +1,7 @@
 'use client'; // Error boundaries must be Client Components
 
-import { useEffect } from 'react';
 import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
-import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
+import { useProcessedError } from '@/lib/error-monitoring/use-processed-error';
 
 type ErrorProps = {
   error: Error & { digest?: string };
@@ -14,20 +13,20 @@ type ErrorProps = {
  * This provides a fallback UI for any unhandled errors in the app router
  */
 export default function Error({ error, reset }: ErrorProps) {
-  useEffect(() => {
-    // Report the error with high severity since it reached the root level
-    errorReporter.reportBoundaryError(
-      error,
-      {
-        errorBoundary: 'RootError',
-      },
-      ErrorSeverity.HIGH,
-    );
-  }, [error]);
+  const { processedError } = useProcessedError({
+    error,
+    reset,
+  });
 
+  if (!processedError) {
+    return null;
+  }
   return (
     <div>
-      <RenderErrorBoundaryFallback error={error} resetErrorBoundary={reset} />
+      <RenderErrorBoundaryFallback
+        error={processedError}
+        resetErrorBoundary={reset}
+      />
     </div>
   );
 }

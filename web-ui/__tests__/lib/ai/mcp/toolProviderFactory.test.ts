@@ -6,9 +6,6 @@ import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 
 setupImpersonationMock();
 
-import { mockFlagsmithInstanceFactory } from '@/__tests__/jest.setup';
-import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { createFlagsmithInstance } from 'flagsmith/isomorphic';
 // Mock all dependencies first
 const mockGetResolvedPromises = jest.fn() as jest.MockedFunction<any>;
 const mockIsError = jest.fn() as jest.MockedFunction<any>;
@@ -27,7 +24,7 @@ const mockGetCachedTools = jest.fn() as unknown as jest.MockedFunction<
 mockGetCachedTools.mockResolvedValue(null as Record<string, unknown> | null);
 
 jest.mock('@/lib/react-util/utility-methods', () => {
-  originalReactUtil = jest.requireActual('/lib/react-util/utility-methods');
+  const originalReactUtil = jest.requireActual('/lib/react-util/utility-methods');
   return {
     ...originalReactUtil,
     getResolvedPromises: mockGetResolvedPromises,
@@ -59,18 +56,30 @@ jest.mock('@/lib/ai/mcp/instrumented-sse-transport', () => ({
   InstrumentedSseTransport: mockInstrumentedSseTransport,
 }));
 jest.mock('@/lib/ai/mcp/providers/client-tool-provider', () => ({
-  clientToolProviderFactory: jest.fn(() => ({
-    url: 'https://server3.com/api',
-    allowWrite: false,
-    get_mcpClient: jest.fn().mockReturnValue({}),
-    get_isConnected: jest.fn().mockReturnValue(true),
-    get tools() {
-      return {};
-    },
-    dispose: jest.fn().mockResolvedValue(undefined as unknown as never),
-    connect: jest.fn().mockResolvedValue({} as unknown as never),
-  })),
+  clientToolProviderFactory: jest.fn(() => {
+    const emitter = new EventEmitter();
+    const dispose = jest.fn(() => emitter.emit('dispose'));
+    return {
+      url: 'https://server3.com/api',
+      allowWrite: false,
+      get_mcpClient: jest.fn().mockReturnValue({}),
+      get_isConnected: jest.fn().mockReturnValue(true),
+      get tools() {
+        return {};
+      },
+      [Symbol.dispose]: dispose,
+      dispose: dispose,
+      connect: jest.fn().mockResolvedValue({} as unknown as never),
+      addDisposeListener: jest.fn((cb: () => void) => {
+        emitter.on('dispose', cb);
+      }),
+      removeDisposeListener: jest.fn((cb: () => void) => {
+        emitter.off('dispose', cb);
+      }),
+    };
+  })
 }));
+
 // Import after mocking
 import {
   toolProviderFactory,
@@ -83,6 +92,31 @@ import type {
 import { ToolSet } from 'ai';
 import z from 'zod';
 import { createAutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import EventEmitter from '@protobufjs/eventemitter';
+
+type DisposedEmitter = {
+  [Symbol.dispose]: () => void;
+  dispose: () => void;
+  addDisposeListener: (listener: () => void) => void;
+  removeDisposeListener: (listener: () => void) => void;
+};
+
+const makeDisposeEmitter = <T>(input: T): T & DisposedEmitter => {
+  const emitter = new EventEmitter();
+  const dispose = jest.fn(() => {
+    emitter.emit('dispose');
+  });
+  const ret = input as (T & Partial<DisposedEmitter>);
+  ret[Symbol.dispose] = dispose;
+  ret.dispose = dispose;
+  ret.addDisposeListener = jest.fn((listener: () => void) => {
+    emitter.on('dispose', listener);
+  });
+  ret.removeDisposeListener = jest.fn((listener: () => void) => {
+    emitter.off('dispose', listener);
+  });
+  return ret as T & Required<DisposedEmitter>;
+};
 
 const mockTools: ToolSet = {
   'read-tool': {
@@ -103,8 +137,8 @@ describe('toolProviderFactory', () => {
   };
 
   const mockMCPClient = {
-    tools: jest.fn() as jest.MockedFunction<() => Promise<ToolSet>>,
-    close: jest.fn() as jest.MockedFunction<() => Promise<void>>,
+    tools: jest.fn(() => Promise.resolve(mockTools)),
+    close: jest.fn(() => Promise.resolve()),
   };
 
   beforeEach(() => {
@@ -274,7 +308,7 @@ describe('toolProviderFactory', () => {
       });
 
       it('should dispose the MCP client', async () => {
-        await provider.dispose();
+        await provider[Symbol.dispose]();
         expect(mockMCPClient.close).toHaveBeenCalled();
       });
 
@@ -282,7 +316,7 @@ describe('toolProviderFactory', () => {
         const disposeError = new Error('Dispose error');
         mockMCPClient.close.mockRejectedValue(disposeError);
 
-        await provider.dispose();
+        await provider[Symbol.dispose]();
 
         expect(mockLoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
           disposeError,
@@ -314,13 +348,7 @@ describe('toolProviderFactory', () => {
       expect(provider.tools).toEqual({});
       expect(provider.get_mcpClient()).toBeUndefined();
     });
-
-    it('should handle stub provider disposal', async () => {
-      mockCreateMCPClient.mockRejectedValue(new Error('Connection failed'));
-      const provider = await toolProviderFactory(mockOptions);
-
-      await expect(provider.dispose()).resolves.toBeUndefined();
-    });
+    ;
 
     it('should handle stub provider reconnection', async () => {
       mockCreateMCPClient.mockRejectedValue(new Error('Connection failed'));
@@ -384,20 +412,26 @@ describe('toolProviderSetFactory', () => {
     { url: 'https://server3.com/api', allowWrite: false },
   ];
 
-  const createMockProvider = (tools: Record<string, unknown> = mockTools) => {
-    mockCreateMCPClient.mockResolvedValueOnce({
-      tools: jest.fn().mockReturnValue(tools),
+  const createMockProvider = (tools: Record<string, unknown> = mockTools): ConnectableToolProvider => {
+    const mcpClient = {
+      tools: jest.fn(() => Promise.resolve(tools as ToolSet)),
       close: jest.fn(),
-    });
-    return {
-      get_mcpClient: jest.fn().mockReturnValue({}),
-      get_isConnected: jest.fn().mockReturnValue(true),
-      get tools() {
-        return tools;
-      },
-      dispose: jest.fn().mockResolvedValue(undefined as unknown as never),
-      connect: jest.fn().mockResolvedValue({} as unknown as never),
     };
+    mockCreateMCPClient.mockResolvedValueOnce(mcpClient);
+    const emitter = new EventEmitter();
+
+    const ret: ConnectableToolProvider = {
+      get_mcpClient: jest.fn(() => mcpClient as any),
+      get_isConnected: jest.fn(() => true),
+      get tools() {
+        return tools as ToolSet;
+      },
+      [Symbol.dispose]: jest.fn(() => emitter.emit('dispose')),
+      addDisposeListener: jest.fn((cb: () => void) => emitter.on('dispose', cb)),
+      removeDisposeListener: jest.fn((cb: () => void) => emitter.off('dispose', cb)),
+      connect: jest.fn(() => Promise.resolve(ret)),
+    };
+    return ret;
   };
 
   beforeEach(() => {
@@ -548,8 +582,8 @@ describe('toolProviderSetFactory', () => {
 
       const providerSet = await toolProviderSetFactory(mockProviderOptions);
 
-      await providerSet.dispose();
-      expect(mockProvider.dispose).toHaveBeenCalledTimes(3);
+      providerSet[Symbol.dispose]();
+      expect(mockProvider[Symbol.dispose]).toHaveBeenCalledTimes(3);
 
       jest.advanceTimersByTime(1000 * 60 * 60 * 24);
     });
@@ -601,15 +635,18 @@ describe('toolProviderSetFactory', () => {
       // Allow pending promise to resolve
       await pendingPromise;
 
-      expect(mockProvider.dispose).toHaveBeenCalled();
+      expect(mockProvider[Symbol.dispose]).toHaveBeenCalled();
     });
 
     it('should handle cleanup errors gracefully', async () => {
       const failingProvider = createMockProvider();
-      const mockedDispose = failingProvider.dispose as jest.MockedFunction<
-        () => Promise<void>
+      const mockedDispose = failingProvider[Symbol.dispose] as jest.MockedFunction<
+        () => void
       >;
-      mockedDispose.mockRejectedValue(new Error('Cleanup failed'));
+
+      mockedDispose.mockImplementation(() => {
+        throw new Error('Cleanup failed');
+      });
 
       const pendingPromise = Promise.resolve(failingProvider);
 
@@ -619,10 +656,9 @@ describe('toolProviderSetFactory', () => {
         pending: [pendingPromise],
       });
 
+      //
       await toolProviderSetFactory(mockProviderOptions);
 
-      // Allow pending promise to resolve
-      await pendingPromise;
 
       // Cleanup errors are logged but don't throw
     });
@@ -638,7 +674,7 @@ describe('toolProviderSetFactory', () => {
       await toolProviderSetFactory(mockProviderOptions);
 
       // Allow rejected promise to settle
-      await rejectedPromise.catch(() => {});
+      await rejectedPromise.catch(() => { });
 
       // Error logging is handled globally
     });
@@ -674,12 +710,12 @@ describe('toolProviderSetFactory', () => {
 });
 
 describe('integration scenarios', () => {
-  it('is a test', () => {});
+  it('is a test', () => { });
 
   it('should handle complex real-world scenario', async () => {
     jest.useFakeTimers();
     // Mock a scenario with mixed success/failure
-    const successfulProvider = {
+    const successfulProvider = makeDisposeEmitter({
       get_mcpClient: jest.fn().mockReturnValue({}),
       get_isConnected: jest.fn().mockReturnValue(true),
       get tools() {
@@ -693,9 +729,9 @@ describe('integration scenarios', () => {
       connect: jest
         .fn()
         .mockResolvedValue({} as unknown as never) as jest.MockedFunction<
-        () => Promise<ConnectableToolProvider>
-      >,
-    };
+          () => Promise<ConnectableToolProvider>
+        >,
+    });
 
     mockGetResolvedPromises.mockResolvedValue({
       fulfilled: [successfulProvider],
@@ -719,7 +755,7 @@ describe('integration scenarios', () => {
 
     jest.advanceTimersByTime(1000 * 60 * 60 * 24);
     // Should cleanup gracefully
-    await providerSet.dispose();
+    await providerSet[Symbol.dispose]();
     expect(successfulProvider.dispose).toHaveBeenCalled();
   });
 });

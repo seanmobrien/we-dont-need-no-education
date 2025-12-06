@@ -5,9 +5,6 @@ import type {
 } from '@ai-sdk/provider';
 import { MiddlewareStateManager } from './state-management';
 
-/**
- * Default telemetry configuration for normalized chat requests
- */
 const DEFAULT_TELEMETRY = {
   isEnabled: true,
   functionId: 'generic-chat-request',
@@ -17,16 +14,10 @@ const DEFAULT_TELEMETRY = {
 const jsonExpression = () =>
   /\`\`\`json[\s\n\r]*((?:\[[\s\n\r]*)?{[\s\S]*?}(?:[\s\n\r]*\])?)[\s\n\r]*\`\`\`/;
 
-/**
- * Checks if response text is wrapped in ```json blocks
- */
 function isJsonCodeBlock(text: string): boolean {
   return jsonExpression().test(text);
 }
 
-/**
- * Checks if response text is valid JSON (starts with {, ends with }, and parses successfully)
- */
 function isValidJsonObject(text: string): boolean {
   const trimmed = text.trim();
   if (
@@ -43,9 +34,6 @@ function isValidJsonObject(text: string): boolean {
   return false;
 }
 
-/**
- * Extracts JSON content from ```json code blocks
- */
 export const extractJsonFromCodeBlock = (text: string): string => {
   const match = jsonExpression().exec(text);
   if (!match) {
@@ -54,9 +42,6 @@ export const extractJsonFromCodeBlock = (text: string): string => {
   return match[1];
 };
 
-/**
- * Checks if structured output is empty or blank
- */
 function isStructuredOutputEmpty(result: Record<string, unknown>): boolean {
   if (!result.providerMetadata) {
     return true;
@@ -79,9 +64,6 @@ function isStructuredOutputEmpty(result: Record<string, unknown>): boolean {
   return false;
 }
 
-/**
- * Safely parses JSON string, returns null if invalid
- */
 function safeJsonParse(jsonString: string): unknown {
   try {
     return JSON.parse(jsonString);
@@ -90,18 +72,8 @@ function safeJsonParse(jsonString: string): unknown {
   }
 }
 
-/**
- * Set Normalized Defaults Middleware (Original Implementation)
- *
- * This middleware:
- * 1. On request: Sets default experimental_telemetry if not present
- * 2. On response: Detects JSON code blocks and valid JSON objects, converts to structured output if structured output is empty
- */
 export const originalSetNormalizedDefaultsMiddleware: LanguageModelV2Middleware =
   {
-    /**
-     * Transform parameters to add default telemetry if missing
-     */
     transformParams: async ({ params }) => {
       // Cast params to allow access to experimental properties
       const modifiedParams = { ...params } as typeof params & {
@@ -116,9 +88,6 @@ export const originalSetNormalizedDefaultsMiddleware: LanguageModelV2Middleware 
       return modifiedParams;
     },
 
-    /**
-     * Wrap generate to post-process response for JSON code blocks and valid JSON objects
-     */
     wrapGenerate: async ({ doGenerate }) => {
       const result = await doGenerate();
 
@@ -159,9 +128,6 @@ export const originalSetNormalizedDefaultsMiddleware: LanguageModelV2Middleware 
       return result;
     },
 
-    /**
-     * Wrap stream to post-process response for JSON code blocks and valid JSON objects
-     */
     wrapStream: async ({ doStream }) => {
       const { stream, ...rest } = await doStream();
 
@@ -223,12 +189,6 @@ export const originalSetNormalizedDefaultsMiddleware: LanguageModelV2Middleware 
     },
   };
 
-/**
- * Set Normalized Defaults Middleware with State Management Support
- *
- * This middleware supports the state management protocol and can participate
- * in state collection and restoration operations.
- */
 export const setNormalizedDefaultsMiddleware =
   MiddlewareStateManager.Instance.basicMiddlewareWrapper({
     middlewareId: 'set-normalized-defaults',

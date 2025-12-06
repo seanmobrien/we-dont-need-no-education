@@ -1,9 +1,5 @@
 import type {
   LanguageModelV2CallOptions,
-  LanguageModelV2FilePart,
-  LanguageModelV2ReasoningPart,
-  LanguageModelV2TextPart,
-  LanguageModelV2ToolCallPart,
   LanguageModelV2ToolResultPart,
 } from '@ai-sdk/provider';
 import { schema } from '@/lib/drizzle-db/schema';
@@ -54,7 +50,7 @@ export const normalizeOutput = (value: unknown): string => {
   }
   return JSON.stringify(value ?? 'null');
 };
-// Extract tool-result input/output/error as strings for storage
+
 export const getItemOutput = (
   item:
     | (LanguageModelV2ToolResultPart & { type: 'tool-result' | 'dynamic-tool' })
@@ -116,47 +112,6 @@ export const getItemOutput = (
   return { status: 'result', output: normalizeOutput(item.output) };
 };
 
-/**
- * Identifies new messages by comparing incoming prompt with existing chat messages.
- *
- * @remarks
- * This function performs message deduplication by comparing incoming messages
- * against existing messages in the chat session. It identifies which messages
- * from the prompt array are truly new and haven't been saved before.
- *
- * **Comparison Strategy:**
- * - Messages are compared by role and content for exact matches
- * - Tool messages use providerId-based deduplication with turn validation
- * - Only messages not found in existing chat history are considered new
- * - Maintains message order from the original prompt array
- * - Handles various content types (string and complex content structures)
- *
- * **Tool Message Update Logic:**
- * - For tool messages with existing providerId: returns message for update processing
- * - Update eligibility determined by currentTurnId > stored.metadata.modifiedTurnId
- * - Non-destructive merge preserves existing functionCall/toolResult data
- *
- * **Performance Optimizations:**
- * - Queries existing messages only once per chat session
- * - Uses efficient array operations for comparison
- * - Minimizes database operations by batching lookups
- *
- * @param tx - Active database transaction for consistency
- * @param chatId - The chat ID to check for existing messages
- * @param incomingMessages - Array of messages from the prompt
- * @param currentTurnId - Current turn ID for tool message update validation
- * @returns Promise resolving to array of messages that need processing (new inserts + eligible updates)
- *
- * @example
- * ```typescript
- * const messages = await getNewMessages(transaction, 'chat_123', [
- *   { role: 'user', content: 'Hello' },        // Already exists - filtered out
- *   { role: 'assistant', content: 'Hi there' }, // Already exists - filtered out
- *   { role: 'user', content: 'How are you?' }   // New message - included
- * ], 3);
- * // Returns: [{ role: 'user', content: 'How are you?' }]
- * ```
- */
 export const getNewMessages = async (
   tx: DbTransactionType,
   chatId: string,
@@ -346,15 +301,11 @@ export const getNewMessages = async (
       incomingMsg.role === 'assistant' &&
       Array.isArray(incomingMsg.content)
     ) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      type MessagePart = any;
+
       const toolCalls = incomingMsg.content.filter(
-        (
-          part:
-            | LanguageModelV2TextPart
-            | LanguageModelV2FilePart
-            | LanguageModelV2ReasoningPart
-            | LanguageModelV2ToolCallPart
-            | LanguageModelV2ToolResultPart,
-        ) => part?.type === 'tool-call' && part?.toolCallId,
+        (part: MessagePart) => part?.type === 'tool-call' && part?.toolCallId,
       );
 
       // If this message contains only tool calls, check update eligibility
@@ -363,25 +314,16 @@ export const getNewMessages = async (
         toolCalls.length === incomingMsg.content.length
       ) {
         // Check if any tool call needs updating
-        const hasUpdatableCall = toolCalls.some(
-          (
-            call:
-              | LanguageModelV2TextPart
-              | LanguageModelV2FilePart
-              | LanguageModelV2ReasoningPart
-              | LanguageModelV2ToolCallPart
-              | LanguageModelV2ToolResultPart,
-          ) => {
-            if (!('toolCallId' in call)) {
-              return false; // Skip if no toolCallId present
-            }
-            if (!existingToolProviderIds.has(call.toolCallId)) {
-              return true; // New tool call
-            }
-            const existingMeta = existingToolProviderIds.get(call.toolCallId)!;
-            return currentTurnId && currentTurnId > existingMeta.modifiedTurnId;
-          },
-        );
+        const hasUpdatableCall = toolCalls.some((call: MessagePart) => {
+          if (!('toolCallId' in call)) {
+            return false; // Skip if no toolCallId present
+          }
+          if (!existingToolProviderIds.has(call.toolCallId)) {
+            return true; // New tool call
+          }
+          const existingMeta = existingToolProviderIds.get(call.toolCallId)!;
+          return currentTurnId && currentTurnId > existingMeta.modifiedTurnId;
+        });
 
         return hasUpdatableCall;
       }

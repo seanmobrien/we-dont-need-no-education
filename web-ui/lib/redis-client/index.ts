@@ -34,7 +34,7 @@ export const getRedisClient = async (
 ): Promise<RedisClientType> => {
   const { subscribeMode } = normalizeOptions(options);
   const registryKey = subscribeMode ? SUBSCRIBABLE_REGISTRY_KEY : REGISTRY_KEY;
-  return await SingletonProvider.Instance.getOrCreate(registryKey, async () => {
+  return await SingletonProvider.Instance.getRequired(registryKey, async () => {
     let client: RedisClientType | null = createClient({
       url: env('REDIS_URL'),
       password: env('REDIS_PASSWORD'),

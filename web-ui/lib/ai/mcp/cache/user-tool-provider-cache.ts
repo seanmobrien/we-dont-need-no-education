@@ -16,7 +16,7 @@ import type {
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
-import { globalSingleton } from '@/lib/typescript';
+import { globalRequiredSingleton } from '@/lib/typescript';
 
 /**
  * Cache for maintaining ToolProviderSet instances per user across HTTP requests.
@@ -86,13 +86,13 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
       // Only include non-auth headers in hash to avoid session token changes
       headers: config.headers
         ? Object.fromEntries(
-            Object.entries(config.headers).filter(
-              ([key]) =>
-                !key.toLowerCase().includes('auth') &&
-                !key.toLowerCase().includes('cookie') &&
-                key !== 'x-chat-history-id',
-            ),
-          )
+          Object.entries(config.headers).filter(
+            ([key]) =>
+              !key.toLowerCase().includes('auth') &&
+              !key.toLowerCase().includes('cookie') &&
+              key !== 'x-chat-history-id',
+          ),
+        )
         : {},
     });
 
@@ -141,11 +141,12 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
 
     try {
       const toolProviders = await factory();
-
       if (toolProviders.isHealthy) {
         // Check cache size limits before adding
         this.enforceEvictionLimits(userId);
-
+        toolProviders.addDisposeListener(() => {
+          this.cache.delete(cacheKey);
+        });
         // Cache the new tool provider
         this.cache.set(cacheKey, {
           toolProviders,
@@ -174,6 +175,10 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
     }
   }
 
+  delete(cacheKey: string): void {
+    this.removeEntry(cacheKey, this.cache.get(cacheKey)!);
+  }
+
   /**
    * Check if a cached entry is expired.
    */
@@ -186,7 +191,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
    */
   private removeEntry(cacheKey: string, entry: CachedToolProvider): void {
     try {
-      entry.toolProviders.dispose();
+      entry.toolProviders[Symbol.dispose]();
       log((l) =>
         l.debug('Tool provider disposed', {
           userId: entry.userId,
@@ -201,8 +206,8 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
           error,
         }),
       );
+      this.cache.delete(cacheKey);
     }
-    this.cache.delete(cacheKey);
   }
 
   /**
@@ -221,7 +226,18 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
       )[0];
 
       if (oldestUserEntry) {
-        this.removeEntry(oldestUserEntry[0], oldestUserEntry[1]);
+        try {
+          oldestUserEntry[1].toolProviders[Symbol.dispose]();
+        } catch (error) {
+          log((l) =>
+            l.warn('Error disposing tool provider', {
+              userId: oldestUserEntry[1].userId,
+              cacheKey: oldestUserEntry[0],
+              error,
+            }),
+          );
+          this.removeEntry(oldestUserEntry[0], oldestUserEntry[1]);
+        }
       }
     }
 
@@ -291,8 +307,14 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
       }
     }
 
-    for (const [cacheKey, entry] of expiredEntries) {
-      this.removeEntry(cacheKey, entry);
+    for (const [, entry] of expiredEntries) {
+      try {
+        entry.toolProviders[Symbol.dispose]();
+      } catch (error) {
+        log((l) =>
+          l.warn('Error disposing tool provider during cleanup', { error }),
+        );
+      }
     }
 
     if (expiredEntries.length > 0) {
@@ -309,9 +331,9 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
    * Clear all cached tool providers and dispose them.
    */
   public clear(): void {
-    for (const entry of this.cache.values()) {
+    for (const entry of [...this.cache.values()]) {
       try {
-        entry.toolProviders.dispose();
+        entry.toolProviders[Symbol.dispose]();
       } catch (error) {
         log((l) =>
           l.warn('Error disposing tool provider during clear', { error }),
@@ -396,7 +418,7 @@ const getInstanceInternal = async (
       }),
     };
   }
-  return globalSingleton(
+  return globalRequiredSingleton(
     '@seanm/wedontneednoeducation/lib/ai/mcp/user-tool-provider-cache',
     () => new UserToolProviderCacheImpl(config),
   );

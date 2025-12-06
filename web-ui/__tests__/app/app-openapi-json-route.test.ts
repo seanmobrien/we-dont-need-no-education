@@ -11,6 +11,7 @@
 import type { NextRequest } from 'next/server';
 
 // hoist-safe mocks
+/*
 const mockFetch = jest.fn();
 jest.mock('@/lib/site-util/env', () => ({
   env: (k: string) => {
@@ -20,15 +21,21 @@ jest.mock('@/lib/site-util/env', () => ({
     return '';
   },
 }));
-
+*/
+/*
 jest.mock('@/lib/nextjs-util/fetch', () => ({
   fetch: (...args: unknown[]) => mockFetch(...args),
 }));
+*/
+import { fetch as mockFetch } from '@/lib/nextjs-util/server/fetch';
 
 describe('openapi route', () => {
   beforeEach(() => {
     //jest.resetModules();
-    mockFetch.mockReset();
+    process.env.MEM0_API_HOST = 'https://mem0.example';
+    process.env.MEM0_API_BASE_PATH = 'api/v1';
+    process.env.NEXT_PUBLIC_HOSTNAME = 'https://app.example';
+    //mockFetch.mockReset();
   });
 
   it('replaces MEM0 host in url fields and remaps paths', async () => {
@@ -42,7 +49,7 @@ describe('openapi route', () => {
     };
 
     // mock fetch to return an object with text()
-    mockFetch.mockResolvedValueOnce({
+    (mockFetch as jest.Mock).mockResolvedValue({
       text: async () => JSON.stringify(original),
     });
 
@@ -73,7 +80,7 @@ describe('openapi route', () => {
         '/other/path': { post: {} },
       },
     };
-    mockFetch.mockResolvedValueOnce({
+    (mockFetch as jest.Mock).mockResolvedValueOnce({
       text: async () => JSON.stringify(original),
     });
 

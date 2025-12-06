@@ -40,5 +40,8 @@ export { zodToStructure } from './zod-to-json-structure';
 export {
   SingletonProvider,
   globalSingleton,
+  globalRequiredSingleton,
+  globalSingletonAsync,
+  globalRequiredSingletonAsync,
   type SingletonConfig,
 } from './singleton-provider';

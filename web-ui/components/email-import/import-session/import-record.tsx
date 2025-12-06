@@ -257,7 +257,7 @@ const ImportRecord: React.FC<ImportRecordProps> = ({
         // no-op for now
         break;
       default:
-        console.warn('Unhandled job state', jobState, providerId);
+        log((l) => l.warn('Unhandled job state', jobState, providerId));
         // nothing to do yet
         break;
     }

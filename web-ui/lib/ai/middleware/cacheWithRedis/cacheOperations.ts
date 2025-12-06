@@ -1,7 +1,3 @@
-/**
- * @fileoverview Cache operations utilities for Redis middleware
- */
-
 import type { CacheableResponse, JailEntry } from './types';
 import { getCacheConfig } from './config';
 import { metricsCollector } from './metrics';
@@ -13,14 +9,6 @@ import { LanguageModelV2Content } from '@ai-sdk/provider';
 
 const config = getCacheConfig();
 
-/**
- * Handles caching of a successful response
- *
- * @param redis - Redis client instance
- * @param cacheKey - The cache key to store under
- * @param response - The response to cache
- * @param context - Optional context string for logging
- */
 export const cacheSuccessfulResponse = async (
   redis: Awaited<ReturnType<typeof getRedisClient>>,
   cacheKey: string,
@@ -81,14 +69,6 @@ export const cacheSuccessfulResponse = async (
   }
 };
 
-/**
- * Handles cache jail logic for problematic responses
- *
- * @param redis - Redis client instance
- * @param cacheKey - The cache key for the response
- * @param response - The problematic response
- * @param context - Optional context string for logging
- */
 export const handleCacheJail = async (
   redis: Awaited<ReturnType<typeof getRedisClient>>,
   cacheKey: string,
@@ -170,7 +150,10 @@ export const handleCacheJail = async (
       metricsCollector.recordError(cacheKey, String(jailError));
     }
     if (config.enableLogging) {
-      console.error(`Error managing ${context}cache jail:`, jailError);
+      LoggedError.isTurtlesAllTheWayDownBaby(jailError, {
+        log: true,
+        source: 'cacheWithRedis',
+      });
     }
   }
 };

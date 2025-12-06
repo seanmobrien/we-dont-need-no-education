@@ -1,21 +1,12 @@
-/**
- * Domain-specific error for missing model resources (provider or model).
- */
 import { isError } from '@/lib/react-util/utility-methods';
 
-// Extendable union of resource categories that can be "not found" in AI services
 export type ModelResourceType = 'provider' | 'model' | 'tool' | 'model-quota';
 
 export interface ModelResourceNotFoundOptions {
-  /** The kind of resource missing */
   resourceType: ModelResourceType;
-  /** Normalized value used for the lookup (e.g., provider name, providerId:modelName) */
   normalized: unknown;
-  /** Raw, unnormalized input that led to the lookup */
   inputRaw: unknown;
-  /** Short message describing the source of the failure */
   message: string;
-  /** Optional inner error to preserve original exception */
   cause?: unknown;
 }
 
@@ -35,9 +26,6 @@ export class ResourceNotFoundError extends Error {
   }
 }
 
-/**
- * Type guard for ResourceNotFoundError supporting instance and duck-typed detection.
- */
 export function isResourceNotFoundError(
   e: unknown,
 ): e is ResourceNotFoundError {

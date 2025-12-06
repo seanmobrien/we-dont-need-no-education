@@ -12,18 +12,17 @@ const createReporterInstance = (): ErrorReporterInterface => {
     enableExternalReporting: true,
     enableLocalStorage: false,
   });
-
   if (!reporter) {
     throw new TypeError(
       'Failed to initialize LoggedErrorReporter - telemetry error tracking will not work',
     );
   }
-
+  reporter.subscribeToErrorReports();
   return reporter;
 };
 
 export const serverReporter = (): ErrorReporterInterface => {
-  return SingletonProvider.Instance.getOrCreate(
+  return SingletonProvider.Instance.getRequired(
     REPORTER_SINGLETON_KEY,
     createReporterInstance,
   );

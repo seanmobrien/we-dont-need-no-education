@@ -261,7 +261,6 @@ export const darkTheme: Theme = createTheme({
         root: {
           '&.Mui-focused.MuiInputLabel-outlined.Mui-focused': {
             color: 'var(--color-secondary-accent)',
-            marginTop: '-6px',
           },
         },
       },

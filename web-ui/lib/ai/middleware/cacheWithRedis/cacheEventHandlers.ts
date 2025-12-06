@@ -1,7 +1,3 @@
-/**
- * @fileoverview Cache event handlers for hit/miss scenarios and metrics
- */
-
 import type { CacheableResponse } from './types';
 import { getCacheConfig } from './config';
 import { metricsCollector } from './metrics';
@@ -10,13 +6,6 @@ import { generateChatId } from '@/lib/ai/core';
 
 const config = getCacheConfig();
 
-/**
- * Handles cache hit logic with metrics and logging
- *
- * @param cacheKey - The cache key that was hit
- * @param parsed - The parsed cached response
- * @param context - Optional context string for logging
- */
 export const handleCacheHit = (
   cacheKey: string,
   parsed: CacheableResponse,
@@ -78,12 +67,6 @@ export const handleCacheHit = (
   }
 };
 
-/**
- * Handles cache miss logic with metrics and logging
- *
- * @param cacheKey - The cache key that was missed
- * @param context - Optional context string for logging
- */
 export const handleCacheMiss = (
   cacheKey: string,
   context: string = '',

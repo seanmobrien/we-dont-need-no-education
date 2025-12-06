@@ -1,5 +1,4 @@
-import { fetch } from '@/lib/nextjs-util/fetch';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server';
+import { wrapRouteRequest, fetch } from '@/lib/nextjs-util/server';
 import { env } from '@/lib/site-util/env';
 import { NextResponse } from 'next/dist/server/web/spec-extension/response';
 

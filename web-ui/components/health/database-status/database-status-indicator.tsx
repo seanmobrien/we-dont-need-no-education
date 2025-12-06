@@ -17,7 +17,7 @@ import {
   Error as ErrorIcon,
   Storage as DatabaseIcon,
 } from '@mui/icons-material';
-import { useDatabaseHealth } from '@/lib/hooks/use-database-health';
+import { useHealth } from '../health-provider/health-context';
 import { BOX_SX_VARIANTS, type BoxSxVariantKey } from '../health-status-styles';
 
 /**
@@ -35,7 +35,7 @@ interface DatabaseStatusIndicatorProps {
   size?: 'small' | 'medium';
 }
 
-type DatabaseHealthStatus = 'ok' | 'warning' | 'error';
+type DatabaseHealthStatus = 'healthy' | 'warning' | 'error';
 
 /**
  * Gets the appropriate icon for the health status
@@ -46,7 +46,7 @@ function getStatusIcon(status: DatabaseHealthStatus, isLoading: boolean) {
   }
 
   switch (status) {
-    case 'ok':
+    case 'healthy':
       return <HealthyIcon fontSize="small" />;
     case 'warning':
       return <WarningIcon fontSize="small" />;
@@ -64,7 +64,7 @@ function getStatusColor(
   status: DatabaseHealthStatus,
 ): 'success' | 'warning' | 'error' | 'default' {
   switch (status) {
-    case 'ok':
+    case 'healthy':
       return 'success';
     case 'warning':
       return 'warning';
@@ -80,7 +80,7 @@ function getStatusColor(
  */
 function getStatusLabel(status: DatabaseHealthStatus): string {
   switch (status) {
-    case 'ok':
+    case 'healthy':
       return 'Database: Healthy';
     case 'warning':
       return 'Database: Warning';
@@ -113,7 +113,7 @@ function getTooltipMessage(
 
   let baseMessage: string;
   switch (status) {
-    case 'ok':
+    case 'healthy':
       baseMessage = 'Database service is healthy and operational.';
       break;
     case 'warning':
@@ -135,8 +135,15 @@ function getTooltipMessage(
  */
 export const DatabaseStatusIndicator = React.memo<DatabaseStatusIndicatorProps>(
   ({ showLabel = false, size = 'medium' }) => {
-    const { healthStatus, isLoading, isError, error, refreshInterval } =
-      useDatabaseHealth();
+    const {
+      health: { database: databaseStatus },
+      isLoading,
+      isError,
+      error,
+      refreshInterval,
+    } = useHealth();
+
+    const healthStatus = databaseStatus || 'warning';
 
     const statusIcon = getStatusIcon(healthStatus, isLoading);
     const statusColor = getStatusColor(healthStatus);

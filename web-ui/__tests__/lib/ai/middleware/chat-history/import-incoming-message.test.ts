@@ -1,4 +1,4 @@
- 
+
 /**
  * @fileoverview Unit tests for chat history import incoming message functionality
  *

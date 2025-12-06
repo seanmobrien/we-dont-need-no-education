@@ -1,12 +1,5 @@
 import type { LanguageModelV2Content } from '@ai-sdk/provider';
 
-/**
- * @fileoverview Type definitions for Redis cache middleware
- */
-
-/**
- * Represents a cacheable AI response with all relevant metadata
- */
 export interface CacheableResponse {
   id: string;
   content: Array<LanguageModelV2Content>;
@@ -18,9 +11,6 @@ export interface CacheableResponse {
   response?: unknown;
 }
 
-/**
- * Represents an entry in the cache jail system for problematic responses
- */
 export interface JailEntry {
   count: number;
   firstSeen: number;

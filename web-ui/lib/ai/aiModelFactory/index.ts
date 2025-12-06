@@ -3,6 +3,9 @@ export {
   aiModelFactory,
   createEmbeddingModel,
   createGoogleEmbeddingModel,
+} from './factory';
+
+export {
   disableModel,
   enableModel,
   disableProvider,
@@ -15,4 +18,4 @@ export {
   handleAzureRateLimit,
   handleGoogleRateLimit,
   handleOpenAIRateLimit,
-} from './factory';
+} from './model-availability-manager';

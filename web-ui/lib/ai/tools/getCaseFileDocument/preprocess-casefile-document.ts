@@ -95,8 +95,8 @@ export const preprocessCaseFileDocument = async ({
   requestContext: { requestId },
 }: {
   documents:
-    | Array<{ verbatim_fidelity: number; document: DocumentResource }>
-    | { verbatim_fidelity: number; document: DocumentResource };
+  | Array<{ verbatim_fidelity: number; document: DocumentResource }>
+  | { verbatim_fidelity: number; document: DocumentResource };
   goals: Array<string>;
   requestContext: { requestId: string };
 }): Promise<Array<CaseFileResponse>> => {
@@ -264,7 +264,7 @@ ___END CASE FILE___`,
     });
     try {
       const model = wrapChatHistoryMiddleware({
-        model: aiModelFactory('lofi'),
+        model: await aiModelFactory('lofi'),
         chatHistoryContext,
       });
       response = await generateTextWithRetry({
@@ -325,14 +325,14 @@ ___END CASE FILE___`,
       // Handle structured outputs from AI provider
       return Array.isArray(response.providerMetadata.structuredOutputs)
         ? response.providerMetadata.structuredOutputs.map((x) => ({
-            summary: x as SummarizedDocumentResource,
-          }))
+          summary: x as SummarizedDocumentResource,
+        }))
         : [
-            {
-              summary: response.providerMetadata
-                .structuredOutputs as SummarizedDocumentResource,
-            },
-          ]; // Ensure we always return an array for consistent handling
+          {
+            summary: response.providerMetadata
+              .structuredOutputs as SummarizedDocumentResource,
+          },
+        ]; // Ensure we always return an array for consistent handling
     }
 
     // Fallback to text-based response when structured parsing isn't available

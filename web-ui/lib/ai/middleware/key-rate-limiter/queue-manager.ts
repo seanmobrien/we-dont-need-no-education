@@ -1,24 +1,18 @@
 import { getRedisClient } from '@/lib/redis-client';
 import type { RateLimitedRequest, ProcessedResponse } from './types';
+import { SingletonProvider } from '@/lib/typescript';
 
 const REDIS_PREFIX = 'rate-limit';
 const EXPIRATION_HOURS = 6;
 const EXPIRATION_SECONDS = EXPIRATION_HOURS * 60 * 60;
 
 export class RateLimitQueueManager {
-  /**
-   * Returns a singleton instance using a Symbol-backed global registry.
-   * This avoids duplicate instances across HMR, SSR, or multi-bundle scenarios.
-   */
   static getInstance(): RateLimitQueueManager {
     const GLOBAL_KEY = Symbol.for('@noeducation/key-rate-limiter:QueueManager');
-    const globalRegistry = globalThis as unknown as {
-      [key: symbol]: RateLimitQueueManager | undefined;
-    };
-    if (!globalRegistry[GLOBAL_KEY]) {
-      globalRegistry[GLOBAL_KEY] = new RateLimitQueueManager();
-    }
-    return globalRegistry[GLOBAL_KEY]!;
+    return SingletonProvider.Instance.getRequired<
+      RateLimitQueueManager,
+      symbol
+    >(GLOBAL_KEY, () => new RateLimitQueueManager());
   }
 
   private getQueueKey(generation: 1 | 2, modelClassification: string): string {

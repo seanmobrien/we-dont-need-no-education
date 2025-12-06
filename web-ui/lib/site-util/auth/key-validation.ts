@@ -1,4 +1,5 @@
 import { log } from '@/lib/logger';
+import { SingletonProvider } from '@/lib/typescript';
 
 const KEY_VALIDATION_STORAGE_KEY = 'lastKeyValidation';
 
@@ -20,17 +21,11 @@ export interface KeySyncResult {
 
 export function isKeyValidationDue(): boolean {
   try {
-    const lastValidation =
-      globalThis.localStorage &&
-      globalThis.localStorage.getItem(KEY_VALIDATION_STORAGE_KEY);
-    if (!lastValidation) {
+    const lastValidationTime = SingletonProvider.Instance.get<number>(
+      KEY_VALIDATION_STORAGE_KEY,
+    );
+    if (!lastValidationTime || isNaN(lastValidationTime)) {
       return true; // Never validated before
-    }
-    const lastValidationTime = parseInt(lastValidation, 10);
-
-    // If parsing failed, default to validation needed
-    if (isNaN(lastValidationTime)) {
-      return true;
     }
 
     const now = Date.now();
@@ -45,7 +40,7 @@ export function isKeyValidationDue(): boolean {
 
 export function updateKeyValidationTimestamp(): void {
   try {
-    localStorage.setItem(KEY_VALIDATION_STORAGE_KEY, Date.now().toString());
+    SingletonProvider.Instance.set(KEY_VALIDATION_STORAGE_KEY, Date.now());
   } catch (error) {
     log((l) => l.warn('Failed to update key validation timestamp', { error }));
   }

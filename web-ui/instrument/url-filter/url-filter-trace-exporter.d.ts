@@ -11,16 +11,13 @@
  * @module instrument/url-filter/url-filter-trace-exporter
  */
 
-declare module '@/instrument/url-filter/url-filter-trace-exporter' {
-  import type {
-    ReadableSpan,
-    SpanExporter,
-  } from '@opentelemetry/sdk-trace-base';
-  import type { ExportResult } from '@opentelemetry/core';
-  import type { LRUCache } from 'lru-cache';
-  import type { UrlFilterOptions } from '@/instrument/url-filter/url-filter-rules';
-  import { UrlFilterEngine } from '@/instrument/url-filter/url-filter-engine';
+import type { ReadableSpan, SpanExporter } from '@opentelemetry/sdk-trace-base';
+import type { ExportResult } from '@opentelemetry/core';
+import type { LRUCache } from 'lru-cache';
+import type { UrlFilterOptions } from './url-filter-rules';
+import { UrlFilterEngine } from './url-filter-engine';
 
+declare module '@/instrument/url-filter/url-filter-trace-exporter' {
   /**
    * SpanExporter decorator that filters spans containing URLs matching configured rules.
    *

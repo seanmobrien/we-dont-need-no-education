@@ -1,41 +1,34 @@
 import { createContext, useContext } from 'react';
-import {
-  AllFeatureFlagsDefault,
-  type KnownFeatureType,
-  type FeatureFlagStatus,
-} from './known-feature';
+import type { KnownFeatureType, KnownFeatureValueType } from './types';
+import { AllFeatureFlagsDefault } from './known-feature-defaults';
 
-/**
- * Lightweight feature flags API and provider.
- * This module is intentionally independent of Flagsmith's React bindings
- * so it can be used in server-rendered pages and hydrated on the client.
- */
 export type FeatureFlagsApi = {
   getFlag: (
     key: KnownFeatureType,
-    defaultValue?: FeatureFlagStatus,
-  ) => FeatureFlagStatus;
+    defaultValue?: KnownFeatureValueType<typeof key>,
+  ) => KnownFeatureValueType<typeof key>;
   getFlags: (
     keys: KnownFeatureType[],
-    defaults?: FeatureFlagStatus[],
-  ) => FeatureFlagStatus[];
-  getAllFlags: () => Partial<Record<KnownFeatureType, FeatureFlagStatus>>;
-  isEnabled: (key: KnownFeatureType | string) => boolean;
-  getFlagState: (key: KnownFeatureType | string) => {
-    value: FeatureFlagStatus | undefined;
+    defaults?: KnownFeatureValueType<KnownFeatureType>[],
+  ) => KnownFeatureValueType<KnownFeatureType>[];
+  getAllFlags: () => Partial<
+    Record<KnownFeatureType, KnownFeatureValueType<KnownFeatureType>>
+  >;
+  isEnabled: (key: KnownFeatureType | string) => boolean | null;
+  getFlagState: <TKey extends KnownFeatureType>(key: TKey) => {
+    value: KnownFeatureValueType<TKey> | undefined;
+    enabled: boolean | null;
     isLoading: boolean;
-    error: null;
+    isDefault: boolean;
+    error: Error | null;
   };
   readonly isLoaded: boolean;
   readonly error?: Error | null;
   readonly isFetching: boolean;
-  readonly isDefault?: true;
+  readonly isDefault?: boolean;
 };
 
-export const defaultFlags = AllFeatureFlagsDefault as unknown as Record<
-  KnownFeatureType,
-  FeatureFlagStatus
->;
+export const defaultFlags = AllFeatureFlagsDefault;
 
 export const FeatureFlagsContext = createContext<FeatureFlagsApi | undefined>(
   undefined,
@@ -44,16 +37,21 @@ export const FeatureFlagsContext = createContext<FeatureFlagsApi | undefined>(
 export function useFeatureFlagsContext(): FeatureFlagsApi {
   const ctx = useContext(FeatureFlagsContext);
   if (!ctx) {
+    const isEnabled = (key: KnownFeatureType | string) =>
+      defaultFlags[key as KnownFeatureType]
+        ? Boolean(defaultFlags[key as KnownFeatureType])
+        : null;
     return {
       getFlag: (key, defaultValue) => defaultFlags[key] ?? defaultValue,
       getFlags: (keys, defaults) =>
         keys.map((k, i) => defaultFlags[k] ?? defaults?.[i]),
       getAllFlags: () => ({ ...defaultFlags }),
-      isEnabled: (key) =>
-        Boolean(defaultFlags[key as KnownFeatureType] ?? false),
-      getFlagState: (key) => ({
-        value: defaultFlags[key as KnownFeatureType],
+      isEnabled,
+      getFlagState: <TKey extends KnownFeatureType>(key: TKey) => ({
+        value: defaultFlags[key],
+        enabled: isEnabled(key),
         isLoading: false,
+        isDefault: true,
         error: null,
       }),
       isLoaded: false,

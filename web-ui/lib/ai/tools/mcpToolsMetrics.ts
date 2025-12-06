@@ -6,6 +6,7 @@
  */
 
 import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util';
 
 /**
  * Type definitions for MCP tool metrics
@@ -96,7 +97,10 @@ export const mcpToolsMetricsRegistry = {
         // Add any periodic gauge updates here if needed in the future
         // For now, most MCP tool metrics are event-based (counters/histograms)
       } catch (error) {
-        console.error('Failed to update periodic MCP tool metrics:', error);
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'mcpToolsMetricsRegistry.startPeriodicMetricsUpdate',
+        });
       }
     }, intervalMs);
 

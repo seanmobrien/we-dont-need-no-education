@@ -4,6 +4,7 @@ import { getToken } from '@auth/core/jwt';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
 import { env } from '../env';
+import { SingletonProvider } from '@/lib/typescript';
 
 export interface KeycloakConfig {
   issuer: string;
@@ -198,20 +199,11 @@ export class KeycloakTokenExchange {
   }
 }
 
-const KEYCLOAK_TOKEN_EXCHANGE = Symbol.for(
-  '@no-education/KeycloakTokenExchangeInstance',
-);
-type GlobalThisWithKeycloak = typeof globalThis & {
-  [KEYCLOAK_TOKEN_EXCHANGE]?: KeycloakTokenExchange;
-};
-
-export const keycloakTokenExchange = () => {
-  const withKeycloak = globalThis as GlobalThisWithKeycloak;
-  if (!withKeycloak[KEYCLOAK_TOKEN_EXCHANGE]) {
-    withKeycloak[KEYCLOAK_TOKEN_EXCHANGE] = new KeycloakTokenExchange();
-  }
-  return withKeycloak[KEYCLOAK_TOKEN_EXCHANGE]!;
-};
+export const keycloakTokenExchange = () =>
+  SingletonProvider.Instance.getRequired<KeycloakTokenExchange>(
+    '@no-education/KeycloakTokenExchangeInstance',
+    () => new KeycloakTokenExchange(),
+  );
 
 export const getGoogleTokensFromKeycloak = async (
   req: NextRequest | NextApiRequest,

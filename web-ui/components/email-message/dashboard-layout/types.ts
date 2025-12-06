@@ -13,6 +13,8 @@
 import { NavigationPageItem } from '@toolpad/core/AppProvider';
 import type { Session } from '@auth/core/types';
 import * as React from 'react';
+import { SiteRoute, SiteRouteType } from '@/lib/site-util/url-builder/_types';
+import { UrlObject } from 'url';
 
 /**
  * Props for the CustomEmailPageItem component.
@@ -21,7 +23,9 @@ import * as React from 'react';
  * @description Defines the properties required for rendering a custom email page item
  * in the dashboard navigation sidebar.
  */
-export interface CustomEmailPageItemProps {
+export interface CustomEmailPageItemProps<
+  TRoute extends SiteRouteType = SiteRouteType,
+> {
   /** The navigation page item containing title, icon, and children */
   item: NavigationPageItem;
   /** Whether the sidebar is in minimized (mini) mode */
@@ -29,7 +33,7 @@ export interface CustomEmailPageItemProps {
   /** The unique identifier of the email being viewed */
   emailId: string;
   /** The active pathname  */
-  pathname: string;
+  pathname: SiteRoute<TRoute> | UrlObject;
 }
 
 /**

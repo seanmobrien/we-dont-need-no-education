@@ -1,4 +1,4 @@
-# Copilot Instructions for Title IX Victim Advocacy Platform
+# Agent Instructions for Title IX Victim Advocacy Platform
 
 This document provides comprehensive guidelines for LLM-based development assistance on the Title IX Victim Advocacy Platform. These instructions optimize AI assistance for the specific architecture, patterns, and requirements of this victim empowerment and evidence analysis system.
 
@@ -9,6 +9,15 @@ The Title IX Victim Advocacy Platform is a sophisticated advocacy technology sol
 ### Core Technologies
 
 - Next.js 15
+
+### Tool Use
+
+- Use MCP tools to their fullest capacity
+- Before using a tool, always explain to the user why you are using it.
+- If you are using a tool that requires a file path, always use the absolute path.
+- Tools provided by the "memory-for-llms" provide useful cross-conversation context, so use them liberally.
+- Before executing any multi-step action, always use the `sequentialthinking` tool to break it down into steps.
+  - This is especially useful when combined with your task or todo list.
 
 ### Frontend (TypeScript/React)
 

@@ -1,4 +1,5 @@
-import { IUrlBuilder, UrlBuilderInfo } from './_types';
+import { mappedPageOverloadFactory } from './_from-map';
+import { IUrlBuilder, MappedPageOverloads, UrlBuilderInfo } from './_types';
 import { env } from '@/lib/site-util/env';
 
 const appendParams = (url: URL, params: object | undefined) => {
@@ -33,7 +34,6 @@ const appendParams = (url: URL, params: object | undefined) => {
   }
   return copy;
 };
-
 
 export class UrlBuilder implements IUrlBuilder {
   /**
@@ -94,6 +94,7 @@ export class UrlBuilder implements IUrlBuilder {
       );
     }
     this.info = info as UrlBuilderInfo;
+    this.route = mappedPageOverloadFactory(this, this.info.segment);
   }
 
   /**
@@ -104,7 +105,7 @@ export class UrlBuilder implements IUrlBuilder {
   private get parentPart(): string {
     return this.info.parent == null ? '' : this.info.parent.path;
   }
-
+  route: MappedPageOverloads;
   /**
    * Gets the slug part formatted for a URL.
    *

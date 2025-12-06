@@ -65,7 +65,7 @@ export const sendApiRequest = <T>({
           typeof input === 'string' ? input : JSON.stringify(input);
       }
       // Send all of this off to the fetch API to do its thing
-      const response = await fetch(url, request);
+      const response = await fetch(String(url), request);
       if (!response.ok) {
         let errorMessage = `Api failure: ${response.statusText}`;
         let errorData;

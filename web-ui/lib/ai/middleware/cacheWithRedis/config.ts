@@ -1,41 +1,21 @@
-/**
- * Enterprise-grade configuration for AI caching middleware
- * Supports environment variables with sensible defaults
- */
-
 export interface CacheConfig {
-  /** Cache TTL in seconds (default: 24 hours) */
   cacheTtl: number;
-  /** Cache jail threshold - number of occurrences before promotion (default: 3) */
   jailThreshold: number;
-  /** Cache jail TTL in seconds (default: 24 hours) */
   jailTtl: number;
-  /** Stream chunk size for cached responses (default: 5 characters) */
   streamChunkSize: number;
-  /** Enable detailed logging (default: true) */
   enableLogging: boolean;
-  /** Enable metrics collection (default: true) */
   enableMetrics: boolean;
-  /** Cache key prefix (default: 'ai-cache') */
   cacheKeyPrefix: string;
-  /** Jail key prefix (default: 'ai-jail') */
   jailKeyPrefix: string;
-  /** Maximum cache key length for logging (default: 20) */
   maxKeyLogLength: number;
 }
 
-/**
- * Parse environment variable as integer with fallback
- */
 function parseIntEnv(envVar: string | undefined, defaultValue: number): number {
   if (!envVar) return defaultValue;
   const parsed = parseInt(envVar, 10);
   return isNaN(parsed) ? defaultValue : parsed;
 }
 
-/**
- * Parse environment variable as boolean with fallback
- */
 function parseBoolEnv(
   envVar: string | undefined,
   defaultValue: boolean,
@@ -44,9 +24,6 @@ function parseBoolEnv(
   return envVar.toLowerCase() === 'true' || envVar === '1';
 }
 
-/**
- * Get cache configuration from environment variables with defaults
- */
 export function getCacheConfig(): CacheConfig {
   return {
     cacheTtl: parseIntEnv(process.env.AI_CACHE_TTL, 86400), // 24 hours
@@ -61,9 +38,6 @@ export function getCacheConfig(): CacheConfig {
   };
 }
 
-/**
- * Validate cache configuration
- */
 export function validateCacheConfig(config: CacheConfig): void {
   if (config.cacheTtl <= 0) {
     throw new Error('Cache TTL must be positive');

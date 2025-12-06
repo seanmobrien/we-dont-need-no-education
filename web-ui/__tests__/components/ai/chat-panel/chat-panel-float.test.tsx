@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@/__tests__/test-utils';
+import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
 import { ChatPanel } from '@/components/ai/chat-panel';
 
 // Mock the dependencies
@@ -49,18 +49,26 @@ describe('ChatPanel Float Functionality', () => {
     fireEvent.click(menuButton!);
 
     // Check if Float option is available
-    expect(screen.getByText('Float')).toBeInTheDocument();
+    await waitFor(() => {
+      fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+    });
+    expect(await screen.findByText('Float')).toBeInTheDocument();
   }, 10000);
 
   it('switches to floating mode when Float is clicked', async () => {
     render(<ChatPanel page="test" />);
 
     // Find and click the menu button
-    const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-    fireEvent.click(menuButton!);
+    const menuButton = screen.getByTestId('button-chat-menu');
+    fireEvent.click(menuButton);
+
+    await waitFor(() => {
+      fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+    });
 
     // Click Float option
-    const floatOption = screen.getByText('Float');
+    // Click Float option
+    const floatOption = await screen.findByText('Float');
     fireEvent.click(floatOption);
 
     // Check if it switched to floating mode

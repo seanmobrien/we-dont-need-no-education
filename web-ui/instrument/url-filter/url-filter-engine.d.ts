@@ -1,3 +1,10 @@
+import type { AnyValue } from '@opentelemetry/api-logs';
+import type {
+  FilterOptionsInput,
+  IFilterRule,
+  UrlFilterOptions,
+} from './url-filter-rules';
+
 /**
  * Type declarations for URL filtering engine for OpenTelemetry log data.
  *
@@ -11,12 +18,7 @@
  */
 
 declare module '@/instrument/url-filter/url-filter-engine' {
-  import type { AnyValue } from '@opentelemetry/api-logs';
-  import type {
-    FilterOptionsInput,
-    IFilterRule,
-    UrlFilterOptions,
-  } from '@/instrument/url-filter/url-filter-rules';
+
 
   /**
    * Abstract base class for URL filtering engines.

@@ -11,6 +11,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import DraftsIcon from '@mui/icons-material/Drafts';
 import ChatIcon from '@mui/icons-material/Chat';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import ChecklistIcon from '@mui/icons-material/Checklist';
 import { NavigationItem, NavigationPageItem } from '@toolpad/core/AppProvider';
 import KeyIcon from '@mui/icons-material/Key';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
@@ -30,6 +31,7 @@ import { Branding } from './branding';
 import { NotificationsProvider } from '@toolpad/core';
 import { KeyRefreshNotifyWrapper } from '@/components/auth/key-refresh-notify/wrapper';
 import ServerSafeErrorManager from '@/components/error-boundaries/ServerSafeErrorManager';
+import { SiteRoute } from '@/lib/site-util/url-builder/_types';
 
 /**
  * Slots for the dashboard layout, such as toolbar actions.
@@ -66,7 +68,7 @@ export const EmailDashboardLayout = ({
   session: Session | null;
 }): React.JSX.Element => {
   const { emailId } = useParams<{ emailId: string }>();
-  const pathname = usePathname();
+  const pathname = usePathname() as SiteRoute;
   const { theme } = useTheme();
   const dashboardNavigation = useMemo<NavigationItem[]>(() => {
     const isChatPage = pathname?.startsWith('/messages/chat');
@@ -120,6 +122,11 @@ export const EmailDashboardLayout = ({
               },
             ]
           : [],
+      },
+      {
+        title: 'Todo Lists',
+        icon: <ChecklistIcon key="todo-lists-icon" />,
+        segment: 'messages/todo-lists',
       },
     ];
 

@@ -102,10 +102,10 @@ export const GET = wrapRouteRequest(async () => {
           // Create model instance (ensure we don't use embedding models for text generation)
           const modelInstance = (
             classification === 'embedding'
-              ? aiModelFactory(classification)
+              ? await aiModelFactory(classification)
               : classification === 'hifi' || classification === 'lofi'
-                ? aiModelFactory(classification)
-                : aiModelFactory('lofi')
+                ? await aiModelFactory(classification)
+                : await aiModelFactory('lofi')
           ) as LanguageModelV2;
           const model = wrapChatHistoryMiddleware({
             chatHistoryContext,
@@ -244,7 +244,7 @@ export const GET = wrapRouteRequest(async () => {
 
         try {
           // If we've made it all the way to gen-2 it's time to bust out the bgcontext model.
-          const modelInstance = aiModelFactory('google:gemini-2.0-flash');
+          const modelInstance = await aiModelFactory('google:gemini-2.0-flash');
           const model = wrapChatHistoryMiddleware({
             model: modelInstance as LanguageModelV2,
             chatHistoryContext,

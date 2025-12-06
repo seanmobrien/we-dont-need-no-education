@@ -1,0 +1,47 @@
+{
+  "jest.monitorLongRun": "",
+  "jest.shell": "",
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "github.copilot.chat.reviewSelection.instructions": [
+    {
+      "file": ".github/copilot/instructions/typescript-react.md",
+      "name": "typescript-react",
+      "description": "Use this instruction file for TypeScript React projects to get tailored code suggestions"
+    },
+    {
+      "file": ".github/copilot/instructions/vercel-ai.md",
+      "name": "vercel-ai",
+      "description": "Use this instruction file for Vercel AI projects to get tailored code suggestions"
+    }
+  ],
+  "editor.tabSize": 2,
+  "typescript.preferences.autoImportSpecifierExcludeRegexes": ["^@mui/[^/]+$"],
+  "debug.hideLauncherWhileDebugging": true,
+  "launch": {
+    "configurations": [],
+    "compounds": []
+  },
+  "jest.outputConfig": {
+    "revealOn": "run",
+    "revealWithFocus": "test-results",
+    "clearOnRun": "none",
+    "showConsole": true,
+    "showStatus": true,
+    "showOutput": true,
+    "showNotification": false,
+    "showCoverageOnPass": false,
+    "showCodeLens": true
+  },
+  "workbench.localHistory.exclude": {
+    "(rsc)/**": true
+  },
+  "explorer.excludeGitIgnore": true,
+  "jest.disabledWorkspaceFolders": [".upsort"],
+  "jest.useJest30": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "testing.automaticallyOpenTestResults": "neverOpen",
+  "[typescript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "debug.javascript.autoAttachFilter": "onlyWithFlag"
+}

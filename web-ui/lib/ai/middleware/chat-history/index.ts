@@ -24,40 +24,7 @@ export {
   createAgentHistoryContext,
   createUserChatHistoryContext,
 } from './create-chat-history-context';
-/**
- * Creates a middleware for chat history management that wraps language model streaming and generation operations.
- *
- * This middleware is responsible for:
- * - Initializing message persistence for each chat turn.
- * - Maintaining FIFO order of streamed message chunks using a processing queue.
- * - Persisting generated text and message metadata upon completion of streaming or generation.
- * - Logging and suppressing errors to ensure chat operations continue even if persistence fails.
- *
- * The middleware exposes three hooks:
- * - `wrapStream`: Wraps the streaming operation, enqueues each chunk for ordered processing, and persists the final message.
- * - `wrapGenerate`: Wraps the text generation operation, persists the generated message, and handles errors gracefully.
- * - `transformParams`: Allows for transformation of parameters before processing (currently a passthrough).
- *
- * @param context - The chat history context containing persistence and logging utilities.
- * @returns A middleware object implementing `LanguageModelddleware` for chat history management.
- *
- * @remarks
- * - If message persistence initialization fails, the middleware falls back to the original stream/generation.
- * - Errors during chunk processing or message persistence are logged but do not interrupt the chat flow.
- * - The middleware is designed to be transparent and robust, ensuring chat history is reliably persisted without impacting user experience.
- *
- * @example
- * ```typescript
- * import { createChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
- * import { myChatHistoryContext } from './my-context';
- *
- * const chatHistoryMiddleware = createChatHistoryMiddleware(myChatHistoryContext);
- *
- * // Use with your language model pipeline
- * const model = wrapModel(aiModelFactory('hifi'), [ chatHistoryMiddleware ]);
- *
- * ```
- */
+
 const createOriginalChatHistoryMiddleware = (
   context: ChatHistoryContext,
 ): LanguageModelV2Middleware => {
@@ -93,6 +60,8 @@ const createOriginalChatHistoryMiddleware = (
         });
         // If middleware setup fails, still continue with the original stream
         return doStream();
+      } finally {
+        log((l) => l.verbose('=== ChatHistoryMiddleware.wrapStream - END ==='));
       }
     },
 
@@ -142,6 +111,7 @@ const createOriginalChatHistoryMiddleware = (
 
     transformParams: async ({ params }) => {
       // Pass tools to ToolMap for scanning/registration
+      log((l) => l.verbose('ChatHistoryMiddleware.transformParams', { params }));
       const { tools = [] } = params;
       try {
         await ToolMap.getInstance().then((x) => x.scanForTools(tools));
@@ -167,9 +137,6 @@ const createOriginalChatHistoryMiddleware = (
   };
 };
 
-/**
- * Chat History Middleware State Interface
- */
 interface ChatHistoryState {
   currentMessageOrder: number;
   generatedText: string;
@@ -181,16 +148,6 @@ interface ChatHistoryState {
   };
 }
 
-/**
- * Creates a middleware for chat history management with State Management Support.
- *
- * This middleware supports the state management protocol and can participate
- * in state collection and restoration operations, preserving processing state
- * across operations.
- *
- * @param context - The chat history context containing persistence and logging utilities.
- * @returns A stateful middleware object that supports state serialization.
- */
 export const createChatHistoryMiddleware = (
   context: ChatHistoryContext,
 ): LanguageModelV2Middleware => {

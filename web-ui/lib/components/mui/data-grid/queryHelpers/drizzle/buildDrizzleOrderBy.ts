@@ -10,6 +10,7 @@
  */
 
 import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
+import { log } from '@/lib/logger';
 import type { GridSortModel } from '@mui/x-data-grid-pro';
 import { asc, desc, SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
@@ -110,8 +111,10 @@ export const buildDrizzleOrderBy = ({
         orderByExpressions.push(orderExpression);
       } else {
         // Log warning about unknown column
-        console.warn(
-          `buildDrizzleOrderBy: Unknown column '${mappedColumnName}' (mapped from '${sortItem.field}')`,
+        log((l) =>
+          l.warn(
+            `buildDrizzleOrderBy: Unknown column '${mappedColumnName}' (mapped from '${sortItem.field}')`,
+          ),
         );
       }
     }
@@ -145,8 +148,10 @@ export const buildDrizzleOrderBy = ({
           ? query
           : (query.orderBy(asc(column)) as DrizzleSortedQuery);
       } else {
-        console.warn(
-          `buildDrizzleOrderBy: Unknown default sort column '${mappedColumnName}' (mapped from '${sort}')`,
+        log((l) =>
+          l.warn(
+            `buildDrizzleOrderBy: Unknown default sort column '${mappedColumnName}' (mapped from '${sort}')`,
+          ),
         );
         return query;
       }
@@ -166,19 +171,19 @@ export const buildDrizzleOrderBy = ({
   const sortBy = isGridSortModel(source)
     ? source
     : parseSortOptions(
-        typeof source === 'string'
-          ? (() => {
-              try {
-                return new URL(source);
-              } catch {
-                // If string is not a valid URL, return undefined to use default sort
-                return undefined;
-              }
-            })()
-          : isLikeNextRequest(source)
-            ? new URL(source.url!)
-            : source,
-      );
+      typeof source === 'string'
+        ? (() => {
+          try {
+            return new URL(source);
+          } catch {
+            // If string is not a valid URL, return undefined to use default sort
+            return undefined;
+          }
+        })()
+        : isLikeNextRequest(source)
+          ? new URL(source.url!)
+          : source,
+    );
 
   // Apply sorting logic
   if (!sortBy) {

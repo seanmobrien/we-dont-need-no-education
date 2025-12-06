@@ -1,4 +1,3 @@
- 
 /**
  * @fileoverview Comprehensive tests for chat panel docking functionality
  * Tests all docking positions: top, left, right, bottom, maximized, and float
@@ -143,10 +142,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Open menu and click Float
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
 
-        const floatOption = screen.getByText('Float');
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        const floatOption = await screen.findByText('Float');
         fireEvent.click(floatOption);
 
         // Should show floating dialog
@@ -166,9 +169,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Switch to float mode
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Float'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Float'));
 
         await waitFor(() => {
           expect(screen.getByTestId('floating-dialog')).toBeInTheDocument();
@@ -190,9 +198,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Switch to float mode
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Float'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Float'));
 
         await waitFor(() => {
           expect(screen.getByTestId('floating-dialog')).toBeInTheDocument();
@@ -222,10 +235,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Open menu and dock left
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
 
-        const dockLeftOption = screen.getByText('Dock Left');
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        const dockLeftOption = await screen.findByText('Dock Left');
         fireEvent.click(dockLeftOption);
 
         // Should show docked placeholder in main area
@@ -250,9 +267,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper isDashboardLayout={true} />);
 
         // Dock to left
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Dock Left'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Dock Left'));
 
         await waitFor(() => {
           expect(
@@ -280,9 +302,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Dock to left
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Dock Left'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Dock Left'));
 
         await waitFor(() => {
           expect(
@@ -304,9 +331,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Dock to right
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Dock Right'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Dock Right'));
 
         await waitFor(() => {
           expect(
@@ -323,9 +355,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Dock to right
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Dock Right'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Dock Right'));
 
         await waitFor(() => {
           expect(screen.getByTestId('resizable-container')).toBeInTheDocument();
@@ -351,9 +388,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Dock to top
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Dock Top'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Dock Top'));
 
         await waitFor(() => {
           expect(
@@ -370,9 +412,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Dock to top
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Dock Top'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Dock Top'));
 
         await waitFor(() => {
           expect(
@@ -396,9 +443,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Dock to bottom
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Dock Bottom'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Dock Bottom'));
 
         await waitFor(() => {
           expect(
@@ -415,9 +467,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Dock to bottom
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Dock Bottom'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Dock Bottom'));
 
         await waitFor(() => {
           expect(screen.getByTestId('resizable-container')).toBeInTheDocument();
@@ -438,9 +495,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // First dock to left
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Dock Left'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Dock Left'));
 
         await waitFor(() => {
           expect(
@@ -463,9 +525,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper isDashboardLayout={true} />);
 
         // Dock to left in dashboard layout
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Dock Left'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Dock Left'));
 
         await waitFor(() => {
           expect(
@@ -497,10 +564,16 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
           );
 
           // Scope queries to the most-recent render container to avoid stale elements
-          const menuButtons = within(container).getAllByTestId('MoreVertIcon');
-          const menuButton = menuButtons[0].closest('button');
-          fireEvent.click(menuButton!);
-          fireEvent.click(screen.getByText(position));
+          const menuButton = within(container).getByTestId('button-chat-menu');
+          fireEvent.click(menuButton);
+
+          await waitFor(() => {
+            const dockMenu = within(container).getByTestId('menu-item-dock');
+            fireEvent.mouseEnter(dockMenu);
+          });
+
+          const option = await screen.findByText(position);
+          fireEvent.click(option);
 
           const positionName = position.toLowerCase().replace('dock ', '');
           await waitFor(() => {
@@ -526,9 +599,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Dock to right
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Dock Right'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Dock Right'));
 
         await waitFor(() => {
           expect(
@@ -567,9 +645,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Dock to top
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Dock Top'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Dock Top'));
 
         await waitFor(() => {
           expect(
@@ -600,9 +683,14 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         render(<ChatPanelTestWrapper />);
 
         // Dock to left on small screen
-        const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-        fireEvent.click(menuButton!);
-        fireEvent.click(screen.getByText('Dock Left'));
+        const menuButton = screen.getByTestId('button-chat-menu');
+        fireEvent.click(menuButton);
+
+        await waitFor(() => {
+          fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+        });
+
+        fireEvent.click(await screen.findByText('Dock Left'));
 
         await waitFor(() => {
           expect(

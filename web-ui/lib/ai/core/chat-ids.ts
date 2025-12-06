@@ -52,7 +52,7 @@ export const generateChatId = (
     actualSeed = Number.parseInt(notCryptoSafeKeyHash(seed), 10);
   }
   const random = seededRandom(actualSeed);
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@$%~';
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let id = '';
   for (let i = 0; i < 8; i++) {
     const cb = chars[Math.floor(random() * chars.length)];

@@ -17,7 +17,7 @@ import {
   Error as ErrorIcon,
   Chat as ChatIcon,
 } from '@mui/icons-material';
-import { useChatHealth } from '@/lib/hooks/use-chat-health';
+import { useHealth } from '../health-provider/health-context';
 import { BOX_SX_VARIANTS, BoxSxVariantKey } from '../health-status-styles';
 
 /**
@@ -35,7 +35,7 @@ interface ChatStatusIndicatorProps {
   size?: 'small' | 'medium';
 }
 
-type ChatHealthStatus = 'ok' | 'warning' | 'error';
+type ChatHealthStatus = 'healthy' | 'warning' | 'error';
 
 /**
  * Gets the appropriate icon for the health status
@@ -46,7 +46,7 @@ function getStatusIcon(status: ChatHealthStatus, isLoading: boolean) {
   }
 
   switch (status) {
-    case 'ok':
+    case 'healthy':
       return <HealthyIcon fontSize="small" />;
     case 'warning':
       return <WarningIcon fontSize="small" />;
@@ -64,7 +64,7 @@ function getStatusColor(
   status: ChatHealthStatus,
 ): 'success' | 'warning' | 'error' | 'default' {
   switch (status) {
-    case 'ok':
+    case 'healthy':
       return 'success';
     case 'warning':
       return 'warning';
@@ -80,7 +80,7 @@ function getStatusColor(
  */
 function getStatusLabel(status: ChatHealthStatus): string {
   switch (status) {
-    case 'ok':
+    case 'healthy':
       return 'Chat: Healthy';
     case 'warning':
       return 'Chat: Warning';
@@ -100,6 +100,7 @@ function getTooltipMessage(
     | {
         cache: ChatHealthStatus;
         queue: ChatHealthStatus;
+        tools: ChatHealthStatus;
       }
     | undefined,
   isLoading: boolean,
@@ -121,7 +122,7 @@ function getTooltipMessage(
   let systemDetails = '';
 
   switch (status) {
-    case 'ok':
+    case 'healthy':
       baseMessage = 'Chat service is healthy and operational.';
       break;
     case 'warning':
@@ -133,11 +134,14 @@ function getTooltipMessage(
 
       if (subsystems) {
         const failingSystems: string[] = [];
-        if (subsystems.cache !== 'ok') {
+        if (subsystems.cache !== 'healthy') {
           failingSystems.push(`Cache (${subsystems.cache})`);
         }
-        if (subsystems.queue !== 'ok') {
+        if (subsystems.queue !== 'healthy') {
           failingSystems.push(`Queue (${subsystems.queue})`);
+        }
+        if (subsystems.tools !== 'healthy') {
+          failingSystems.push(`Tools (${subsystems.tools})`);
         }
 
         if (failingSystems.length > 0) {
@@ -158,13 +162,15 @@ function getTooltipMessage(
 export const ChatStatusIndicator = React.memo<ChatStatusIndicatorProps>(
   ({ showLabel = false, size = 'medium' }) => {
     const {
-      healthStatus,
-      subsystems,
+      health: { chat: chatData },
       isLoading,
       isError,
       error,
       refreshInterval,
-    } = useChatHealth();
+    } = useHealth();
+
+    const healthStatus = (chatData?.status as ChatHealthStatus) ?? 'error';
+    const subsystems = chatData?.subsystems;
 
     const statusIcon = getStatusIcon(healthStatus, isLoading);
     const statusColor = getStatusColor(healthStatus);

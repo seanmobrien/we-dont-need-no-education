@@ -11,10 +11,16 @@ jest.mock('@/lib/api/health/database', () => ({
 }));
 
 // Mock memory cache module
-jest.mock('@/lib/api/health/memory', () => ({
-  getMemoryHealthCache: jest.fn(),
-  ensureMemoryCacheConfigured: jest.fn(),
-}));
+jest.mock('@/lib/api/health/memory', () => {
+  const getMemoryHealthCache = jest.fn();
+  const ensureMemoryCacheConfigured = jest.fn();
+  const originalModule = jest.requireActual('@/lib/api/health/memory');
+  return {
+    ...originalModule,
+    getMemoryHealthCache,
+    ensureMemoryCacheConfigured,
+  };
+});
 
 import { checkDatabaseHealth } from '@/lib/api/health/database';
 import { getMemoryHealthCache } from '@/lib/api/health/memory';
@@ -69,7 +75,7 @@ describe('health probe route', () => {
   });
 
   it('readiness returns ok when db is ok, 503 when db error', async () => {
-    (checkDatabaseHealth as jest.Mock).mockResolvedValue({ status: 'ok' });
+    (checkDatabaseHealth as jest.Mock).mockResolvedValue({ status: 'healthy' });
     let res = await GET(
       {} as any,
       {
@@ -91,7 +97,7 @@ describe('health probe route', () => {
   });
 
   it('startup: both ok => ok and resets counter', async () => {
-    (checkDatabaseHealth as jest.Mock).mockResolvedValue({ status: 'ok' });
+    (checkDatabaseHealth as jest.Mock).mockResolvedValue({ status: 'healthy' });
     const fakeMem = { details: buildHealthyMemoryDetails() };
     (getMemoryHealthCache as jest.Mock).mockReturnValue({ get: () => fakeMem });
     SingletonProvider.Instance.set('startup-failure-counter', { count: 5 });
@@ -110,7 +116,7 @@ describe('health probe route', () => {
   });
 
   it('startup: mem error and db ok below threshold => 503 then increments counter', async () => {
-    (checkDatabaseHealth as jest.Mock).mockResolvedValue({ status: 'ok' });
+    (checkDatabaseHealth as jest.Mock).mockResolvedValue({ status: 'healthy' });
     (getMemoryHealthCache as jest.Mock).mockReturnValue({
       get: () => undefined,
     });
@@ -126,14 +132,14 @@ describe('health probe route', () => {
     expect(
       (
         SingletonProvider.Instance.get('startup-failure-counter') as
-          | { count: number }
-          | undefined
+        | { count: number }
+        | undefined
       )?.count,
     ).toBe(1);
   });
 
   it('startup: after threshold only db required (db ok => ok)', async () => {
-    (checkDatabaseHealth as jest.Mock).mockResolvedValue({ status: 'ok' });
+    (checkDatabaseHealth as jest.Mock).mockResolvedValue({ status: 'healthy' });
     (getMemoryHealthCache as jest.Mock).mockReturnValue({
       get: () => undefined,
     });

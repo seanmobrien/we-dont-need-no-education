@@ -31,6 +31,8 @@ import { FirstParameter } from '@/lib/typescript';
 import { clientToolProviderFactory } from './client-tool-provider';
 import { getToolCache } from '../cache';
 import { getStreamingTransportFlag } from '../tool-flags';
+import EventEmitter from '@protobufjs/eventemitter';
+import { withEmittingDispose } from '@/lib/nextjs-util/utils';
 
 type MCPClientConfig = FirstParameter<typeof createMCPClient>;
 
@@ -201,7 +203,6 @@ export const toolProviderFactory = async ({
       userId,
       ...options,
     });
-
     const toolCache = await getToolCache();
     const cachedTools: ToolSet | null = await toolCache.getCachedTools(options);
     let tools: ToolSet;
@@ -212,12 +213,12 @@ export const toolProviderFactory = async ({
       const filteredTools = options.allowWrite
         ? allTools
         : Object.entries(allTools).reduce((acc, [toolName, tool]) => {
-            // Filter out tools that require write access when in read-only mode
-            if ((tool.description?.indexOf('Write access') ?? -1) === -1) {
-              acc[toolName] = tool;
-            }
-            return acc;
-          }, {} as ToolSet);
+          // Filter out tools that require write access when in read-only mode
+          if ((tool.description?.indexOf('Write access') ?? -1) === -1) {
+            acc[toolName] = tool;
+          }
+          return acc;
+        }, {} as ToolSet);
 
       // Cache the filtered tools for future requests
       await toolCache.setCachedTools(options, filteredTools);
@@ -231,7 +232,7 @@ export const toolProviderFactory = async ({
     let isConnected = true;
 
     // Return the connected tool provider interface
-    return {
+    return withEmittingDispose({
       /**
        * Gets the underlying MCP client instance.
        * @returns {MCPClient} The MCP client instance
@@ -257,29 +258,28 @@ export const toolProviderFactory = async ({
        * @async
        * @returns {Promise<void>} Promise that resolves when disposal is complete
        */
-      dispose: async (): Promise<void> => {
-        try {
-          await mcpClient.close();
-        } catch (e) {
-          // Downgrade AbortError noise on shutdown
-          if (isAbortError(e)) {
-            log((l) =>
-              l.verbose('toolProviderFactory.dispose: Ignoring AbortError'),
-            );
-          } else {
-            LoggedError.isTurtlesAllTheWayDownBaby(e, {
-              log: true,
-              source: 'toolProviderFactory dispose',
-              severity: 'error',
-              data: {
-                message: 'Error disposing MCP client',
-                options,
-              },
-            });
-          }
-        }
+      [Symbol.dispose]: (): void => {
+        mcpClient.close()
+          .catch((e) => {
+            // Downgrade AbortError noise on shutdown
+            if (isAbortError(e)) {
+              log((l) =>
+                l.verbose('toolProviderFactory.dispose: Ignoring AbortError'),
+              );
+            } else {
+              LoggedError.isTurtlesAllTheWayDownBaby(e, {
+                log: true,
+                source: 'toolProviderFactory dispose',
+                severity: 'error',
+                data: {
+                  message: 'Error disposing MCP client',
+                  options,
+                },
+              });
+            }
+            return Promise.resolve();
+          });
       },
-
       /**
        * Reconnects the provider with new access permissions.
        * @async
@@ -311,7 +311,7 @@ export const toolProviderFactory = async ({
         isConnected = true;
         return newTool;
       },
-    };
+    });
   } catch (error) {
     // Graceful degradation: return stub provider on connection failure
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -320,7 +320,7 @@ export const toolProviderFactory = async ({
       message: `A critical failure occurred connecting to MCP server at [${options?.url}] - tools from this resource will not be available.`,
       url: options?.url,
     });
-    return {
+    return withEmittingDispose({
       /**
        * Stub implementation - returns undefined as no client is available.
        * @returns {MCPClient} Undefined cast to MCPClient type
@@ -342,13 +342,6 @@ export const toolProviderFactory = async ({
       },
 
       /**
-       * Stub implementation - no-op disposal for failed connections.
-       * @async
-       * @returns {Promise<void>} Resolved promise
-       */
-      dispose: async (): Promise<void> => {},
-
-      /**
        * Stub implementation - attempts to reconnect by creating a new provider.
        * @async
        * @param {object} options - Reconnection options
@@ -367,7 +360,7 @@ export const toolProviderFactory = async ({
         });
         return newTool;
       },
-    } as ConnectableToolProvider;
+    });
   }
 };
 
@@ -381,10 +374,17 @@ const getResolvedProvidersWithCleanup = async (
   categorized.pending.forEach((p) => {
     p.then((provider) => {
       // Dispose of providers that resolve after timeout to prevent resource leaks
-      if (provider && typeof provider.dispose === 'function') {
-        provider.dispose().catch((e) => {
-          log((l) => l.error('Error disposing provider after rejection:', e));
-        });
+      if (provider && typeof provider[Symbol.dispose] === 'function') {
+        try {
+          provider[Symbol.dispose]();
+        } catch (e) {
+          LoggedError.isTurtlesAllTheWayDownBaby(e, {
+            log: true,
+            relog: true,
+            source: 'toolProviderFactory::getResolvedProvidersWithCleanup',
+            severity: 'error',
+          });
+        }
       }
     }).catch((e) => {
       // Log cleanup errors but continue execution
@@ -462,13 +462,12 @@ export const isToolProvider = (
     'get_mcpClient' in check &&
     'get_isConnected' in check &&
     'tools' in check &&
-    'dispose' in check &&
     'connect' in check &&
     typeof (check as ConnectableToolProvider).get_mcpClient === 'function' &&
     typeof (check as ConnectableToolProvider).get_isConnected === 'function' &&
     typeof (check as ConnectableToolProvider).tools === 'function' &&
     typeof (check as ConnectableToolProvider).tools === 'object' &&
-    typeof (check as ConnectableToolProvider).dispose === 'function' &&
+    Symbol.dispose in check && typeof (check as ConnectableToolProvider)[Symbol.dispose] === 'function' &&
     typeof (check as ConnectableToolProvider).connect === 'function'
   );
 };
@@ -556,7 +555,30 @@ export const toolProviderSetFactory = async (
     timeoutMs,
   );
   const allProviders = [clientToolProviderFactory(), ...resolvedProviders];
+  allProviders.forEach((provider) => {
+    if (!provider.addDisposeListener) {
+      log(l => l.warn('weird non-dispose-emitting provider detected', { provider, data: { provider } }));
+    }
+    provider.addDisposeListener(() => {
+      const index = allProviders.indexOf(provider)
+      if (index > -1) {
+        allProviders.splice(index, 1);
+        if (allProviders.length === 0) {
+          dispose();
+        }
+      }
+    });
+  });
   const isHealthy = allProviders.length === providers.length + 1;
+  const dispose = () => {
+    [...allProviders].forEach((provider) => {
+      provider.removeDisposeListener(dispose);
+      provider[Symbol.dispose]();
+    });
+    allProviders.splice(0, allProviders.length);
+    emitter.emit('disposed');
+  };
+  const emitter = new EventEmitter();
   return {
     /** @type {ConnectableToolProvider[]} Array of successfully connected providers */
     providers: allProviders,
@@ -571,7 +593,6 @@ export const toolProviderSetFactory = async (
     /**
      * Aggregates tools from all connected providers into a single ToolSet.
      *
-     * @returns {ToolSet} Combined tool set from all providers
      * @description
      * Merges tools from all successful provider connections. If multiple providers
      * offer tools with the same name, the last provider's tool will take precedence.
@@ -581,42 +602,41 @@ export const toolProviderSetFactory = async (
         return { ...acc, ...provider.tools };
       }, {} as ToolSet);
     },
-
+    /**
+     * Adds a dispose listener.
+     *
+     * @param listener - The listener to add.
+     */
+    addDisposeListener: (listener: () => void): void => {
+      emitter.on('disposed', listener);
+    },
+    /**
+     * Removes a dispose listener.
+     *
+     * @param listener - The listener to remove.
+     */
+    removeDisposeListener: (listener: () => void): void => {
+      emitter.off('disposed', listener);
+    },
     /**
      * Disposes of all providers with timeout protection.
      *
      * @async
-     * @returns {Promise<void>} Promise that resolves when disposal is complete or times out
      * @description
      * Attempts to dispose all providers gracefully within a 30-second timeout.
-     * Uses `Promise.any` to ensure the function doesn't hang indefinitely if
-     * some providers fail to dispose properly. Suppresses AbortErrors that occur
-     * during disposal as these are expected during cleanup.
      */
-    dispose: async (): Promise<void> => {
-      await Promise.any([
-        Promise.all(
-          allProviders.map(async (provider) => {
-            try {
-              await provider.dispose();
-            } catch (e) {
-              // Suppress AbortErrors during disposal as they're expected
-              if (isAbortError(e)) {
-                log((l) =>
-                  l.verbose(
-                    'toolProviderFactory.dispose: Ignoring AbortError from provider disposal',
-                  ),
-                );
-              } else {
-                // Re-throw non-AbortErrors so they can be properly logged
-                return Promise.reject(e);
-              }
-            }
-            return Promise.resolve();
-          }),
-        ),
-        new Promise((resolve) => setTimeout(resolve, 30 * 1000)), // Wait 30 seconds max for disposal
-      ]);
+    dispose: (): Promise<void> => {
+      dispose();
+      return Promise.resolve();
+    },
+    /**
+     * Disposes of all providers contained within the set.
+     *
+     * @description
+     * Disposes all providers contained within the set.
+     */
+    [Symbol.dispose]: () => {
+      dispose();
     },
   };
 };

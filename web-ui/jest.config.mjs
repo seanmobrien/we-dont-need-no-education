@@ -9,18 +9,19 @@ const config = {
     },
   },
   // Ensure environment globals (Response/Request/Headers) are available before modules load
-  setupFiles: [
-    '<rootDir>/__tests__/jest.mock-log.ts',
-    '<rootDir>/__tests__/jest.setup.env.ts',
-  ],
+  setupFiles: ['<rootDir>/__tests__/setup/jest.mock-log.ts'],
   setupFilesAfterEnv: [
+    '<rootDir>/__tests__/setup/jest.env-vars.ts',
+    '<rootDir>/__tests__/setup/jest.mock-appstartup.ts',
     '<rootDir>/__tests__/jest.test-extensions.ts',
-    '<rootDir>/__tests__/jest.mock-node-modules.ts',
-    '<rootDir>/__tests__/jest.mock-redis.ts',
-    '<rootDir>/__tests__/jest.mock-health.ts',
-    '<rootDir>/__tests__/jest.mock-auth.ts',
-    '<rootDir>/__tests__/jest.mock-feature-flags.ts',
-    '<rootDir>/__tests__/jest.setup.ts',
+    '<rootDir>/__tests__/setup/jest.mock-node-modules.ts',
+    '<rootDir>/__tests__/setup/jest.mock-redis.ts',
+    '<rootDir>/__tests__/setup/jest.mock-health.ts',
+    '<rootDir>/__tests__/setup/jest.mock-auth.ts',
+    '<rootDir>/__tests__/setup/jest.mock-feature-flags.ts',
+    '<rootDir>/__tests__/setup/jest.mock-ai.ts',
+    '<rootDir>/__tests__/setup/jest.setup.env.ts',
+    '<rootDir>/__tests__/setup/jest.setup.ts',
   ], // Setup file for global imports
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled
   testMatch: [
@@ -36,12 +37,14 @@ const config = {
   maxConcurrency: 5, // Limit concurrent tests to prevent resource contention
 
   moduleNameMapper: {
-    '^@/instrumentation(.*)$':
-      '<rootDir>/__tests__/jest.mock-instrumentation.ts', // Mock instrumentation module
-    '^@/lib/site-util/metrics.*$': '<rootDir>/__tests__/jest.mock-metrics.ts', // Alias for lib imports
+    '@/instrumentation(.*)$':
+      '<rootDir>/__tests__/setup/jest.mock-instrumentation.ts', // Mock instrumentation module
+    '^@/lib/site-util/metrics.*$':
+      '<rootDir>/__tests__/setup/jest.mock-metrics.ts', // Alias for lib imports
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
-    '^~@/(.*)$': '<rootDir>/__tests__/$1', // Alias for module imports
+    //'^~@/(.*)$': '<rootDir>/__tests__/$1', // Alias for module imports
     '^zodex$': '<rootDir>/__tests__/mocks/zodex.js',
+    '^prexit$': '<rootDir>/__tests__/setup/jest.mock-prexit.ts', // Mock prexit module
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
     '^(@|\\.)/lib/auth/keycloak-provider$':
       '<rootDir>/__tests__/mocks/keycloak-provider.js', // Mock static file imports
@@ -52,7 +55,7 @@ const config = {
       {
         tsconfig: {
           jsx: 'react-jsx', // Enable JSX transformation for React
-          // useESM: false,
+          //useESM: true, // Use ESM modules
         },
       },
     ], // Transform TypeScript files using ts-jest
@@ -60,10 +63,10 @@ const config = {
   },
   transformIgnorePatterns: [
     // Allow transpiling certain ESM packages (zodex, zod) which ship ESM-only
-    '<rootDir>/node_modules/(?!(zodex|zod|got|react-error-boundary)/)',
+    '<rootDir>/node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client))',
     '<rootDir>/.next',
     '<rootDir>/.upstream',
-    '<rootDir>/(rsc)',
+    //'<rootDir>/(rsc)',
     '.upstream',
   ],
   collectCoverageFrom: [

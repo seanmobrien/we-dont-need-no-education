@@ -25,7 +25,8 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import type { SxProps, Theme } from '@mui/material/styles';
 import Tooltip from '@mui/material/Tooltip';
-import { getLastPathSegment, normalizePath } from '@/lib/react-util/url';
+import { SiteRoute } from '@/lib/site-util/url-builder/_types';
+import { getLastPathSegment } from './url-utils';
 
 const stableSx = {
   activeText: {
@@ -115,11 +116,10 @@ export const CustomEmailPageItem = memo(
     emailId,
   }: CustomEmailPageItemProps): React.JSX.Element => {
     const itemId = `navmenu-email-${item.title?.toLocaleLowerCase()?.replaceAll(' ', '-')}`;
-    const parentHref = String(
+    const parentHref =
       emailId && (item.title === 'View Email' || item.title === 'Email')
         ? siteBuilder.messages.email(emailId)
-        : `/${item.segment ?? ''}`,
-    );
+        : (`/${item.segment ?? ''}` as SiteRoute);
     const lastSegment = useMemo(() => getLastPathSegment(pathname), [pathname]);
     return (
       <>
@@ -150,10 +150,14 @@ export const CustomEmailPageItem = memo(
             <ListItemButton sx={stableSx.listItemButton}>
               <Link
                 data-id={itemId}
-                component={NextLink}
-                href={parentHref}
+                role="link"
+                component={
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  NextLink<any>
+                }
+                href={parentHref.toString()}
                 aria-current={
-                  normalizePath(pathname ?? '') === normalizePath(parentHref)
+                  pathname.toString() === parentHref.toString()
                     ? 'page'
                     : undefined
                 }
@@ -188,7 +192,9 @@ export const CustomEmailPageItem = memo(
               const key =
                 'segment' in child && child.segment ? child.segment : idx;
               const childSegment = typeof key === 'string' ? key : undefined;
-              const cleanPath = (pathname ?? '').split('?')[0].split('#')[0];
+              const cleanPath = String(pathname ?? '')
+                .split('?')[0]
+                .split('#')[0];
               const isActive =
                 !!childSegment &&
                 (lastSegment === childSegment ||

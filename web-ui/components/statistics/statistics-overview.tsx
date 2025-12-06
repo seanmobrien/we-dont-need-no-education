@@ -93,7 +93,6 @@ export const StatisticsOverview = () => {
                 onChange={(e) =>
                   setDataSource(e.target.checked ? 'redis' : 'database')
                 }
-                disabled={dataSource === 'redis'} // Disable Redis for now as it's not implemented
               />
             }
             label={

@@ -9,16 +9,33 @@ jest.mock('@/lib/site-util/feature-flags/server', () => ({
   getAllFeatureFlags: jest.fn(),
 }));
 
-import { mockFlagsmithInstanceFactory } from '@/__tests__/jest.setup';
+import { mockFlagsmithInstanceFactory } from '@/__tests__/setup/jest.setup';
 import { createFlagsmithInstance } from 'flagsmith/isomorphic';
 import { getUserToolProviderCache } from '@/lib/ai/mcp/cache';
+import EventEmitter from '@protobufjs/eventemitter';
+
+const makeToolSet = (input: Partial<ToolProviderSet>) => {
+  const emitter = new EventEmitter();
+  const dispose = jest.fn(() => {
+    emitter.emit('dispose');
+  });
+  return {
+    [Symbol.dispose]: dispose,
+    dispose,
+    addDisposeListener: jest.fn((listener: () => void) => {
+      emitter.on('dispose', listener);
+    }),
+    removeDisposeListener: jest.fn((listener: () => void) => {
+      emitter.off('dispose', listener);
+    }),
+    tools: {},
+    providers: [],
+    isHealthy: true,
+    ...input,
+  } as ToolProviderSet
+};
 // Mock the ToolProviderSet
-const mockToolProviderSet = {
-  dispose: jest.fn(),
-  tools: {},
-  providers: [],
-  isHealthy: true,
-} as unknown as ToolProviderSet;
+const mockToolProviderSet = makeToolSet({});
 
 // Mock the factory function
 const mockFactory = jest.fn().mockResolvedValue(mockToolProviderSet);
@@ -106,12 +123,7 @@ describe('getUserToolProviderCache', () => {
       const config1 = { writeEnabled: true, memoryDisabled: false };
       const config2 = { writeEnabled: false, memoryDisabled: true };
 
-      const mockToolProviderSet2 = {
-        dispose: jest.fn(),
-        tools: {},
-        providers: [],
-        isHealthy: true,
-      } as unknown as ToolProviderSet;
+      const mockToolProviderSet2 = makeToolSet({});
 
       mockFactory
         .mockResolvedValueOnce(mockToolProviderSet)
@@ -138,12 +150,7 @@ describe('getUserToolProviderCache', () => {
       const sessionId = 'session1';
       const config = { writeEnabled: true, memoryDisabled: false };
 
-      const mockToolProviderSet2 = {
-        dispose: jest.fn(),
-        tools: {},
-        providers: [],
-        isHealthy: true,
-      } as unknown as ToolProviderSet;
+      const mockToolProviderSet2 = makeToolSet({});
 
       mockFactory
         .mockResolvedValueOnce(mockToolProviderSet)
@@ -171,24 +178,9 @@ describe('getUserToolProviderCache', () => {
       const config = { writeEnabled: true, memoryDisabled: false };
 
       // Fill up the user's cache to the limit (2 entries)
-      const mockToolProviderSet1 = {
-        dispose: jest.fn(),
-        tools: {},
-        providers: [],
-        isHealthy: true,
-      } as unknown as ToolProviderSet;
-      const mockToolProviderSet2 = {
-        dispose: jest.fn(),
-        tools: {},
-        providers: [],
-        isHealthy: true,
-      } as unknown as ToolProviderSet;
-      const mockToolProviderSet3 = {
-        dispose: jest.fn(),
-        tools: {},
-        providers: [],
-        isHealthy: true,
-      } as unknown as ToolProviderSet;
+      const mockToolProviderSet1 = makeToolSet({});
+      const mockToolProviderSet2 = makeToolSet({});
+      const mockToolProviderSet3 = makeToolSet({});
 
       mockFactory
         .mockResolvedValueOnce(mockToolProviderSet1)
@@ -203,7 +195,7 @@ describe('getUserToolProviderCache', () => {
       await cache.getOrCreate(userId, 'session3', config, mockFactory);
 
       expect(mockFactory).toHaveBeenCalledTimes(3);
-      expect(mockToolProviderSet1.dispose).toHaveBeenCalledTimes(1); // First one should be disposed
+      expect(mockToolProviderSet1[Symbol.dispose]).toHaveBeenCalledTimes(1); // First one should be disposed
 
       // Verify that session1 was evicted by trying to access it again
       mockFactory.mockResolvedValueOnce({
@@ -220,24 +212,18 @@ describe('getUserToolProviderCache', () => {
     it('should dispose and remove all entries for a specific user', async () => {
       const config = { writeEnabled: true, memoryDisabled: false };
 
-      const mockToolProviderSet1 = {
-        dispose: jest.fn(),
+      const mockToolProviderSet1 = makeToolSet({
         tools: {},
         providers: [],
-        isHealthy: true,
-      } as unknown as ToolProviderSet;
-      const mockToolProviderSet2 = {
-        dispose: jest.fn(),
+      });
+      const mockToolProviderSet2 = makeToolSet({
         tools: {},
         providers: [],
-        isHealthy: true,
-      } as unknown as ToolProviderSet;
-      const mockToolProviderSet3 = {
-        dispose: jest.fn(),
+      });
+      const mockToolProviderSet3 = makeToolSet({
         tools: {},
         providers: [],
-        isHealthy: true,
-      } as unknown as ToolProviderSet;
+      });
 
       mockFactory
         .mockResolvedValueOnce(mockToolProviderSet1)
@@ -253,9 +239,9 @@ describe('getUserToolProviderCache', () => {
       cache.invalidateUser('user1');
 
       // Check that user1's tool providers were disposed
-      expect(mockToolProviderSet1.dispose).toHaveBeenCalledTimes(1);
-      expect(mockToolProviderSet2.dispose).toHaveBeenCalledTimes(1);
-      expect(mockToolProviderSet3.dispose).not.toHaveBeenCalled(); // user2's should not be disposed
+      expect(mockToolProviderSet1[Symbol.dispose]).toHaveBeenCalledTimes(1);
+      expect(mockToolProviderSet2[Symbol.dispose]).toHaveBeenCalledTimes(1);
+      expect(mockToolProviderSet3[Symbol.dispose]).not.toHaveBeenCalled(); // user2's should not be disposed
 
       // Verify user1's entries were removed by creating a new one
       mockFactory.mockResolvedValueOnce({
@@ -279,18 +265,8 @@ describe('getUserToolProviderCache', () => {
     it('should dispose all cached tool providers and clear intervals', async () => {
       const config = { writeEnabled: true, memoryDisabled: false };
 
-      const mockToolProviderSet1 = {
-        dispose: jest.fn(),
-        tools: {},
-        providers: [],
-        isHealthy: true,
-      } as unknown as ToolProviderSet;
-      const mockToolProviderSet2 = {
-        dispose: jest.fn(),
-        tools: {},
-        providers: [],
-        isHealthy: true,
-      } as unknown as ToolProviderSet;
+      const mockToolProviderSet1 = makeToolSet({});
+      const mockToolProviderSet2 = makeToolSet({});
 
       mockFactory
         .mockResolvedValueOnce(mockToolProviderSet1)
@@ -304,8 +280,8 @@ describe('getUserToolProviderCache', () => {
       cache.shutdown();
 
       // Check that all tool providers were disposed
-      expect(mockToolProviderSet1.dispose).toHaveBeenCalledTimes(1);
-      expect(mockToolProviderSet2.dispose).toHaveBeenCalledTimes(1);
+      expect(mockToolProviderSet1[Symbol.dispose]).toHaveBeenCalledTimes(1);
+      expect(mockToolProviderSet2[Symbol.dispose]).toHaveBeenCalledTimes(1);
 
       // Verify cache is cleared by checking it creates new entries after disposal
       const newCache = await getUserToolProviderCache({

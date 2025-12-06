@@ -63,7 +63,6 @@ const fetchQueueStatistics = async (): Promise<{
   return data.data;
 };
 
-
 export const useModelStatistics = (
   source: 'database' | 'redis' = 'database',
 ) => {
@@ -78,7 +77,6 @@ export const useModelStatistics = (
   });
 };
 
-
 export const useQueueStatistics = () => {
   return useQuery({
     queryKey: ['queueStatistics'],
@@ -90,7 +88,6 @@ export const useQueueStatistics = () => {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
-
 
 export const useStatistics = (
   modelSource: 'database' | 'redis' = 'database',

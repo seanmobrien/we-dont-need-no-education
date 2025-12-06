@@ -10,7 +10,13 @@ import {
   AnnotatedRetryMessage,
   AnnotatedErrorMessageBase,
 } from './types';
-import { AiModelType, AiModelTypeValues, AiLanguageModelType } from './unions';
+import {
+  AiModelType,
+  AiModelTypeValues,
+  AiLanguageModelType,
+  AiProviderTypeValues,
+  AiProviderType,
+} from './unions';
 
 /**
  * Type guard to check if a given value is an `AnnotatedMessageBase`.
@@ -106,3 +112,24 @@ export const isAiLanguageModelType = (
   value: unknown,
 ): value is AiLanguageModelType =>
   isAiModelType(value) && value !== 'embedding' && value !== 'google-embedding';
+
+/**
+ * Type guard to check if a given value is a valid `AiProviderType`.
+ *
+ * @param value - The value to check.
+ * @returns `true` if the value is a valid `AiProviderType`, otherwise `false`.
+ *
+ * @example
+ * ```typescript
+ * isAiProviderType('azure'); // true
+ * isAiProviderType('google'); // true
+ * isAiProviderType('openai'); // true
+ * isAiProviderType('other-provider'); // false
+ * ```
+ */
+export const isAiProviderType = (value: unknown): value is AiProviderType => {
+  return (
+    typeof value === 'string' &&
+    AiProviderTypeValues.includes(value as AiProviderType)
+  );
+};

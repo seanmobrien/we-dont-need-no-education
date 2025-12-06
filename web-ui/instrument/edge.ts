@@ -9,6 +9,7 @@ const instrument = () => {
     ...config,
   });
   */
+  // NOTE: log methods not available at edge runtime and until after instrumentation is complete
   console.warn('Instrumentation is currently disabled at edge.');
 };
 

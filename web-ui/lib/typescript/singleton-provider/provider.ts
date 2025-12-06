@@ -99,9 +99,9 @@ export class SingletonProvider {
 
   getOrCreate<T, S extends string | symbol = string>(
     symbol: S,
-    factory: () => IsNotNull<T>,
+    factory: () => IsNotNull<T> | undefined,
     config: SingletonConfig = {},
-  ): T {
+  ): T | undefined {
     const key = this.#toStorageKey(symbol);
     const existing = this.#lookupExisting<T>(key);
     if (existing !== undefined) {
@@ -109,7 +109,10 @@ export class SingletonProvider {
     }
 
     const value = factory();
-    if (value === undefined || value === null) {
+    if (value === undefined) {
+      return value as T;
+    }
+    if (value === null) {
       throw new TypeError(
         'Factory for global singleton cannot return null or undefined.',
       );
@@ -120,11 +123,23 @@ export class SingletonProvider {
     return value;
   }
 
+  getRequired<T, S extends string | symbol = string>(
+    symbol: S,
+    factory: () => IsNotNull<T> | undefined,
+    config: SingletonConfig = {},
+  ): T {
+    const ret = this.getOrCreate(symbol, factory, config);
+    if (typeof ret === 'undefined' || ret === null) {
+      throw new TypeError(`Unexpected error creating required singleton ${String(symbol)}`);
+    }
+    return ret;
+  }
+
   async getOrCreateAsync<T, S extends string | symbol = string>(
     symbol: S,
-    factory: () => Promise<IsNotNull<T>>,
+    factory: () => Promise<IsNotNull<T> | undefined>,
     config: SingletonConfig = {},
-  ): Promise<T> {
+  ): Promise<T | undefined> {
     const key = this.#toStorageKey(symbol);
 
     // Check if instance already exists
@@ -143,12 +158,9 @@ export class SingletonProvider {
     const factoryPromise = (async () => {
       try {
         const value = await factory();
-        if (value === undefined || value === null) {
-          throw new TypeError(
-            'Factory for global singleton cannot return null or undefined.',
-          );
+        if (!value) {
+          return undefined as T;
         }
-
         const storage = this.#selectStorage(config);
         this.#store(key, storage, value);
         return value;
@@ -161,7 +173,19 @@ export class SingletonProvider {
     // Track the pending factory
     this.#pendingFactories.set(key, factoryPromise);
 
-    return factoryPromise;
+    return await factoryPromise;
+  }
+
+  async getRequiredAsync<T, S extends string | symbol = string>(
+    symbol: S,
+    factory: () => Promise<IsNotNull<T> | undefined>,
+    config: SingletonConfig = {},
+  ): Promise<T> {
+    const ret = await this.getOrCreateAsync(symbol, factory, config);
+    if (typeof ret === 'undefined' || ret === null) {
+      throw new TypeError(`Unexpected error creating required singleton ${String(symbol)}`);
+    }
+    return ret;
   }
 
   has<S extends string | symbol = string>(symbol: S): boolean {

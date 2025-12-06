@@ -9,7 +9,7 @@ import {
 import {
   PROVIDER_ID_AZURE,
   setupMaps,
-} from '@/__tests__/jest.mock-provider-model-maps';
+} from '@/__tests__/setup/jest.mock-provider-model-maps';
 
 describe('ProviderMap OrThrow + ModelMap normalization throwing', () => {
   beforeEach(() => {

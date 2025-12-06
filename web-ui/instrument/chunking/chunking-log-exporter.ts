@@ -12,6 +12,8 @@ import type {
 } from '@opentelemetry/sdk-logs';
 import type { AnyValueMap } from '@opentelemetry/api-logs';
 import type { ExportResult } from '@opentelemetry/core';
+import { LoggedError } from '@/lib/react-util';
+import { log } from '@/lib/logger';
 
 export type LogChunkingOptions = {
   /** Maximum characters allowed in any single property or body before chunking */
@@ -77,9 +79,18 @@ export class ChunkingLogExporter implements LogRecordExporter {
           );
           attrs[`body_chunk_${i + 1}`] = chunk;
         }
-        base.body = this.keepOriginalKey
-          ? s.slice(0, this.maxChunkChars)
-          : '[chunked]';
+        // NOTE: When the record has already been emitted the body property throws an error,
+        // which we believe winds up crashing the child process.  Handle this defensively.
+        try {
+          base.body = this.keepOriginalKey
+            ? s.slice(0, this.maxChunkChars)
+            : '[chunked]';
+        } catch (innerError) {
+          // Unable to update body - exporting this record will likely fail / be skipped, so write details out to console
+          // so that it's not completely invisible.
+          // NOTE: log methods would feed into the same process, which would cause infinite recursion
+          console.warn(`Unable to update log record body - ${LoggedError.buildMessage(innerError)}.  Full record: ${base.body ?? '<null>'}`)
+        }
       }
 
       // Prepare a snapshot of original entries to avoid iterating over keys we add below

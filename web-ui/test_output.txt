@@ -1,0 +1,558 @@
+npm warn Unknown project config "package-manager-strict". This will stop working in the next major version of npm.
+npm warn Unknown project config "prefer-yarn". This will stop working in the next major version of npm.
+
+> compliance-theater@0.1.0 test
+> jest
+
+FAIL __tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ GridSortModel source ΓÇ║ should skip unknown columns and log warnings
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleOrderBy: Unknown column 'unknown_column' (mapped from 'unknown_column')"
+
+    Number of calls: 0
+
+      253 |         column: mockColumns.name,
+      254 |       });
+    > 255 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+          |                               ^
+      256 |         "buildDrizzleOrderBy: Unknown column 'unknown_column' (mapped from 'unknown_column')",
+      257 |       );
+      258 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:255:31)
+
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ GridSortModel source ΓÇ║ should return original query when all columns are unknown
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 2
+    Received number of calls: 0
+
+      276 |       expect(result).toBe(mockQuery);
+      277 |       expect(mockQuery.orderBy).not.toHaveBeenCalled();
+    > 278 |       expect(mockConsoleWarn).toHaveBeenCalledTimes(2);
+          |                               ^
+      279 |     });
+      280 |   });
+      281 |
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:278:31)
+
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ Column mapping ΓÇ║ should log warning with mapped column names
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleOrderBy: Unknown column 'backend_field' (mapped from 'frontend_field')"
+
+    Number of calls: 0
+
+      464 |       });
+      465 |
+    > 466 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+          |                               ^
+      467 |         "buildDrizzleOrderBy: Unknown column 'backend_field' (mapped from 'frontend_field')",
+      468 |       );
+      469 |     });
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:466:31)
+
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ Default sort handling ΓÇ║ should log warning for unknown default sort column
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleOrderBy: Unknown default sort column 'unknown_column' (mapped from 'unknown_column')"
+
+    Number of calls: 0
+
+      574 |       expect(result).toBe(mockQuery);
+      575 |       expect(mockQuery.orderBy).not.toHaveBeenCalled();
+    > 576 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+          |                               ^
+      577 |         "buildDrizzleOrderBy: Unknown default sort column 'unknown_column' (mapped from 'unknown_column')",
+      578 |       );
+      579 |     });
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:576:31)
+
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ Edge cases and error handling ΓÇ║ should handle null/undefined column results
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleOrderBy: Unknown column 'invalid' (mapped from 'invalid')"
+
+    Number of calls: 0
+
+      651 |         column: mockColumns.name,
+      652 |       });
+    > 653 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+          |                               ^
+      654 |         "buildDrizzleOrderBy: Unknown column 'invalid' (mapped from 'invalid')",
+      655 |       );
+      656 |     });
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:653:31)
+
+FAIL __tests__/lib/components/mui/data-grid/buildDrizzleFilter.test.ts
+  ΓùÅ buildDrizzleItemFilter ΓÇ║ Error handling ΓÇ║ should return undefined and log warning for unknown columns
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')"
+
+    Number of calls: 0
+
+      872 |
+      873 |       expect(result).toBeUndefined();
+    > 874 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+          |                               ^
+      875 |         "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')",
+      876 |       );
+      877 |     });
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleFilter.test.ts:874:31)
+
+  ΓùÅ buildDrizzleQueryFilter ΓÇ║ Edge cases ΓÇ║ should handle filters with unknown columns
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')"
+
+    Number of calls: 0
+
+      1230 |         queryChunks: ['and condition'],
+      1231 |       });
+    > 1232 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+           |                               ^
+      1233 |         "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')",
+      1234 |       );
+      1235 |     });
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleFilter.test.ts:1232:31)
+
+FAIL __tests__/lib/email/email-id-resolver.test.ts
+  ΓùÅ Console
+
+    console.group
+        ≡ƒÉ¢ Mock Error Report
+
+      at reportErrorToConsole (__tests__/setup/jest.setup.ts:916:15)
+          at Array.map (<anonymous>)
+
+    console.log
+        ΓöîΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö¼ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÉ
+      Γöé (index) Γöé Values                                                                                                                                                                                                                                                                                                                                        Γöé
+      Γö£ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö╝ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöñ
+      Γöé stack   Γöé 'at LoggedError.isTurtlesAllTheWayDownBaby (D:\\repos\\no-ed\\web-ui\\lib\\react-util\\errors\\logged-error\\logged-error-class.ts:185:31)\nat resolveEmailId (D:\\repos\\no-ed\\web-ui\\lib\\email\\email-id-resolver.ts:116:17)\nat Object.<anonymous> (D:\\repos\\no-ed\\web-ui\\__tests__\\lib\\email\\email-id-resolver.test.ts:121:20)' Γöé
+      Γöé error   Γöé undefined                                                                                                                                                                                                                                                                                                                                     Γöé
+      Γöé source  Γöé 'EmailIdResolver.resolveEmailId'                                                                                                                                                                                                                                                                                                              Γöé
+      Γöé message Γöé undefined                                                                                                                                                                                                                                                                                                                                     Γöé
+      ΓööΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö┤ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÿ
+
+      at reportErrorToConsole (__tests__/setup/jest.setup.ts:922:15)
+          at Array.map (<anonymous>)
+
+  ΓùÅ resolveEmailId ΓÇ║ should return null on database error
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "Error resolving document ID to email ID:", Any<Error>
+    Received: "Error:", [Error: Database error]
+
+    Number of calls: 1
+
+      121 |     const result = await resolveEmailId(documentId);
+      122 |     expect(result).toBeNull();
+    > 123 |     expect(consoleSpy).toHaveBeenCalledWith(
+          |                        ^
+      124 |       'Error resolving document ID to email ID:',
+      125 |       expect.any(Error),
+      126 |     );
+
+      at Object.<anonymous> (__tests__/lib/email/email-id-resolver.test.ts:123:24)
+
+PASS __tests__/lib/ai/middleware/tool-optimizing-middleware/performance.test.ts (6.996 s)
+PASS __tests__/lib/email/import/importmanager.test.ts (6.384 s)
+PASS __tests__/lib/ai/services/search/hybridSearchClient.test.ts
+PASS __tests__/lib/nextjs-util/fetch/cache-strategies.test.ts (5.537 s)
+PASS __tests__/components/ai/chat-panel/chat-panel-float.test.tsx (6.85 s)
+PASS __tests__/components/email-message/dashboard-layout/email-dashboard-layout.test.tsx (11.148 s)
+PASS __tests__/lib/api/health/chat.test.ts (11.347 s)
+PASS __tests__/components/ai/chat/tool-details-dialog.test.tsx (11.726 s)
+PASS __tests__/components/mui/resizeable-draggable-dialog/integration.test.tsx (11.929 s)
+PASS __tests__/components/ai/chat-panel/chat-panel-model-formatting.test.tsx (12.175 s)
+PASS __tests__/components/ai/chat-panel/chat-menu-provider-selection.test.tsx (12.491 s)
+PASS __tests__/components/error-boundaries/error-flow-integration.test.tsx
+PASS __tests__/components/ai/chat-panel/chat-panel-dock.test.tsx (13.252 s)
+PASS __tests__/app/api/auth/keys/route.test.ts
+PASS __tests__/lib/site-util/auth/user-keys.test.ts
+PASS __tests__/lib/error-monitoring/use-error-reporter.test.tsx
+PASS __tests__/components/error-boundaries/renderFallback.test.tsx (14.024 s)
+PASS __tests__/app/api/ai/chat/history.test.ts
+PASS __tests__/app/api/ai/chat/history/[chatId].test.ts
+PASS __tests__/components/email-message/dashboard-layout/custom-email-page-item.test.tsx
+PASS __tests__/lib/ai/middleware/chat-history/middleware-integration.test.ts
+PASS __tests__/lib/hooks/use-todo.full.test.tsx
+PASS __tests__/lib/ai/middleware/cache-success-only.test.ts
+PASS __tests__/lib/ai/tools/todo/storage.test.ts
+  ΓùÅ Console
+
+    console.log
+      process cleanup complete.
+
+      at __tests__/setup/jest.mock-prexit.ts:4:27
+
+PASS __tests__/components/email-message/email-form-react-query.test.tsx
+PASS __tests__/components/ai/chat/list.test.tsx
+PASS __tests__/components/todo/todo-list-flyout.test.tsx
+PASS __tests__/app/api/health/route.test.ts
+  ΓùÅ Console
+
+    console.log
+      process cleanup complete.
+
+      at __tests__/setup/jest.mock-prexit.ts:4:27
+
+PASS __tests__/components/mui/resizeable-draggable-dialog/dialog.test.tsx
+PASS __tests__/lib/ai/middleware/chat-history/stream-handlers.test.ts
+PASS __tests__/lib/error-monitoring/recovery-strategies.test.ts
+PASS __tests__/components/todo/floating-todo-dialog.test.tsx
+PASS __tests__/lib/hooks/use-statistics.test.tsx
+PASS __tests__/components/mui/resizeable-draggable-dialog/background-interaction.test.tsx
+PASS __tests__/app/api/email/[emailId]/properties/call-to-action/route.test.ts
+PASS __tests__/lib/api/_baseDrizzleRepository.test.ts
+PASS __tests__/components/general/enhanced-table-head.test.tsx
+PASS __tests__/components/general/loading-component-updates.test.tsx
+PASS __tests__/lib/react-util/_utility-methods.debounce.test.ts
+PASS __tests__/lib/ai/middleware/cache-basic.test.ts
+PASS __tests__/components/ai/chat-panel/chat-panel-layout.test.tsx
+PASS __tests__/components/auth/key-refresh-notify/wrapper.test.tsx
+PASS __tests__/components/ai/chat-panel/chat-panel-comprehensive-docking.test.tsx (18.157 s)
+PASS __tests__/components/ai/chat/chat-message-filters.test.tsx
+PASS __tests__/components/ai/chat/history.test.tsx
+PASS __tests__/lib/ai/chat/message-optimizer-tools.test.ts
+PASS __tests__/components/general/flags/flag-provider.test.tsx
+PASS __tests__/lib/ai/services/model-stats/model-map-full.test.ts
+PASS __tests__/lib/ai/middleware/tokenStatsTracking/tokenStatsService.test.ts
+PASS __tests__/lib/ai/middleware/chat-history/flush-handlers-simple.test.ts
+PASS __tests__/components/general/modal.test.tsx
+PASS __tests__/lib/ai/middleware/state-management/integration.test.ts
+PASS __tests__/instrument/url-filter/UrlFilteredSpanExporter.test.ts
+PASS __tests__/components/ai/chat-panel/chat-panel-context.test.tsx
+PASS __tests__/lib/typescript/singleton-provider/storage-strong-ref.test.ts
+PASS __tests__/lib/typescript/singleton-provider.test.ts
+PASS __tests__/lib/components/mui/data-grid/useDataSourceQuery.test.ts
+PASS __tests__/lib/components/ai/chat-query-integration.test.tsx
+PASS __tests__/lib/ai/aiModelFactory.test.ts
+PASS __tests__/components/email-message/dashboard-layout/email-dashboard-toolbar-action.test.tsx
+PASS __tests__/lib/ai/tools/todo.test.ts
+PASS __tests__/lib/ai/tools/searchCaseFile.test.ts
+PASS __tests__/lib/ai/middleware/chat-history/processing-queue.test.ts
+PASS __tests__/lib/ai/middleware/key-rate-limiter.test.ts
+PASS __tests__/lib/config/index.test.ts
+PASS __tests__/lib/nextjs-util/semaphore-manager.test.ts
+PASS __tests__/app/chat/[chatId]/page.test.tsx
+PASS __tests__/lib/nextjs-util/server/normalize-request-init.test.ts
+PASS __tests__/components/error-boundaries/ClientErrorManager.test.tsx
+PASS __tests__/lib/typescript/_generics.test.ts
+PASS __tests__/app/api/email/route.test.ts
+PASS __tests__/lib/ai/mem0/memory-client.test.ts
+PASS __tests__/lib/auth/impersonation.thirdparty.cache.test.ts
+PASS __tests__/app/api/ai/chat/stats/models.redis.test.tsx
+PASS __tests__/lib/ai/middleware/tool-optimizing-middleware/index.test.ts
+PASS __tests__/lib/typescript/singleton-provider/storage-weak-refs.test.ts
+PASS __tests__/lib/nextjs-util/server/utils.test.ts
+PASS __tests__/components/mui/resizeable-draggable-dialog/index.test.tsx
+PASS __tests__/lib/nextjs-util/utils.wrapRouteRequest.test.ts
+PASS __tests__/lib/ai/middleware/chat-history/import-incoming-message.test.ts
+PASS __tests__/lib/react-util/simple-rate-limiter.test.ts
+PASS __tests__/lib/react-util/_utility-methods.test.ts
+PASS __tests__/app/api/auth/session/route.test.ts
+PASS __tests__/lib/hooks/use-email.test.tsx (20.882 s)
+PASS __tests__/lib/typescript/_record-decorators.test.ts
+PASS __tests__/lib/ai/mcp/toolProviderFactory.test.ts
+PASS __tests__/lib/ai/middleware/tool-optimizing-middleware/integration.test.ts
+PASS __tests__/lib/auth/impersonation.thirdparty.test.ts
+PASS __tests__/app/api/ai/chat/route.test.ts
+PASS __tests__/components/mui/resizeable-draggable-dialog/types.test.ts
+PASS __tests__/lib/ai/mcp/tool-cache.test.ts
+PASS __tests__/lib/ai/middleware/chat-history/index.test.ts
+PASS __tests__/lib/ai/tools/searchPolicyStore.test.ts
+PASS __tests__/lib/api/email/email-drizzle-repository.test.ts
+PASS __tests__/lib/api/email/email-service.test.ts
+PASS __tests__/app/api/contact/[contactId]/route.test.ts
+PASS __tests__/lib/api/email/properties/compliance-scores/ComplianceScoresDetailsRepository.test.ts
+PASS __tests__/instrument/url-filter/UrlFilteredLogExporter.test.ts
+PASS __tests__/lib/auth/impersonation/utility.test.ts
+PASS __tests__/app/api/health/probe.route.test.ts
+PASS __tests__/lib/api/document-unit/document-unit-repository.test.ts
+PASS __tests__/lib/ai/middleware/tokenStatsTracking/tokenStatsMiddleware.test.ts
+PASS __tests__/lib/ai/mcp/client-tool-provider.test.ts
+PASS __tests__/lib/nextjs-util/server/error-response.test.ts
+PASS lib/nextjs-util/server/response/__tests__/fetch-response.test.ts
+PASS __tests__/lib/api/attachment/drizzle-repository.test.ts
+PASS __tests__/lib/nextjs-util/server/response/index.test.ts
+  ΓùÅ Console
+
+    console.log
+      Blob defined: function
+
+      at Object.<anonymous> (__tests__/lib/nextjs-util/server/response/index.test.ts:787:15)
+
+PASS __tests__/lib/react-util/simple-circuit-breaker.test.ts
+PASS __tests__/components/email-message/dashboard-layout/branding.test.tsx
+PASS __tests__/app/api/contact/route.test.ts
+PASS __tests__/lib/components/mui/data-grid/buildDrizzlePagination.test.ts
+PASS __tests__/lib/ai/services/chat/language-model-queue.test.ts
+PASS __tests__/lib/nextjs-util/server/fetch-manager-timeout.test.ts
+PASS __tests__/lib/site-util/auth/crypto-service.test.ts
+PASS __tests__/lib/typescript/zod.test.ts
+PASS __tests__/app/api/health/util/route.test.ts
+PASS __tests__/lib/ai/services/chat/errors/error-classes.test.ts
+PASS __tests__/lib/ai/types/message-structure-preservation.test.ts
+PASS __tests__/lib/ai/services/model-stats/provider-and-model-map-throwing.test.ts
+PASS __tests__/lib/api/email/properties/violation-details/ViolationDetailsRepository.test.ts
+PASS __tests__/concurrency-validation.test.ts
+PASS __tests__/lib/components/mui/data-grid/utility.test.ts
+PASS __tests__/lib/ai/middleware/chat-history/tool-message-deduplication.test.ts
+PASS __tests__/lib/api/email/properties/sentiment-analysis/SentimentAnalysisDetailsRepository.test.ts
+PASS __tests__/lib/api/email/properties/CallToActionDetailsRepository.test.ts
+PASS __tests__/lib/api/email.test.ts
+PASS __tests__/lib/api/email/properties/email-header/EmailHeaderDetailsRepository.test.ts
+PASS __tests__/lib/auth/utilities.test.ts
+PASS __tests__/lib/ai/tools/utility.test.ts
+PASS __tests__/lib/site-util/auth/keycloak-token-exchange.test.ts
+PASS __tests__/lib/api/email/properties/key-points/KeyPointsDetailsRepository.test.ts
+PASS __tests__/lib/api/email/properties/call-to-action/CallToActionDetailsRepository.test.ts
+PASS __tests__/lib/ai/middleware/chat-history/instrumentation.test.ts
+PASS __tests__/lib/auth/redirect.test.ts
+PASS __tests__/lib/ai/middleware/set-normalized-defaults.test.ts
+PASS __tests__/app/app-openapi-json-route.test.ts
+PASS __tests__/lib/themes/definitions.test.ts
+PASS __tests__/app/api/email/import/[provider]/_utilities.test.ts
+PASS __tests__/lib/ai/middleware/chat-history/message-deduplication-integration.test.ts
+PASS __tests__/lib/site-util/url-builder/url-builder.test.ts
+PASS __tests__/lib/api/drizzle-crud-controller.test.ts
+PASS __tests__/instrument/ChunkingLogExporter.test.ts
+PASS __tests__/lib/ai/middleware/enterprise.test.ts
+PASS __tests__/lib/ai/middleware/chat-history/types.test.ts
+PASS __tests__/instrument/ChunkingTraceExporter.test.ts
+PASS __tests__/lib/ai/middleware/chat-history/utility.test.ts
+PASS __tests__/lib/components/mui/data-grid/buildQueryFilter.test.ts
+PASS __tests__/lib/email/import/google/parsedHeaderMap.test.ts
+PASS __tests__/lib/api/email/properties/call-to-action-response/CallToActionResponseDetailsRepository.test.ts
+PASS __tests__/components/email-message/dashboard-layout/index.test.tsx
+PASS __tests__/lib/ai/middleware/chat-history/stream-handlers.generic-start.test.ts
+PASS __tests__/lib/react-util/errors/error-like.test.ts
+PASS __tests__/lib/typescript/dual-key-map.test.ts
+PASS __tests__/lib/site-util/auth/key-validation.test.ts
+PASS __tests__/app/api/health/flags.test.ts
+PASS __tests__/lib/ai/middleware/state-management/state-management.test.ts
+PASS __tests__/lib/ai/tools/getCaseFileDocument/compact-casefile-document.test.ts
+PASS __tests__/lib/typescript/_guards.test.ts
+PASS __tests__/lib/auth/impersonation/impersonation-service-cache.test.ts
+PASS __tests__/lib/components/mui/data-grid/selectForGrid.test.ts
+PASS __tests__/lib/api/email/import/google/index.test.ts
+PASS __tests__/data-models/_utilities.test.ts
+PASS __tests__/lib/ai/mem0/types/health-check.test.ts
+PASS __tests__/lib/api/health/base-cache.test.ts
+PASS __tests__/lib/nextjs-util/error-response.test.ts
+PASS __tests__/lib/ai/services/model-stats/tool-map.test.ts
+PASS __tests__/lib/ai/mcp/user-tool-provider-cache.test.ts
+PASS __tests__/lib/drizzle-db/drizzle-error.test.ts
+PASS __tests__/lib/nextjs-util/server/utils.tracing.test.ts
+PASS __tests__/lib/ai/services/embedding/EmbeddingService.test.ts
+PASS __tests__/lib/email/import/google/utilities.test.ts
+PASS __tests__/lib/ai/middleware/chat-history/message-deduplication.test.ts
+PASS __tests__/lib/react-util/errors/aggregate-error.test.ts
+PASS __tests__/lib/logger/utilities.test.ts
+PASS __tests__/lib/react-util/url.test.ts
+PASS __tests__/lib/site-util/format.test.ts
+PASS __tests__/lib/nextjs-util/guards.test.ts
+PASS __tests__/lib/site-util/auth/security.test.ts
+PASS __tests__/lib/ai/core/count-tokens.test.ts
+PASS __tests__/lib/drizzle-db/drizzle-types.test.ts
+PASS __tests__/lib/ai/tools/todo/todo-manager-factory.test.ts
+PASS __tests__/lib/ai/middleware/chat-history/enhancement-demonstration.test.ts
+PASS __tests__/lib/logger/simple-scoped-logger.test.ts
+PASS __tests__/lib/ai/agents/timeline-agent.test.ts
+PASS __tests__/lib/ai/services/chat/errors/model-resource-not-found-error.test.ts
+PASS __tests__/lib/typescript/_guards.extra.test.ts
+PASS __tests__/components/mui/data-grid/valueGetters.test.ts
+PASS __tests__/lib/error-monitoring/error-reporter.test.ts
+PASS __tests__/lib/react-util/utility-methods.test.ts
+PASS __tests__/lib/ai/tools/toolCallbackResultFactory.test.ts
+PASS __tests__/components/email-message/email-detail-panel.test.tsx (29.865 s)
+PASS __tests__/themes/theme-integration.test.tsx (31.6 s)
+PASS __tests__/components/database-status/database-status-indicator.test.tsx (31.868 s)
+PASS __tests__/components/chat-status/chat-status-indicator.test.tsx (31.872 s)
+PASS __tests__/components/email-message/list/email-list.test.tsx (31.884 s)
+PASS __tests__/app/messages/email/emailId/notes-panel.test.tsx (32.037 s)
+PASS __tests__/app/home-page-theme.test.tsx (31.833 s)
+PASS __tests__/components/memory-status/memory-status-indicator.test.tsx (31.871 s)
+PASS __tests__/components/ai/chat/message-filtering.test.tsx (32.287 s)
+PASS __tests__/app/messages/email/emailId/key-points-panel.test.tsx (32.208 s)
+PASS __tests__/app/messages/email/emailId/email-header-panel.test.tsx (32.211 s)
+PASS __tests__/components/ai/chat/virtualized-chat-display.test.tsx (32.266 s)
+PASS __tests__/components/ai/chat/chat-turn-display.test.tsx (33.092 s)
+PASS __tests__/app/messages/email/emailId/responsive-action-panel.test.tsx (33.056 s)
+PASS __tests__/app/messages/email/emailId/call-to-action-panel.test.tsx (32.873 s)
+PASS __tests__/components/ai/chat/chat-message-display.test.tsx (32.958 s)
+PASS __tests__/components/email-message/email-list.test.tsx (33.361 s)
+PASS __tests__/components/email-message/email-viewer.test.tsx (33.806 s)
+
+Summary of all failing tests
+FAIL __tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ GridSortModel source ΓÇ║ should skip unknown columns and log warnings
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleOrderBy: Unknown column 'unknown_column' (mapped from 'unknown_column')"
+
+    Number of calls: 0
+
+      253 |         column: mockColumns.name,
+      254 |       });
+    > 255 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+          |                               ^
+      256 |         "buildDrizzleOrderBy: Unknown column 'unknown_column' (mapped from 'unknown_column')",
+      257 |       );
+      258 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:255:31)
+
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ GridSortModel source ΓÇ║ should return original query when all columns are unknown
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 2
+    Received number of calls: 0
+
+      276 |       expect(result).toBe(mockQuery);
+      277 |       expect(mockQuery.orderBy).not.toHaveBeenCalled();
+    > 278 |       expect(mockConsoleWarn).toHaveBeenCalledTimes(2);
+          |                               ^
+      279 |     });
+      280 |   });
+      281 |
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:278:31)
+
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ Column mapping ΓÇ║ should log warning with mapped column names
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleOrderBy: Unknown column 'backend_field' (mapped from 'frontend_field')"
+
+    Number of calls: 0
+
+      464 |       });
+      465 |
+    > 466 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+          |                               ^
+      467 |         "buildDrizzleOrderBy: Unknown column 'backend_field' (mapped from 'frontend_field')",
+      468 |       );
+      469 |     });
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:466:31)
+
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ Default sort handling ΓÇ║ should log warning for unknown default sort column
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleOrderBy: Unknown default sort column 'unknown_column' (mapped from 'unknown_column')"
+
+    Number of calls: 0
+
+      574 |       expect(result).toBe(mockQuery);
+      575 |       expect(mockQuery.orderBy).not.toHaveBeenCalled();
+    > 576 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+          |                               ^
+      577 |         "buildDrizzleOrderBy: Unknown default sort column 'unknown_column' (mapped from 'unknown_column')",
+      578 |       );
+      579 |     });
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:576:31)
+
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ Edge cases and error handling ΓÇ║ should handle null/undefined column results
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleOrderBy: Unknown column 'invalid' (mapped from 'invalid')"
+
+    Number of calls: 0
+
+      651 |         column: mockColumns.name,
+      652 |       });
+    > 653 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+          |                               ^
+      654 |         "buildDrizzleOrderBy: Unknown column 'invalid' (mapped from 'invalid')",
+      655 |       );
+      656 |     });
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:653:31)
+
+FAIL __tests__/lib/components/mui/data-grid/buildDrizzleFilter.test.ts
+  ΓùÅ buildDrizzleItemFilter ΓÇ║ Error handling ΓÇ║ should return undefined and log warning for unknown columns
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')"
+
+    Number of calls: 0
+
+      872 |
+      873 |       expect(result).toBeUndefined();
+    > 874 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+          |                               ^
+      875 |         "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')",
+      876 |       );
+      877 |     });
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleFilter.test.ts:874:31)
+
+  ΓùÅ buildDrizzleQueryFilter ΓÇ║ Edge cases ΓÇ║ should handle filters with unknown columns
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')"
+
+    Number of calls: 0
+
+      1230 |         queryChunks: ['and condition'],
+      1231 |       });
+    > 1232 |       expect(mockConsoleWarn).toHaveBeenCalledWith(
+           |                               ^
+      1233 |         "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')",
+      1234 |       );
+      1235 |     });
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleFilter.test.ts:1232:31)
+
+FAIL __tests__/lib/email/email-id-resolver.test.ts
+  ΓùÅ resolveEmailId ΓÇ║ should return null on database error
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "Error resolving document ID to email ID:", Any<Error>
+    Received: "Error:", [Error: Database error]
+
+    Number of calls: 1
+
+      121 |     const result = await resolveEmailId(documentId);
+      122 |     expect(result).toBeNull();
+    > 123 |     expect(consoleSpy).toHaveBeenCalledWith(
+          |                        ^
+      124 |       'Error resolving document ID to email ID:',
+      125 |       expect.any(Error),
+      126 |     );
+
+      at Object.<anonymous> (__tests__/lib/email/email-id-resolver.test.ts:123:24)
+
+
+Test Suites: 3 failed, 1 skipped, 208 passed, 211 of 212 total
+Tests:       8 failed, 49 skipped, 2553 passed, 2610 total
+Snapshots:   13 passed, 13 total
+Time:        38.789 s
+Ran all test suites.

@@ -26,6 +26,7 @@ import {
 import { LanguageModel } from 'ai';
 import { ModelMap } from '../../services/model-stats/model-map';
 import { MiddlewareStateManager } from '../state-management';
+import { LoggedError } from '@/lib/react-util';
 
 type RateLimitRetryState = {
   rateLimitContext: RateLimitRetryContext;
@@ -58,9 +59,6 @@ const getFailoverConfig = (currentProvider: string): ModelFailoverConfig => {
 export const retryRateLimitMiddlewareFactory = async (
   factoryOptions: RateLimitFactoryOptions | RateLimitRetryContext,
 ): Promise<RetryRateLimitMiddlewareType> => {
-  /**
-   * Advanced rate limit middleware context data
-   */
   let rateLimitContext = await (async () => {
     if ('modelClass' in factoryOptions) {
       return factoryOptions;
@@ -88,9 +86,6 @@ export const retryRateLimitMiddlewareFactory = async (
     };
   })();
 
-  /**
-   * Original rate limit middleware implementation
-   */
   const originalRetryRateLimitMiddleware: RetryRateLimitMiddlewareType = {
     rateLimitContext: () => ({ ...rateLimitContext }),
 
@@ -98,8 +93,10 @@ export const retryRateLimitMiddlewareFactory = async (
       const startTime = Date.now();
       const modelClassification = rateLimitContext.modelClass;
 
-      console.log('Advanced rate limit middleware - doGenerate called');
-      console.log(`Model classification: ${modelClassification}`);
+      log((l) =>
+        l.info('Advanced rate limit middleware - doGenerate called'),
+      );
+      log((l) => l.info(`Model classification: ${modelClassification}`));
 
       // Check if current model is available, attempt fallback if not
       const currentProvider = getCurrentProvider();
@@ -131,7 +128,6 @@ export const retryRateLimitMiddlewareFactory = async (
         const result = await doGenerate();
 
         recordRequestMetrics(startTime, modelClassification, 'generate');
-        console.log('doGenerate finished successfully');
         return result;
       } catch (error) {
         recordRequestMetrics(startTime, modelClassification, 'generate');
@@ -159,109 +155,119 @@ export const retryRateLimitMiddlewareFactory = async (
 
     wrapStream: async ({ doStream, params, model }) => {
       const startTime = Date.now();
-      const modelClassification = await getModelClassification({ model });
-
-      console.log('Advanced rate limit middleware - doStream called');
-      console.log(`Model classification: ${modelClassification}`);
-
-      // Similar model availability check as in wrapGenerate
-      const currentProvider = getCurrentProvider();
-      const currentModelKey = constructModelKey(
-        currentProvider,
-        modelClassification,
-      );
-
       try {
-        await checkModelAvailabilityAndFallback(
-          currentModelKey,
+        const modelClassification = await getModelClassification({ model });
+        log((l) => l.verbose(`=== RetryRateLimitMiddleware - doStream called - Model classification: ${modelClassification} ===`));
+
+        // Similar model availability check as in wrapGenerate
+        const currentProvider = getCurrentProvider();
+        const currentModelKey = constructModelKey(
+          currentProvider,
           modelClassification,
-          getFailoverConfig(currentProvider),
-          {
-            ...params,
-            ...{
-              chatId: 'unassigned',
-              turnId: '1',
-              ...(params?.providerOptions?.backoffice ?? {}),
-            },
-          },
         );
-      } catch (error) {
-        // Model unavailable and no fallback - error already thrown with appropriate message
-        throw error;
-      }
 
-      try {
-        const { stream, ...rest } = await doStream();
-        let generatedText = '';
-        let hasError = false;
+        try {
+          await checkModelAvailabilityAndFallback(
+            currentModelKey,
+            modelClassification,
+            getFailoverConfig(currentProvider),
+            {
+              ...params,
+              ...{
+                chatId: 'unassigned',
+                turnId: '1',
+                ...(params?.providerOptions?.backoffice ?? {}),
+              },
+            },
+          );
+        } catch (error) {
+          // Model unavailable and no fallback - error already thrown with appropriate message
+          throw error;
+        }
 
-        const transformStream = new TransformStream<
-          LanguageModelV2StreamPart,
-          LanguageModelV2StreamPart
-        >({
-          transform(chunk, controller) {
-            if (chunk.type === 'text-delta') {
-              generatedText += chunk.delta;
-            }
+        try {
+          const { stream, ...rest } = await doStream();
+          let generatedText = '';
+          let hasError = false;
 
-            // Check for error chunks that might indicate rate limiting
-            if (chunk.type === 'error') {
-              hasError = true;
-              const rateLimitErrorInfo = getRetryErrorInfo(chunk.error);
-              if (
-                rateLimitErrorInfo?.isRetry &&
-                rateLimitErrorInfo.retryAfter
-              ) {
-                console.log(
-                  `Stream rate limit detected: ${rateLimitErrorInfo.retryAfter}s`,
-                );
-                disableModelFromRateLimit(
-                  currentModelKey,
-                  rateLimitErrorInfo.retryAfter,
-                );
-                rateLimitMetrics.recordError(
-                  'stream_rate_limit',
-                  modelClassification,
+          const transformStream = new TransformStream<
+            LanguageModelV2StreamPart,
+            LanguageModelV2StreamPart
+          >({
+            transform(chunk, controller) {
+              if (chunk.type === 'text-delta') {
+                generatedText += chunk.delta;
+              }
+
+              // Check for error chunks that might indicate rate limiting
+              if (chunk.type === 'error') {
+                hasError = true;
+                const rateLimitErrorInfo = getRetryErrorInfo(chunk.error);
+                if (
+                  rateLimitErrorInfo?.isRetry &&
+                  rateLimitErrorInfo.retryAfter
+                ) {
+                  log((l) =>
+                    l.info(
+                      `Stream rate limit detected: ${rateLimitErrorInfo.retryAfter}s`,
+                    ),
+                  );
+                  disableModelFromRateLimit(
+                    currentModelKey,
+                    rateLimitErrorInfo.retryAfter,
+                  );
+                  rateLimitMetrics.recordError(
+                    'stream_rate_limit',
+                    modelClassification,
+                  );
+                }
+              }
+
+              controller.enqueue(chunk);
+            },
+
+            flush() {
+              recordRequestMetrics(startTime, modelClassification, 'stream');
+
+              if (!hasError) {
+                log((l) => l.info('doStream finished successfully'));
+                log((l) =>
+                  l.info(`Generated text length: ${generatedText.length}`),
                 );
               }
-            }
+            },
+          });
 
-            controller.enqueue(chunk);
-          },
+          return {
+            stream: stream.pipeThrough(transformStream),
+            ...rest,
+          };
+        } catch (error) {
+          recordRequestMetrics(startTime, modelClassification, 'stream');
 
-          flush() {
-            recordRequestMetrics(startTime, modelClassification, 'stream');
-
-            if (!hasError) {
-              console.log('doStream finished successfully');
-              console.log(`Generated text length: ${generatedText.length}`);
-            }
-          },
-        });
-
-        return {
-          stream: stream.pipeThrough(transformStream),
-          ...rest,
-        };
+          // Handle rate limit errors using utility function
+          await handleRateLimitError(
+            error,
+            currentModelKey,
+            modelClassification,
+            getFailoverConfig(currentProvider),
+            params,
+            'stream_setup',
+          );
+          // This line should never be reached as handleRateLimitError always throws
+          throw error;
+        }
       } catch (error) {
-        recordRequestMetrics(startTime, modelClassification, 'stream');
-
-        // Handle rate limit errors using utility function
-        await handleRateLimitError(
-          error,
-          currentModelKey,
-          modelClassification,
-          getFailoverConfig(currentProvider),
-          params,
-          'stream_setup',
-        );
-        // This line should never be reached as handleRateLimitError always throws
-        throw error;
+        throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          source: 'rateLimitMiddleware',
+          log: true,
+        })
+      } finally {
+        log((l) => l.verbose('=== RetryRateLimitMiddleware - doStream finished ==='));
       }
     },
 
     transformParams: async ({ params }) => {
-      console.log('transformParams called - checking model availability');
 
       const modelClassification = rateLimitContext.modelClass;
       const currentProvider =
@@ -293,9 +299,6 @@ export const retryRateLimitMiddlewareFactory = async (
     });
   };
 
-  /**
-   * Stateful wrapper with rate limit context preservation
-   */
   const statefulMiddleware =
     MiddlewareStateManager.Instance.statefulMiddlewareWrapper<RateLimitRetryState>(
       {

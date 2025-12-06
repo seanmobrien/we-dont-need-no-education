@@ -47,7 +47,7 @@ const loadStoredConfig = (): ChatPanelConfig => {
       dockSize,
     };
   } catch (error) {
-    console.warn('Failed to load chat panel config from localStorage:', error);
+    reportError(error);
     return DEFAULT_CONFIG;
   }
 };
@@ -64,7 +64,7 @@ const saveConfig = (config: ChatPanelConfig): void => {
       localStorage.setItem(STORAGE_KEYS.DOCK_SIZE, config.dockSize.toString());
     }
   } catch (error) {
-    console.warn('Failed to save chat panel config to localStorage:', error);
+    reportError(error);
   }
 };
 
@@ -79,6 +79,9 @@ export const ChatPanelProvider: React.FC<
   const [isClient, setIsClient] = useState(false);
   const [dockPanel, setDockPanel] = useState<HTMLDivElement | null>(null);
   const [caseFileId, setCaseFileId] = useState<string | null>(null);
+  const [lastCompletionTime, setLastCompletionTime] = useState<Date | null>(
+    null,
+  );
 
   useEffect(() => {
     setIsClient(true);
@@ -223,6 +226,8 @@ export const ChatPanelProvider: React.FC<
     dockPanel,
     setDockPanel,
     caseFileId,
+    lastCompletionTime,
+    setLastCompletionTime,
   };
 
   return (

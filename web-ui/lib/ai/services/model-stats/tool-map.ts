@@ -7,47 +7,33 @@ import type {
   LanguageModelV2ProviderDefinedTool,
   LanguageModelV2FunctionTool,
 } from '@ai-sdk/provider';
+import { SingletonProvider } from '@/lib/typescript';
 
 type ToolMapEntry = ChatToolType;
 type ToolIdType = ChatToolType['chatToolId'];
 type ToolNameType = ChatToolType['toolName'];
 type ToolNameOrIdType = ToolIdType | ToolNameType;
 
-/**
- * ToolMap manages chat tool metadata from the `chat_tool` table.
- * It mirrors ProviderMap's lifecycle and lookup utilities.
- */
+const REGISTRY_KEY = '@noeducation/model-stats:ToolMap';
+
 export class ToolMap {
-  /** Global symbol key to access the init resolvers across module copies */
-  static readonly #INIT_KEY = Symbol.for(
-    '@noeducation/model-stats:ToolMap:init',
-  );
-  /** Symbol-based global registry key for singleton ToolMap. */
-  static readonly #REGISTRY_KEY = Symbol.for(
-    '@noeducation/model-stats:ToolMap',
-  );
-  /** Local cached reference to the global singleton via global symbol registry. */
   static get #instance(): ToolMap | undefined {
-    type GlobalReg = { [k: symbol]: ToolMap | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    return g[this.#REGISTRY_KEY];
+    return SingletonProvider.Instance.get<ToolMap>(REGISTRY_KEY);
   }
   static set #instance(value: ToolMap | undefined) {
-    type GlobalReg = { [k: symbol]: ToolMap | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    g[this.#REGISTRY_KEY] = value;
+    if (value === undefined) {
+      SingletonProvider.Instance.delete(REGISTRY_KEY);
+    } else {
+      SingletonProvider.Instance.set<ToolMap>(REGISTRY_KEY, value);
+    }
   }
 
-  /** In-memory cache for tool records, keyed by record ID. */
   readonly #idToRecord: Map<ToolIdType, ToolMapEntry>;
 
-  /** In-memory mapping of tool name to record ID. */
   readonly #nameToId: Map<ToolNameType, ToolIdType>;
 
-  /** Promise that resolves when the instance is initialized. */
   #whenInitialized: PromiseWithResolvers<boolean>;
 
-  /** Whether the instance has been initialized. */
   #initialized: boolean = false;
 
   constructor(
@@ -56,10 +42,6 @@ export class ToolMap {
     this.#idToRecord = new Map();
     this.#nameToId = new Map();
     this.#whenInitialized = Promise.withResolvers<boolean>();
-    // Expose init resolvers via a global symbol so static methods don't touch private slots
-    (this as unknown as Record<symbol, PromiseWithResolvers<boolean>>)[
-      ToolMap.#INIT_KEY
-    ] = this.#whenInitialized;
     this.#initialized = false;
 
     if (Array.isArray(entriesOrDb)) {
@@ -72,88 +54,53 @@ export class ToolMap {
     }
   }
 
-  /**
-   * Synchronous singleton getter. Prefer getInstance() in async flows.
-   */
   static get Instance(): ToolMap {
-    type GlobalReg = { [k: symbol]: ToolMap | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    if (!g[this.#REGISTRY_KEY]) {
-      g[this.#REGISTRY_KEY] = new ToolMap();
-    }
-    this.#instance = g[this.#REGISTRY_KEY]!;
-    return this.#instance;
+    return SingletonProvider.Instance.getRequired<ToolMap>(
+      REGISTRY_KEY,
+      () => new ToolMap(),
+    );
   }
 
-  /**
-   * Return the singleton ToolMap instance, initializing from DB if needed.
-   */
   static getInstance(db?: DbDatabaseType): Promise<ToolMap> {
-    type GlobalReg = { [k: symbol]: ToolMap | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    if (!g[this.#REGISTRY_KEY]) {
-      g[this.#REGISTRY_KEY] = new ToolMap(db);
+    let ret = ToolMap.#instance;
+    if (!ret) {
+      ret = new ToolMap(db);
+      ToolMap.#instance = ret;
     }
-    this.#instance = g[this.#REGISTRY_KEY]!;
-    const init = (
-      this.#instance as unknown as Record<
-        symbol,
-        PromiseWithResolvers<boolean> | undefined
-      >
-    )[ToolMap.#INIT_KEY];
-    const promise =
-      init?.promise ??
-      (this.#instance.initialized
-        ? Promise.resolve(true)
-        : Promise.resolve(true));
-    return promise.then(() => this.#instance!);
+    return ret.whenInitialized.then(() => ret!);
   }
 
-  /** Setup a mock instance for tests using in-memory entries. */
   static setupMockInstance(
     records: (readonly [ToolIdType, ToolMapEntry])[],
   ): ToolMap {
-    type GlobalReg = { [k: symbol]: ToolMap | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    g[this.#REGISTRY_KEY] = new ToolMap(records);
-    this.#instance = g[this.#REGISTRY_KEY]!;
-    return this.#instance;
+    const ret = new ToolMap(records);
+    this.#instance = ret;
+    return ret;
   }
-
-  /** Reset the singleton (tests/reinit). */
   static reset(): void {
-    type GlobalReg = { [k: symbol]: ToolMap | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    g[this.#REGISTRY_KEY] = undefined;
     ToolMap.#instance = undefined;
   }
 
-  /** Whether initialized. */
   get initialized(): boolean {
     return this.#initialized;
   }
 
-  /** Promise that resolves when initialized. */
   get whenInitialized(): Promise<boolean> {
     return this.#whenInitialized.promise;
   }
 
-  /** Iterate entries as [id, record]. */
   get entries(): IterableIterator<[ToolIdType, ToolMapEntry]> {
     return this.#idToRecord.entries();
   }
 
-  /** Return all tool IDs. */
   get allIds(): ToolIdType[] {
     return Array.from(this.#idToRecord.keys());
   }
 
-  /** Return all tool names. */
   get allNames(): ToolNameType[] {
     return Array.from(this.#nameToId.keys());
   }
 
-  /** Lookup a tool record by id or name. */
   record(idOrName: ToolNameOrIdType): ToolMapEntry | undefined {
     // First, try by id
     if (this.#idToRecord.has(idOrName as ToolIdType)) {
@@ -164,7 +111,6 @@ export class ToolMap {
     return id ? this.#idToRecord.get(id) : undefined;
   }
 
-  /** Lookup a tool record or throw when missing. */
   recordOrThrow(idOrName: ToolNameOrIdType): ToolMapEntry {
     const rec = this.record(idOrName);
     if (rec) return rec;
@@ -176,13 +122,11 @@ export class ToolMap {
     });
   }
 
-  /** Return the tool name for an id or name. */
   name(idOrName: ToolNameOrIdType): ToolNameType | undefined {
     const rec = this.record(idOrName);
     return rec?.toolName;
   }
 
-  /** Like name(), but throws if missing. */
   nameOrThrow(idOrName: ToolNameOrIdType): ToolNameType {
     const n = this.name(idOrName);
     if (n) return n;
@@ -194,7 +138,6 @@ export class ToolMap {
     });
   }
 
-  /** Return the tool id for an id or name. */
   id(idOrName: ToolNameOrIdType): ToolIdType | undefined {
     if (this.#idToRecord.has(idOrName as ToolIdType)) {
       return idOrName as ToolIdType;
@@ -203,7 +146,6 @@ export class ToolMap {
     return this.#nameToId.get(name);
   }
 
-  /** Like id(), but throws if missing. */
   idOrThrow(idOrName: ToolNameOrIdType): ToolIdType {
     const val = this.id(idOrName);
     if (val) return val;
@@ -215,7 +157,6 @@ export class ToolMap {
     });
   }
 
-  /** Whether a tool exists for id or name. */
   contains(idOrName: ToolNameOrIdType): boolean {
     return !!this.record(idOrName);
   }
@@ -300,16 +241,11 @@ export class ToolMap {
     return processed;
   }
 
-  /** Refresh caches from database. */
   refresh(db?: DbDatabaseType): Promise<boolean> {
     this.#idToRecord.clear();
     this.#nameToId.clear();
     this.#initialized = false;
     this.#whenInitialized = Promise.withResolvers<boolean>();
-    // Re-expose fresh resolvers under the global INIT symbol
-    (this as unknown as Record<symbol, PromiseWithResolvers<boolean>>)[
-      ToolMap.#INIT_KEY
-    ] = this.#whenInitialized;
 
     const initDb = (!!db ? Promise.resolve(db) : drizDbWithInit())
       .then((database) => database.select().from(schema.chatTool))

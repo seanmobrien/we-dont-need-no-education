@@ -1,3 +1,12 @@
+import type { IsNotNull } from '../_types';
+import type {
+  SingletonConfig,
+  SingletonStorageStrategy,
+} from './types';
+import type { SingletonProvider } from './provider';
+
+
+
 /**
  * Type declarations for singleton provider module.
  *
@@ -47,15 +56,9 @@
  * @since 1.0.0
  * @version 1.0.0
  */
-
 declare module '@/lib/typescript/singleton-provider' {
-  import type { IsNotNull } from '@/lib/typescript/_types';
-  import type {
-    SingletonConfig,
-    SingletonStorageStrategy,
-  } from '@/lib/typescript/singleton-provider/types';
 
-  export { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
+  export { SingletonProvider };
   export type { SingletonConfig, SingletonStorageStrategy };
 
   /**
@@ -74,9 +77,7 @@ declare module '@/lib/typescript/singleton-provider' {
    * @param symbol - Global symbol namespace for the singleton (string or symbol)
    * @param factory - Function that creates the singleton value when it doesn't exist
    * @param config - Optional configuration for storage strategy (defaults to strong references)
-   * @returns The cached or newly-created singleton instance
-   *
-   * @throws {TypeError} If the factory returns null or undefined
+   * @returns The cached or newly-created singleton instance, or undefined if factory returns undefined
    *
    * @example
    * ```typescript
@@ -102,7 +103,59 @@ declare module '@/lib/typescript/singleton-provider' {
    */
   export function globalSingleton<T, S extends string | symbol = string>(
     symbol: S,
-    factory: () => IsNotNull<T>,
+    factory: () => IsNotNull<T> | undefined,
+    config?: SingletonConfig,
+  ): T | undefined;
+
+  /**
+   * Retrieves or lazily creates a required global singleton instance.
+   * Throws if the factory returns undefined or null.
+   *
+   * @template T - Type of the singleton value
+   * @template S - Symbol string namespace used with Symbol.for (defaults to string)
+   * @param symbol - Global symbol namespace for the singleton (string or symbol)
+   * @param factory - Function that creates the singleton value when it doesn't exist
+   * @param config - Optional configuration for storage strategy
+   * @returns The cached or newly-created singleton instance
+   * @throws {TypeError} If the singleton cannot be created
+   */
+  export function globalRequiredSingleton<T, S extends string | symbol = string>(
+    symbol: S,
+    factory: () => IsNotNull<T> | undefined,
     config?: SingletonConfig,
   ): T;
+
+  /**
+   * Asynchronously retrieves or lazily creates a singleton instance stored on the global scope.
+   *
+   * @template T - Type of the singleton value
+   * @template S - Symbol string namespace used with Symbol.for (defaults to string)
+   * @param symbol - Global symbol namespace for the singleton (string or symbol)
+   * @param factory - Async function that creates the singleton value when it doesn't exist
+   * @param config - Optional configuration for storage strategy
+   * @returns Promise resolving to the cached or newly-created singleton instance, or undefined
+   */
+  export function globalSingletonAsync<T, S extends string | symbol = string>(
+    symbol: S,
+    factory: () => Promise<IsNotNull<T> | undefined>,
+    config?: SingletonConfig,
+  ): Promise<T | undefined>;
+
+  /**
+   * Asynchronously retrieves or lazily creates a required global singleton instance.
+   * Throws if the factory returns undefined or null.
+   *
+   * @template T - Type of the singleton value
+   * @template S - Symbol string namespace used with Symbol.for (defaults to string)
+   * @param symbol - Global symbol namespace for the singleton (string or symbol)
+   * @param factory - Async function that creates the singleton value when it doesn't exist
+   * @param config - Optional configuration for storage strategy
+   * @returns Promise resolving to the cached or newly-created singleton instance
+   * @throws {TypeError} If the singleton cannot be created
+   */
+  export function globalRequiredSingletonAsync<T, S extends string | symbol = string>(
+    symbol: S,
+    factory: () => Promise<IsNotNull<T> | undefined>,
+    config?: SingletonConfig,
+  ): Promise<T>;
 }

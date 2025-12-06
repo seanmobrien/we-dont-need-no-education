@@ -1,4 +1,4 @@
-export type { LoggedErrorOptions, TurtleRecursionParams } from './types';
+export type { LoggedErrorOptions, TurtleRecursionParams, ErrorReportArgs } from './types';
 
 export { LoggedError, dumpError } from './logged-error-class';
 

@@ -152,21 +152,23 @@ const processError = ({
   if (suppressionResult.suppress) {
     // Log suppressed errors with low severity if configured
     if (reportSuppressedErrors && !suppressionResult.completely) {
-      errorReporter.reportError(errorObj, ErrorSeverity.LOW, {
-        source: errorObj.source,
-        breadcrumbs: ['global-error-suppressed'],
-        additionalData: {
-          suppression_rule: suppressionResult.rule?.id,
-          suppression_reason: suppressionResult.rule?.reason,
-          lineno: errorObj.line,
-          colno: errorObj.column,
-        },
-      });
+      errorReporter((r) =>
+        r.reportError(errorObj, ErrorSeverity.LOW, {
+          source: errorObj.source,
+          breadcrumbs: ['global-error-suppressed'],
+          additionalData: {
+            suppression_rule: suppressionResult.rule?.id,
+            suppression_reason: suppressionResult.rule?.reason,
+            lineno: errorObj.line,
+            colno: errorObj.column,
+          },
+        }),
+      );
     }
     return false;
   }
   // Report non-suppressed errors
-  errorReporter.reportError(errorObj, ErrorSeverity.HIGH, {
+  errorReporter().reportError(errorObj, ErrorSeverity.HIGH, {
     source: errorObj.source,
     breadcrumbs: ['global-error-handler'],
     additionalData: {

@@ -9,7 +9,7 @@
  * - Proper drizzle query construction and data transformation
  */
 
- 
+
 
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();

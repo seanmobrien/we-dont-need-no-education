@@ -1,4 +1,5 @@
 import { TimelineAgent } from './agent';
+import { log } from '@/lib/logger';
 import { TimelineEntry, ComplianceRating, TimelineSummary } from './types';
 import TimelineAgentFactory from './agent';
 
@@ -176,7 +177,7 @@ export class ComplianceTimelineProcessor {
     return action.summary.includes('parent')
       ? "Sean O'Brien (citizen/parent)"
       : action.summary.includes('school') ||
-          action.summary.includes('authority')
+        action.summary.includes('authority')
         ? 'School Authority'
         : 'Unknown Actor';
   }
@@ -317,7 +318,7 @@ export function createComplianceProcessor(
  * Example usage demonstrating the script requirements
  */
 export async function demonstrateComplianceProcessing() {
-  console.log('=== Compliance Timeline Processing Demonstration ===');
+  log((l) => l.info('=== Compliance Timeline Processing Demonstration ==='));
 
   // Create a processor for the specific case mentioned in the script
   const processor = createComplianceProcessor('initial-ferpa-request-325');
@@ -332,11 +333,11 @@ export async function demonstrateComplianceProcessing() {
 
   summary = await processor.processCaseDocument('308');
 
-  console.log('\nProcessing next record (307)...');
+  log((l) => l.info('\nProcessing next record (307)...'));
   summary = await processor.processCaseDocument('307');
 
-  console.log('\n=== Final Compliance Summary ===');
-  console.log(summary);
+  log((l) => l.info('\n=== Final Compliance Summary ==='));
+  log((l) => l.info(summary));
 
   return summary;
 }

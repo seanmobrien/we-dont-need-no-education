@@ -40,10 +40,9 @@ import { onClientToolRequest } from '@/lib/ai/client';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { FirstParameter } from '@/lib/typescript';
 import { panelStableStyles } from './styles';
-import {
-  AllFeatureFlagsDefault,
-  useFeatureFlags,
-} from '@/lib/site-util/feature-flags';
+import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
+import type { KnownFeatureValueType } from '@/lib/site-util/feature-flags/types';
+import { useFeatureFlags } from '@/lib/site-util/feature-flags';
 
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
@@ -121,9 +120,12 @@ const ChatPanel = ({ page }: { page: string }) => {
     UIMessage[] | undefined
   >(undefined);
   const { getFlag } = useFeatureFlags();
-  const {
-    value: { provider, chat_model } = { provider: 'azure', chat_model: 'lofi' },
-  } = getFlag('models_defaults', AllFeatureFlagsDefault['models_defaults']);
+  const modelFlag = getFlag(
+    'models_defaults',
+    AllFeatureFlagsDefault['models_defaults'],
+  ) ?? { provider: 'azure', chat_model: 'lofi' };
+  const { provider, chat_model } =
+    modelFlag as KnownFeatureValueType<'models_defaults'>;
   const [activeModelSelection, setActiveModelSelection] =
     useState<ModelSelection>({
       provider: provider as AiProvider,
@@ -142,6 +144,7 @@ const ChatPanel = ({ page }: { page: string }) => {
     isFloating,
     setFloating,
     debounced: { setSize: debouncedSetSize },
+    setLastCompletionTime,
   } = useChatPanelContext();
 
   // Using ref for input element in order to minimize renders on text change
@@ -207,7 +210,11 @@ const ChatPanel = ({ page }: { page: string }) => {
     onToolCall: ({ toolCall }) => {
       onClientToolRequest({ toolCall, addToolResult });
     },
-    onFinish: stable_onFinish,
+    onFinish: (message) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      stable_onFinish(message as any);
+      setLastCompletionTime(new Date());
+    },
     onData: (data) => {
       if (isAnnotatedRetryMessage(data)) {
         onModelTimeout(data);
@@ -438,7 +445,9 @@ const ChatPanel = ({ page }: { page: string }) => {
           timeoutIds.push(
             setTimeout(() => {
               onRateLimitTimeout(thisModel);
-              console.warn('Rate limit timeout expired, resending message.');
+              log((l) =>
+                l.warn('Rate limit timeout expired, resending message.'),
+              );
               regenerate();
             }, rateLimitExpires),
           );

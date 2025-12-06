@@ -7,20 +7,10 @@ import {
   ClientErrorManager,
   createSuppressionRule,
 } from '@/components/error-boundaries/ClientErrorManager';
-import { errorReporter } from '@/lib/error-monitoring';
-
-// Mock the error reporter
-jest.mock('@/lib/error-monitoring', () => ({
-  errorReporter: {
-    reportError: jest.fn(),
-  },
-  ErrorSeverity: {
-    LOW: 'low',
-    MEDIUM: 'medium',
-    HIGH: 'high',
-    CRITICAL: 'critical',
-  },
-}));
+import {
+  type ErrorReporterInterface,
+  errorReporter,
+} from '@/lib/error-monitoring';
 
 // Mock window methods that might not be available in test environment
 const mockConsoleError = jest
@@ -29,7 +19,10 @@ const mockConsoleError = jest
 const mockPreventDefault = jest.fn();
 
 describe('ClientErrorManager', () => {
+  let mockErrorReporter: jest.Mocked<ErrorReporterInterface>;
+
   beforeEach(() => {
+    mockErrorReporter = errorReporter() as jest.Mocked<ErrorReporterInterface>;
     // jest.clearAllMocks();
     mockConsoleError.mockClear();
 
@@ -75,7 +68,7 @@ describe('ClientErrorManager', () => {
 
       // Should prevent default and not report to error reporter
       expect(mockPreventDefault).toHaveBeenCalled();
-      expect(errorReporter.reportError).not.toHaveBeenCalled();
+      expect(mockErrorReporter.reportError).not.toHaveBeenCalled();
 
       unmount();
     });
@@ -100,7 +93,7 @@ describe('ClientErrorManager', () => {
       });
 
       expect(mockPreventDefault).toHaveBeenCalled();
-      expect(errorReporter.reportError).not.toHaveBeenCalled();
+      expect(mockErrorReporter.reportError).not.toHaveBeenCalled();
 
       unmount();
     });
@@ -132,7 +125,7 @@ describe('ClientErrorManager', () => {
       });
 
       expect(mockPreventDefault).toHaveBeenCalled();
-      expect(errorReporter.reportError).not.toHaveBeenCalled();
+      expect(mockErrorReporter.reportError).not.toHaveBeenCalled();
 
       unmount();
     });
@@ -173,7 +166,7 @@ describe('ClientErrorManager', () => {
 
       // Should still prevent default but report with low severity
       expect(mockPreventDefault).toHaveBeenCalled();
-      expect(errorReporter.reportError).toHaveBeenCalledWith(
+      expect(mockErrorReporter.reportError).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Error',
           message: 'Test suppressed error message',
@@ -207,7 +200,7 @@ describe('ClientErrorManager', () => {
       });
 
       // Should report error but not surface to boundary
-      expect(errorReporter.reportError).toHaveBeenCalled();
+      expect(mockErrorReporter.reportError).toHaveBeenCalled();
       // The component should not try to setState to trigger boundary
 
       unmount();

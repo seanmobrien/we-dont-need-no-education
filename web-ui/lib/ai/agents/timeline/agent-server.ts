@@ -541,7 +541,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
       }
       const hal = wrapChatHistoryMiddleware({
         chatHistoryContext: this.#chatHistoryContext,
-        model: aiModelFactory(model ?? 'lofi'),
+        model: await aiModelFactory(model ?? 'lofi'),
       });
       tools = await setupDefaultTools({ user: undefined, req });
       const ret = await generateTextWithRetry({
@@ -586,7 +586,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     } finally {
       if (tools) {
         try {
-          tools.dispose();
+          tools[Symbol.dispose]();
         } catch (e) {
           log((l) => l.error('Error disposing tools', e));
         }
