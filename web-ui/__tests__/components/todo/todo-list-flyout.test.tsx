@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   render,
   screen,
@@ -35,12 +35,21 @@ describe('TodoListFlyout', () => {
     jest.clearAllMocks();
   });
 
-  const renderComponent = () => {
-    return render(
+  const TestWrapper = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
       <QueryClientProvider client={queryClient}>
-        <TodoListFlyout onSelectList={mockOnSelectList} />
-      </QueryClientProvider>,
+        <TodoListFlyout
+          onSelectList={mockOnSelectList}
+          isOpen={isOpen}
+          onHover={() => setIsOpen(true)}
+        />
+      </QueryClientProvider>
     );
+  };
+
+  const renderComponent = () => {
+    return render(<TestWrapper />);
   };
 
   it('renders the todo lists menu item', () => {
@@ -52,7 +61,7 @@ describe('TodoListFlyout', () => {
     renderComponent();
 
     expect(screen.getByTestId('menu-item-todo-lists')).toBeInTheDocument();
-    expect(screen.getByText('To-do lists')).toBeInTheDocument();
+    expect(screen.getByText('Todo Lists')).toBeInTheDocument();
   });
 
   it('shows loading state when fetching lists', async () => {

@@ -1,7 +1,6 @@
 import {
   Divider,
   IconButton,
-  ListSubheader,
   Menu,
   MenuItem,
   ListItemIcon,
@@ -10,9 +9,6 @@ import {
   MenuListProps,
   MenuListSlotPropsOverrides,
   MenuOwnerState,
-  Chip,
-  Box,
-  Typography,
 } from '@mui/material';
 import {
   Dispatch,
@@ -26,6 +22,7 @@ import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import DockIcon from '@mui/icons-material/Dock';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
 import CloudIcon from '@mui/icons-material/Cloud';
+import CheckIcon from '@mui/icons-material/Check';
 import {
   DockPosition,
   AiProvider,
@@ -34,6 +31,7 @@ import {
   ProviderConfig,
 } from './types';
 import { TodoListFlyout, FloatingTodoDialog } from '@/components/todo';
+import { FlyoutMenu } from '@/components/flyout-menu';
 
 export const ChatMenu = ({
   onResetSession,
@@ -52,6 +50,7 @@ export const ChatMenu = ({
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+  const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
 
   // Todo list dialog state
   const [selectedTodoListId, setSelectedTodoListId] = useState<string | null>(
@@ -128,14 +127,17 @@ export const ChatMenu = ({
   );
   const activeModelDisplayName = currentModel?.displayName || 'Unknown';
   const activeProviderDisplayName = currentProvider?.displayName || 'Unknown';
+
   const onMenuClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       setAnchorEl(event.currentTarget);
+      setActiveSubmenu(null);
     },
     [setAnchorEl],
   );
   const handleClose = useCallback(() => {
     setAnchorEl(null);
+    setActiveSubmenu(null);
   }, [setAnchorEl]);
 
   const onResetSessionClick = useCallback(() => {
@@ -158,7 +160,6 @@ export const ChatMenu = ({
 
   const onProviderSelect = useCallback(
     (provider: AiProvider) => {
-      // When switching providers, keep the same model type if available, otherwise default to lofi
       const newProvider = availableProviders.find((p) => p.id === provider);
       const currentModelType = activeModelSelection.model;
       const availableModel = newProvider?.models.find(
@@ -191,7 +192,6 @@ export const ChatMenu = ({
     [activeModelSelection, setActiveModelSelection, handleClose],
   );
 
-  // Todo list handlers
   const handleSelectTodoList = useCallback(
     (listId: string) => {
       setSelectedTodoListId(listId);
@@ -205,7 +205,14 @@ export const ChatMenu = ({
     setTodoDialogOpen(false);
   }, []);
 
-  // Docking options configuration
+  const handleSubmenuHover = useCallback((id: string) => {
+    setActiveSubmenu(id);
+  }, []);
+
+  const clearSubmenu = useCallback(() => {
+    setActiveSubmenu(null);
+  }, []);
+
   const dockingOptions = [
     {
       position: 'left' as DockPosition,
@@ -229,6 +236,11 @@ export const ChatMenu = ({
     },
   ];
 
+  const getDockLabel = () => {
+    if (currentPosition === 'inline') return 'Dock';
+    return `Dock (${currentPosition.charAt(0).toUpperCase() + currentPosition.slice(1)})`;
+  };
+
   return (
     <>
       <IconButton
@@ -248,6 +260,8 @@ export const ChatMenu = ({
           list: {
             'data-testid': 'chat-menu-list',
             'aria-labelledby': 'chat-menu-button',
+            subheader: <></>,
+            onClick: clearSubmenu,
           } as SlotProps<
             React.ElementType<MenuListProps>,
             MenuListSlotPropsOverrides,
@@ -255,81 +269,112 @@ export const ChatMenu = ({
           >,
         }}
       >
-        <MenuItem onClick={onResetSessionClick} data-testid="menu-item-reset">
+        <MenuItem
+          onClick={onResetSessionClick}
+          data-testid="menu-item-reset"
+          onMouseEnter={clearSubmenu}
+        >
           Reset chat session
         </MenuItem>
-        <Divider />
-        <TodoListFlyout onSelectList={handleSelectTodoList} />
-        <Divider />
-        <MenuItem onClick={onFloatClick} data-testid="menu-item-float">
-          <ListItemIcon>
-            <OpenInFullIcon fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Float</ListItemText>
-        </MenuItem>
-        {dockingOptions.map((option) => (
-          <MenuItem
-            key={option.position}
-            onClick={() => onDockClick(option.position)}
-            data-testid={`menu-item-dock-${option.position}`}
-            selected={currentPosition === option.position}
-          >
-            <ListItemIcon>{option.icon}</ListItemIcon>
-            <ListItemText>{option.label}</ListItemText>
-          </MenuItem>
-        ))}
-        <Divider />
-        <ListSubheader>
-          <Box display="flex" alignItems="center" gap={1}>
-            <Typography variant="inherit">Active Model:</Typography>
-            <Chip
-              icon={<CloudIcon />}
-              label={activeProviderDisplayName}
-              size="small"
-              variant="outlined"
-            />
-            <Typography variant="inherit">{activeModelDisplayName}</Typography>
-          </Box>
-        </ListSubheader>
 
-        {/* Provider Selection */}
-        <ListSubheader>Provider</ListSubheader>
-        {availableProviders.map((provider) => (
-          <MenuItem
-            data-testid={`menu-item-provider-${provider.id}`}
-            key={provider.id}
-            onClick={() => onProviderSelect(provider.id)}
-            selected={provider.id === activeModelSelection.provider}
-          >
+        <Divider />
+
+        <TodoListFlyout
+          onSelectList={handleSelectTodoList}
+          isOpen={activeSubmenu === 'todo'}
+          onHover={() => handleSubmenuHover('todo')}
+        />
+
+        <Divider />
+
+        <FlyoutMenu
+          label={getDockLabel()}
+          icon={<DockIcon />}
+          dataTestId="menu-item-dock"
+          active={currentPosition !== 'inline'}
+          isOpen={activeSubmenu === 'dock'}
+          onHover={() => handleSubmenuHover('dock')}
+        >
+          <MenuItem onClick={onFloatClick} data-testid="menu-item-float">
             <ListItemIcon>
-              <CloudIcon fontSize="small" />
+              <OpenInFullIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>{provider.displayName}</ListItemText>
+            <ListItemText>Float</ListItemText>
           </MenuItem>
-        ))}
+          {dockingOptions.map((option) => (
+            <MenuItem
+              key={option.position}
+              onClick={() => onDockClick(option.position)}
+              data-testid={`menu-item-dock-${option.position}`}
+              selected={currentPosition === option.position}
+            >
+              <ListItemIcon>{option.icon}</ListItemIcon>
+              <ListItemText>{option.label}</ListItemText>
+              {currentPosition === option.position && (
+                <CheckIcon fontSize="small" sx={{ ml: 'auto' }} />
+              )}
+            </MenuItem>
+          ))}
+        </FlyoutMenu>
 
         <Divider />
 
-        {/* Model Selection for Current Provider */}
-        <ListSubheader>Model ({activeProviderDisplayName})</ListSubheader>
-        {currentProvider?.models.map((model) => (
-          <MenuItem
-            data-testid={`menu-item-model-${model.id}`}
-            key={model.id}
-            onClick={() => onModelSelect(model.id)}
-            selected={model.id === activeModelSelection.model}
-            disabled={!model.available}
-          >
-            <ListItemText
-              primary={model.displayName}
-              secondary={!model.available ? 'Not available' : undefined}
-            />
-          </MenuItem>
-        )) || (
-          <MenuItem disabled>
-            <ListItemText primary="No models available" />
-          </MenuItem>
-        )}
+        <FlyoutMenu
+          label={`Provider (${activeProviderDisplayName})`}
+          icon={<CloudIcon />}
+          active={true}
+          dataTestId="menu-item-provider"
+          isOpen={activeSubmenu === 'provider'}
+          onHover={() => handleSubmenuHover('provider')}
+        >
+          {availableProviders.map((provider) => (
+            <MenuItem
+              data-testid={`menu-item-provider-${provider.id}`}
+              key={provider.id}
+              onClick={() => onProviderSelect(provider.id)}
+              selected={provider.id === activeModelSelection.provider}
+            >
+              <ListItemIcon>
+                <CloudIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>{provider.displayName}</ListItemText>
+              {provider.id === activeModelSelection.provider && (
+                <CheckIcon fontSize="small" sx={{ ml: 'auto' }} />
+              )}
+            </MenuItem>
+          ))}
+        </FlyoutMenu>
+
+        <FlyoutMenu
+          label={`Model (${activeModelDisplayName})`}
+          icon={<CloudIcon />}
+          dataTestId="menu-item-model"
+          active={true}
+          isOpen={activeSubmenu === 'model'}
+          onHover={() => handleSubmenuHover('model')}
+        >
+          {currentProvider?.models.map((model) => (
+            <MenuItem
+              data-testid={`menu-item-model-${model.id}`}
+              key={model.id}
+              onClick={() => onModelSelect(model.id)}
+              selected={model.id === activeModelSelection.model}
+              disabled={!model.available}
+            >
+              <ListItemText
+                primary={model.displayName}
+                secondary={!model.available ? 'Not available' : undefined}
+              />
+              {model.id === activeModelSelection.model && (
+                <CheckIcon fontSize="small" sx={{ ml: 'auto' }} />
+              )}
+            </MenuItem>
+          )) || (
+            <MenuItem disabled>
+              <ListItemText primary="No models available" />
+            </MenuItem>
+          )}
+        </FlyoutMenu>
       </Menu>
       <FloatingTodoDialog
         listId={selectedTodoListId}
