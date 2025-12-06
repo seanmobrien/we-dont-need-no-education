@@ -201,7 +201,7 @@ export const useMemoryHealth = (): MemoryStatusHookResult => {
   }, [healthCheckConfig?.refresh?.healthy, healthCheckConfig?.refresh?.warning, healthCheckConfig?.refresh?.error]);
 
   const query = useQuery<MemoryStatusHookResult['health'], Error>({
-    enabled: !isLoading && healthCheckEnabled === true,
+    enabled: !isLoading && healthCheckEnabled === true && healthCheckConfig != null,
     queryKey: stableQueryKey,
     queryFn: fetchMemoryHealth,
     staleTime: healthCheckConfig!.staleTime,
