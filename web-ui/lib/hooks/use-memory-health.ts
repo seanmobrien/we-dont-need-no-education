@@ -170,7 +170,7 @@ export const useMemoryHealth = (): MemoryStatusHookResult => {
   const {
     enabled: healthCheckEnabled,
     value: healthCheckConfig,
-    isDefault: healthCheckDefault,
+    isLoading,
   } = useFlagState('health_checks');
   const refetchInterval = useCallback((query: { state: { data?: { [key: string]: { status: string } | string } } }) => {
     const mostSevereStatus = Object.values(query.state.data ?? {})
@@ -201,7 +201,7 @@ export const useMemoryHealth = (): MemoryStatusHookResult => {
   }, [healthCheckConfig?.refresh?.healthy, healthCheckConfig?.refresh?.warning, healthCheckConfig?.refresh?.error]);
 
   const query = useQuery<MemoryStatusHookResult['health'], Error>({
-    enabled: healthCheckEnabled === true && !healthCheckDefault,
+    enabled: !isLoading && healthCheckEnabled === true,
     queryKey: stableQueryKey,
     queryFn: fetchMemoryHealth,
     staleTime: healthCheckConfig!.staleTime,
