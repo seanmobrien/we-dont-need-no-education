@@ -279,13 +279,11 @@ export const ChatMenu = ({
 
         <Divider />
 
-        <div onMouseEnter={() => handleSubmenuHover('todo')}>
-          <TodoListFlyout
-            onSelectList={handleSelectTodoList}
-            isOpen={activeSubmenu === 'todo'}
-            onHover={() => handleSubmenuHover('todo')}
-          />
-        </div>
+        <TodoListFlyout
+          onSelectList={handleSelectTodoList}
+          isOpen={activeSubmenu === 'todo'}
+          onHover={() => handleSubmenuHover('todo')}
+        />
 
         <Divider />
 
