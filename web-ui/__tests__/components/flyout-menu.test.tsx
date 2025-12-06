@@ -286,7 +286,7 @@ describe('FlyoutMenu', () => {
       });
     });
 
-    it('does not open menu when hovering and isOpen is false', async () => {
+    it('does not open menu when hovering and isOpen is false', () => {
       render(
         <FlyoutMenu {...defaultProps} isOpen={false} dataTestId="no-open-menu">
           <MenuItem data-testid="child-item">Child Item</MenuItem>
@@ -296,13 +296,8 @@ describe('FlyoutMenu', () => {
       const menuItem = screen.getByTestId('no-open-menu');
       fireEvent.mouseEnter(menuItem);
 
-      // Give it a moment to potentially open (it shouldn't)
-      await waitFor(
-        () => {
-          expect(screen.queryByTestId('child-item')).not.toBeInTheDocument();
-        },
-        { timeout: 100 },
-      );
+      // Menu should not be visible when isOpen is false
+      expect(screen.queryByTestId('child-item')).not.toBeInTheDocument();
     });
   });
 
