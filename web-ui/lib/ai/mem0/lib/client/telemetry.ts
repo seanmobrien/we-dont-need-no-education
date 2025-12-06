@@ -58,7 +58,9 @@ class UnifiedTelemetry implements TelemetryClient {
       });
 
       if (!response.ok) {
-        LoggedError.isTurtlesAllTheWayDownBaby(response, {
+        const errorText = await response.text();
+        const error = new Error(`Telemetry event failed: ${response.status} ${response.statusText} - ${errorText}`);
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
           log: true,
           source: 'captureClientEvent',
         });
