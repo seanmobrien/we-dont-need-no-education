@@ -10,7 +10,6 @@
  */
 
 import { drizDbWithInit } from '@/lib/drizzle-db';
-import { eq } from 'drizzle-orm';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
@@ -192,6 +191,7 @@ export async function getKeycloakUserIdFromUserId(
  * ```
  */
 export async function getAccessibleUserIds(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   userAccessToken: string,
 ): Promise<number[]> {
   try {
