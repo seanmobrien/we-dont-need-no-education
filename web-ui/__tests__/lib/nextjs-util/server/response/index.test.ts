@@ -9,6 +9,22 @@ import {
   makeStreamResponse,
 } from '@/lib/nextjs-util/server/response';
 
+// Force MockBlob to ensure text() method exists, as some environments have partial Blob implementations
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(global as any).Blob = class MockBlob {
+  content: Uint8Array[];
+  type: string;
+  constructor(content: Uint8Array[], options: { type?: string } = {}) {
+    this.content = content;
+    this.type = options.type || '';
+  }
+  async text() {
+    return new TextDecoder().decode(
+      Buffer.concat(this.content.map((c) => Buffer.from(c))),
+    );
+  }
+};
+
 // Helper to create ReadableStream from chunks
 const createReadableStream = (
   chunks: (string | Uint8Array)[],
@@ -28,12 +44,14 @@ const createReadableStream = (
 };
 
 describe('FetchResponse', () => {
+  // ... (rest of file)
+
   describe('constructor', () => {
-    it('should create a response with default values', () => {
+    it('should create a response with default values', async () => {
       const response = new FetchResponse(Buffer.from('test'));
 
-      expect(response.body).toBeInstanceOf(Buffer);
-      expect(response.body.toString()).toBe('test');
+      expect(response.body).toBeInstanceOf(ReadableStream);
+      expect(await response.text()).toBe('test');
       expect(response.status).toBe(200);
       expect(response.headers).toBeInstanceOf(Headers);
     });
@@ -56,15 +74,13 @@ describe('FetchResponse', () => {
     it('should handle empty body', () => {
       const response = new FetchResponse(Buffer.alloc(0));
 
-      expect(response.body).toBeInstanceOf(Buffer);
-      expect(response.body.length).toBe(0);
+      expect(response.body).toBeNull();
     });
 
     it('should handle null body by allocating empty buffer', () => {
       const response = new FetchResponse(null as any);
 
-      expect(response.body).toBeInstanceOf(Buffer);
-      expect(response.body.length).toBe(0);
+      expect(response.body).toBeNull();
     });
   });
 
@@ -166,28 +182,28 @@ describe('FetchResponse', () => {
   });
 
   describe('arrayBuffer()', () => {
-    it('should return ArrayBuffer from body', () => {
+    it('should return ArrayBuffer from body', async () => {
       const data = Buffer.from([1, 2, 3, 4, 5]);
       const response = new FetchResponse(data);
-      const arrayBuffer = response.arrayBuffer();
+      const arrayBuffer = await response.arrayBuffer();
 
       expect(arrayBuffer).toBeDefined();
       expect(arrayBuffer.byteLength).toBe(5);
       expect(new Uint8Array(arrayBuffer)).toEqual(new Uint8Array([1, 2, 3, 4, 5]));
     });
 
-    it('should handle empty buffer', () => {
+    it('should handle empty buffer', async () => {
       const response = new FetchResponse(Buffer.alloc(0));
-      const arrayBuffer = response.arrayBuffer();
+      const arrayBuffer = await response.arrayBuffer();
 
       expect(arrayBuffer).toBeDefined();
       expect(arrayBuffer.byteLength).toBe(0);
     });
 
-    it('should return independent ArrayBuffer slice', () => {
+    it('should return independent ArrayBuffer slice', async () => {
       const data = Buffer.from([1, 2, 3, 4, 5]);
       const response = new FetchResponse(data);
-      const arrayBuffer = response.arrayBuffer();
+      const arrayBuffer = await response.arrayBuffer();
 
       // Modify original buffer
       data[0] = 99;
@@ -212,7 +228,7 @@ describe('FetchResponse', () => {
 
       const reader = stream.getReader();
       const chunks: Uint8Array[] = [];
-      
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -238,7 +254,7 @@ describe('FetchResponse', () => {
       const reader = stream.getReader();
       const { done, value } = await reader.read();
       expect(value).toBeDefined();
-      
+
       const secondRead = await reader.read();
       expect(secondRead.done).toBe(true);
     });
@@ -646,6 +662,7 @@ describe('makeStreamResponse', () => {
     });
   });
 
+
   describe('use cases', () => {
     it('should work for SSE (Server-Sent Events)', () => {
       const stream = new ReadableStream({
@@ -681,5 +698,120 @@ describe('makeStreamResponse', () => {
 
       expect(text).toBe(chunks.join(''));
     });
+  });
+});
+
+describe('FetchResponse with ReadableStream', () => {
+  it('should accept ReadableStream in constructor', async () => {
+    const stream = createReadableStream(['stream', ' ', 'data']);
+    const response = new FetchResponse(stream);
+
+    expect(response.body).toBeInstanceOf(ReadableStream);
+    expect((response as any).streamBody).toBe(stream);
+
+    const text = await response.text();
+    expect(text).toBe('stream data');
+  });
+
+  it('should stream() returns the original stream', () => {
+    const stream = createReadableStream(['test']);
+    const response = new FetchResponse(stream);
+
+    expect(response.stream()).toBe(stream);
+  });
+
+  it('should handle json() from stream', async () => {
+    const data = { key: 'value' };
+    const stream = createReadableStream([JSON.stringify(data)]);
+    const response = new FetchResponse(stream);
+
+    const json = await response.json();
+    expect(json).toEqual(data);
+  });
+
+  it('should handle arrayBuffer() from stream', async () => {
+    const stream = createReadableStream([new Uint8Array([1, 2]), new Uint8Array([3])]);
+    const response = new FetchResponse(stream);
+
+    const buffer = await response.arrayBuffer();
+    expect(new Uint8Array(buffer)).toEqual(new Uint8Array([1, 2, 3]));
+  });
+
+  it('should set bodyUsed to true after reading stream', async () => {
+    const stream = createReadableStream(['test']);
+    const response = new FetchResponse(stream);
+
+    expect(response.bodyUsed).toBe(false);
+    await response.text();
+    expect(response.bodyUsed).toBe(true);
+  });
+
+  it('should throw if reading stream twice', async () => {
+    const stream = createReadableStream(['test']);
+    const response = new FetchResponse(stream);
+
+    await response.text();
+    await expect(response.text()).rejects.toThrow('Body is unusable');
+  });
+
+  it('should clone() stream', async () => {
+    const stream = createReadableStream(['test']);
+    const response = new FetchResponse(stream);
+    const clone = response.clone();
+
+    expect(response.bodyUsed).toBe(false);
+    expect(clone.bodyUsed).toBe(false);
+
+    expect(await response.text()).toBe('test');
+    expect(await clone.text()).toBe('test');
+  });
+
+  it('should clone() buffer', async () => {
+    const response = new FetchResponse(Buffer.from('test'));
+    const clone = response.clone();
+
+    expect(await response.text()).toBe('test');
+    expect(await clone.text()).toBe('test');
+  });
+
+  it('should throw if cloning used stream', async () => {
+    const stream = createReadableStream(['test']);
+    const response = new FetchResponse(stream);
+    await response.text();
+
+    expect(() => response.clone()).toThrow('Cannot clone: body is already used');
+  });
+
+  it('should support blob()', async () => {
+    try {
+      console.log('Blob defined:', typeof Blob);
+      const response = new FetchResponse(Buffer.from('test'), {
+        headers: { 'Content-Type': 'text/plain' },
+      });
+      const blob = await response.blob();
+
+      expect(blob).toBeInstanceOf(Blob);
+      expect(blob.type).toBe('text/plain');
+      expect(await blob.text()).toBe('test');
+    } catch (e) {
+      console.error('Blob test failed:', e);
+      throw e;
+    }
+  });
+
+  it('should enforce memory limit', async () => {
+    const largeChunk = new Uint8Array(1024 * 1024); // 1MB
+    const stream = new ReadableStream({
+      start(controller) {
+        // Enqueue 11 chunks of 1MB = 11MB > 10MB limit
+        for (let i = 0; i < 11; i++) {
+          controller.enqueue(largeChunk);
+        }
+        controller.close();
+      },
+    });
+    const response = new FetchResponse(stream);
+
+    await expect(response.arrayBuffer()).rejects.toThrow('Body exceeded 10485760 limit');
   });
 });

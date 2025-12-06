@@ -19,7 +19,6 @@ import {
   tokenUsage,
   accounts,
   sessions,
-  sessionsExt,
   contacts,
   policiesStatutes,
   emailPropertyCategory,
@@ -321,6 +320,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts, {
     relationName: 'accounts_userId_users_id',
   }),
+  sessions: many(sessions),
   userPublicKeys: many(userPublicKeys),
 }));
 
@@ -329,7 +329,10 @@ export const sessionsRelations = relations(sessions, ({ one, many }) => ({
     fields: [sessions.userId],
     references: [accounts.userId],
   }),
-  sessionsExts: many(sessionsExt),
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
 }));
 
 export const accountsRelations = relations(accounts, ({ one, many }) => ({
@@ -337,13 +340,6 @@ export const accountsRelations = relations(accounts, ({ one, many }) => ({
   user: one(users, {
     fields: [accounts.userId],
     references: [users.id],
-  }),
-}));
-
-export const sessionsExtRelations = relations(sessionsExt, ({ one }) => ({
-  session: one(sessions, {
-    fields: [sessionsExt.sessionId],
-    references: [sessions.id],
   }),
 }));
 

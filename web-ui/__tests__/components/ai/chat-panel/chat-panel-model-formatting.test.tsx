@@ -102,6 +102,11 @@ describe('ChatPanel Model String Formatting', () => {
 
     // Select Google provider
     await waitFor(() => {
+      const providerMenu = screen.getByTestId('menu-item-provider');
+      fireEvent.mouseEnter(providerMenu);
+    });
+
+    await waitFor(() => {
       const googleOption = screen.getByTestId('menu-item-provider-google');
       fireEvent.click(googleOption);
     });
@@ -136,6 +141,11 @@ describe('ChatPanel Model String Formatting', () => {
 
     // Select lofi model
     await waitFor(() => {
+      const modelMenu = screen.getByTestId('menu-item-model');
+      fireEvent.mouseEnter(modelMenu);
+    });
+
+    await waitFor(() => {
       const lofiOption = screen.getByTestId('menu-item-model-lofi');
       fireEvent.click(lofiOption);
     });
@@ -167,6 +177,11 @@ describe('ChatPanel Model String Formatting', () => {
     fireEvent.click(menuButton);
 
     // Select OpenAI provider
+    await waitFor(() => {
+      const providerMenu = screen.getByTestId('menu-item-provider');
+      fireEvent.mouseEnter(providerMenu);
+    });
+
     await waitFor(() => {
       const openaiOption = screen.getByTestId('menu-item-provider-openai');
       fireEvent.click(openaiOption);

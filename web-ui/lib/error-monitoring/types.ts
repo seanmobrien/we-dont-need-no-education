@@ -48,25 +48,44 @@ export interface ErrorReporterConfig {
   debounce?: ErrorReporterConfigDebounceParams;
 }
 
+export type ErrorReportResult = Omit<SuppressionResult, 'rule'> & {
+  report: ErrorReport;
+  rule: string | ErrorSuppressionRule;
+  logged: boolean;
+  console: boolean;
+  stored: boolean;
+  reported: boolean;
+};
+
 export interface ErrorReporterInterface {
+  createErrorReport(
+    error: Error | unknown,
+    severity?: ErrorSeverity,
+    context?: Partial<ErrorContext>,
+  ): Promise<ErrorReport>;
+  generateFingerprint(error: Error, context: ErrorContext): string;
   reportError(
     error: Error | unknown,
     severity?: ErrorSeverity,
     context?: Partial<ErrorContext>,
-  ): Promise<void>;
+  ): Promise<ErrorReportResult>;
 
   reportBoundaryError(
     error: Error,
     errorInfo: { componentStack?: string; errorBoundary?: string },
     severity?: ErrorSeverity,
-  ): Promise<void>;
+  ): Promise<ErrorReportResult>;
 
   reportUnhandledRejection(
     reason: unknown,
     promise: Promise<unknown>,
-  ): Promise<void>;
+  ): Promise<ErrorReportResult>;
 
   setupGlobalHandlers(): void;
+
+  subscribeToErrorReports(): void;
+
+  unsubscribeFromErrorReports(): void;
 
   getStoredErrors(): ErrorReport[];
 
@@ -76,19 +95,12 @@ export interface ErrorReporterInterface {
 export type IContextEnricher = {
   enrichContext: (context: ErrorContext) => Promise<ErrorContext>;
 };
-/**
- * Configuration for error suppression patterns
- */
 export interface ErrorSuppressionRule {
-  /** Unique identifier for this rule */
   id: string;
-  /** Pattern to match against error messages (string contains or regex) */
   pattern: string | RegExp;
-  /** Optional: match against error source/filename */
   source?: string | RegExp;
-  /** Whether to completely suppress (no logging) or just prevent UI display */
   suppressCompletely?: boolean;
-  /** Description of why this error is suppressed */
+  reload?: boolean;
   reason?: string;
 }
 

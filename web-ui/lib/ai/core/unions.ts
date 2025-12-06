@@ -58,3 +58,10 @@ export type AiLanguageModelType = Exclude<
   AiModelType,
   typeof AiModelTypeValue_Embedding | typeof AiModelTypeValue_GoogleEmbedding
 >;
+
+export const AiProviderTypeValues = ['azure', 'google', 'openai'] as const;
+
+/**
+ * Available AI providers
+ */
+export type AiProviderType = (typeof AiProviderTypeValues)[number];

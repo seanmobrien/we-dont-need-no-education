@@ -2,8 +2,16 @@ import { createAzure } from '@ai-sdk/azure';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
 import { env } from '@/lib/site-util/env';
-import { EmbeddingModelV2, LanguageModelV2 } from '@ai-sdk/provider';
-import { AiModelType, isAiLanguageModelType } from '@/lib/ai/core';
+import type {
+  EmbeddingModelV2,
+  LanguageModelV2,
+  ProviderV2,
+} from '@ai-sdk/provider';
+import {
+  type AiModelType,
+  isAiLanguageModelType,
+  type AiProviderType,
+} from '@/lib/ai/core';
 import {
   AiModelTypeValue_Embedding,
   AiModelTypeValue_GoogleEmbedding,
@@ -11,151 +19,46 @@ import {
 import { log } from '@/lib/logger';
 
 import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
+import { cacheWithRedis } from '../middleware/cacheWithRedis';
+import { setNormalizedDefaultsMiddleware } from '../middleware/set-normalized-defaults';
+import { tokenStatsLoggingOnlyMiddleware } from '../middleware/tokenStatsTracking';
+import { MiddlewareStateManager } from '../middleware/state-management';
+
 import {
-  cacheWithRedis,
-  setNormalizedDefaultsMiddleware,
-  MiddlewareStateManager,
-  tokenStatsLoggingOnlyMiddleware,
-} from '../middleware';
+  globalRequiredSingleton,
+  isNotNull,
+  SingletonProvider,
+} from '@/lib/typescript';
+import {
+  isAutoRefreshFeatureFlag,
+} from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import type {
+  AutoRefreshFeatureFlag,
+  KnownFeatureType,
+  ModelProviderFactoryConfig,
+  ModelServerConfig,
+} from '@/lib/site-util/feature-flags/types';
+import { isPromise } from 'util/types';
+import {
+  type ModelFromDeploymentId,
+  SupportedProviders,
+  normalizeModelKeyForProvider,
+  getModelFlag,
+  caseProviderMatch,
+} from './util';
+import {
+  getAvailability,
+} from './model-availability-manager';
+import { LoggedError } from '@/lib/react-util';
 
-/**
- * Model availability manager for programmatic control of model enabling/disabling
- */
-class ModelAvailabilityManager {
-  private availabilityMap = new Map<string, boolean>();
-
-  private constructor() {
-    // Initialize all models as available by default
-    this.resetToDefaults();
-  }
-
-  static getInstance(): ModelAvailabilityManager {
-    const KEY = Symbol.for('@noeducation/aiModelFactory:availability');
-    type GlobalReg = { [k: symbol]: ModelAvailabilityManager | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    if (!g[KEY]) {
-      g[KEY] = new ModelAvailabilityManager();
-    }
-    return g[KEY]!;
-  }
-
-  /**
-   * Check if a specific model is available
-   */
-  isModelAvailable(modelKey: string): boolean {
-    return this.availabilityMap.get(modelKey) ?? true;
-  }
-
-  /**
-   * Check if a provider is available (checks if any model for that provider is available)
-   */
-  isProviderAvailable(provider: 'azure' | 'google' | 'openai'): boolean {
-    const providerModels = Array.from(this.availabilityMap.keys()).filter(
-      (key) => key.startsWith(`${provider}:`),
-    );
-
-    if (providerModels.length === 0) return true; // No explicit settings, assume available
-
-    return providerModels.some((key) => this.availabilityMap.get(key) === true);
-  }
-
-  /**
-   * Disable a specific model
-   */
-  disableModel(modelKey: string): void {
-    this.availabilityMap.set(modelKey, false);
-  }
-
-  /**
-   * Enable a specific model
-   */
-  enableModel(modelKey: string): void {
-    this.availabilityMap.set(modelKey, true);
-  }
-
-  /**
-   * Disable all models for a provider
-   */
-  disableProvider(provider: 'azure' | 'google' | 'openai'): void {
-    const modelTypes = ['hifi', 'lofi', 'completions', 'embedding'];
-    const googleSpecificModels = [
-      'gemini-pro',
-      'gemini-flash',
-      'google-embedding',
-    ];
-
-    if (provider === 'azure') {
-      modelTypes.forEach((model) => this.disableModel(`azure:${model}`));
-    } else if (provider === 'google') {
-      [...modelTypes, ...googleSpecificModels].forEach((model) =>
-        this.disableModel(`google:${model}`),
-      );
-    } else if (provider === 'openai') {
-      modelTypes.forEach((model) => this.disableModel(`openai:${model}`));
-    }
-  }
-
-  /**
-   * Enable all models for a provider
-   */
-  enableProvider(provider: 'azure' | 'google' | 'openai'): void {
-    const modelTypes = ['hifi', 'lofi', 'completions', 'embedding'];
-    const googleSpecificModels = [
-      'gemini-pro',
-      'gemini-flash',
-      'google-embedding',
-    ];
-
-    if (provider === 'azure') {
-      modelTypes.forEach((model) => this.enableModel(`azure:${model}`));
-    } else if (provider === 'google') {
-      [...modelTypes, ...googleSpecificModels].forEach((model) =>
-        this.enableModel(`google:${model}`),
-      );
-    } else if (provider === 'openai') {
-      modelTypes.forEach((model) => this.enableModel(`openai:${model}`));
-    }
-  }
-
-  /**
-   * Temporarily disable a model for a specified duration (in milliseconds)
-   */
-  temporarilyDisableModel(modelKey: string, durationMs: number): void {
-    this.disableModel(modelKey);
-    setTimeout(() => {
-      this.enableModel(modelKey);
-    }, durationMs);
-  }
-
-  /**
-   * Reset all models to default available state
-   */
-  resetToDefaults(): void {
-    this.availabilityMap.clear();
-    // All models are available by default (no explicit entries needed)
-  }
-
-  /**
-   * Get current availability status for debugging
-   */
-  getAvailabilityStatus(): Record<string, boolean> {
-    const status: Record<string, boolean> = {};
-    for (const [key, value] of this.availabilityMap.entries()) {
-      status[key] = value;
-    }
-    return status;
-  }
-}
-
-const getAvailability = () => ModelAvailabilityManager.getInstance();
 
 /**
  * Setup middleware for language models with caching and retry logic
  */
-const setupMiddleware = (
+const setupMiddleware = async (
   provider: string,
   model: LanguageModelV2,
-): LanguageModelV2 => {
+): Promise<LanguageModelV2> => {
   return wrapLanguageModel({
     model: wrapLanguageModel({
       model: wrapLanguageModel({
@@ -175,229 +78,297 @@ const setupMiddleware = (
   });
 };
 
-/**
- * Azure custom provider with model aliases for our existing model names
- * Maps hifi, lofi, embedding to Azure-hosted models
- */
-const getAzureProvider = () => {
-  const KEY = Symbol.for('@noeducation/aiModelFactory:azureProvider');
-  type GlobalReg = {
-    [k: symbol]: ReturnType<typeof customProvider> | undefined;
+const getGuardedProvider = async <
+  P extends AiProviderType,
+  R extends ReturnType<typeof customProvider>,
+>(
+  provider: P,
+  cb: (config: ModelProviderFactoryConfig) => Promise<R>,
+): Promise<R | undefined> => {
+  const flag = await getModelFlag(provider);
+  if (!flag?.isEnabled) {
+    return undefined;
+  }
+  if (!flag.isInitialized) {
+    log(l => l.warn(`AiModelFactory: Loading provider configuration settings for new ${provider}.`))
+    // Wait until we get real data
+    await flag.forceRefresh();
+  }
+  const cleanup = () => {
+    log(l => l.verbose(`AiModelFactory: Configuration settings for provider ${provider} have been updated - obsolete provider removed from registry.`))
+    flag.removeOnChangedListener(cleanup);
   };
-  const g = globalThis as unknown as GlobalReg;
-  if (g[KEY]) return g[KEY]!;
-  g[KEY] = customProvider({
-    languageModels: {
-      // Custom aliases for Azure models
-      hifi: setupMiddleware(
-        'azure',
-        createAzure({
-          baseURL: env('AZURE_OPENAI_ENDPOINT'),
+  flag.addOnChangedListener(cleanup);
+  try {
+    const ret = await cb(flag.value as ModelProviderFactoryConfig);
+    if (isNotNull(ret)) {
+      log(l => l.verbose(`AiModelFactory: Provider ${provider} has been initialized.`))
+      return ret;
+    }
+  } catch (error) {
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'AiModelFactory'
+    });
+  }
+
+  log(l => l.warn(`AiModelFactory: Unexpected null provider returned from factory for provider ${provider}; models will not be available.`));
+  return undefined;
+};
+
+type OptionsFactoryProps = Omit<ModelServerConfig, 'model'> & {
+  apiKey?: string;
+};
+
+/**
+ * Factory function used to create all of our custom providers.  Supports model aliases
+ * and flagsmith-based configuration management.
+ * @param param0 Provider factory options.
+ * @param param0.provider The provider that this factory will create.
+ * @param param0.providerFactory The factory function to create the provider.
+ * @param param0.optionsFactory The factory function to create the provider options.
+ * @param param0.baselineFactory The factory function to create the provider baseline.
+ * @param param0.apiKey The API key to use for the provider.
+ * @returns An initialized model provider ready to be used by the registry, or undefined
+ * if the provider is not enabled.
+ */
+const customProviderFactory = async <
+  P extends AiProviderType,
+  TOptions extends object,
+  TProvider extends ProviderV2 & { chat: (model: string) => LanguageModelV2; completions?: (model: string) => LanguageModelV2 },
+>({
+  provider,
+  providerFactory,
+  optionsFactory: optionsFactoryFromProps,
+  baselineFactory: baselineFactoryFromProps,
+  apiKey,
+}: {
+  apiKey: string;
+  provider: P;
+  providerFactory: (options?: TOptions) => TProvider;
+  baselineFactory?: (model: string | undefined) => Partial<ModelServerConfig>;
+  optionsFactory?: (config: OptionsFactoryProps) => TOptions;
+}) => {
+  const optionsFactory =
+    optionsFactoryFromProps ??
+    ((cfg: OptionsFactoryProps) => ({
+      baseURL: cfg.base,
+      apiKey: cfg.apiKey ?? apiKey,
+    }));
+  const baselineFactory = baselineFactoryFromProps ?? (() => ({}));
+
+  const modelFactory = <T extends string | undefined>(
+    config: ModelProviderFactoryConfig,
+    model: T,
+  ): ModelFromDeploymentId<T> => {
+    const merged = {
+      ...(apiKey ? { apiKey } : {}),
+      ...(baselineFactory(model) ?? {}),
+      ...(config['default'] ?? {}),
+      ...(model === undefined ? (config.fallback ?? {}) : {}),
+      ...(model && model !== 'embedding' ? (config.named?.[model] ?? {}) : {}),
+      ...(model === 'embedding' ? (config.embedding ?? {}) : {}),
+    };
+    const builder = providerFactory(optionsFactory(merged) as TOptions);
+    if (model === undefined) {
+      return builder as ProviderV2 as ModelFromDeploymentId<T>;
+    }
+    if (model === 'embedding') {
+      return builder.textEmbeddingModel(merged.model!) as ModelFromDeploymentId<T>;
+    }
+    const ret = (model === 'completions' && builder.completions)
+      ? builder.completions(merged.model!)
+      : builder.chat(merged.model!);
+    return ret as ModelFromDeploymentId<T>;
+  };
+  return getGuardedProvider(provider, async (cfg) => {
+    const wrappedModels = ['hifi', 'lofi', 'completions', 'gemini-2.0-flash', 'gemini-pro'];
+    const languageModelEntries = await Promise.all(
+      Object.keys(cfg.named ?? {}).map(async (key) => {
+        const model = modelFactory(cfg, key);
+        const value = wrappedModels.includes(key)
+          ? await setupMiddleware(provider, model)
+          : model;
+        return [key, value] as [string, LanguageModelV2];
+      })
+    );
+    const languageModels: Record<string, LanguageModelV2> = Object.fromEntries(languageModelEntries);
+    return customProvider({
+      languageModels,
+      textEmbeddingModels: {
+        embedding: modelFactory(cfg, 'embedding'),
+      },
+      fallbackProvider: modelFactory(cfg, undefined),
+    });
+  });
+};
+
+/**
+ * Global singleton containing the Azure custom provider used by the application
+ * provider registry.  This supports model creation by alias with model aliases matching
+ * the ones used by OpenAI and Google (hifi, lofi, embedding, etc).
+ */
+const getAzureProvider = async () => {
+  return customProviderFactory({
+    provider: 'azure',
+    providerFactory: createAzure,
+    apiKey: env('AZURE_API_KEY'),
+    baselineFactory: (model: string | undefined) =>
+      model === 'embedding'
+        ? {
+          model,
+          // base: env('AZURE_OPENAI_ENDPOINT_EMBEDDING'),
+          apiKey: env('AZURE_OPENAI_KEY_EMBEDDING'),
+        }
+        : {
+          model,
           apiKey: env('AZURE_API_KEY'),
-          useDeploymentBasedUrls: true,
-          apiVersion: '2025-04-01-preview',
-        }).chat(env('AZURE_OPENAI_DEPLOYMENT_HIFI')),
-      ),
-      lofi: setupMiddleware(
-        'azure',
-        createAzure({
-          baseURL: env('AZURE_OPENAI_ENDPOINT'),
-          apiKey: env('AZURE_API_KEY'),
-          useDeploymentBasedUrls: true,
-          apiVersion: '2025-04-01-preview',
-        }).chat(env('AZURE_OPENAI_DEPLOYMENT_LOFI')),
-      ),
-      completions: setupMiddleware(
-        'azure',
-        createAzure({
-          baseURL: env('AZURE_OPENAI_ENDPOINT'),
-          apiKey: env('AZURE_API_KEY'),
-          useDeploymentBasedUrls: true,
-          apiVersion: '2025-04-01-preview',
-        }).completion(env('AZURE_OPENAI_DEPLOYMENT_COMPLETIONS')),
-      ),
-    },
-    textEmbeddingModels: {
-      embedding: createAzure({
-        baseURL: env('AZURE_OPENAI_ENDPOINT_EMBEDDING'),
-        apiKey: env('AZURE_OPENAI_KEY_EMBEDDING'),
+          // base: env('AZURE_OPENAI_ENDPOINT'),
+        },
+    optionsFactory: (merged: OptionsFactoryProps) => ({
+      baseURL: merged.base,
+      apiKey: merged.apiKey,
+      ...(merged.deployBased ? {
+        ...(merged.version ? { apiVersion: merged.version } : {}),
         useDeploymentBasedUrls: true,
-        apiVersion: '2025-04-01-preview',
-      }).textEmbeddingModel(env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING')),
-    },
-    // Fallback to the raw Azure provider for any models not explicitly defined
-    fallbackProvider: createAzure({
-      baseURL: env('AZURE_OPENAI_ENDPOINT'),
-      apiKey: env('AZURE_API_KEY'),
-      apiVersion: '2025-04-01-preview',
-      useDeploymentBasedUrls: true,
+      } : {
+        useDeploymentBasedUrls: false,
+      }),
     }),
   });
-  return g[KEY]!;
 };
 
 /**
- * Google custom provider with model aliases matching Azure as much as possible
- * Maps hifi, lofi, embedding to Google-hosted models
+ * Global singleton containing the Google custom provider used by the application
+ * provider registry.  This supports model creation by alias with model aliases matching
+ * the ones used by Azure and OpenAI (hifi, lofi, embedding, etc).
  */
-const getGoogleProvider = () => {
-  const KEY = Symbol.for('@noeducation/aiModelFactory:googleProvider');
-  type GlobalReg = {
-    [k: symbol]: ReturnType<typeof customProvider> | undefined;
-  };
-  const g = globalThis as unknown as GlobalReg;
-  if (g[KEY]) return g[KEY]!;
-  g[KEY] = customProvider({
-    languageModels: {
-      // Match Azure aliases with equivalent Google models
-      hifi: setupMiddleware(
-        'google',
-        createGoogleGenerativeAI({
-          apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-        }).chat('gemini-2.5-pro'), // High-quality model equivalent to Azure hifi
-      ),
-      lofi: setupMiddleware(
-        'google',
-        createGoogleGenerativeAI({
-          apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-        }).chat('gemini-2.5-flash'), // Fast model equivalent to Azure lofi
-      ),
-      'gemini-2.0-flash': setupMiddleware(
-        'google',
-        createGoogleGenerativeAI({
-          apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-        }).chat('gemini-2.0-flash'), // Fast model equivalent to Azure lofi
-      ),
-      // Google-specific model aliases
-      'gemini-pro': setupMiddleware(
-        'google',
-        createGoogleGenerativeAI({
-          apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-        }).chat('gemini-2.5-pro'),
-      ),
-    },
-    textEmbeddingModels: {
-      embedding: createGoogleGenerativeAI({
-        apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-      }).textEmbeddingModel('text-embedding-004'), // Google embedding equivalent to Azure embedding
-    },
-    // Fallback to the raw Google provider for any models not explicitly defined
-    fallbackProvider: createGoogleGenerativeAI({
-      apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-    }),
+const getGoogleProvider = async () => {
+  return customProviderFactory({
+    provider: 'google',
+    providerFactory: createGoogleGenerativeAI,
+    apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY')!,
   });
-  return g[KEY]!;
 };
 
 /**
- * OpenAI custom provider with model aliases matching Azure and Google
- * Maps hifi, lofi, embedding to OpenAI-hosted models
+ * Global singleton containing the OpenAI custom provider used by the application
+ * provider registry.  This supports model creation by alias with model aliases matching
+ * the ones used by Azure and Google (hifi, lofi, embedding, etc).
  */
-const getOpenAIProvider = () => {
-  const KEY = Symbol.for('@noeducation/aiModelFactory:openaiProvider');
-  type GlobalReg = {
-    [k: symbol]: ReturnType<typeof customProvider> | undefined;
-  };
-  const g = globalThis as unknown as GlobalReg;
-  if (g[KEY]) return g[KEY]!;
-  g[KEY] = customProvider({
-    languageModels: {
-      // Match Azure aliases with equivalent OpenAI models
-      hifi: setupMiddleware(
-        'openai',
-        createOpenAI({
-          apiKey: env('OPENAI_API_KEY'),
-        }).chat(env('OPENAI_HIFI')), // High-quality model equivalent to Azure hifi
-      ),
-      lofi: setupMiddleware(
-        'openai',
-        createOpenAI({
-          apiKey: env('OPENAI_API_KEY'),
-        }).chat(env('OPENAI_LOFI')), // Fast model equivalent to Azure lofi
-      ),
-      completions: setupMiddleware(
-        'openai',
-        createOpenAI({
-          apiKey: env('OPENAI_API_KEY'),
-        }).completion(env('OPENAI_LOFI')), // Use lofi for completions
-      ),
-    },
-    textEmbeddingModels: {
-      embedding: createOpenAI({
-        apiKey: env('OPENAI_API_KEY'),
-      }).textEmbeddingModel(env('OPENAI_EMBEDDING')), // OpenAI embedding model
-    },
-    // Fallback to the raw OpenAI provider for any models not explicitly defined
-    fallbackProvider: createOpenAI({
-      apiKey: env('OPENAI_API_KEY'),
-    }),
+const getOpenAIProvider = async () => {
+  return customProviderFactory({
+    provider: 'openai',
+    providerFactory: createOpenAI,
+    apiKey: env('OPENAI_API_KEY')!,
   });
-  return g[KEY]!;
 };
 
 /**
- * Provider registry with Azure as default, Google and OpenAI as fallbacks
- * Supports creating models by alias with Azure as primary, falling back to Google and OpenAI
+ * Global singleton containg the primary Provider Registry used by the application.  Current 
+ * configuration is with Azure as default, Google and OpenAI as fallbacks.  This registry is
+ * used by the {@link aiModelFactory} to create models by alias with Azure as primary, falling
+ * back to Google and OpenAI.
  */
-export const getProviderRegistry = () => {
-  const KEY = Symbol.for('@noeducation/aiModelFactory:providerRegistry');
-  type GlobalReg = {
-    [k: symbol]: ReturnType<typeof createProviderRegistry> | undefined;
-  };
-  const g = globalThis as unknown as GlobalReg;
-  if (g[KEY]) return g[KEY]!;
-  g[KEY] = createProviderRegistry(
-    {
-      azure: getAzureProvider(),
-      google: getGoogleProvider(),
-      openai: getOpenAIProvider(),
-    },
-    {
-      languageModelMiddleware:
-        MiddlewareStateManager.Instance.getMiddlewareInstance(),
-    },
-  );
-  return g[KEY]!;
-};
-
-/**
- * Overloaded function signature for normalizing model keys based on the provider and model type.
- *
- * @param provider - The AI service provider, either `'azure'` or `'google'`.
- * @param modelType - The type of AI model to normalize the key for.
- * @returns A normalized model key string prefixed with the provider name (e.g., `azure:modelName` or `google:modelName`).
- */
-interface NormalizeModelKeyForProviderOverloads {
-  (provider: 'azure', modelType: AiModelType): `azure:${string}`;
-  (provider: 'google', modelType: AiModelType): `google:${string}`;
-  (provider: 'openai', modelType: AiModelType): `openai:${string}`;
-}
-
-/**
- * Normalizes the model key for a given provider by ensuring it is prefixed with the provider name.
- *
- * If the `modelType` already starts with the provider prefix (e.g., "provider:model"), it is returned as-is.
- * If `modelType` contains a colon, the substring after the colon is used and prefixed with the provider.
- * Otherwise, the entire `modelType` is prefixed with the provider.
- *
- * @param provider - The name of the AI model provider.
- * @param modelType - The model type string, which may or may not be prefixed with a provider.
- * @returns The normalized model key in the format "provider:model".
- */
-const normalizeModelKeyForProvider: NormalizeModelKeyForProviderOverloads = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  provider: any,
-  modelType: AiModelType,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any => {
-  if (modelType.startsWith(provider + ':')) {
-    return modelType;
-  }
-  const idx = modelType.indexOf(':');
-  if (idx > -1) {
-    return `${provider}:${modelType.substring(idx + 1)}`;
-  }
-  return `${provider}:${modelType}`;
+export const getProviderRegistry = async () => {
+  const GLOBAL_PROVIDER_REGISTRY = Symbol.for('@noeducation/aiModelFactory:providerRegistry');
+  return globalRequiredSingleton(GLOBAL_PROVIDER_REGISTRY, async () => {
+    const eventHandlers = new Map<AiProviderType, [AutoRefreshFeatureFlag<KnownFeatureType>, () => void]>();
+    // Setup handlers for provider config events so we properly refresh the registry
+    await Promise.all(
+      SupportedProviders.map(
+        async (provider) => {
+          const flag = await getModelFlag(provider);
+          const setupChangeEvent = (f: unknown) => {
+            const cleanup = () => {
+              log(l => l.info(`Provider ${provider} changed, refreshing global registry`));
+              // First, unsubscribe from all flag events - this will prevent memory leaks
+              // and ensure we don't continue to emit events to this provider when the new
+              // one is available.
+              Promise.allSettled(
+                Array.from(eventHandlers.values()).map(async ([relatedFlag, relatedHandler]) => {
+                  relatedFlag.removeOnChangedListener(relatedHandler);
+                  relatedFlag.removeOnDisposedListener(relatedHandler);
+                  eventHandlers.delete(provider);
+                  // As long as we have the flag do a quick pull on it's value - this will
+                  // ensure all config settings have been updated when the registry is 
+                  // re-created (we hope...otherwise we're converting this whole thing to async)
+                  if (!Object.is(f, flag) && relatedFlag.isStale) {
+                    // I know it looks wierd just pulling the value, but this will trigger
+                    // a reload if it's needed and ensure the flag is up to date when we 
+                    // pull the value again in a few seconds.
+                    return relatedFlag.forceRefresh().then(() => !relatedFlag.isStale);
+                  }
+                  return Promise.resolve(!relatedFlag.isStale);
+                })
+              ).then(promises => {
+                return promises.reduce((acc, v) => {
+                  if (v.status === 'rejected') {
+                    log(l => l.warn(`Failed to refresh provider: ${v.reason}`));
+                  }
+                  return acc && v.status === 'fulfilled';
+                }, true);
+              })
+                .catch(err => {
+                  LoggedError.isTurtlesAllTheWayDownBaby(err, {
+                    source: 'GetProviderRegistry::Provider OnRefresh',
+                    log: true,
+                    throw: true
+                  });
+                  return Promise.resolve(false);
+                })
+                .finally(() => {
+                  // Deleting the singleton instance will force a re-creation of the registry
+                  // the next time it is requested.
+                  SingletonProvider.Instance.delete(GLOBAL_PROVIDER_REGISTRY);
+                })
+            };
+            if (isAutoRefreshFeatureFlag(f)) {
+              // Add the event handler and flag to a map so we can remove all of them
+              // when refreshing the registry.
+              eventHandlers.set(provider, [f, cleanup]);
+              // And subscribe to changed and disposed events so we can clean up
+              // the registry when the flag is disposed or changed.
+              f.addOnDisposedListener(cleanup);
+              f.addOnChangedListener(cleanup);
+            } else {
+              log(l => l.warn(`Cleanup called on non-provider ${String(f)}`))
+            }
+          }
+          // Note we really should never be getting a promise here, but somehow we do
+          // on occasion.  At some point we'll need to track down that bug, bug for now
+          // a little defensive programming will get us running and give us flexibility
+          // to handle interface changes in the future.
+          if (isPromise(flag)) {
+            await flag.then(setupChangeEvent);
+          } else {
+            setupChangeEvent(flag);
+          }
+        },
+      ));
+    const providers: Record<string, ProviderV2> = {};
+    const azure = await getAzureProvider();
+    if (azure) {
+      providers.azure = azure;
+    }
+    const google = await getGoogleProvider();
+    if (google) {
+      providers.google = google;
+    }
+    const openai = await getOpenAIProvider();
+    if (openai) {
+      providers.openai = openai;
+    }
+    const providerRegistry = createProviderRegistry(
+      providers,
+      {
+        languageModelMiddleware:
+          MiddlewareStateManager.Instance.getMiddlewareInstance(),
+      },
+    );
+    log(l => l.info(`=== A new provider registry has been created ===`));
+    return providerRegistry;
+  });
 };
 
 /**
@@ -422,42 +393,27 @@ const normalizeModelKeyForProvider: NormalizeModelKeyForProviderOverloads = (
  * @returns An instance of `LanguageModel`.
  */
 interface GetAiModelProviderOverloads {
-  (): ReturnType<typeof getAzureProvider>;
-  (deploymentId: 'embedding' | 'google-embedding'): EmbeddingModelV2<string>;
+  (): Promise<ReturnType<typeof getAzureProvider>>;
+  (deploymentId: 'embedding' | 'google-embedding'): Promise<EmbeddingModelV2<string>>;
   (
     deploymentId: Exclude<AiModelType, 'embedding' | 'google-embedding'>,
-  ): LanguageModelV2;
-  (deploymentId: AiModelType): LanguageModelV2 | EmbeddingModelV2<string>;
+  ): Promise<LanguageModelV2>;
+  (deploymentId: AiModelType): Promise<LanguageModelV2 | EmbeddingModelV2<string>>;
 }
 
 /**
- * Checks if the model type starts with the given prefix.  This is used to short-circuit
- * model case statements by matching on the provider prefix only.
- * @param prefix The prefix to check
- * @param modelType The model type to check against the prefix
- * @returns The model type if it starts with the prefix, otherwise 'not-a-match' - which, obviosly, won't match :)
- */
-const caseProviderMatch = (
-  prefix: string,
-  modelType: AiModelType,
-): AiModelType => {
-  if (modelType.startsWith(prefix)) {
-    return modelType as AiModelType;
-  }
-  return 'not-a-match' as AiModelType;
-};
-
-/**
  * Main factory function that provides backward compatibility with existing usage
- * while using the new provider registry internally with availability control
+ * while using the new provider registry internally with availability control.  See
+ * {@link GetAiModelProviderOverloads} for the different overloads available.
  */
-export const aiModelFactory: GetAiModelProviderOverloads = (
+export const aiModelFactory: GetAiModelProviderOverloads = async (
   modelType?: AiModelType,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any => {
+): Promise<any> => {
   if (typeof modelType === 'undefined') {
     return getAzureProvider();
   }
+
   const azureModelKey = normalizeModelKeyForProvider('azure', modelType);
   const googleModelKey = normalizeModelKeyForProvider('google', modelType);
   const openaiModelKey = normalizeModelKeyForProvider('openai', modelType);
@@ -472,7 +428,7 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
         // Check availability and try Azure first if available, fallback to Google
         if (getAvailability().isModelAvailable(azureModelKey)) {
           try {
-            return getProviderRegistry().languageModel(azureModelKey);
+            return (await getProviderRegistry()).languageModel(azureModelKey);
           } catch (error) {
             // If Azure fails, temporarily disable it and try Google
             getAvailability().temporarilyDisableModel(azureModelKey, 60000); // 1 minute
@@ -484,11 +440,9 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
             );
           }
         }
-
         if (getAvailability().isModelAvailable(googleModelKey)) {
-          return getProviderRegistry().languageModel(googleModelKey);
+          return (await getProviderRegistry()).languageModel(googleModelKey);
         }
-
         throw new Error(`No available providers for model type: ${modelType}`);
       }
 
@@ -500,7 +454,7 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
         if (!getAvailability().isModelAvailable(googleModelKey)) {
           throw new Error(`Google model ${modelType} is currently disabled`);
         }
-        return getProviderRegistry().languageModel(googleModelKey);
+        return (await getProviderRegistry()).languageModel(googleModelKey);
       }
 
       case caseProviderMatch('openai:', modelType): {
@@ -509,45 +463,44 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
         if (!getAvailability().isModelAvailable(openaiModelKey)) {
           throw new Error(`OpenAI model ${modelType} is currently disabled`);
         }
-        return getProviderRegistry().languageModel(openaiModelKey);
+        return (await getProviderRegistry()).languageModel(openaiModelKey);
       }
 
       default:
         if (getAvailability().isModelAvailable(modelType)) {
-          const chat = getProviderRegistry().languageModel(modelType);
+          const chat = (await getProviderRegistry()).languageModel(modelType);
           if (chat == null) {
             throw new Error('Invalid AiModelType provided: ' + modelType);
           }
           return chat;
         }
     }
-  } else {
-    switch (modelType) {
-      case 'embedding':
-      case caseProviderMatch('azure:', modelType): // Matches any string starting with 'azure
-        const embed = getProviderRegistry().textEmbeddingModel(azureModelKey);
-        if (embed != null) {
-          return embed;
-        }
-        break;
-      case 'google-embedding':
-      case caseProviderMatch('google:', modelType): // Matches any string starting with 'google:'
-        const googleEmbed =
-          getProviderRegistry().textEmbeddingModel(googleModelKey);
-        if (googleEmbed != null) {
-          return googleEmbed;
-        }
-        break; // Continue to handle embedding models below
-      case caseProviderMatch('openai:', modelType): // Matches any string starting with 'openai:'
-        const openaiEmbed =
-          getProviderRegistry().textEmbeddingModel(openaiModelKey);
-        if (openaiEmbed != null) {
-          return openaiEmbed;
-        }
-        break;
-      default:
-        break;
-    }
+  }
+  switch (modelType) {
+    case 'embedding':
+    case caseProviderMatch('azure:', modelType): // Matches any string starting with 'azure
+      const embed = (await getProviderRegistry()).textEmbeddingModel(azureModelKey);
+      if (embed != null) {
+        return embed;
+      }
+      break;
+    case 'google-embedding':
+    case caseProviderMatch('google:', modelType): // Matches any string starting with 'google:'
+      const googleEmbed =
+        (await getProviderRegistry()).textEmbeddingModel(googleModelKey);
+      if (googleEmbed != null) {
+        return googleEmbed;
+      }
+      break; // Continue to handle embedding models below
+    case caseProviderMatch('openai:', modelType): // Matches any string starting with 'openai:'
+      const openaiEmbed =
+        (await getProviderRegistry()).textEmbeddingModel(openaiModelKey);
+      if (openaiEmbed != null) {
+        return openaiEmbed;
+      }
+      break;
+    default:
+      break;
   }
   // If we make it all the way here we were given a bad model string
   throw new TypeError(
@@ -562,132 +515,13 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
 /**
  * Convenience function to create Azure embedding model
  */
-export const createEmbeddingModel = (): EmbeddingModelV2<string> =>
+export const createEmbeddingModel = async (): Promise<EmbeddingModelV2<string>> =>
   aiModelFactory(AiModelTypeValue_Embedding);
 
 /**
  * Convenience function to create Google embedding model
  */
-export const createGoogleEmbeddingModel = (): EmbeddingModelV2<string> =>
+export const createGoogleEmbeddingModel = async (): Promise<EmbeddingModelV2<string>> =>
   aiModelFactory(AiModelTypeValue_GoogleEmbedding);
 
-/**
- * Model availability control functions
- */
 
-/**
- * Disable a specific model (e.g., 'azure:hifi', 'google:embedding')
- * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
- */
-export const disableModel = (modelKey: string): void =>
-  getAvailability().disableModel(modelKey);
-
-/**
- * Enable a specific model (e.g., 'azure:hifi', 'google:embedding')
- * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
- */
-export const enableModel = (modelKey: string): void =>
-  getAvailability().enableModel(modelKey);
-
-/**
- * Disable all models for a provider
- * @param provider - Either 'azure', 'google', or 'openai'
- */
-export const disableProvider = (
-  provider: 'azure' | 'google' | 'openai',
-): void => getAvailability().disableProvider(provider);
-/**
- * Enable all models for a provider
- * @param provider - Either 'azure', 'google', or 'openai'
- */
-export const enableProvider = (provider: 'azure' | 'google' | 'openai'): void =>
-  getAvailability().enableProvider(provider);
-
-/**
- * Temporarily disable a model for a specified duration
- * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
- * @param durationMs - Duration in milliseconds to disable the model
- */
-export const temporarilyDisableModel = (
-  modelKey: string,
-  durationMs: number,
-): void => getAvailability().temporarilyDisableModel(modelKey, durationMs);
-/**
- * Check if a model is currently available
- * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
- * @returns True if the model is available, false otherwise
- */
-export const isModelAvailable = (modelKey: string): boolean =>
-  getAvailability().isModelAvailable(modelKey);
-
-/**
- * Check if a provider is available
- * @param provider - Either 'azure', 'google', or 'openai'
- * @returns True if the provider has any available models, false otherwise
- */
-export const isProviderAvailable = (
-  provider: 'azure' | 'google' | 'openai',
-): boolean => getAvailability().isProviderAvailable(provider);
-/**
- * Get the current availability status of all models (for debugging)
- * @returns Object mapping model keys to their availability status
- */
-export const getModelAvailabilityStatus = (): Record<string, boolean> =>
-  getAvailability().getAvailabilityStatus();
-
-/**
- * Reset all models to their default available state
- */
-export const resetModelAvailability = (): void =>
-  getAvailability().resetToDefaults();
-
-/**
- * Convenience functions for common scenarios
- */
-
-/**
- * Handle Azure rate limiting by temporarily disabling Azure models
- * @param durationMs - Duration in milliseconds to disable Azure (default: 5 minutes)
- */
-export const handleAzureRateLimit = (durationMs: number = 300000): void => {
-  log((l) =>
-    l.warn('Azure rate limit detected, temporarily disabling Azure models'),
-  );
-  getAvailability().temporarilyDisableModel('azure:hifi', durationMs);
-  getAvailability().temporarilyDisableModel('azure:lofi', durationMs);
-  getAvailability().temporarilyDisableModel('azure:completions', durationMs);
-  getAvailability().temporarilyDisableModel('azure:embedding', durationMs);
-};
-
-/**
- * Handle Google rate limiting by temporarily disabling Google models
- * @param durationMs - Duration in milliseconds to disable Google (default: 5 minutes)
- */
-export const handleGoogleRateLimit = (durationMs: number = 300000): void => {
-  log((l) =>
-    l.warn('Google rate limit detected, temporarily disabling Google models'),
-  );
-  getAvailability().temporarilyDisableModel('google:hifi', durationMs);
-  getAvailability().temporarilyDisableModel('google:lofi', durationMs);
-  getAvailability().temporarilyDisableModel('google:embedding', durationMs);
-  getAvailability().temporarilyDisableModel('google:gemini-pro', durationMs);
-  getAvailability().temporarilyDisableModel('google:gemini-flash', durationMs);
-  getAvailability().temporarilyDisableModel(
-    'google:google-embedding',
-    durationMs,
-  );
-};
-
-/**
- * Handle OpenAI rate limiting by temporarily disabling OpenAI models
- * @param durationMs - Duration in milliseconds to disable OpenAI (default: 5 minutes)
- */
-export const handleOpenAIRateLimit = (durationMs: number = 300000): void => {
-  log((l) =>
-    l.warn('OpenAI rate limit detected, temporarily disabling OpenAI models'),
-  );
-  getAvailability().temporarilyDisableModel('openai:hifi', durationMs);
-  getAvailability().temporarilyDisableModel('openai:lofi', durationMs);
-  getAvailability().temporarilyDisableModel('openai:completions', durationMs);
-  getAvailability().temporarilyDisableModel('openai:embedding', durationMs);
-};

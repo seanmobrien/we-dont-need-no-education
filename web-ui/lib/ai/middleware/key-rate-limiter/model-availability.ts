@@ -10,7 +10,6 @@ import type {
 import { v4 as uuidv4 } from 'uuid';
 import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 
-// Check if model is available and get fallback if needed
 export function getAvailableModel(
   provider: 'azure' | 'google',
   classification: ModelClassification,
@@ -19,21 +18,8 @@ export function getAvailableModel(
   return isModelAvailable(modelKey) ? modelKey : null;
 }
 
-/**
- * Retry delay for model requests.
- */
 export const CHAT_RETRY_DELAY_MS = 90 * 1000; // 90 seconds
 
-/**
- * Checks model availability and handles fallback logic.
- * If no models are available, enqueues the request for retry.
- *
- * @param currentModelKey - The current model key being checked
- * @param modelClassification - The model classification
- * @param failoverConfig - The failover configuration
- * @param params - The request parameters
- * @returns The available model key or throws an error if none available
- */
 export async function checkModelAvailabilityAndFallback(
   currentModelKey: string,
   modelClassification: ModelClassification,
@@ -93,14 +79,6 @@ export async function checkModelAvailabilityAndFallback(
   }
 }
 
-/**
- * Enqueues a request for retry processing when models are unavailable or rate limited.
- *
- * @param modelClassification - The model classification
- * @param params - The request parameters
- * @param errorType - The type of error causing the enqueue
- * @returns The generated request ID
- */
 export const enqueueRequestForRetry = async (
   modelClassification: ModelClassification,
   {

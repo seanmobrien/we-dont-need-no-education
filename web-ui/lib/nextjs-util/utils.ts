@@ -8,6 +8,7 @@ import {
 import { LikeNextRequest, LikeNextResponse } from './types';
 import { isPromise } from '../typescript';
 import { getStackTrace } from './get-stack-trace';
+import EventEmitter from '@protobufjs/eventemitter';
 
 type HeadersLikeNextRequestOrResponse = {
   headers: Headers;
@@ -18,14 +19,14 @@ export const getHeaderValue = (
   headerName: string,
 ): typeof req extends infer TActual
   ? TActual extends HeadersLikeNextRequestOrResponse
-    ? string | string[] | undefined
-    : TActual extends OutgoingMessage
-      ? string | string[] | undefined | number
-      : TActual extends IncomingMessage
-        ? string | null
-        : TActual extends ServerResponse
-          ? string | string[] | undefined
-          : never
+  ? string | string[] | undefined
+  : TActual extends OutgoingMessage
+  ? string | string[] | undefined | number
+  : TActual extends IncomingMessage
+  ? string | null
+  : TActual extends ServerResponse
+  ? string | string[] | undefined
+  : never
   : never => {
   if (isNextApiRequest(req) || req instanceof IncomingMessage) {
     return req.headers[headerName.toLowerCase()];
@@ -75,4 +76,32 @@ export const deprecate = <T extends (...args: any[]) => any>(
   });
 
   return deprecatedFn;
+};
+
+type EmittingDispose = {
+  [Symbol.dispose]: () => void;
+  addDisposeListener: (listener: () => void) => void;
+  removeDisposeListener: (listener: () => void) => void;
+};
+
+export const withEmittingDispose = <T>(input: T): T & EmittingDispose => {
+  const emitter = new EventEmitter();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const originalDispose = (input as any)[Symbol.dispose];
+  const dispose = () => {
+    if (originalDispose) {
+      originalDispose();
+    }
+    emitter.emit('dispose');
+    emitter.off();
+  };
+  const ret = input as (T & Partial<EmittingDispose>);
+  ret[Symbol.dispose] = dispose;
+  ret.addDisposeListener = (listener: () => void) => {
+    emitter.on('dispose', listener);
+  };
+  ret.removeDisposeListener = (listener: () => void) => {
+    emitter.off('dispose', listener);
+  };
+  return ret as T & Required<EmittingDispose>;
 };

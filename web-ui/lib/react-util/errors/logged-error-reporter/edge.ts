@@ -1,4 +1,9 @@
-import type { ErrorReporterInterface } from '@/lib/error-monitoring/types';
+import { errorReporter } from '@/lib/error-monitoring/error-reporter';
+import type {
+  ErrorContext,
+  ErrorReporterInterface,
+  ErrorReportResult,
+} from '@/lib/error-monitoring/types';
 import { log } from '@/lib/logger';
 
 /**
@@ -8,6 +13,21 @@ import { log } from '@/lib/logger';
  */
 class LoggedErrorReporter {
   static #instance: ErrorReporterInterface | undefined;
+  static makeFakeResult = async (
+    error: unknown,
+  ): Promise<ErrorReportResult> => {
+    const report = await errorReporter((r) => r.createErrorReport(error));
+    return {
+      suppress: true,
+      stored: false,
+      logged: true,
+      report,
+      console: false,
+      reported: false,
+      rule: 'mock',
+    };
+  };
+
   static get Instance(): ErrorReporterInterface {
     if (!LoggedErrorReporter.#instance) {
       const mockReport = (error: unknown) => {
@@ -18,17 +38,26 @@ class LoggedErrorReporter {
             source: 'Edge Error Reporter instance',
           }),
         );
-        return Promise.resolve();
+        return LoggedErrorReporter.makeFakeResult(error);
       };
 
-      LoggedErrorReporter.#instance = {
+      const instance = {
         reportError: mockReport,
         reportBoundaryError: mockReport,
         reportUnhandledRejection: mockReport,
-        setupGlobalHandlers: () => {},
+        setupGlobalHandlers: () => { },
+        subscribeToErrorReports: () => { },
+        unsubscribeFromErrorReports: () => { },
         getStoredErrors: () => [],
-        clearStoredErrors: () => {},
+        clearStoredErrors: () => { },
+        generateFingerprint: (error: Error, context: ErrorContext) =>
+          errorReporter((x) => x.generateFingerprint(error, context)),
+        createErrorReport: (error: unknown) =>
+          errorReporter((r) => r.createErrorReport(error)),
       };
+      // technically this is a no-op, but it's good to be consistent
+      instance.subscribeToErrorReports();
+      LoggedErrorReporter.#instance = instance;
     }
     if (!LoggedErrorReporter.#instance) {
       throw new TypeError(

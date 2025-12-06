@@ -1,14 +1,14 @@
 import { createFlagsmithInstance } from 'flagsmith/isomorphic';
 import type { IFlagsmith } from 'flagsmith';
-import {
-  KnownFeature,
-  AllFeatureFlagsDefault,
-  type KnownFeatureType,
-  type FeatureFlagStatus,
-} from './known-feature';
-import { isKeyOf } from '@/lib/typescript';
+import { type KnownFeatureType, isKnownFeatureType } from './known-feature';
+import { AllFeatureFlagsDefault } from './known-feature-defaults';
+
 import { env } from '../env';
 import { LoggedError } from '@/lib/react-util';
+import type {
+  FeatureFlagValueType,
+} from './types';
+import { extractFlagValue } from './util';
 
 // Client-bound Flagsmith instance used for client-side flag evaluation.
 export const flagsmithClient = async () => {
@@ -18,6 +18,11 @@ export const flagsmithClient = async () => {
     environmentID: env('NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID'),
     api: env('NEXT_PUBLIC_FLAGSMITH_API_URL'),
     enableAnalytics: true,
+    cacheOptions: {
+      ttl: REFRESH_INTERVAL,
+      loadStale: false,
+      skipAPI: false,
+    },
   });
   flagsmithClient.startListening(REFRESH_INTERVAL);
   return flagsmithClient;
@@ -49,27 +54,35 @@ const identify = async ({
 export const getFeatureFlag = async <T extends KnownFeatureType>(
   flagKey: T,
   userId?: string,
-  defaultValue?: (typeof AllFeatureFlagsDefault)[T],
-) => {
+  defaultValue?: FeatureFlagValueType<typeof flagKey>,
+): Promise<FeatureFlagValueType<typeof flagKey> | null> => {
   try {
     const server = await identify({ userId });
+    if (!server)
+      return (
+        defaultValue ??
+        (AllFeatureFlagsDefault[flagKey] as FeatureFlagValueType<
+          typeof flagKey
+        >)
+      );
+    if (!server.initialised) {
+      await server.getFlags();
+    }
+    const flag = server?.getAllFlags()[flagKey];
     return (
-      server?.getValue(flagKey, {
-        skipAnalytics: false,
-        json: true,
-        ...(defaultValue === undefined || typeof defaultValue === 'object'
-          ? {}
-          : { fallback: defaultValue }),
-      }) ??
+      extractFlagValue(flagKey, flag) ??
       defaultValue ??
-      AllFeatureFlagsDefault[flagKey]
+      (AllFeatureFlagsDefault[flagKey] as FeatureFlagValueType<typeof flagKey>)
     );
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       source: 'Flagsmith',
       log: true,
     });
-    return defaultValue;
+    return (
+      defaultValue ??
+      (AllFeatureFlagsDefault[flagKey] as FeatureFlagValueType<typeof flagKey>)
+    );
   }
 };
 
@@ -82,19 +95,15 @@ export const getAllFeatureFlags = async (userId?: string) => {
     const flags = server.getAllFlags();
     return Object.entries(flags).reduce(
       (acc, [key, value]) => {
-        if (isKeyOf(key, KnownFeature)) {
-          acc[key] = value
-            ? typeof value === 'boolean'
-              ? value
-              : {
-                  enabled: true,
-                  value,
-                }
-            : AllFeatureFlagsDefault[key];
+        if (isKnownFeatureType(key)) {
+          const flagValue = extractFlagValue(key, value);
+          if (flagValue !== null) {
+            acc[key] = flagValue;
+          }
         }
         return acc;
       },
-      {} as Record<KnownFeatureType, FeatureFlagStatus>,
+      {} as Record<KnownFeatureType, FeatureFlagValueType<KnownFeatureType>>,
     );
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {

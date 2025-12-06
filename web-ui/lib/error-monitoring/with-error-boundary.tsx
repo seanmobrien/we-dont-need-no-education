@@ -16,7 +16,6 @@ interface WithErrorBoundaryConfig {
   isolate?: boolean; // If true, errors won't bubble up to parent boundaries
 }
 
-
 export function withErrorBoundary<P extends object>(
   WrappedComponent: ComponentType<P>,
   config: WithErrorBoundaryConfig = {},
@@ -42,13 +41,15 @@ export function withErrorBoundary<P extends object>(
         )}
         onError={(error, errorInfo) => {
           // Report the error with component context
-          errorReporter.reportBoundaryError(
-            error,
-            {
-              componentStack: errorInfo.componentStack || undefined,
-              errorBoundary: `${componentName}ErrorBoundary`,
-            },
-            severity,
+          errorReporter((r) =>
+            r.reportBoundaryError(
+              error,
+              {
+                componentStack: errorInfo.componentStack || undefined,
+                errorBoundary: `${componentName}ErrorBoundary`,
+              },
+              severity,
+            ),
           );
 
           // Prevent error from bubbling if isolation is enabled
@@ -75,7 +76,6 @@ export function withErrorBoundary<P extends object>(
 
   return WithErrorBoundaryComponent;
 }
-
 
 export function ErrorBoundaryDecorator(config?: WithErrorBoundaryConfig) {
   return function <T extends ComponentType<Record<string, unknown>>>(
@@ -113,13 +113,15 @@ export function ErrorBoundaryWrapper({
       )}
       onError={(error, errorInfo) => {
         // Report the error
-        errorReporter.reportBoundaryError(
-          error,
-          {
-            componentStack: errorInfo.componentStack || undefined,
-            errorBoundary: name,
-          },
-          ErrorSeverity.MEDIUM,
+        errorReporter((r) =>
+          r.reportBoundaryError(
+            error,
+            {
+              componentStack: errorInfo.componentStack || undefined,
+              errorBoundary: name,
+            },
+            ErrorSeverity.MEDIUM,
+          ),
         );
 
         // Custom error handler

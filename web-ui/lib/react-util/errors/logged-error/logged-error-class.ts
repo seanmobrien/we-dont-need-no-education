@@ -1,7 +1,7 @@
 // Documentation is authoritative in: lib/react-util/errors/logged-error.d.ts
 // The runtime implementation remains here. Keep implementation edits minimal.
 
-import { errorLogFactory, log } from '@/lib/logger';
+import { errorLogFactory as standardErrorLogFactory, log, safeSerialize } from '@/lib/logger';
 import {
   isAbortError,
   isError,
@@ -9,9 +9,9 @@ import {
 } from './../../utility-methods';
 import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
 import { asKnownSeverityLevel } from '@/lib/logger/constants';
-import { reporter } from './../logged-error-reporter';
-import { TurtleRecursionParams, LoggedErrorOptions } from './types';
+import type { TurtleRecursionParams, LoggedErrorOptions, ErrorReportArgs } from './types';
 import { ProgressEventError } from '../progress-event-error';
+import mitt from 'next/dist/shared/lib/mitt';
 
 /**
  * A unique symbol used to brand `LoggedError` class instances for runtime type checking.
@@ -22,7 +22,7 @@ import { ProgressEventError } from '../progress-event-error';
  * @private
  * @readonly
  */
-const brandLoggedError = Symbol.for('@no-education/LoggedError');
+const brandLoggedError: unique symbol = Symbol.for('@no-education/LoggedError');
 /**
  * The underlying Error object that this LoggedError wraps.
  *
@@ -33,7 +33,7 @@ const brandLoggedError = Symbol.for('@no-education/LoggedError');
  * @private
  * @readonly
  */
-const INNER_ERROR = Symbol.for('@no-education/LoggedError::InnerError');
+const INNER_ERROR: unique symbol = Symbol.for('@no-education/LoggedError::InnerError');
 /**
  * Whether this error is classified as critical.
  *
@@ -44,10 +44,25 @@ const INNER_ERROR = Symbol.for('@no-education/LoggedError::InnerError');
  * @private
  * @readonly
  */
-const CRITICAL = Symbol.for('@no-education/LoggedError::CriticalFlag');
+const CRITICAL: unique symbol = Symbol.for('@no-education/LoggedError::CriticalFlag');
+
 
 // LoggedError class implementation.  Type and extensive documentation in .d.ts.
-export class LoggedError implements Error {
+export class LoggedError extends Error {
+  static #errorReportEmitter = mitt();
+  static subscribeToErrorReports(callback: (args: ErrorReportArgs) => void) {
+    this.#errorReportEmitter.on('errorReported', callback);
+  }
+  static unsubscribeFromErrorReports(callback: (args: ErrorReportArgs) => void) {
+    this.#errorReportEmitter.off('errorReported', callback);
+  }
+  static clearErrorReportSubscriptions() {
+    // no good way to clear/enumerate mitt subscriptions, but we can create a
+    // new emitter and throw away the old one.
+    this.#errorReportEmitter = mitt();
+  }
+
+
   // Type guard to check if an object is a LoggedError instance.
   static isLoggedError(e: unknown): e is LoggedError {
     return (
@@ -60,38 +75,63 @@ export class LoggedError implements Error {
   }
 
   // Recursively unwraps nested errors and ensures the result is a LoggedError.
+  // We know the name isn't professional.  9 out of 10 programming dentists agree
+  // it's still really funny, and we're keeping it...drop it Gemini/Copilot/Claude.
   static isTurtlesAllTheWayDownBaby(
     e: unknown,
-    {
-      log: shouldLog = false,
+    options?: TurtleRecursionParams,
+  ): LoggedError {
+    const {
+      log: logFromProps = false,
       relog = false,
       logCanceledOperation = false,
       source = 'Turtles, baby',
       message,
       critical,
+      errorLogFactory = standardErrorLogFactory,
       ...itsRecusionMan
-    }: TurtleRecursionParams = { log: false },
-  ): LoggedError {
+    } = options ?? ({ log: false } as TurtleRecursionParams)
+    let shouldLog = logFromProps;
+    const isArgLoggedError = LoggedError.isLoggedError(e);
+    const isArgError = !isArgLoggedError && isError(e);
+    const isArgProgressEvent = !isArgLoggedError && !isArgError && isProgressEvent(e);
+
     if (
-      arguments.length === 1 &&
-      typeof e === 'object' &&
-      e !== null &&
-      'error' in e &&
-      isError(e.error) &&
-      ('critical' in e || 'log' in e || 'source' in e)
+      // If e is a non-null object
+      typeof e === 'object' && e !== null &&
+      // And it's not a logged error, error, or progress event
+      (!(isArgLoggedError || isArgError || isArgProgressEvent))
+      // And it has an error property
+      && 'error' in e
+      // And that error property is an error
+      && isError(e.error)
     ) {
-      // We've been passed a composite error object...extract error and try again
+      // Then we've been passed a composite error object...extract the error from error and try again.
       const { error: theError, ...allTheRest } = e;
       return LoggedError.isTurtlesAllTheWayDownBaby(
         theError,
-        allTheRest as TurtleRecursionParams,
+        {
+          log: false,
+          ...allTheRest,
+          ...(options ?? {})
+        }
       );
     }
-    const isLoggedError = LoggedError.isLoggedError(e);
-    if (shouldLog && (!isLoggedError || relog !== true)) {
-      if (!isError(e)) {
-        // Some dependencies will throw a ProgressEvent instead of an errror
-        if (isProgressEvent(e)) {
+    // If the shouldLog bit is true, we need to determine if this instance should be emitted for logging 
+    if (shouldLog) {
+      // If this is a logged error we by default do not want to re-log
+      if (isArgLoggedError) {
+        // So we reset the shouldLog bit based on the relog option
+        shouldLog = relog === true;
+      } else if (isArgError) {
+        // If this is an abort error and logCanceledOperation is disabled, skip logging
+        if (!logCanceledOperation && isAbortError(e)) {
+          shouldLog = false;
+        }
+      } else {
+        // If this is not an error then check to see if it's a progress event
+        if (isArgProgressEvent) {
+          // and if so wrap it in an ProgressEventError and pass it back to the turtles
           return LoggedError.isTurtlesAllTheWayDownBaby(
             new ProgressEventError(e),
             {
@@ -104,65 +144,84 @@ export class LoggedError implements Error {
               ...itsRecusionMan,
             },
           );
-        } else {
-          log((l) =>
-            l.warn({ message: 'Some bonehead threw a not-error', error: e }),
-          );
-          debugger;
         }
-      }
-      if (logCanceledOperation || !isAbortError(e)) {
-        const logObject = errorLogFactory({
-          error: e,
-          source,
-          message,
-          ...itsRecusionMan,
-        });
-        reporter()
-          .then((instance) => {
-            instance.reportError({
-              error: e,
-              severity: asKnownSeverityLevel(logObject.severity),
-              context: {
-                source,
-                message,
-                stack: getStackTrace({ skip: 2 }),
-                ...itsRecusionMan,
-              },
-            });
-          })
-          .catch((fail) => {
-            log((l) => l.error('Failed to report error', { error: fail }));
-          });
+        // Otherwise we are not a logged error, we are not an error, we are not a progress event,
+        // and we are not a wrapped composite error object - Not really sure what use case this is.
+        log((l) =>
+          l.warn(`Some bonehead threw a not-error. Input: ${safeSerialize(e)
+            }\nStack Trace: ${getStackTrace({ skip: 1, myCodeOnly: true })
+            }`)
+        );
+        // We will log this using best-effort conversion to a LoggedError
       }
     }
-    if (isLoggedError) {
-      return e;
+    // Create the LoggedError instance from our input
+    let newLoggedError: LoggedError;
+    if (isArgLoggedError) {
+      // If we already have a LoggedError this is a passthrough
+      newLoggedError = e;
+    } else if (isArgError) {
+      // If we have a traditional Error instance then construct a LoggedError from it
+      newLoggedError = new LoggedError(e, { critical });
+    } else {
+      // Otherwise we have the "bonehead threw a non-error" use case...Convert the input
+      // as a string and use it as the message for a new Error instance.
+      newLoggedError = new LoggedError(new Error(String(e)), { critical });
     }
-    return isError(e)
-      ? new LoggedError(e, { critical })
-      : new LoggedError(new Error(String(e)));
+    // Now we have our error and we know whether it's eligible for emitting...all thats left
+    // to do is actually emit it :)
+    if (shouldLog) {
+      // And if so, emit away!
+      const logObject = errorLogFactory({
+        error: e,
+        source,
+        message,
+        ...itsRecusionMan,
+      });
+      LoggedError.#errorReportEmitter.emit('errorReported', {
+        error: e,
+        severity: asKnownSeverityLevel(logObject.severity),
+        context: {
+          stack: getStackTrace({ skip: 2 }),
+          ...{
+            ...logObject,
+            error: undefined,
+            source,
+            message,
+          },
+        },
+      });
+    }
+    // And finally return the fancy new LoggedError instance
+    return newLoggedError;
   }
 
   // Builds a descriptive message from various input types, handling recursion and cycles.
-  static buildMessage(options: unknown, visited?: Set<unknown>): string {
+  static buildMessage(options: unknown): string {
     if (!options) {
       return 'null or undefined error';
     }
+    // For error we just use the message
     if (isError(options)) {
       return options.message;
     }
-    if (typeof options === 'object' && options !== null && 'error' in options) {
-      if (!visited) {
-        visited = new Set();
+    // Otherwise if its an object...
+    if (typeof options === 'object' && options !== null) {
+      // Wrapping an error then return the wrapped error message
+      if ('error' in options && isError(options.error)) {
+        return options.error.message;
       }
-      if (visited.has(options)) {
-        return '[circular error reference]';
+      // Otherwise serialize the object
+      const serialized = safeSerialize(options).trim();
+      // If that had data then return it
+      if (serialized.length) {
+        return `Error: ${serialized}`;
       }
-      visited.add(options);
-      return this.buildMessage(options.error as unknown, visited);
+      // And if it was empty then return the stringified version
+      return safeSerialize(options.toString(), 7000);
     }
-    return options.toString();
+    // Otherwise just return the stringified version
+    return safeSerialize(options, 7000);
   }
 
   // Customizes the string tag for better identification in logs and debuggers.
@@ -181,21 +240,20 @@ export class LoggedError implements Error {
     const _fingerprintValue = getWithFallback('fingerprint');
     const _sourceValue = getWithFallback('source');
 
-    return `LoggedError${
-      _fingerprintValue ? ` (Fingerprint: ${_fingerprintValue}) ` : ''
-    }${_sourceValue ? ` [Source: ${_sourceValue}] ` : ''}: ${
-      this[CRITICAL] ? 'CRITICAL - ' : ''
-    }${LoggedError.buildMessage(this)}`;
+    return `LoggedError${_fingerprintValue ? ` (Fingerprint: ${_fingerprintValue}) ` : ''
+      }${_sourceValue ? ` [Source: ${_sourceValue}] ` : ''}: ${this[CRITICAL] ? 'CRITICAL - ' : ''
+      }${LoggedError.buildMessage(this)}`;
   }
 
   // Constructor overloads to handle various input scenarios.
-  constructor(
+  private constructor(
     message: string | LoggedErrorOptions | Error,
     options?:
       | (Omit<LoggedErrorOptions, 'error'> &
-          Partial<Pick<LoggedErrorOptions, 'error'>>)
+        Partial<Pick<LoggedErrorOptions, 'error'>>)
       | Error,
   ) {
+    super();
     let ops: LoggedErrorOptions;
     if (typeof message === 'string') {
       if (options) {
@@ -293,9 +351,14 @@ export const dumpError = (e: unknown): string => {
       ret += `\nCaused by: ${dumpError(e.cause)}`;
     }
   } else if (typeof e === 'object' && e !== null) {
-    ret = JSON.stringify(e, null, 5);
+    ret = safeSerialize(e, {
+      maxObjectDepth: 5,
+      propertyFilter: LoggedError.isLoggedError(e)
+        ? (_key, propertyPath) => propertyPath !== 'cause.cause'
+        : undefined,
+    });
   } else {
-    ret = String(e);
+    ret = safeSerialize(e);
   }
   return ret;
 };

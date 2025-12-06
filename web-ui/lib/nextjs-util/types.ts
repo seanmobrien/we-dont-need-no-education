@@ -6,3 +6,4 @@ export type LikeNextRequest = NextApiRequest | NextRequest;
 export type LikeNextResponse<Data = unknown> =
   | NextApiResponse<Data>
   | NextResponse<Data>;
+

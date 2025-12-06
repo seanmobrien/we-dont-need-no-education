@@ -97,6 +97,9 @@ const buildRawInstance = () => {
     AZURE_STORAGE_ACCOUNT_NAME: process.env.AZURE_STORAGE_ACCOUNT_NAME,
     /*** Flagsmith server-side SDK key, supporting update and privledged server-side reads */
     FLAGSMITH_SDK_KEY: process.env.FLAGSMITH_SDK_KEY,
+    /** Google Chrome DevTools workspace ID for app-specific integration. Example: 'a7c3f8e2-4b9d-4f1a-8c6e-5d2a3b7e9f4c' */
+    GOOGLE_CHROME_DEVTOOLS_WORKSPACE_ID:
+      process.env.GOOGLE_CHROME_DEVTOOLS_WORKSPACE_ID,
     /** Google Generative AI API key for Gemini models. Example: 'AIzaSyA1234567890abcdef...' */
     GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     /** Google Generative AI service base URL. Example: 'https://generativelanguage.googleapis.com/v1beta' */
@@ -222,6 +225,7 @@ const serverEnvSchema = z
       .describe(
         'Azure AI Search index name for storing document vectors and metadata. Example: documents-prod',
       ),
+
     AZURE_OPENAI_DEPLOYMENT_CHAT: z
       .string()
       .optional()
@@ -242,12 +246,14 @@ const serverEnvSchema = z
       .describe(
         'Azure OpenAI endpoint URL for embedding services (fallback to main endpoint). Example: https://myembeddings.openai.azure.com/',
       ),
+
     AZURE_OPENAI_KEY_EMBEDDING: z
       .string()
       .default(process.env.AZURE_OPENAI_KEY ?? '')
       .describe(
         'Azure OpenAI API key for embedding services (fallback to main key). Example: embed123key456...',
       ),
+
     AZURE_OPENAI_DEPLOYMENT_HIFI: z
       .string()
       .optional()
@@ -275,6 +281,7 @@ const serverEnvSchema = z
       .describe(
         'Azure OpenAI endpoint URL for completion services (fallback to main endpoint). Example: https://mycompletions.openai.azure.com/',
       ),
+
     AZURE_OPENAI_KEY_COMPLETIONS: z
       .string()
       .default(process.env.AZURE_OPENAI_KEY ?? '')
@@ -288,25 +295,25 @@ const serverEnvSchema = z
         'Azure AI Search index name for storing policy document vectors and metadata. Example: policies-prod',
       ),
     AZURE_AISEARCH_VECTOR_SIZE_SMALL: z
-      .number()
+      .coerce.number()
       .default(1536)
       .describe(
         'Vector dimension size for small embeddings in Azure AI Search. Default: 1536. Example: 1536',
       ),
     AZURE_AISEARCH_VECTOR_SIZE_LARGE: z
-      .number()
+      .coerce.number()
       .default(3072)
       .describe(
         'Vector dimension size for large embeddings in Azure AI Search. Default: 3072. Example: 3072',
       ),
     AZURE_AISEARCH_DOCUMENT_SPLITTER_OVERLAP: z
-      .number()
+      .coerce.number()
       .default(15)
       .describe(
         'Token overlap count when splitting documents for search indexing. Default: 15. Example: 20',
       ),
     AZURE_AISEARCH_DOCUMENT_SPLITTER_MAX_TOKENS: z
-      .number()
+      .coerce.number()
       .default(512)
       .describe(
         'Maximum tokens per document chunk during splitting for indexing. Default: 512. Example: 512',
@@ -356,6 +363,12 @@ const serverEnvSchema = z
       .describe(
         'Flagsmith server-side SDK key for feature flag management and privileged reads.',
       ),
+    GOOGLE_CHROME_DEVTOOLS_WORKSPACE_ID: z
+      .string()
+      .default('a7c3f8e2-4b9d-4f1a-8c6e-5d2a3b7e9f4c')
+      .describe(
+        'Google Chrome DevTools workspace ID for app-specific integration. See {@link https://stackoverflow.com/questions/79629915/well-known-appspecific-com-chrome-devtools-json-request/79631068#79631068}',
+      ),
     GOOGLE_GENERATIVE_AI_API_KEY: z
       .string()
       .min(1)
@@ -363,6 +376,7 @@ const serverEnvSchema = z
       .describe(
         'Google Generative AI API key for Gemini model access (optional). Example: AIzaSyA1234567890abcdef...',
       ),
+
     GOOGLE_GENERATIVE_AI_BASE_URL: ZodProcessors.url()
       .default('https://generativelanguage.googleapis.com/v1beta')
       .describe(
@@ -389,6 +403,7 @@ const serverEnvSchema = z
       .describe(
         'Google Generative AI embedding model name. Default: google-embedding. Example: text-embedding-004',
       ),
+
     AUTH_KEYCLOAK_CLIENT_ID: z
       .string()
       .min(1)
@@ -507,6 +522,7 @@ const serverEnvSchema = z
       .describe(
         'OpenAI API key for direct OpenAI service access (optional - Azure OpenAI preferred). Example: sk-1234567890abcdef...',
       ),
+
     OPENAI_HIFI: z
       .string()
       .optional()

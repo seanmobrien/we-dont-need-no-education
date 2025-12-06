@@ -1,8 +1,7 @@
 'use client'; // Error boundaries must be Client Components
 
 import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
-import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
-import { useEffect } from 'react';
+import { useProcessedError } from '@/lib/error-monitoring/use-processed-error';
 
 type ErrorWithDigest = Error & { digest?: string };
 
@@ -13,21 +12,21 @@ export default function Error({
   error: ErrorWithDigest;
   reset: () => void;
 }) {
-  useEffect(() => {
-    if (error) {
-      errorReporter.reportBoundaryError(
-        error,
-        {
-          errorBoundary: 'MessagesError',
-        },
-        ErrorSeverity.MEDIUM,
-      );
-    }
-  }, [error]);
+  const { processedError } = useProcessedError({
+    error,
+    reset,
+    errorBoundary: 'MessagesError',
+  });
 
+  if (!processedError) {
+    return <></>;
+  }
   return (
     <div>
-      <RenderErrorBoundaryFallback error={error} resetErrorBoundary={reset} />
+      <RenderErrorBoundaryFallback
+        error={processedError}
+        resetErrorBoundary={reset}
+      />
     </div>
   );
 }

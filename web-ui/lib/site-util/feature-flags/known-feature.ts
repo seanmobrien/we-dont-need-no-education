@@ -1,90 +1,72 @@
-import { AiProvider, ModelType } from '@/components/ai/chat-panel/types';
+import { isKeyOf } from '@/lib/typescript';
 
-export const KnownFeatureValues = [
+export const BooleanFeatureFlagValues = [
   'mem0_mcp_tools_enabled',
-  'mcp_cache_tools',
-  'mcp_cache_client',
-  'mcp_max_duration',
-  'mcp_protocol_http_stream',
-  'mcp_trace_level',
+  'models_fetch_enhanced',
+  'models_fetch_dedup_writerequests',
   'models_azure',
-  'models_defaults',
   'models_openai',
   'models_google',
+  'mcp_cache_tools',
+  'mcp_cache_client',
+  'mcp_protocol_http_stream',
+] as const;
+export const NumberFeatureFlagValues = [
   'models_fetch_cache_ttl',
   'models_fetch_concurrency',
-  'models_fetch_enhanced',
-  'models_fetch_stream_buffer',
-  'models_fetch_trace_level',
+  'models_fetch_stream_max_chunks',
+  'models_fetch_stream_max_total_bytes',
   'health_database_cache_ttl',
   'health_memory_cache_ttl',
+  'health_memory_cache_error_ttl',
+  'health_memory_cache_warning_ttl',
   'health_startup_failure_threshold',
+  'mcp_max_duration',
 ] as const;
+export const StringFeatureFlagValues = [
+  'mcp_trace_level',
+  'models_fetch_trace_level',
+  'todo_storage_strategy',
+] as const;
+export const ObjectFeatureFlagValues = [
+  'models_fetch_stream_buffer',
+  'models_defaults',
+  'todo_storage_in_memory_config',
+  'todo_storage_redis_config',
+  'models_config_azure',
+  'models_config_openai',
+  'models_config_google',
+  'health_checks',
+] as const;
+
+export type NumberFeatureFlagType = (typeof NumberFeatureFlagValues)[number];
+export type BooleanFeatureFlagType = (typeof BooleanFeatureFlagValues)[number];
+export type StringFeatureFlagType = (typeof StringFeatureFlagValues)[number];
+export type ObjectFeatureFlagType = (typeof ObjectFeatureFlagValues)[number];
+
+export const KnownFeatureValues = [
+  ...BooleanFeatureFlagValues,
+  ...NumberFeatureFlagValues,
+  ...StringFeatureFlagValues,
+  ...ObjectFeatureFlagValues,
+] as const;
+
 export type KnownFeatureType = (typeof KnownFeatureValues)[number];
 
+export const KnownFeatureKeyMap: Readonly<
+  Record<KnownFeatureType, KnownFeatureType>
+> = KnownFeatureValues.reduce(
+  (acc, value) => ({ ...acc, [value]: value }) as const,
+  {} as Readonly<Record<KnownFeatureType, KnownFeatureType>>,
+);
+
+export const isKnownFeatureBooleanType = (
+  check: unknown,
+): check is BooleanFeatureFlagType => isKeyOf(check, BooleanFeatureFlagValues);
+
+export const isKnownFeatureObjectType = (
+  check: unknown,
+): check is ObjectFeatureFlagType => isKeyOf(check, ObjectFeatureFlagValues);
+
 export const isKnownFeatureType = (check: unknown): check is KnownFeatureType =>
-  !!check &&
-  KnownFeatureValues.some(
-    (value) => String(value) === String(check).toLocaleLowerCase(),
-  );
-export const KnownFeature: Record<KnownFeatureType, KnownFeatureType> =
-  KnownFeatureValues.reduce(
-    (acc, value) => ({ ...acc, [value]: value }),
-    {} as Record<KnownFeatureType, KnownFeatureType>,
-  );
-
-export type FeatureFlagStatus =
-  | boolean
-  | number
-  | string
-  | {
-      enabled: boolean;
-      value?: string | number | object | boolean;
-    }
-  | {
-      value?: string | number | object | boolean;
-      max: number;
-      detect: number;
-    };
-export type AllFeatureFlagStatus = Record<KnownFeatureType, FeatureFlagStatus>;
-
-export const AllFeatureFlagsDefault = {
-  mem0_mcp_tools_enabled: true as boolean,
-  models_fetch_cache_ttl: 300 as number,
-  models_fetch_concurrency: 8 as number,
-  models_fetch_enhanced: true as boolean,
-  models_fetch_stream_buffer: {
-    enabled: true,
-    value: {
-      max: (64 * 1024) as number,
-      detect: (4 * 1024) as number,
-    },
-  },
-  models_fetch_trace_level: 'warn' as string,
-  models_azure: true as boolean,
-  models_openai: false as boolean,
-  models_google: true as boolean,
-  models_defaults: {
-    enabled: true as boolean,
-    value: {
-      provider: 'azure' as AiProvider,
-      chat_model: 'lofi' as ModelType,
-      tool_model: 'lofi' as ModelType,
-    },
-  },
-  mcp_cache_tools: false as boolean,
-  mcp_cache_client: true as boolean,
-  mcp_max_duration: (1000 * 60 * 15) as number,
-  mcp_protocol_http_stream: false as boolean,
-  mcp_trace_level: 'warn' as string,
-  health_database_cache_ttl: 120 as number,
-  health_memory_cache_ttl: 60 as number,
-  health_startup_failure_threshold: 10 as number,
-} as const satisfies AllFeatureFlagStatus;
-
-export type AllFeatureFlagDefaultType = typeof AllFeatureFlagsDefault;
-
-export type FeatureFlagValueType<K extends KnownFeatureType> =
-  K extends keyof AllFeatureFlagDefaultType
-    ? Pick<AllFeatureFlagDefaultType, K>[K]
-    : never;
+  isKeyOf(check, KnownFeatureValues);

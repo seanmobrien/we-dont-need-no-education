@@ -28,6 +28,14 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
+      # Extract short SHA for use throughout workflow
+      - name: Extract short SHA
+        id: sha
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "short=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "::notice::Short SHA: $SHORT_SHA"
+
       # Validate all required secrets exist (fail-fast principle)
       - name: Validate required secrets and configuration
         run: |
@@ -87,8 +95,8 @@ jobs:
           
           echo "::group::Creating build environment file"
           
-          # Create .env.production with all build-time variables
-          cat << 'ENV_EOF' > ./web-ui/.env.production
+          # Create .env.production.local with all build-time variables
+          cat << 'ENV_EOF' > ./web-ui/.env.production.local
           # Public variables (safe to embed in client bundle)
           NEXT_PUBLIC_MUI_LICENSE=${{ secrets.NEXT_PUBLIC_MUI_LICENSE }}
           NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
@@ -132,12 +140,12 @@ jobs:
           ENV_EOF
           
           # Validate the file was created
-          if [ ! -f ./web-ui/.env.production ]; then
-            echo "::error::Failed to create .env.production file"
+          if [ ! -f ./web-ui/.env.production.local ]; then
+            echo "::error::Failed to create .env.production.local file"
             exit 1
           fi
           
-          echo "✅ Build environment file created with $(wc -l < ./web-ui/.env.production) variables"
+          echo "✅ Build environment file created with $(wc -l < ./web-ui/.env.production.local) variables"
           echo "::endgroup::"
 
       - name: Extract Docker metadata
@@ -149,6 +157,7 @@ jobs:
             type=ref,event=branch
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value={{branch}}-${{ steps.sha.outputs.short }}
 
       # Build Docker image with environment file
       - name: Build and push Docker image
@@ -166,14 +175,51 @@ jobs:
             BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
             VCS_REF=${{ github.sha }}
             VERSION=${{ github.ref_name }}
+            NEXT_PUBLIC_HOSTNAME=${{ vars.NEXT_PUBLIC_HOSTNAME }}
+            NEXT_PUBLIC_LOG_LEVEL_CLIENT=${{ vars.NEXT_PUBLIC_LOG_LEVEL_CLIENT }}
+            NEXT_PUBLIC_DEFAULT_AI_MODEL=${{ vars.NEXT_PUBLIC_DEFAULT_AI_MODEL }}
+            NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=15
+            NEXT_PUBLIC_FLAGSMITH_API_URL=${{ vars.NEXT_PUBLIC_FLAGSMITH_API_URL }}
+            NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID=${{ vars.NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID }}
+            OTEL_SERVICE_NAME=${{ vars.OTEL_SERVICE_NAME }}
+            OTEL_RESOURCE_ATTRIBUTES=${{ vars.OTEL_RESOURCE_ATTRIBUTES }}
+            RATE_RETRY_INTERVAL_MINUTES=${{ vars.RATE_RETRY_INTERVAL_MINUTES }}
+            AZURE_OPENAI_ENDPOINT=${{ vars.AZURE_OPENAI_ENDPOINT }}
+            AZURE_AISEARCH_ENDPOINT=${{ vars.AZURE_AISEARCH_ENDPOINT }}
+            AZURE_AISEARCH_DOCUMENTS_INDEX_NAME=${{ vars.AZURE_AISEARCH_DOCUMENTS_INDEX_NAME }}
+            AZURE_AISEARCH_POLICY_INDEX_NAME=${{ vars.AZURE_AISEARCH_POLICY_INDEX_NAME }}
+            AZURE_STORAGE_ACCOUNT_NAME=${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}
+            AZURE_STORAGE_CONNECTION_STRING=${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+            MEM0_API_HOST=${{ vars.MEM0_API_HOST }}
+            MEM0_UI_HOST=${{ vars.MEM0_UI_HOST }}
+            MEM0_USERNAME=${{ vars.MEM0_USERNAME }}
+          secrets: |
+            AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+            AZURE_AISEARCH_KEY=${{ secrets.AZURE_AISEARCH_KEY }}
+            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+            FLAGSMITH_SDK_KEY=${{ secrets.FLAGSMITH_SDK_KEY }}
+            OPENID_KEY_TEXT=${{ secrets.OPENID_KEY_TEXT }}
+            NEXT_PUBLIC_MUI_LICENSE=${{ secrets.NEXT_PUBLIC_MUI_LICENSE }}
+            NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
+            REDIS_URL=${{ secrets.REDIS_URL }}
+            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+            AUTH_GOOGLE_APIKEY=${{ secrets.AUTH_GOOGLE_APIKEY }}
+            AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+            AUTH_GOOGLE_ID=${{ secrets.AUTH_GOOGLE_ID }}
+            AZURE_STORAGE_ACCOUNT_KEY=${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
+            AZURE_STORAGE_CONNECTION_STRING=${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+            OPENID_KEY_TEXT=${{ secrets.OPENID_KEY_TEXT }}
+            FLAGSMITH_SDK_KEY=${{ secrets.FLAGSMITH_SDK_KEY }}
           secret-files: |
-            "env_file=./web-ui/.env.production"
+            "env_file=./web-ui/.env.production.local"
 
       # Clean up sensitive files immediately after build
       - name: Cleanup sensitive files
         if: always()
         run: |
-          rm -f ./web-ui/.env.production
+          rm -f ./web-ui/.env.production.local
           echo "✅ Sensitive files removed"
 
       # Extract and validate deploy tag with audit logging
@@ -188,17 +234,18 @@ jobs:
           echo "::notice::Deployment Context"
           echo "::notice::  Branch: ${{ github.ref_name }}"
           echo "::notice::  Commit: ${{ github.sha }}"
+          echo "::notice::  Short SHA: ${{ steps.sha.outputs.short }}"
           echo "::notice::  Actor: ${{ github.actor }}"
           echo "::notice::  Run ID: ${{ github.run_id }}"
           echo "::notice::  Triggered by: ${{ github.event_name }}"
           
           # Extract deploy tag from metadata
-          DEPLOY_TAG=$(echo "${{ steps.meta.outputs.tags }}" | grep "${{ github.ref_name }}-${{ github.sha }}" | head -n1 || true)
+          DEPLOY_TAG=$(echo "${{ steps.meta.outputs.tags }}" | grep "${{ github.ref_name }}-${{ steps.sha.outputs.short }}" | head -n1 || true)
           
           # Validate tag was extracted
           if [ -z "$DEPLOY_TAG" ]; then
             echo "::error::Failed to extract deploy tag"
-            echo "::error::Pattern: ${{ github.ref_name }}-${{ github.sha }}"
+            echo "::error::Pattern: ${{ github.ref_name }}-${{ steps.sha.outputs.short }}"
             echo "::error::Available tags:"
             echo "${{ steps.meta.outputs.tags }}" | while IFS= read -r line; do
               echo "::error::  - $line"
@@ -223,13 +270,13 @@ jobs:
           acrName: schoollawregistry
           containerAppName: full-ui
           resourceGroup: SchoolLawyer
-        env:
-          # Deployment metadata for audit trail
-          DEPLOY_TIMESTAMP: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          DEPLOY_ACTOR: ${{ github.actor }}
-          DEPLOY_RUN_ID: ${{ github.run_id }}
-          DEPLOY_COMMIT: ${{ github.sha }}
-          DEPLOY_BRANCH: ${{ github.ref_name }}
+        #env:
+        #  # Deployment metadata for audit trail
+        #  DEPLOY_TIMESTAMP: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        #  DEPLOY_ACTOR: ${{ github.actor }}
+        #  DEPLOY_RUN_ID: ${{ github.run_id }}
+        #  DEPLOY_COMMIT: ${{ github.sha }}
+        #  DEPLOY_BRANCH: ${{ github.ref_name }}
 
       # Post-deployment verification and audit logging
       - name: Verify deployment and create audit log
@@ -258,7 +305,7 @@ jobs:
           Source Control:
             - Repository: ${{ github.repository }}
             - Branch: ${{ github.ref_name }}
-            - Commit: ${{ github.sha }}
+            - Commit: ${{ steps.sha.outputs.short }} ( ${{ github.sha }} )
           
           Workflow:
             - Triggered by: ${{ github.event_name }}

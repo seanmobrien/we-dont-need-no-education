@@ -1,18 +1,15 @@
 import type {
-  KnownFeature,
-  AllFeatureFlagsDefault,
+  KnownFeatureKeyMap,
   KnownFeatureType,
-  FeatureFlagStatus,
-  AllFeatureFlagStatus,
 } from './known-feature';
 
-import type { FeatureFlagsApi, defaultFlags } from './context';
-
 import type {
-  getFeatureFlag,
-  getAllFeatureFlags,
-  flagsmithServer,
-} from './server';
+  AllFeatureFlagType,
+  FeatureFlagStatus,
+  AllFeatureFlagStatus,
+} from './types';
+
+import type { FeatureFlagsApi, defaultFlags } from './context';
 
 declare module '@/lib/site-util/feature-flags' {
   /**
@@ -24,8 +21,8 @@ declare module '@/lib/site-util/feature-flags' {
    */
 
   export type {
-    KnownFeature,
-    AllFeatureFlagsDefault,
+    KnownFeatureKeyMap as KnownFeature,
+    AllFeatureFlagType as AllFeatureFlagsDefault,
     KnownFeatureType,
     FeatureFlagStatus,
     AllFeatureFlagStatus,
@@ -101,6 +98,4 @@ declare module '@/lib/site-util/feature-flags' {
    * @returns All feature flags as AllFeatureFlagStatus
    */
   export function useAIFeatureFlags(): AllFeatureFlagStatus;
-
-  export type { getFeatureFlag, getAllFeatureFlags, flagsmithServer };
 }

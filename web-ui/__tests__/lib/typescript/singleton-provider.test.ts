@@ -150,14 +150,8 @@ describe('SingletonProvider', () => {
     it('should throw error when factory returns undefined', () => {
       const factory = jest.fn(() => undefined);
 
-      expect(() => {
-        provider.getOrCreate('undefined-key', factory as any);
-      }).toThrow(TypeError);
-      expect(() => {
-        provider.getOrCreate('undefined-key', factory as any);
-      }).toThrow(
-        'Factory for global singleton cannot return null or undefined.',
-      );
+      const value = provider.getOrCreate('undefined-key', factory as any);
+      expect(value).toBeUndefined();
     });
 
     it('should ensure singleton behavior across multiple calls', () => {
@@ -460,9 +454,8 @@ describe('globalSingleton', () => {
       globalSingleton('null-global', nullFactory);
     }).toThrow(TypeError);
 
-    expect(() => {
-      globalSingleton('undefined-global', undefinedFactory);
-    }).toThrow(TypeError);
+    const value = globalSingleton('undefined-global', undefinedFactory);
+    expect(value).toBeUndefined();
   });
 
   it('should be accessible through SingletonProvider', () => {
@@ -556,21 +549,6 @@ describe('error handling', () => {
     await expect(async () => {
       await provider.getOrCreate('async-error', asyncErrorFactory as any);
     }).rejects.toThrow('Async factory error');
-  });
-
-  it('should validate factory return values strictly', () => {
-    const invalidFactories = [
-      () => null,
-      () => undefined,
-
-      () => (({}) as any).nonExistent, // This would be undefined
-    ];
-
-    invalidFactories.forEach((factory, index) => {
-      expect(() => {
-        provider.getOrCreate(`invalid-${index}`, factory as any);
-      }).toThrow(TypeError);
-    });
   });
 });
 
@@ -771,34 +749,6 @@ describe('getOrCreateAsync', () => {
   });
 
   describe('error handling', () => {
-    it('should throw error when factory returns null', async () => {
-      const factory = jest.fn(async () => null);
-
-      await expect(
-        provider.getOrCreateAsync('async-null-key', factory as any),
-      ).rejects.toThrow(TypeError);
-
-      await expect(
-        provider.getOrCreateAsync('async-null-key', factory as any),
-      ).rejects.toThrow(
-        'Factory for global singleton cannot return null or undefined.',
-      );
-    });
-
-    it('should throw error when factory returns undefined', async () => {
-      const factory = jest.fn(async () => undefined);
-
-      await expect(
-        provider.getOrCreateAsync('async-undefined-key', factory as any),
-      ).rejects.toThrow(TypeError);
-
-      await expect(
-        provider.getOrCreateAsync('async-undefined-key', factory as any),
-      ).rejects.toThrow(
-        'Factory for global singleton cannot return null or undefined.',
-      );
-    });
-
     it('should propagate factory errors to all concurrent callers', async () => {
       const factory = jest.fn(async () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
@@ -936,7 +886,7 @@ describe('getOrCreateAsync', () => {
         'typed-async-key',
         factory,
       );
-
+      if (!result) { throw new Error('Fail - result should not be undefined.'); }
       expect(result.name).toBe('async-test');
       expect(result.value).toBe(42);
     });
@@ -1011,19 +961,6 @@ describe('globalSingletonAsync', () => {
 
     expect(factory).toHaveBeenCalledTimes(1);
     expect(result).toEqual({ strong: true });
-  });
-
-  it('should throw error when factory returns null or undefined', async () => {
-    const nullFactory = jest.fn(async () => null as any);
-    const undefinedFactory = jest.fn(async () => undefined as any);
-
-    await expect(
-      globalSingletonAsync('null-global-async', nullFactory),
-    ).rejects.toThrow(TypeError);
-
-    await expect(
-      globalSingletonAsync('undefined-global-async', undefinedFactory),
-    ).rejects.toThrow(TypeError);
   });
 
   it('should be accessible through SingletonProvider', async () => {

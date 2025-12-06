@@ -9,31 +9,24 @@ import {
   waitFor,
   screen,
 } from '@testing-library/react';
-
-// Create mock error reporter
-const mockReportError = jest.fn();
-
-// Mock the error reporter module directly
-jest.mock('@/lib/error-monitoring/error-reporter', () => ({
-  errorReporter: {
-    reportError: mockReportError,
-  },
-  ErrorSeverity: {
-    LOW: 'low',
-    MEDIUM: 'medium',
-    HIGH: 'high',
-    CRITICAL: 'critical',
-  },
-}));
-
+import {
+  errorReporter,
+  ErrorSeverity,
+  ErrorReporterInterface,
+} from '@/lib/error-monitoring';
 import { useErrorReporter } from '@/lib/error-monitoring/use-error-reporter';
-import { ErrorSeverity } from '@/lib/error-monitoring/error-reporter';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 const mockConsole = hideConsoleOutput();
 
 describe('useErrorReporter', () => {
+  // Create mock error reporter
+  let mockReportError: jest.Mocked<ErrorReporterInterface>['reportError'];
+  let mockErrorReporter: jest.Mocked<ErrorReporterInterface>;
+
   beforeEach(() => {
+    mockErrorReporter = errorReporter() as jest.Mocked<ErrorReporterInterface>;
+    mockReportError = mockErrorReporter.reportError;
     // jest.clearAllMocks();
     mockConsole.setup();
   });

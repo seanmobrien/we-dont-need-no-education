@@ -8,7 +8,7 @@
  * @module __tests__/lib/ai/middleware/tool-optimizing-middleware/index.test.ts
  */
 
- 
+
 
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 

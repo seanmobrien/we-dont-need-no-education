@@ -8,10 +8,12 @@ import { EmbeddingService } from '@/lib/ai/services/embedding/EmbeddingService';
 import { createEmbeddingModel } from '@/lib/ai/aiModelFactory';
 
 jest.mock('@/lib/ai/aiModelFactory', () => ({
-  createEmbeddingModel: jest.fn(() => ({
-    provider: 'test-provider',
-    modelId: 'test-model',
-  })),
+  createEmbeddingModel: jest.fn(() =>
+    Promise.resolve({
+      provider: 'test-provider',
+      modelId: 'test-model',
+    }),
+  ),
 }));
 
 // Mock the external 'ai' embed call

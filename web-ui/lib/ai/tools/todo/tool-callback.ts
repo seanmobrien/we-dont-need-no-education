@@ -3,17 +3,13 @@ import {
   toolCallbackResultFactory,
   toolCallbackResultSchemaFactory,
 } from '../utility';
-import {
-  getTodoManager,
-  Todo,
-  TodoList,
-  TodoPriority,
-  TodoStatus,
-} from './todo-manager';
+import { getTodoManager } from './todo-manager';
+import type { Todo, TodoList, TodoPriority, TodoStatus } from './types';
 import { SEQUENTIAL_THINKING_TOOL_NAME } from '@/lib/ai/tools/sequentialthinking/tool-callback';
 import z from 'zod';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { isError } from '@/lib/react-util/utility-methods';
+import { auth } from '@/auth';
 
 // Zod schema for Todo serialization
 const TodoSchema = z.object({
@@ -66,7 +62,7 @@ function serializeTodoList(list: TodoListLike) {
 }
 
 // Create Todo Tool
-export const createTodoCallback = ({
+export const createTodoCallback = async ({
   listId,
   title,
   description,
@@ -89,6 +85,10 @@ export const createTodoCallback = ({
   }>;
 }) => {
   try {
+    // Get userId from session
+    const session = await auth();
+    const userId = session?.user?.id;
+
     log((l) =>
       l.info('createTodoList tool called', {
         listId,
@@ -96,25 +96,34 @@ export const createTodoCallback = ({
         todoCount: todos?.length ?? 0,
         status,
         priority,
+        userId,
       }),
     );
 
-    const manager = getTodoManager();
-    const list = manager.upsertTodoList({
-      id: listId,
-      title,
-      description,
-      status,
-      priority,
-      todos: todos?.map((todo) => ({
-        id: todo.id,
-        title: todo.title,
-        description: todo.description,
-        status: todo.status,
-        completed: todo.completed,
-        priority: todo.priority,
-      })),
-    });
+    const manager = await getTodoManager();
+    const list = await manager.upsertTodoList(
+      {
+        id: listId,
+        title,
+        description,
+        status,
+        priority,
+        todos: todos?.map((todo) => ({
+          id: todo.id,
+          title: todo.title,
+          description: todo.description,
+          status: todo.status,
+          completed: todo.completed,
+          priority: todo.priority,
+        })),
+      },
+      { session },
+    );
+
+    if (isError(list)) {
+      const message = `Failed to create todo list: ${list.message}`;
+      return toolCallbackResultFactory(list, message);
+    }
 
     return toolCallbackResultFactory(serializeTodoList(list));
   } catch (error) {
@@ -216,7 +225,7 @@ Create or replace a Title IX / FERPA compliance task list. Provide the full set 
 } as const;
 
 // Get Todos Tool
-export const getTodosCallback = ({
+export const getTodosCallback = async ({
   completed,
   listId,
 }: {
@@ -224,14 +233,18 @@ export const getTodosCallback = ({
   listId?: string;
 }) => {
   try {
-    log((l) => l.info('getTodos tool called', { completed, listId }));
+    // Get userId from session
+    const session = await auth();
+    const userId = session?.user?.id;
 
-    const manager = getTodoManager();
+    log((l) => l.info('getTodos tool called', { completed, listId, userId }));
+
+    const manager = await getTodoManager();
 
     if (listId) {
       const list =
-        manager.getTodoList(listId, { completed }) ??
-        manager.getTodoList(listId);
+        (await manager.getTodoList(listId, { completed, session })) ??
+        (await manager.getTodoList(listId, { session }));
 
       if (!list) {
         const message = `Todo list with id ${listId} not found`;
@@ -241,7 +254,7 @@ export const getTodosCallback = ({
       return toolCallbackResultFactory(serializeTodoList(list));
     }
 
-    const lists = manager.getTodoLists({ completed });
+    const lists = await manager.getTodoLists({ completed, session });
 
     return toolCallbackResultFactory(
       lists.map((list) => serializeTodoList(list)),
@@ -346,7 +359,7 @@ Each todo list contains metadata plus a \`todos\` collection, and every todo inc
 } as const;
 
 // Update Todo Tool
-export const updateTodoCallback = ({
+export const updateTodoCallback = async ({
   id,
   title,
   description,
@@ -362,6 +375,10 @@ export const updateTodoCallback = ({
   priority?: TodoPriority;
 }) => {
   try {
+    // Get userId from session
+    const session = await auth();
+    const userId = session?.user?.id;
+
     log((l) =>
       l.info(`update todo called`, {
         id,
@@ -370,17 +387,22 @@ export const updateTodoCallback = ({
         completed,
         status,
         priority,
+        userId,
       }),
     );
 
-    const manager = getTodoManager();
-    const todo = manager.updateTodo(id, {
-      title,
-      description,
-      completed,
-      status,
-      priority,
-    });
+    const manager = await getTodoManager();
+    const todo = await manager.updateTodo(
+      id,
+      {
+        title,
+        description,
+        completed,
+        status,
+        priority,
+      },
+      { session },
+    );
 
     if (!todo) {
       return toolCallbackResultFactory(
@@ -465,12 +487,16 @@ Use this tool to update an existing task so the session stays aligned with Title
 } as const;
 
 // Delete Todo Tool
-export const deleteTodoCallback = ({ id }: { id: string }) => {
+export const deleteTodoCallback = async ({ id }: { id: string }) => {
   try {
-    log((l) => l.info('deleteTodo tool called', { id }));
+    // Get userId from session
+    const session = await auth();
+    const userId = session?.user?.id;
 
-    const manager = getTodoManager();
-    const result = manager.deleteTodo(id);
+    log((l) => l.info('deleteTodo tool called', { id, userId }));
+
+    const manager = await getTodoManager();
+    const result = await manager.deleteTodo(id, { session });
 
     if (!result) {
       return toolCallbackResultFactory(
@@ -511,12 +537,16 @@ export const deleteTodoConfig = {
 } as const;
 
 // Toggle Todo Completion Tool
-export const toggleTodoCallback = ({ id }: { id: string }) => {
+export const toggleTodoCallback = async ({ id }: { id: string }) => {
   try {
-    log((l) => l.info('toggleTodo tool called', { id }));
+    // Get userId from session
+    const session = await auth();
+    const userId = session?.user?.id;
 
-    const manager = getTodoManager();
-    const list = manager.toggleTodo(id);
+    log((l) => l.info('toggleTodo tool called', { id, userId }));
+
+    const manager = await getTodoManager();
+    const list = await manager.toggleTodo(id, { session });
 
     if (!list) {
       return toolCallbackResultFactory(

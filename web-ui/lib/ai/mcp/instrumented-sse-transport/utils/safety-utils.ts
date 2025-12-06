@@ -10,6 +10,7 @@ import { tracer, MetricsRecorder, DEBUG_MODE } from '../metrics/otel-metrics';
 import { isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
+import { withTimeoutAsError } from '@/lib/nextjs-util/with-timeout';
 
 // Timeout constants
 export const CONNECTION_TIMEOUT_MS = 30 * 1000; // 30 seconds for connection
@@ -20,6 +21,7 @@ export interface OperationMetrics {
   operation: string;
   messageId?: string | number;
 }
+
 
 /**
  * Provides safety utilities for async operations and error handling
@@ -187,19 +189,8 @@ export class SafetyUtils {
   withTimeout<T>(
     promise: Promise<T>,
     timeoutMs: number,
-    operation: string,
-  ): Promise<T> {
-    return Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        setTimeout(() => {
-          const error = new Error(
-            `${operation} timed out after ${timeoutMs}ms`,
-          );
-          error.name = 'TimeoutError';
-          reject(error);
-        }, timeoutMs);
-      }),
-    ]);
+    operation?: string,
+  ) {
+    return withTimeoutAsError(promise, timeoutMs, operation);
   }
 }

@@ -23,6 +23,12 @@ jest.mock('next/navigation', () => ({
   notFound: jest.fn(),
 }));
 
+jest.mock('@/lib/react-util', () => ({
+  LoggedError: {
+    isTurtlesAllTheWayDownBaby: jest.fn(), // isTurtlesAllTheWayDownBaby might be a static method on the real class, so we can mock the class export like this
+  },
+}));
+
 import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
 import { isValidUuid } from '@/lib/ai/tools/utility';
 
@@ -89,7 +95,7 @@ describe('resolveEmailId', () => {
         },
       },
     };
-     
+
     mockDrizDb.mockResolvedValue(mockDb as any);
 
     const result = await resolveEmailId(documentId);
@@ -110,21 +116,23 @@ describe('resolveEmailId', () => {
         },
       },
     };
-     
+
     mockDrizDb.mockResolvedValue(mockDb as any);
 
-    // Mock console.error to avoid test output noise
-    const consoleSpy = jest
-      .spyOn(console, 'error')
-      .mockImplementation(() => {});
+    jest.clearAllMocks();
 
     const result = await resolveEmailId(documentId);
     expect(result).toBeNull();
-    expect(consoleSpy).toHaveBeenCalledWith(
-      'Error resolving document ID to email ID:',
-      expect.any(Error),
-    );
 
-    consoleSpy.mockRestore();
+    // Check LoggedError usage
+    const { LoggedError } = require('@/lib/react-util');
+    expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        log: true,
+        source: 'EmailIdResolver.resolveEmailId',
+        critical: true,
+      })
+    );
   });
 });

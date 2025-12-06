@@ -1,5 +1,6 @@
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
 
 /**
  * Handler invoked by AfterManager queued operations.
@@ -21,21 +22,26 @@ const AFTER_MANAGER_KEY = Symbol.for('@noeducation/after-manager-instance');
  * Symbols created with Symbol.for() are globally registered and shared across
  * all webpack chunks, preventing duplicate singleton instances.
  */
-interface GlobalAfterRegistry {
-  [AFTER_MANAGER_KEY]?: AfterManager;
-}
+
 
 export default class AfterManager {
   /** Default timeout (ms) for waiting on registered handlers to complete */
   static readonly #TIMEOUT = 7500;
 
-  /** Internal singleton accessor stored on globalThis to survive reloads */
+  /** Internal singleton accessor stored on SingletonProvider to survive reloads */
   static get #instance(): AfterManager | undefined {
-    return (globalThis as GlobalAfterRegistry)[AFTER_MANAGER_KEY];
+    return SingletonProvider.Instance.get<
+      AfterManager,
+      typeof AFTER_MANAGER_KEY
+    >(AFTER_MANAGER_KEY);
   }
 
   static set #instance(value: AfterManager | undefined) {
-    (globalThis as GlobalAfterRegistry)[AFTER_MANAGER_KEY] = value;
+    if (value === undefined) {
+      SingletonProvider.Instance.delete(AFTER_MANAGER_KEY);
+    } else {
+      SingletonProvider.Instance.set(AFTER_MANAGER_KEY, value);
+    }
   }
 
   /**
@@ -273,7 +279,6 @@ export default class AfterManager {
           }),
         );
       }
-      console.log(`Signal received: ${signalName}`);
       resolve(); // Replace with actual resolution logic
     });
   }

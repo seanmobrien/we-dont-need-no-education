@@ -1,16 +1,5 @@
-/**
- * Enterprise-grade metrics collection for AI caching middleware
- * Provides hooks for monitoring cache performance and jail behavior
- *
- * Features:
- * - OpenTelemetry integration for enterprise observability
- * - Prometheus-compatible metrics export
- * - Real-time event streaming and hooks
- * - Performance timing and response size tracking
- * - Error categorization and jail behavior monitoring
- */
-
 import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util';
 import { appMeters } from '@/lib/site-util/metrics';
 
 // OpenTelemetry Metrics - Enterprise observability
@@ -73,23 +62,14 @@ const cacheOperationDuration = appMeters.createHistogram(
 );
 
 export interface CacheMetrics {
-  /** Total cache hits */
   cacheHits: number;
-  /** Total cache misses */
   cacheMisses: number;
-  /** Total successful caches */
   successfulCaches: number;
-  /** Total problematic responses */
   problematicResponses: number;
-  /** Total jail promotions */
   jailPromotions: number;
-  /** Total cache errors */
   cacheErrors: number;
-  /** Cache hit rate (0-1) */
   hitRate: number;
-  /** Average response size in characters */
   avgResponseSize: number;
-  /** Total responses processed */
   totalResponses: number;
 }
 
@@ -100,9 +80,6 @@ export interface CacheEvent {
   metadata?: Record<string, unknown>;
 }
 
-/**
- * Metrics collector with thread-safe operations
- */
 class MetricsCollector {
   private metrics: CacheMetrics = {
     cacheHits: 0,
@@ -122,9 +99,6 @@ class MetricsCollector {
   private metricsHooks: Array<(metrics: CacheMetrics) => void> = [];
   private eventHooks: Array<(event: CacheEvent) => void> = [];
 
-  /**
-   * Record a cache hit
-   */
   recordHit(cacheKey: string, responseSize?: number): void {
     const startTime = performance.now();
 
@@ -177,9 +151,6 @@ class MetricsCollector {
     this.notifyMetricsHooks();
   }
 
-  /**
-   * Record a cache miss
-   */
   recordMiss(cacheKey: string): void {
     const startTime = performance.now();
 
@@ -210,9 +181,6 @@ class MetricsCollector {
     this.notifyMetricsHooks();
   }
 
-  /**
-   * Record a successful cache store
-   */
   recordStore(cacheKey: string, responseSize: number): void {
     const startTime = performance.now();
 
@@ -243,9 +211,6 @@ class MetricsCollector {
     this.notifyMetricsHooks();
   }
 
-  /**
-   * Record a jail update
-   */
   recordJailUpdate(cacheKey: string, count: number, threshold: number): void {
     const startTime = performance.now();
 
@@ -269,9 +234,6 @@ class MetricsCollector {
     this.notifyMetricsHooks();
   }
 
-  /**
-   * Record a jail promotion
-   */
   recordJailPromotion(cacheKey: string, responseSize: number): void {
     const startTime = performance.now();
 
@@ -302,9 +264,6 @@ class MetricsCollector {
     this.notifyMetricsHooks();
   }
 
-  /**
-   * Record a cache error
-   */
   recordError(cacheKey: string, error: string): void {
     const startTime = performance.now();
 
@@ -332,24 +291,15 @@ class MetricsCollector {
     this.notifyMetricsHooks();
   }
 
-  /**
-   * Get current metrics snapshot
-   */
   getMetrics(): CacheMetrics {
     return { ...this.metrics };
   }
 
-  /**
-   * Get recent events
-   */
   getEvents(limit?: number): CacheEvent[] {
     const events = [...this.events];
     return limit ? events.slice(-limit) : events;
   }
 
-  /**
-   * Subscribe to metrics updates
-   */
   onMetricsUpdate(callback: (metrics: CacheMetrics) => void): () => void {
     this.metricsHooks.push(callback);
     return () => {
@@ -360,9 +310,6 @@ class MetricsCollector {
     };
   }
 
-  /**
-   * Subscribe to events
-   */
   onEvent(callback: (event: CacheEvent) => void): () => void {
     this.eventHooks.push(callback);
     return () => {
@@ -373,9 +320,6 @@ class MetricsCollector {
     };
   }
 
-  /**
-   * Reset all metrics
-   */
   reset(): void {
     this.metrics = {
       cacheHits: 0,
@@ -397,9 +341,6 @@ class MetricsCollector {
     this.metrics.hitRate = total > 0 ? this.metrics.cacheHits / total : 0;
   }
 
-  /**
-   * Hash cache key for telemetry (avoid exposing sensitive data)
-   */
   private hashCacheKey(cacheKey: string): string {
     // Simple hash to avoid exposing sensitive cache keys in telemetry
     let hash = 0;
@@ -411,9 +352,6 @@ class MetricsCollector {
     return Math.abs(hash).toString(16).substring(0, 8);
   }
 
-  /**
-   * Categorize error types for telemetry
-   */
   private categorizeError(error: string): string {
     const errorLower = error.toLowerCase();
     if (errorLower.includes('timeout') || errorLower.includes('ttl')) {
@@ -448,7 +386,10 @@ class MetricsCollector {
       try {
         hook(metrics);
       } catch (error) {
-        console.error('Error in metrics hook:', error);
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'metricsCollector',
+        });
       }
     });
   }
@@ -458,37 +399,33 @@ class MetricsCollector {
       try {
         hook(event);
       } catch (error) {
-        console.error('Error in event hook:', error);
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'metricsCollector',
+        });
       }
     });
   }
 }
 
-// Global metrics collector instance
 const metricsCollector = new MetricsCollector();
 
 export { metricsCollector };
 
-/**
- * Helper function to set up basic console logging for metrics
- */
 export function setupConsoleMetrics(): () => void {
   return metricsCollector.onMetricsUpdate((metrics) => {
     if (metrics.totalResponses % 10 === 0 && metrics.totalResponses > 0) {
       log((l) =>
         l.info(
           `📊 Cache Metrics - Hit Rate: ${(metrics.hitRate * 100).toFixed(1)}%, ` +
-            `Hits: ${metrics.cacheHits}, Misses: ${metrics.cacheMisses}, ` +
-            `Jail Promotions: ${metrics.jailPromotions}, Errors: ${metrics.cacheErrors}`,
+          `Hits: ${metrics.cacheHits}, Misses: ${metrics.cacheMisses}, ` +
+          `Jail Promotions: ${metrics.jailPromotions}, Errors: ${metrics.cacheErrors}`,
         ),
       );
     }
   });
 }
 
-/**
- * Helper function to set up Prometheus-style metrics export
- */
 export function getPrometheusMetrics(): string {
   const metrics = metricsCollector.getMetrics();
   return [
@@ -518,10 +455,6 @@ export function getPrometheusMetrics(): string {
   ].join('\n');
 }
 
-/**
- * Helper function to update OpenTelemetry gauge metrics with current values
- * Call this periodically to ensure gauges reflect current state
- */
 export function updateOpenTelemetryGauges(): void {
   const metrics = metricsCollector.getMetrics();
 
@@ -532,9 +465,6 @@ export function updateOpenTelemetryGauges(): void {
   });
 }
 
-/**
- * Helper function to get OpenTelemetry metrics summary for debugging
- */
 export function getOpenTelemetryMetricsSummary(): Record<string, unknown> {
   const metrics = metricsCollector.getMetrics();
   return {

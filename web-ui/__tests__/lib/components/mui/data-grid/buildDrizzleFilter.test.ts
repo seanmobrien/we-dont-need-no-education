@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
- 
+
 
 /**
  * @fileoverview Unit tests for buildDrizzleFilter functions
@@ -50,10 +50,9 @@ import {
 import { NextRequest } from 'next/server';
 import { LikeNextRequest } from '@/lib/nextjs-util/types';
 
-// Mock console.warn to track warning messages
-const originalConsoleWarn = console.warn;
-const mockConsoleWarn = jest.fn();
+import { ILogger, log } from '@/lib/logger';
 
+// Mock logger
 // Mock Drizzle imports
 jest.mock('drizzle-orm', () => ({
   and: jest.fn((...conditions) => ({
@@ -277,14 +276,14 @@ const mockSQLExpressions = {
 };
 
 describe('buildDrizzleAttachmentOrEmailFilter', () => {
+  let mockLogger: ILogger = undefined as unknown as ILogger;
   beforeEach(() => {
+    log(l => mockLogger = l);
     // jest.clearAllMocks();
-    console.warn = mockConsoleWarn;
+    //jest.clearAllMocks();
   });
 
-  afterEach(() => {
-    console.warn = originalConsoleWarn;
-  });
+
 
   describe('Basic functionality', () => {
     it('should return undefined when email_id is not provided', () => {
@@ -479,15 +478,13 @@ describe('buildDrizzleAttachmentOrEmailFilter', () => {
 describe('buildDrizzleItemFilter', () => {
   const getColumn = (name: string) =>
     mockColumns[name as keyof typeof mockColumns];
-
+  let mockLogger: ILogger = undefined as unknown as ILogger;
   beforeEach(() => {
+    log(l => mockLogger = l);
     // jest.clearAllMocks();
-    console.warn = mockConsoleWarn;
+    //jest.clearAllMocks();
   });
 
-  afterEach(() => {
-    console.warn = originalConsoleWarn;
-  });
 
   describe('Equality operators', () => {
     it('should handle equals operator', () => {
@@ -871,7 +868,7 @@ describe('buildDrizzleItemFilter', () => {
       });
 
       expect(result).toBeUndefined();
-      expect(mockConsoleWarn).toHaveBeenCalledWith(
+      expect(mockLogger.warn).toHaveBeenCalledWith(
         "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')",
       );
     });
@@ -896,14 +893,11 @@ describe('buildDrizzleQueryFilter', () => {
     mockColumns[name as keyof typeof mockColumns];
 
   beforeEach(() => {
-    // jest.clearAllMocks();
-    console.warn = mockConsoleWarn;
+    jest.clearAllMocks();
     mockQuery = createMockQuery();
   });
 
-  afterEach(() => {
-    console.warn = originalConsoleWarn;
-  });
+
 
   describe('Basic functionality', () => {
     it('should return original query when no source provided', () => {
@@ -1043,7 +1037,7 @@ describe('buildDrizzleQueryFilter', () => {
       };
       const url = new URL(
         'https://example.com/api/data?filter=' +
-          encodeURIComponent(JSON.stringify(filterModel)),
+        encodeURIComponent(JSON.stringify(filterModel)),
       );
 
       buildDrizzleQueryFilter({
@@ -1087,7 +1081,7 @@ describe('buildDrizzleQueryFilter', () => {
       };
       const request = new NextRequest(
         'https://example.com/api/data?filter=' +
-          encodeURIComponent(JSON.stringify(filterModel)),
+        encodeURIComponent(JSON.stringify(filterModel)),
       );
 
       buildDrizzleQueryFilter({
@@ -1203,6 +1197,10 @@ describe('buildDrizzleQueryFilter', () => {
   });
 
   describe('Edge cases', () => {
+    let mockLogger: ILogger = undefined as unknown as ILogger;
+    beforeEach(() => {
+      log(l => mockLogger = l);
+    });
     it('should handle filters with unknown columns', () => {
       const filterModel: GridFilterModel = {
         items: [
@@ -1229,7 +1227,7 @@ describe('buildDrizzleQueryFilter', () => {
         ],
         queryChunks: ['and condition'],
       });
-      expect(mockConsoleWarn).toHaveBeenCalledWith(
+      expect(mockLogger.warn).toHaveBeenCalledWith(
         "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')",
       );
     });
@@ -1266,12 +1264,12 @@ describe('buildDrizzleQueryFilter', () => {
     });
   });
 });
-
 describe('Integration tests', () => {
   let mockQuery: MockQuery;
+  let mockLogger: ILogger = undefined as unknown as ILogger;
 
   beforeEach(() => {
-    // jest.clearAllMocks();
+    log(l => mockLogger = l);
     mockQuery = createMockQuery();
   });
 

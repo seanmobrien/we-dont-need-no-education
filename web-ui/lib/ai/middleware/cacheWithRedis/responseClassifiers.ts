@@ -1,15 +1,5 @@
-/**
- * @fileoverview Response classification utilities for cache middleware
- */
-
 import type { CacheableResponse } from './types';
 
-/**
- * Determines if a response should be cached immediately (successful response)
- *
- * @param response - The AI response to evaluate
- * @returns true if the response is successful and should be cached immediately
- */
 export const isSuccessfulResponse = (response: CacheableResponse): boolean => {
   return !!(
     response &&
@@ -23,12 +13,6 @@ export const isSuccessfulResponse = (response: CacheableResponse): boolean => {
   );
 };
 
-/**
- * Determines if a response should be put in cache jail (problematic but not error)
- *
- * @param response - The AI response to evaluate
- * @returns true if the response is problematic and should go to cache jail
- */
 export const isProblematicResponse = (response: CacheableResponse): boolean => {
   return !!(
     response &&

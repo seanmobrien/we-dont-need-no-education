@@ -39,7 +39,8 @@
  * @module site-util/feature-flags/feature-flag-with-refresh
  */
 
-import { FeatureFlagValueType, KnownFeatureType } from './known-feature';
+import type { KnownFeatureType } from './known-feature';
+import type { KnownFeatureValueType } from './types';
 
 declare module '@/lib/site-util/feature-flags/feature-flag-with-refresh' {
   /**
@@ -166,7 +167,7 @@ declare module '@/lib/site-util/feature-flags/feature-flag-with-refresh' {
      * }
      * ```
      */
-    get value(): FeatureFlagValueType<T>;
+    get value(): KnownFeatureValueType<T>;
 
     /**
      * Last error encountered during refresh, or null if no errors.
@@ -418,7 +419,7 @@ declare module '@/lib/site-util/feature-flags/feature-flag-with-refresh' {
      * ]);
      * ```
      */
-    forceRefresh(): Promise<FeatureFlagValueType<T>>;
+    forceRefresh(): Promise<KnownFeatureValueType<T>>;
 
     /**
      * Disposes the feature flag instance and cleans up resources.
@@ -514,7 +515,7 @@ declare module '@/lib/site-util/feature-flags/feature-flag-with-refresh' {
      *
      * @default undefined (fetch immediately)
      */
-    initialValue?: FeatureFlagValueType<T>;
+    initialValue?: KnownFeatureValueType<T>;
 
     /**
      * Time-to-live in milliseconds.
@@ -701,4 +702,6 @@ declare module '@/lib/site-util/feature-flags/feature-flag-with-refresh' {
   export function createAutoRefreshFeatureFlagSync<T extends KnownFeatureType>(
     options: AutoRefreshFeatureFlagOptions<T> & { load?: boolean },
   ): AutoRefreshFeatureFlag<T>;
+
+  export const FLAGSMITH_SERVER_SINGLETON_KEY: '@noeducation/flagsmith-server';
 }

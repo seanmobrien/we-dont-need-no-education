@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes for SSE connections
-
+import type { Session } from '@auth/core/types';
 import { log, safeSerialize } from '@/lib/logger';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
@@ -58,6 +58,7 @@ import {
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { FirstParameter } from '@/lib/typescript';
 import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import { auth } from '@/auth';
 
 type McpConfig = Exclude<Parameters<typeof createMcpHandler>[2], undefined>;
 type OnEventHandler = Exclude<McpConfig['onEvent'], undefined>;
@@ -94,9 +95,9 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
                 try {
                   // clear runtime callback reference
                   (t as { onerror?: unknown }).onerror = undefined;
-                } catch {}
+                } catch { }
               }
-            } catch {}
+            } catch { }
             try {
               const t = transport as Record<string, unknown>;
               if (typeof t['close'] === 'function') {
@@ -104,7 +105,7 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
               } else if (typeof t['destroy'] === 'function') {
                 (t['destroy'] as (...a: unknown[]) => unknown)();
               }
-            } catch {}
+            } catch { }
           }
           const srvClose =
             serverObj && typeof serverObj['close'] === 'function'
@@ -115,7 +116,7 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
           if (typeof srvClose === 'function') {
             try {
               srvClose.call(serverObj ?? s);
-            } catch {}
+            } catch { }
           }
         } catch {
           /* swallow cleanup errors */
@@ -162,9 +163,9 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
               if ('onerror' in t) {
                 try {
                   (t as { onerror?: unknown }).onerror = undefined;
-                } catch {}
+                } catch { }
               }
-            } catch {}
+            } catch { }
             try {
               const t = transport as Record<string, unknown>;
               if (typeof t['close'] === 'function') {
@@ -172,7 +173,7 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
               } else if (typeof t['destroy'] === 'function') {
                 (t['destroy'] as (...a: unknown[]) => unknown)();
               }
-            } catch {}
+            } catch { }
           }
           const srvClose =
             serverObj && typeof serverObj['close'] === 'function'
@@ -183,7 +184,7 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
           if (typeof srvClose === 'function') {
             try {
               srvClose.call(serverObj ?? s);
-            } catch {}
+            } catch { }
           }
         } catch {
           /* swallow cleanup errors */
@@ -232,6 +233,51 @@ const onMcpEvent = (event: McpEvent, ...args: unknown[]) => {
   }
 };
 
+const checkAccess = async (req: NextRequest) => {
+  const checkResource = (
+    resource_access: { [key: string]: string[] } | undefined,
+  ) => {
+    if (!resource_access) {
+      log((l) => l.warn('No resource access found in session'));
+      return false;
+    }
+    const mcpToolAccess = resource_access['mcp-tool'];
+    if (!mcpToolAccess) {
+      log((l) => l.warn('No mcp-tool access found in session resource access'));
+      return false;
+    }
+    if (
+      !mcpToolAccess.includes(KnownScopeValues[KnownScopeIndex.ToolRead]) &&
+      !mcpToolAccess.includes(KnownScopeValues[KnownScopeIndex.ToolReadWrite])
+    ) {
+      log((l) => l.warn(
+        'tool-read or tool-write scope not found in mcp-tool access',
+        mcpToolAccess,
+      ));;
+      return false;
+    }
+    return true;
+  };
+  const checkSession = async () => {
+    const session: Session | null = await auth();
+    if (!session) {
+      log((l) => l.warn('No session found'));
+      return false;
+    }
+    return checkResource(session.resource_access);
+  };
+  const checkToken = async () => {
+    const token = await extractToken(req);
+    if (!token) {
+      log((l) => l.warn('No token found'));
+      return false;
+    }
+    return checkResource(token.resource_access);
+  };
+  const check = await Promise.all([checkSession(), checkToken()]);
+  return check[0] || check[1];
+};
+
 const handler = wrapRouteRequest(
   async (
     req: NextRequest,
@@ -241,15 +287,15 @@ const handler = wrapRouteRequest(
     const transport = Array.isArray(transportFromProps)
       ? transportFromProps.join('/')
       : transportFromProps;
-    const token = await extractToken(req);
-    if (!token) {
+    const hasAccess = await checkAccess(req);
+    if (!hasAccess) {
       log((l) =>
         l.warn(
           `Unauthorized access attempt (no token).  Transport: ${safeSerialize(transport)}`,
         ),
       );
       throw new ApiRequestError(
-        'Unauthorized - No Token',
+        'Unauthorized',
         unauthorizedServiceResponse({
           req,
           scopes: [
@@ -259,27 +305,7 @@ const handler = wrapRouteRequest(
         }),
       );
     }
-    if (
-      !token?.resource_access?.['mcp-tool']?.includes(
-        KnownScopeValues[KnownScopeIndex.ToolRead],
-      )
-    ) {
-      log((l) =>
-        l.warn(
-          `Unauthorized access attempt (no access), token: ${JSON.stringify(token)}, Transport: ${safeSerialize(transport)}`,
-        ),
-      );
-      throw new ApiRequestError(
-        `Unauthorized - ${JSON.stringify(token)}`,
-        unauthorizedServiceResponse({
-          req,
-          scopes: [
-            KnownScopeValues[KnownScopeIndex.ToolRead],
-            KnownScopeValues[KnownScopeIndex.ToolReadWrite],
-          ],
-        }),
-      );
-    }
+
     log((l) => l.debug('Calling MCP Tool route.', { transport }));
 
     const maxDuration = (await wellKnownFlag('mcp_max_duration')).value;
@@ -293,7 +319,7 @@ const handler = wrapRouteRequest(
             serverInfo: safeSerialize.serverDescriptor(server),
           }),
         );
-        console.log('=== Registering MCP tools ===');
+        log((l) => l.info('=== Registering MCP tools ==='));
         server.registerTool(
           'playPingPong',
           pingPongToolConfig,
@@ -338,13 +364,12 @@ const handler = wrapRouteRequest(
       {},
       {
         redisUrl: process.env.REDIS_URL,
-        basePath: '/api/ai/tools/',
+        basePath: `/api/ai/tools/`,
         maxDuration,
         verboseLogs,
         onEvent: verboseLogs ? onMcpEvent : undefined,
       },
     );
-
     // Call mcpHandler directly without await - it manages the SSE stream itself
     return mcpHandler(req);
   },

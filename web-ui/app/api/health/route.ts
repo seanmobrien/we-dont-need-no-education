@@ -4,15 +4,14 @@ import {
   ExtendedMemoryClient,
   memoryClientFactory,
 } from '@/lib/ai/mem0/memoryclient-factory';
-import {
-  MemoryHealthCheckResponse,
-  determineHealthStatus,
-} from '@/lib/ai/mem0/types/health-check';
 import { getMemoryHealthCache } from '@/lib/api/health/memory';
 import { checkDatabaseHealth } from '@/lib/api/health/database';
 import { env } from '@/lib/site-util/env';
 import { LoggedError } from '@/lib/react-util';
 import { fromRequest } from '@/lib/auth/impersonation';
+import { MemoryHealthCheckResponse } from '@/lib/ai/mem0/types/health-check';
+import { determineHealthStatus } from '@/lib/ai/mem0/lib/health-check';
+import { checkChatHealth } from '@/lib/api/health/chat';
 
 /**
  * Health Check Route (GET /api/health)
@@ -29,62 +28,35 @@ import { fromRequest } from '@/lib/auth/impersonation';
  *      - cache: In‑process / external cache layer (placeholder)
  *      - queue: Background processing / queue subsystem (placeholder)
  *
- * NOTE: This endpoint intentionally does NOT perform real connectivity probes in this
- * implementation to avoid cascading failures or latency amplification. If deeper
- * diagnostics are required, consider a separate /api/health/deep or /api/diagnostics route.
- *
  * Example Successful Response:
  * {
+ *   "memory": { 
+ *      "status": "ok",
+ *      "db": { "status": "ok" },
+ *      "vectorStore": { "status": "ok" },
+ *      "graphStore": { "status": "ok" },
+ *      "historyStore": { "status": "ok" },
+ *      "authService": { "status": "ok" },
+ *    },
  *   "database": { "status": "ok" },
  *   "chat": {
  *     "status": "ok",
  *     "cache": { "status": "ok" },
- *     "queue": { "status": "ok" }
+ *     "queue": { "status": "ok" },
+ *     "tools": { "status": "ok" },
  *   }
- * }
- *
- * Build / Deployment Considerations:
- *  - Wrapped with wrapRouteRequest, which provides:
- *      * Consistent logging (when enabled)
- *      * Structured error handling returning a JSON errorResponseFactory on failures
- *      * Build‑phase fallback short‑circuit (returns a neutral JSON object when
- *        NEXT_PHASE === 'phase-production-build' or IS_BUILDING=1 unless explicitly overridden)
- *
- * Testing:
- *  - See: __tests__/app/api/health/route.test.ts for validation of:
- *      * Successful payload shape
- *      * Build fallback behavior
- *      * Logging invocation path
- *
- * Extending:
- *  - Introduce real checks by replacing static assignments with async probes, e.g.:
- *      const database = await dbPing();
- *      const cache = await cacheClient.ping();
- *    Ensure added calls are timeout‑bounded to preserve endpoint responsiveness.
+ * } 
  */
 
-/**
- * Narrow set of status codes surfaced by the health layer.
- * Keep deliberately small to simplify external automation.
- */
-type HealthCheckStatusCode = 'ok' | 'warning' | 'error';
+import {
+  HealthCheckStatusCode,
+  HealthCheckStatusEntry,
+} from '@/lib/hooks/types';
 
 /**
  * Enumerates discrete systems (or system groups) represented in the response.
  */
 type HealthCheckSystem = 'database' | 'cache' | 'queue' | 'chat' | 'memory';
-
-/**
- * Base shape for any status entry.
- */
-type HealthCheckStatusEntryBase = {
-  /** Current coarse status value */
-  status: HealthCheckStatusCode;
-};
-type HealthCheckStatusEntry<K extends string = never> =
-  HealthCheckStatusEntryBase & {
-    [key in K]?: HealthCheckStatusEntryBase;
-  };
 
 /**
  * Maps each system to its expected nested structure.
@@ -93,7 +65,7 @@ type HealthCheckStatusEntry<K extends string = never> =
  */
 type HealthSystemResponseTypeMap = {
   database: HealthCheckStatusEntry<never>;
-  chat: HealthCheckStatusEntry<'cache' | 'queue'>;
+  chat: HealthCheckStatusEntry<'cache' | 'queue' | 'tools'>;
   cache: HealthCheckStatusEntry<never>;
   queue: HealthCheckStatusEntry<never>;
   memory: HealthCheckStatusEntry<
@@ -123,7 +95,7 @@ function transformMemoryResponse(
   const details = resp?.details;
   const status: HealthCheckStatusCode = details
     ? determineHealthStatus(details) === 'healthy'
-      ? 'ok'
+      ? 'healthy'
       : determineHealthStatus(details) === 'warning'
         ? 'warning'
         : 'error'
@@ -131,24 +103,37 @@ function transformMemoryResponse(
 
   return {
     status,
-    db: { status: details?.system_db_available ? 'ok' : 'error' },
-    vectorStore: { status: details?.vector_store_available ? 'ok' : 'error' },
-    graphStore: { status: details?.graph_store_available ? 'ok' : 'error' },
-    historyStore: { status: details?.history_store_available ? 'ok' : 'error' },
-    authService: { status: details?.auth_service?.healthy ? 'ok' : 'error' },
+    db: { status: details?.system_db_available ? 'healthy' : 'error' },
+    vectorStore: { status: details?.vector_store_available ? 'healthy' : 'error' },
+    graphStore: { status: details?.graph_store_available ? 'healthy' : 'error' },
+    historyStore: { status: details?.history_store_available ? 'healthy' : 'error' },
+    authService: { status: details?.auth_service?.healthy ? 'healthy' : 'error' },
   };
 }
 
 /**
  * Checks memory system health by calling the Mem0 health check endpoint
  * Returns granular subsystem health information
+ *
+ * Caching behavior:
+ * - Returns cached responses for all status types (ok, warning, error)
+ * - Uses different TTLs based on status:
+ *   - ok: 60 seconds (default)
+ *   - warning: 30 seconds (default)
+ *   - error: 10 seconds (default)
+ * - This prevents cascading failures during outages while still allowing
+ *   relatively quick recovery detection
  */
 async function checkMemoryHealth(): Promise<MemoryHealthCheckResponse> {
   const cache = await getMemoryHealthCache();
   const cached = cache.get();
-  if (cached && cached.status === 'ok') {
+
+  // Return cached response if available, regardless of status
+  // The cache TTL is status-dependent, so errors/warnings expire faster
+  if (cached) {
     return cached;
   }
+
   try {
     const memoryClient = await memoryClientFactory<ExtendedMemoryClient>({
       impersonation: await fromRequest(),
@@ -161,7 +146,7 @@ async function checkMemoryHealth(): Promise<MemoryHealthCheckResponse> {
     // Cache the raw mem0 response and return it directly
     try {
       cache.set(healthResponse);
-    } catch {}
+    } catch { }
     return healthResponse;
   } catch (error) {
     // If we can't reach the memory service, consider everything an error
@@ -210,7 +195,7 @@ async function checkMemoryHealth(): Promise<MemoryHealthCheckResponse> {
     try {
       const cache = await getMemoryHealthCache();
       cache.set(fallback);
-    } catch {}
+    } catch { }
     return fallback;
   }
 }
@@ -272,10 +257,26 @@ export const GET = wrapRouteRequest(async () => {
 
   const databaseStatus = await checkDatabaseHealth();
 
+  const chatHealth = await Promise.race([
+    checkChatHealth(),
+    new Promise<HealthCheckStatusEntry<'cache' | 'queue' | 'tools'>>((resolve) =>
+      setTimeout(
+        () =>
+          resolve({
+            status: 'error',
+            tools: { status: 'error' },
+            cache: { status: 'error' },
+            queue: { status: 'error' },
+          }),
+        90 * 1000,
+      ),
+    ),
+  ]);
+
   const healthCheckResponse: HealthCheckResponse = {
     server: env('NEXT_PUBLIC_HOSTNAME') ?? 'unknown',
     database: databaseStatus,
-    chat: { status: 'ok', cache: { status: 'ok' }, queue: { status: 'ok' } },
+    chat: chatHealth,
     memory: transformMemoryResponse(memoryHealth),
   };
 
