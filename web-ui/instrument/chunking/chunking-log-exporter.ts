@@ -88,7 +88,9 @@ export class ChunkingLogExporter implements LogRecordExporter {
         } catch (innerError) {
           // Unable to update body - exporting this record will likely fail / be skipped, so write details out to console
           // so that it's not completely invisible.
-          // NOTE: log methods would feed into the same process, which would cause infinite recursion
+          // IMPORTANT: This direct use of console.warn is an intentional and necessary exception to the project logging standard,
+          // because using the log() utility here would cause infinite recursion (log() would trigger this same code path).
+          // See CodeQL rule: "Do not use console.warn directly; use log() unless it would cause recursion."
           console.warn(`Unable to update log record body - ${LoggedError.buildMessage(innerError)}.  Full record: ${base.body ?? '<null>'}`)
         }
       }
