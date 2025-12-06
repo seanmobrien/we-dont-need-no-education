@@ -1,9 +1,9 @@
 /**
  * Memory Health Check Types
  * ========================
- * 
+ *
  * Type definitions for the Mem0 API health check response structure.
- * Based on the sample JSON structure from /api/v1/stats/health-check endpoint.
+ * Based on the sample JSON structure from the Mem0 stats/health-check endpoint (base path configurable).
  */
 
 /**
@@ -35,7 +35,7 @@ export interface AuthServiceHealth {
   client_id: string;
   auth_url: string;
   token_url: string;
-  jkws_url: string;
+  jwks_url: string;
 }
 
 /**
@@ -77,48 +77,3 @@ export interface HealthCheckParams {
  * Simplified health status for UI components
  */
 export type HealthStatus = 'healthy' | 'warning' | 'error';
-
-/**
- * Determines the overall health status based on the health check details
- */
-export function determineHealthStatus(details: HealthDetails): HealthStatus {
-  // Error if client is not active
-  if (!details.client_active) {
-    return 'error';
-  }
-
-  // Check if any critical services are unavailable
-  const criticalServices = [
-    details.system_db_available,
-    details.vector_store_available,
-    details.graph_store_available,
-    details.history_store_available,
-    details.auth_service.healthy,
-  ];
-
-  const unavailableServices = criticalServices.filter(service => !service);
-  
-  // Warning if one or more services are unavailable
-  if (unavailableServices.length > 0) {
-    return 'warning';
-  }
-
-  // Healthy if all services are available
-  return 'healthy';
-}
-
-/**
- * Get refresh interval based on health status
- */
-export function getRefreshInterval(status: HealthStatus): number {
-  switch (status) {
-    case 'healthy':
-      return 3 * 60 * 1000; // 3 minutes
-    case 'warning':
-      return 30 * 1000; // 30 seconds
-    case 'error':
-      return 5 * 1000; // 5 seconds
-    default:
-      return 30 * 1000; // Default to 30 seconds
-  }
-}

@@ -1,3 +1,4 @@
+ 
 /**
  * @fileoverview Integration tests for ResizableDraggableDialog and ResizeableDraggablePaper components.
  * Tests the components working together without mocking to ensure full functionality and coverage.

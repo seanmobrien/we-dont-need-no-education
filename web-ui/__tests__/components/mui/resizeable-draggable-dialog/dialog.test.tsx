@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * @fileoverview Tests for the ResizableDraggableDialog component.
  * Tests dialog rendering, props passing, and basic integration.
@@ -35,7 +35,7 @@ jest.mock(
       }, [setRefineSizeProps, width, height]);
 
       // Filter out non-DOM props
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+       
       const {
         dragHandleId,
         dialogId,

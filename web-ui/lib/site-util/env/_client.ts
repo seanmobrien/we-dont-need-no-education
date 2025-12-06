@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isAiLanguageModelType, AiLanguageModelType } from '@/lib/ai/client';
-import { ZodProcessors } from './_common';
+import { getMappedSource, ZodProcessors } from './_common';
 
 /**
  * The type representing the validated client environment variables.
@@ -22,8 +22,7 @@ export type ClientEnvType = ReturnType<typeof clientEnvSchema.parse>;
  * @doc
  */
 export const clientRawInstance = {
-  NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
-    process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,
+  AZURE_MONITOR_CONNECTION_STRING: process.env.AZURE_MONITOR_CONNECTION_STRING,
   /**
    * The cache timeout for client-side data grids.
    * @type {number | undefined}
@@ -70,7 +69,7 @@ export const clientRawInstance = {
  * @doc
  */
 export const clientEnvSchema = z.object({
-  NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING: z.string().optional(),
+  AZURE_MONITOR_CONNECTION_STRING: z.string().optional(),
   NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT: ZodProcessors.integer().default(
     5 * 60 * 1000,
   ),
@@ -94,4 +93,4 @@ export const clientEnvSchema = z.object({
  * @doc
  */
 export const clientEnvFactory = (): ClientEnvType =>
-  clientEnvSchema.parse(clientRawInstance);
+  clientEnvSchema.parse(getMappedSource(clientRawInstance));

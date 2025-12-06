@@ -67,6 +67,7 @@
 import { ToolSet } from 'ai';
 import { ConnectableToolProvider, MCPClient } from '../types';
 import z from 'zod';
+import EventEmitter from '@protobufjs/eventemitter';
 
 /**
  * Factory that creates a pre‑connected {@link ConnectableToolProvider} exposing
@@ -120,6 +121,13 @@ export const clientToolProviderFactory = (): ConnectableToolProvider => {
       }),
     },
   };
+  const emitter = new EventEmitter();
+  const dispose = () => {
+    emitter.emit('disposed');
+  };
+  const addDisposeListener = (listener: () => void) => emitter.on('disposed', listener);
+  const removeDisposeListener = (listener: () => void) => emitter.off('disposed', listener);
+
   const thisProvider: ConnectableToolProvider = {
     get_mcpClient: () => {
       return {} as MCPClient;
@@ -128,8 +136,10 @@ export const clientToolProviderFactory = (): ConnectableToolProvider => {
     get tools() {
       return clientSideTools;
     },
-    dispose: () => Promise.resolve(),
-    connect: ({}) => Promise.resolve(thisProvider),
+    connect: ({ }) => Promise.resolve(thisProvider),
+    addDisposeListener,
+    removeDisposeListener,
+    [Symbol.dispose]: dispose,
   };
   return thisProvider;
 };

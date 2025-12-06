@@ -94,7 +94,7 @@ describe('_utility-methods', () => {
 
   describe('isTemplateStringsArray', () => {
     it('should return true for template strings array', () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
       const templateFn = (
         strings: TemplateStringsArray,
         ..._values: unknown[]
@@ -331,11 +331,13 @@ describe('_utility-methods', () => {
       ];
 
       const resultPromise = getResolvedPromises(promises, 1000);
-
-      // Fast-forward past timeout
-      jest.advanceTimersByTime(1500);
+      // Fast-forward past timeout- note this must be done async
+      // so that the fast promise has a chance to resolve before
+      // the timeout expires.
+      const advanceTimers = jest.advanceTimersByTimeAsync(1500);
 
       const result = await resultPromise;
+      await advanceTimers;
 
       expect(result.fulfilled).toEqual(['fast', 42]);
       expect(result.rejected).toEqual([error]);

@@ -2,8 +2,6 @@
  * @jest-environment node
  */
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   wrapRouteRequest,
   EnableOnBuild,
@@ -16,11 +14,19 @@ import { trace, context as otelContext, propagation } from '@opentelemetry/api';
 import { SpanStatusCode } from '@opentelemetry/api';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { NextRequest } from 'next/dist/server/web/spec-extension/request';
 
 // Mock external dependencies
 jest.mock('@opentelemetry/api', () => ({
   trace: {
-    getTracer: jest.fn(),
+    getTracer: jest.fn(() => ({
+      startActiveSpan: jest.fn(async (name, fn2, ctx, fn) => await ((fn ?? fn2)({
+        setAttribute: jest.fn(),
+        setStatus: jest.fn(),
+        recordException: jest.fn(),
+        end: jest.fn(),
+      }))),
+    })),
     setSpan: jest.fn(),
   },
   context: {
@@ -31,7 +37,8 @@ jest.mock('@opentelemetry/api', () => ({
     extract: jest.fn(),
   },
   SpanKind: {
-    SERVER: 'server',
+    SERVER: 1,
+    CLIENT: 2,
   },
   SpanStatusCode: {
     OK: 'ok',
@@ -43,10 +50,6 @@ jest.mock('@opentelemetry/api-logs', () => ({
   logs: {
     getLogger: jest.fn(),
   },
-}));
-
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(),
 }));
 
 jest.mock('@/lib/react-util/errors/logged-error', () => ({
@@ -79,19 +82,6 @@ jest.mock('@/lib/nextjs-util/server/error-response', () => ({
 }));
 
 describe('Server Utils', () => {
-  // Mock process for build fallback tests
-  const originalProcess = global.process;
-  beforeEach(() => {
-    // jest.clearAllMocks();
-    // Reset environment
-    delete global.process.env.IS_BUILDING;
-    delete global.process.env.NEXT_PHASE;
-  });
-
-  afterEach(() => {
-    global.process = originalProcess;
-  });
-
   describe('Constants', () => {
     test('EnableOnBuild is a unique symbol', () => {
       expect(typeof EnableOnBuild).toBe('symbol');
@@ -142,11 +132,9 @@ describe('Server Utils', () => {
       });
 
       expect(trace.getTracer).toHaveBeenCalledWith('app-instrumentation');
-      expect(mockTracer.startSpan).toHaveBeenCalledWith(
-        'test-span',
-        undefined,
-        mockContext,
-      );
+      expect(mockTracer.startSpan).toHaveBeenCalledWith<
+        [string, undefined, object]
+      >('test-span', undefined, mockContext);
       expect(result.span).toBe(mockSpan);
     });
 
@@ -167,7 +155,49 @@ describe('Server Utils', () => {
         attributes,
       });
 
-      expect(mockSpan.setAttributes).toHaveBeenCalledWith(attributes);
+      expect(mockTracer.startSpan).toHaveBeenCalledWith(
+        'test-span',
+        {
+          attributes,
+        },
+        mockContext,
+      );
+    });
+
+    test('sets span kind', async () => {
+      const { SpanKind } = await import('@opentelemetry/api');
+
+      await createInstrumentedSpan({
+        spanName: 'test-span',
+        kind: SpanKind.CLIENT,
+      });
+
+      expect(mockTracer.startSpan).toHaveBeenCalledWith(
+        'test-span',
+        {
+          kind: SpanKind.CLIENT,
+        },
+        mockContext,
+      );
+    });
+    test('sets both kind and attributes', async () => {
+      const { SpanKind } = await import('@opentelemetry/api');
+      const attributes = { 'test.key': 'value' };
+
+      await createInstrumentedSpan({
+        spanName: 'test-span',
+        kind: SpanKind.SERVER,
+        attributes,
+      });
+
+      expect(mockTracer.startSpan).toHaveBeenCalledWith(
+        'test-span',
+        {
+          kind: SpanKind.SERVER,
+          attributes,
+        },
+        mockContext,
+      );
     });
 
     test('executes function successfully', async () => {
@@ -313,7 +343,7 @@ describe('Server Utils', () => {
       (trace.getTracer as jest.Mock).mockReturnValue(mockTracer);
       mockTracer.startActiveSpan.mockImplementation(
         async (name, options, parentCtx, fn) => {
-          return await fn(mockSpan);
+          return await ((fn ?? options)(mockSpan));
         },
       );
       (otelContext.active as jest.Mock).mockReturnValue({});
@@ -332,7 +362,9 @@ describe('Server Utils', () => {
       } as any;
 
       const response = await handler(mockRequest);
-
+      if (!response) {
+        throw new Error('Response is undefined');
+      }
       expect(response.status).toBe(200);
       expect(mockSpan.setStatus).toHaveBeenCalledWith({
         code: SpanStatusCode.OK,
@@ -341,31 +373,9 @@ describe('Server Utils', () => {
     });
 
     describe('build fallback scenarios', () => {
-      beforeAll(() => {
-        // Polyfill Response.json if not available
-        /*
-        if (!globalThis.Response.json) {
-          globalThis.Response.json = (data: any, init?: ResponseInit) => {
-            return new Response(JSON.stringify(data), {
-              ...init,
-              headers: {
-                'content-type': 'application/json',
-                ...(init?.headers || {}),
-              },
-            });
-          };
-        }
-        */
-      });
-
       test('handles build fallback when IS_BUILDING is set', async () => {
         // Use Object.defineProperty to ensure it can't be overwritten
-        Object.defineProperty(process.env, 'IS_BUILDING', {
-          value: '1',
-          writable: true,
-          enumerable: true,
-          configurable: true,
-        });
+        process.env.IS_BUILDING = '1';
 
         // Mock startActiveSpan to add debug logging
         mockTracer.startActiveSpan.mockImplementation(
@@ -384,45 +394,37 @@ describe('Server Utils', () => {
           throw new Error('Handler should not execute during build');
         });
 
-        const mockRequest = {} as Request;
+        const mockRequest = {} as NextRequest;
         const response = await handler(mockRequest);
-
+        if (!response) {
+          throw new Error('Response is undefined');
+        }
         expect(response.status).toBe(200);
         expect(response.statusText).toBe('OK-BUILD-FALLBACK');
         expect(mockSpan.setAttribute).toHaveBeenCalledWith(
           'http.status_code',
           200,
         );
-
-        // Clean up
-        delete process.env.IS_BUILDING;
       });
 
       test('handles build fallback when NEXT_PHASE is production-build', async () => {
-        // Use Object.defineProperty to ensure it can't be overwritten
-        Object.defineProperty(process.env, 'NEXT_PHASE', {
-          value: 'phase-production-build',
-          writable: true,
-          enumerable: true,
-          configurable: true,
-        });
+        process.env.NEXT_PHASE = 'phase-production-build';
 
         const handler = wrapRouteRequest(async (_req: Request) => {
           throw new Error('Handler should not execute during build');
         });
 
-        const mockRequest = {} as Request;
+        const mockRequest = {} as NextRequest;
         const response = await handler(mockRequest);
-
+        if (!response) {
+          throw new Error('Response is undefined');
+        }
         expect(response.status).toBe(200);
         expect(response.statusText).toBe('OK-BUILD-FALLBACK');
         expect(mockSpan.setAttribute).toHaveBeenCalledWith(
           'http.status_code',
           200,
         );
-
-        // Clean up
-        delete process.env.NEXT_PHASE;
       });
     });
 
@@ -436,9 +438,12 @@ describe('Server Utils', () => {
         { buildFallback: EnableOnBuild },
       );
 
-      const mockRequest = {} as Request;
+      const mockRequest = {} as NextRequest;
       const response = await handler(mockRequest);
 
+      if (!response) {
+        throw new Error('Response is undefined');
+      }
       expect(response.status).toBe(200);
       expect(await response.text()).toBe('executed during build');
     });
@@ -456,11 +461,11 @@ describe('Server Utils', () => {
         throw testError;
       });
 
-      const mockRequest = {} as Request;
+      const mockRequest = {} as NextRequest;
 
       const response = await handler(mockRequest);
 
-      expect(response.status).toBe(500);
+      expect(response!.status).toBe(500);
       expect(response).toBeInstanceOf(Response);
       expect(mockSpan.recordException).toHaveBeenCalledWith(testError);
       expect(mockSpan.setStatus).toHaveBeenCalledWith({
@@ -486,35 +491,21 @@ describe('Server Utils', () => {
 
     test('does not log in production', async () => {
       // Temporarily set NODE_ENV to production
-      const originalEnv = process.env.NODE_ENV;
-      Object.defineProperty(process.env, 'NODE_ENV', {
-        value: 'production',
-        writable: true,
-        configurable: true,
+      // @ts-ignore
+      process.env.NODE_ENV = 'production';
+      const handler = wrapRouteRequest(async (_req: Request) => {
+        return new Response('success');
       });
 
-      try {
-        const handler = wrapRouteRequest(async (_req: Request) => {
-          return new Response('success');
-        });
+      const mockRequest = {
+        url: 'https://example.com/test',
+        method: 'GET',
+        headers: new Map(),
+      } as any;
 
-        const mockRequest = {
-          url: 'https://example.com/test',
-          method: 'GET',
-          headers: new Map(),
-        } as any;
+      await handler(mockRequest);
 
-        await handler(mockRequest);
-
-        expect(log).not.toHaveBeenCalled();
-      } finally {
-        // Restore original environment
-        Object.defineProperty(process.env, 'NODE_ENV', {
-          value: originalEnv,
-          writable: true,
-          configurable: true,
-        });
-      }
+      expect(log).not.toHaveBeenCalled();
     });
 
     test('handles custom error callback', async () => {
@@ -528,7 +519,7 @@ describe('Server Utils', () => {
         { errorCallback },
       );
 
-      const mockRequest = {} as Request;
+      const mockRequest = {} as NextRequest;
 
       await handler(mockRequest);
 
@@ -553,7 +544,7 @@ describe('Server Utils', () => {
         { errorCallback },
       );
 
-      const mockRequest = {} as Request;
+      const mockRequest = {} as NextRequest;
 
       // Should not throw despite callback error
       const response = await handler(mockRequest);
@@ -597,8 +588,8 @@ describe('Server Utils', () => {
         return new Response('success');
       });
 
-      const mockRequest = {} as Request;
-      const mockContext = {};
+      const mockRequest = {} as NextRequest;
+      const mockContext = { params: Promise.resolve({ id: '123' }) };
 
       await handler(mockRequest, mockContext);
 
@@ -607,7 +598,7 @@ describe('Server Utils', () => {
         'route.request',
         expect.objectContaining({
           attributes: expect.objectContaining({
-            'route.params': expect.stringContaining('{}'),
+            'route.params': expect.stringContaining('{\"id\":\"123\"}'),
           }),
         }),
         expect.any(Object),

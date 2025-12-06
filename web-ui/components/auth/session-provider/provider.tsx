@@ -25,11 +25,13 @@ import {
   getUserPublicKeyForServer,
 } from '@/lib/site-util/auth/user-keys';
 import { fetch } from '@/lib/nextjs-util/fetch';
+import { Session } from '@auth/core/types';
+import { useNotifications } from '@toolpad/core';
+import { LoggedError } from '@/lib/react-util';
 
 export const SessionContext = createContext<SessionContextType<object> | null>(
   null,
 );
-
 const SESSION_QUERY_KEY = ['auth-session'] as const;
 const SESSION_WITH_KEYS_QUERY_KEY = [
   ...SESSION_QUERY_KEY,
@@ -74,8 +76,11 @@ const queryFn = async ({ queryKey }: { queryKey: SessionQueryKey }) => {
       },
     });
   }
-  return res.json();
+  return (await res.json()) as SessionResponse<Session>;
 };
+
+const NOTIFICATION_KEY_USERHASH_COMPUTE = 'userhash-compute';
+const errorMessage = 'Error computing user hash';
 
 export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
   children,
@@ -85,20 +90,22 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
     useState<KeyValidationStatus>('unknown');
   const [lastValidated, setLastValidated] = useState<Date>();
   const [validationError, setValidationError] = useState<string>();
+  const notifications = useNotifications();
 
   // Prevent unnecessary re-renders by tracking previous values
   const previousSessionStatus = useRef<
-    'loading' | 'authenticated' | 'unauthenticated'
+    'loading' | 'processing' | 'authenticated' | 'unauthenticated'
   >('loading');
   const previousKeyValidationStatus = useRef<KeyValidationStatus>('unknown');
+  const [userHash, setUserHash] = useState<string | null>();
 
   // Session query - fetch with keys when validation is due
   const shouldGetKeys = isKeyValidationDue();
 
-  const query = useQuery<
-    SessionResponse<object>,
+  const { data, isLoading, isFetching, refetch } = useQuery<
+    SessionResponse<Session>,
     Error,
-    SessionResponse<object>,
+    SessionResponse<Session>,
     SessionQueryKey
   >({
     queryKey: shouldGetKeys ? SESSION_WITH_KEYS_QUERY_KEY : SESSION_QUERY_KEY,
@@ -127,8 +134,66 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
       updateKeyValidationTimestamp();
     },
   });
+  useEffect(() => {
+    let cancelled = false;
+    const unmountedEffect = () => {
+      cancelled = true;
+    };
+    // compute user hash
+    // no-op on server or if crypto not available
+    if (typeof window === 'undefined') {
+      return unmountedEffect;
+    }
+    if (!window.crypto || !window.crypto.subtle) {
+      if (userHash !== null) {
+        setUserHash(null);
+      }
+      return unmountedEffect;
+    }
+    const input = data?.data?.user?.email;
+    if (!input) {
+      // if we have not been unmounted and we have a userHash, clear it out
+      if (!cancelled && userHash) {
+        setUserHash(undefined);
+      }
+      return unmountedEffect;
+    }
+    const computeHash = async () => {
+      const enc = new TextEncoder();
+      const data = enc.encode(input);
+      const digest = await window.crypto.subtle.digest('SHA-256', data);
+      // convert to hex string
+      const hashArray = Array.from(new Uint8Array(digest));
+      const hashHex = hashArray
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+      // attach to response for downstream usage
+      return hashHex;
+    };
+    // Compute the hash and then update state
+    computeHash()
+      .then((hash) => {
+        // if we have not been unmounted and this is a new hash value, set it
+        if (!cancelled && hash !== userHash) {
+          setUserHash(hash);
+        }
+      })
+      .catch((err) => {
+        LoggedError.isTurtlesAllTheWayDownBaby(err, {
+          source: 'UserHashCompute',
+          log: true,
+        });
+        if (cancelled) return;
+        // show notification of failure
+        notifications.show(errorMessage, {
+          severity: 'error',
+          key: NOTIFICATION_KEY_USERHASH_COMPUTE,
+          autoHideDuration: 60000, // 60 seconds
+        });
+      });
 
-  const { data, isLoading, isFetching, refetch } = query;
+    return unmountedEffect;
+  }, [data?.data?.user?.email, userHash, notifications]);
 
   // Key validation logic
   const performKeyValidation = useCallback(
@@ -200,13 +265,22 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
 
   // Determine current session status
   const currentStatus: 'loading' | 'authenticated' | 'unauthenticated' =
-    isLoading ? 'loading' : (dataStatus ?? 'unauthenticated');
+    isLoading
+      ? 'loading'
+      : dataStatus === 'authenticated'
+        ? keyValidationStatus === 'validating' ||
+          keyValidationStatus === 'synchronizing' ||
+          userHash === undefined
+          ? 'loading'
+          : 'authenticated'
+        : (dataStatus ?? 'unauthenticated');
 
   // Create context value, only updating if values actually changed
   const contextValue: SessionContextType<object> = {
     status: currentStatus,
     data: data?.data ?? null,
     isFetching,
+    userHash: userHash === null ? undefined : userHash,
     refetch,
     publicKeys: data?.publicKeys,
     keyValidation: {

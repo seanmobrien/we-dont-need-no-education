@@ -1,4 +1,5 @@
 import { config } from './common';
+import { log } from '@/lib/logger';
 import { env } from '@/lib/site-util/env';
 import {
   ApplicationInsights,
@@ -33,7 +34,7 @@ const getClickPlugin = () => {
 
 const getAppInsights = () => {
   if (
-    env('NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING') &&
+    env('AZURE_MONITOR_CONNECTION_STRING') &&
     typeof window !== 'undefined' &&
     (!appInsightState.appInsightInstance ||
       !appInsightState.appInsightInstance?.core?.isInitialized)
@@ -46,7 +47,7 @@ const getAppInsights = () => {
     appInsightState.appInsightInstance ??= new ApplicationInsights({
       config: {
         appId: config.serviceName,
-        connectionString: env('NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING'),
+        connectionString: env('AZURE_MONITOR_CONNECTION_STRING'),
         enableDebug: true,
         enableAutoRouteTracking: true,
         enableAjaxErrorStatusText: true,
@@ -114,6 +115,10 @@ const getAppInsights = () => {
               }
             }
           }
+
+          if (JSON.stringify(envelope).includes('/health')) {
+            return false;
+          }
           return true;
         },
       );
@@ -146,7 +151,8 @@ const getAppInsights = () => {
 export { getAppInsights, getReactPlugin, getClickPlugin };
 
 const instrument = () => {
-  console.log(
+  // Logging is not availalbe until after instrumentation is complete
+  console.info(
     'Instrumentation is not supported in the browser environment....nothing to do.',
   );
   return Promise.resolve(void 0);

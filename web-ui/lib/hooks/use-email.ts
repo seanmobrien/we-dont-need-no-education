@@ -11,13 +11,7 @@ export const emailKeys = {
   search: (params: object) => [...emailKeys.all, 'search', params] as const,
 };
 
-/**
- * Hook for fetching a single email by ID using React Query
- * 
- * @param emailId - The ID of the email to fetch
- * @param options - Additional React Query options
- * @returns React Query result with email data, loading state, and error state
- */
+
 export const useEmail = (
   emailId: string | null,
   options?: {
@@ -59,12 +53,7 @@ export const useEmail = (
   });
 };
 
-/**
- * Hook for writing (creating or updating) email records using React Query mutation
- * 
- * @param options - Configuration options for the mutation
- * @returns React Query mutation result with mutate function and state
- */
+
 export const useWriteEmail = (options?: {
   onSuccess?: (data: EmailMessage) => void;
   onError?: (error: unknown) => void;
@@ -116,12 +105,7 @@ export const useWriteEmail = (options?: {
   });
 };
 
-/**
- * Hook for prefetching an email
- * Useful for optimistic loading when user hovers over links
- * 
- * @param emailId - The ID of the email to prefetch
- */
+
 export const usePrefetchEmail = () => {
   const queryClient = useQueryClient();
 

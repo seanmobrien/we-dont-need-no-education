@@ -2,14 +2,13 @@
  * @jest-environment node
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { trace } from '@opentelemetry/api';
 
 describe('wrapRouteRequest tracing', () => {
   test('extracts parent from trace headers and sets attributes', async () => {
     // Create a dummy handler
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     const handler = wrapRouteRequest(async (_req: any) => {
       return new Response(JSON.stringify({ ok: true }), { status: 201 });
     });
@@ -49,7 +48,7 @@ describe('wrapRouteRequest tracing', () => {
           parent: any,
           fn: (span: any) => Promise<Response> | Response,
         ) => {
-          return await fn(mockSpan);
+          return await ((fn ?? options)(mockSpan));
         },
       );
     const getTracerSpy = jest
@@ -57,7 +56,7 @@ describe('wrapRouteRequest tracing', () => {
       .mockReturnValue({ startActiveSpan: startActiveSpanSpy } as any);
 
     const res = await handler(req as any);
-    expect(res.status).toBe(201);
+    expect(res!.status).toBe(201);
 
     // Verify startActiveSpan was called with expected attributes
     expect(startActiveSpanSpy).toHaveBeenCalled();
@@ -85,7 +84,6 @@ describe('wrapRouteRequest tracing', () => {
   });
 
   test('handles NextRequest.nextUrl path/query extraction and header redaction', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handler = wrapRouteRequest(async (_req: any) => {
       return new Response(JSON.stringify({ ok: true }), { status: 202 });
     });
@@ -123,7 +121,7 @@ describe('wrapRouteRequest tracing', () => {
           parent: any,
           fn: (span: any) => Promise<Response> | Response,
         ) => {
-          return await fn(mockSpan);
+          return await ((fn ?? options)(mockSpan));
         },
       );
     const getTracerSpy = jest
@@ -131,7 +129,7 @@ describe('wrapRouteRequest tracing', () => {
       .mockReturnValue({ startActiveSpan: startActiveSpanSpy } as any);
 
     const res = await handler(req as any);
-    expect(res.status).toBe(202);
+    expect(res!.status).toBe(202);
 
     expect(startActiveSpanSpy).toHaveBeenCalled();
     const call = startActiveSpanSpy.mock.calls[0];

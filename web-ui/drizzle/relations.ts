@@ -19,7 +19,6 @@ import {
   userPublicKeys,
   accounts,
   sessions,
-  sessionsExt,
   policiesStatutes,
   emailPropertyCategory,
   stagingMessage,
@@ -296,6 +295,7 @@ export const userPublicKeysRelations = relations(userPublicKeys, ({ one }) => ({
 export const usersRelations = relations(users, ({ many }) => ({
   userPublicKeys: many(userPublicKeys),
   accounts: many(accounts),
+  sessions: many(sessions),
   stagingMessages: many(stagingMessage),
 }));
 
@@ -312,13 +312,9 @@ export const sessionsRelations = relations(sessions, ({ one, many }) => ({
     fields: [sessions.userId],
     references: [accounts.userId],
   }),
-  sessionsExts: many(sessionsExt),
-}));
-
-export const sessionsExtRelations = relations(sessionsExt, ({ one }) => ({
-  session: one(sessions, {
-    fields: [sessionsExt.sessionId],
-    references: [sessions.id],
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
   }),
 }));
 

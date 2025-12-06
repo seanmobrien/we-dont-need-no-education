@@ -7,18 +7,12 @@ import {
 } from '@/lib/drizzle-db';
 import { auth } from '@/auth';
 
-/**
- * Returns all public keys for a user that were active at a given date.
- * @param userId - The user's id (number)
- * @param effectiveDate - ISO string or Date for the point in time
- * @param db - Drizzle database instance (must be provided by caller)
- */
 export const getActiveUserPublicKeys = async ({
   db: database,
   effectiveDate,
   userId: userIdFromProps,
 }: {
-  userId: number;
+  userId?: number;
   effectiveDate?: string | Date;
   db?: DatabaseType;
 }): Promise<string[]> => {
@@ -31,7 +25,7 @@ export const getActiveUserPublicKeys = async ({
       : typeof effectiveDate === 'string'
         ? new Date(effectiveDate)
         : effectiveDate;
-  let userId: number;
+  let userId: number | undefined;
   if (userIdFromProps) {
     userId = userIdFromProps;
   } else {

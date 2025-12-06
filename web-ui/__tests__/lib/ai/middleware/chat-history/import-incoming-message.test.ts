@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 /**
  * @fileoverview Unit tests for chat history import incoming message functionality
  *

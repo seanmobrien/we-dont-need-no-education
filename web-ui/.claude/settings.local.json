@@ -13,7 +13,9 @@
       "Bash(yarn lint:*)",
       "Bash(cat:*)",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Read(//d/repos/no-ed/.github/workflows/**)",
+      "Bash(npm info:*)"
     ],
     "deny": [],
     "defaultMode": "acceptEdits"

@@ -1,4 +1,5 @@
-import { IUrlBuilder, UrlBuilderInfo } from './_types';
+import { mappedPageOverloadFactory } from './_from-map';
+import { IUrlBuilder, MappedPageOverloads, UrlBuilderInfo } from './_types';
 import { env } from '@/lib/site-util/env';
 
 const appendParams = (url: URL, params: object | undefined) => {
@@ -34,27 +35,6 @@ const appendParams = (url: URL, params: object | undefined) => {
   return copy;
 };
 
-/**
- * The `UrlBuilder` class is responsible for constructing and manipulating URLs
- * based on a hierarchical structure of segments and optional slugs. It provides
- * methods to build child URLs, append query parameters, and generate URL strings.
- *
- * The class supports the following features:
- * - Constructing URLs from segments and slugs.
- * - Generating child URLs based on the current URL.
- * - Appending query parameters to URLs.
- * - Handling root URLs and base paths.
- *
- * Example usage:
- *
- * ```typescript
- * const builder = UrlBuilder.rootBuilder.child('segment', 'slug');
- * const url = builder.page('page', { param: 'value' });
- * console.log(url.toString()); // Outputs the constructed URL
- * ```
- *
- * @implements {IUrlBuilder}
- */
 export class UrlBuilder implements IUrlBuilder {
   /**
    * Returns the root URL of the application.
@@ -114,6 +94,7 @@ export class UrlBuilder implements IUrlBuilder {
       );
     }
     this.info = info as UrlBuilderInfo;
+    this.route = mappedPageOverloadFactory(this, this.info.segment);
   }
 
   /**
@@ -124,7 +105,7 @@ export class UrlBuilder implements IUrlBuilder {
   private get parentPart(): string {
     return this.info.parent == null ? '' : this.info.parent.path;
   }
-
+  route: MappedPageOverloads;
   /**
    * Gets the slug part formatted for a URL.
    *

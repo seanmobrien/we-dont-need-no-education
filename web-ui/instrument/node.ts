@@ -14,12 +14,15 @@ import {
   AzureMonitorMetricExporter,
   AzureMonitorLogExporter,
 } from '@azure/monitor-opentelemetry-exporter';
-import { ChunkingTraceExporter } from './chunking/ChunkingTraceExporter';
-import { ChunkingLogExporter } from './chunking/ChunkingLogExporter';
+import { ChunkingTraceExporter } from './chunking/chunking-trace-exporter';
+import { ChunkingLogExporter } from './chunking/chunking-log-exporter';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import { config } from './common';
 import AfterManager from '@/lib/site-util/after';
+import UrlFilteredSpanExporter from './url-filter/url-filter-trace-exporter';
+import UrlFilteredLogExporter from './url-filter/url-filtered-log-exporter';
+import { GlobalWithMyGlobal } from '@/lib/typescript/singleton-provider/types';
 
 enum KnownSeverityLevel {
   Verbose = 'Verbose',
@@ -31,31 +34,38 @@ enum KnownSeverityLevel {
 
 // Global symbol keys for singleton registry
 const NODE_SDK_KEY = Symbol.for('@noeducation/instrumentation:nodeSdk');
-const REGISTERED_KEY = Symbol.for('@noeducation/instrumentation:registered');
+const REGISTERED_KEY = Symbol.for(
+  '@noeducation/instrumentation/nodeSdk:registered',
+);
+
+type GlobalWithNodeSdk = GlobalWithMyGlobal<
+  NodeSDK | undefined,
+  typeof NODE_SDK_KEY
+>;
+type GlobalWithNodeRegistered = GlobalWithMyGlobal<
+  boolean,
+  typeof REGISTERED_KEY
+>;
 
 // Global registry accessors for NodeSDK singleton
 const getNodeSdk = (): NodeSDK | undefined => {
-  type GlobalReg = { [k: symbol]: NodeSDK | undefined };
-  const g = globalThis as unknown as GlobalReg;
+  const g = globalThis as GlobalWithNodeSdk;
   return g[NODE_SDK_KEY];
 };
 
 const setNodeSdk = (value: NodeSDK | undefined): void => {
-  type GlobalReg = { [k: symbol]: NodeSDK | undefined };
-  const g = globalThis as unknown as GlobalReg;
+  const g = globalThis as GlobalWithNodeSdk;
   g[NODE_SDK_KEY] = value;
 };
 
 // Global registry accessors for registered flag singleton
 const getRegistered = (): boolean => {
-  type GlobalReg = { [k: symbol]: boolean };
-  const g = globalThis as unknown as GlobalReg;
+  const g = globalThis as GlobalWithNodeRegistered;
   return g[REGISTERED_KEY] ?? false;
 };
 
 const setRegistered = (value: boolean): void => {
-  type GlobalReg = { [k: symbol]: boolean };
-  const g = globalThis as unknown as GlobalReg;
+  const g = globalThis as GlobalWithNodeRegistered;
   g[REGISTERED_KEY] = value;
 };
 
@@ -81,7 +91,7 @@ const instrumentServer = () => {
     return;
   }
 
-  const connStr = process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING;
+  const connStr = process.env.AZURE_MONITOR_CONNECTION_STRING;
 
   // Skip instrumentation in development if no valid connection string
   if (
@@ -93,17 +103,25 @@ const instrumentServer = () => {
     console.log('[otel] Skipping Azure Monitor in development mode');
     return;
   }
-
-  const traceExporter = new ChunkingTraceExporter(
-    new AzureMonitorTraceExporter({ connectionString: connStr }),
-    { maxChunkChars: 8000, keepOriginalKey: false },
+  const urlFilter = {
+    rules: ['/api/auth/login', '/api/auth/session', '/api/health'],
+  };
+  const traceExporter = new UrlFilteredSpanExporter(
+    new ChunkingTraceExporter(
+      new AzureMonitorTraceExporter({ connectionString: connStr }),
+      { maxChunkChars: 8000, keepOriginalKey: false },
+    ),
+    urlFilter,
   );
   const metricExporter = new AzureMonitorMetricExporter({
     connectionString: connStr,
   });
-  const logExporter = new ChunkingLogExporter(
-    new AzureMonitorLogExporter({ connectionString: connStr }),
-    { maxChunkChars: 8000, keepOriginalKey: false },
+  const logExporter = new UrlFilteredLogExporter(
+    new ChunkingLogExporter(
+      new AzureMonitorLogExporter({ connectionString: connStr }),
+      { maxChunkChars: 8000, keepOriginalKey: false },
+    ),
+    urlFilter,
   );
 
   const sdk = new NodeSDK({
@@ -121,20 +139,19 @@ const instrumentServer = () => {
       exporter: metricExporter,
     }),
     instrumentations: [
-      new UndiciInstrumentation({
-        ignoreRequestHook: (request) => {
-          // Ignore requests to auth session endpoint, too spammy
-          if (request.path.includes('/api/auth/session')) {
-            return true;
-          }
-          return false;
-        },
-      }),
+      new UndiciInstrumentation({}),
       new PinoInstrumentation({
         disableLogSending: false,
         logHook: (span, record) => {
           record.trace_id = span.spanContext().traceId;
           record.span_id = span.spanContext().spanId;
+          if (record.attribs) {
+            Object.entries(record.attribs).forEach(([key, value]) => {
+              if (value) {
+                span.setAttribute(key, String(value));
+              }
+            });
+          }
           if (record.error) {
             record.body =
               record.error.stack ||

@@ -2,7 +2,7 @@
 
 import { getAppInsights } from '@/instrument/browser';
 import { useSession } from '@/components/auth/session-provider';
-import { Session } from 'next-auth';
+import type { Session } from '@auth/core/types';
 import {
   usePathname,
   useSearchParams,

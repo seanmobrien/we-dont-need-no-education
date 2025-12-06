@@ -23,18 +23,8 @@ export const ApplicationInsightsEventBaseType = 'EventData';
  * @example Can't convert 'int' object to str implicitly
  */
 export const ATTR_EXCEPTION_MESSAGE = 'exception.message';
-/**
- * A stacktrace as a string in the natural representation for the language runtime. The representation is to be determined and documented by each language SIG.
- *
- * @example "Exception in thread "main" java.lang.RuntimeException: Test exception\\n at com.example.GenerateTrace.methodB(GenerateTrace.java:13)\\n at com.example.GenerateTrace.methodA(GenerateTrace.java:9)\\n at com.example.GenerateTrace.main(GenerateTrace.java:5)\\n"
- */
+
 export const ATTR_EXCEPTION_STACKTRACE = 'exception.stacktrace';
-/**
- * The type of the exception (its fully-qualified class name, if applicable). The dynamic type of the exception should be preferred over the static type in languages that support it.
- *
- * @example java.net.ConnectException
- * @example OSError
- */
 export const ATTR_EXCEPTION_TYPE = 'exception.type';
 export enum KnownSeverityLevel {
   /** Verbose */
@@ -48,10 +38,11 @@ export enum KnownSeverityLevel {
   /** Critical */
   Critical = 'Critical',
 }
+
 export const asKnownSeverityLevel = (input: unknown): KnownSeverityLevel => {
   if (typeof input === 'number') {
-    if (input < 5){
-      switch(input) {
+    if (input < 5) {
+      switch (input) {
         case 0:
           return KnownSeverityLevel.Verbose;
         case 1:
@@ -78,7 +69,7 @@ export const asKnownSeverityLevel = (input: unknown): KnownSeverityLevel => {
     }
     if (input < 40) {
       return KnownSeverityLevel.Critical;
-    }      
+    }
     return KnownSeverityLevel.Error;
   }
   switch (String(input ?? '').toLocaleLowerCase()) {
@@ -94,4 +85,4 @@ export const asKnownSeverityLevel = (input: unknown): KnownSeverityLevel => {
       return KnownSeverityLevel.Critical;
   }
   return KnownSeverityLevel.Error;
-}
+};

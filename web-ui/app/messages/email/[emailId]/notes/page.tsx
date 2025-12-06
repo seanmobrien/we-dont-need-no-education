@@ -1,4 +1,4 @@
-import { Box, Stack } from '@mui/material';
+import { Box } from '@mui/material';
 import { NoteGrid } from './grid';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
 import { auth } from '@/auth';
@@ -30,15 +30,25 @@ const Home = async (args: { params: Promise<{ emailId: string }> }) => {
         <Box
           sx={{
             width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
             '& > :not(style)': {
               m: 1,
             },
           }}
         >
-          <Stack>
-            <NoteGrid />
+          <NoteGrid />
+          <Box
+            sx={{
+              flexGrow: 1,
+              '& > div': {
+                height: ['100%', 'fill-available', '-webkit-fill-available'],
+              },
+            }}
+          >
             <ChatPanel page="email-notes" />
-          </Stack>
+          </Box>
         </Box>
       </ChatPanelLayout>
     </EmailDashboardLayout>

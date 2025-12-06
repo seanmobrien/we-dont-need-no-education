@@ -1,16 +1,4 @@
-/**
- * @module lib/ai/middleware/tokenStatsTracking/tokenStatsService
- * @fileoverview
- * TokenStatsService provides centralized logic for tracking AI token consumption, enforcing quotas, and reporting usage statistics.
- * It integrates Redis for fast, sliding-window statistics and PostgreSQL for persistent system-of-record storage.
- * This module is used by AI middleware, model factories, and quota enforcement logic throughout the application.
- *
- * @author NoEducation Team
- * @version 1.0.0
- * @since 2025-01-01
- */
-
-import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
+import { getRedisClient } from '@/lib/redis-client';
 import { drizDbWithInit, schema, sql } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
@@ -22,50 +10,30 @@ import {
   TokenUsageData,
 } from '../../middleware/tokenStatsTracking/types';
 import { ModelMap } from './model-map';
+import { SingletonProvider } from '@/lib/typescript';
 
-/**
- * Service for tracking token consumption statistics and enforcing quotas.
- * Uses Redis for fast access and PostgreSQL as system of record.
- *
- * @implements {TokenStatsServiceType}
- */
+const REGISTRY_KEY = '@noeducation/model-stats:TokenStatsService';
+
 class TokenStatsService implements TokenStatsServiceType {
-  /** Symbol-based global registry key for TokenStatsService singleton. */
-  static readonly #REGISTRY_KEY = Symbol.for(
-    '@noeducation/model-stats:TokenStatsService',
-  );
-
-  /** Global singleton instance via symbol registry. */
   private static get instance(): TokenStatsService | undefined {
-    type GlobalReg = { [k: symbol]: TokenStatsService | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    return g[this.#REGISTRY_KEY];
+    return SingletonProvider.Instance.get<TokenStatsService>(REGISTRY_KEY);
   }
   private static set instance(value: TokenStatsService | undefined) {
-    type GlobalReg = { [k: symbol]: TokenStatsService | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    g[this.#REGISTRY_KEY] = value;
+    if (value === undefined) {
+      SingletonProvider.Instance.delete(REGISTRY_KEY);
+    } else {
+      SingletonProvider.Instance.set<TokenStatsService>(REGISTRY_KEY, value);
+    }
   }
 
-  /** Quota cache time-to-live in milliseconds (default: 5 minutes). */
   private readonly QUOTA_CACHE_TTL = 5 * 60 * 1000;
 
-  /** Private constructor for singleton pattern. */
   private constructor() {}
 
-  /**
-   * Reset the singleton instance (for testing or reinitialization).
-   * @function
-   */
   static reset(): void {
     this.instance = undefined;
   }
 
-  /**
-   * Get the singleton instance of TokenStatsService.
-   * @returns {TokenStatsService} The singleton instance.
-   * @function
-   */
   static get Instance(): TokenStatsService {
     if (!TokenStatsService.instance) {
       TokenStatsService.instance = new TokenStatsService();
@@ -73,14 +41,6 @@ class TokenStatsService implements TokenStatsServiceType {
     return TokenStatsService.instance;
   }
 
-  /**
-   * Get the Redis key for token statistics for a given provider/model and window type.
-   * @param {string} provider - Provider ID (e.g., 'azure-openai.chat').
-   * @param {string} modelName - Model name (e.g., 'gpt-4').
-   * @param {string} windowType - Time window ('minute', 'hour', 'day').
-   * @returns {string} Redis key for token stats.
-   * @private
-   */
   private getRedisStatsKey(
     provider: string,
     modelName: string,
@@ -89,12 +49,6 @@ class TokenStatsService implements TokenStatsServiceType {
     return `token_stats:${provider}:${modelName}:${windowType}`;
   }
 
-  /**
-   * Get quota configuration for a provider/model from cache, Redis, or database.
-   * @param {string} provider - Provider name or ID.
-   * @param {string} modelName - Model name.
-   * @returns {Promise<ModelQuota|null>} Quota configuration or null if not found.
-   */
   async getQuota(
     provider: string,
     modelName: string,
@@ -137,12 +91,6 @@ class TokenStatsService implements TokenStatsServiceType {
     }
   }
 
-  /**
-   * Get current token usage statistics for a provider/model from Redis.
-   * @param {string} provider - Provider name or ID.
-   * @param {string} modelName - Model name.
-   * @returns {Promise<TokenStats>} Aggregated token usage statistics.
-   */
   async getTokenStats(
     provider: string,
     modelName: string,
@@ -207,14 +155,6 @@ class TokenStatsService implements TokenStatsServiceType {
     }
   }
 
-  /**
-   * Check if a token usage request would exceed quotas for a provider/model.
-   * Returns a result indicating allowance, reason, and current usage.
-   * @param {string} provider - Provider name or ID.
-   * @param {string} modelName - Model name.
-   * @param {number} requestedTokens - Number of tokens requested.
-   * @returns {Promise<QuotaCheckResult>} Quota check result.
-   */
   async checkQuota(
     provider: string,
     modelName: string,
@@ -294,24 +234,6 @@ class TokenStatsService implements TokenStatsServiceType {
     }
   }
 
-  /**
-   * Safely record token usage for a provider/model.
-   * Updates both Redis and PostgreSQL with sliding window statistics.
-   * This method is guaranteed not to reject and can be safely ignored.
-   *
-   * @param {string} provider - Provider ID (e.g., 'azure-openai.chat').
-   * @param {string} modelName - Model name (e.g., 'gpt-4').
-   * @param {TokenUsageData} usage - Token usage data to record.
-   * @returns {Promise<void>} Resolves when usage is recorded.
-   * @throws Never - errors are handled internally.
-   *
-   * @example
-   * await tokenStatsService.safeRecordTokenUsage('azure-openai.chat', 'gpt-4', {
-   *   promptTokens: 100,
-   *   completionTokens: 200,
-   *   totalTokens: 300
-   * });
-   */
   async safeRecordTokenUsage(
     provider: string,
     modelName: string,
@@ -345,14 +267,6 @@ class TokenStatsService implements TokenStatsServiceType {
     }
   }
 
-  /**
-   * Update Redis statistics for a provider/model with sliding windows.
-   * @param {string} provider - Provider ID.
-   * @param {string} modelName - Model name.
-   * @param {TokenUsageData} usage - Token usage data.
-   * @returns {Promise<void>} Resolves when Redis stats are updated.
-   * @private
-   */
   private async updateRedisStats(
     provider: string,
     modelName: string,
@@ -450,14 +364,6 @@ class TokenStatsService implements TokenStatsServiceType {
     }
   }
 
-  /**
-   * Update PostgreSQL statistics for a provider/model for persistence.
-   * @param {string} provider - Provider ID.
-   * @param {string} modelName - Model name.
-   * @param {TokenUsageData} usage - Token usage data.
-   * @returns {Promise<void>} Resolves when database stats are updated.
-   * @private
-   */
   private async updateDatabaseStats(
     provider: string,
     modelName: string,
@@ -538,14 +444,6 @@ class TokenStatsService implements TokenStatsServiceType {
     }
   }
 
-  /**
-   * Get a comprehensive token usage report for a provider/model.
-   * Includes quota, current stats, and quota check result.
-   * @param {string} provider - Provider name or ID.
-   * @param {string} modelName - Model name.
-   * @returns {Promise<{quota: ModelQuota|null, currentStats: TokenStats, quotaCheckResult: QuotaCheckResult}>}
-   *   Usage report object.
-   */
   async getUsageReport(
     provider: string,
     modelName: string,
@@ -581,15 +479,7 @@ class TokenStatsService implements TokenStatsServiceType {
   }
 }
 
-/**
- * Get the singleton instance of TokenStatsService as TokenStatsServiceType.
- * @returns {TokenStatsServiceType} The singleton instance.
- */
 export const getInstance = (): TokenStatsServiceType =>
   TokenStatsService.Instance;
 
-/**
- * Reset the singleton instance of TokenStatsService.
- * @returns {void}
- */
 export const reset = (): void => TokenStatsService.reset();

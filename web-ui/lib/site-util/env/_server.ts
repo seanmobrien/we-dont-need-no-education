@@ -11,7 +11,7 @@
  */
 
 import { z } from 'zod';
-import { isRunningOnClient, ZodProcessors } from './_common';
+import { getMappedSource, isRunningOnClient, ZodProcessors } from './_common';
 import {
   clientEnvFactory,
   clientRawInstance,
@@ -29,6 +29,7 @@ import { AiModelType } from '@/lib/ai/core';
 const buildRawInstance = () => {
   const raw = {
     ...clientRawInstance,
+    AUTH_SECRET: process.env.AUTH_SECRET,
     /** Server-side logging level - controls verbosity of server logs. Example: 'debug', 'info', 'warn', 'error' */
     LOG_LEVEL_SERVER: process.env.LOG_LEVEL_SERVER ?? 'warn',
     /** Primary database connection URL for pooled connections. Example: 'postgresql://user:pass@host:5432/dbname' */
@@ -84,13 +85,9 @@ const buildRawInstance = () => {
     AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
     /** Google API key for service access. Example: 'AIzaSyD1234567890abcdef...' */
     AUTH_GOOGLE_APIKEY: process.env.AUTH_GOOGLE_APIKEY,
-    /** HTTP header name for authentication bypass in development. Example: 'x-auth-bypass-key' */
-    AUTH_HEADER_BYPASS_KEY: process.env.AUTH_HEADER_BYPASS_KEY,
-    /** HTTP header value for authentication bypass in development. Example: 'dev-secret-123' */
-    AUTH_HEADER_BYPASS_VALUE: process.env.AUTH_HEADER_BYPASS_VALUE,
     /** Azure Monitor Application Insights connection string. Example: 'InstrumentationKey=12345678-1234-1234-1234-123456789012' */
-    NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
-      process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,
+    AZURE_MONITOR_CONNECTION_STRING:
+      process.env.AZURE_MONITOR_CONNECTION_STRING,
     /** Azure Storage account connection string. Example: 'DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=...' */
     AZURE_STORAGE_CONNECTION_STRING:
       process.env.AZURE_STORAGE_CONNECTION_STRING,
@@ -100,6 +97,9 @@ const buildRawInstance = () => {
     AZURE_STORAGE_ACCOUNT_NAME: process.env.AZURE_STORAGE_ACCOUNT_NAME,
     /*** Flagsmith server-side SDK key, supporting update and privledged server-side reads */
     FLAGSMITH_SDK_KEY: process.env.FLAGSMITH_SDK_KEY,
+    /** Google Chrome DevTools workspace ID for app-specific integration. Example: 'a7c3f8e2-4b9d-4f1a-8c6e-5d2a3b7e9f4c' */
+    GOOGLE_CHROME_DEVTOOLS_WORKSPACE_ID:
+      process.env.GOOGLE_CHROME_DEVTOOLS_WORKSPACE_ID,
     /** Google Generative AI API key for Gemini models. Example: 'AIzaSyA1234567890abcdef...' */
     GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     /** Google Generative AI service base URL. Example: 'https://generativelanguage.googleapis.com/v1beta' */
@@ -130,16 +130,18 @@ const buildRawInstance = () => {
     /** Keycloak impersonator offline token for user impersonation tokens (optional). Example: admin */
     AUTH_KEYCLOAK_IMPERSONATOR_OFFLINE_TOKEN:
       process.env.AUTH_KEYCLOAK_IMPERSONATOR_OFFLINE_TOKEN,
+    /** Keycloak OAuth scope for authentication. Example: 'openid profile email roles mcp-tool' */
+    AUTH_KEYCLOAK_SCOPE: process.env.AUTH_KEYCLOAK_SCOPE,
     /** Redis connection URL for caching and session storage. Example: 'redis://localhost:6379' */
     REDIS_URL: process.env.REDIS_URL,
     /** Redis password for authentication. Example: 'redis-secret-password' */
     REDIS_PASSWORD: process.env.REDIS_PASSWORD,
     /** User ID to bypass authentication in local development. Example: 'dev-user-123' */
     LOCAL_DEV_AUTH_BYPASS_USER_ID: process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID,
-    /** Flag to disable Mem0 memory service integration. Example: 'true' or 'false' */
-    MEM0_DISABLED: process.env.MEM0_DISABLED,
     /** Mem0 API service host URL. Example: 'https://api.mem0.ai' */
     MEM0_API_HOST: process.env.MEM0_API_HOST,
+    /** Base path appended to Mem0 API requests. Example: 'api/v1' */
+    MEM0_API_BASE_PATH: process.env.MEM0_API_BASE_PATH ?? 'api/v1',
     /** Mem0 UI dashboard host URL. Example: 'https://app.mem0.ai' */
     MEM0_UI_HOST: process.env.MEM0_UI_HOST,
     /** Mem0 service username for authentication. Example: 'user@example.com' */
@@ -169,7 +171,7 @@ const buildRawInstance = () => {
       process.env.NEXT_PUBLIC_HOSTNAME,
     ).toString();
   }
-  return raw;
+  return getMappedSource(raw);
 };
 
 /*
@@ -184,6 +186,10 @@ const ZodAiModelType = () => z.enum(AiModelTypeValues);
  */
 const serverEnvSchema = z
   .object({
+    AUTH_SECRET: z
+      .string()
+      .min(1)
+      .describe('auth.js secret used when signing tokens'),
     LOG_LEVEL_SERVER: ZodProcessors.logLevel().describe(
       'Server-side logging level for application logs. Example: debug, info, warn, error',
     ),
@@ -219,6 +225,7 @@ const serverEnvSchema = z
       .describe(
         'Azure AI Search index name for storing document vectors and metadata. Example: documents-prod',
       ),
+
     AZURE_OPENAI_DEPLOYMENT_CHAT: z
       .string()
       .optional()
@@ -239,12 +246,14 @@ const serverEnvSchema = z
       .describe(
         'Azure OpenAI endpoint URL for embedding services (fallback to main endpoint). Example: https://myembeddings.openai.azure.com/',
       ),
+
     AZURE_OPENAI_KEY_EMBEDDING: z
       .string()
       .default(process.env.AZURE_OPENAI_KEY ?? '')
       .describe(
         'Azure OpenAI API key for embedding services (fallback to main key). Example: embed123key456...',
       ),
+
     AZURE_OPENAI_DEPLOYMENT_HIFI: z
       .string()
       .optional()
@@ -272,6 +281,7 @@ const serverEnvSchema = z
       .describe(
         'Azure OpenAI endpoint URL for completion services (fallback to main endpoint). Example: https://mycompletions.openai.azure.com/',
       ),
+
     AZURE_OPENAI_KEY_COMPLETIONS: z
       .string()
       .default(process.env.AZURE_OPENAI_KEY ?? '')
@@ -285,25 +295,25 @@ const serverEnvSchema = z
         'Azure AI Search index name for storing policy document vectors and metadata. Example: policies-prod',
       ),
     AZURE_AISEARCH_VECTOR_SIZE_SMALL: z
-      .number()
+      .coerce.number()
       .default(1536)
       .describe(
         'Vector dimension size for small embeddings in Azure AI Search. Default: 1536. Example: 1536',
       ),
     AZURE_AISEARCH_VECTOR_SIZE_LARGE: z
-      .number()
+      .coerce.number()
       .default(3072)
       .describe(
         'Vector dimension size for large embeddings in Azure AI Search. Default: 3072. Example: 3072',
       ),
     AZURE_AISEARCH_DOCUMENT_SPLITTER_OVERLAP: z
-      .number()
+      .coerce.number()
       .default(15)
       .describe(
         'Token overlap count when splitting documents for search indexing. Default: 15. Example: 20',
       ),
     AZURE_AISEARCH_DOCUMENT_SPLITTER_MAX_TOKENS: z
-      .number()
+      .coerce.number()
       .default(512)
       .describe(
         'Maximum tokens per document chunk during splitting for indexing. Default: 512. Example: 512',
@@ -329,18 +339,6 @@ const serverEnvSchema = z
       .describe(
         'Google API key for accessing Google services (Gmail, Drive, etc.). Example: AIzaSyD1234567890abcdef...',
       ),
-    AUTH_HEADER_BYPASS_KEY: z
-      .string()
-      .optional()
-      .describe(
-        'HTTP header name for development authentication bypass (optional). Example: x-auth-bypass-key',
-      ),
-    AUTH_HEADER_BYPASS_VALUE: z
-      .string()
-      .optional()
-      .describe(
-        'HTTP header value for development authentication bypass (optional). Example: dev-secret-123',
-      ),
     AZURE_STORAGE_CONNECTION_STRING: z
       .string()
       .min(1)
@@ -365,6 +363,12 @@ const serverEnvSchema = z
       .describe(
         'Flagsmith server-side SDK key for feature flag management and privileged reads.',
       ),
+    GOOGLE_CHROME_DEVTOOLS_WORKSPACE_ID: z
+      .string()
+      .default('a7c3f8e2-4b9d-4f1a-8c6e-5d2a3b7e9f4c')
+      .describe(
+        'Google Chrome DevTools workspace ID for app-specific integration. See {@link https://stackoverflow.com/questions/79629915/well-known-appspecific-com-chrome-devtools-json-request/79631068#79631068}',
+      ),
     GOOGLE_GENERATIVE_AI_API_KEY: z
       .string()
       .min(1)
@@ -372,6 +376,7 @@ const serverEnvSchema = z
       .describe(
         'Google Generative AI API key for Gemini model access (optional). Example: AIzaSyA1234567890abcdef...',
       ),
+
     GOOGLE_GENERATIVE_AI_BASE_URL: ZodProcessors.url()
       .default('https://generativelanguage.googleapis.com/v1beta')
       .describe(
@@ -398,6 +403,7 @@ const serverEnvSchema = z
       .describe(
         'Google Generative AI embedding model name. Default: google-embedding. Example: text-embedding-004',
       ),
+
     AUTH_KEYCLOAK_CLIENT_ID: z
       .string()
       .min(1)
@@ -412,15 +418,17 @@ const serverEnvSchema = z
       .describe(
         'Keycloak OAuth client secret for authentication (optional). Example: abc123-def456-ghi789',
       ),
-    AUTH_KEYCLOAK_ISSUER: z
-      .string()
-      .min(1)
-      .default(
-        'https://login.jollybush-836e15bc.westus3.azurecontainerapps.io/',
-      )
+    AUTH_KEYCLOAK_ISSUER: ZodProcessors.url()
       .optional()
       .describe(
         'Keycloak issuer URL for token validation. Default: development instance (optional). Example: https://auth.example.com/realms/myrealm',
+      ),
+    AUTH_KEYCLOAK_SCOPE: z
+      .string()
+      .optional()
+      .default('openid mcp_tool')
+      .describe(
+        'Keycloak OAuth scope for authentication (optional). Example: openid mcp_tool',
       ),
     AUTH_KEYCLOAK_IMPERSONATION_AUDIENCE: z
       .string()
@@ -469,12 +477,15 @@ const serverEnvSchema = z
       .describe(
         'User ID for bypassing authentication in local development (optional). Example: dev-user-123',
       ),
-    MEM0_DISABLED: ZodProcessors.truthy(false).describe(
-      'Flag to disable Mem0 memory service integration. Default: false. Example: true or false',
-    ),
     MEM0_API_HOST: ZodProcessors.url().describe(
       'Mem0 API service host URL for memory operations. Example: https://api.mem0.ai',
     ),
+    MEM0_API_BASE_PATH: z
+      .string()
+      .default('api/v1')
+      .describe(
+        'Base path segment appended to Mem0 API requests (without leading slash). Example: api/v1',
+      ),
     MEM0_UI_HOST: ZodProcessors.url().describe(
       'Mem0 UI dashboard host URL for memory management. Example: https://app.mem0.ai',
     ),
@@ -497,9 +508,8 @@ const serverEnvSchema = z
     MEM0_API_KEY: z
       .string()
       .optional()
-      .default('SKYNET')
       .describe(
-        'Mem0 API key for service authentication. Default: SKYNET. Example: mem0_sk_1234567890abcdef...',
+        'Mem0 API key for service authentication. Example: mem0_sk_1234567890abcdef...',
       ),
     NODE_ENV: z
       .string()
@@ -512,6 +522,7 @@ const serverEnvSchema = z
       .describe(
         'OpenAI API key for direct OpenAI service access (optional - Azure OpenAI preferred). Example: sk-1234567890abcdef...',
       ),
+
     OPENAI_HIFI: z
       .string()
       .optional()
@@ -566,7 +577,7 @@ export type ServerEnvType = ReturnType<typeof serverEnvSchema.parse>;
  *
  * @remarks
  * - Returns empty object when running on client-side (SSR safety)
- * - Falls back to client environment if DATABASE_URL is missing
+ * - Falls back to client environment if AUTH_SECRET is missing
  * - Validates all environment variables against their schemas
  * - Provides default values for optional configuration
  */
@@ -574,11 +585,11 @@ export const serverEnvFactory = (): ServerEnvType => {
   try {
     return isRunningOnClient()
       ? ({} as ServerEnvType)
-      : serverEnvSchema.parse(buildRawInstance());
+      : serverEnvSchema.parse({ ...buildRawInstance(), ...process.env });
   } catch (e) {
-    // Check an environment variable to verify really are running on server
-    if ((process.env.DATABASE_URL ?? '').length === 0) {
-      // We aren't - suppress (arguably could return client here)
+    // AUTH_SECRET is only server-side and super required...if it's missing, we're probably a client bundle
+    if ((process.env.AUTH_SECRET ?? '').length === 0) {
+      // We aren't - return client environment pretending to be server
       return clientEnvFactory() as unknown as ServerEnvType;
     }
     // Otherwise, rethrow the error

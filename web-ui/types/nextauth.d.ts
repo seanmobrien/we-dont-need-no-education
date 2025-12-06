@@ -161,6 +161,11 @@ declare module 'next-auth' {
      * Unique identifier within the provider's system (e.g., sub claim in JWT).
      */
     subject: string;
+
+    /**
+     * SHA256 hash of the user's email for consistent identification.
+     */
+    hash?: string;
   }
 
   /**
@@ -240,5 +245,10 @@ declare module 'next-auth/jwt' {
      * Essential for user-specific database queries and authorization checks.
      */
     user_id?: number;
+
+    /**
+     * Resource access claims associated with the token.
+     */
+    resource_access?: { [key: string]: string[] };
   }
 }

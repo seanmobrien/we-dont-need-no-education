@@ -188,7 +188,7 @@ try {
 
 The queue integrates with existing infrastructure:
 
-- **Redis**: Uses the existing Redis client from `@/lib/ai/middleware/cacheWithRedis/redis-client`
+- **Redis**: Uses the existing Redis client from `@/lib/redis-client`
 - **Auth**: Gets user IDs from the NextAuth `auth()` function
 - **Tokens**: Uses the existing token counting logic from `@/lib/ai/core/count-tokens`
 - **Logging**: Integrates with the application logger

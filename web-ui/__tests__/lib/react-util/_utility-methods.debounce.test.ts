@@ -22,7 +22,7 @@ describe('debounce', () => {
   });
 
   it('should only call the function once if called multiple times within wait', async () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     const fn = jest.fn((_x: string) => 'result');
     const debounced = debounce(fn, 200);
     const result1 = debounced('a');

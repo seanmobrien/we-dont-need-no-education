@@ -10,7 +10,6 @@ import { fetch } from '@/lib/nextjs-util/fetch';
 
 // Polyfill ReadableStream for Node.js test environment
 if (!globalThis.ReadableStream) {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ReadableStream } = require('stream/web');
   globalThis.ReadableStream = ReadableStream;
 }

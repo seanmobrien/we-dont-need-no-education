@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 // Mock the database connection
 
 import { DbDatabaseType, drizDb, drizDbWithInit } from '@/lib/drizzle-db';

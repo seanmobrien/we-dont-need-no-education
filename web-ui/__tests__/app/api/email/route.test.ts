@@ -97,7 +97,7 @@ import { NextRequest } from 'next/server';
 import { POST, PUT, GET } from '@/app/api/email/route';
 import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
-import { makeMockDb } from '@/__tests__/jest.setup';
+import { makeMockDb } from '@/__tests__/setup/jest.setup';
 import {
   count_kpi,
   count_attachments,

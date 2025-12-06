@@ -6,16 +6,13 @@
             "type": "node",
             "request": "launch",
             "cwd": "${workspaceFolder}",
-            "runtimeExecutable": "node",
+            "runtimeExecutable": "npm",
             "sourceMapRenames": true,
             "runtimeArgs": [
                 "--inspect",
-                //"--preserve-symlinks",
-                //"--preserve-symlinks-main",
-                // "--trace-deprecation",
-                // "--trace-warnings",
                 "--experimental-modules",
-                "--run",
+                "--preserve-symlinks",
+                "run-script",
                 "dev"
             ]
         },
@@ -23,13 +20,36 @@
             "name": "Next.js: debug trace deprecation",
             "type": "node",
             "request": "launch",
-            "env": {
-                "NODE_OPTIONS": "--inspect --trace-deprecation --trace-warnings"
-            },
-            "program": "${workspaceFolder}/node_modules/.bin/next",
+            "runtimeExecutable": "npm",
+            "console": "internalConsole",
+            "internalConsoleOptions": "openOnFirstSessionStart",
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "${workspaceFolder}",
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**"
+            ],
+            "showAsyncStacks": true,
+            "skipFiles": [
+                "(rsc)/**",
+                "(instrument)/**",
+                "<node_internals>/**",
+                "**/node_modules/**",
+                "**/.next/**",
+                "**/out/**",
+                "**/.vercel/**",
+                "**/.turbo/**",
+                "**/.expo/**",
+                "**/.expo-shared/**",
+                "**/.vscode/**"
+            ],
+            "outputCapture": "std",
             "runtimeArgs": [
                 "--experimental-modules",
-                "--run",
+                "--inspect",
+                "--trace-deprecation",
+                "--trace-warnings",
+                "run-script",
                 "dev"
             ]
         },
@@ -38,6 +58,13 @@
             "type": "chrome",
             "request": "launch",
             "url": "http://localhost:3000"
+        },
+        {
+            "name": "Launch Chrome",
+            "request": "launch",
+            "type": "chrome",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}"
         },
         {
             "name": "Next.js: debug full stack",

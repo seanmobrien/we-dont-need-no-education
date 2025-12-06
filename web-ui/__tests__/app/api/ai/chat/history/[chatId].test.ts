@@ -9,7 +9,7 @@
  * - Proper drizzle query construction and data transformation
  */
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();

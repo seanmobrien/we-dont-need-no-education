@@ -1,4 +1,9 @@
 import { forOneOrMany, OneOrMany } from '@/lib/typescript';
+import {
+  globalRequiredSingleton,
+  globalSingleton,
+  SingletonProvider,
+} from '@/lib/typescript/singleton-provider';
 import { ContactSummary, Contact } from './contact';
 import { isContact } from './guards';
 
@@ -14,19 +19,21 @@ export type ContactCache = {
   hasByEmail: OneOrMany<string, boolean>;
 };
 
+const CONTACT_CACHE_KEY = '@noeducation/data-models/api/ContactCache';
+
 class ContactCacheImpl implements ContactCache {
-  static #globalContactCache: ContactCache | null;
-  static ContactCacheImpl: ContactCacheImpl;
   static get globalCache(): ContactCache {
-    if (!ContactCacheImpl.#globalContactCache) {
-      ContactCacheImpl.#globalContactCache = new ContactCacheImpl();
-    }
-    return ContactCacheImpl.#globalContactCache;
+    return globalRequiredSingleton(CONTACT_CACHE_KEY, () => new ContactCacheImpl(), {
+      weakRef: true,
+    });
   }
+
   static resetGlobalCache(): void {
-    if (ContactCacheImpl.#globalContactCache) {
-      ContactCacheImpl.#globalContactCache.clear();
-      ContactCacheImpl.#globalContactCache = null;
+    const instance =
+      SingletonProvider.Instance.get<ContactCache>(CONTACT_CACHE_KEY);
+    if (instance) {
+      instance.clear();
+      SingletonProvider.Instance.delete(CONTACT_CACHE_KEY);
     }
   }
 

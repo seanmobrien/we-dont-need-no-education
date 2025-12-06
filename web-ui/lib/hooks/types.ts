@@ -2,7 +2,24 @@ import type { HealthStatus } from '@/lib/ai/mem0/types/health-check';
 
 export type { HealthStatus } from '@/lib/ai/mem0/types/health-check';
 
-export type RawHealthStatus = 'ok' | 'warning' | 'error';
+/**
+ * Narrow set of status codes surfaced by the health layer.
+ * Keep deliberately small to simplify external automation.
+ */
+export type HealthCheckStatusCode = 'healthy' | 'warning' | 'error';
+
+/**
+ * Base shape for any status entry.
+ */
+export type HealthCheckStatusEntryBase = {
+  /** Current coarse status value */
+  status: HealthCheckStatusCode;
+};
+
+export type HealthCheckStatusEntry<K extends string = never> =
+  HealthCheckStatusEntryBase & {
+    [key in K]?: HealthCheckStatusEntryBase;
+  };
 
 /**
  * Memory health response structure from the /api/health endpoint
@@ -105,10 +122,27 @@ export type HealthCheckResponse = {
   memory?: MemoryHealthResponse;
 
   /** General database service status - future extension point */
-  database?: { status: string };
+  database?: { status: HealthStatus };
 
   /** Chat service status - future extension point */
-  chat?: { status: string };
+  chat?: {
+    status: HealthStatus;
+    cache?: { status: HealthStatus };
+    queue?: { status: HealthStatus };
+    tools?: { status: HealthStatus };
+  };
+};
+
+/**
+ * Processed chat health data with subsystem details
+ */
+export type ChatHealthData = {
+  status: HealthStatus;
+  subsystems?: {
+    cache: HealthStatus;
+    queue: HealthStatus;
+    tools: HealthStatus;
+  };
 };
 
 /**
@@ -116,11 +150,11 @@ export type HealthCheckResponse = {
  *
  * @interface MemoryHealthData
  * @description Final data structure returned by the useMemoryHealth hook after processing
- * the raw API response. Converts API status codes to standard HealthStatus enum values
+ * the raw API response.Converts API status codes to standard HealthStatus enum values
  * and ensures all subsystems have defined status values.
  *
  * @example
- * ```typescript
+  * ```typescript
  * const healthData: MemoryHealthData = {
  *   status: 'healthy',
  *   subsystems: {
@@ -132,7 +166,7 @@ export type HealthCheckResponse = {
  *   }
  * };
  * ```
- */
+  */
 export type MemoryHealthData = {
   /** Overall health status using standardized HealthStatus enum */
   status: HealthStatus;
@@ -154,48 +188,27 @@ export type MemoryHealthData = {
  */
 export type MemoryStatusHookResult = {
   /** Latest memory health data or undefined if not yet fetched */
-  healthStatus: HealthStatus;
-  subsystems: MemorySubsystemStatus | undefined;
+  health: {
+    memory: MemoryHealthData;
+    chat: ChatHealthData;
+    database: HealthStatus;
+  };
   refreshInterval: number;
   isLoading: boolean;
   isFetching: boolean;
   isError: boolean;
   error: Error | null;
-  data: MemoryHealthData | undefined;
 };
 
 /**
  * Database health response structure for the useDatabaseHealth hook
  */
 export type DatabaseHealthResponse = {
-  data: RawHealthStatus;
+  data: HealthStatus;
   error: Error | null;
   isError: boolean;
   isFetching: boolean;
   isLoading: boolean;
-  healthStatus: RawHealthStatus;
+  healthStatus: HealthStatus;
   refreshInterval: number;
-};
-/**
- * Processed chat health data with subsystem details
- */
-export type ChatHealthData = {
-  status: RawHealthStatus;
-  subsystems?: {
-    cache: RawHealthStatus;
-    queue: RawHealthStatus;
-  };
-};
-export type ChatHealthHookResponse = {
-  data: ChatHealthData | undefined;
-  error: Error | null;
-  isError: boolean;
-  isFetching: boolean;
-  isLoading: boolean;
-  healthStatus: RawHealthStatus;
-  refreshInterval: number;
-  subsystems?: {
-    cache: RawHealthStatus;
-    queue: RawHealthStatus;
-  };
 };

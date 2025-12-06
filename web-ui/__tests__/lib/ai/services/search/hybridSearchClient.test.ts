@@ -13,7 +13,7 @@ setupImpersonationMock();
 
 // Mock fetch module BEFORE importing SUTs so the implementation is captured.
 const fetchMock = jest.fn();
-jest.mock('@/lib/nextjs-util/fetch', () => ({
+jest.mock('@/lib/nextjs-util/server/fetch', () => ({
   fetch: (...args: unknown[]) => fetchMock(...args),
 }));
 
@@ -40,7 +40,7 @@ class TestClient extends HybridSearchClient<TestOptions> {
   protected getSearchIndexName(): string {
     return 'test-index';
   }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   protected appendScopeFilter(_payload: HybridSearchPayload): void {
     /* intentionally not used in test subclass */
   }

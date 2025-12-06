@@ -1,8 +1,3 @@
-/**
- * Formats a duration in milliseconds to a human-readable string.
- * @param ms - Duration in milliseconds
- * @returns Formatted duration string (e.g., "2h 15m", "5m 30s", "45s")
- */
 export const formatDuration = (ms: number): string => {
   const seconds = Math.floor(ms / 1000);
   const minutes = Math.floor(seconds / 60);
@@ -17,11 +12,6 @@ export const formatDuration = (ms: number): string => {
   return `${seconds}s`;
 };
 
-/**
- * 
- * @param {Date | string} fromDate The date used to compute elapsed time. 
- * @returns A formatted string describing the duration beteen now and the provided value.
- */
 export const formatElapsed = (fromDate: Date | string): string => {
   if (!fromDate) return undefined as unknown as string;
   const start = new Date();
@@ -30,11 +20,6 @@ export const formatElapsed = (fromDate: Date | string): string => {
   return formatDuration(elapsed);
 };
 
-/**
- * Formats a number to a human-readable string with appropriate units.
- * @param num - Number to format
- * @returns Formatted number string (e.g., "1.5M", "2.3K", "150")
- */
 export const formatNumber = (num: number): string => {
   if (num >= 1000000) {
     return (num / 1000000).toFixed(1) + 'M';
@@ -45,22 +30,11 @@ export const formatNumber = (num: number): string => {
   return num.toString();
 };
 
-/**
- * Calculates usage percentage with a maximum of 100%.
- * @param used - Used amount
- * @param limit - Maximum limit (null means no limit)
- * @returns Percentage (0-100)
- */
 export const getUsagePercentage = (used: number, limit: number | null): number => {
   if (!limit || limit === 0) return 0;
   return Math.min((used / limit) * 100, 100);
 };
 
-/**
- * Determines the appropriate color for usage percentage.
- * @param percentage - Usage percentage (0-100)
- * @returns Material-UI color variant
- */
 export const getUsageColor = (percentage: number): 'success' | 'warning' | 'error' => {
   if (percentage < 70) return 'success';
   if (percentage < 90) return 'warning';

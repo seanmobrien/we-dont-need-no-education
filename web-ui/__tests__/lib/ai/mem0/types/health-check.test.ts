@@ -4,12 +4,10 @@
  */
 
 import {
-  determineHealthStatus,
-  getRefreshInterval,
   type HealthDetails,
   type AuthServiceHealth,
-  type HealthStatus,
 } from '@/lib/ai/mem0/types/health-check';
+import { determineHealthStatus } from '@/lib/api/health/memory';
 
 describe('Memory Health Check Types', () => {
   describe('determineHealthStatus', () => {
@@ -21,7 +19,7 @@ describe('Memory Health Check Types', () => {
       client_id: 'test-client',
       auth_url: 'https://example.com/auth',
       token_url: 'https://example.com/token',
-      jkws_url: 'https://example.com/certs',
+      jwks_url: 'https://example.com/certs',
     });
 
     const createMockHealthDetails = (
@@ -112,25 +110,4 @@ describe('Memory Health Check Types', () => {
     });
   });
 
-  describe('getRefreshInterval', () => {
-    it('should return 3 minutes (180000ms) for healthy status', () => {
-      const result = getRefreshInterval('healthy');
-      expect(result).toBe(3 * 60 * 1000);
-    });
-
-    it('should return 30 seconds (30000ms) for warning status', () => {
-      const result = getRefreshInterval('warning');
-      expect(result).toBe(30 * 1000);
-    });
-
-    it('should return 5 seconds (5000ms) for error status', () => {
-      const result = getRefreshInterval('error');
-      expect(result).toBe(5 * 1000);
-    });
-
-    it('should return 30 seconds (30000ms) for unknown status', () => {
-      const result = getRefreshInterval('unknown' as HealthStatus);
-      expect(result).toBe(30 * 1000);
-    });
-  });
 });

@@ -1,20 +1,9 @@
-/**
- * @fileoverview Sequential Processing Queue for Chat History
- *
- * This module provides a queue-based system to ensure that stream chunks
- * are processed in FIFO order, even when individual database operations
- * have varying completion times.
- *
- * @module lib/ai/middleware/chat-history/processing-queue
- * @version 1.0.0
- * @since 2025-07-17
- */
-
 import type {
   LanguageModelV2CallOptions,
   LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
 import { log } from '@/lib/logger';
+import { Semaphore } from '@/lib/nextjs-util/semaphore-manager';
 import { ensureCreateResult } from './stream-handler-result';
 import { processStreamChunk } from './stream-handlers';
 import type {
@@ -31,40 +20,11 @@ import {
 } from './message-persistence';
 import { isError } from '@/lib/react-util/core';
 
-/**
- * Sequential processing queue that maintains FIFO order for database operations.
- *
- * This queue ensures that even if individual database operations complete at
- * different speeds, the results are applied in the correct order to maintain
- * data consistency and proper state management.
- *
- * @example
- * ```typescript
- * const queue = new ProcessingQueue();
- *
- * // Add chunks - they'll be processed in order
- * queue.enqueue(chunk1, context1);
- * queue.enqueue(chunk2, context2);
- * queue.enqueue(chunk3, context3);
- *
- * // Even if chunk2 completes first, results applied in order
- * ```
- */
 export class ProcessingQueue {
   private queue: QueuedTask[] = [];
-  private processing = false;
+  private semaphore = new Semaphore(1); // Mutex: ensures only 1 task processes at a time
   private nextTaskId = 1;
 
-  /**
-   * Adds a chunk to the processing queue.
-   *
-   * The chunk will be processed in FIFO order, ensuring that state updates
-   * are applied sequentially even if database operations complete out of order.
-   *
-   * @param chunk - The stream chunk to process
-   * @param context - The processing context
-   * @returns Promise that resolves when the chunk has been processed
-   */
   async enqueue(
     chunk: LanguageModelV2StreamPart,
     context: StreamHandlerContext,
@@ -88,12 +48,6 @@ export class ProcessingQueue {
     });
   }
 
-  /**
-   * Processes a single task by calling the stream chunk handler.
-   *
-   * @param task - The task to process
-   * @returns Promise that resolves with the processing result
-   */
   private async processTask(task: QueuedTask): Promise<void> {
     try {
       const result = await processStreamChunk(task.chunk, task.context);
@@ -121,16 +75,15 @@ export class ProcessingQueue {
     }
   }
 
-  /**
-   * Processes the queue in FIFO order, waiting for each task to complete
-   * before applying its results and moving to the next task.
-   */
   private async processQueue(): Promise<void> {
-    if (this.processing || this.queue.length === 0) {
-      return;
+    // Check if already processing or queue empty
+    const state = this.semaphore.getState();
+    if (state.availableSlots === 0 || this.queue.length === 0) {
+      return; // Already processing or nothing to process
     }
 
-    this.processing = true;
+    // Acquire mutex lock - only one processor can run
+    await this.semaphore.acquire();
 
     try {
       while (this.queue.length > 0) {
@@ -160,18 +113,11 @@ export class ProcessingQueue {
         this.queue.shift();
       }
     } finally {
-      this.processing = false;
+      // Release mutex lock
+      this.semaphore.release();
     }
   }
 
-  /**
-   * Updates the context for all remaining tasks in the queue.
-   *
-   * This ensures that state changes (like updated message order or
-   * accumulated text) are propagated to subsequent tasks.
-   *
-   * @param result - The result from the completed task
-   */
   private updateSubsequentContexts(result: StreamHandlerResult): void {
     for (const task of this.queue) {
       if (result.currentMessageOrder !== undefined) {
@@ -182,22 +128,21 @@ export class ProcessingQueue {
     }
   }
 
-  /**
-   * Gets the current queue length for monitoring purposes.
-   *
-   * @returns The number of tasks currently in the queue
-   */
   getQueueLength(): number {
     return this.queue.length;
   }
 
-  /**
-   * Checks if the queue is currently processing tasks.
-   *
-   * @returns True if processing is active, false otherwise
-   */
   isProcessing(): boolean {
-    return this.processing;
+    return this.semaphore.getState().activeOperations > 0;
+  }
+
+  getQueueStatus() {
+    const state = this.semaphore.getState();
+    return {
+      queueLength: this.queue.length,
+      isProcessing: state.activeOperations > 0,
+      semaphoreState: state,
+    };
   }
 }
 
@@ -227,6 +172,7 @@ export const enqueueStream = async ({
   generatedText: Promise<string>;
   result: Promise<StreamContext>;
 }> => {
+  log((l) => l.verbose('=== ChatHistoryMiddleware.enqueueStream - BEGIN ==='));
   const startTime = Date.now();
   const generatedText = Promise.withResolvers<string>();
   const result = Promise.withResolvers<StreamContext>();
@@ -318,6 +264,7 @@ export const enqueueStream = async ({
           isError(error) ? error : new Error(String(error)),
         );
       }
+      log((l) => l.verbose('=== ChatHistoryMiddleware.flush ===', { streamContext }));
       context.turnId = streamContext.turnId;
       generatedText.resolve(streamContext.streamedText);
       if (streamContext.errors.length > 0) {

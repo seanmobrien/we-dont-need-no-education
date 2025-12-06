@@ -1,5 +1,5 @@
 import { isError } from '@/lib/react-util/utility-methods';
-import { log } from '@/lib/logger';
+import { log, safeSerialize } from '@/lib/logger';
 import {
   ErrorSeverity,
   KnownEnvironmentType,
@@ -8,11 +8,15 @@ import {
   ErrorReporterConfig,
   ErrorReporterInterface,
   IContextEnricher,
+  ErrorReporterConfigDebounceParams,
+  ErrorReportResult,
 } from './types';
 import { isRunningOnEdge } from '../site-util/env';
 import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
 import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
-
+import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
+import { shouldSuppressError } from './utility';
+import { type ErrorReportArgs, LoggedError } from '@/lib/react-util/errors/logged-error';
 export { ErrorSeverity };
 
 export type {
@@ -74,15 +78,54 @@ const isContextEnricher = (check: unknown): check is IContextEnricher =>
   'enrichContext' in check &&
   typeof (check as IContextEnricher).enrichContext === 'function';
 
-/**
- * Centralized error reporting system
- * Handles logging, external service reporting, and error analytics
- */
+const ERROR_REPORTER_SINGLETON_KEY =
+  '@noeducation/error-monitoring:ErrorReporter';
+
 export class ErrorReporter implements ErrorReporterInterface {
+  readonly #errorReportHandler: ((args: ErrorReportArgs) => void);
   private config: ErrorReporterConfig;
+  private debounceSettings: ErrorReporterConfigDebounceParams;
+  private debounceSet = new Map<string, number>();
+  private lastDebounceCleanup = Date.now();
 
   private constructor(config: ErrorReporterConfig) {
     this.config = config;
+    this.debounceSettings = config.debounce ?? {
+      debounceIntervalMs: 60000,
+      debounceCleanupIntervalMs: 300000,
+    };
+    this.#errorReportHandler = (args: ErrorReportArgs) => {
+      let severity: ErrorSeverity | undefined;
+      try {
+        switch (args.severity) {
+          case "Verbose":
+            severity = ErrorSeverity.LOW;
+            break;
+          case "Information":
+            severity = ErrorSeverity.MEDIUM;
+            break;
+          case "Warning":
+            severity = ErrorSeverity.MEDIUM;
+            break;
+          case "Error":
+            severity = ErrorSeverity.HIGH;
+            break;
+          case "Critical":
+            severity = ErrorSeverity.CRITICAL;
+            break;
+          case undefined:
+            severity = undefined;
+            break;
+          default:
+            severity = ErrorSeverity.HIGH;
+            break;
+        }
+        this.reportError(args.error, severity, args.context);
+      } catch (e) {
+        // console.error is needed here to avoid infinite recursion
+        console.error('Failed to report error', e);
+      }
+    };
   }
 
   /**
@@ -101,69 +144,118 @@ export class ErrorReporter implements ErrorReporterInterface {
   /**
    * Get singleton instance of ErrorReporter
    */
-  public static getInstance(
-    config?: ErrorReporterConfig,
-  ): ErrorReporterInterface {
-    const GLOBAL_KEY = Symbol.for(
-      '@noeducation/error-monitoring:ErrorReporter',
+  public static getInstance = (
+    config?: Partial<ErrorReporterConfig>,
+  ): ErrorReporterInterface =>
+    SingletonProvider.Instance.getRequired(ERROR_REPORTER_SINGLETON_KEY, () =>
+      ErrorReporter.createInstance(config ?? {}),
     );
-    const registry = globalThis as unknown as {
-      [key: symbol]: ErrorReporterInterface | undefined;
-    };
-    if (!registry[GLOBAL_KEY]) {
-      registry[GLOBAL_KEY] = ErrorReporter.createInstance(config ?? {});
+
+  private shouldDebounce(report: ErrorReport): boolean {
+    if (!report.fingerprint) {
+      // Without a fingerprint we don't have a basis to debounce
+      return false;
     }
-    return registry[GLOBAL_KEY]!;
+    const now = Date.now();
+    const lastReported = this.debounceSet.get(report.fingerprint);
+    // If we are below the debounce interval then skip reporting
+    if (
+      lastReported &&
+      now - lastReported < this.debounceSettings.debounceIntervalMs
+    ) {
+      return true;
+    }
+    // Update last reported time for this fingerprint
+    this.debounceSet.set(report.fingerprint, now);
+
+    // Periodically clean up old entries to prevent memory bloat
+    if (
+      now - this.lastDebounceCleanup >
+      this.debounceSettings.debounceCleanupIntervalMs
+    ) {
+      this.lastDebounceCleanup = now;
+      const expirationTime = now - this.debounceSettings.debounceIntervalMs;
+      for (const [fingerprint, timestamp] of this.debounceSet.entries()) {
+        if (timestamp < expirationTime) {
+          this.debounceSet.delete(fingerprint);
+        }
+      }
+    }
+
+    return false;
   }
 
-  async #createErrorReport(
+  async createErrorReport(
     error: Error | unknown,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
     context: Partial<ErrorContext> = {},
   ): Promise<ErrorReport> {
-    let baseReport: ErrorReport;
-    // Check to see if this is an error report already
-    if (isErrorReport(error)) {
-      baseReport = error;
-      if (!Object.keys(error).length || !error.error.message) {
-        baseReport.error = this.normalizeError({
-          ...baseReport.error,
-          message:
-            baseReport?.error.message ?? 'Unknown error - No details provided',
-        });
+    let baseReport: ErrorReport | undefined;
+    let enrichedContext: ErrorContext | undefined;
+    try {
+      // Check to see if this is an error report already
+      if (isErrorReport(error)) {
+        baseReport = error;
+        if (!baseReport.error.message) {
+          baseReport.error = this.normalizeError(baseReport.error);
+        }
+      } else {
+        // Ensure we have a proper Error object
+        const errorObj = this.normalizeError(error);
+        baseReport = {
+          error: errorObj,
+          severity,
+          context: {},
+        };
       }
-    } else {
-      // Ensure we have a proper Error object
-      const errorObj = this.normalizeError(error);
-      baseReport = {
-        error: errorObj,
-        severity,
-      } as ErrorReport;
-      if (
-        !Object.keys(error as object).length ||
-        !(error as { message?: string }).message
-      ) {
-        (error as { message?: string }).message =
-          'Unknown error - No details provided';
+
+      // Enrich context with browser/environment data
+      enrichedContext = await this.enrichContext({
+        ...(baseReport.context ?? {}),
+        ...context,
+      });
+
+      // Create error report
+      return {
+        ...baseReport,
+        fingerprint: this.generateFingerprint(
+          baseReport.error!,
+          enrichedContext,
+        ),
+        context: enrichedContext,
+        tags: {
+          ...(baseReport.tags ?? {}),
+          ...this.generateTags(baseReport.error!, enrichedContext),
+        },
+      };
+    } catch (reportBuilderError) {
+      enrichedContext = {
+        ...(enrichedContext ?? context ?? {}),
+        additionalData: {
+          ...((enrichedContext ?? context)?.additionalData ?? {}),
+          reportBuilderError: safeSerialize(reportBuilderError),
+        },
+      };
+      if (baseReport) {
+        baseReport.context = {
+          ...(baseReport.context ?? {}),
+          ...enrichedContext,
+        };
+      } else {
+        baseReport = {
+          error: this.normalizeError(error),
+          severity,
+          context: enrichedContext,
+        };
       }
+      return {
+        ...baseReport,
+        fingerprint: this.generateFingerprint(
+          baseReport.error!,
+          enrichedContext ?? context ?? {},
+        ),
+      };
     }
-
-    // Enrich context with browser/environment data
-    const enrichedContext = await this.enrichContext({
-      ...(baseReport.context ?? {}),
-      ...context,
-    });
-
-    // Create error report
-    return {
-      ...baseReport,
-      fingerprint: this.generateFingerprint(baseReport.error!, enrichedContext),
-      context: enrichedContext,
-      tags: {
-        ...(baseReport.tags ?? {}),
-        ...this.generateTags(baseReport.error!, enrichedContext),
-      },
-    };
   }
 
   /**
@@ -173,24 +265,56 @@ export class ErrorReporter implements ErrorReporterInterface {
     error: Error | unknown,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
     context: Partial<ErrorContext> = {},
-  ): Promise<void> {
+  ): Promise<ErrorReportResult> {
+    let result: ErrorReportResult | undefined;
+    let report: ErrorReport | undefined;
     try {
       // Ensure we have a proper Error object
-      const report = await this.#createErrorReport(error, severity, context);
-
+      report = await this.createErrorReport(error, severity, context);
+      if (!report) {
+        throw new Error('Failed to create error report');
+      }
+      // Check for debounce/deduping
+      if (this.shouldDebounce(report)) {
+        return {
+          report,
+          suppress: true,
+          completely: true,
+          rule: 'debounce',
+          logged: false,
+          console: false,
+          stored: false,
+          reported: false,
+        };
+      }
+      // Check suppression rules
+      result = {
+        report,
+        rule: 'missing',
+        ...shouldSuppressError({ error: report.error }),
+        logged: false,
+        console: false,
+        stored: false,
+        reported: false,
+      };
+      if (result.suppress && result.completely) {
+        return result;
+      }
+      // Standard logging
       if (this.config.enableStandardLogging) {
         const source = report.context.source ?? 'ErrorReporter';
         log((l) =>
           l.error({
             source,
-            body: JSON.stringify(report.error),
-            severity: report.severity,
-            fingerprint: report.fingerprint,
-            tags: report.tags,
-            context: report.context,
-            [Symbol.toStringTag]: `${source}: (${report.fingerprint ?? 'no fingerprint'}) ${report.error.message}`,
+            body: JSON.stringify(report!.error),
+            severity: report!.severity,
+            fingerprint: report!.fingerprint,
+            tags: report!.tags,
+            context: report!.context,
+            [Symbol.toStringTag]: `${source}: (${report!.fingerprint ?? 'no fingerprint'}) ${report!.error.message}`,
           }),
         );
+        result.logged = true;
       }
 
       // Console logging for development
@@ -199,11 +323,17 @@ export class ErrorReporter implements ErrorReporterInterface {
         console.error('Error:', report.error);
         console.table(report.context);
         console.groupEnd();
+        result.console = true;
+      }
+
+      if (result.suppress) {
+        return result;
       }
 
       // Store error locally for offline analysis
       if (this.config.enableLocalStorage && typeof window !== 'undefined') {
         this.storeErrorLocally(report);
+        result.stored = true;
       }
 
       // Report to external services
@@ -213,22 +343,45 @@ export class ErrorReporter implements ErrorReporterInterface {
           this.reportToApplicationInsights(report),
           // Add other monitoring services here
         ]);
+        result.reported = true;
       }
     } catch (reportingError) {
       // Avoid infinite loops - just log to console
-      log((l) => l.error('Error in error reporting system', reportingError));
+      log((l) =>
+        l.error('Error in error reporting system', {
+          cause: safeSerialize(error, { maxObjectDepth: 2 }),
+          reportingError: safeSerialize(reportingError),
+        }),
+      );
+      if (!result) {
+        result = {
+          report: report ?? {
+            error: this.normalizeError(error),
+            severity,
+            context,
+          },
+          suppress: true,
+          completely: false,
+          rule: 'reporting-failure',
+          logged: true,
+          console: false,
+          stored: false,
+          reported: false,
+        };
+      }
     }
+    return result;
   }
 
   /**
    * Report a caught error from an error boundary
    */
-  public async reportBoundaryError(
+  public reportBoundaryError(
     error: Error,
     errorInfo: { componentStack?: string; errorBoundary?: string },
     severity: ErrorSeverity = ErrorSeverity.HIGH,
-  ): Promise<void> {
-    await this.reportError(error, severity, {
+  ): Promise<ErrorReportResult> {
+    return this.reportError(error, severity, {
       componentStack: errorInfo.componentStack,
       errorBoundary: errorInfo.errorBoundary,
       breadcrumbs: ['error-boundary-catch'],
@@ -238,12 +391,12 @@ export class ErrorReporter implements ErrorReporterInterface {
   /**
    * Report unhandled promise rejections
    */
-  public async reportUnhandledRejection(
+  public reportUnhandledRejection(
     reason: unknown,
     promise: Promise<unknown>,
-  ): Promise<void> {
+  ): Promise<ErrorReportResult> {
     const error = reason instanceof Error ? reason : new Error(String(reason));
-    await this.reportError(error, ErrorSeverity.HIGH, {
+    return this.reportError(error, ErrorSeverity.HIGH, {
       breadcrumbs: ['unhandled-promise-rejection'],
       additionalData: { promiseString: promise.toString() },
     });
@@ -255,7 +408,7 @@ export class ErrorReporter implements ErrorReporterInterface {
   public setupGlobalHandlers(): void {
     if (typeof window === 'undefined') return;
     if (isRunningOnEdge()) {
-      console.log('setupGlobalHandlers::edge');
+      log((l) => l.info('setupGlobalHandlers::edge'));
     }
 
     // Unhandled errors
@@ -279,19 +432,31 @@ export class ErrorReporter implements ErrorReporterInterface {
     window.addEventListener('unhandledrejection', (event) => {
       this.reportUnhandledRejection(event.reason, event.promise);
     });
+
+    // LoggedError emitted messages
+    this.subscribeToErrorReports();
   }
 
   /**
    * Normalize any thrown value to an Error object
    */
   private normalizeError(error: unknown): Error {
+    let normalError: Error;
     if (isError(error)) {
-      return error;
+      normalError = error;
+    } else {
+      if (typeof error === 'string') {
+        normalError = new Error(LoggedError.buildMessage(error));
+      } else {
+        normalError = !!error
+          ? new Error(`Non-error thrown: ${LoggedError.buildMessage(error)}`)
+          : new TypeError('Normalized null error');
+      }
     }
-    if (typeof error === 'string') {
-      return new Error(error);
+    if (!normalError.message) {
+      normalError.message = `Unknown error - No details provided [${LoggedError.buildMessage(normalError)}]`;
     }
-    return new Error(`Non-error thrown: ${String(error)}`);
+    return normalError;
   }
 
   /**
@@ -396,12 +561,38 @@ export class ErrorReporter implements ErrorReporterInterface {
   /**
    * Generate a fingerprint for error deduplication
    */
-  private generateFingerprint(error: Error, context: ErrorContext): string {
+  public generateFingerprint(error: Error, context: ErrorContext): string {
     const key = `${error.name}:${error.message}:${context.url || 'unknown'}`;
     return btoa(encodeURIComponent(key))
       .replace(/[^a-zA-Z0-9]/g, '')
       .substring(0, 16);
   }
+
+  public subscribeToErrorReports(): void {
+    try {
+      // Defensively unsubscribe to avoid duplicate registration
+      LoggedError.unsubscribeFromErrorReports(this.#errorReportHandler);
+      LoggedError.subscribeToErrorReports(this.#errorReportHandler);
+    } catch (e) {
+      this.reportError(e, ErrorSeverity.HIGH, {
+        additionalData: {
+          message: 'Failed to subscribe to logged errors',
+        },
+      });
+    }
+  }
+  public unsubscribeFromErrorReports(): void {
+    try {
+      LoggedError.unsubscribeFromErrorReports(this.#errorReportHandler);
+    } catch (e) {
+      this.reportError(e, ErrorSeverity.HIGH, {
+        additionalData: {
+          message: 'Failed to unsubscribe from logged errors',
+        },
+      });
+    }
+  }
+
 
   /**
    * Generate tags for error categorization
@@ -474,7 +665,7 @@ export class ErrorReporter implements ErrorReporterInterface {
         'error.fingerprint': report.fingerprint ?? '',
         ...(report.tags ?? {}),
         severity: String(report.severity),
-        context: JSON.stringify(report.context || {}),
+        context: safeSerialize(JSON.stringify(report.context || {})),
       };
 
       // If there is an active and still-recording span, attach the error there.
@@ -482,17 +673,15 @@ export class ErrorReporter implements ErrorReporterInterface {
       if (
         activeSpan &&
         typeof (activeSpan as { isRecording: () => boolean }).isRecording ===
-          'function' &&
+        'function' &&
         (activeSpan as { isRecording: () => boolean }).isRecording()
       ) {
         try {
-          activeSpan.setAttributes(
-            safeAttributes as unknown as import('@opentelemetry/api').Attributes,
-          );
+          activeSpan.setAttributes(safeAttributes);
         } catch {
           // ignore attribute errors
         }
-        activeSpan.recordException(report.error as unknown as Error);
+        activeSpan.recordException(report.error);
         activeSpan.setStatus({
           code: SpanStatusCode.ERROR,
           message: report.error.message,
@@ -511,19 +700,18 @@ export class ErrorReporter implements ErrorReporterInterface {
         ? [{ context: activeSpan.spanContext() }]
         : undefined;
       const span = tracer.startSpan('error.report', {
-        attributes:
-          safeAttributes as unknown as import('@opentelemetry/api').Attributes,
+        attributes: safeAttributes,
         links,
       });
       try {
-        span.recordException(report.error as unknown as Error);
+        span.recordException(report.error);
         span.setStatus({
           code: SpanStatusCode.ERROR,
           message: report.error.message,
         });
         span.addEvent('error.reported', {
           context: safeAttributes.context,
-        } as import('@opentelemetry/api').Attributes);
+        });
       } finally {
         span.end();
       }
@@ -557,8 +745,6 @@ export class ErrorReporter implements ErrorReporterInterface {
   private async reportToApplicationInsights(
     report: ErrorReport,
   ): Promise<void> {
-    // Implementation would depend on Application Insights setup
-    // This is a placeholder for Azure Application Insights integration
     if (typeof window === 'undefined') {
       await this.server_reportToApplicationInsights(report);
       return;
@@ -611,10 +797,33 @@ export class ErrorReporter implements ErrorReporterInterface {
   }
 }
 
-// Export singleton instance
-export const errorReporter = ErrorReporter.getInstance();
+interface ErrorReporterInstanceOverloads {
+  (): ErrorReporterInterface;
+  <
+    TCallback extends (
+      reporter: ErrorReporterInterface,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ) => any extends infer TResult ? TResult : never,
+  >(
+    cb: TCallback,
+  ): ReturnType<TCallback>;
+}
 
+// Export singleton instance
+export const errorReporter: ErrorReporterInstanceOverloads = (
+  cb?: (reporter: ErrorReporterInterface) => unknown,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): any => {
+  const reporter = ErrorReporter.getInstance();
+  if (typeof cb === 'undefined') {
+    return reporter;
+  }
+  return cb(reporter);
+};
+
+/*
 // Auto-setup global handlers
 if (typeof window !== 'undefined') {
   // errorReporter.setupGlobalHandlers();
 }
+*/

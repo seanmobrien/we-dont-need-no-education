@@ -3,6 +3,8 @@ ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
+ARG NEXT_PUBLIC_FLAGSMITH_API_URL
+ARG NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
 ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
 ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
@@ -16,12 +18,14 @@ ARG MEM0_API_HOST
 ARG MEM0_UI_HOST
 ARG MEM0_USERNAME
 
-FROM node:22-alpine AS base
+FROM node:24-alpine AS base
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
+ARG NEXT_PUBLIC_FLAGSMITH_API_URL
+ARG NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
 ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
 ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
@@ -62,6 +66,8 @@ ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
+ARG NEXT_PUBLIC_FLAGSMITH_API_URL
+ARG NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
 ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
 ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
@@ -97,6 +103,8 @@ ARG NEXT_PUBLIC_HOSTNAME
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
 ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
+ARG NEXT_PUBLIC_FLAGSMITH_API_URL
+ARG NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
 ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG AZURE_OPENAI_ENDPOINT
@@ -121,7 +129,7 @@ COPY --link=true ./types ./types
 COPY --link=true ./instrument ./instrument
 COPY --link=true ./scripts ./scripts
 COPY --link=true ./public ./public
-COPY --link=true ./*.ts ./*.mjs ./*.json ./*.lock ./
+COPY --link=true ./*.ts ./*.mjs ./*.json ./*.lock ./*.production.local ./ 
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT
@@ -137,6 +145,8 @@ ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
 ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
+ENV NEXT_PUBLIC_FLAGSMITH_API_URL=$NEXT_PUBLIC_FLAGSMITH_API_URL
+ENV NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID=$NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
 ENV MEM0_API_HOST=$MEM0_API_HOST
 ENV MEM0_UI_HOST=$MEM0_UI_HOST
 ENV MEM0_USERNAME=$MEM0_USERNAME
@@ -144,13 +154,9 @@ ENV FOR_STANDALONE=1
 ENV IS_BUILDING=1
 
 RUN \
-  --mount=type=secret,id=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,env=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING \
-  printf "NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=%s\nAZURE_MONITOR_CONNECTION_STRING=%s\n" "$NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING" "$NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING" > .env \
-  && cat .env
-
-RUN \
   --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE,env=NEXT_PUBLIC_MUI_LICENSE \
-  --mount=type=secret,id=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,env=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING \
+  --mount=type=secret,id=AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING,env=AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING \
+  --mount=type=secret,id=AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING,env=AZURE_MONITOR_CONNECTION_STRING \
   --mount=type=secret,id=REDIS_URL,env=REDIS_URL \
   --mount=type=secret,id=REDIS_PASSWORD,env=REDIS_PASSWORD \
   --mount=type=secret,id=DATABASE_URL,env=DATABASE_URL \
@@ -162,11 +168,14 @@ RUN \
   --mount=type=secret,id=AZURE_STORAGE_CONNECTION_STRING,env=AZURE_STORAGE_CONNECTION_STRING \
   --mount=type=secret,id=AUTH_GOOGLE_ID,env=AUTH_GOOGLE_ID \
   --mount=type=secret,id=OPENID_KEY_TEXT,env=OPENID_KEY_TEXT \
+  --mount=type=secret,id=FLAGSMITH_SDK_KEY,env=FLAGSMITH_SDK_KEY \
   if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
   else echo "Lockfile not found." && exit 1; \
   fi
+
+RUN  rm -f .env.production.local
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -220,33 +229,32 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs \
+  && adduser --system --uid 1001 --shell /bin/sh nextjs \
   && mkdir /app/scripts
 
 # Automatically leverage output traces to reduce image size
 
 COPY --link=true --from=builder /app/.next/standalone ./
 COPY --link=true --from=builder /app/.next/static ./.next/static
-#COPY --link=true ./public ./public
 COPY --link=true --from=builder /app/public ./public
 
 # Copy rate retry script
-#COPY --link=true --from=builder /app/scripts/rate-retry-client.sh ./scripts/
 COPY --link=true --from=builder /app/scripts/rate-retry-client.sh ./scripts/rate-retry-client.sh
-#RUN chmod +x ./scripts/rate-retry-client.sh
 
 # Set up cron for rate retry processing
 RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs
 RUN crontab -u nextjs /etc/crontabs/nextjs
 
 # Ensure log directory exists, set owner and execute modes
-RUN mkdir -p /var/log && chown nextjs:nodejs /var/log && chown -R nextjs:nodejs /app && chmod +x /app/scripts/rate-retry-client.sh
-
-USER nextjs
+RUN mkdir -p /var/log && chown nextjs:nodejs /var/log && chown -R nextjs:nodejs /app && chmod +x /app/scripts/*.sh
 
 EXPOSE 3000
 
+# Expose debug port for Node.js inspector (when RUN_DEBUGGER=1)
+EXPOSE 9229
+
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
-# Start cron daemon and then start the Next.js server
-CMD ["sh", "-c", "crond -f -d 8 & node server.js"]
+# Start cron daemon as root, then switch to nextjs user to run the server
+# If RUN_DEBUGGER=1, start Node.js with inspector enabled
+CMD ["sh", "-c", "crond && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -c 'node --inspect=0.0.0.0:9229 server.js'; else su nextjs -c 'node server.js'; fi"]

@@ -2,36 +2,31 @@ import { EmbeddingModelV2 } from '@ai-sdk/provider';
 import { createEmbeddingModel } from '../../aiModelFactory';
 import { embed } from 'ai';
 import { IEmbeddingService } from './types';
+import { globalRequiredSingleton, SingletonProvider } from '@/lib/typescript';
 
 export class EmbeddingService implements IEmbeddingService {
-  /**
-   * Global embedding model stored in a Symbol-backed registry to avoid
-   * duplication across HMR/SSR/multi-bundle environments.
-   */
-  private static get globalEmbeddingModel(): EmbeddingModelV2<string> {
-    const GLOBAL_KEY = Symbol.for('@noeducation/embedding:Model');
-    const registry = globalThis as unknown as {
-      [key: symbol]: EmbeddingModelV2<string> | undefined;
-    };
-    if (!registry[GLOBAL_KEY]) {
-      registry[GLOBAL_KEY] = createEmbeddingModel();
-    }
-    return registry[GLOBAL_KEY]!;
+  private static get globalEmbeddingModel(): Promise<EmbeddingModelV2<string>> {
+    return globalRequiredSingleton(Symbol.for('@noeducation/embedding:Model'), async () =>
+      createEmbeddingModel(),
+    );
   }
-  private static set globalEmbeddingModel(model: EmbeddingModelV2<string>) {
+  private static set globalEmbeddingModel(model: Promise<EmbeddingModelV2<string>>) {
     const GLOBAL_KEY = Symbol.for('@noeducation/embedding:Model');
-    const registry = globalThis as unknown as {
-      [key: symbol]: EmbeddingModelV2<string> | undefined;
-    };
-    registry[GLOBAL_KEY] = model;
+    SingletonProvider.Instance.set<Promise<EmbeddingModelV2<string>>, symbol>(
+      GLOBAL_KEY,
+      model,
+    );
   }
 
-  private openAiClient: EmbeddingModelV2<string>;
+  private embeddingClient: Promise<EmbeddingModelV2<string>>;
   private cacheEmbeddings = true;
   private embeddingCache: Map<string, number[]> = new Map();
 
-  constructor(openAiClient?: EmbeddingModelV2<string>) {
-    this.openAiClient = openAiClient ?? EmbeddingService.globalEmbeddingModel;
+  constructor(embeddingClient?: EmbeddingModelV2<string> | Promise<EmbeddingModelV2<string>>) {
+    this.embeddingClient =
+      embeddingClient instanceof Promise || typeof embeddingClient === 'undefined'
+        ? (embeddingClient ?? EmbeddingService.globalEmbeddingModel)
+        : Promise.resolve(embeddingClient);
   }
 
   public setCacheEmbeddings(cache: boolean): this {
@@ -41,7 +36,7 @@ export class EmbeddingService implements IEmbeddingService {
 
   private async getEmbedding(query: string): Promise<number[]> {
     const ret = await embed({
-      model: this.openAiClient,
+      model: await this.embeddingClient,
       value: query,
     });
     return ret.embedding;

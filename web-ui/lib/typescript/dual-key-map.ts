@@ -1,16 +1,4 @@
-/**
- * DualKeyMap<TRecordType, TRecordIdType, TRecordNameType>
- *
- * A generic dual-key dictionary for fast lookup by both ID and name.
- *
- * - Maintains two maps: idToRecord and nameToId
- * - Supports lookup by either key, and iteration over entries
- * - Used for cases like ProviderMap, ModelMap, etc.
- *
- * @template TRecordType - The record type (e.g., ProviderMapEntry)
- * @template TRecordIdType - The ID type (e.g., string | number)
- * @template TRecordNameType - The name type (e.g., string)
- */
+
 export class DualKeyMap<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TRecordType extends { [K in TIdField | TNameField]: any },

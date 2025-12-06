@@ -5,7 +5,6 @@
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { UIMessage } from 'ai';
 import {
   optimizeMessagesWithToolSummarization,
@@ -18,7 +17,11 @@ import { generateText, generateObject } from 'ai';
 
 // Mock dependencies
 jest.mock('@/lib/ai/aiModelFactory');
-jest.mock('ai');
+jest.mock('ai', () => ({
+  ...jest.requireActual('ai'),
+  generateText: jest.fn(),
+  generateObject: jest.fn(),
+}));
 jest.mock('@/lib/drizzle-db', () => ({
   drizDbWithInit: jest.fn(() => ({
     transaction: jest.fn((callback) =>
@@ -48,18 +51,6 @@ jest.mock('@/lib/ai/services/model-stats/tool-map', () => ({
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'mock-uuid'),
 }));
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn((callback) => {
-    const mockLogger = {
-      debug: jest.fn(),
-      info: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
-    };
-    callback(mockLogger);
-  }),
-}));
-
 const mockAiModelFactory = aiModelFactory as jest.MockedFunction<
   typeof aiModelFactory
 >;
@@ -89,7 +80,7 @@ describe('Message Optimizer Tools', () => {
     cacheManager.clear();
 
     // Default mock setup
-    mockAiModelFactory.mockReturnValue('mock-lofi-model' as never);
+    mockAiModelFactory.mockResolvedValue('mock-lofi-model' as never);
     mockGenerateText.mockResolvedValue({
       text: 'Tool executed successfully with optimized results.',
       usage: { completionTokens: 50, promptTokens: 100, totalTokens: 150 },

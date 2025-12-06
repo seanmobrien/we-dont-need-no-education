@@ -8,7 +8,7 @@ let errorResponseFactory: any;
 
 beforeAll(async () => {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+     
     const undici = require('undici');
     if (!(globalThis as any).Response && undici.Response) {
       (globalThis as any).Response = undici.Response;

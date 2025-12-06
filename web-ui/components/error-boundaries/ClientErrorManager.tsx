@@ -15,22 +15,9 @@ import {
   isErrorLike,
   StringOrErrorLike,
 } from '@/lib/react-util/errors/error-like';
-
-/**
- * Configuration for error suppression patterns
- */
-export interface ErrorSuppressionRule {
-  /** Unique identifier for this rule */
-  id: string;
-  /** Pattern to match against error messages (string contains or regex) */
-  pattern: string | RegExp;
-  /** Optional: match against error source/filename */
-  source?: string | RegExp;
-  /** Whether to completely suppress (no logging) or just prevent UI display */
-  suppressCompletely?: boolean;
-  /** Description of why this error is suppressed */
-  reason?: string;
-}
+import { DEFAULT_SUPPRESSION_RULES } from '@/lib/error-monitoring/default-suppression-rules';
+import { shouldSuppressError } from '@/lib/error-monitoring/utility';
+import type { ErrorSuppressionRule } from '@/lib/error-monitoring/types';
 
 /**
  * Configuration for ClientErrorManager
@@ -47,31 +34,6 @@ export interface ClientErrorManagerConfig {
 }
 
 /**
- * Default suppression rules for common known issues
- */
-const DEFAULT_SUPPRESSION_RULES: ErrorSuppressionRule[] = [
-  {
-    id: 'ai-content-blob-error',
-    pattern: /AI \(Internal\): 102 message/i,
-    suppressCompletely: true,
-    reason: 'Known AI service issue that does not affect functionality',
-  },
-  {
-    id: 'script-load-errors',
-    pattern: /Loading chunk \d+ failed/i,
-    source: /chunk/i,
-    suppressCompletely: false,
-    reason: 'Chunk loading failures should be logged but not displayed',
-  },
-  {
-    id: 'extension-errors',
-    pattern: /extension|chrome-extension|moz-extension/i,
-    suppressCompletely: true,
-    reason: 'Browser extension errors not related to our application',
-  },
-];
-
-/**
  * Normalize error messages by removing repeating 'Uncaught ' prefixes
  * Example: 'Uncaught Uncaught Uncaught [object] test Uncaught' -> '[object] test Uncaught'
  */
@@ -83,54 +45,6 @@ const normalizeErrorMessage = (message: string): string => {
 const normalizeDebounceKey = (key: string) => {
   // Normalize the key by removing repeating 'Uncaught ' prefixes
   return normalizeErrorMessage(key).toLowerCase().trim();
-};
-
-type SuppressionResult = {
-  suppress: boolean;
-  rule?: ErrorSuppressionRule;
-  completely?: boolean;
-};
-
-const shouldSuppressError = ({
-  error,
-  suppressionRules,
-}: {
-  error: ErrorLike;
-  suppressionRules: ErrorSuppressionRule[];
-}): SuppressionResult => {
-  const testMatch = (pattern: string | RegExp, value: string): boolean => {
-    return (
-      !!value &&
-      (typeof pattern === 'string'
-        ? value.includes(pattern)
-        : pattern.test(value))
-    );
-  };
-  const errorMessage = normalizeErrorMessage(error.message);
-  const errorSource = error.source;
-  const matchedRule = suppressionRules.find((rule) => {
-    // Check if the error message matches the rule pattern
-    const messageMatches = testMatch(rule.pattern, errorMessage);
-    if (!messageMatches) {
-      return false;
-    }
-    // If rule contains a source then it must match as well
-    if (rule.source) {
-      const sourceMatches = testMatch(rule.source, errorSource || '');
-      if (!sourceMatches) {
-        return false;
-      }
-    }
-    // If we reach here, the rule is a match.
-    return true;
-  });
-  return matchedRule
-    ? {
-        suppress: true,
-        rule: matchedRule,
-        completely: matchedRule.suppressCompletely,
-      }
-    : { suppress: false };
 };
 
 class LastErrorMap {
@@ -238,29 +152,33 @@ const processError = ({
   if (suppressionResult.suppress) {
     // Log suppressed errors with low severity if configured
     if (reportSuppressedErrors && !suppressionResult.completely) {
-      errorReporter.reportError(errorObj, ErrorSeverity.LOW, {
-        source: errorObj.source,
-        breadcrumbs: ['global-error-suppressed'],
-        additionalData: {
-          suppression_rule: suppressionResult.rule?.id,
-          suppression_reason: suppressionResult.rule?.reason,
-          lineno: errorObj.line,
-          colno: errorObj.column,
-        },
-      });
+      errorReporter((r) =>
+        r.reportError(errorObj, ErrorSeverity.LOW, {
+          source: errorObj.source,
+          breadcrumbs: ['global-error-suppressed'],
+          additionalData: {
+            suppression_rule: suppressionResult.rule?.id,
+            suppression_reason: suppressionResult.rule?.reason,
+            lineno: errorObj.line,
+            colno: errorObj.column,
+          },
+        }),
+      );
     }
     return false;
   }
   // Report non-suppressed errors
-  errorReporter.reportError(errorObj, ErrorSeverity.HIGH, {
-    source: errorObj.source,
-    breadcrumbs: ['global-error-handler'],
-    additionalData: {
-      type: 'javascript-error',
-      lineno: errorObj.line,
-      colno: errorObj.column,
-    },
-  });
+  errorReporter((r) =>
+    r.reportError(errorObj, ErrorSeverity.HIGH, {
+      source: errorObj.source,
+      breadcrumbs: ['global-error-handler'],
+      additionalData: {
+        type: 'javascript-error',
+        lineno: errorObj.line,
+        colno: errorObj.column,
+      },
+    }),
+  );
   // If we are surfacing to a parent boundary then we don't want to log (avoid duplicate logs)
   if (surfaceToErrorBoundary) {
     // Surface to React error boundary if configured

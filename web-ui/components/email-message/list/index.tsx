@@ -102,7 +102,10 @@ const createColumns = (
       return params.value ? (
         <Link
           onMouseEnter={() => prefetchEmail(params.row.emailId)}
-          component={NextLink}
+          component={
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            NextLink<any>
+          }
           href={siteMap.messages.email(params.row.emailId).toString()}
           title="Open email message"
           aria-label={
@@ -210,7 +213,7 @@ export const EmailList = ({
       if (!event.isPropagationStopped()) {
         const emailId = params.row.emailId;
         if (emailId) {
-          push(siteMap.messages.email(emailId).toString());
+          push(siteMap.messages.email(emailId));
         }
       }
     },

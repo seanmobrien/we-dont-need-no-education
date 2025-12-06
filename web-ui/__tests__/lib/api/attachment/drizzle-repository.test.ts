@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-require-imports */
+ 
+ 
 // It's not worth the effort to fix the mocks
 
 // @ts-check

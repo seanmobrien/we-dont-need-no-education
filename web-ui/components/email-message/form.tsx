@@ -154,7 +154,7 @@ const EmailForm: ForwardRefRenderFunction<
     onSuccess: (result) => {
       const isNewEmail = !emailId;
       if (isNewEmail) {
-        routerReplace(siteMap.email.edit(result.emailId).toString());
+        routerReplace(siteMap.email.edit(result.emailId));
       } else {
         switch (afterSaveBehavior) {
           case 'redirect':

@@ -7,3 +7,4 @@ export type { ILogger, EventSeverity };
 export { errorLogFactory } from './utilities';
 export { logger, log, logEvent } from './core';
 export { simpleScopedLogger } from './simple-scoped-logger';
+export { safeSerialize } from './safe-serialize';

@@ -17,13 +17,13 @@ import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { isAbortError, isTruthy } from '@/lib/react-util/utility-methods';
+import { isTruthy } from '@/lib/react-util/utility-methods';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
-import { User } from 'next-auth';
+import type { User } from '@auth/core/types';
 // Allow streaming responses up to 360 seconds
 //const maxDuration = 60 * 1000 * 360;
 
@@ -35,29 +35,8 @@ const safeDisposeToolProviders = async (
   toolProviders: ToolProviderSet | undefined,
 ): Promise<void> => {
   if (!toolProviders) return;
-
-  try {
-    await toolProviders.dispose();
-  } catch (disposalError) {
-    // Suppress AbortErrors during disposal as they're expected during cleanup
-    if (!isAbortError(disposalError)) {
-      LoggedError.isTurtlesAllTheWayDownBaby(disposalError, {
-        log: true,
-        severity: 'warn',
-        source: 'route:ai:chat safeDisposeToolProviders',
-        message: 'Error during tool provider disposal',
-      });
-    }
-  }
+  toolProviders[Symbol.dispose]();
 };
-
-// Get the tool provider cache instance
-const toolProviderCachePromise = getUserToolProviderCache({
-  maxEntriesPerUser: 5, // Allow up to 5 different tool configurations per user
-  maxTotalEntries: 200, // Increase total limit for multiple users
-  ttl: 45 * 60 * 1000, // 45 minutes (longer than typical chat sessions)
-  cleanupInterval: 10 * 60 * 1000, // Cleanup every 10 minutes
-});
 
 const toolProviderFactory = async ({
   req,
@@ -77,7 +56,12 @@ const toolProviderFactory = async ({
 }) => {
   const flag = await getFeatureFlag('mcp_cache_tools', user?.id);
   if (isTruthy(flag)) {
-    const toolProviderCache = await toolProviderCachePromise;
+    const toolProviderCache = await getUserToolProviderCache({
+      maxEntriesPerUser: 5, // Allow up to 5 different tool configurations per user
+      maxTotalEntries: 200, // Increase total limit for multiple users
+      ttl: 45 * 60 * 1000, // 45 minutes (longer than typical chat sessions)
+      cleanupInterval: 10 * 60 * 1000, // Cleanup every 10 minutes
+    });
     // Use the cache to get or create tool providers
     return toolProviderCache.getOrCreate(
       user.id!,
@@ -180,7 +164,7 @@ export const POST = (req: NextRequest) => {
         });
 
         // Wrap the base model with chat history middleware
-        const baseModel = aiModelFactory(model);
+        const baseModel = await aiModelFactory(model);
         const modelWithHistory = wrapChatHistoryMiddleware({
           model: baseModel,
           chatHistoryContext,
@@ -222,7 +206,6 @@ export const POST = (req: NextRequest) => {
           },
           stopWhen: [stepCountIs(20), hasToolCall('askConfirmation')],
           onError: async (error) => {
-            // await safeDisposeToolProviders(toolProviders);
             LoggedError.isTurtlesAllTheWayDownBaby(error, {
               log: true,
               source: 'route:ai:chat onError',
@@ -264,9 +247,8 @@ export const POST = (req: NextRequest) => {
           },
           onFinish: async (/*evt*/) => {
             try {
-              // await safeDisposeToolProviders(toolProviders);
               log((l) =>
-                l.verbose({
+                l.info({
                   source: 'route:ai:chat onFinish',
                   message: 'Chat response generated',
                   data: {
@@ -348,12 +330,24 @@ export const POST = (req: NextRequest) => {
                 const payload = JSON.stringify(chunk);
                 controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
               }
+              log((l) => l.verbose('Chat: Stream closing normally', { chatHistoryId }));
               controller.close();
             } catch (err) {
-              controller.error(err as Error);
+              controller.error(LoggedError.isTurtlesAllTheWayDownBaby(err, {
+                log: true,
+                source: 'route:ai:chat mergedChunks',
+                severity: 'error',
+                data: {
+                  chatHistoryId,
+                  model,
+                  isRateLimitError,
+                  retryAfter,
+                },
+              }));
             }
           },
-          cancel() {
+          cancel(reason) {
+            log((l) => l.warn('Stream cancelled', { reason, chatHistoryId }));
             // noop
           },
         });

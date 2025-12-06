@@ -29,12 +29,14 @@
  * the specified provider configurations and return an aggregated interface the
  * caller can hand to higher-level AI tooling.
  */
-import { toolProviderSetFactory } from './toolProviderFactory';
+import { toolProviderSetFactory } from './tool-provider-factory';
 import { env } from '@/lib/site-util/env';
 import { ToolProviderFactoryOptions, ToolProviderSet } from '../types';
 import { NextRequest } from 'next/server';
 import { fromUserId as fromUser } from '@/lib/auth/impersonation/impersonation-factory';
-import { User } from 'next-auth';
+import type { User } from '@auth/core/types';
+import { encode, getToken } from '@auth/core/jwt';
+import { getMem0EnabledFlag, getStreamingTransportFlag } from '../tool-flags';
 
 /**
  * Builds a minimal header map for MCP client connections.
@@ -63,6 +65,7 @@ export const getMcpClientHeaders = ({
   const ret: { [key: string]: string } = {
     ...(chatHistoryId ? { 'x-chat-history-id': chatHistoryId } : {}),
   };
+  // TOOD: Guard forwarding this outside of our own domain?
   const sessionCookie = req.cookies?.get('authjs.session-token')?.value ?? '';
   if (sessionCookie.length > 0) {
     ret.Cookie = `authjs.session-token=${sessionCookie}`;
@@ -110,23 +113,45 @@ export const setupDefaultTools = async ({
   const defaultHeaders = {
     ...(chatHistoryId ? { 'x-chat-history-id': chatHistoryId } : {}),
   };
+  const globalMem0Enabled = await getMem0EnabledFlag();
   if (req) {
-    const sessionToken = req.cookies?.get('authjs.session-token')?.value ?? '';
+    const token = await getToken({
+      req,
+      secret: env('AUTH_SECRET'),
+    });
+    const encoded = token
+      ? await encode({
+          token,
+          secret: env('AUTH_SECRET'),
+          maxAge: 60 * 60,
+          salt: 'bearer-token', // flavor for bearer token use
+        })
+      : null;
+    const streamingTransport = await getStreamingTransportFlag();
+    const url = new URL(
+      `/api/ai/tools/${streamingTransport.value ? 'mcp' : 'sse'}`,
+      env('NEXT_PUBLIC_HOSTNAME'),
+    );
+    const sessionTokenKey =
+      (url.protocol === 'https:' ? '__Secure-' : '') + 'authjs.session-token';
+    const sessionToken = req.cookies?.get(sessionTokenKey)?.value;
     options.push({
       allowWrite: writeEnabled,
-      url: new URL('/api/ai/tools/sse', env('NEXT_PUBLIC_HOSTNAME')).toString(),
+      url: url.toString(),
       headers: async () => ({
         ...defaultHeaders,
+        ...(encoded ? { Authorization: `Bearer ${encoded}` } : {}),
         ...(sessionToken
-          ? { Cookie: `authjs.session-token=${sessionToken}` }
+          ? { Cookie: `${sessionTokenKey}=${sessionToken}` }
           : {}),
       }),
     });
   }
-  if (memoryEnabled && !env('MEM0_DISABLED')) {
+  if (memoryEnabled && globalMem0Enabled.value) {
     const impersonation = await fromUser({ user });
     options.push({
       allowWrite: true,
+      sse: true,
       headers: async () => ({
         ...defaultHeaders,
         'cache-control': 'no-cache, no-transform',

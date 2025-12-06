@@ -7,32 +7,37 @@ import type {
 import { memoryClientFactory } from '../mem0';
 import { log } from '@/lib/logger';
 import { MiddlewareStateManager } from './state-management';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
-/**
- * Memory Middleware (Original Implementation)
- *
- * This middleware adds memory-related system prompts to enhance AI responses
- * with context from previous interactions.
- */
 const originalMemoryMiddleware: LanguageModelV2Middleware = {
   wrapStream: async ({ doStream }) => {
-    const { stream, ...rest } = await doStream();
-    const transformStream = new TransformStream<
-      LanguageModelV2StreamPart,
-      LanguageModelV2StreamPart
-    >({
-      transform(chunk, controller) {
-        controller.enqueue(chunk);
-      },
-      flush() {
-        log((l) => l.verbose('Memory middleware stream flushed'));
-      },
-    });
+    try {
+      log(l => l.verbose('=== Memory middleware stream start ==='));
+      const { stream, ...rest } = await doStream();
+      const transformStream = new TransformStream<
+        LanguageModelV2StreamPart,
+        LanguageModelV2StreamPart
+      >({
+        transform(chunk, controller) {
+          controller.enqueue(chunk);
+        },
+        flush() {
+          log(l => l.verbose('Memory middleware stream flushed'));
+        },
+      });
 
-    return {
-      stream: stream.pipeThrough(transformStream),
-      ...rest,
-    };
+      return {
+        stream: stream.pipeThrough(transformStream),
+        ...rest,
+      };
+    } catch (error) {
+      throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        source: 'memoryMiddleware',
+        log: true,
+      })
+    } finally {
+      log(l => l.verbose('=== Memory middleware stream end ==='));
+    }
   },
 
   transformParams: async ({ params }) => {
@@ -64,12 +69,6 @@ const originalMemoryMiddleware: LanguageModelV2Middleware = {
   },
 };
 
-/**
- * Memory Middleware with State Management Support
- *
- * This middleware supports the state management protocol and can participate
- * in state collection and restoration operations.
- */
 export const memoryMiddleware =
   MiddlewareStateManager.Instance.basicMiddlewareWrapper({
     middlewareId: 'memory-middleware',

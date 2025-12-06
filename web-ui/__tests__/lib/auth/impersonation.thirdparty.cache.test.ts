@@ -2,14 +2,14 @@
  * @jest-environment node
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Offline token cache lifecycle tests for ImpersonationThirdParty
  * - Uses Redis + CryptoService mocks to simulate encrypted cached refresh token
  * - Verifies refresh_token grant path avoids headless login
  * - Verifies expired cached token falls back to login and persists rotated token
  */
-import { createMockTracer } from '@/__tests__/jest.mock-tracing';
+import { createMockTracer } from '@/__tests__/setup/jest.mock-tracing';
+import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 // Helpers to craft minimal JWT strings with exp claim
 const b64url = (obj: unknown) =>
   Buffer.from(JSON.stringify(obj), 'utf8')
@@ -84,7 +84,7 @@ const redisClient = {
   get: jest.fn(),
   setEx: jest.fn(),
 };
-jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
+jest.mock('@/lib/redis-client', () => ({
   getRedisClient: jest.fn(async () => redisClient),
 }));
 
@@ -104,8 +104,6 @@ jest.mock('@keycloak/keycloak-admin-client', () => ({
   default: MockKcAdminCtor,
 }));
 
-import { auth } from '@/auth';
-
 const tracer = createMockTracer();
 
 describe('ImpersonationThirdParty - offline token cache lifecycle', () => {
@@ -124,27 +122,13 @@ describe('ImpersonationThirdParty - offline token cache lifecycle', () => {
     process.env.AUTH_KEYCLOAK_IMPERSONATOR_PASSWORD = 'S3cr3t!';
     // Ensure no preset offline token in env
     delete process.env.AUTH_KEYCLOAK_IMPERSONATOR_OFFLINE_TOKEN;
-
-    // Default mocks
-    (auth as jest.Mock).mockResolvedValue({
-      user: {
-        id: 'admin-user-id',
-        subject: 'admin-sub',
-        email: 'target.user@example.com',
-        name: 'Admin User',
-      },
-    });
-    // User lookup succeeds
-    if (lastKcAdminInstance) {
-      (lastKcAdminInstance.users.find as jest.Mock).mockReset();
-    }
-    gotGet.mockReset();
-    gotPost.mockReset();
+    withJestTestExtensions().session!.user = {
+      id: 'admin-user-id',
+      subject: 'admin-sub',
+      email: 'target.user@example.com',
+      name: 'Admin User',
+    };
     grantQueue.length = 0;
-    redisClient.get.mockReset();
-    redisClient.setEx.mockReset();
-    mockEncrypt.mockClear();
-    mockDecrypt.mockClear();
   });
   afterEach(() => {
     tracer.dispose();
@@ -179,9 +163,9 @@ describe('ImpersonationThirdParty - offline token cache lifecycle', () => {
     // Only user grant needed (admin came from refresh path)
     grantQueue.push({ access_token: 'user-access', expires_in: 3600 });
 
-    const { ImpersonationThirdParty } = await import(
-      '@/lib/auth/impersonation/impersonation.thirdparty'
-    );
+    const {
+      ImpersonationThirdParty,
+    } = require('@/lib/auth/impersonation/impersonation.thirdparty');
     const svc = await ImpersonationThirdParty.fromRequest({
       session: {
         id: 1,

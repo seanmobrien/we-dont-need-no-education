@@ -1,47 +1,72 @@
-export const KnownFeatureValues = [
+import { isKeyOf } from '@/lib/typescript';
+
+export const BooleanFeatureFlagValues = [
+  'mem0_mcp_tools_enabled',
+  'models_fetch_enhanced',
+  'models_fetch_dedup_writerequests',
   'models_azure',
   'models_openai',
   'models_google',
-  'models_defaults',
   'mcp_cache_tools',
   'mcp_cache_client',
+  'mcp_protocol_http_stream',
 ] as const;
+export const NumberFeatureFlagValues = [
+  'models_fetch_cache_ttl',
+  'models_fetch_concurrency',
+  'models_fetch_stream_max_chunks',
+  'models_fetch_stream_max_total_bytes',
+  'health_database_cache_ttl',
+  'health_memory_cache_ttl',
+  'health_memory_cache_error_ttl',
+  'health_memory_cache_warning_ttl',
+  'health_startup_failure_threshold',
+  'mcp_max_duration',
+] as const;
+export const StringFeatureFlagValues = [
+  'mcp_trace_level',
+  'models_fetch_trace_level',
+  'todo_storage_strategy',
+] as const;
+export const ObjectFeatureFlagValues = [
+  'models_fetch_stream_buffer',
+  'models_defaults',
+  'todo_storage_in_memory_config',
+  'todo_storage_redis_config',
+  'models_config_azure',
+  'models_config_openai',
+  'models_config_google',
+  'health_checks',
+] as const;
+
+export type NumberFeatureFlagType = (typeof NumberFeatureFlagValues)[number];
+export type BooleanFeatureFlagType = (typeof BooleanFeatureFlagValues)[number];
+export type StringFeatureFlagType = (typeof StringFeatureFlagValues)[number];
+export type ObjectFeatureFlagType = (typeof ObjectFeatureFlagValues)[number];
+
+export const KnownFeatureValues = [
+  ...BooleanFeatureFlagValues,
+  ...NumberFeatureFlagValues,
+  ...StringFeatureFlagValues,
+  ...ObjectFeatureFlagValues,
+] as const;
+
 export type KnownFeatureType = (typeof KnownFeatureValues)[number];
-export const KnownFeature: Record<KnownFeatureType, KnownFeatureType> =
-  KnownFeatureValues.reduce(
-    (acc, value) => ({ ...acc, [value]: value }),
-    {} as Record<KnownFeatureType, KnownFeatureType>,
-  );
 
-export type FeatureFlagStatus =
-  | boolean
-  | number
-  | string
-  | {
-      enabled: boolean;
-      value?: string | number | object | boolean;
-    };
-export type AllFeatureFlagStatus = Record<KnownFeatureType, FeatureFlagStatus>;
+export const KnownFeatureKeyMap: Readonly<
+  Record<KnownFeatureType, KnownFeatureType>
+> = KnownFeatureValues.reduce(
+  (acc, value) => ({ ...acc, [value]: value }) as const,
+  {} as Readonly<Record<KnownFeatureType, KnownFeatureType>>,
+);
 
-export const AllFeatureFlagsDefault = {
-  models_azure: true as boolean,
-  models_openai: false as boolean,
-  models_google: true as boolean,
-  models_defaults: {
-    enabled: true as boolean,
-    value: {
-      openai: 'lofi' as string,
-      azure: 'lofi' as string,
-      google: 'gemini-1.5-pro' as string,
-    },
-  },
-  mcp_cache_tools: false as boolean,
-  mcp_cache_client: true as boolean,
-} as const satisfies AllFeatureFlagStatus;
+export const isKnownFeatureBooleanType = (
+  check: unknown,
+): check is BooleanFeatureFlagType => isKeyOf(check, BooleanFeatureFlagValues);
 
-export type AllFeatureFlagDefaultType = typeof AllFeatureFlagsDefault;
+export const isKnownFeatureObjectType = (
+  check: unknown,
+): check is ObjectFeatureFlagType => isKeyOf(check, ObjectFeatureFlagValues);
 
-export type FeatureFlagValueType<K extends KnownFeatureType> =
-  K extends keyof AllFeatureFlagDefaultType
-    ? Pick<AllFeatureFlagDefaultType, K>[K]
-    : never;
+export const isKnownFeatureType = (check: unknown): check is KnownFeatureType =>
+  isKeyOf(check, KnownFeatureValues);

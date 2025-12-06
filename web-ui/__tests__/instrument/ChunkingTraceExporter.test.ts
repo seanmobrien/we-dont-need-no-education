@@ -2,7 +2,7 @@ import { BasicTracerProvider } from '@opentelemetry/sdk-trace-base';
 import { InMemorySpanExporter } from '@opentelemetry/sdk-trace-base';
 import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import type { ReadableSpan, SpanExporter } from '@opentelemetry/sdk-trace-base';
-import { ChunkingTraceExporter } from '@/instrument/chunking/ChunkingTraceExporter';
+import { ChunkingTraceExporter } from '@/instrument/chunking/chunking-trace-exporter';
 
 describe('ChunkingTraceExporter', () => {
   it('splits oversized attributes into chunk events with context id and order', () => {

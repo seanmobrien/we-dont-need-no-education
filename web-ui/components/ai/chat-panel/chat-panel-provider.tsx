@@ -9,6 +9,7 @@ import { debounce } from '@/lib/react-util/debounce';
 import { ChatPanelConfig, ChatPanelContextValue, DockPosition } from './types';
 import { ChatPanelContext } from './chat-panel-context';
 import { isKeyOf } from '@/lib/typescript/_guards';
+import { errorReporter } from '@/lib/error-monitoring/error-reporter';
 
 const STORAGE_KEYS = {
   POSITION: 'chatPanelPosition',
@@ -47,7 +48,7 @@ const loadStoredConfig = (): ChatPanelConfig => {
       dockSize,
     };
   } catch (error) {
-    console.warn('Failed to load chat panel config from localStorage:', error);
+    errorReporter((r) => r.reportError(error));
     return DEFAULT_CONFIG;
   }
 };
@@ -64,7 +65,7 @@ const saveConfig = (config: ChatPanelConfig): void => {
       localStorage.setItem(STORAGE_KEYS.DOCK_SIZE, config.dockSize.toString());
     }
   } catch (error) {
-    console.warn('Failed to save chat panel config to localStorage:', error);
+    errorReporter((r) => r.reportError(error));
   }
 };
 
@@ -79,6 +80,9 @@ export const ChatPanelProvider: React.FC<
   const [isClient, setIsClient] = useState(false);
   const [dockPanel, setDockPanel] = useState<HTMLDivElement | null>(null);
   const [caseFileId, setCaseFileId] = useState<string | null>(null);
+  const [lastCompletionTime, setLastCompletionTime] = useState<Date | null>(
+    null,
+  );
 
   useEffect(() => {
     setIsClient(true);
@@ -146,6 +150,13 @@ export const ChatPanelProvider: React.FC<
         fieldsEqual(newConfig, config, key),
       );
       if (!areEqual) {
+        // Enforce minimum height before merging
+        if (
+          newConfig.size?.height !== undefined &&
+          newConfig.size.height < 300
+        ) {
+          newConfig.size.height = 300;
+        }
         setConfigState({
           ...config,
           ...newConfig,
@@ -216,6 +227,8 @@ export const ChatPanelProvider: React.FC<
     dockPanel,
     setDockPanel,
     caseFileId,
+    lastCompletionTime,
+    setLastCompletionTime,
   };
 
   return (

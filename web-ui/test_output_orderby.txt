@@ -1,0 +1,155 @@
+npm warn Unknown project config "package-manager-strict". This will stop working in the next major version of npm.
+npm warn Unknown project config "prefer-yarn". This will stop working in the next major version of npm.
+
+> compliance-theater@0.1.0 test
+> jest __tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts
+
+FAIL __tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts
+  buildDrizzleOrderBy
+    Basic functionality
+      ΓêÜ should return original query when no source provided (4 ms)
+      ΓêÜ should apply default sort when no source provided but defaultSort specified (2 ms)
+      ΓêÜ should handle empty GridSortModel source (1 ms)
+    GridSortModel source
+      ΓêÜ should handle single column ascending sort (2 ms)
+      ΓêÜ should handle single column descending sort (1 ms)
+      ΓêÜ should handle multiple column sorts (1 ms)
+      ├ù should skip unknown columns and log warnings (2 ms)
+      ├ù should return original query when all columns are unknown (5 ms)
+    URL and string sources
+      ΓêÜ should parse sort from URL string (1 ms)
+      ΓêÜ should parse sort from URL object (1 ms)
+      ΓêÜ should handle URL with no sort parameter (1 ms)
+      ΓêÜ should handle URL with empty sort parameter (1 ms)
+    NextRequest source
+      ΓêÜ should parse sort from NextRequest (2 ms)
+      ΓêÜ should handle NextRequest with no url (1 ms)
+    Column mapping
+      ΓêÜ should apply column mapping with object map (1 ms)
+      ΓêÜ should apply column mapping with function map
+      ├ù should log warning with mapped column names (1 ms)
+    Default sort handling
+      ΓêÜ should handle string default sort
+      ΓêÜ should handle GridSortModel default sort (1 ms)
+      ΓêÜ should handle SQL expression default sort (1 ms)
+      ΓêÜ should handle PgColumn default sort (1 ms)
+      ΓêÜ should apply column mapping to string default sort (1 ms)
+      ├ù should log warning for unknown default sort column (1 ms)
+    Edge cases and error handling
+      ΓêÜ should handle malformed sort URL gracefully (1 ms)
+      ΓêÜ should prioritize source sort over default sort (1 ms)
+      ΓêÜ should handle getColumn function that throws errors (3 ms)
+      ├ù should handle null/undefined column results (1 ms)
+  createColumnGetter
+    ΓêÜ should create a getter that returns correct columns (1 ms)
+    ΓêÜ should handle SQL expressions in column map (1 ms)
+    ΓêÜ should return undefined for missing columns (1 ms)
+  createTableColumnGetter
+    ΓêÜ should get columns by exact property name
+    ΓêÜ should handle camelCase to snake_case conversion (1 ms)
+    ΓêÜ should handle snake_case to camelCase conversion (1 ms)
+    ΓêÜ should prioritize custom mappings over automatic conversions (1 ms)
+    ΓêÜ should handle SQL expressions in custom mappings (4 ms)
+    ΓêÜ should return undefined for non-object properties (1 ms)
+    ΓêÜ should return undefined for missing properties (1 ms)
+    ΓêÜ should handle empty custom mappings (1 ms)
+    ΓêÜ should handle complex field name conversions (1 ms)
+  Integration tests
+    ΓêÜ should work end-to-end with realistic data (1 ms)
+    ΓêÜ should handle mixed column types (regular columns and SQL expressions) (1 ms)
+    ΓêÜ should maintain query chain fluency
+
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ GridSortModel source ΓÇ║ should skip unknown columns and log warnings
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleOrderBy: Unknown column 'unknown_column' (mapped from 'unknown_column')"
+
+    Number of calls: 0
+
+      259 |         column: mockColumns.name,
+      260 |       });
+    > 261 |       expect(mockLogger.warn).toHaveBeenCalledWith(
+          |                               ^
+      262 |         "buildDrizzleOrderBy: Unknown column 'unknown_column' (mapped from 'unknown_column')",
+      263 |       );
+      264 |       expect(mockLogger.warn).toHaveBeenCalledWith(
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:261:31)
+
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ GridSortModel source ΓÇ║ should return original query when all columns are unknown
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 2
+    Received number of calls: 0
+
+      282 |       expect(result).toBe(mockQuery);
+      283 |       expect(mockQuery.orderBy).not.toHaveBeenCalled();
+    > 284 |       expect(mockLogger.warn).toHaveBeenCalledTimes(2);
+          |                               ^
+      285 |     });
+      286 |   });
+      287 |
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:284:31)
+
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ Column mapping ΓÇ║ should log warning with mapped column names
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleOrderBy: Unknown column 'backend_field' (mapped from 'frontend_field')"
+
+    Number of calls: 0
+
+      470 |       });
+      471 |
+    > 472 |       expect(mockLogger.warn).toHaveBeenCalledWith(
+          |                               ^
+      473 |         "buildDrizzleOrderBy: Unknown column 'backend_field' (mapped from 'frontend_field')",
+      474 |       );
+      475 |     });
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:472:31)
+
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ Default sort handling ΓÇ║ should log warning for unknown default sort column
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleOrderBy: Unknown default sort column 'unknown_column' (mapped from 'unknown_column')"
+
+    Number of calls: 0
+
+      580 |       expect(result).toBe(mockQuery);
+      581 |       expect(mockQuery.orderBy).not.toHaveBeenCalled();
+    > 582 |       expect(mockLogger.warn).toHaveBeenCalledWith(
+          |                               ^
+      583 |         "buildDrizzleOrderBy: Unknown default sort column 'unknown_column' (mapped from 'unknown_column')",
+      584 |       );
+      585 |     });
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:582:31)
+
+  ΓùÅ buildDrizzleOrderBy ΓÇ║ Edge cases and error handling ΓÇ║ should handle null/undefined column results
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "buildDrizzleOrderBy: Unknown column 'invalid' (mapped from 'invalid')"
+
+    Number of calls: 0
+
+      657 |         column: mockColumns.name,
+      658 |       });
+    > 659 |       expect(mockLogger.warn).toHaveBeenCalledWith(
+          |                               ^
+      660 |         "buildDrizzleOrderBy: Unknown column 'invalid' (mapped from 'invalid')",
+      661 |       );
+      662 |     });
+
+      at Object.<anonymous> (__tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts:659:31)
+
+Test Suites: 1 failed, 1 total
+Tests:       5 failed, 37 passed, 42 total
+Snapshots:   0 total
+Time:        0.621 s, estimated 1 s
+Ran all test suites matching __tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test.ts.

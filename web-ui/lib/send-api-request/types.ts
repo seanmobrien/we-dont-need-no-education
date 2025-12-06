@@ -1,6 +1,8 @@
 import { ICancellablePromiseExt } from '../typescript';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
+import { UrlObject } from 'url';
+import { SiteRoute } from '../site-util/url-builder/_types';
 
 /**
  * Represents the parameters required for making an API request.
@@ -14,7 +16,7 @@ import { NextApiRequest } from 'next';
  * @property {boolean} [forwardCredentials] - Whether to forward credentials to the endpoint.  True by default when the request property is provided.
  */
 export type ApiRequestParams = {
-  url: URL;
+  url: UrlObject | SiteRoute;
   area: string;
   action: string;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -31,7 +33,7 @@ export type ApiRequestParams = {
  * @returns {ICancellablePromiseExt<T>} A cancellable promise that resolves to the response data of type T.
  */
 export type ApiRequestFunction = <T>(
-  apiRequest: ApiRequestParams
+  apiRequest: ApiRequestParams,
 ) => ICancellablePromiseExt<T>;
 
 /**
@@ -91,7 +93,7 @@ export type ApiRequestHelper = {
    */
   get: <T>(
     params: Omit<ReadApiRequestParams, 'area'>,
-    additional?: AdditionalRequestParams
+    additional?: AdditionalRequestParams,
   ) => ICancellablePromiseExt<T>;
 
   /**
@@ -103,7 +105,7 @@ export type ApiRequestHelper = {
    */
   post: <T>(
     params: Omit<WriteApiRequestParams, 'area'>,
-    additional?: AdditionalRequestParams
+    additional?: AdditionalRequestParams,
   ) => ICancellablePromiseExt<T>;
 
   /**
@@ -115,7 +117,7 @@ export type ApiRequestHelper = {
    */
   put: <T>(
     params: Omit<WriteApiRequestParams, 'area'>,
-    additional?: AdditionalRequestParams
+    additional?: AdditionalRequestParams,
   ) => ICancellablePromiseExt<T>;
 
   /**
@@ -127,6 +129,6 @@ export type ApiRequestHelper = {
    */
   delete: <T>(
     params: Omit<DeleteApiRequestParams, 'area'>,
-    additional?: AdditionalRequestParams
+    additional?: AdditionalRequestParams,
   ) => ICancellablePromiseExt<T>;
 };

@@ -1,4 +1,5 @@
 import React from 'react';
+import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 
 /**
  * NOTE: Global test environment mocks are defined in __tests__/jest.setup.ts.
@@ -20,16 +21,15 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Use the globally mocked auth (from jest.setup.ts) and override implementation per test via helper
-import { auth as authMockOriginal } from '@/auth';
-const authMock = authMockOriginal as unknown as jest.Mock;
+// import { auth as authMockOriginal } from '@/auth';
+// const authMock = authMockOriginal as unknown as jest.Mock;
 
 const setSession = (userId: number | null) => {
   if (userId == null) {
-    authMock.mockImplementation(() => Promise.resolve(null));
+    // authMock.mockImplementation(() => Promise.resolve(null));
+    withJestTestExtensions().session = null;
   } else {
-    authMock.mockImplementation(() =>
-      Promise.resolve({ user: { id: userId } }),
-    );
+    withJestTestExtensions().session!.user.id = String(userId);
   }
 };
 
@@ -70,7 +70,7 @@ interface MockChatHistoryProps {
   chatId: string;
   title?: string;
 }
-jest.mock('@/components/chat/history', () => {
+jest.mock('@/components/ai/chat/history', () => {
   const ChatHistory = (props: MockChatHistoryProps) => {
     return <div data-testid="chat-history" {...props} />;
   };
@@ -122,7 +122,7 @@ const findChatHistoryProps = (
 // Import module under test AFTER mocks so dependencies are mocked correctly.
 let ChatDetailPage: (args: {
   params: Promise<{ chatId: string }>;
-}) => Promise<React.ReactElement>;
+}) => Promise<React.JSX.Element>;
 let getChatDetails: (args: {
   chatId: string;
   userId: number;
@@ -138,17 +138,21 @@ beforeAll(async () => {
 
 describe('ChatDetailPage', () => {
   beforeEach(() => {
+    /*
     unauthorizedMock.mockClear();
     notFoundMock.mockClear();
-    authMock.mockReset();
+    // authMock.mockReset();
     drizDbWithInitMock.mockReset();
     isUserAuthorizedMock.mockReset();
+    */
   });
 
   test('unauthorized when no session', async () => {
     setSession(null);
     await expect(
-      ChatDetailPage({ params: Promise.resolve({ chatId: 'abc123' }) }),
+      ChatDetailPage({
+        params: Promise.resolve({ chatId: 'abc123' }),
+      }),
     ).rejects.toThrow('UNAUTHORIZED');
     expect(unauthorizedMock).toHaveBeenCalledTimes(1);
     expect(notFoundMock).not.toHaveBeenCalled();
@@ -158,7 +162,9 @@ describe('ChatDetailPage', () => {
     setSession(42);
     drizDbWithInitMock.mockResolvedValueOnce(undefined); // no chat
     await expect(
-      ChatDetailPage({ params: Promise.resolve({ chatId: 'abc123' }) }),
+      ChatDetailPage({
+        params: Promise.resolve({ chatId: 'abc123' }),
+      }),
     ).rejects.toThrow('NOT_FOUND');
     expect(unauthorizedMock).not.toHaveBeenCalled();
     expect(notFoundMock).toHaveBeenCalledTimes(1);
@@ -173,7 +179,9 @@ describe('ChatDetailPage', () => {
     });
     isUserAuthorizedMock.mockResolvedValueOnce(false);
     await expect(
-      ChatDetailPage({ params: Promise.resolve({ chatId: 'abc123' }) }),
+      ChatDetailPage({
+        params: Promise.resolve({ chatId: 'abc123' }),
+      }),
     ).rejects.toThrow('NOT_FOUND');
     expect(notFoundMock).toHaveBeenCalledTimes(1);
   });

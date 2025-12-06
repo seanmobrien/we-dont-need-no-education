@@ -4,6 +4,7 @@ import type {
   ErrorReport,
   ErrorReporterConfig,
   ErrorReporterInterface,
+  ErrorReportResult,
 } from './types';
 
 /**
@@ -30,20 +31,20 @@ export declare class ErrorReporter implements ErrorReporterInterface {
     error: Error | unknown,
     severity?: ErrorSeverity,
     context?: Partial<ErrorContext>,
-  ): Promise<void>;
+  ): Promise<ErrorReportResult>;
 
   /** Report an error captured by a React error boundary */
   public reportBoundaryError(
     error: Error,
     errorInfo: { componentStack?: string; errorBoundary?: string },
     severity?: ErrorSeverity,
-  ): Promise<void>;
+  ): Promise<ErrorReportResult>;
 
   /** Report an unhandled promise rejection */
   public reportUnhandledRejection(
     reason: unknown,
     promise: Promise<unknown>,
-  ): Promise<void>;
+  ): Promise<ErrorReportResult>;
 
   /** Install global window error and rejection handlers (no-op on server) */
   public setupGlobalHandlers(): void;
@@ -53,6 +54,12 @@ export declare class ErrorReporter implements ErrorReporterInterface {
 
   /** Clear stored error reports from localStorage (client only) */
   public clearStoredErrors(): void;
+  createErrorReport(
+    error: Error | unknown,
+    severity?: ErrorSeverity,
+    context?: Partial<ErrorContext>,
+  ): Promise<ErrorReport>;
+  generateFingerprint(error: Error, context: ErrorContext): string;
 }
 
 /**

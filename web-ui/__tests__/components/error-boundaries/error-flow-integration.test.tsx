@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * @jest-environment jsdom
  */
+
 import React from 'react';
 import { render, waitFor, act } from '@testing-library/react';
 // import userEvent from '@testing-library/user-event';
@@ -10,23 +10,25 @@ import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import { ClientErrorManager } from '@/components/error-boundaries/ClientErrorManager';
 import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
-import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
-import { any } from 'zod';
+import {
+  errorReporter,
+  ErrorSeverity,
+  ErrorReporterInterface,
+} from '@/lib/error-monitoring';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock the error reporter and recovery strategies
-jest.mock('@/lib/error-monitoring', () => ({
-  errorReporter: {
-    reportError: jest.fn(),
-    reportBoundaryError: jest.fn(),
-  },
-  ErrorSeverity: {
-    LOW: 'low',
-    MEDIUM: 'medium',
-    HIGH: 'high',
-    CRITICAL: 'critical',
-  },
-}));
+/*
+jest.mock('@/lib/error-monitoring', () => {
+  const originalModule = jest.requireActual('@/lib/error-monitoring');
+  const mockErrorReporter = jest.fn();
+  return {
+    ...originalModule,
+    __esModule: true,
+    errorReporter: mockErrorReporter,
+  };
+});
+*/
 
 const mockReload = jest.fn();
 
@@ -36,7 +38,6 @@ jest.mock('@/lib/error-monitoring/recovery-strategies', () => ({
   classifyError: jest.fn(),
 }));
 
-const mockErrorReporter = errorReporter as jest.Mocked<typeof errorReporter>;
 const mockGetRecoveryActions =
   require('/lib/error-monitoring/recovery-strategies').getRecoveryActions;
 const mockGetDefaultRecoveryAction =
@@ -68,7 +69,9 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const consoleSpy = hideConsoleOutput();
 
 describe('Error Flow Integration Tests', () => {
+  let mockErrorReporter: jest.Mocked<ErrorReporterInterface>;
   beforeEach(() => {
+    mockErrorReporter = errorReporter() as jest.Mocked<ErrorReporterInterface>;
     // jest.clearAllMocks();
     // Default mock implementations
     mockClassifyError.mockReturnValue('network');

@@ -1,13 +1,6 @@
-/**
- * @fileoverview FIFO rate-aware language model queue implementation
- *
- * This class provides a queue-based system for processing language model requests
- * while respecting rate limits and providing intelligent request scheduling.
- */
-
 import { LanguageModelV2 } from '@ai-sdk/provider';
 import { v4 as uuidv4 } from 'uuid';
-import { getRedisClient } from '../../../middleware/cacheWithRedis/redis-client';
+import { getRedisClient } from '@/lib/redis-client';
 import { countTokens } from '../../../core/count-tokens';
 import { auth } from '@/auth';
 import { log } from '@/lib/logger';
@@ -29,12 +22,6 @@ const FIFO_CHATQUEUE_QUEUE_EXPIRATION_SECONDS =
 const FIFO_CHATQUEUE_MESSAGE_STALE_TIMEOUT = 5 * 60 * 1000;
 const FIFO_CHATQUEUE_OUTPUT_TOKEN_BUFFER = 1500; // Reserved tokens for response
 
-/**
- * FIFO rate-aware language model queue
- *
- * Manages queued requests to language models with intelligent rate limiting,
- * FIFO processing with capacity-aware skipping, and comprehensive error handling.
- */
 export class LanguageModelQueue {
   private readonly model: LanguageModelV2;
   private readonly maxConcurrentRequests: number;
@@ -61,16 +48,10 @@ export class LanguageModelQueue {
     this.startProcessing();
   }
 
-  /**
-   * Get the readonly queue instance ID
-   */
   get queueInstanceId(): string {
     return this._queueInstanceId;
   }
 
-  /**
-   * Extract model type from LanguageModel instance
-   */
   private extractModelType(model: LanguageModelV2): string {
     // Try to extract from the model's provider and model ID
     if ('provider' in model && 'modelId' in model) {
@@ -81,9 +62,6 @@ export class LanguageModelQueue {
     return 'unknown-model';
   }
 
-  /**
-   * Generate Redis keys for queue operations
-   */
   private getQueueKey(): string {
     return `${REDIS_PREFIX}:queue:${this.modelType}`;
   }
@@ -96,9 +74,6 @@ export class LanguageModelQueue {
     return `${REDIS_PREFIX}:processing:${this.modelType}`;
   }
 
-  /**
-   * Get current user ID from auth
-   */
   private async getCurrentUserId(): Promise<string> {
     try {
       const session = await auth();
@@ -109,9 +84,6 @@ export class LanguageModelQueue {
     }
   }
 
-  /**
-   * Get model token per minute limit from the models table
-   */
   private async getModelTokenLimit(): Promise<number> {
     try {
       const quotaRecord = await (
@@ -127,9 +99,6 @@ export class LanguageModelQueue {
     }
   }
 
-  /**
-   * Validate that a message isn't too large for the queue
-   */
   private async validateMessageSize(tokenCount: number): Promise<void> {
     const maxTokensPerMinute = await this.getModelTokenLimit();
     const maxAllowedTokens =
@@ -144,9 +113,6 @@ export class LanguageModelQueue {
     }
   }
 
-  /**
-   * Create a queued request object
-   */
   private async createQueuedRequest(
     method: LanguageModelMethod,
     params: unknown,
@@ -166,9 +132,6 @@ export class LanguageModelQueue {
     };
   }
 
-  /**
-   * Add a request to the Redis queue
-   */
   private async enqueueRequest(request: QueuedRequest): Promise<void> {
     const redis = await getRedisClient();
     const queueKey = this.getQueueKey();
@@ -189,9 +152,6 @@ export class LanguageModelQueue {
     );
   }
 
-  /**
-   * Get the current model capacity from Redis
-   */
   private async getModelCapacity(): Promise<ModelCapacity | null> {
     try {
       const redis = await getRedisClient();
@@ -209,9 +169,6 @@ export class LanguageModelQueue {
     }
   }
 
-  /**
-   * Update model capacity in Redis
-   */
   private async updateModelCapacity(capacity: ModelCapacity): Promise<void> {
     try {
       const redis = await getRedisClient();
@@ -227,9 +184,6 @@ export class LanguageModelQueue {
     }
   }
 
-  /**
-   * Extract rate limit information from response headers
-   */
   private extractRateLimitInfo(
     headers: Record<string, string | string[]>,
   ): RateLimitInfo {
@@ -259,9 +213,6 @@ export class LanguageModelQueue {
     return info;
   }
 
-  /**
-   * Check if the model has capacity to process a request
-   */
   private async hasCapacity(tokenCount: number): Promise<boolean> {
     const capacity = await this.getModelCapacity();
 
@@ -283,16 +234,10 @@ export class LanguageModelQueue {
     return capacity.tokensPerMinute >= requiredTokens;
   }
 
-  /**
-   * Generate text using the underlying model
-   */
   async generateText(params: unknown, signal?: AbortSignal): Promise<unknown> {
     return this.processRequest('generateText', params, signal);
   }
 
-  /**
-   * Generate object using the underlying model
-   */
   async generateObject(
     params: unknown,
     signal?: AbortSignal,
@@ -300,23 +245,14 @@ export class LanguageModelQueue {
     return this.processRequest('generateObject', params, signal);
   }
 
-  /**
-   * Stream text using the underlying model
-   */
   async streamText(params: unknown, signal?: AbortSignal): Promise<unknown> {
     return this.processRequest('streamText', params, signal);
   }
 
-  /**
-   * Stream object using the underlying model
-   */
   async streamObject(params: unknown, signal?: AbortSignal): Promise<unknown> {
     return this.processRequest('streamObject', params, signal);
   }
 
-  /**
-   * Process a request by adding it to the queue and waiting for completion
-   */
   private async processRequest(
     method: LanguageModelMethod,
     params: unknown,
@@ -353,9 +289,6 @@ export class LanguageModelQueue {
     });
   }
 
-  /**
-   * Estimate token count for request parameters
-   */
   private estimateTokenCount(params: unknown): number {
     try {
       // Try to extract messages from params for token counting
@@ -375,9 +308,6 @@ export class LanguageModelQueue {
     }
   }
 
-  /**
-   * Handle request abortion
-   */
   private async handleAbort(requestId: string): Promise<void> {
     try {
       const redis = await getRedisClient();
@@ -410,9 +340,6 @@ export class LanguageModelQueue {
     }
   }
 
-  /**
-   * Wait for a request to complete processing
-   */
   private async waitForRequestCompletion(
     requestId: string,
     resolve: (value: unknown) => void,
@@ -429,9 +356,6 @@ export class LanguageModelQueue {
     }, 1000);
   }
 
-  /**
-   * Start the processing loop
-   */
   private startProcessing(): void {
     this.processingInterval = setInterval(() => {
       this.processQueue().catch((error) => {
@@ -440,9 +364,6 @@ export class LanguageModelQueue {
     }, 1000); // Process every second
   }
 
-  /**
-   * Main queue processing logic
-   */
   private async processQueue(): Promise<void> {
     try {
       // Get current queue state
@@ -491,9 +412,6 @@ export class LanguageModelQueue {
     }
   }
 
-  /**
-   * Select and process requests using FIFO with capacity-aware skipping
-   */
   private async selectAndProcessRequests(
     pendingRequests: QueuedRequest[],
     availableSlots: number,
@@ -529,9 +447,6 @@ export class LanguageModelQueue {
     }
   }
 
-  /**
-   * Execute a single request
-   */
   private async executeRequest(request: QueuedRequest): Promise<void> {
     try {
       // Mark as processing
@@ -548,9 +463,6 @@ export class LanguageModelQueue {
     }
   }
 
-  /**
-   * Mark a request as processing
-   */
   private async markRequestAsProcessing(request: QueuedRequest): Promise<void> {
     const updatedRequest: QueuedRequest = {
       ...request,
@@ -562,9 +474,6 @@ export class LanguageModelQueue {
     await this.updateRequestInQueue(request.id, updatedRequest);
   }
 
-  /**
-   * Update a request in the queue
-   */
   private async updateRequestInQueue(
     requestId: string,
     updatedRequest: QueuedRequest,
@@ -596,9 +505,6 @@ export class LanguageModelQueue {
     }
   }
 
-  /**
-   * Call the underlying language model
-   */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private async callModel(request: QueuedRequest): Promise<unknown> {
     // This would implement the actual model calls
@@ -606,9 +512,6 @@ export class LanguageModelQueue {
     throw new Error('Model calling not yet implemented');
   }
 
-  /**
-   * Handle successful request completion
-   */
   private async handleRequestSuccess(
     request: QueuedRequest,
     result: unknown,
@@ -636,9 +539,6 @@ export class LanguageModelQueue {
     );
   }
 
-  /**
-   * Handle request errors
-   */
   private async handleRequestError(
     request: QueuedRequest,
     error: unknown,
@@ -670,9 +570,6 @@ export class LanguageModelQueue {
     );
   }
 
-  /**
-   * Remove a request from the queue
-   */
   private async removeRequestFromQueue(requestId: string): Promise<void> {
     const redis = await getRedisClient();
     const queueKey = this.getQueueKey();
@@ -694,9 +591,6 @@ export class LanguageModelQueue {
     }
   }
 
-  /**
-   * Check if an error is a rate limit error
-   */
   private isRateLimitError(error: unknown): boolean {
     if (error && typeof error === 'object') {
       const errorObj = error as {
@@ -724,9 +618,6 @@ export class LanguageModelQueue {
     return false;
   }
 
-  /**
-   * Handle rate limit errors
-   */
   private async handleRateLimitError(error: unknown): Promise<void> {
     // Extract retry-after information
     let retryAfter: string | undefined;
@@ -750,9 +641,6 @@ export class LanguageModelQueue {
     await this.updateModelCapacity(capacity);
   }
 
-  /**
-   * Update capacity from response headers
-   */
   private async updateCapacityFromHeaders(
     headers: Record<string, string | string[]>,
   ): Promise<void> {
@@ -770,9 +658,6 @@ export class LanguageModelQueue {
     }
   }
 
-  /**
-   * Report metrics to Application Insights
-   */
   private async reportMetrics(): Promise<void> {
     try {
       const redis = await getRedisClient();
@@ -805,16 +690,12 @@ export class LanguageModelQueue {
         modelType: this.modelType,
       };
 
-      // Report to Application Insights
-      log((l) => l.info('Queue metrics', metrics));
+      log((l) => l.info('Queue metrics', { metrics }));
     } catch (error) {
       log((l) => l.warn('Failed to report metrics', { error }));
     }
   }
 
-  /**
-   * Clean up resources
-   */
   dispose(): void {
     if (this.processingInterval) {
       clearInterval(this.processingInterval);

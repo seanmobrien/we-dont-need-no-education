@@ -1,15 +1,3 @@
-/**
- * @fileoverview OpenTelemetry Instrumentation for Chat History Middleware
- *
- * This module provides comprehensive observability for the chat history middleware system,
- * focusing on error tracking, performance monitoring, and operational metrics. It captures
- * key metrics from flush operations and provides structured error attribution.
- *
- * @module lib/ai/middleware/chat-history/instrumentation
- * @version 1.0.0
- * @since 2025-07-25
- */
-
 import { trace, metrics, SpanStatusCode, SpanKind } from '@opentelemetry/api';
 import type {
   FlushResult,
@@ -55,23 +43,6 @@ const errorCounter = meter.createCounter('chat_history_errors_total', {
   description: 'Total number of errors in chat history operations',
 });
 
-/**
- * Instruments a flush operation with comprehensive observability.
- *
- * Creates a span for the flush operation and records detailed metrics including
- * duration, text length, success/failure rates, and error attribution.
- *
- * @param context - The flush context containing operation details
- * @param operation - The async flush operation to instrument
- * @returns Promise resolving to the flush result with added observability
- *
- * @example
- * ```typescript
- * const result = await instrumentFlushOperation(flushContext, async () => {
- *   return await handleFlush(context, config);
- * });
- * ```
- */
 export async function instrumentFlushOperation<T extends FlushResult>(
   context: FlushContext,
   operation: () => Promise<T>,
@@ -182,24 +153,6 @@ export async function instrumentFlushOperation<T extends FlushResult>(
   }
 }
 
-/**
- * Instruments stream chunk processing with lightweight observability.
- *
- * Records metrics for stream chunk processing including chunk types,
- * processing success rates, and text accumulation patterns.
- *
- * @param chunkType - The type of stream chunk being processed
- * @param context - The stream handler context
- * @param operation - The async chunk processing operation
- * @returns Promise resolving to the processing result
- *
- * @example
- * ```typescript
- * const result = await instrumentStreamChunk('text-delta', context, async () => {
- *   return await handleTextDelta(chunk, context);
- * });
- * ```
- */
 export async function instrumentStreamChunk(
   chunkType: string,
   context: { chatId: string; turnId: number; messageId?: number },
@@ -255,23 +208,7 @@ export async function instrumentStreamChunk(
     }
   }
 }
-/**
- * Instruments chat history middleware initialization.
- *
- * Creates a span for the middleware setup and records configuration attributes
- * for observability and debugging purposes.
- *
- * @param context - The chat history context being initialized
- * @param operation - The async initialization operation
- * @returns Promise resolving to the initialization result
- *
- * @example
- * ```typescript
- * const result = await instrumentMiddlewareInit(context, async () => {
- *   return await initializeMessagePersistence(context, params);
- * });
- * ```
- */
+
 export async function instrumentMiddlewareInit<T>(
   context: ChatHistoryContext,
   operation: () => Promise<T>,
@@ -316,22 +253,6 @@ export async function instrumentMiddlewareInit<T>(
   }
 }
 
-/**
- * Records a processing queue operation metric.
- *
- * Lightweight metric recording for queue operations without creating spans.
- * Useful for high-frequency operations where span overhead might be excessive.
- *
- * @param operation - The type of queue operation
- * @param success - Whether the operation succeeded
- * @param queueSize - Current size of the processing queue
- *
- * @example
- * ```typescript
- * recordQueueOperation('enqueue', true, 5);
- * recordQueueOperation('process', false, 4);
- * ```
- */
 export function recordQueueOperation(
   operation: 'enqueue' | 'process' | 'complete',
   success: boolean,
@@ -363,26 +284,6 @@ export function recordQueueOperation(
   }
 }
 
-/**
- * Creates a custom error with additional context for better observability.
- *
- * Enhances error objects with chat-specific context that will be captured
- * by the instrumentation spans and metrics.
- *
- * @param message - The error message
- * @param context - Chat context for error attribution
- * @param originalError - Optional original error to wrap
- * @returns Enhanced error with chat context
- *
- * @example
- * ```typescript
- * throw createChatHistoryError(
- *   'Failed to persist message',
- *   { chatId: 'chat-123', turnId: 1 },
- *   originalError
- * );
- * ```
- */
 export function createChatHistoryError(
   message: string,
   context: { chatId: string; turnId?: number; messageId?: number },

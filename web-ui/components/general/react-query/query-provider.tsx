@@ -2,13 +2,19 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import type { FC, ReactNode } from 'react';
+import React from 'react';
 interface DataGridQueryProviderProps {
   children: ReactNode;
   showDevtools?: boolean;
 }
-
 let queryClient: QueryClient | undefined = undefined;
-//...................................................................................'''''''''''const queryClient = new QueryClient();
+
+// Conditionally import the production devtools
+const ReactQueryDevtoolsProduction = React.lazy(() =>
+  import('@tanstack/react-query-devtools/production').then((d) => ({
+    default: d.ReactQueryDevtools,
+  })),
+);
 
 /**
  * Provider component that wraps the application with React Query context for data grid operations.
@@ -19,15 +25,32 @@ let queryClient: QueryClient | undefined = undefined;
  * @param children - The child components to wrap with the query provider
  * @param showDevtools - Whether to show React Query DevTools (default: false in production, true in development)
  */
+import { useKonamiCode } from '@/lib/hooks/use-konami-code';
+
 export const QueryProvider: FC<DataGridQueryProviderProps> = ({
   children,
   showDevtools = process.env.NODE_ENV === 'development',
 }) => {
-  queryClient ??= new QueryClient({})
+  const [showDevToolsState, setShowDevToolsState] = React.useState(
+    showDevtools === true,
+  );
+
+  useKonamiCode(() => {
+    setShowDevToolsState(true);
+  });
+
+  queryClient ??= new QueryClient({});
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      {showDevtools && <ReactQueryDevtools initialIsOpen={false} />}
+      {showDevToolsState &&
+        (process.env.NODE_ENV === 'development' ? (
+          <ReactQueryDevtools initialIsOpen={false} />
+        ) : (
+          <React.Suspense fallback={null}>
+            <ReactQueryDevtoolsProduction initialIsOpen={false} />
+          </React.Suspense>
+        ))}
     </QueryClientProvider>
   );
 };

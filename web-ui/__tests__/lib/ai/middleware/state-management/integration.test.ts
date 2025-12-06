@@ -1,21 +1,19 @@
+
 /** @jest-environment node */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 /**
  * @fileoverview Integration Tests for State Management Protocol
  *
  * These tests demonstrate the full end-to-end functionality of the state management
  * protocol including state collection and restoration across multiple middleware.
- */ import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+ */
 
-setupImpersonationMock();
-
-import { aiModelFactory } from '@/lib/ai';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import {
   MiddlewareStateManager,
   setNormalizedDefaultsMiddleware,
 } from '@/lib/ai/middleware';
 import { generateText, wrapLanguageModel } from 'ai';
-import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
 
 const makeMiddleware = () => ({
   wrapGenerate: async (options: any) => {
@@ -53,19 +51,41 @@ const makeMockModel = (stateManager?: MiddlewareStateManager) => {
   };
   return stateManager
     ? stateManager.initializeModel({
-        model,
-      })
+      model,
+    })
     : model;
 };
+
+jest.mock('@/lib/ai/aiModelFactory');
+const mockAiModelFactory = aiModelFactory as jest.MockedFunction<typeof aiModelFactory>;
 
 describe('State Management Protocol Integration', () => {
   let actualModel: any;
   let mockDoGenerate: jest.SpyInstance;
 
-  beforeAll(async () => {
-    setupMaps();
-    actualModel = aiModelFactory('lofi');
+  beforeEach(async () => {
+    const setupImpersonationMock =
+      require('@/__tests__/jest.mock-impersonation').setupImpersonationMock;
+    const setupMaps =
+      require('@/__tests__/setup/jest.mock-provider-model-maps').setupMaps;
 
+    setupImpersonationMock();
+    setupMaps();
+
+    const mockModel = {
+      modelId: 'test-model',
+      provider: 'test',
+      specificationVersion: 'v1',
+      doGenerate: jest.fn(),
+      doStream: jest.fn(),
+      defaultObjectGenerationMode: 'json',
+    };
+    mockAiModelFactory.mockResolvedValue(mockModel as any);
+
+    actualModel = await aiModelFactory('lofi');
+  });
+
+  beforeAll(async () => {
     /*
     let text = await generateText({
       model: actualModel,
@@ -122,10 +142,10 @@ describe('State Management Protocol Integration', () => {
               typeof options.params.prompt === 'string'
                 ? options.params.prompt
                 : options.params.prompt
-                    .flatMap((msg: any) =>
-                      msg.content.map((part: any) => part.text),
-                    )
-                    .join('\n');
+                  .flatMap((msg: any) =>
+                    msg.content.map((part: any) => part.text),
+                  )
+                  .join('\n');
             return await options.doGenerate();
           },
           serializeState: () => {

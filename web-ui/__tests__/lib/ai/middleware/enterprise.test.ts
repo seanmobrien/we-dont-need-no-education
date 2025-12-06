@@ -7,7 +7,29 @@
  * Comprehensive test suite for configuration, metrics, and advanced behaviors
  */
 
-import { resetEnvVariables, withRedisConnection } from '@/__tests__/jest.setup';
+jest.mock('@/lib/site-util/after', () => {
+  const afterManager = {
+    getInstance: () => ({
+      add: jest.fn(),
+      remove: jest.fn(),
+      processExit: jest.fn(),
+    }),
+    processExit: jest.fn(),
+  };
+  return {
+    AfterManager: afterManager,
+    processExit: jest.fn(),
+    getInstance: () => ({
+      add: jest.fn(),
+      remove: jest.fn(),
+      processExit: jest.fn(),
+    }),
+  };
+});
+
+import {
+  /*resetEnvVariables, */ withRedisConnection,
+} from '@/__tests__/setup/jest.setup';
 import {
   getCacheConfig,
   validateCacheConfig,
@@ -18,10 +40,7 @@ import {
   setupConsoleMetrics,
   getPrometheusMetrics,
 } from '@/lib/ai/middleware/cacheWithRedis/metrics';
-import {
-  getRedisClient,
-  closeRedisClient,
-} from '@/lib/ai/middleware/cacheWithRedis/redis-client';
+import { getRedisClient, closeRedisClient } from '@/lib/redis-client';
 import type { RedisClientType } from 'redis';
 
 describe('Enterprise Cache Features', () => {
@@ -36,7 +55,6 @@ describe('Enterprise Cache Features', () => {
   });
 
   beforeEach(async () => {
-    resetEnvVariables();
     withRedisConnection();
     redis = await getRedisClient();
     // Clear test data and reset metrics

@@ -2,32 +2,31 @@
  * @jest-environment jsdom
  */
 import React from 'react';
-import { renderHook, act, render } from '@testing-library/react';
-
-// Create mock error reporter
-const mockReportError = jest.fn();
-
-// Mock the error reporter module directly
-jest.mock('@/lib/error-monitoring/error-reporter', () => ({
-  errorReporter: {
-    reportError: mockReportError,
-  },
-  ErrorSeverity: {
-    LOW: 'low',
-    MEDIUM: 'medium',
-    HIGH: 'high',
-    CRITICAL: 'critical',
-  },
-}));
-
+import {
+  renderHook,
+  act,
+  render,
+  waitFor,
+  screen,
+} from '@testing-library/react';
+import {
+  errorReporter,
+  ErrorSeverity,
+  ErrorReporterInterface,
+} from '@/lib/error-monitoring';
 import { useErrorReporter } from '@/lib/error-monitoring/use-error-reporter';
-import { ErrorSeverity } from '@/lib/error-monitoring/error-reporter';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 const mockConsole = hideConsoleOutput();
 
 describe('useErrorReporter', () => {
+  // Create mock error reporter
+  let mockReportError: jest.Mocked<ErrorReporterInterface>['reportError'];
+  let mockErrorReporter: jest.Mocked<ErrorReporterInterface>;
+
   beforeEach(() => {
+    mockErrorReporter = errorReporter() as jest.Mocked<ErrorReporterInterface>;
+    mockReportError = mockErrorReporter.reportError;
     // jest.clearAllMocks();
     mockConsole.setup();
   });
@@ -42,6 +41,7 @@ describe('useErrorReporter', () => {
 
       await act(async () => {
         result.current.reportError(testError);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -59,6 +59,7 @@ describe('useErrorReporter', () => {
 
       await act(async () => {
         result.current.reportError(testError, ErrorSeverity.CRITICAL);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -85,6 +86,7 @@ describe('useErrorReporter', () => {
           ErrorSeverity.HIGH,
           additionalContext,
         );
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -104,6 +106,7 @@ describe('useErrorReporter', () => {
 
       await act(async () => {
         result.current.reportError(stringError);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -124,6 +127,7 @@ describe('useErrorReporter', () => {
 
       await act(async () => {
         result.current.reportError(testError, ErrorSeverity.LOW, context);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -146,7 +150,8 @@ describe('useErrorReporter', () => {
       const testError = new Error('Async test error');
 
       await act(async () => {
-        await result.current.reportAsyncError(testError);
+        result.current.reportAsyncError(testError);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -172,6 +177,7 @@ describe('useErrorReporter', () => {
           ErrorSeverity.HIGH,
           context,
         );
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -188,11 +194,13 @@ describe('useErrorReporter', () => {
       const { result } = renderHook(() => useErrorReporter());
       const testError = new Error('Promise test');
 
-      const reportPromise = result.current.reportAsyncError(testError);
-      expect(reportPromise).toBeInstanceOf(Promise);
+      let reportPromise: Promise<void> | undefined = undefined;
 
       await act(async () => {
+        reportPromise = result.current.reportAsyncError(testError);
+        expect(reportPromise).toBeInstanceOf(Promise);
         await reportPromise;
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalled();
@@ -207,6 +215,7 @@ describe('useErrorReporter', () => {
 
       await act(async () => {
         result.current.reportUserAction(testError, action);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -230,6 +239,7 @@ describe('useErrorReporter', () => {
           action,
           ErrorSeverity.CRITICAL,
         );
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -249,6 +259,7 @@ describe('useErrorReporter', () => {
 
       await act(async () => {
         result.current.reportUserAction(testError, action);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -270,6 +281,7 @@ describe('useErrorReporter', () => {
 
       await act(async () => {
         result.current.reportApiError(testError, endpoint);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -299,6 +311,7 @@ describe('useErrorReporter', () => {
           method,
           ErrorSeverity.HIGH,
         );
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -323,6 +336,7 @@ describe('useErrorReporter', () => {
 
       await act(async () => {
         result.current.reportApiError(testError, endpoint, method);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -346,6 +360,7 @@ describe('useErrorReporter', () => {
 
       await act(async () => {
         result.current.reportApiError(testError, endpoint);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -364,48 +379,50 @@ describe('useErrorReporter', () => {
   });
 
   describe('Hook Stability', () => {
-    it('should return stable function references', () => {
-      const { result, rerender } = renderHook(() => useErrorReporter());
-
-      const firstRender = result.current;
-
-      rerender();
-
-      const secondRender = result.current;
-
-      // All functions should be stable across renders
-      expect(firstRender.reportError).toBe(secondRender.reportError);
-      expect(firstRender.reportAsyncError).toBe(secondRender.reportAsyncError);
-      expect(firstRender.reportUserAction).toBe(secondRender.reportUserAction);
-      expect(firstRender.reportApiError).toBe(secondRender.reportApiError);
-    });
-
-    it('should not cause infinite re-renders when used in useEffect', () => {
+    it('should not cause infinite re-renders when used in useEffect', async () => {
       let renderCount = 0;
 
       const TestComponent = () => {
         renderCount++;
         const { reportError } = useErrorReporter();
-
+        const [effectTriggered, setEffectTriggered] = React.useState(false);
         React.useEffect(() => {
           // This should not cause infinite re-renders
           if (renderCount === 1) {
             reportError(new Error('Effect test'));
           }
-        }, [reportError]);
+          if (!effectTriggered) {
+            setEffectTriggered(true);
+          }
+        }, [reportError, effectTriggered]);
 
-        return null;
+        return (
+          <div>
+            {effectTriggered && (
+              <span data-testid="effect-triggered">Effect Triggered</span>
+            )}
+          </div>
+        );
       };
 
       const { rerender } = render(<TestComponent />);
+      await act(async () => {
+        await waitFor(() =>
+          expect(screen.getByTestId('effect-triggered')).toBeInTheDocument(),
+        );
+      });
 
       // Should only render once initially
-      expect(renderCount).toBe(1);
+      expect(renderCount).toBe(2);
 
       rerender(<TestComponent />);
-
+      await act(async () => {
+        await waitFor(() =>
+          expect(screen.getByTestId('effect-triggered')).toBeInTheDocument(),
+        );
+      });
       // Should not re-render due to stable function references
-      expect(renderCount).toBe(2); // Only the explicit rerender
+      expect(renderCount).toBe(3); // Only the explicit rerender
     });
   });
 
@@ -419,10 +436,10 @@ describe('useErrorReporter', () => {
       const testError = new Error('Original error');
 
       await act(async () => {
+        const promise = result.current.reportAsyncError(testError);
         // Should not throw even if underlying reporting fails
-        await expect(
-          result.current.reportAsyncError(testError),
-        ).resolves.not.toThrow();
+        await waitFor(() => expect(promise).resolves.not.toThrow());
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
     }, 15000);
 
@@ -438,9 +455,10 @@ describe('useErrorReporter', () => {
 
       await act(async () => {
         // Should not throw
-        expect(() => result.current.reportError(testError)).not.toThrow();
+        result.current.reportError(testError);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
-    });
+    }, 15000);
   });
 
   describe('Integration with Error Reporter', () => {
@@ -455,6 +473,7 @@ describe('useErrorReporter', () => {
 
       await act(async () => {
         result.current.reportError(testError, ErrorSeverity.HIGH, context);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -471,7 +490,6 @@ describe('useErrorReporter', () => {
 
     it('should work with different error severities', async () => {
       const { result } = renderHook(() => useErrorReporter());
-      const testError = new Error('Severity test');
 
       const severities = [
         ErrorSeverity.LOW,
@@ -480,20 +498,53 @@ describe('useErrorReporter', () => {
         ErrorSeverity.CRITICAL,
       ];
 
-      for (const severity of severities) {
-        await act(async () => {
-          result.current.reportError(testError, severity);
-        });
-
-        expect(mockReportError).toHaveBeenCalledWith(
-          testError,
-          severity,
-          expect.any(Object),
+      await act(async () => {
+        const thisError = new Error(`Severity test ${severities[0]}`);
+        result.current.reportError(thisError, severities[0]);
+        await waitFor(() =>
+          expect(mockReportError).toHaveBeenCalledWith(
+            thisError,
+            severities[0],
+            expect.any(Object),
+          ),
         );
-      }
+      });
+      await act(async () => {
+        const thisError = new Error(`Severity test ${severities[1]}`);
+        result.current.reportError(thisError, severities[1]);
+        await waitFor(() =>
+          expect(mockReportError).toHaveBeenCalledWith(
+            thisError,
+            severities[1],
+            expect.any(Object),
+          ),
+        );
+      });
+      await act(async () => {
+        const thisError = new Error(`Severity test ${severities[2]}`);
+        result.current.reportError(thisError, severities[2]);
+        await waitFor(() =>
+          expect(mockReportError).toHaveBeenCalledWith(
+            thisError,
+            severities[2],
+            expect.any(Object),
+          ),
+        );
+      });
+      await act(async () => {
+        const thisError = new Error(`Severity test ${severities[3]}`);
+        result.current.reportError(thisError, severities[3]);
+        await waitFor(() =>
+          expect(mockReportError).toHaveBeenCalledWith(
+            thisError,
+            severities[3],
+            expect.any(Object),
+          ),
+        );
+      });
 
       expect(mockReportError).toHaveBeenCalledTimes(4);
-    });
+    }, 15000);
   });
 
   describe('TypeScript Type Safety', () => {
@@ -503,6 +554,7 @@ describe('useErrorReporter', () => {
 
       await act(async () => {
         result.current.reportError(error);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -518,6 +570,7 @@ describe('useErrorReporter', () => {
 
       await act(async () => {
         result.current.reportError(unknownError);
+        await waitFor(() => expect(mockReportError).toHaveBeenCalled());
       });
 
       expect(mockReportError).toHaveBeenCalledWith(

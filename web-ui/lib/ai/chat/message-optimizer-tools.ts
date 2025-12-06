@@ -86,28 +86,28 @@ const createChatToolCallRecord = async (
   const input =
     toolRequest.length > 0
       ? JSON.stringify(
-          toolRequest.map((req) => ({
-            type: req.type,
-            state: 'state' in req ? req.state : undefined,
-            toolName: 'toolName' in req ? req.toolName : undefined,
-            args: 'args' in req ? req.args : undefined,
-            input: 'input' in req ? req.input : undefined,
-          })),
-        )
+        toolRequest.map((req) => ({
+          type: req.type,
+          state: 'state' in req ? req.state : undefined,
+          toolName: 'toolName' in req ? req.toolName : undefined,
+          args: 'args' in req ? req.args : undefined,
+          input: 'input' in req ? req.input : undefined,
+        })),
+      )
       : null;
 
   const output =
     toolResult.length > 0
       ? JSON.stringify(
-          toolResult.map((res) => ({
-            type: res.type,
-            state: 'state' in res ? res.state : undefined,
-            toolName: 'toolName' in res ? res.toolName : undefined,
-            result: 'result' in res ? res.result : undefined,
-            output: 'output' in res ? res.output : undefined,
-            errorText: 'errorText' in res ? res.errorText : undefined,
-          })),
-        )
+        toolResult.map((res) => ({
+          type: res.type,
+          state: 'state' in res ? res.state : undefined,
+          toolName: 'toolName' in res ? res.toolName : undefined,
+          result: 'result' in res ? res.result : undefined,
+          output: 'output' in res ? res.output : undefined,
+          errorText: 'errorText' in res ? res.errorText : undefined,
+        })),
+      )
       : null;
 
   const result = await tx
@@ -602,7 +602,7 @@ export async function optimizeMessagesWithToolSummarization(
     const characterReduction = Math.round(
       ((originalCharacterCount - optimizedCharacterCount) /
         originalCharacterCount) *
-        100,
+      100,
     );
 
     const messageReduction = Math.round(
@@ -629,7 +629,7 @@ export async function optimizeMessagesWithToolSummarization(
 
     characterReductionHistogram.record(
       (originalCharacterCount - optimizedCharacterCount) /
-        originalCharacterCount,
+      originalCharacterCount,
       attributes,
     );
 
@@ -788,7 +788,7 @@ export const summarizeMessageRecord = async ({
             deep
               ? (m: object) => (m as { content: string }).content
               : (m: object) =>
-                  (m as { optimizedContent: string }).optimizedContent,
+                (m as { optimizedContent: string }).optimizedContent,
           )
           .filter(
             (content): content is string =>
@@ -826,7 +826,7 @@ export const summarizeMessageRecord = async ({
   ${prevMessages.join('\n----\n')}
 
   CURRENT MESSAGE:
-  ${JSON.stringify(thisMessage.content, null, 2)}
+  ${typeof thisMessage.content === 'string' ? thisMessage.content : JSON.stringify(thisMessage.content, null, 2)}
 
   CURRENT CHAT TITLE:
   ${thisMessage.chat.title || 'Untitled Chat'}
@@ -847,7 +847,7 @@ export const summarizeMessageRecord = async ({
       throw new Error('Generated prompt is invalid (empty or too long)');
     }
 
-    const model = aiModelFactory('lofi');
+    const model = await aiModelFactory('lofi');
     const summarized = (
       await generateObject({
         model,
@@ -998,7 +998,7 @@ const processOlderMessagesForSummarization = async (
         if (isOutputToolState(invocation.state)) {
           // If the first thing we see is a result then we want to create a new record
           const record: ToolCallRecord = {
-            messageId: (message as LegacyMessageShape).id ?? `msg-${i}`,
+            messageId: (message as LegacyMessageShape).id ?? `msg-${i} `,
             toolResult: [{ ...invocation } as ToolResponseMesage],
             toolRequest: [],
             toolSummary: {
@@ -1081,7 +1081,7 @@ const generateToolCallSummaries = async (
         record.toolSummary.text = summaryWithId;
 
         log((l) =>
-          l.debug(`Generated summary for tool call ${toolCallId}`, {
+          l.debug(`Generated summary for tool call ${toolCallId} `, {
             originalLength: record.toolResult.reduce(
               (acc, msg) => acc + JSON.stringify(msg).length,
               0,
@@ -1091,13 +1091,13 @@ const generateToolCallSummaries = async (
         );
       } catch (error) {
         log((l) =>
-          l.error(`Failed to generate summary for tool call ${toolCallId}`, {
+          l.error(`Failed to generate summary for tool call ${toolCallId} `, {
             error,
           }),
         ); // Fallback to basic summary on error
-        const fallbackText = `[TOOL CALL COMPLETED] ID: ${toolCallId} - Summary generation failed, see logs for details.`;
+        const fallbackText = `[TOOL CALL COMPLETED]ID: ${toolCallId} - Summary generation failed, see logs for details.`;
         const fallbackWithId = record.chatToolCallId
-          ? `${fallbackText} [ID: ${record.chatToolCallId}]`
+          ? `${fallbackText}[ID: ${record.chatToolCallId}]`
           : fallbackText;
         record.toolSummary.text = fallbackWithId;
       }
@@ -1156,18 +1156,18 @@ const generateSingleToolCallSummary = async (
   const toolRequests = record.toolRequest.flatMap((msg) =>
     'toolInvocations' in msg && Array.isArray(msg.toolInvocations)
       ? msg.toolInvocations.map((inv) => ({
-          tool: 'toolName' in inv ? inv.toolName : 'unknown',
-          args: 'args' in inv ? inv.args : {},
-        }))
+        tool: 'toolName' in inv ? inv.toolName : 'unknown',
+        args: 'args' in inv ? inv.args : {},
+      }))
       : [],
   );
 
   const toolResults = record.toolResult.flatMap((msg) =>
     'toolInvocations' in msg && Array.isArray(msg.toolInvocations)
       ? msg.toolInvocations.map((inv) => ({
-          result: 'result' in inv ? inv.result : 'No result',
-          tool: 'toolName' in inv ? inv.toolName : 'unknown',
-        }))
+        result: 'result' in inv ? inv.result : 'No result',
+        tool: 'toolName' in inv ? inv.toolName : 'unknown',
+      }))
       : [],
   );
 
@@ -1188,23 +1188,24 @@ ${JSON.stringify(toolRequests, null, 2)}
 
 TOOL RESULTS:
 ${JSON.stringify(
-  toolResults.map((r) => ({
-    tool: r.tool,
-    result:
-      typeof r.result === 'string' &&
+    toolResults.map((r) => ({
+      tool: r.tool,
+      result:
+        typeof r.result === 'string' &&
       /*r.result.length > 500
          ? r.result.substring(0, 500) + '...[truncated]'
         : */ r.result,
-  })),
-  null,
-  2,
-)}
+    })),
+    null,
+    2,
+  )
+    }
 
 Create a concise summary that:
-1. Identifies what tools were executed and why (based on the conversational context)
-2. Extracts the key findings that might be relevant for future conversation
+    1. Identifies what tools were executed and why(based on the conversational context)
+    2. Extracts the key findings that might be relevant for future conversation
 3. Notes any important patterns, insights, or errors
-4. Maintains context for ongoing conversation flow
+    4. Maintains context for ongoing conversation flow
 
 Keep the summary under 300 characters while preserving essential meaning.
 Respond with just the summary text, no additional formatting.`;
@@ -1217,7 +1218,7 @@ Respond with just the summary text, no additional formatting.`;
   const startSummaryTime = Date.now();
 
   try {
-    const lofiModel = aiModelFactory('lofi');
+    const lofiModel = await aiModelFactory('lofi');
     const result = await generateObject({
       model: lofiModel,
       prompt,
@@ -1297,7 +1298,7 @@ const extractConversationalContext = (
           typeof part.text === 'string' &&
           part.text.trim()
         ) {
-          contextParts.push(`Assistant reasoning: ${part.text.trim()}`);
+          contextParts.push(`Assistant reasoning: ${part.text.trim()} `);
         }
       });
     }
@@ -1338,7 +1339,7 @@ const extractConversationalContext = (
               userContent.length > 200
                 ? userContent.substring(0, 200) + '...'
                 : userContent;
-            contextParts.unshift(`User request: ${truncatedContent.trim()}`);
+            contextParts.unshift(`User request: ${truncatedContent.trim()} `);
             break;
           }
         }

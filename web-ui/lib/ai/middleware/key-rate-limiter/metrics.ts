@@ -1,3 +1,4 @@
+import { globalRequiredSingleton } from '@/lib/typescript';
 import { metrics } from '@opentelemetry/api';
 
 const meter = metrics.getMeter('key-rate-limiter', '1.0.0');
@@ -29,19 +30,11 @@ const queueSizeGauge = meter.createUpDownCounter('rate_limit_queue_size', {
 });
 
 export class RateLimitMetricsCollector {
-  private static readonly REGISTRY_KEY = Symbol.for(
-    '@noeducation/key-rate-limiter:RateLimitMetricsCollector',
-  );
-  private static instance: RateLimitMetricsCollector | undefined;
-
   static getInstance(): RateLimitMetricsCollector {
-    type GlobalReg = { [k: symbol]: RateLimitMetricsCollector | undefined };
-    const g = globalThis as unknown as GlobalReg;
-    if (!g[this.REGISTRY_KEY]) {
-      g[this.REGISTRY_KEY] = new RateLimitMetricsCollector();
-    }
-    this.instance = g[this.REGISTRY_KEY]!;
-    return this.instance;
+    return globalRequiredSingleton(
+      Symbol.for('@noeducation/key-rate-limiter:RateLimitMetricsCollector'),
+      () => new RateLimitMetricsCollector(),
+    );
   }
 
   recordMessageProcessed(modelClassification: string, generation: 1 | 2): void {

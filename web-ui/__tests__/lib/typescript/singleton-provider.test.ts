@@ -1,6 +1,7 @@
 import {
   SingletonProvider,
   globalSingleton,
+  globalSingletonAsync,
   type SingletonConfig,
 } from '@/lib/typescript/singleton-provider';
 
@@ -108,7 +109,6 @@ describe('SingletonProvider', () => {
       const factory = jest.fn(() => 'primitive value');
 
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         provider.getOrCreate('weak-invalid', factory as any, { weakRef: true });
       }).toThrow('Weak reference singletons require a non-null object value.');
     });
@@ -138,11 +138,9 @@ describe('SingletonProvider', () => {
       const factory = jest.fn(() => null);
 
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         provider.getOrCreate('null-key', factory as any);
       }).toThrow(TypeError);
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         provider.getOrCreate('null-key', factory as any);
       }).toThrow(
         'Factory for global singleton cannot return null or undefined.',
@@ -152,16 +150,8 @@ describe('SingletonProvider', () => {
     it('should throw error when factory returns undefined', () => {
       const factory = jest.fn(() => undefined);
 
-      expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        provider.getOrCreate('undefined-key', factory as any);
-      }).toThrow(TypeError);
-      expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        provider.getOrCreate('undefined-key', factory as any);
-      }).toThrow(
-        'Factory for global singleton cannot return null or undefined.',
-      );
+      const value = provider.getOrCreate('undefined-key', factory as any);
+      expect(value).toBeUndefined();
     });
 
     it('should ensure singleton behavior across multiple calls', () => {
@@ -221,7 +211,6 @@ describe('SingletonProvider', () => {
 
     it('should throw when setting weak reference singleton with non-object value', () => {
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         provider.set('weak-set-invalid', 'primitive' as any, { weakRef: true });
       }).toThrow('Weak reference singletons require a non-null object value.');
     });
@@ -238,14 +227,12 @@ describe('SingletonProvider', () => {
 
     it('should throw error when value is null', () => {
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         provider.set('null-set', null as any);
       }).toThrow(TypeError);
     });
 
     it('should throw error when value is undefined', () => {
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         provider.set('undefined-set', undefined as any);
       }).toThrow(TypeError);
     });
@@ -459,18 +446,16 @@ describe('globalSingleton', () => {
   });
 
   it('should throw error when factory returns null or undefined', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nullFactory = jest.fn(() => null as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const undefinedFactory = jest.fn(() => undefined as any);
 
     expect(() => {
       globalSingleton('null-global', nullFactory);
     }).toThrow(TypeError);
 
-    expect(() => {
-      globalSingleton('undefined-global', undefinedFactory);
-    }).toThrow(TypeError);
+    const value = globalSingleton('undefined-global', undefinedFactory);
+    expect(value).toBeUndefined();
   });
 
   it('should be accessible through SingletonProvider', () => {
@@ -562,24 +547,471 @@ describe('error handling', () => {
     });
 
     await expect(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await provider.getOrCreate('async-error', asyncErrorFactory as any);
     }).rejects.toThrow('Async factory error');
   });
+});
 
-  it('should validate factory return values strictly', () => {
-    const invalidFactories = [
-      () => null,
-      () => undefined,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      () => (({}) as any).nonExistent, // This would be undefined
-    ];
+describe('getOrCreateAsync', () => {
+  let provider: SingletonProvider;
 
-    invalidFactories.forEach((factory, index) => {
-      expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        provider.getOrCreate(`invalid-${index}`, factory as any);
-      }).toThrow(TypeError);
+  beforeEach(() => {
+    provider = SingletonProvider.Instance;
+    provider.clear();
+  });
+
+  afterEach(() => {
+    provider.clear();
+  });
+
+  describe('basic functionality', () => {
+    it('should create new singleton when it does not exist', async () => {
+      const factory = jest.fn(async () => ({ created: true }));
+      const result = await provider.getOrCreateAsync('async-new-key', factory);
+
+      expect(factory).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ created: true });
     });
+
+    it('should return existing singleton when it exists', async () => {
+      const existingObject = { existing: true };
+      provider.set('async-existing-key', existingObject);
+
+      const factory = jest.fn(async () => ({ created: false }));
+      const result = await provider.getOrCreateAsync(
+        'async-existing-key',
+        factory,
+      );
+
+      expect(factory).not.toHaveBeenCalled();
+      expect(result).toBe(existingObject);
+    });
+
+    it('should work with symbol keys', async () => {
+      const symbolKey = Symbol.for('async-symbol-create');
+      const factory = jest.fn(async () => ({ symbol: true }));
+
+      const result = await provider.getOrCreateAsync(symbolKey, factory);
+
+      expect(factory).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ symbol: true });
+      expect(provider.has(symbolKey)).toBe(true);
+    });
+
+    it('should create singleton with weak references when configured', async () => {
+      const factory = jest.fn(async () => ({ weak: true }));
+      const config: SingletonConfig = { weakRef: true };
+
+      const result = await provider.getOrCreateAsync(
+        'async-weak-key',
+        factory,
+        config,
+      );
+
+      expect(factory).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ weak: true });
+      expect(provider.has('async-weak-key')).toBe(true);
+    });
+
+    it('should create singleton with strong references by default', async () => {
+      const factory = jest.fn(async () => ({ strong: true }));
+
+      const result = await provider.getOrCreateAsync(
+        'async-strong-key',
+        factory,
+      );
+
+      expect(factory).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ strong: true });
+      expect(provider.has('async-strong-key')).toBe(true);
+    });
+  });
+
+  describe('concurrency protection', () => {
+    it('should only invoke factory once when multiple concurrent calls are made', async () => {
+      let factoryCallCount = 0;
+      const factory = jest.fn(async () => {
+        factoryCallCount++;
+        // Simulate async work
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        return { callNumber: factoryCallCount };
+      });
+
+      // Make multiple concurrent calls
+      const [result1, result2, result3] = await Promise.all([
+        provider.getOrCreateAsync('concurrent-test', factory),
+        provider.getOrCreateAsync('concurrent-test', factory),
+        provider.getOrCreateAsync('concurrent-test', factory),
+      ]);
+
+      // Factory should only be called once
+      expect(factory).toHaveBeenCalledTimes(1);
+
+      // All results should be the same instance
+      expect(result1).toBe(result2);
+      expect(result2).toBe(result3);
+      expect(result1).toEqual({ callNumber: 1 });
+    });
+
+    it('should handle sequential calls correctly after async creation completes', async () => {
+      const factory = jest.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return { sequential: true };
+      });
+
+      // First call creates the singleton
+      const result1 = await provider.getOrCreateAsync(
+        'sequential-test',
+        factory,
+      );
+
+      // Subsequent calls should use the cached instance
+      const result2 = await provider.getOrCreateAsync(
+        'sequential-test',
+        factory,
+      );
+      const result3 = await provider.getOrCreateAsync(
+        'sequential-test',
+        factory,
+      );
+
+      expect(factory).toHaveBeenCalledTimes(1);
+      expect(result1).toBe(result2);
+      expect(result2).toBe(result3);
+    });
+
+    it('should handle race conditions with synchronously set values', async () => {
+      const asyncFactory = jest.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        return { async: true };
+      });
+
+      // Start async creation
+      const asyncPromise = provider.getOrCreateAsync('race-test', asyncFactory);
+
+      // Try to get the value before async completes (should wait for async)
+      const result = await asyncPromise;
+
+      expect(asyncFactory).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ async: true });
+      expect(provider.get('race-test')).toBe(result);
+    });
+
+    it('should properly clean up pending factory tracking after completion', async () => {
+      const factory = jest.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return { cleanup: true };
+      });
+
+      await provider.getOrCreateAsync('cleanup-test', factory);
+
+      // Second call should use cached value, not pending factory
+      const newFactory = jest.fn(async () => ({ new: true }));
+      const result = await provider.getOrCreateAsync(
+        'cleanup-test',
+        newFactory,
+      );
+
+      expect(factory).toHaveBeenCalledTimes(1);
+      expect(newFactory).not.toHaveBeenCalled();
+      expect(result).toEqual({ cleanup: true });
+    });
+
+    it('should handle multiple different keys concurrently', async () => {
+      const factory1 = jest.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        return { key: 'key1' };
+      });
+
+      const factory2 = jest.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        return { key: 'key2' };
+      });
+
+      const factory3 = jest.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return { key: 'key3' };
+      });
+
+      const [result1, result2, result3] = await Promise.all([
+        provider.getOrCreateAsync('multi-key-1', factory1),
+        provider.getOrCreateAsync('multi-key-2', factory2),
+        provider.getOrCreateAsync('multi-key-3', factory3),
+      ]);
+
+      expect(factory1).toHaveBeenCalledTimes(1);
+      expect(factory2).toHaveBeenCalledTimes(1);
+      expect(factory3).toHaveBeenCalledTimes(1);
+      expect(result1).toEqual({ key: 'key1' });
+      expect(result2).toEqual({ key: 'key2' });
+      expect(result3).toEqual({ key: 'key3' });
+    });
+  });
+
+  describe('error handling', () => {
+    it('should propagate factory errors to all concurrent callers', async () => {
+      const factory = jest.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        throw new Error('Factory failed');
+      });
+
+      const promises = [
+        provider.getOrCreateAsync('error-concurrent', factory),
+        provider.getOrCreateAsync('error-concurrent', factory),
+        provider.getOrCreateAsync('error-concurrent', factory),
+      ];
+
+      await expect(Promise.all(promises)).rejects.toThrow('Factory failed');
+      expect(factory).toHaveBeenCalledTimes(1);
+
+      // Singleton should not be created after error
+      expect(provider.has('error-concurrent')).toBe(false);
+    });
+
+    it('should clean up pending factory tracking on error', async () => {
+      const failingFactory = jest.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        throw new Error('First attempt failed');
+      });
+
+      await expect(
+        provider.getOrCreateAsync('error-cleanup', failingFactory),
+      ).rejects.toThrow('First attempt failed');
+
+      // Should be able to retry with a new factory after error
+      const successFactory = jest.fn(async () => ({ success: true }));
+      const result = await provider.getOrCreateAsync(
+        'error-cleanup',
+        successFactory,
+      );
+
+      expect(successFactory).toHaveBeenCalledTimes(1);
+      expect(result).toEqual({ success: true });
+    });
+
+    it('should throw when weak reference factory returns non-object values', async () => {
+      const factory = jest.fn(async () => 'primitive value');
+
+      await expect(
+        provider.getOrCreateAsync('async-weak-invalid', factory as any, {
+          weakRef: true,
+        }),
+      ).rejects.toThrow(
+        'Weak reference singletons require a non-null object value.',
+      );
+    });
+  });
+
+  describe('integration with synchronous methods', () => {
+    it('should return async-created singleton via synchronous get', async () => {
+      const factory = jest.fn(async () => ({ asyncCreated: true }));
+
+      const asyncResult = await provider.getOrCreateAsync(
+        'sync-async-integration',
+        factory,
+      );
+      const syncResult = provider.get('sync-async-integration');
+
+      expect(syncResult).toBe(asyncResult);
+      expect(syncResult).toEqual({ asyncCreated: true });
+    });
+
+    it('should use sync-set singleton in getOrCreateAsync', async () => {
+      const syncObject = { syncSet: true };
+      provider.set('async-sync-integration', syncObject);
+
+      const factory = jest.fn(async () => ({ shouldNotCreate: true }));
+      const result = await provider.getOrCreateAsync(
+        'async-sync-integration',
+        factory,
+      );
+
+      expect(factory).not.toHaveBeenCalled();
+      expect(result).toBe(syncObject);
+    });
+
+    it('should work with getOrCreate and getOrCreateAsync for same key', async () => {
+      const object = { mixed: true };
+
+      // Create with sync method
+      const syncResult = provider.getOrCreate('mixed-sync-async', () => object);
+
+      // Retrieve with async method
+      const asyncFactory = jest.fn(async () => ({ shouldNotCreate: true }));
+      const asyncResult = await provider.getOrCreateAsync(
+        'mixed-sync-async',
+        asyncFactory,
+      );
+
+      expect(asyncFactory).not.toHaveBeenCalled();
+      expect(asyncResult).toBe(syncResult);
+      expect(asyncResult).toBe(object);
+    });
+
+    it('should respect delete called during async creation', async () => {
+      const factory = jest.fn(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        return { willBeDeleted: true };
+      });
+
+      // Start async creation
+      const promise = provider.getOrCreateAsync('delete-during-async', factory);
+
+      // Delete while factory is running
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      provider.delete('delete-during-async');
+
+      // Wait for factory to complete
+      const result = await promise;
+
+      // Result should still be returned to the promise
+      expect(result).toEqual({ willBeDeleted: true });
+
+      // But it should be available in the provider since factory completed
+      expect(provider.get('delete-during-async')).toBe(result);
+    });
+  });
+
+  describe('type safety', () => {
+    it('should maintain type safety with generic parameter', async () => {
+      interface AsyncTestType {
+        name: string;
+        value: number;
+      }
+
+      const testObject: AsyncTestType = { name: 'async-test', value: 42 };
+      const factory = jest.fn(async (): Promise<AsyncTestType> => testObject);
+
+      const result = await provider.getOrCreateAsync<AsyncTestType>(
+        'typed-async-key',
+        factory,
+      );
+      if (!result) { throw new Error('Fail - result should not be undefined.'); }
+      expect(result.name).toBe('async-test');
+      expect(result.value).toBe(42);
+    });
+  });
+});
+
+describe('globalSingletonAsync', () => {
+  let originalInstance: SingletonProvider;
+
+  beforeEach(() => {
+    originalInstance = SingletonProvider.Instance;
+    originalInstance.clear();
+  });
+
+  afterEach(() => {
+    originalInstance.clear();
+  });
+
+  it('should create global async singleton with string key', async () => {
+    const factory = jest.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return { globalAsync: true };
+    });
+
+    const result1 = await globalSingletonAsync('global-async-test', factory);
+    const result2 = await globalSingletonAsync('global-async-test', factory);
+
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(result1).toEqual({ globalAsync: true });
+    expect(result1).toBe(result2);
+  });
+
+  it('should create global async singleton with symbol key', async () => {
+    const symbolKey = Symbol.for('global-async-symbol');
+    const factory = jest.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return { symbol: true };
+    });
+
+    const result1 = await globalSingletonAsync(symbolKey, factory);
+    const result2 = await globalSingletonAsync(symbolKey, factory);
+
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(result1).toEqual({ symbol: true });
+    expect(result1).toBe(result2);
+  });
+
+  it('should support weak references configuration', async () => {
+    const factory = jest.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return { weak: true };
+    });
+    const config: SingletonConfig = { weakRef: true };
+
+    const result = await globalSingletonAsync(
+      'weak-global-async',
+      factory,
+      config,
+    );
+
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ weak: true });
+  });
+
+  it('should use strong references by default', async () => {
+    const factory = jest.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return { strong: true };
+    });
+
+    const result = await globalSingletonAsync('strong-global-async', factory);
+
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ strong: true });
+  });
+
+  it('should be accessible through SingletonProvider', async () => {
+    const factory = jest.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      return { accessible: true };
+    });
+
+    const globalResult = await globalSingletonAsync(
+      'cross-access-async',
+      factory,
+    );
+    const providerResult = SingletonProvider.Instance.get('cross-access-async');
+
+    expect(globalResult).toBe(providerResult);
+    expect(globalResult).toEqual({ accessible: true });
+  });
+
+  it('should handle concurrent calls properly', async () => {
+    const factory = jest.fn(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return { concurrent: true };
+    });
+
+    const [result1, result2, result3] = await Promise.all([
+      globalSingletonAsync('concurrent-global-async', factory),
+      globalSingletonAsync('concurrent-global-async', factory),
+      globalSingletonAsync('concurrent-global-async', factory),
+    ]);
+
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(result1).toBe(result2);
+    expect(result2).toBe(result3);
+    expect(result1).toEqual({ concurrent: true });
+  });
+
+  it('should integrate with synchronous globalSingleton', async () => {
+    const syncObject = { sync: true };
+
+    // Create with sync function
+    const syncResult = globalSingleton('mixed-global', () => syncObject);
+
+    // Retrieve with async function
+    const asyncFactory = jest.fn(async () => ({ shouldNotCreate: true }));
+    const asyncResult = await globalSingletonAsync(
+      'mixed-global',
+      asyncFactory,
+    );
+
+    expect(asyncFactory).not.toHaveBeenCalled();
+    expect(asyncResult).toBe(syncResult);
+    expect(asyncResult).toBe(syncObject);
   });
 });

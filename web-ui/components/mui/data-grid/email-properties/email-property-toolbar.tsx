@@ -35,6 +35,7 @@ import Box from '@mui/material/Box';
 import { ChatStatusIndicator } from '@/components/health/chat-status';
 import { MemoryStatusIndicator } from '@/components/health/memory-status';
 import { DatabaseStatusIndicator } from '@/components/health/database-status';
+import { HealthProvider } from '@/components/health/health-provider/health-context';
 
 const StyledQuickFilter = styled(QuickFilter)({
   display: 'grid',
@@ -226,7 +227,7 @@ const ToolbarQuickFilter = () => {
 
 const SystemHealthPanel = () => {
   const Component = React.memo(() => (
-    <>
+    <HealthProvider>
       <MemoryStatusIndicator />
       <DatabaseStatusIndicator />
       <ChatStatusIndicator />
@@ -236,7 +237,7 @@ const SystemHealthPanel = () => {
         flexItem
         sx={stableSx.marginOneAndHalf}
       />
-    </>
+    </HealthProvider>
   ));
   Component.displayName = 'SystemHealthPanel';
   return <Component />;

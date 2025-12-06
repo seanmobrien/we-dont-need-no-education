@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 /**
  * @fileoverview Integration tests for chat history message deduplication
  *

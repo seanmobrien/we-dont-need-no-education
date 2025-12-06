@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
+
+import { setupMaps } from '@/__tests__/setup/jest.mock-provider-model-maps';
 
 setupMaps();
 
@@ -37,8 +37,8 @@ import { wrapLanguageModel } from 'ai';
 
 type MockTokenStats = {
   [k in keyof TokenStatsServiceType]: k extends 'mockClear'
-    ? TokenStatsServiceType[k]
-    : jest.Mock<any, any, any>;
+  ? TokenStatsServiceType[k]
+  : jest.Mock<any, any, any>;
 };
 
 describe('TokenStatsMiddleware', () => {

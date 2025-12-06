@@ -1,51 +1,14 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 
 setupImpersonationMock();
 
-// Mock external dependencies
-jest.mock('@/lib/drizzle-db', () => {
-  const schema = jest.requireActual('/lib/drizzle-db/schema');
-  const exports = jest.requireActual('/lib/drizzle-db');
-
+jest.mock('@/lib/ai/middleware/chat-history/utility', () => {
+  const original = jest.requireActual(
+    '/lib/ai/middleware/chat-history/utility',
+  );
   return {
-    ...exports,
-    drizDb: jest.fn(() => ({
-      transaction: jest.fn((fn) =>
-        fn({
-          select: jest.fn(() => ({
-            from: jest.fn(() => ({
-              where: jest.fn(() => ({
-                limit: jest.fn(() => ({
-                  execute: jest.fn(() => Promise.resolve([])),
-                })),
-              })),
-            })),
-          })),
-          insert: jest.fn(() => ({
-            values: jest.fn(() => ({
-              returning: jest.fn(() => ({
-                execute: jest.fn(() => Promise.resolve([{ messageId: 1 }])),
-              })),
-              execute: jest.fn(() => Promise.resolve()),
-            })),
-          })),
-          execute: jest.fn(() => Promise.resolve([{ allocate_scoped_ids: 1 }])),
-        }),
-      ),
-      query: {
-        chats: {
-          findFirst: jest.fn(() => Promise.resolve(null)),
-        },
-      },
-      update: jest.fn(() => ({
-        set: jest.fn(() => ({
-          where: jest.fn(() => Promise.resolve()),
-        })),
-      })),
-    })),
-    schema,
+    ...original,
+    getNextSequence: jest.fn().mockResolvedValue([1, 2, 3, 4]),
   };
 });
 
@@ -56,12 +19,6 @@ import { hideConsoleOutput } from '@/__tests__/test-utils';
 import { createChatHistoryMiddlewareEx } from '@/lib/ai/middleware/chat-history';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { schema, drizDb } from '@/lib/drizzle-db';
-
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(),
-}));
 
 jest.mock('@/lib/react-util', () => ({
   LoggedError: {

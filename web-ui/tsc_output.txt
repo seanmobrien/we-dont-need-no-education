@@ -1,0 +1,7 @@
+npm warn Unknown project config "package-manager-strict". This will stop working in the next major version of npm.
+npm warn Unknown project config "prefer-yarn". This will stop working in the next major version of npm.
+lib/api/health/memory.ts(6,8): error TS2724: '"@/lib/site-util/feature-flags/feature-flag-with-refresh"' has no exported member named 'AutoRefreshFeatureFlag'. Did you mean 'isAutoRefreshFeatureFlag'?
+lib/nextjs-util/server/fetch/__tests__/normalize-request-init.test.ts(2,25): error TS7016: Could not find a declaration file for module 'node-fetch'. 'D:/repos/no-ed/web-ui/node_modules/node-fetch/lib/index.js' implicitly has an 'any' type.
+  Try `npm i --save-dev @types/node-fetch` if it exists or add a new declaration (.d.ts) file containing `declare module 'node-fetch';`
+lib/nextjs-util/server/fetch/__tests__/normalize-request-init.test.ts(139,24): error TS2322: Type '{ 'X-Null': any; 'X-Undefined': undefined; }' is not assignable to type 'Headers | Record<string, string | string[]> | [string, string | string[]][] | undefined'.
+  Type '{ 'X-Null': any; 'X-Undefined': undefined; }' is not assignable to type 'undefined'.

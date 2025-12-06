@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @fileoverview Unit tests for EmailDashboardLayout component
  *
@@ -203,7 +202,7 @@ jest.mock('@mui/icons-material/PrivacyTip', () => {
 });
 
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
-import type { Session } from 'next-auth';
+import type { Session } from '@auth/core/types';
 import { usePathname } from 'next/navigation';
 
 describe('EmailDashboardLayout', () => {

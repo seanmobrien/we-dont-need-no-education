@@ -81,13 +81,14 @@ export const generateChatId = (
     }
   } else {
     actualSeed = Number.parseInt(notCryptoSafeKeyHash(seed), 10);
-    const random = seededRandom(actualSeed);
-    for (let i = 0; i < 8; i++) {
-      const cb = chars[Math.floor(random() * chars.length)];
-      if (cb === undefined) {
-        log((l) => l.error('Chat ID generation failed', { seed: actualSeed }));
-      }
-      id += cb ?? '';
+  }
+  const random = seededRandom(actualSeed);
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let id = '';
+  for (let i = 0; i < 8; i++) {
+    const cb = chars[Math.floor(random() * chars.length)];
+    if (cb === undefined) {
+      log((l) => l.error('Chat ID generation failed', { seed: actualSeed }));
     }
   }
   return {

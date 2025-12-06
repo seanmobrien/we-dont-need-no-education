@@ -18,7 +18,7 @@ import {
   Error as ErrorIcon,
   Memory as MemoryIcon,
 } from '@mui/icons-material';
-import { useMemoryHealth } from '@/lib/hooks/use-memory-health';
+import { useHealth } from '../health-provider/health-context';
 import type { HealthStatus } from '@/lib/ai/mem0/types/health-check';
 import { BOX_SX_VARIANTS, type BoxSxVariantKey } from '../health-status-styles';
 
@@ -199,14 +199,16 @@ function getTooltipMessage(
  */
 export const MemoryStatusIndicator = React.memo<MemoryStatusIndicatorProps>(
   ({ showLabel = false, size = 'medium' }) => {
+    const healthProps = useHealth();
     const {
-      healthStatus,
-      subsystems,
+      health: {
+        memory: { status: healthStatus, subsystems },
+      },
       isLoading,
       isError,
       error,
       refreshInterval,
-    } = useMemoryHealth();
+    } = healthProps;
 
     const statusIcon = getStatusIcon(healthStatus, isLoading);
     const statusColor = getStatusColor(healthStatus);

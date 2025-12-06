@@ -1,6 +1,9 @@
-import { JWT } from 'next-auth/jwt';
+import type { JWT } from '@auth/core/jwt';
+import type { Account } from '@auth/core/types';
 import { NextAuthUserWithAccountId } from './types';
 import { AdapterUser } from '@auth/core/adapters';
+import { decodeToken } from './utilities';
+import { log } from '../logger';
 
 /**
  * JWT callback used by NextAuth to shape the JWT sent to the client and stored
@@ -23,6 +26,7 @@ import { AdapterUser } from '@auth/core/adapters';
 export const jwt = async ({
   token,
   user,
+  account,
 }: {
   /**
    * The JWT payload (mutable). Fields added here are serialized and sent to
@@ -38,6 +42,11 @@ export const jwt = async ({
    *   token is being refreshed/read.
    */
   user?: NextAuthUserWithAccountId | AdapterUser | null;
+  /**
+   * The account object associated with the user sign-in. Typically
+   * used to access provider-specific tokens.
+   */
+  account?: Account | null;
 }) => {
   // When a user is present (typically during sign-in), copy canonical ids
   // and any application-specific metadata we want available in the JWT.
@@ -53,6 +62,38 @@ export const jwt = async ({
     // Note: `account_id` is treated as non-sensitive application metadata.
     if ('account_id' in user && !!user.account_id) {
       token.account_id = user.account_id;
+    }
+
+    if (account?.access_token) {
+      try {
+        // Decode JWT payload using jose library via utility function
+        // Note: verify=false means no signature validation (decode only)
+        // For signature validation, set verify=true
+        const accessTokenPayload = (await decodeToken({
+          token: account.access_token,
+          verify: true,
+        })) as {
+          account_id?: number;
+          resource_access?: { [key: string]: string[] };
+        };
+
+        if (accessTokenPayload?.account_id) {
+          if (!token.account_id) {
+            token.account_id = accessTokenPayload.account_id;
+          }
+        }
+        if (accessTokenPayload.resource_access) {
+          token.resource_access = {
+            ...accessTokenPayload.resource_access,
+            ...token.resource_access,
+          };
+        }
+      } catch (decodeError) {
+        // Log but don't throw - gracefully handle invalid JWT format
+        log((l) =>
+          l.warn('Failed to decode access_token JWT payload:', decodeError),
+        );
+      }
     }
   }
 

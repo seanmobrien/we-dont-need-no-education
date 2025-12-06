@@ -104,6 +104,7 @@ export const useChatFetchWrapper = (): {
     }
     while (true) {
       const { done, value } = await reader.read();
+      // Removed debug logging of chunk data to avoid cluttering logs and leaking sensitive data
       if (done) break;
       yield value;
       if (init?.signal?.aborted) {

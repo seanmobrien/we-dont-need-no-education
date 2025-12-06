@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import '@testing-library/jest-dom';
 import {
   render,
@@ -163,9 +162,15 @@ export type MockedConsole = {
   warn?: jest.SpyInstance;
   setup: () => void;
   dispose: () => void;
+  [Symbol.dispose]: () => void;
 };
 
+let lastMockedConsole: MockedConsole | undefined = undefined;
+
 export const hideConsoleOutput = () => {
+  if (lastMockedConsole) {
+    return lastMockedConsole;
+  }
   const ret: MockedConsole = {
     error: undefined,
     log: undefined,
@@ -186,6 +191,9 @@ export const hideConsoleOutput = () => {
       ret.warn ??= jest.spyOn(console, 'warn').mockImplementation(() => {});
     },
     dispose: () => {
+      ret[Symbol.dispose]();
+    },
+    [Symbol.dispose]: () => {
       ret.error?.mockRestore();
       delete ret.error;
       ret.log?.mockRestore();
@@ -202,6 +210,7 @@ export const hideConsoleOutput = () => {
       delete ret.warn;
     },
   };
+  lastMockedConsole = ret;
   return ret;
 };
 
@@ -217,4 +226,9 @@ beforeEach(() => {
 afterEach(() => {
   mockUseId?.mockRestore();
   mockUseId = undefined;
+  // Automatically clean up any console mocking
+  if (lastMockedConsole) {
+    lastMockedConsole.dispose();
+    lastMockedConsole = undefined;
+  }
 });

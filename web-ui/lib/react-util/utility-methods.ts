@@ -1,6 +1,8 @@
 // General utility methods used across React components
 // and other parts of the application.
 
+import { withTimeout } from "../nextjs-util/with-timeout";
+
 // Pseudo-random ID generator for lightweight unique IDs.
 // Not cryptographically secure; suitable for client-side use.
 export const generateUniqueId = (): string => {
@@ -141,35 +143,20 @@ export const getResolvedPromises = async <T>(
   promises: Promise<T>[],
   timeoutMs: number = 60 * 1000,
 ): Promise<CategorizedPromiseResult<T>> => {
-  // Use a unique symbol to identify timeouts
-  const TIMEOUT_SYMBOL = Symbol('timeout');
-
-  // Race each promise against a timeout that RESOLVES with the symbol
-  const racedPromises = promises.map((promise) =>
-    Promise.race([
-      promise,
-      new Promise<typeof TIMEOUT_SYMBOL>((resolve) =>
-        setTimeout(() => resolve(TIMEOUT_SYMBOL), timeoutMs),
-      ),
-    ]),
-  );
-
+  // Race each promise against a timeout that resolves with a timeout bit or wrapped value.
+  const racedPromises = promises.map((promise) => withTimeout(promise, timeoutMs));
   // Wait for all races to complete
   const results = await Promise.allSettled(racedPromises);
-
   // Categorize results with clear logic
   return results.reduce(
     (acc, result, index) => {
       if (result.status === 'fulfilled') {
-        if (result.value === TIMEOUT_SYMBOL) {
-          // This promise timed out, still pending
+        if (result.value.timedOut) {
           acc.pending.push(promises[index]);
         } else {
-          // This promise resolved (even if value is null/undefined)
-          acc.fulfilled.push(result.value);
+          acc.fulfilled.push(result.value.value);
         }
       } else {
-        // This promise rejected
         acc.rejected.push(result.reason);
       }
       return acc;

@@ -11,10 +11,10 @@
  * @module lib/typescript/singleton-provider/provider
  */
 
-declare module '@/lib/typescript/singleton-provider/provider' {
-  import type { IsNotNull } from '@/lib/typescript/_types';
-  import type { SingletonConfig } from '@/lib/typescript/singleton-provider/types';
+import type { IsNotNull } from './../_types';
+import type { SingletonConfig } from './types';
 
+declare module '@/lib/typescript/singleton-provider/provider' {
   /**
    * Singleton provider class for managing singleton instances with advanced memory management.
    *

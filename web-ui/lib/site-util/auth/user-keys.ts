@@ -1,17 +1,12 @@
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
-/**
- * Key pair management for user signing
- */
+// Key pair management for user signing (detailed docs live in user-keys.d.ts)
 class UserKeyManager {
   private static readonly DB_NAME = 'UserKeyStore';
   private static readonly DB_VERSION = 1;
   private static readonly STORE_NAME = 'keys';
   private static readonly KEY_ID = 'userSigningKey';
 
-  /**
-   * Opens IndexedDB connection
-   */
   private static async openDB(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
@@ -28,9 +23,6 @@ class UserKeyManager {
     });
   }
 
-  /**
-   * Generates and stores a new ECDSA key pair
-   */
   static async generateKeyPair(): Promise<{
     publicKey: CryptoKey;
     privateKey: CryptoKey;
@@ -70,9 +62,6 @@ class UserKeyManager {
     return keyPair;
   }
 
-  /**
-   * Retrieves the user's private key from IndexedDB
-   */
   static async getPrivateKey(): Promise<CryptoKey | null> {
     try {
       const db = await this.openDB();
@@ -94,9 +83,6 @@ class UserKeyManager {
     }
   }
 
-  /**
-   * Gets the user's public key for server verification
-   */
   static async getPublicKey(): Promise<CryptoKey | null> {
     try {
       const db = await this.openDB();
@@ -118,9 +104,6 @@ class UserKeyManager {
     }
   }
 
-  /**
-   * Exports public key to send to server for user account association
-   */
   static async exportPublicKeyForServer({
     publicKey,
   }: { publicKey?: CryptoKey | undefined } | undefined = {}): Promise<
@@ -133,9 +116,6 @@ class UserKeyManager {
     return btoa(String.fromCharCode(...new Uint8Array(exported)));
   }
 
-  /**
-   * Ensures user has a key pair, generating one if needed
-   */
   static async ensureKeyPair(): Promise<void> {
     const privateKey = await this.getPrivateKey();
     if (!privateKey) {
@@ -143,9 +123,6 @@ class UserKeyManager {
     }
   }
 
-  /**
-   * Validates that the local public key matches one of the provided server keys
-   */
   static async validateAgainstServerKeys(
     serverKeys: string[],
   ): Promise<boolean> {
@@ -168,9 +145,6 @@ class UserKeyManager {
     }
   }
 
-  /**
-   * Exports a public key to base64 string format
-   */
   private static async exportPublicKeyToBase64(
     publicKey: CryptoKey,
   ): Promise<string> {
@@ -178,9 +152,6 @@ class UserKeyManager {
     return btoa(String.fromCharCode(...new Uint8Array(exported)));
   }
 
-  /**
-   * Checks if the user has any valid keys stored locally
-   */
   static async hasValidKeys(): Promise<boolean> {
     try {
       const publicKey = await this.getPublicKey();
@@ -192,9 +163,6 @@ class UserKeyManager {
   }
 }
 
-/**
- * Signs data using ECDSA with the user's private key
- */
 export const signData = async (data: string): Promise<string> => {
   await UserKeyManager.ensureKeyPair();
   const privateKey = await UserKeyManager.getPrivateKey();
@@ -221,42 +189,26 @@ export const signData = async (data: string): Promise<string> => {
   return btoa(String.fromCharCode(...new Uint8Array(signature)));
 };
 
-/**
- * Export user's public key for server-side verification setup
- * Call this when user first logs in to associate their public key with their account
- */
 export const getUserPublicKeyForServer = async (props?: {
   publicKey?: CryptoKey | undefined;
 }): Promise<string | null> => {
   return await UserKeyManager.exportPublicKeyForServer(props);
 };
 
-/**
- * Initialize user's key pair (call this on app startup or user login)
- */
 export const initializeUserKeys = async (): Promise<void> => {
   await UserKeyManager.ensureKeyPair();
 };
 
-/**
- * Validates that the user's local keys match server-registered keys
- */
 export const validateUserKeysAgainstServer = async (
   serverKeys: string[],
 ): Promise<boolean> => {
   return await UserKeyManager.validateAgainstServerKeys(serverKeys);
 };
 
-/**
- * Checks if user has valid keys stored locally
- */
 export const hasValidLocalKeys = async (): Promise<boolean> => {
   return await UserKeyManager.hasValidKeys();
 };
 
-/**
- * Generate and return a new key pair, storing it locally
- */
 export const generateUserKeyPair = async (): Promise<{
   publicKey: CryptoKey;
   privateKey: CryptoKey;
@@ -264,16 +216,10 @@ export const generateUserKeyPair = async (): Promise<{
   return await UserKeyManager.generateKeyPair();
 };
 
-/**
- * Get the user's stored public key
- */
 export const getUserPublicKey = async (): Promise<CryptoKey | null> => {
   return await UserKeyManager.getPublicKey();
 };
 
-/**
- * Get the user's stored private key
- */
 export const getUserPrivateKey = async (): Promise<CryptoKey | null> => {
   return await UserKeyManager.getPrivateKey();
 };
