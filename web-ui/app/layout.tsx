@@ -49,7 +49,11 @@ export default async function RootLayout({
   if (state() === 'done') {
     return (
       <html lang="en">
-        <body>App is shutting down</body>
+        <body>
+          <main role="main" aria-label="Shutdown message" style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center' }}>
+            <h1 tabIndex={0}>App is shutting down</h1>
+          </main>
+        </body>
       </html>
     );
   }
