@@ -10,10 +10,22 @@ import { schema } from '@/lib/drizzle-db/schema';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
 import { PgColumn } from 'drizzle-orm/pg-core';
+import {
+  checkEmailAuthorization,
+  CaseFileScope,
+} from '@/lib/auth/resources/case-file';
 
 export const GET = wrapRouteRequest(
   async (req: NextRequest, args: { params: Promise<{ emailId: string }> }) => {
     const { emailId } = await extractParams<{ emailId: string }>(args);
+
+    // Check case file authorization
+    const authCheck = await checkEmailAuthorization(req, emailId, {
+      requiredScope: CaseFileScope.READ,
+    });
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
 
     const db = await drizDbWithInit();
 

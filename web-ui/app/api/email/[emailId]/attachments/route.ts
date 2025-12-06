@@ -5,6 +5,10 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { buildAttachmentDownloadUrl } from '@/lib/api/attachment';
 import { getAbsoluteUrl } from '@/lib/site-util/url-builder';
 import { isValidUuid } from '@/lib/ai/tools/utility';
+import {
+  checkEmailAuthorization,
+  CaseFileScope,
+} from '@/lib/auth/resources/case-file';
 
 // Helper function to extract filename from a file path or URL
 const extractFileNameFromPath = (hrefDocument?: string): string | undefined => {
@@ -37,6 +41,14 @@ export async function GET(
     let resolvedEmailId: string | null = null;
     if (isValidUuid(emailId)) {
       resolvedEmailId = emailId;
+      
+      // Check case file authorization
+      const authCheck = await checkEmailAuthorization(req, resolvedEmailId, {
+        requiredScope: CaseFileScope.READ,
+      });
+      if (!authCheck.authorized) {
+        return authCheck.response;
+      }
     } else {
       const emailNumericId = parseInt(emailId, 10);
       if (isNaN(emailNumericId)) {
@@ -57,6 +69,14 @@ export async function GET(
       );
       if (!resolvedEmailId) {
         return NextResponse.json({ error: 'Email not found' }, { status: 404 });
+      }
+
+      // Check case file authorization
+      const authCheck = await checkEmailAuthorization(req, resolvedEmailId, {
+        requiredScope: CaseFileScope.READ,
+      });
+      if (!authCheck.authorized) {
+        return authCheck.response;
       }
     }
     return await drizDbWithInit((db) =>

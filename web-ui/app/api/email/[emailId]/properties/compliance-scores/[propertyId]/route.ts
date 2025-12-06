@@ -13,6 +13,16 @@ export const GET = wrapRouteRequest(
     req: NextRequest,
     args: { params: Promise<{ emailId: string; propertyId: string }> },
   ) => {
+    const { emailId } = await extractParams(args);
+
+    // Check case file authorization
+    const authCheck = await checkEmailAuthorization(req, emailId, {
+      requiredScope: CaseFileScope.READ,
+    });
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
+
     const controller = new RepositoryCrudController(
       new ComplianceScoresDetailsRepository(),
     );
@@ -26,6 +36,16 @@ export const PUT = wrapRouteRequest(
     req: NextRequest,
     args: { params: Promise<{ emailId: string; propertyId: string }> },
   ) => {
+    const { emailId } = await extractParams(args);
+
+    // Check case file authorization
+    const authCheck = await checkEmailAuthorization(req, emailId, {
+      requiredScope: CaseFileScope.WRITE,
+    });
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
+
     const controller = new RepositoryCrudController(
       new ComplianceScoresDetailsRepository(),
     );
@@ -38,6 +58,16 @@ export const DELETE = wrapRouteRequest(
     req: NextRequest,
     args: { params: Promise<{ emailId: string; propertyId: string }> },
   ) => {
+    const { emailId } = await extractParams(args);
+
+    // Check case file authorization
+    const authCheck = await checkEmailAuthorization(req, emailId, {
+      requiredScope: CaseFileScope.WRITE,
+    });
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
+
     const controller = new RepositoryCrudController(
       new ComplianceScoresDetailsRepository(),
     );
