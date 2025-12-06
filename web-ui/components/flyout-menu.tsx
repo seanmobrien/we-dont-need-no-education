@@ -8,13 +8,42 @@ import {
   stableTransformOrigin,
 } from '@/components/flyout-props';
 
+/**
+ * Props for the FlyoutMenu component.
+ *
+ * The FlyoutMenu is a menu item that, when hovered or clicked, opens a flyout submenu.
+ * State management for the open/close behavior is controlled externally via the `isOpen` and `onHover` props.
+ */
 export interface FlyoutMenuProps {
+  /**
+   * The label text to display for the menu item.
+   */
   label: string;
+  /**
+   * Optional icon to display alongside the label.
+   */
   icon?: React.ReactNode;
+  /**
+   * The submenu content to render inside the flyout.
+   */
   children: React.ReactNode;
+  /**
+   * If true, the menu item is visually marked as active/selected.
+   */
   active?: boolean;
+  /**
+   * Optional test id for querying in tests.
+   */
   dataTestId?: string;
+  /**
+   * Controls whether the flyout menu is open.
+   * This prop is managed externally to support controlled open/close state.
+   */
   isOpen: boolean;
+  /**
+   * Callback invoked when the menu item is hovered or clicked.
+   * Used to notify the parent to update the open/close state.
+   */
   onHover: () => void;
 }
 
