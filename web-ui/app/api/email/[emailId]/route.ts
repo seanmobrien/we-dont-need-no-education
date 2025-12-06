@@ -8,6 +8,10 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { extractParams } from '@/lib/nextjs-util/utils';
 import { eq } from 'drizzle-orm';
 import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import {
+  checkEmailAuthorization,
+  CaseFileScope,
+} from '@/lib/auth/resources/case-file';
 
 /**
  * Extracts the emailId out of the route parameters, with some magic to support document IDs if that's what we were given.
@@ -68,6 +72,15 @@ export const GET = wrapRouteRequest(
         { status: 400 },
       );
     }
+
+    // Check case file authorization
+    const authCheck = await checkEmailAuthorization(req, emailId, {
+      requiredScope: CaseFileScope.READ,
+    });
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
+
     try {
       const record = await (
         await drizDbWithInit()
@@ -203,6 +216,15 @@ export const DELETE = wrapRouteRequest(
         { status: 400 },
       );
     }
+
+    // Check case file authorization (write scope required for deletion)
+    const authCheck = await checkEmailAuthorization(req, emailId, {
+      requiredScope: CaseFileScope.WRITE,
+    });
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
+
     try {
       const records = await (await drizDbWithInit())
         .delete(schema.emails)

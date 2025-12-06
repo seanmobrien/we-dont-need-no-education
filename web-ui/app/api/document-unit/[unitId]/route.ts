@@ -12,6 +12,10 @@ import { isError } from '@/lib/react-util/utility-methods';
 import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
 import { log } from '@/lib/logger';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
+import {
+  checkDocumentUnitAuthorization,
+  CaseFileScope,
+} from '@/lib/auth/resources/case-file';
 export const dynamic = 'force-dynamic';
 export const GET = wrapRouteRequest(
   async (
@@ -20,6 +24,19 @@ export const GET = wrapRouteRequest(
   ) => {
     try {
       const { unitId } = await extractParams(args);
+
+      // Check case file authorization
+      const authCheck = await checkDocumentUnitAuthorization(
+        req,
+        Number(unitId),
+        {
+          requiredScope: CaseFileScope.READ,
+        },
+      );
+      if (!authCheck.authorized) {
+        return authCheck.response;
+      }
+
       const document = await getCaseFileDocument({
         caseFileId: Number(unitId),
       });
@@ -53,6 +70,19 @@ export const PUT = wrapRouteRequest(
     args: { params: Promise<{ unitId: number | string }> },
   ) => {
     const { unitId } = await extractParams(args);
+
+    // Check case file authorization (write scope required)
+    const authCheck = await checkDocumentUnitAuthorization(
+      req,
+      Number(unitId),
+      {
+        requiredScope: CaseFileScope.WRITE,
+      },
+    );
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
+
     const data = (await req.json()) as CaseFileAmendment;
     if (data.targetCaseFileId !== Number(unitId)) {
       return NextResponse.json(
@@ -82,10 +112,23 @@ export const DELETE = wrapRouteRequest(
     req: NextRequest,
     args: { params: Promise<{ unitId: number | string }> },
   ) => {
+    const { unitId } = await extractParams(args);
+
+    // Check case file authorization (write scope required)
+    const authCheck = await checkDocumentUnitAuthorization(
+      req,
+      Number(unitId),
+      {
+        requiredScope: CaseFileScope.WRITE,
+      },
+    );
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
+
     const controller = new RepositoryCrudController(
       new DocumentUnitRepository(),
     );
-    const { unitId } = await extractParams(args);
     return controller.delete(req, { params: { unitId: Number(unitId) } });
   },
 );
@@ -95,10 +138,23 @@ export const POST = wrapRouteRequest(
     req: NextRequest,
     data: { params: Promise<{ unitId: number | string }> },
   ) => {
+    const { unitId } = await extractParams(data);
+
+    // Check case file authorization (write scope required)
+    const authCheck = await checkDocumentUnitAuthorization(
+      req,
+      Number(unitId),
+      {
+        requiredScope: CaseFileScope.WRITE,
+      },
+    );
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
+
     const controller = new RepositoryCrudController(
       new DocumentUnitRepository(),
     );
-    const { unitId } = await extractParams(data);
     return controller.create(req, { params: { unitId: Number(unitId) } });
   },
 );
