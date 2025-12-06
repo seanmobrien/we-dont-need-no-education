@@ -35,6 +35,19 @@ jest.mock('@/lib/api/email/email-service', () => ({
   EmailService: jest.fn().mockImplementation(() => mockEmailService),
 }));
 
+// Mock authorization checks to always allow access in tests
+jest.mock('@/lib/auth/resources/case-file', () => ({
+  checkEmailAuthorization: jest.fn().mockResolvedValue({ authorized: true }),
+  checkDocumentUnitAuthorization: jest
+    .fn()
+    .mockResolvedValue({ authorized: true }),
+  CaseFileScope: {
+    READ: 'case-file:read',
+    WRITE: 'case-file:write',
+    ADMIN: 'case-file:admin',
+  },
+}));
+
 // Define mocks for [emailId]/route.ts (drizzle-based individual email operations)
 const mockDbQuery = {
   emails: {
