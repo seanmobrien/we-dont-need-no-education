@@ -43,11 +43,14 @@ export const QueryProvider: FC<DataGridQueryProviderProps> = ({
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      {showDevToolsState ? (
-        <ReactQueryDevtoolsProduction initialIsOpen={false} />
-      ) : (
-        <ReactQueryDevtools initialIsOpen={false} />
-      )}
+      {showDevToolsState &&
+        (process.env.NODE_ENV === 'development' ? (
+          <ReactQueryDevtools initialIsOpen={false} />
+        ) : (
+          <React.Suspense fallback={null}>
+            <ReactQueryDevtoolsProduction initialIsOpen={false} />
+          </React.Suspense>
+        ))}
     </QueryClientProvider>
   );
 };

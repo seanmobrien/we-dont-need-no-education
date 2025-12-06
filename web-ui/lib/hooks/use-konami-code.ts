@@ -15,6 +15,12 @@ const KONAMI_CODE = [
 
 export const useKonamiCode = (callback: () => void) => {
   const index = useRef(0);
+  const callbackRef = useRef(callback);
+
+  // Update callback ref when callback changes
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -24,7 +30,7 @@ export const useKonamiCode = (callback: () => void) => {
 
         // If the sequence is complete
         if (index.current === KONAMI_CODE.length) {
-          callback();
+          callbackRef.current();
           index.current = 0; // Reset after successful activation
         }
       } else {
@@ -39,5 +45,5 @@ export const useKonamiCode = (callback: () => void) => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [callback]);
+  }, []);
 };
