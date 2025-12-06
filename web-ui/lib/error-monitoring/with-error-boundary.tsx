@@ -41,13 +41,15 @@ export function withErrorBoundary<P extends object>(
         )}
         onError={(error, errorInfo) => {
           // Report the error with component context
-          errorReporter().reportBoundaryError(
-            error,
-            {
-              componentStack: errorInfo.componentStack || undefined,
-              errorBoundary: `${componentName}ErrorBoundary`,
-            },
-            severity,
+          errorReporter((r) =>
+            r.reportBoundaryError(
+              error,
+              {
+                componentStack: errorInfo.componentStack || undefined,
+                errorBoundary: `${componentName}ErrorBoundary`,
+              },
+              severity,
+            ),
           );
 
           // Prevent error from bubbling if isolation is enabled
@@ -111,13 +113,15 @@ export function ErrorBoundaryWrapper({
       )}
       onError={(error, errorInfo) => {
         // Report the error
-        errorReporter().reportBoundaryError(
-          error,
-          {
-            componentStack: errorInfo.componentStack || undefined,
-            errorBoundary: name,
-          },
-          ErrorSeverity.MEDIUM,
+        errorReporter((r) =>
+          r.reportBoundaryError(
+            error,
+            {
+              componentStack: errorInfo.componentStack || undefined,
+              errorBoundary: name,
+            },
+            ErrorSeverity.MEDIUM,
+          ),
         );
 
         // Custom error handler
