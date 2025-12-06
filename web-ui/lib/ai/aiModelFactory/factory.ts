@@ -183,11 +183,16 @@ const customProviderFactory = async <
   };
   return getGuardedProvider(provider, async (cfg) => {
     const wrappedModels = ['hifi', 'lofi', 'completions', 'gemini-2.0-flash', 'gemini-pro'];
-    const languageModels: Record<string, LanguageModelV2> = {};
-    for (const key of Object.keys(cfg.named ?? {})) {
-      const model = modelFactory(cfg, key);
-      languageModels[key] = wrappedModels.includes(key) ? await setupMiddleware(provider, model) : model;
-    }
+    const languageModelEntries = await Promise.all(
+      Object.keys(cfg.named ?? {}).map(async (key) => {
+        const model = modelFactory(cfg, key);
+        const value = wrappedModels.includes(key)
+          ? await setupMiddleware(provider, model)
+          : model;
+        return [key, value] as [string, LanguageModelV2];
+      })
+    );
+    const languageModels: Record<string, LanguageModelV2> = Object.fromEntries(languageModelEntries);
     return customProvider({
       languageModels,
       textEmbeddingModels: {
