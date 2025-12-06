@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@/__tests__/test-utils';
+import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
 import { ChatPanel } from '@/components/ai/chat-panel';
 
 // Mock the dependencies
@@ -34,24 +34,33 @@ describe('ChatPanel Docking Functionality', () => {
     render(<ChatPanel page="test" />);
 
     // Find and click the menu button
-    const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-    fireEvent.click(menuButton!);
+    const menuButton = screen.getByTestId('button-chat-menu');
+    fireEvent.click(menuButton);
+
+    await waitFor(() => {
+      fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+    });
 
     // Check if docking options are available
-    expect(screen.getByText('Dock Left')).toBeInTheDocument();
-    expect(screen.getByText('Dock Right')).toBeInTheDocument();
-    expect(screen.getByText('Dock Top')).toBeInTheDocument();
-    expect(screen.getByText('Dock Bottom')).toBeInTheDocument();
+    // Check if docking options are available
+    expect(await screen.findByText('Dock Left')).toBeInTheDocument();
+    expect(await screen.findByText('Dock Right')).toBeInTheDocument();
+    expect(await screen.findByText('Dock Top')).toBeInTheDocument();
+    expect(await screen.findByText('Dock Bottom')).toBeInTheDocument();
   }, 10000);
 
   it('shows placeholder when docked to left', async () => {
     render(<ChatPanel page="test" />);
 
     // Open menu and click dock left
-    const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-    fireEvent.click(menuButton!);
+    const menuButton = screen.getByTestId('button-chat-menu');
+    fireEvent.click(menuButton);
 
-    const dockLeftOption = screen.getByText('Dock Left');
+    await waitFor(() => {
+      fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+    });
+
+    const dockLeftOption = await screen.findByText('Dock Left');
     fireEvent.click(dockLeftOption);
 
     // Check if it shows docked placeholder
@@ -73,17 +82,25 @@ describe('ChatPanel Docking Functionality', () => {
     render(<ChatPanel page="test" />);
 
     // Open menu and dock to right first
-    const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-    fireEvent.click(menuButton!);
+    const menuButton = screen.getByTestId('button-chat-menu');
+    fireEvent.click(menuButton);
 
-    const dockRightOption = screen.getByText('Dock Right');
+    await waitFor(() => {
+      fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+    });
+
+    const dockRightOption = await screen.findByText('Dock Right');
     fireEvent.click(dockRightOption);
 
     // Open menu again
-    fireEvent.click(menuButton!);
+    fireEvent.click(menuButton);
+
+    await waitFor(() => {
+      fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+    });
 
     // The dock right option should be selected (this would be shown by styling/selection state)
-    const dockRightSelected = screen.getByText('Dock Right');
+    const dockRightSelected = await screen.findByText('Dock Right');
     expect(dockRightSelected).toBeInTheDocument();
   }, 10000);
 
@@ -91,10 +108,14 @@ describe('ChatPanel Docking Functionality', () => {
     render(<ChatPanel page="test" />);
 
     // First dock the panel
-    const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
-    fireEvent.click(menuButton!);
+    const menuButton = screen.getByTestId('button-chat-menu');
+    fireEvent.click(menuButton);
 
-    const dockBottomOption = screen.getByText('Dock Bottom');
+    await waitFor(() => {
+      fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
+    });
+
+    const dockBottomOption = await screen.findByText('Dock Bottom');
     fireEvent.click(dockBottomOption);
 
     // Verify it's docked

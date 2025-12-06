@@ -33,12 +33,9 @@ describe('ChatMenu Provider Selection', () => {
 
     await waitFor(
       () => {
-        // Look for the elements using getAllBy since there are multiples
-        const azureElements = screen.getAllByText('Azure');
-        const attorneyElements = screen.getAllByText('Attorney');
-
-        expect(azureElements.length).toBeGreaterThan(0);
-        expect(attorneyElements.length).toBeGreaterThan(0);
+        // Look for the Labels "Provider (Azure)" and "Model (Attorney)"
+        expect(screen.getByText('Provider (Azure)')).toBeInTheDocument();
+        expect(screen.getByText('Model (Attorney)')).toBeInTheDocument();
       },
       { timeout: 5000 },
     );
@@ -54,6 +51,14 @@ describe('ChatMenu Provider Selection', () => {
 
     const menuButton = screen.getByTestId('button-chat-menu');
     fireEvent.click(menuButton);
+
+    await waitFor(
+      () => {
+        const providerMenu = screen.getByTestId('menu-item-provider');
+        fireEvent.mouseEnter(providerMenu);
+      },
+      { timeout: 5000 },
+    );
 
     await waitFor(
       () => {
@@ -82,6 +87,14 @@ describe('ChatMenu Provider Selection', () => {
 
     const menuButton = screen.getByTestId('button-chat-menu');
     fireEvent.click(menuButton);
+
+    await waitFor(
+      () => {
+        const providerMenu = screen.getByTestId('menu-item-provider');
+        fireEvent.mouseEnter(providerMenu);
+      },
+      { timeout: 5000 },
+    );
 
     await waitFor(
       () => {
@@ -115,6 +128,14 @@ describe('ChatMenu Provider Selection', () => {
 
     await waitFor(
       () => {
+        const providerMenu = screen.getByTestId('menu-item-provider');
+        fireEvent.mouseEnter(providerMenu);
+      },
+      { timeout: 5000 },
+    );
+
+    await waitFor(
+      () => {
         const googleOption = screen.getByTestId('menu-item-provider-google');
         fireEvent.click(googleOption);
       },
@@ -145,6 +166,14 @@ describe('ChatMenu Provider Selection', () => {
 
     await waitFor(
       () => {
+        const modelMenu = screen.getByTestId('menu-item-model');
+        fireEvent.mouseEnter(modelMenu);
+      },
+      { timeout: 5000 },
+    );
+
+    await waitFor(
+      () => {
         // Partner models should be disabled for Google
         const partnerMediumOption = screen.getByTestId(
           'menu-item-model-reasoning-medium',
@@ -170,6 +199,14 @@ describe('ChatMenu Provider Selection', () => {
 
     const menuButton = screen.getByTestId('button-chat-menu');
     fireEvent.click(menuButton);
+
+    await waitFor(
+      () => {
+        const modelMenu = screen.getByTestId('menu-item-model');
+        fireEvent.mouseEnter(modelMenu);
+      },
+      { timeout: 5000 },
+    );
 
     await waitFor(
       () => {
