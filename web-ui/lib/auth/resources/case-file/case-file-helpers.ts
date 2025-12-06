@@ -176,18 +176,28 @@ export async function getKeycloakUserIdFromUserId(
 /**
  * Gets accessible user IDs (case file IDs) for the current user based on their Keycloak token
  *
- * This function would typically query Keycloak entitlements to determine which
- * case files the user has access to. For now, it's a placeholder that should be
- * implemented based on specific Keycloak entitlement queries.
+ * **NOTE:** This is a stub function for future implementation. It should query Keycloak's
+ * entitlement endpoint to discover which case-file resources the user has access to,
+ * then extract the caseFileId from each resource's attributes.
+ *
+ * When implemented, this will enable list/search endpoints to filter results by accessible
+ * case files without requiring individual authorization checks for each item.
+ *
+ * Implementation steps:
+ * 1. Request entitlements from Keycloak using the user's token
+ * 2. Parse the response to extract resource names matching "case-file:*"
+ * 3. For each resource, query its attributes to get the caseFileId
+ * 4. Return an array of accessible user IDs
  *
  * @param userAccessToken - The user's access token
- * @returns Array of user IDs the user can access
+ * @returns Array of user IDs the user can access (currently returns empty array)
  * @throws {LoggedError} If entitlement query fails
  *
  * @example
  * ```typescript
+ * // Future usage for filtering list endpoints:
  * const accessibleCaseFiles = await getAccessibleUserIds(token);
- * // Filter results: WHERE user_id IN (accessibleCaseFiles)
+ * const filteredEmails = emails.filter(e => accessibleCaseFiles.includes(e.userId));
  * ```
  */
 export async function getAccessibleUserIds(
@@ -195,16 +205,15 @@ export async function getAccessibleUserIds(
   userAccessToken: string,
 ): Promise<number[]> {
   try {
-    // TODO: Implement entitlement query to Keycloak
-    // This should query for all resources the user has access to
-    // and extract the caseFileId from the resource attributes
-    
+    // STUB: This function is intentionally not implemented yet.
+    // It is exported for consistency and to establish the API contract
+    // for future list/search endpoint filtering.
     log((l) =>
       l.warn({
-        msg: 'getAccessibleUserIds is not yet implemented - returning empty array',
+        msg: 'getAccessibleUserIds is a stub - returning empty array. Implement Keycloak entitlement query for list filtering.',
       }),
     );
-    
+
     return [];
   } catch (error) {
     throw LoggedError.isTurtlesAllTheWayDownBaby(error, {

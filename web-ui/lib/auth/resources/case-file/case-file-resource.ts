@@ -21,6 +21,26 @@ import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
+ * Gets the Keycloak token endpoint URL
+ * @internal
+ */
+const getTokenEndpoint = (): string => {
+  return `${env('AUTH_KEYCLOAK_ISSUER')}/protocol/openid-connect/token`;
+};
+
+/**
+ * Creates the body for client credentials grant
+ * @internal
+ */
+const createClientCredentialsBody = (): URLSearchParams => {
+  return new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: env('AUTH_KEYCLOAK_CLIENT_ID'),
+    client_secret: env('AUTH_KEYCLOAK_CLIENT_SECRET'),
+  });
+};
+
+/**
  * Represents a case file resource in Keycloak
  */
 export interface CaseFileResource {
@@ -241,17 +261,12 @@ async function createCaseFileResource(
 ): Promise<CaseFileResource> {
   try {
     // Get PAT (Protection API Token)
-    const protectionApiUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/protocol/openid-connect/token`;
-    const patResponse = await fetch(protectionApiUrl, {
+    const patResponse = await fetch(getTokenEndpoint(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: env('AUTH_KEYCLOAK_CLIENT_ID'),
-        client_secret: env('AUTH_KEYCLOAK_CLIENT_SECRET'),
-      }),
+      body: createClientCredentialsBody(),
     });
 
     if (!patResponse.ok) {
@@ -331,8 +346,7 @@ export async function checkCaseFileAccess(
     const resourceName = `case-file:${userId}`;
 
     // Request an RPT (Requesting Party Token) with entitlement
-    const tokenUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/protocol/openid-connect/token`;
-    const response = await fetch(tokenUrl, {
+    const response = await fetch(getTokenEndpoint(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',

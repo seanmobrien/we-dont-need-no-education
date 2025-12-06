@@ -19,6 +19,36 @@ import { log } from '@/lib/logger';
 import { extractToken } from '@/lib/auth/utilities';
 
 /**
+ * Extracts and validates the access token from a request
+ *
+ * @param req - The Next.js request object
+ * @param resourceId - The resource ID for logging purposes
+ * @returns The access token if valid, or an error response
+ * @internal
+ */
+async function getValidatedAccessToken(
+  req: NextRequest,
+  resourceId: string | number,
+): Promise<{ token: string } | { error: NextResponse }> {
+  const token = await extractToken(req);
+  if (!token || !token.access_token) {
+    log((l) =>
+      l.warn({
+        msg: 'No access token found in request',
+        resourceId,
+      }),
+    );
+    return {
+      error: NextResponse.json(
+        { error: 'Unauthorized - No access token' },
+        { status: 401 },
+      ),
+    };
+  }
+  return { token: token.access_token };
+}
+
+/**
  * Options for case file authorization middleware
  */
 export interface CaseFileAuthOptions {
@@ -98,21 +128,12 @@ export async function checkEmailAuthorization(
       };
     }
 
-    // Extract access token from request
-    const token = await extractToken(req);
-    if (!token || !token.access_token) {
-      log((l) =>
-        l.warn({
-          msg: 'No access token found in request',
-          emailId,
-        }),
-      );
+    // Extract and validate access token
+    const tokenResult = await getValidatedAccessToken(req, emailId);
+    if ('error' in tokenResult) {
       return {
         authorized: false,
-        response: NextResponse.json(
-          { error: 'Unauthorized - No access token' },
-          { status: 401 },
-        ),
+        response: tokenResult.error,
       };
     }
 
@@ -120,7 +141,7 @@ export async function checkEmailAuthorization(
     const hasAccess = await checkCaseFileAccess(
       userId,
       options.requiredScope,
-      token.access_token,
+      tokenResult.token,
     );
 
     if (!hasAccess) {
@@ -222,21 +243,12 @@ export async function checkDocumentUnitAuthorization(
       };
     }
 
-    // Extract access token from request
-    const token = await extractToken(req);
-    if (!token || !token.access_token) {
-      log((l) =>
-        l.warn({
-          msg: 'No access token found in request',
-          unitId,
-        }),
-      );
+    // Extract and validate access token
+    const tokenResult = await getValidatedAccessToken(req, unitId);
+    if ('error' in tokenResult) {
       return {
         authorized: false,
-        response: NextResponse.json(
-          { error: 'Unauthorized - No access token' },
-          { status: 401 },
-        ),
+        response: tokenResult.error,
       };
     }
 
@@ -244,7 +256,7 @@ export async function checkDocumentUnitAuthorization(
     const hasAccess = await checkCaseFileAccess(
       userId,
       options.requiredScope,
-      token.access_token,
+      tokenResult.token,
     );
 
     if (!hasAccess) {
