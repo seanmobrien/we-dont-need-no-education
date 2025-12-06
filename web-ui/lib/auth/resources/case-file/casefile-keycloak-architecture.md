@@ -99,8 +99,8 @@ Example resource representation:
 
 Backend checks permissions by requesting an RPT or entitlement token from Keycloak including:
 
-```
-permission: "{resourceId}#{scope}"
+```pseudo
+permission: '{resourceId}#{scope}'
 ```
 
 Then inspects the resulting token’s `authorization.permissions`.
