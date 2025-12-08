@@ -9,6 +9,10 @@ import { eq, and, ne } from 'drizzle-orm';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import {
+  checkEmailAuthorization,
+  CaseFileScope,
+} from '@/lib/auth/resources/case-file';
+import {
   DrizzleSelectQuery,
   getEmailColumn,
   selectForGrid,
@@ -19,6 +23,14 @@ import { PgColumn } from 'drizzle-orm/pg-core';
 export const GET = wrapRouteRequest(
   async (req: NextRequest, args: { params: Promise<{ emailId: string }> }) => {
     const { emailId } = await extractParams<{ emailId: string }>(args);
+
+    // Check case file authorization
+    const authCheck = await checkEmailAuthorization(req, emailId, {
+      requiredScope: CaseFileScope.READ,
+    });
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
 
     const db = await drizDbWithInit();
 

@@ -135,6 +135,7 @@ export const documentUnits = pgTable(
     ),
     embeddingModel: varchar('embedding_model', { length: 255 }),
     embeddedOn: timestamp('embedded_on', { mode: 'string' }),
+    userId: integer('user_id').notNull(),
   },
   (table) => [
     index('idx_document_units_attachment').using(
@@ -144,6 +145,10 @@ export const documentUnits = pgTable(
     index('idx_document_units_email').using(
       'btree',
       table.emailId.asc().nullsLast().op('uuid_ops'),
+    ),
+    index('idx_document_units_user_id').using(
+      'btree',
+      table.userId.asc().nullsLast().op('int4_ops'),
     ),
     foreignKey({
       columns: [table.attachmentId],
@@ -159,6 +164,11 @@ export const documentUnits = pgTable(
       columns: [table.documentPropertyId],
       foreignColumns: [documentProperty.propertyId],
       name: 'document_units_email_property_id_fkey1',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'document_units_user_id_fkey',
     }).onDelete('cascade'),
     check(
       'document_type_check_allowed_values',

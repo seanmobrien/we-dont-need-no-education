@@ -13,17 +13,30 @@ import {
   buildFallbackGrid,
   wrapRouteRequest,
 } from '@/lib/nextjs-util/server/utils';
+import {
+  checkEmailAuthorization,
+  CaseFileScope,
+} from '@/lib/auth/resources/case-file';
 
 export const dynamic = 'force-dynamic';
 
 export const GET = wrapRouteRequest(
   async (req: NextRequest, args: { params: Promise<{ emailId: string }> }) => {
+    const { emailId } = await extractParams<{ emailId: string }>(args);
+
+    // Check case file authorization
+    const authCheck = await checkEmailAuthorization(req, emailId, {
+      requiredScope: CaseFileScope.READ,
+    });
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
+
     const controller = new RepositoryCrudController(
       new EmailPropertyRepository(),
     );
 
     return controller.listFromRepository(async (r) => {
-      const { emailId } = await extractParams<{ emailId: string }>(args);
       return r.innerQuery((q) =>
         q.list(
           (num, page, offset) =>
