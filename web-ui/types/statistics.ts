@@ -22,7 +22,7 @@
  *
  * // Processing statistics data
  * const stats: StatisticsData = await fetchStatistics();
- * console.log('Total pending requests:', stats.queues.summary.totalPending);
+ * log(l => l.info('Total pending requests:', stats.queues.summary.totalPending);
  * ```
  *
  * @example

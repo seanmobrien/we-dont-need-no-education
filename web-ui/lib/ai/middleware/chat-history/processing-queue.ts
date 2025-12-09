@@ -218,14 +218,6 @@ export const enqueueStream = async ({
       // Queue processing maintains order and updates local state
       processingQueue
         .enqueue(chunk, handlerContext)
-        .then(() => {
-          // Context is updated by the queue processor
-          // Get the latest state for subsequent chunks
-          streamContext.currentMessageOrder =
-            handlerContext.currentMessageOrder;
-          streamContext.streamedText = handlerContext.generatedText;
-          streamContext.messageId = handlerContext.messageId;
-        })
         .catch((error: Error) => {
           log((l) =>
             l.error('Queued chunk processing failed', {
@@ -237,6 +229,14 @@ export const enqueueStream = async ({
             }),
           );
           streamContext.errors.push(error);
+        })
+        .finally(() => {
+          // Context is updated by the queue processor
+          // Get the latest state for subsequent chunks
+          streamContext.currentMessageOrder =
+            handlerContext.currentMessageOrder;
+          streamContext.streamedText = handlerContext.generatedText;
+          streamContext.messageId = handlerContext.messageId;
         });
     },
 

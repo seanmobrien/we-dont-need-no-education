@@ -26,6 +26,8 @@ import {
   reportEvent,
 } from '@/lib/nextjs-util/server/utils';
 import type { Span } from '@opentelemetry/api';
+import { ProcessedMemoryAdd } from './types';
+import { request } from 'http';
 
 class APIError extends Error {
   constructor(message: string) {
@@ -224,16 +226,8 @@ export default class MemoryClient {
     }
   }
 
-  async _fetchWithErrorHandling<TResult = any>(
-    url: string,
-    options: any,
-  ): Promise<TResult> {
-    // Initialize client if not already done
-    if (!this.#clientInitialized && !url.includes('ping')) {
-      await this._initializeClient();
-    }
-    // Authenticate
-    await this.#updateAuthorizationIfNeeded();
+  #resolveForwardedApiUrl(url: string): [boolean, URL] {
+
     const joinPathSegments = (base: string, target: string): string => {
       const trimmedTarget = target.replace(/^\/+/, '');
       if (!base) {
@@ -280,8 +274,25 @@ export default class MemoryClient {
       ? new URL(
         relativePath.replace(/^\/+/, ''),
         env('MEM0_API_HOST'),
-      ).toString()
-      : new URL(effectivePath, this.host).toString();
+      )
+      : new URL(effectivePath, this.host);
+
+    return [isSwaggerDocs, requestUrl];
+  }
+
+  async _fetchWithErrorHandling<TResult = any>(
+    url: string,
+    options: any,
+  ): Promise<TResult> {
+    // Initialize client if not already done
+    if (!this.#clientInitialized && !url.includes('ping')) {
+      await this._initializeClient();
+    }
+    // Authenticate
+    await this.#updateAuthorizationIfNeeded();
+    // Formulate request URL, forwarded through compliance theater rewrite if necessary, and detect if swagger docs
+    const [isSwaggerDocs, requestUrl] = this.#resolveForwardedApiUrl(url);
+    // Make request
     const response = await fetch(requestUrl, {
       ...options,
       headers: {
@@ -290,13 +301,16 @@ export default class MemoryClient {
         'X-Mem0-User-ID': this.telemetryId,
       },
     });
+    // Handle non-2xx responses
     if (!response.ok) {
       const errorData = await response.text();
       throw new APIError(`API request failed: ${errorData}`);
     }
+    // Swagger docs should be returned unparsed as text
     if (isSwaggerDocs) {
       return (await response.text()) as unknown as TResult;
     }
+    // All other responses are parsed as JSON
     return await response.json();
   }
 
@@ -413,7 +427,7 @@ export default class MemoryClient {
   async add(
     messages: Array<Message>,
     options: MemoryOptions = {},
-  ): Promise<Array<Memory>> {
+  ): Promise<Array<ProcessedMemoryAdd>> {
     return this._instrument('add', async (span) => {
       this._validateOrgProject();
       if (this.organizationName != null && this.projectName != null) {

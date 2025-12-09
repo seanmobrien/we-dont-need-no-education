@@ -58,14 +58,18 @@ const hydrateContext = (
   });
   let error: unknown;
   const dispose = async () => {
-    if (!!context.error) {
-      const ex = isError(error) ? error : new Error(String(error));
-      span.recordException(ex);
-      span.setStatus({ code: SpanStatusCode.ERROR, message: ex.message });
-    } else {
-      span.setStatus({ code: SpanStatusCode.OK });
+    try {
+      if (!!context.error) {
+        const ex = isError(error) ? error : new Error(String(error));
+        span.recordException(ex);
+        span.setStatus({ code: SpanStatusCode.ERROR, message: ex.message });
+      } else {
+        span.setStatus({ code: SpanStatusCode.OK });
+      }
+      span.end();
+    } catch (e) {
+      // Swallow errors during dispose to avoid masking prior errors
     }
-    span.end();
   };
   return {
     iteration: 1,

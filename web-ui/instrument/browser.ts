@@ -34,7 +34,7 @@ const getClickPlugin = () => {
 
 const getAppInsights = () => {
   if (
-    env('AZURE_MONITOR_CONNECTION_STRING') &&
+    env('NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING') &&
     typeof window !== 'undefined' &&
     (!appInsightState.appInsightInstance ||
       !appInsightState.appInsightInstance?.core?.isInitialized)
@@ -47,7 +47,7 @@ const getAppInsights = () => {
     appInsightState.appInsightInstance ??= new ApplicationInsights({
       config: {
         appId: config.serviceName,
-        connectionString: env('AZURE_MONITOR_CONNECTION_STRING'),
+        connectionString: env('NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING'),
         enableDebug: true,
         enableAutoRouteTracking: true,
         enableAjaxErrorStatusText: true,

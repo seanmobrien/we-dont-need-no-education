@@ -209,6 +209,7 @@ const customProviderFactory = async <
  * the ones used by OpenAI and Google (hifi, lofi, embedding, etc).
  */
 const getAzureProvider = async () => {
+
   return customProviderFactory({
     provider: 'azure',
     providerFactory: createAzure,

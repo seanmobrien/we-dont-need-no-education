@@ -784,7 +784,6 @@ describe('FetchResponse with ReadableStream', () => {
 
   it('should support blob()', async () => {
     try {
-      console.log('Blob defined:', typeof Blob);
       const response = new FetchResponse(Buffer.from('test'), {
         headers: { 'Content-Type': 'text/plain' },
       });
