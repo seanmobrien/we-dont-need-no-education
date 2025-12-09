@@ -1,0 +1,13 @@
+{
+  "name": "compliance-theater-mono-root",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "web-ui",
+    "!web-ui/submodules",
+    "web-ui/submodules/*"
+  ],
+  "devDependencies": {
+    "@changesets/cli": "^2.29.8"
+  }
+}
