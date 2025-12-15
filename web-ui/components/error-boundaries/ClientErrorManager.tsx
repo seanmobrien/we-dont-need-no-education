@@ -168,15 +168,17 @@ const processError = ({
     return false;
   }
   // Report non-suppressed errors
-  errorReporter().reportError(errorObj, ErrorSeverity.HIGH, {
-    source: errorObj.source,
-    breadcrumbs: ['global-error-handler'],
-    additionalData: {
-      type: 'javascript-error',
-      lineno: errorObj.line,
-      colno: errorObj.column,
-    },
-  });
+  errorReporter((r) =>
+    r.reportError(errorObj, ErrorSeverity.HIGH, {
+      source: errorObj.source,
+      breadcrumbs: ['global-error-handler'],
+      additionalData: {
+        type: 'javascript-error',
+        lineno: errorObj.line,
+        colno: errorObj.column,
+      },
+    }),
+  );
   // If we are surfacing to a parent boundary then we don't want to log (avoid duplicate logs)
   if (surfaceToErrorBoundary) {
     // Surface to React error boundary if configured

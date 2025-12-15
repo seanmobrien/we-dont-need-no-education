@@ -6,6 +6,7 @@ import type {
   AllFeatureFlagType,
   ModelConfig,
   ModelProviderFactoryConfig,
+  EnhancedFetchConfig,
 } from './types';
 import { SingletonProvider } from '@/lib/typescript/singleton-provider';
 
@@ -17,6 +18,18 @@ const DEFAULT_REDIS_STORAGE_CONFIG = {
   keyPrefix: 'todo',
   enableFallback: true,
 } as const satisfies StorageStrategyConfig;
+
+const DEFAULT_ENHANCED_FETCH_CONFIG = {
+  timeout: {
+    lookup: 1 * 100,
+    connect: 1 * 1000,
+    secureConnect: 1 * 1000,
+    socket: 60 * 1000,
+    send: 10 * 1000,
+    response: 30 * 1000,
+    request: 60 * 1000,
+  } as const
+} as const satisfies EnhancedFetchConfig;
 
 type ModelConfigDefaultType = {
   [key in AiProvider | 'client']: key extends infer K
@@ -90,7 +103,7 @@ export const AllFeatureFlagsDefault: AllFeatureFlagType = {
   mem0_mcp_tools_enabled: true,
   models_fetch_cache_ttl: 300,
   models_fetch_concurrency: 8,
-  models_fetch_enhanced: true,
+  models_fetch_enhanced: DEFAULT_ENHANCED_FETCH_CONFIG,
   models_fetch_dedup_writerequests: true,
   models_fetch_stream_buffer: {
     max: 64 * 1024,

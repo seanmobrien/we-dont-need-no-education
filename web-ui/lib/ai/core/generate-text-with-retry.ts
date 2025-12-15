@@ -1,17 +1,17 @@
 import { isRateRetryError } from '@/lib/react-util/errors/rate-retry-error';
-import { generateText } from 'ai';
+import { generateText, type ToolSet } from 'ai';
 import { rateLimitQueueManager } from '../middleware/key-rate-limiter/queue-manager';
 import { FirstParameter } from '@/lib/typescript/_types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
-export const generateTextWithRetry = async ({
+export const generateTextWithRetry = async <TOOLS extends ToolSet = ToolSet, OUTPUT = never, OUTPUT_PARTIAL = never>({
   maxRetries = 5,
   retryTimeout,
   ...props
-}: FirstParameter<typeof generateText> & {
+}: FirstParameter<typeof generateText<TOOLS, OUTPUT, OUTPUT_PARTIAL>> & {
   maxRetries?: number;
   retryTimeout?: number;
-}): ReturnType<typeof generateText> => {
+}): ReturnType<typeof generateText<TOOLS, OUTPUT>> => {
   let tries = 0;
   let retryId: string | undefined = undefined;
   while (tries < maxRetries) {
@@ -19,7 +19,7 @@ export const generateTextWithRetry = async ({
       if (retryId) {
         const response = await rateLimitQueueManager.getResponse(retryId);
         if (response?.response) {
-          return response.response as ReturnType<typeof generateText>;
+          return response.response as ReturnType<typeof generateText<TOOLS, OUTPUT, OUTPUT_PARTIAL>>;
         } else {
           tries++;
           if (tries >= maxRetries) {
@@ -28,7 +28,7 @@ export const generateTextWithRetry = async ({
           await new Promise((resolve) => setTimeout(resolve, retryTimeout));
         }
       } else {
-        const llmRet = await generateText(props);
+        const llmRet = await generateText<TOOLS, OUTPUT, OUTPUT_PARTIAL>(props);
         return llmRet;
       }
     } catch (error) {

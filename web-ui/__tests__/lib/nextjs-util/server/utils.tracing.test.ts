@@ -2,6 +2,8 @@
  * @jest-environment node
  */
 
+jest.unmock('@opentelemetry/api');
+jest.unmock('@opentelemetry/sdk-trace-base');
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { trace } from '@opentelemetry/api';
 

@@ -54,11 +54,11 @@ export interface MultiModalMessages {
 }
 
 export interface Messages {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system" | "tool";
   content: string | MultiModalMessages;
 }
 
-export interface Message extends Messages {}
+export interface Message extends Messages { }
 
 export interface MemoryHistory {
   id: string;
@@ -86,7 +86,15 @@ export interface SearchOptions extends MemoryOptions {
   rerank?: boolean;
 }
 
-enum Event {
+export const MemoryStateValues = [
+  'active',
+  'paused',
+  'archived',
+  'deleted',
+] as const;
+export type MemoryState = typeof MemoryStateValues[number];
+
+export enum MemoryAddEvent {
   ADD = "ADD",
   UPDATE = "UPDATE",
   DELETE = "DELETE",
@@ -100,7 +108,7 @@ export interface MemoryData {
 export interface Memory {
   id: string;
   messages?: Array<Messages>;
-  event?: Event | string;
+  event?: MemoryAddEvent | string;
   data?: MemoryData | null;
   memory?: string;
   user_id?: string;

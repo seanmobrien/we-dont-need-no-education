@@ -1,4 +1,4 @@
-import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
+import type { LanguageModelV2CallOptions, SharedV2ProviderOptions } from '@ai-sdk/provider';
 import { JSONValue } from 'ai';
 import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
@@ -121,15 +121,43 @@ export const safeInitializeMessagePersistence = async (
     context.chatId ??= generateChatId().id;
     params.providerOptions ??= {};
     params.providerOptions.backoffice ??= {} as Record<string, JSONValue>;
-    params.providerOptions.backoffice.chatId = context.chatId;
+    const backoffice = params.providerOptions.backoffice;
+    backoffice.chatId = context.chatId;
     return await instrumentMiddlewareInit(context, async () => {
-      return await initializeMessagePersistence(context, params);
+      const ret = await initializeMessagePersistence(context, params);
+      if (ret.turnId) {
+        backoffice.turnId = ret.turnId;
+      }
+      if (ret.messageId) {
+        backoffice.messageId = ret.messageId;
+      }
+      return ret;
     });
   } catch {
     // Error already logged in initializeMessagePersistence and instrumentation
     return null;
   }
 };
+
+export const chatIdFromParams = (params: { providerOptions?: SharedV2ProviderOptions | undefined }) => {
+  if (!params.providerOptions?.backoffice) {
+    return undefined;
+  }
+  const {
+    chatId = undefined,
+    turnId = undefined,
+    messageId = undefined,
+  } = params.providerOptions.backoffice ?? {};
+  return chatId
+    ? {
+      ...{
+        chatId,
+        turnId,
+        messageId,
+      }
+    }
+    : undefined;
+}
 
 export const safeCompleteMessagePersistence = async (
   completionContext: MessageCompletionContext,

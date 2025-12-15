@@ -31,7 +31,9 @@ jest.mock('@/lib/components/ai/chat-fetch-wrapper', () => ({
 
 describe('ChatPanel Docking Functionality', () => {
   it('shows docking options in menu', async () => {
-    render(<ChatPanel page="test" />);
+    render(<ChatPanel page="test" />, {
+      chatPanel: true,
+    });
 
     // Find and click the menu button
     const menuButton = screen.getByTestId('button-chat-menu');
@@ -50,7 +52,9 @@ describe('ChatPanel Docking Functionality', () => {
   }, 10000);
 
   it('shows placeholder when docked to left', async () => {
-    render(<ChatPanel page="test" />);
+    render(<ChatPanel page="test" />, {
+      chatPanel: true,
+    });
 
     // Open menu and click dock left
     const menuButton = screen.getByTestId('button-chat-menu');
@@ -70,7 +74,9 @@ describe('ChatPanel Docking Functionality', () => {
   }, 10000);
 
   it('handles dashboard layout flag', async () => {
-    render(<ChatPanel page="test" />);
+    render(<ChatPanel page="test" />, {
+      chatPanel: true,
+    });
 
     // Component should render without errors with dashboard layout flag
     expect(
@@ -79,7 +85,9 @@ describe('ChatPanel Docking Functionality', () => {
   }, 10000);
 
   it('preserves current position in menu selection', async () => {
-    render(<ChatPanel page="test" />);
+    render(<ChatPanel page="test" />, {
+      chatPanel: true,
+    });
 
     // Open menu and dock to right first
     const menuButton = screen.getByTestId('button-chat-menu');
@@ -105,7 +113,9 @@ describe('ChatPanel Docking Functionality', () => {
   }, 10000);
 
   it('can undock from docked state', async () => {
-    render(<ChatPanel page="test" />);
+    render(<ChatPanel page="test" />, {
+      chatPanel: true,
+    });
 
     // First dock the panel
     const menuButton = screen.getByTestId('button-chat-menu');

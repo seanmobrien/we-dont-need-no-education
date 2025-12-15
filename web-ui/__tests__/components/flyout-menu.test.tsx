@@ -110,9 +110,12 @@ describe('FlyoutMenu', () => {
         <FlyoutMenu {...defaultProps} isOpen={false} dataTestId="hover-menu">
           <MenuItem data-testid="child-item">Child Item</MenuItem>
         </FlyoutMenu>,
+        {
+          chatPanel: true,
+        },
       );
 
-      const menuItem = screen.getByTestId('hover-menu');
+      let menuItem = screen.getByTestId('hover-menu');
       fireEvent.mouseEnter(menuItem);
 
       // Child should not be visible when isOpen is false
@@ -125,7 +128,11 @@ describe('FlyoutMenu', () => {
         <FlyoutMenu {...defaultProps} isOpen={true} dataTestId="hover-menu">
           <MenuItem data-testid="child-item">Child Item</MenuItem>
         </FlyoutMenu>,
+        {
+          chatPanel: true,
+        },
       );
+      menuItem = screen.getByTestId('hover-menu');
 
       fireEvent.mouseEnter(menuItem);
 
@@ -133,7 +140,7 @@ describe('FlyoutMenu', () => {
       await waitFor(() => {
         expect(screen.getByTestId('child-item')).toBeInTheDocument();
       });
-    });
+    }, 2000);
   });
 
   describe('Click Interactions', () => {

@@ -1,27 +1,11 @@
-
 import { FetchManager } from '@/lib/nextjs-util/server/fetch/fetch-server';
 import got from 'got';
 
-// Mock got
-jest.mock('got', () => {
-  const mockGot = jest.fn().mockResolvedValue({
-    body: Buffer.from('ok'),
-    headers: {},
-    statusCode: 200,
-    rawBody: Buffer.from('ok')
-  });
-  // Mock stream method
-  (mockGot as any).stream = jest.fn().mockReturnValue({
-    on: jest.fn(),
-    pipe: jest.fn(),
-  });
-  return {
-    __esModule: true,
-    default: mockGot,
-  };
-});
+
+
 
 describe('FetchManager Timeout Normalization', () => {
+
   it('should normalize number timeout to object in doGotFetch (POST)', async () => {
     const fetchManager = new FetchManager({ concurrency: 8 });
     const url = 'http://example.com/api';
@@ -40,13 +24,48 @@ describe('FetchManager Timeout Normalization', () => {
     const options = callArgs[1];
 
     expect(options.timeout).toBeDefined();
-    expect(options.timeout).toEqual({ request: timeoutVal });
+    expect(options.timeout).toEqual({
+      connect: 30000,
+      lookup: 100,
+      request: 60000,
+      response: 30000,
+      secureConnect: 1000,
+      send: 10000,
+      socket: 30000,
+    });
   });
 
   it('should handle existing object timeout correctly', async () => {
     const fetchManager = new FetchManager({ concurrency: 8 });
     const url = 'http://example.com/api';
     const timeoutObj = { request: 15000 };
+
+    await fetchManager.fetch(url, {
+      method: 'POST',
+      timeout: timeoutObj,
+      body: JSON.stringify({ test: true })
+    });
+
+    const mockGot = got as unknown as jest.Mock;
+    const lastCall = mockGot.mock.calls[mockGot.mock.calls.length - 1];
+    const options = lastCall[1];
+
+    expect(options.timeout).toEqual({
+      connect: 1000,
+      lookup: 100,
+      request: 15000,
+      response: 30000,
+      secureConnect: 1000,
+      send: 10000,
+      socket: 60000,
+    });
+  });
+
+
+  it('should support overriding default with undefined', async () => {
+    const fetchManager = new FetchManager({ concurrency: 8 });
+    const url = 'http://example.com/api';
+    const timeoutObj = { lookup: 0 };
 
     await fetchManager.fetch(url, {
       method: 'POST',
@@ -58,6 +77,15 @@ describe('FetchManager Timeout Normalization', () => {
     const lastCall = mockGot.mock.calls[mockGot.mock.calls.length - 1];
     const options = lastCall[1];
 
-    expect(options.timeout).toEqual({ request: 15000 });
+    expect(options.timeout).toEqual({
+      connect: 1000,
+      lookup: 100,
+      request: 60000,
+      response: 30000,
+      secureConnect: 1000,
+      send: 10000,
+      socket: 60000,
+    });
   });
+
 });

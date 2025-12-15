@@ -64,13 +64,47 @@ type FlagsmithFeatureObjectValue<T> = {
   readonly value?: Readonly<T>;
 };
 
+export type EnhancedFetchConfig = {
+  timeout: {
+    /**
+     * DNS lookup timeout
+     */
+    lookup: number | undefined;
+    /**
+     * Connection timeout
+     */
+    connect: number | undefined;
+    /**
+     * SSL handshake timeout
+     */
+    secureConnect: number | undefined;
+    /**
+     * Socket timeout - resets when data is transferred
+     */
+    socket: number | undefined;
+    /**
+     * Send timeout: Connect -> when all data is written to the stream
+     */
+    send: number | undefined;
+    /**
+     * Response timeout: Send -> headers received
+     */
+    response: number | undefined;
+    /**
+     * Request timeout: From request initiation to response end; global timeout
+     */
+    request: number | undefined;
+  };
+};
+
 export type FeatureFlagObjectValue =
   | FlagsmithFeatureObjectValue<string | number | boolean>
   | FlagsmithFeatureObjectValue<StreamConfig>
   | FlagsmithFeatureObjectValue<HealthCheckConfig>
   | FlagsmithFeatureObjectValue<StorageStrategyConfig>
   | FlagsmithFeatureObjectValue<ModelProviderFactoryConfig>
-  | FlagsmithFeatureObjectValue<ModelConfig>;
+  | FlagsmithFeatureObjectValue<ModelConfig>
+  | FlagsmithFeatureObjectValue<EnhancedFetchConfig>;
 
 export type FeatureFlagStatus =
   | boolean
@@ -82,6 +116,7 @@ export type AllFeatureFlagStatus = Record<KnownFeatureType, FeatureFlagStatus>;
 
 type FeatureFlagTypeObjectValueMap = {
   models_fetch_stream_buffer: StreamConfig;
+  models_fetch_enhanced: EnhancedFetchConfig;
   models_defaults: ModelConfig;
   todo_storage_in_memory_config: StorageStrategyConfig;
   todo_storage_redis_config: StorageStrategyConfig;

@@ -2,8 +2,10 @@
  * @jest-environment node
  */
 
-import { BasicTracerProvider } from '@opentelemetry/sdk-trace-base';
-import { InMemorySpanExporter } from '@opentelemetry/sdk-trace-base';
+jest.unmock('@opentelemetry/api');
+jest.unmock('@opentelemetry/sdk-trace-base');
+
+import { BasicTracerProvider, InMemorySpanExporter } from '@opentelemetry/sdk-trace-base';
 import type { ReadableSpan, SpanExporter } from '@opentelemetry/sdk-trace-base';
 import type { ExportResult } from '@opentelemetry/core';
 import { LRUCache } from 'lru-cache';
@@ -444,9 +446,9 @@ describe('UrlFilteredSpanExporter', () => {
         has: () => {
           throw new Error('Cache error');
         },
-        set: () => {},
+        set: () => { },
         get: () => undefined,
-        clear: () => {},
+        clear: () => { },
         size: 0,
       } as unknown as LRUCache<string, boolean>;
 

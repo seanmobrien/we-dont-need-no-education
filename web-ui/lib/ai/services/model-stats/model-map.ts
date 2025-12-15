@@ -24,6 +24,7 @@ import { log } from '@/lib/logger';
 import { LanguageModel } from 'ai';
 import { ModelClassification } from '../../middleware/key-rate-limiter/types';
 import { isKeyOf, newUuid } from '@/lib/typescript';
+import { mapHas } from 'jest-mock-extended';
 
 /**
  * Type representing a complete model record with provider information.
@@ -310,90 +311,119 @@ export class ModelMap {
    * @returns {Promise<boolean>} Promise that resolves to true when refresh is complete.
    */
   async refresh(db?: DbDatabaseType): Promise<boolean> {
-    this.#providerModelToRecord.clear();
-    this.#idToRecord.clear();
-    this.#modelIdToQuota.clear();
+    // Load into temporary maps so data stays available if refresh fails
+    const tempProviderModelToRecord = new Map<string, ModelRecord>();
+    const tempIdToRecord = new Map<string, ModelRecord>();
+    const tempModelIdToQuota = new Map<string, ModelQuotaRecord>();
+
     if (this.#initialized) {
-      this.#initialized = false;
       this.#whenInitialized = Promise.withResolvers<boolean>();
     }
 
     try {
+      // Read from database
       const database = db || (await drizDbWithInit());
-      // Load models with provider information
-      const modelsWithProviders = database
-        .select({
-          modelId: schema.models.id,
-          providerId: schema.models.providerId,
-          modelName: schema.models.modelName,
-          displayName: schema.models.displayName,
-          description: schema.models.description,
-          isActive: schema.models.isActive,
-          createdAt: schema.models.createdAt,
-          updatedAt: schema.models.updatedAt,
-          providerName: schema.providers.name,
-        })
-        .from(schema.models)
-        .innerJoin(
-          schema.providers,
-          eq(schema.models.providerId, schema.providers.id),
-        )
-        .where(eq(schema.models.isActive, true))
-        .execute();
-
-      // Load all quotas
-      const quotas = database
-        .select()
-        .from(schema.modelQuotas)
-        .where(eq(schema.modelQuotas.isActive, true))
-        .execute();
-
-      // Populate model caches - ensure we have an array to iterate over
+      const [modelsWithProviders, quotas] = await Promise.all([
+        // Load models with provider information      
+        database
+          .select({
+            modelId: schema.models.id,
+            providerId: schema.models.providerId,
+            modelName: schema.models.modelName,
+            displayName: schema.models.displayName,
+            description: schema.models.description,
+            isActive: schema.models.isActive,
+            createdAt: schema.models.createdAt,
+            updatedAt: schema.models.updatedAt,
+            providerName: schema.providers.name,
+          })
+          .from(schema.models)
+          .innerJoin(
+            schema.providers,
+            eq(schema.models.providerId, schema.providers.id),
+          )
+          .where(eq(schema.models.isActive, true))
+          .execute(),
+        // Load quota records
+        database
+          .select()
+          .from(schema.modelQuotas)
+          .where(eq(schema.modelQuotas.isActive, true))
+          .execute()
+      ]).catch((error) => {
+        throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'ModelMap.refresh:populateCaches-query',
+        });
+      });
+      // Parse and populate temporary maps
       const now = new Date(Date.now());
-      Array.from((await modelsWithProviders) ?? []).forEach((row) => {
-        const record: ModelRecord = {
-          id: row.modelId,
-          providerId: row.providerId,
-          providerName: row.providerName,
-          modelName: row.modelName,
-          displayName: row.displayName || undefined,
-          description: row.description || undefined,
-          isActive: row.isActive,
-          createdAt: row.createdAt ?? now.toISOString(),
-          updatedAt: row.updatedAt ?? now.toISOString(),
-        };
-        this.#providerModelToRecord.set(
-          `${row.providerId}:${row.modelName}`,
-          record,
-        );
-        this.#idToRecord.set(row.modelId, record);
-      });
-
-      // Populate quota cache - ensure we have an array to iterate over
-      Array.from((await quotas) ?? []).forEach((quota) => {
-        const quotaRecord: ModelQuotaRecord = {
-          id: quota.id,
-          modelId: quota.modelId,
-          maxTokensPerMessage: quota.maxTokensPerMessage || undefined,
-          maxTokensPerMinute: quota.maxTokensPerMinute || undefined,
-          maxTokensPerDay: quota.maxTokensPerDay || undefined,
-          isActive: quota.isActive,
-          createdAt: quota.createdAt ?? now.toISOString(),
-          updatedAt: quota.updatedAt ?? now.toISOString(),
-        };
-        this.#modelIdToQuota.set(quota.modelId, quotaRecord);
-      });
-      this.#initialized = true;
-      this.#lastCacheUpdate = Date.now();
-      this.#whenInitialized.resolve(true);
-      return true;
+      const loaded = (await Promise.all([
+        // Populate model caches with null guard
+        (async () => {
+          Array.from(modelsWithProviders ?? []).forEach((row) => {
+            const record: ModelRecord = {
+              id: row.modelId,
+              providerId: row.providerId,
+              providerName: row.providerName,
+              modelName: row.modelName,
+              displayName: row.displayName || undefined,
+              description: row.description || undefined,
+              isActive: row.isActive,
+              createdAt: row.createdAt ?? now.toISOString(),
+              updatedAt: row.updatedAt ?? now.toISOString(),
+            };
+            tempProviderModelToRecord.set(
+              `${row.providerId}:${row.modelName}`,
+              record,
+            );
+            tempIdToRecord.set(row.modelId, record);
+          });
+          return true;
+        })(),
+        (async () => {
+          // Populate quota cache with null guard
+          Array.from(quotas ?? []).forEach((quota) => {
+            const quotaRecord: ModelQuotaRecord = {
+              id: quota.id,
+              modelId: quota.modelId,
+              maxTokensPerMessage: quota.maxTokensPerMessage || undefined,
+              maxTokensPerMinute: quota.maxTokensPerMinute || undefined,
+              maxTokensPerDay: quota.maxTokensPerDay || undefined,
+              isActive: quota.isActive,
+              createdAt: quota.createdAt ?? now.toISOString(),
+              updatedAt: quota.updatedAt ?? now.toISOString(),
+            };
+            tempModelIdToQuota.set(quota.modelId, quotaRecord);
+          });
+          return true;
+        })()
+      ]).catch((error) => {
+        throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'ModelMap.refresh:populateCaches-load',
+        });
+      })).every(Boolean);
+      if (loaded) {
+        // copy data from temp maps to instance maps
+        this.#providerModelToRecord.clear();
+        tempProviderModelToRecord.forEach((value, key) => this.#providerModelToRecord.set(key, value));
+        this.#idToRecord.clear();
+        tempIdToRecord.forEach((value, key) => this.#idToRecord.set(key, value));
+        this.#modelIdToQuota.clear();
+        tempModelIdToQuota.forEach((value, key) => this.#modelIdToQuota.set(key, value));
+        this.#initialized = true;
+        this.#lastCacheUpdate = Date.now();
+      }
+      this.#whenInitialized.resolve(loaded);
+      return loaded;
     } catch (error) {
-      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         message: 'Failed to refresh ModelMap from database',
         source: 'ModelMap.refresh',
-      });
-      this.#whenInitialized.reject(error);
+      })
+      this.#whenInitialized.resolve(false);
       throw error;
     }
   }
@@ -531,6 +561,7 @@ export class ModelMap {
           if (
             modelId.includes('lofi') ||
             modelId.includes('gpt-3.5') ||
+            (modelId.includes('gpt-') && modelId.includes('mini')) ||
             (modelId.includes('gemini') && modelId.includes('flash'))
           ) {
             return 'lofi';
@@ -654,8 +685,20 @@ export class ModelMap {
    * @returns {Promise<ModelRecord | null>} Model record or null if not found.
    */
   async getModelById(modelId: string): Promise<ModelRecord | null> {
-    await this.#ensureFreshCache();
-    return this.#idToRecord.get(modelId) || null;
+    try {
+      if (!modelId) {
+        throw new TypeError('modelId is required to get model by ID.');
+      }
+      await this.#ensureFreshCache();
+      return this.#idToRecord.get(modelId) || null;
+    } catch (error) {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'ModelMap.getModelById',
+        data: { modelId },
+      });
+    }
+    return null;
   }
 
   /**
@@ -665,8 +708,17 @@ export class ModelMap {
    * @returns {Promise<ModelQuotaRecord | null>} Quota record or null if not found.
    */
   async getQuotaByModelId(modelId: string): Promise<ModelQuotaRecord | null> {
-    await this.#ensureFreshCache();
-    return this.#modelIdToQuota.get(modelId) || null;
+    try {
+      await this.#ensureFreshCache();
+      return this.#modelIdToQuota.get(modelId) || null;
+    } catch (error) {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'ModelMap.getQuotaByModelId',
+        data: { modelId },
+      });
+    }
+    return null;
   }
   /**
    * Get a quota record by model ID.
@@ -875,6 +927,12 @@ export class ModelMap {
         extra: { provider, modelName },
         source: 'ModelMap.loadQuotaFromDatabase',
       });
+      try {
+        const { modelId } = await this.normalizeProviderModelOrThrow(provider, modelName);
+        return modelId ? this.#modelIdToQuota.get(modelId) ?? null : null;
+      } catch (e) {
+        // swallow error in error
+      }
       return null;
     }
   }
@@ -884,11 +942,24 @@ export class ModelMap {
    * @private
    */
   async #ensureFreshCache(): Promise<void> {
+    const isInitialized = this.#initialized;
+    const isFresh = Date.now() - this.#lastCacheUpdate < this.#CACHE_TTL;
     if (
-      !this.#initialized ||
-      Date.now() - this.#lastCacheUpdate > this.#CACHE_TTL
+      !(isInitialized && isFresh)
     ) {
-      await this.refresh();
+      try {
+        await this.refresh();
+      } catch (error) {
+        const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'ModelMap.#ensureFreshCache',
+        });
+        // if we are not initialized yet we have no data, so we throw.
+        if (!isInitialized) {
+          throw le;
+        }
+        // Otherwise we just log and soldier on with stale data.
+      }
     }
   }
 

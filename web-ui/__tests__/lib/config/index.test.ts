@@ -14,13 +14,11 @@ import type { NextConfig } from 'next';
 import {
   withIgnorePacks,
   withStripRscPrefixPlugin,
-  withPublicEnv,
   withBundleAnalyzer,
 } from '@/lib/config';
 
 // Import individual modules for more focused testing
 import { StripRscPrefixPlugin } from '@/lib/config/strip-rsc-prefix-plugin';
-import { PublicEnv } from '@/lib/config/public-env';
 import { WebpackConfigContext } from 'next/dist/server/config-shared';
 import { withTypescriptConfig } from '@/lib/config/typescript-config';
 import {
@@ -36,9 +34,6 @@ describe('lib/config/index.ts', () => {
 
       expect(withStripRscPrefixPlugin).toBeDefined();
       expect(typeof withStripRscPrefixPlugin).toBe('function');
-
-      expect(withPublicEnv).toBeDefined();
-      expect(typeof withPublicEnv).toBe('function');
 
       expect(withBundleAnalyzer).toBeDefined();
       expect(typeof withBundleAnalyzer).toBe('function');
@@ -487,173 +482,10 @@ describe('lib/config/index.ts', () => {
     });
   });
 
-  describe('PublicEnv and withPublicEnv', () => {
-    const originalEnv = process.env;
-
-    beforeEach(() => {
-      // Reset environment to clean state
-      process.env = { ...originalEnv };
-      delete process.env.NEXT_PUBLIC_HOSTNAME;
-      delete process.env.NEXT_PUBLIC_LOG_LEVEL_CLIENT;
-      delete process.env.AZURE_MONITOR_CONNECTION_STRING;
-      delete process.env.AZURE_MONITOR_CONNECTION_STRING;
-      delete process.env.NEXT_PUBLIC_MUI_LICENSE;
-    });
-
-    afterEach(() => {
-      process.env = originalEnv;
-    });
-
-    describe('PublicEnv', () => {
-      it('should have all expected properties', () => {
-        expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_HOSTNAME');
-        expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_LOG_LEVEL_CLIENT');
-        expect(PublicEnv).toHaveProperty('AZURE_MONITOR_CONNECTION_STRING');
-        expect(PublicEnv).toHaveProperty('AZURE_MONITOR_CONNECTION_STRING');
-        expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_MUI_LICENSE');
-      });
-
-      it('should read from environment variables', () => {
-        process.env.NEXT_PUBLIC_HOSTNAME = 'https://test.example.com';
-        process.env.NEXT_PUBLIC_LOG_LEVEL_CLIENT = 'debug';
-        process.env.NEXT_PUBLIC_MUI_LICENSE = 'test-license-key';
-
-        // Re-import to get fresh values
-        jest.resetModules();
-        const { PublicEnv: FreshPublicEnv } = require('/lib/config/public-env');
-
-        expect(FreshPublicEnv.NEXT_PUBLIC_HOSTNAME).toBe(
-          'https://test.example.com',
-        );
-        expect(FreshPublicEnv.NEXT_PUBLIC_LOG_LEVEL_CLIENT).toBe('debug');
-        expect(FreshPublicEnv.NEXT_PUBLIC_MUI_LICENSE).toBe('test-license-key');
-      });
-
-      it('should handle undefined environment variables', () => {
-        // Re-import with clean env
-        jest.resetModules();
-        const { PublicEnv: FreshPublicEnv } = require('/lib/config/public-env');
-
-        expect(FreshPublicEnv.NEXT_PUBLIC_HOSTNAME).toBeUndefined();
-        expect(FreshPublicEnv.NEXT_PUBLIC_LOG_LEVEL_CLIENT).toBeUndefined();
-        expect(FreshPublicEnv.NEXT_PUBLIC_MUI_LICENSE).toBeUndefined();
-      });
-
-      it('should implement fallback for AZURE_MONITOR_CONNECTION_STRING', () => {
-        // Test private value takes precedence
-        process.env.AZURE_MONITOR_CONNECTION_STRING = 'public-connection';
-
-        jest.resetModules();
-        const { PublicEnv: FreshPublicEnv } = require('/lib/config/public-env');
-
-        expect(FreshPublicEnv.AZURE_MONITOR_CONNECTION_STRING).toBe(
-          'public-connection',
-        );
-
-        // Test fallback to public value
-        delete process.env.AZURE_MONITOR_CONNECTION_STRING;
-        process.env.AZURE_MONITOR_CONNECTION_STRING = 'public-connection';
-
-        jest.resetModules();
-        const {
-          PublicEnv: FreshPublicEnv2,
-        } = require('/lib/config/public-env');
-
-        expect(FreshPublicEnv2.AZURE_MONITOR_CONNECTION_STRING).toBe(
-          'public-connection',
-        );
-
-        // Test both undefined
-        delete process.env.AZURE_MONITOR_CONNECTION_STRING;
-        delete process.env.AZURE_MONITOR_CONNECTION_STRING;
-
-        jest.resetModules();
-        const {
-          PublicEnv: FreshPublicEnv3,
-        } = require('/lib/config/public-env');
-
-        expect(FreshPublicEnv3.AZURE_MONITOR_CONNECTION_STRING).toBeUndefined();
-      });
-
-      it('should be immutable (as const)', () => {
-        // This test verifies the TypeScript 'as const' assertion
-        // The object should be readonly at the type level
-        expect(typeof PublicEnv).toBe('object');
-        expect(PublicEnv).not.toBeNull();
-
-        // Verify the properties exist and are accessible
-        expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_HOSTNAME');
-        expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_LOG_LEVEL_CLIENT');
-        expect(PublicEnv).toHaveProperty('AZURE_MONITOR_CONNECTION_STRING');
-        expect(PublicEnv).toHaveProperty('AZURE_MONITOR_CONNECTION_STRING');
-        expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_MUI_LICENSE');
-      });
-    });
-
-    describe('withPublicEnv', () => {
-      it('should preserve existing Next.js configuration', () => {
-        const originalConfig: NextConfig = {
-          reactStrictMode: true,
-          env: { TEST: 'value' },
-        };
-
-        const result = withPublicEnv(originalConfig);
-
-        expect(result.reactStrictMode).toBe(true);
-        expect(result.env).toEqual({ TEST: 'value' });
-      });
-
-      it('should add PublicEnv to publicRuntimeConfig', () => {
-        const originalConfig: NextConfig = {};
-        const result = withPublicEnv(originalConfig);
-
-        expect(result.publicRuntimeConfig).toEqual(PublicEnv);
-      });
-
-      it('should merge with existing publicRuntimeConfig', () => {
-        const originalConfig: NextConfig = {
-          publicRuntimeConfig: {
-            EXISTING_VAR: 'existing-value',
-            NEXT_PUBLIC_HOSTNAME: 'should-be-overridden',
-          },
-        };
-
-        const result = withPublicEnv(originalConfig);
-
-        expect(result.publicRuntimeConfig).toEqual({
-          EXISTING_VAR: 'existing-value',
-          ...PublicEnv,
-        });
-
-        // PublicEnv values should override existing ones
-        expect(result.publicRuntimeConfig!.NEXT_PUBLIC_HOSTNAME).toBe(
-          PublicEnv.NEXT_PUBLIC_HOSTNAME,
-        );
-      });
-
-      it('should preserve type information', () => {
-        interface CustomConfig extends NextConfig {
-          customProperty: string;
-        }
-
-        const originalConfig: CustomConfig = {
-          customProperty: 'test',
-          reactStrictMode: true,
-        };
-
-        const result = withPublicEnv(originalConfig);
-
-        expect(result.customProperty).toBe('test');
-        expect(result.reactStrictMode).toBe(true);
-      });
-    });
-  });
-
   describe('withBundleAnalyzer', () => {
     const originalEnv = process.env.ANALYZE;
 
     beforeEach(() => {
-      delete process.env.ANALYZE;
       // jest.clearAllMocks();
     });
 
@@ -773,7 +605,7 @@ describe('lib/config/index.ts', () => {
 
       // Chain all config functions
       const result = withBundleAnalyzer(
-        withPublicEnv(withStripRscPrefixPlugin(withIgnorePacks(baseConfig))),
+        withStripRscPrefixPlugin(withIgnorePacks(baseConfig)),
       );
 
       // Should preserve original config
@@ -782,9 +614,6 @@ describe('lib/config/index.ts', () => {
       // Should have webpack function (from both ignore packs and strip rsc)
       expect(result.webpack).toBeDefined();
       expect(typeof result.webpack).toBe('function');
-
-      // Should have publicRuntimeConfig (from withPublicEnv)
-      expect(result.publicRuntimeConfig).toEqual(PublicEnv);
 
       // Bundle analyzer should not be applied (ANALYZE not set)
       expect(result).not.toHaveProperty('_bundleAnalyzer');
@@ -802,13 +631,12 @@ describe('lib/config/index.ts', () => {
         reactStrictMode: true,
       };
 
-      const result = withPublicEnv(withIgnorePacks(baseConfig));
+      const result = withIgnorePacks(baseConfig);
 
       // TypeScript should preserve custom properties
       expect(result.customProperty).toBe('test');
       expect(result.customObject).toEqual({ nested: true });
       expect(result.reactStrictMode).toBe(true);
-      expect(result.publicRuntimeConfig).toEqual(PublicEnv);
     });
   });
 
@@ -1108,7 +936,7 @@ describe('lib/config/index.ts', () => {
 
       const result = withReactConfig(
         withTypescriptConfig(
-          withPublicEnv(withStripRscPrefixPlugin(withIgnorePacks(baseConfig))),
+          withStripRscPrefixPlugin(withIgnorePacks(baseConfig)),
         ),
       );
 
@@ -1118,7 +946,6 @@ describe('lib/config/index.ts', () => {
       expect(result.productionBrowserSourceMaps).toBe(true);
       expect(result.experimental?.reactCompiler).toBe(true);
       expect(result.webpack).toBeDefined();
-      expect(result.publicRuntimeConfig).toEqual(PublicEnv);
     });
 
     it('should work with custom react config factory in chain', () => {

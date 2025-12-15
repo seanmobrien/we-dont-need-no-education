@@ -1,3 +1,6 @@
+jest.unmock('@opentelemetry/api');
+jest.unmock('@opentelemetry/sdk-trace-base');
+
 import { BasicTracerProvider } from '@opentelemetry/sdk-trace-base';
 import { InMemorySpanExporter } from '@opentelemetry/sdk-trace-base';
 import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base';

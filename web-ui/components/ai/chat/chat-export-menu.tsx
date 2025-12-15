@@ -19,6 +19,7 @@ import {
   type SelectedChatItem,
 } from '@/lib/ai/chat/export';
 import type { ChatTurn } from '@/lib/ai/chat/types';
+import { errorReporter } from '@/lib/error-monitoring/error-reporter';
 
 interface ChatExportMenuProps {
   turns: ChatTurn[];
@@ -65,7 +66,7 @@ export const ChatExportMenu: React.FC<ChatExportMenuProps> = ({
       exportToCsv(turns, selectedItems, chatTitle);
       onSetExportMenuClosed();
     } catch (error) {
-      reportError(error);
+      errorReporter((r) => r.reportError(error));
     }
   };
 
@@ -74,7 +75,7 @@ export const ChatExportMenu: React.FC<ChatExportMenuProps> = ({
       exportToMarkdown(turns, selectedItems, chatTitle, chatCreatedAt);
       onSetExportMenuClosed();
     } catch (error) {
-      reportError(error);
+      errorReporter((r) => r.reportError(error));
     }
   };
 

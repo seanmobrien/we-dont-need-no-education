@@ -38,10 +38,15 @@ export const ThemeProvider = ({
         savedTheme !== currentTheme &&
         (savedTheme === 'dark' || savedTheme === 'light')
       ) {
-        setCurrentTheme(savedTheme);
+        setCurrentTheme((ct) => {
+          if (ct !== savedTheme) {
+            return savedTheme;
+          }
+          return ct;
+        });
       }
     }
-  }, [hasMounted, currentTheme]);
+  }, [hasMounted]);
 
   // Update CSS data-theme attribute when theme changes
   useEffect(() => {

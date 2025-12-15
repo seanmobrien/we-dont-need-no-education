@@ -9,6 +9,7 @@ import { debounce } from '@/lib/react-util/debounce';
 import { ChatPanelConfig, ChatPanelContextValue, DockPosition } from './types';
 import { ChatPanelContext } from './chat-panel-context';
 import { isKeyOf } from '@/lib/typescript/_guards';
+import { errorReporter } from '@/lib/error-monitoring/error-reporter';
 
 const STORAGE_KEYS = {
   POSITION: 'chatPanelPosition',
@@ -47,7 +48,7 @@ const loadStoredConfig = (): ChatPanelConfig => {
       dockSize,
     };
   } catch (error) {
-    reportError(error);
+    errorReporter((r) => r.reportError(error));
     return DEFAULT_CONFIG;
   }
 };
@@ -64,7 +65,7 @@ const saveConfig = (config: ChatPanelConfig): void => {
       localStorage.setItem(STORAGE_KEYS.DOCK_SIZE, config.dockSize.toString());
     }
   } catch (error) {
-    reportError(error);
+    errorReporter((r) => r.reportError(error));
   }
 };
 

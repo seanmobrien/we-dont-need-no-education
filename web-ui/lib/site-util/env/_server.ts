@@ -86,8 +86,8 @@ const buildRawInstance = () => {
     /** Google API key for service access. Example: 'AIzaSyD1234567890abcdef...' */
     AUTH_GOOGLE_APIKEY: process.env.AUTH_GOOGLE_APIKEY,
     /** Azure Monitor Application Insights connection string. Example: 'InstrumentationKey=12345678-1234-1234-1234-123456789012' */
-    AZURE_MONITOR_CONNECTION_STRING:
-      process.env.AZURE_MONITOR_CONNECTION_STRING,
+    NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
+      process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,
     /** Azure Storage account connection string. Example: 'DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=...' */
     AZURE_STORAGE_CONNECTION_STRING:
       process.env.AZURE_STORAGE_CONNECTION_STRING,

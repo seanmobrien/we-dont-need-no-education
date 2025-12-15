@@ -9,7 +9,12 @@
     "noEmit": true,
     "removeComments": true,
     "jsx": "preserve", // Ensure JSX is supported
-    "lib": ["dom", "dom.iterable", "es6", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es6",
+      "esnext"
+    ],
     "module": "esnext",
     "moduleResolution": "bundler",
     "moduleDetection": "auto",
@@ -26,8 +31,12 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "/(rsc)/./*": ["./*"]
+      "@/*": [
+        "./*"
+      ],
+      "/(rsc)/./*": [
+        "./*"
+      ]
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,
@@ -35,7 +44,10 @@
     // example mocha) that collide with jest globals in the monorepo.
     // We include node + jest here so tests and runtime node types are
     // available while preventing other ambient test typings from leaking in.
-    "types": ["node", "jest"],
+    "types": [
+      "node",
+      "jest"
+    ],
     "strict": true,
     "strictNullChecks": true,
     "target": "ESNext"
@@ -52,7 +64,7 @@
   "exclude": [
     "node_modules",
     ".upstream/**/*.*",
-    "**/.upstream/**/*.*"
-    // "./(rsc)/**/*.*"
+    "**/.upstream/**/*.*",
+    "submodules/**/*.*"
   ]
 }

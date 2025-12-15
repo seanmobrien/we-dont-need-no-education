@@ -25,6 +25,9 @@ describe('ChatMenu Provider Selection', () => {
         activeModelSelection={defaultModelSelection}
         setActiveModelSelection={mockSetActiveModelSelection}
       />,
+      {
+        chatPanel: true,
+      },
     );
 
     // Click the menu button to open the menu
@@ -47,6 +50,9 @@ describe('ChatMenu Provider Selection', () => {
         activeModelSelection={defaultModelSelection}
         setActiveModelSelection={mockSetActiveModelSelection}
       />,
+      {
+        chatPanel: true,
+      },
     );
 
     const menuButton = screen.getByTestId('button-chat-menu');
@@ -83,6 +89,9 @@ describe('ChatMenu Provider Selection', () => {
         activeModelSelection={defaultModelSelection}
         setActiveModelSelection={mockSetActiveModelSelection}
       />,
+      {
+        chatPanel: true,
+      },
     );
 
     const menuButton = screen.getByTestId('button-chat-menu');
@@ -121,6 +130,9 @@ describe('ChatMenu Provider Selection', () => {
         activeModelSelection={modelSelection}
         setActiveModelSelection={mockSetActiveModelSelection}
       />,
+      {
+        chatPanel: true,
+      },
     );
 
     const menuButton = screen.getByTestId('button-chat-menu');
@@ -159,6 +171,9 @@ describe('ChatMenu Provider Selection', () => {
         activeModelSelection={googleSelection}
         setActiveModelSelection={mockSetActiveModelSelection}
       />,
+      {
+        chatPanel: true,
+      },
     );
 
     const menuButton = screen.getByTestId('button-chat-menu');
@@ -195,6 +210,9 @@ describe('ChatMenu Provider Selection', () => {
         activeModelSelection={defaultModelSelection}
         setActiveModelSelection={mockSetActiveModelSelection}
       />,
+      {
+        chatPanel: true,
+      },
     );
 
     const menuButton = screen.getByTestId('button-chat-menu');

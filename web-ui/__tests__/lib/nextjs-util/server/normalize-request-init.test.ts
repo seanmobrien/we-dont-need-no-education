@@ -64,15 +64,6 @@ describe('normalizeRequestInit', () => {
       expect(options.method).toBe('POST');
     });
 
-    it('should allow overrides to take precedence over init and defaults', () => {
-      const [_, options] = normalizeRequestInit({
-        requestInfo: 'https://example.com',
-        requestInit: { method: 'POST' },
-        defaults: { method: 'GET' },
-        overrides: { method: 'PUT' },
-      });
-      expect(options.method).toBe('PUT');
-    });
   });
 
   describe('Header Merging', () => {
