@@ -24,6 +24,7 @@ export {
   createAgentHistoryContext,
   createUserChatHistoryContext,
 } from './create-chat-history-context';
+export { chatIdFromParams } from './message-persistence';
 
 const createOriginalChatHistoryMiddleware = (
   context: ChatHistoryContext,

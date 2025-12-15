@@ -2,6 +2,9 @@
  * @jest-environment node
  */
 
+jest.unmock('@opentelemetry/api');
+jest.unmock('@opentelemetry/sdk-trace-base');
+
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();
 

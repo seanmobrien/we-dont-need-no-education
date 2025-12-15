@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Box } from '@mui/material';
 import { UIMessage } from 'ai';
@@ -55,11 +55,12 @@ export const ChatWindow = ({
     parentRef.current.style.maxHeight = `${availableHeight - 25}px`;
   }, [height, dockPosition]);
 
-  const rowVirtualizer = useVirtualizer({
-    count: messages.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: (index) => {
-      const message = messages[index];
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+
+  const estimateSize = useCallback(
+    (index: number) => {
+      const message = messagesRef.current[index];
 
       let width = 0;
       // Attach message to a ChatMessageV2 component and use createElementMeasurer to estimate height
@@ -107,10 +108,24 @@ export const ChatWindow = ({
 
       return estimatedHeight + toolHeight + paperPadding + marginBetween;
     },
+    [parentRef],
+  );
+
+  const getScrollElement = useCallback(() => parentRef.current, []);
+
+  const getItemKey = useCallback(
+    (index: number) => messagesRef.current[index].id,
+    [],
+  );
+
+  const rowVirtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement,
+    estimateSize,
     overscan: 10,
     // ⬇️ Inverted scrolling
     scrollPaddingStart: 0,
-    getItemKey: (index) => messages[index].id,
+    getItemKey,
   });
 
   const items = [...messages].reverse(); // For inverted render

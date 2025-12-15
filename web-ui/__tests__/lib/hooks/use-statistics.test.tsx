@@ -15,8 +15,6 @@ import { RefObject } from 'react';
 import { log } from '@/lib/logger';
 import { isError } from '@/lib/react-util/utility-methods';
 import { assert } from 'console';
-// Mock fetch globally
-//global.fetch = jest.fn();
 
 const createWrapper = () => {
   const queryClient = new QueryClient({

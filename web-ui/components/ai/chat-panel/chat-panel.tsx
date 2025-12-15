@@ -28,12 +28,7 @@ import { getReactPlugin } from '@/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';
 import { ChatWindow } from './chat-window';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
-import type {
-  AiProvider,
-  DockPosition,
-  ModelSelection,
-  ModelType,
-} from './types';
+import type { AiProvider, ModelSelection, ModelType } from './types';
 import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
 import { onClientToolRequest } from '@/lib/ai/client';
@@ -43,7 +38,7 @@ import { panelStableStyles } from './styles';
 import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
 import type { KnownFeatureValueType } from '@/lib/site-util/feature-flags/types';
 import { useFeatureFlags } from '@/lib/site-util/feature-flags';
-
+import { useRouter } from 'next/navigation';
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
   `chatMessages-${threadId}`;
@@ -134,7 +129,7 @@ const ChatPanel = ({ page }: { page: string }) => {
   const [rateLimitTimeout, setRateLimitTimeout] = useState<
     Map<AiModelType, Date>
   >(new Map<AiModelType, Date>());
-
+  const { refresh } = useRouter();
   // Use chat panel context for docking state
   const {
     caseFileId,
@@ -243,7 +238,7 @@ const ChatPanel = ({ page }: { page: string }) => {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [/*input, */ config.position]); // Trigger on input changes and position changes
+  }, [config.position]); // Trigger on input changes and position changes
   // Convert ModelSelection to provider-prefixed model string
   const getModelString = useCallback((selection: ModelSelection): string => {
     return `${selection.provider}:${selection.model}`;
@@ -358,14 +353,6 @@ const ChatPanel = ({ page }: { page: string }) => {
     setFloating(true);
   }, [setFloating]);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const onDock = useCallback(
-    (position: DockPosition) => {
-      setPosition(position);
-    },
-    [setPosition],
-  );
-
   const onInline = useCallback(() => {
     setPosition('inline');
   }, [setPosition]);
@@ -376,6 +363,7 @@ const ChatPanel = ({ page }: { page: string }) => {
       setThreadId(generateChatId().id);
       setInitialMessages(undefined);
       setMessages([]);
+      refresh();
     };
 
     return {
@@ -411,6 +399,7 @@ const ChatPanel = ({ page }: { page: string }) => {
     setPosition,
     config.position,
     setMessages,
+    refresh,
   ]);
 
   useEffect(() => {
@@ -467,7 +456,6 @@ const ChatPanel = ({ page }: { page: string }) => {
           rows={5}
           variant="outlined"
           placeholder="Type your message here..."
-          // onChange={handleInputChangeWithFocusPreservation}
           onKeyDown={handleInputKeyDown}
           sx={panelStableStyles.chatInput}
           slotProps={stableChatInputSlotProps}
@@ -484,7 +472,6 @@ const ChatPanel = ({ page }: { page: string }) => {
     ),
     [
       textFieldRef,
-      // handleInputChangeWithFocusPreservation,
       handleInputKeyDown,
       addToolResult,
       stableChatInputSlotProps,

@@ -2,7 +2,6 @@ import { isKeyOf } from '@/lib/typescript';
 
 export const BooleanFeatureFlagValues = [
   'mem0_mcp_tools_enabled',
-  'models_fetch_enhanced',
   'models_fetch_dedup_writerequests',
   'models_azure',
   'models_openai',
@@ -29,6 +28,7 @@ export const StringFeatureFlagValues = [
   'todo_storage_strategy',
 ] as const;
 export const ObjectFeatureFlagValues = [
+  'models_fetch_enhanced',
   'models_fetch_stream_buffer',
   'models_defaults',
   'todo_storage_in_memory_config',

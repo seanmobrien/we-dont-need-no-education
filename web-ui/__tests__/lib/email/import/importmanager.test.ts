@@ -1,7 +1,11 @@
 /**
  * @jest-environment node
  */
- 
+
+jest.unmock('@opentelemetry/api');
+jest.unmock('@opentelemetry/sdk-trace-base');
+
+
 jest.mock('@/lib/neondb');
 jest.mock('google-auth-library');
 jest.mock('googleapis');
@@ -53,7 +57,7 @@ const consoleSpy = hideConsoleOutput();
 describe('DefaultImportManager', () => {
   beforeEach(() => {
     const map = ImportStageValues.reduce((acc, stage) => {
-       
+
       acc[stage] = jest.fn(() => mockStateManager) as any;
       return acc;
     }, {} as ImportManagerMap);

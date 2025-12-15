@@ -6,7 +6,7 @@ import type { ErrorSuppressionRule } from './types';
 export const DEFAULT_SUPPRESSION_RULES: ErrorSuppressionRule[] = [
   {
     id: 'ai-content-blob-error',
-    pattern: /AI \(Internal\): 102 message/i,
+    pattern: /AI \(Internal\): \d+ message/i,
     suppressCompletely: true,
     reason: 'Known AI service issue that does not affect functionality',
   },
@@ -32,3 +32,4 @@ export const DEFAULT_SUPPRESSION_RULES: ErrorSuppressionRule[] = [
     reason: 'Browser extension errors not related to our application',
   },
 ];
+//AI (Internal)

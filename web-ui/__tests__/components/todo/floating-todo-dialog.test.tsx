@@ -54,6 +54,9 @@ describe('FloatingTodoDialog', () => {
       <QueryClientProvider client={queryClient}>
         <FloatingTodoDialog listId={listId} open={open} onClose={mockOnClose} />
       </QueryClientProvider>,
+      {
+        chatPanel: true,
+      },
     );
   };
 

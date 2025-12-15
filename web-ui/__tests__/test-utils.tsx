@@ -1,3 +1,14 @@
+jest.mock('@mui/material/styles', () => {
+  const orig = jest.requireActual('@mui/material/styles');
+  return {
+    ...orig,
+    ThemeProvider: ({ children }: { children: React.ReactNode }) => (
+      <>{children}</>
+    ),
+  };
+});
+
+import { ThemeProvider as MuiThemeProvider } from '@/lib/themes/provider';
 import '@testing-library/jest-dom';
 import {
   render,
@@ -14,9 +25,12 @@ import { ThemeProvider } from '@/lib/themes/provider';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
 import { SessionProvider } from '@/components/auth/session-provider';
 import { FlagProvider } from '@/components/general/flags/flag-provider';
+import type { ThemeType } from '@/lib/themes/types';
 
 type CustomRenderOptions = RenderOptions & {
   withFlags?: boolean;
+  theme?: ThemeType;
+  chatPanel?: boolean;
 };
 
 // Create a test QueryClient with disabled retries and logs
@@ -31,24 +45,43 @@ const createTestQueryClient = () =>
       },
     },
   });
-
-const AllTheProviders = ({ children }: PropsWithChildren) => {
+type WrapperProps = PropsWithChildren & {
+  theme?: ThemeType;
+  chatPanel?: boolean;
+};
+const AllTheProviders = ({
+  children: childrenFromProps,
+  theme,
+  chatPanel = false,
+}: WrapperProps) => {
   const queryClient = createTestQueryClient();
-
+  const ChatPanelWrapper = ({ children }: PropsWithChildren) =>
+    chatPanel ? (
+      <ChatPanelProvider>{children}</ChatPanelProvider>
+    ) : (
+      <>{children}</>
+    );
   return (
-    <QueryClientProvider client={queryClient}>
-      <ChatPanelProvider>
-        <SessionProvider>
-          <ThemeProvider>{children}</ThemeProvider>
-        </SessionProvider>
-      </ChatPanelProvider>
-    </QueryClientProvider>
+    <>
+      <QueryClientProvider client={queryClient}>
+        <ChatPanelWrapper>
+          <SessionProvider>
+            <ThemeProvider defaultTheme={theme ?? 'dark'}>
+              {childrenFromProps}
+            </ThemeProvider>
+          </SessionProvider>
+        </ChatPanelWrapper>
+      </QueryClientProvider>
+    </>
   );
 };
 
-const AllTheProvidersWithFlags = ({ children }: PropsWithChildren) => {
+const AllTheProvidersWithFlags = ({
+  children,
+  ...wrapperProps
+}: WrapperProps) => {
   return (
-    <AllTheProviders>
+    <AllTheProviders {...wrapperProps}>
       <FlagProvider>{children}</FlagProvider>
     </AllTheProviders>
   );
@@ -59,9 +92,23 @@ const customRender = (
   options: CustomRenderOptions = {},
 ) => {
   let ret: any = undefined;
+  const Wrapper = ({ children }: PropsWithChildren) =>
+    options.withFlags ? (
+      <AllTheProvidersWithFlags
+        theme={options.theme}
+        children={children}
+        chatPanel={options.chatPanel}
+      />
+    ) : (
+      <AllTheProviders
+        theme={options.theme}
+        children={children}
+        chatPanel={options.chatPanel}
+      />
+    );
   act(() => {
     ret = render(ui, {
-      wrapper: options.withFlags ? AllTheProvidersWithFlags : AllTheProviders,
+      wrapper: Wrapper,
       ...options,
     });
   });
@@ -70,7 +117,10 @@ const customRender = (
     ...ret,
     rerender: (rerenderUi: React.ReactElement) => {
       act(() => {
-        rerender(rerenderUi);
+        rerender(rerenderUi, {
+          wrapper: Wrapper,
+          ...options,
+        });
       });
     },
   };
@@ -80,10 +130,24 @@ const customAsyncRender = async (
   ui: React.ReactElement,
   options: CustomRenderOptions = {},
 ) => {
+  const Wrapper = ({ children }: PropsWithChildren) =>
+    options.withFlags ? (
+      <AllTheProvidersWithFlags
+        theme={options.theme}
+        chatPanel={options.chatPanel}
+        children={children}
+      />
+    ) : (
+      <AllTheProviders
+        theme={options.theme}
+        chatPanel={options.chatPanel}
+        children={children}
+      />
+    );
   let ret: any = undefined;
   await act(async () => {
     ret = render(ui, {
-      wrapper: options.withFlags ? AllTheProvidersWithFlags : AllTheProviders,
+      wrapper: Wrapper,
       ...options,
     });
   });

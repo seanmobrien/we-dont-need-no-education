@@ -1,3 +1,5 @@
+jest.unmock('@opentelemetry/api');
+jest.unmock('@opentelemetry/sdk-trace-base');
 
 /**
  * @fileoverview Unit tests for chat history import incoming message functionality

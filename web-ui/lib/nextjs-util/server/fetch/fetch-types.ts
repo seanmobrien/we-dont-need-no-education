@@ -8,6 +8,7 @@
  * - fetch.ts (FetchManager)
  */
 
+import { EnhancedFetchConfig } from '@/lib/site-util/feature-flags/types';
 import type { LRUCache } from 'lru-cache';
 import type { RedisClientType } from 'redis';
 
@@ -17,6 +18,7 @@ export type FetchConfig = {
   fetch_stream_buffer_max?: number;
   fetch_cache_ttl?: number;
   enhanced?: boolean;
+  timeout: EnhancedFetchConfig['timeout'];
   trace_level?: string;
   stream_enabled?: boolean;
   fetch_stream_max_chunks?: number;

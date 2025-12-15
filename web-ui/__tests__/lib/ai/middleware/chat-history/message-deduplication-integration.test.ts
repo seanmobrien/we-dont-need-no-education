@@ -1,3 +1,5 @@
+jest.unmock('@opentelemetry/api');
+jest.unmock('@opentelemetry/sdk-trace-base');
 
 /**
  * @fileoverview Integration tests for chat history message deduplication

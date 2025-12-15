@@ -160,7 +160,7 @@ const ConfirmationPrompt = <TResult extends object>({
               {result
                 ? typeof result === 'object'
                   ? JSON.stringify(result)
-                  : String(result)
+                  : String(result ?? 'Rejected')
                 : 'Rejected'}
             </span>
           </div>

@@ -9,7 +9,7 @@ import {
 } from '@/lib/nextjs-util/semaphore-manager';
 type Handler = (...args: unknown[]) => void;
 import { getRedisClient } from '@/lib/redis-client';
-import { makeResponse } from '../response';
+import { makeResponse, webStreamToReadable } from '../response';
 import { fetchConfig, fetchConfigSync, FETCH_MANAGER_SINGLETON_KEY } from './fetch-config';
 import { LoggedError } from '@/lib/react-util';
 import { createInstrumentedSpan } from '../utils';
@@ -19,13 +19,16 @@ import { CacheStrategies } from './cache-strategies';
 import { StreamingStrategy } from './streaming-strategy';
 import { BufferingStrategy } from './buffering-strategy';
 import type { CachedValue, RequestInfo, RequestInit, ServerFetchManager } from './fetch-types';
+import { EnhancedFetchConfig } from '@/lib/site-util/feature-flags/types';
+import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
+import { withTimeout } from '../../with-timeout';
+import { TimeoutError } from '@/lib/react-util/errors/timeout-error';
 
 const DEFAULT_CONCURRENCY = 8;
 const DEFAULT_CACHE_SIZE = 500;
 const DEFAULT_STREAM_DETECT_BUFFER = 4 * 1024;
 const DEFAULT_STREAM_BUFFER_MAX = 64 * 1024;
 const DEFAULT_MAX_RESPONSE_SIZE = 10 * 1024 * 1024; // 10MB
-const DEFAULT_REQUEST_TIMEOUT = 60 * 1000; // 60 seconds
 
 /**
  * Configuration options for FetchManager
@@ -41,8 +44,10 @@ export interface FetchManagerConfig {
   streamBufferMax: number;
   /** Maximum response size in bytes (default: 10MB) */
   maxResponseSize: number;
-  /** Request timeout in milliseconds (default: 30s) */
-  requestTimeout: number;
+  /**
+   * Timeouts for different stages of the connection
+   */
+  timeout: EnhancedFetchConfig['timeout'];
 }
 
 const DEFAULT_CONFIG: FetchManagerConfig = {
@@ -51,7 +56,7 @@ const DEFAULT_CONFIG: FetchManagerConfig = {
   streamDetectBuffer: DEFAULT_STREAM_DETECT_BUFFER,
   streamBufferMax: DEFAULT_STREAM_BUFFER_MAX,
   maxResponseSize: DEFAULT_MAX_RESPONSE_SIZE,
-  requestTimeout: DEFAULT_REQUEST_TIMEOUT,
+  timeout: AllFeatureFlagsDefault.models_fetch_enhanced.timeout,
 };
 
 
@@ -117,22 +122,33 @@ const mergeHeaders = (
   }
 };
 
+type RequestInitWithTimeout = (Omit<RequestInit, 'timeout'> & {
+  timeout?: number | Partial<EnhancedFetchConfig['timeout']>;
+});
+
 export const normalizeRequestInit = ({
   requestInfo,
-  requestInit,
-  defaults,
-  overrides,
+  requestInit: { timeout: initTimeout, ...requestInit } = {},
+  defaults: { timeout: defaultTimeouts, ...defaults } = {},
 }: {
   requestInfo: RequestInfo;
-  requestInit: RequestInit | undefined;
+  requestInit?: RequestInitWithTimeout;
   defaults?: Partial<OptionsInit>;
-  overrides?: Partial<OptionsInit>;
 }): [string, OptionsInit] => {
   let url: string;
-  let init: RequestInit = requestInit || {};
-
+  let init: (Omit<RequestInitWithTimeout, 'timeout'> & { timeout?: Partial<EnhancedFetchConfig['timeout']> }) = {
+    ...requestInit,
+  };
   if (!requestInfo) {
     throw new Error('Invalid requestInfo');
+  }
+  if (initTimeout) {
+    init.timeout = typeof initTimeout === 'number'
+      ? {
+        connect: initTimeout,
+        socket: initTimeout,
+      }
+      : initTimeout ?? {};
   }
 
   if (typeof requestInfo === 'string') {
@@ -140,23 +156,45 @@ export const normalizeRequestInit = ({
   } else if (requestInfo instanceof URL) {
     url = requestInfo.toString();
   } else if ('url' in requestInfo) {
+    if ('timeout' in requestInfo && !!requestInfo.timeout) {
+      if (typeof requestInfo.timeout === 'number') {
+        init.timeout = {
+          connect: requestInfo.timeout,
+          socket: requestInfo.timeout,
+          ...init.timeout,
+        }
+      } else if (typeof requestInfo.timeout === 'object') {
+        init.timeout = {
+          ...requestInfo.timeout,
+          ...init.timeout,
+        };
+      } else {
+        log(l => l.warn(`Unrecognized timeout type: ${requestInfo.timeout}`));
+      }
+    }
+    // Timeout has been normalized as timeout under init.timeout,
+    // and url extracted, so we want to eliminate then from the request.
     url = requestInfo.url;
-    init = { ...requestInfo, ...init };
+    init = {
+      ...{
+        ...requestInfo,
+        timeout: undefined,
+        url: undefined,
+      },
+      ...init,
+    };
   } else {
     throw new Error('Invalid requestInfo');
   }
-
   const options: OptionsInit = {
     method: 'GET',
     ...defaults,
     ...init,
-    ...overrides,
+    timeout: {
+      ...defaultTimeouts,
+      ...(init.timeout ?? {}),
+    },
   } as OptionsInit;
-
-  // Handle body: null -> undefined
-  if (options.body === null) {
-    options.body = undefined;
-  }
 
   const headers: Record<string, string | string[] | undefined> = {};
 
@@ -166,23 +204,28 @@ export const normalizeRequestInit = ({
   }
 
   if (init.headers) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mergeHeaders(headers, init.headers as any);
+    mergeHeaders(headers, init.headers);
   }
-
-  if (overrides?.headers) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mergeHeaders(headers, overrides.headers as any);
-  }
-
   options.headers = headers;
 
+  // Strip out undefined / null / 0 values
   const cleanOptions: OptionsInit = {};
   for (const [k, v] of Object.entries(options)) {
-    if (v !== undefined && v !== null) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (cleanOptions as any)[k] = v;
+    const key = k as keyof OptionsInit;
+    if (!!v) {
+      (cleanOptions as Record<typeof key, OptionsInit[keyof OptionsInit]>)[key] = v;
     }
+  }
+
+  // If timeout values in init are explicitly null/empty/0, then they will override defaults.
+  if (cleanOptions.timeout && init.timeout) {
+    const theTimeout = cleanOptions.timeout;
+    const initTimeout = init.timeout;
+    Object.entries(initTimeout).forEach(([k, v]) => {
+      if (!v) {
+        delete theTimeout[k as keyof EnhancedFetchConfig['timeout']];
+      }
+    });
   }
 
   return [url, cleanOptions];
@@ -282,29 +325,6 @@ export class FetchManager implements ServerFetchManager {
       releaseSemaphore: () => this.semManager.sem.release(),
     });
   }
-  /**
-   * Lazy refresh of configuration (AutoRefreshFeatureFlag pattern).
-   * Called on each fetch() to check if config needs refreshing.
-   * Triggers async refresh if stale, returns immediately.
-   */
-  private async refreshConfigIfStale(): Promise<void> {
-    // Really all the "refresh" does is validate flags have performed an initial
-    // load, so OK to call frequently.  Deduplication occurs at the flag level
-    // within the config manager.
-    if (!this._pendingConfigRefresh) {
-      this._pendingConfigRefresh = this.loadConfig()
-        .catch((err) => {
-          LoggedError.isTurtlesAllTheWayDownBaby(err, {
-            source: 'fetch:config-refresh',
-            log: true,
-          });
-        })
-        .finally(() => {
-          this._pendingConfigRefresh = null;
-        });
-    }
-    await this._pendingConfigRefresh;
-  }
 
   /**
    * Loads configuration from fetchConfigSync and updates internal state.
@@ -326,6 +346,13 @@ export class FetchManager implements ServerFetchManager {
           log: true,
         });
       }
+
+    }
+
+    // Update timeout always
+    const newTimeout = cfg.timeout;
+    if (newTimeout) {
+      this.config.timeout = newTimeout;
     }
 
     // Update stream configuration if changed
@@ -358,6 +385,9 @@ export class FetchManager implements ServerFetchManager {
         method: 'GET',
         isStream: false,
         retry: { limit: 1 },
+        timeout: {
+          ...this.config.timeout,
+        },
         throwHttpErrors: false,
         responseType: 'buffer',
       }
@@ -365,28 +395,9 @@ export class FetchManager implements ServerFetchManager {
     log((l) => l.info(`GOT Fetch: About to read [${url}] using - ${JSON.stringify(gotOptions)}`));
     await this.semManager.sem.acquire();
     try {
-      // Normalize timeout to object format for got
-      const timeoutVal = gotOptions.timeout;
-      let requestTimeout = this.config.requestTimeout;
-      if (typeof timeoutVal === 'number') {
-        requestTimeout = timeoutVal;
-      } else if (timeoutVal && typeof timeoutVal === 'object' && !Array.isArray(timeoutVal)) {
-        // Cast to any to access potential 'request' property safely
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const t = timeoutVal as any;
-        requestTimeout = t.request ?? requestTimeout;
-      }
-
-      const safeOptions = {
-        ...gotOptions,
-        timeout: {
-          request: requestTimeout
-        }
-      };
-
       const res: GotResponse<Buffer> = await got(
         url,
-        safeOptions as unknown as OptionsOfBufferResponseBody,
+        gotOptions as unknown as OptionsOfBufferResponseBody,
       );
       const headersObj: Record<string, string> = {};
       for (const [k, v] of Object.entries(res.headers || {})) {
@@ -407,7 +418,8 @@ export class FetchManager implements ServerFetchManager {
   /**
    * Direct streaming fetch without caching
    */
-  async fetchStream(input: RequestInfo, init?: RequestInit) {
+  async fetchStream(input: RequestInfo, init?: RequestInitWithTimeout) {
+    await this.loadConfig();
     const [normalizedUrl, options] = normalizeRequestInit({
       requestInfo: input,
       requestInit: init,
@@ -415,8 +427,58 @@ export class FetchManager implements ServerFetchManager {
         method: 'GET',
         isStream: true as const,
         retry: { limit: 1 },
+        timeout: {
+          ...this.config.timeout,
+        },
       }
     });
+    const method = (options.method || 'GET').toUpperCase();
+    const cacheKey = `${method}:${normalizedUrl}`;
+    const enhanced = await this.#isEnhancedEnabled();
+    if (!enhanced) {
+      const instrumented = await createInstrumentedSpan({
+        spanName: 'fetch.get',
+        attributes: { 'http.method': 'GET', 'http.url': normalizedUrl, 'http.enhanced-fetch': false },
+      });
+      return await instrumented.executeWithContext(async (span) => {
+        const domResponse = await this.#doDomFetch(normalizedUrl, options);
+        const headersLower: Record<string, string> = {};
+        for (const [k, v] of Object.entries(domResponse.headers || {}))
+          headersLower[k.toLowerCase()] = Array.isArray(v)
+            ? v.join(',')
+            : String(v ?? '');
+
+        const isStreaming =
+          this.streamingStrategy.detectStreamingResponse(headersLower);
+
+        span.setAttribute('http.is_streaming', isStreaming);
+        if (!domResponse.body) {
+          throw new Error('No body found in response');
+        }
+        if (isStreaming) {
+          // Use streaming strategy for pure streaming response
+          return this.streamingStrategy.handlePureStreaming(
+            cacheKey,
+            webStreamToReadable(domResponse.body),
+            headersLower,
+            domResponse.status,
+            span,
+          );
+        }
+        // Use buffering strategy for non-streaming responses
+        const bufferedResult =
+          await this.bufferingStrategy.handleBufferedResponse(
+            cacheKey,
+            webStreamToReadable(domResponse.body),
+            headersLower,
+            domResponse.status,
+            normalizedUrl,
+            span,
+          );
+        return bufferedResult.response;
+      });
+    }
+    // otherwise, do got stream
     await this.semManager.sem.acquire();
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -435,44 +497,111 @@ export class FetchManager implements ServerFetchManager {
     }
   }
 
+  #isEnhancedEnabled(): Promise<boolean> {
+    return fetchConfig()
+      .then(x => x.enhanced)
+      .catch((e) => {
+        LoggedError.isTurtlesAllTheWayDownBaby(e, {
+          source: 'fetch:enhanced-enabled-fail',
+          log: true,
+        });
+        return false;
+      });
+  }
+  async #doDomFetch(url: string, normalInit: OptionsInit) {
+    const domFetch = globalThis.fetch;
+    if (typeof domFetch === 'function') {
+      const controller = new AbortController();
+      // If we were provided a signal then forward it to the controller
+      const signal = normalInit.signal;
+      if (signal) {
+        signal.addEventListener('abort', controller.abort);
+      }
+      normalInit.signal = controller.signal;
+      const domReq = domFetch(
+        url,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        normalInit as any,
+      );
+      // the only timeout we handle here is request timeout
+      return normalInit.timeout?.request
+        ? withTimeout(domReq, normalInit.timeout.request)
+          .then((x) => {
+            if (x.timedOut) {
+              controller.abort();
+              throw new TimeoutError();
+            }
+            return x.value;
+          })
+        : domReq;
+    }
+    throw new Error('No fetch implementation found');
+  }
+
+
   /**
    * Enhanced fetch implementation with multi-layer caching and streaming support.
    *
    * See main JSDoc on exported `fetch` function for full documentation.
    */
-  async fetch(input: RequestInfo, init?: RequestInit) {
+  async fetch(input: RequestInfo, init?: RequestInitWithTimeout) {
+    await this.loadConfig();
     const [url, normalInit] = normalizeRequestInit({
       requestInfo: input,
       requestInit: init,
     });
-    // Lazy refresh: check if config is stale and trigger async refresh
-    await this.refreshConfigIfStale();
+    const method = (normalInit.method || 'GET').toUpperCase();
+    const cacheKey = `${method}:${url}`;
+    const enhanced = await this.#isEnhancedEnabled();
+    if (!enhanced) {
+      // handle as traditional fetch
+      const instrumented = await createInstrumentedSpan({
+        spanName: `fetch.${method}`,
+        attributes: { 'http.method': method, 'http.url': url, 'http.enhanced-fetch': false },
+      });
+      return await instrumented.executeWithContext(async (span) => {
+        const domResponse = await this.#doDomFetch(url, normalInit);
+        const headersLower: Record<string, string> = {};
+        for (const [k, v] of Object.entries(domResponse.headers || {}))
+          headersLower[k.toLowerCase()] = Array.isArray(v)
+            ? v.join(',')
+            : String(v ?? '');
 
-    try {
-      const cfg = fetchConfigSync();
-      if (!cfg.enhanced) {
-        const domFetch = globalThis.fetch;
-        if (typeof domFetch === 'function') {
-          return domFetch(
-            input,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            init as any,
+        const isStreaming =
+          this.streamingStrategy.detectStreamingResponse(headersLower);
+
+        span.setAttribute('http.is_streaming', isStreaming);
+        if (!domResponse.body) {
+          throw new Error('No body found in response');
+        }
+        if (isStreaming) {
+          // Use streaming strategy for pure streaming response
+          return this.streamingStrategy.handlePureStreaming(
+            cacheKey,
+            webStreamToReadable(domResponse.body),
+            headersLower,
+            domResponse.status,
+            span,
           );
         }
-      }
-    } catch (e) {
-      /* continue with enhanced */
-      LoggedError.isTurtlesAllTheWayDownBaby(e, {
-        source: 'fetch:config-sync-fail',
-        log: true,
+        // Use buffering strategy for non-streaming responses
+        const bufferedResult =
+          await this.bufferingStrategy.handleBufferedResponse(
+            cacheKey,
+            webStreamToReadable(domResponse.body),
+            headersLower,
+            domResponse.status,
+            url,
+            span,
+          );
+        return bufferedResult.response;
       });
     }
-    const method = (normalInit.method || 'GET').toUpperCase();
+    // otherwise, handle as enhanced fetch
     if (method === 'GET') {
-      const cacheKey = `${method}:${url}`;
       const instrumented = await createInstrumentedSpan({
         spanName: 'fetch.get',
-        attributes: { 'http.method': 'GET', 'http.url': url },
+        attributes: { 'http.method': 'GET', 'http.url': url, 'http.enhanced-fetch': true },
       });
       return await instrumented.executeWithContext(async (span) => {
         // Try memory cache (L1)
@@ -499,21 +628,11 @@ export class FetchManager implements ServerFetchManager {
         await this.semManager.sem.acquire();
         let gotStream: Readable;
         try {
-          const timeoutVal = normalInit.timeout;
-          let requestTimeout = this.config.requestTimeout;
-          if (typeof timeoutVal === 'number') {
-            requestTimeout = timeoutVal;
-          } else if (timeoutVal && typeof timeoutVal === 'object') {
-            requestTimeout = timeoutVal.request ?? requestTimeout;
-          }
-
           gotStream = got.stream(url, {
             method: 'GET',
             headers: normalInit.headers,
             retry: { limit: 1 },
-            timeout: {
-              request: requestTimeout,
-            },
+            timeout: normalInit.timeout,
           });
 
           const resHead: {
@@ -589,11 +708,10 @@ export class FetchManager implements ServerFetchManager {
         }
       });
     }
-
     // non-GET: do a normal got fetch limited by semaphore
     const instrumented = await createInstrumentedSpan({
       spanName: 'fetch.non_get',
-      attributes: { 'http.method': method, 'http.url': url },
+      attributes: { 'http.method': method, 'http.url': url, 'http.enhanced-fetch': true },
     });
     return await instrumented.executeWithContext(async (span) => {
       const v = await this.doGotFetch(url, normalInit as unknown as RequestInit);
@@ -628,10 +746,8 @@ export const resetFetchManager = (): void => {
   SingletonProvider.Instance.delete(FETCH_MANAGER_SINGLETON_KEY);
 };
 
-export const serverFetch = async (input: RequestInfo, init?: RequestInit) => {
-  return getFetchManager().fetch(input, init);
-};
+export const serverFetch = async (input: RequestInfo, init?: RequestInitWithTimeout) =>
+  getFetchManager().fetch(input, init);
 
-export const fetchStream = async (input: RequestInfo, init?: RequestInit) => {
-  return getFetchManager().fetchStream(input, init);
-};
+export const fetchStream = async (input: RequestInfo, init?: RequestInitWithTimeout) =>
+  getFetchManager().fetchStream(input, init);

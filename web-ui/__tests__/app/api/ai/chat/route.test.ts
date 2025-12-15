@@ -31,27 +31,6 @@ jest.mock('@/lib/site-util/feature-flags/server', () => ({
   getFeatureFlag: jest.fn().mockResolvedValue(false),
 }));
 
-jest.mock('@opentelemetry/api', () => ({
-  trace: {
-    getTracer: jest.fn(() => ({
-      startActiveSpan: jest.fn((name, fn2, ctx, fn) => (fn ?? fn2)({
-        setAttribute: jest.fn(),
-        setStatus: jest.fn(),
-        recordException: jest.fn(),
-        end: jest.fn(),
-      })),
-    })),
-  },
-  context: {
-    active: jest.fn(),
-  },
-  propagation: {
-    extract: jest.fn(),
-  },
-  SpanKind: { SERVER: 1 },
-  SpanStatusCode: { OK: 1, ERROR: 2 },
-}));
-
 // Use real wrapRouteRequest
 jest.unmock('@/lib/nextjs-util/server');
 

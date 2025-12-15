@@ -91,7 +91,7 @@ const instrumentServer = () => {
     return;
   }
 
-  const connStr = process.env.AZURE_MONITOR_CONNECTION_STRING;
+  const connStr = process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING;
 
   // Skip instrumentation in development if no valid connection string
   if (

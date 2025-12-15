@@ -36,6 +36,15 @@ describe('VirtualizedChatDisplay', () => {
     getVirtualItems: jest.fn(() => [mockVirtualItem]),
   };
 
+  beforeAll(() => {
+    // Mock canvas getContext for text measurement in jsdom
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (HTMLCanvasElement.prototype as any).getContext = jest.fn(() => ({
+      measureText: (text: string) => ({ width: text.length * 8 }),
+      font: '',
+    }));
+  });
+
   beforeEach(() => {
     // jest.clearAllMocks();
     const { useVirtualizer } = jest.requireMock('@tanstack/react-virtual');

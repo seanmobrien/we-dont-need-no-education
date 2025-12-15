@@ -93,7 +93,7 @@ describe('MemoryClient configurable base path', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const [url, options] = fetchMock.mock.calls[1];
-    expect(url).toBe('https://mem0.test/api/v1/memories/');
+    expect(String(url)).toEqual('https://mem0.test/api/v1/memories/');
     expect(options).toEqual(
       expect.objectContaining({
         method: 'GET',
@@ -118,7 +118,7 @@ describe('MemoryClient configurable base path', () => {
 
     expect(result).toBe('{}');
     const [url] = fetchMock.mock.calls[1];
-    expect(url).toBe('https://mem0.test/docs');
+    expect(String(url)).toEqual('https://mem0.test/docs');
   });
 
   it('does not apply the base path to versioned v2 routes', async () => {
@@ -134,7 +134,7 @@ describe('MemoryClient configurable base path', () => {
     });
 
     const [url] = fetchMock.mock.calls[1];
-    expect(url).toBe('https://mem0.test/v2/memories/');
+    expect(String(url)).toEqual('https://mem0.test/v2/memories/');
   });
 
   it('uses custom base path values from the environment', async () => {
@@ -151,7 +151,7 @@ describe('MemoryClient configurable base path', () => {
     });
 
     const [url] = fetchMock.mock.calls[1];
-    expect(url).toBe('https://mem0.test/api/v9/memories/');
+    expect(String(url)).toEqual('https://mem0.test/api/v9/memories/');
   });
 
   it('applies the base path when invoking memoryClientFactory healthCheck', async () => {
@@ -171,7 +171,7 @@ describe('MemoryClient configurable base path', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const [url] = fetchMock.mock.calls[1];
-    expect(url).toBe(
+    expect(String(url)).toEqual(
       'https://mem0.test/api/v1/stats/health-check?strict=false&verbose=1',
     );
   });

@@ -12,6 +12,8 @@ const config = {
   setupFiles: ['<rootDir>/__tests__/setup/jest.mock-log.ts'],
   setupFilesAfterEnv: [
     '<rootDir>/__tests__/setup/jest.env-vars.ts',
+    '<rootDir>/__tests__/setup/jest.mock-got.ts',
+    '<rootDir>/__tests__/setup/jest.mock-opentelemetry.ts',
     '<rootDir>/__tests__/setup/jest.mock-appstartup.ts',
     '<rootDir>/__tests__/jest.test-extensions.ts',
     '<rootDir>/__tests__/setup/jest.mock-node-modules.ts',

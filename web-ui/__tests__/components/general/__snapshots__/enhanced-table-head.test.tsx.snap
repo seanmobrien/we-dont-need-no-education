@@ -7,24 +7,24 @@ exports[`EnhancedTableHead renders table head snapshot 1`] = `
       class="MuiTableHead-root css-1a7iywq-MuiTableHead-root"
     >
       <tr
-        class="MuiTableRow-root MuiTableRow-head css-92sqde-MuiTableRow-root"
+        class="MuiTableRow-root MuiTableRow-head css-1xtozoh-MuiTableRow-root"
       >
         <th
-          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-xncyw9-MuiTableCell-root"
+          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-1e9a4b0-MuiTableCell-root"
           scope="col"
           vertical-align="center"
         >
           Name
         </th>
         <th
-          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-xncyw9-MuiTableCell-root"
+          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-1e9a4b0-MuiTableCell-root"
           scope="col"
           vertical-align="center"
         >
           Email
         </th>
         <th
-          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignRight MuiTableCell-sizeMedium css-1o9hn7v-MuiTableCell-root"
+          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignRight MuiTableCell-sizeMedium css-to33az-MuiTableCell-root"
           scope="col"
           vertical-align="center"
         >
@@ -43,24 +43,24 @@ exports[`EnhancedTableHead renders with all items selected snapshot 1`] = `
       class="MuiTableHead-root css-1a7iywq-MuiTableHead-root"
     >
       <tr
-        class="MuiTableRow-root MuiTableRow-head css-92sqde-MuiTableRow-root"
+        class="MuiTableRow-root MuiTableRow-head css-1xtozoh-MuiTableRow-root"
       >
         <th
-          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-xncyw9-MuiTableCell-root"
+          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-1e9a4b0-MuiTableCell-root"
           scope="col"
           vertical-align="center"
         >
           Name
         </th>
         <th
-          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-xncyw9-MuiTableCell-root"
+          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-1e9a4b0-MuiTableCell-root"
           scope="col"
           vertical-align="center"
         >
           Email
         </th>
         <th
-          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignRight MuiTableCell-sizeMedium css-1o9hn7v-MuiTableCell-root"
+          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignRight MuiTableCell-sizeMedium css-to33az-MuiTableCell-root"
           scope="col"
           vertical-align="center"
         >
@@ -79,14 +79,14 @@ exports[`EnhancedTableHead renders with select all callback snapshot 1`] = `
       class="MuiTableHead-root css-1a7iywq-MuiTableHead-root"
     >
       <tr
-        class="MuiTableRow-root MuiTableRow-head css-92sqde-MuiTableRow-root"
+        class="MuiTableRow-root MuiTableRow-head css-1xtozoh-MuiTableRow-root"
       >
         <th
-          class="MuiTableCell-root MuiTableCell-head MuiTableCell-paddingCheckbox MuiTableCell-sizeMedium css-j0ceml-MuiTableCell-root"
+          class="MuiTableCell-root MuiTableCell-head MuiTableCell-paddingCheckbox MuiTableCell-sizeMedium css-47m1dp-MuiTableCell-root"
           scope="col"
         >
           <span
-            class="MuiButtonBase-root MuiCheckbox-root MuiCheckbox-colorPrimary MuiCheckbox-sizeMedium PrivateSwitchBase-root MuiCheckbox-root MuiCheckbox-colorPrimary MuiCheckbox-sizeMedium MuiCheckbox-root MuiCheckbox-colorPrimary MuiCheckbox-sizeMedium css-rm2pxo-MuiButtonBase-root-MuiSwitchBase-root-MuiCheckbox-root"
+            class="MuiButtonBase-root MuiCheckbox-root MuiCheckbox-colorPrimary MuiCheckbox-sizeMedium PrivateSwitchBase-root MuiCheckbox-root MuiCheckbox-colorPrimary MuiCheckbox-sizeMedium MuiCheckbox-root MuiCheckbox-colorPrimary MuiCheckbox-sizeMedium css-vuhw6e-MuiButtonBase-root-MuiSwitchBase-root-MuiCheckbox-root"
           >
             <input
               aria-label="select all emails"
@@ -96,7 +96,7 @@ exports[`EnhancedTableHead renders with select all callback snapshot 1`] = `
             />
             <svg
               aria-hidden="true"
-              class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-p47w5u-MuiSvgIcon-root"
+              class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1umw9bq-MuiSvgIcon-root"
               data-testid="CheckBoxOutlineBlankIcon"
               focusable="false"
               viewBox="0 0 24 24"
@@ -108,21 +108,21 @@ exports[`EnhancedTableHead renders with select all callback snapshot 1`] = `
           </span>
         </th>
         <th
-          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-xncyw9-MuiTableCell-root"
+          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-1e9a4b0-MuiTableCell-root"
           scope="col"
           vertical-align="center"
         >
           Name
         </th>
         <th
-          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-xncyw9-MuiTableCell-root"
+          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-1e9a4b0-MuiTableCell-root"
           scope="col"
           vertical-align="center"
         >
           Email
         </th>
         <th
-          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignRight MuiTableCell-sizeMedium css-1o9hn7v-MuiTableCell-root"
+          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignRight MuiTableCell-sizeMedium css-to33az-MuiTableCell-root"
           scope="col"
           vertical-align="center"
         >
@@ -141,24 +141,24 @@ exports[`EnhancedTableHead renders with some selected items snapshot 1`] = `
       class="MuiTableHead-root css-1a7iywq-MuiTableHead-root"
     >
       <tr
-        class="MuiTableRow-root MuiTableRow-head css-92sqde-MuiTableRow-root"
+        class="MuiTableRow-root MuiTableRow-head css-1xtozoh-MuiTableRow-root"
       >
         <th
-          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-xncyw9-MuiTableCell-root"
+          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-1e9a4b0-MuiTableCell-root"
           scope="col"
           vertical-align="center"
         >
           Name
         </th>
         <th
-          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-xncyw9-MuiTableCell-root"
+          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-1e9a4b0-MuiTableCell-root"
           scope="col"
           vertical-align="center"
         >
           Email
         </th>
         <th
-          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignRight MuiTableCell-sizeMedium css-1o9hn7v-MuiTableCell-root"
+          class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignRight MuiTableCell-sizeMedium css-to33az-MuiTableCell-root"
           scope="col"
           vertical-align="center"
         >

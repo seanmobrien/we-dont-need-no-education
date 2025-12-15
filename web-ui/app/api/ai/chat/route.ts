@@ -24,6 +24,7 @@ import type { ToolProviderSet } from '@/lib/ai/mcp/types';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
 import type { User } from '@auth/core/types';
+import { wrapMemoryMiddleware } from '@/lib/ai/middleware/memory-middleware';
 // Allow streaming responses up to 360 seconds
 //const maxDuration = 60 * 1000 * 360;
 
@@ -145,8 +146,8 @@ export const POST = (req: NextRequest) => {
       }
       const chatHistoryId = id ?? `${threadId}:${generateChatId().id}`;
 
-      // Get tools
       try {
+        // Get tools
         toolProviders ??= await toolProviderFactory({
           req,
           chatHistoryId,
@@ -155,31 +156,29 @@ export const POST = (req: NextRequest) => {
           user: session?.user,
           sessionId: chatHistoryId,
         });
-        // Create chat history context
         const chatHistoryContext = createUserChatHistoryContext({
           userId: session?.user?.id || 'anonymous',
           requestId: chatHistoryId,
           chatId: threadId,
           model,
         });
-
         // Wrap the base model with chat history middleware
-        const baseModel = await aiModelFactory(model);
-        const modelWithHistory = wrapChatHistoryMiddleware({
-          model: baseModel,
-          chatHistoryContext,
+        // and memory middleware        
+        const modelWithHistory = wrapMemoryMiddleware({
+          model: wrapChatHistoryMiddleware({
+            model: await aiModelFactory(model),
+            chatHistoryContext
+          }),
+          toolProviders,
+          mem0Enabled: !memoryDisabled,
+          directAccess: true,
+          userId: session?.user?.id || 'anonymous',
+          chatId: threadId,
+          messageId: chatHistoryId,
         });
         // attach tools
         let isRateLimitError = false;
         let retryAfter = 0;
-        toolProviders ??= await toolProviderFactory({
-          req,
-          chatHistoryId,
-          memoryDisabled,
-          writeEnabled,
-          user: session?.user,
-          sessionId: chatHistoryId,
-        });
         // In v5: create a UI message stream response and merge the generated stream.
         // We'll create a merged ReadableStream that forwards the SDK stream and allows
         // injecting an annotated retry data chunk when a rate limit is detected.
@@ -204,7 +203,11 @@ export const POST = (req: NextRequest) => {
               user: session.user ? `user-${session.user.id}` : `user-anon`,
             },
           },
-          stopWhen: [stepCountIs(20), hasToolCall('askConfirmation')],
+          stopWhen: [
+            stepCountIs(150),
+            hasToolCall('askConfirmation'),
+            ({ steps }) => steps.every(step => step.finishReason !== 'tool-calls')
+          ],
           onError: async (error) => {
             LoggedError.isTurtlesAllTheWayDownBaby(error, {
               log: true,
@@ -242,7 +245,19 @@ export const POST = (req: NextRequest) => {
                 return;
               }
             } finally {
-              chatHistoryContext.dispose();
+              chatHistoryContext.dispose()
+                .catch((disposeError) => {
+                  LoggedError.isTurtlesAllTheWayDownBaby(disposeError, {
+                    log: true,
+                    source: 'route:ai:chat onError dispose',
+                    severity: 'error',
+                    data: {
+                      userId: session?.user?.id,
+                      model,
+                      chatHistoryId,
+                    },
+                  });
+                });
             }
           },
           onFinish: async (/*evt*/) => {
@@ -276,7 +291,19 @@ export const POST = (req: NextRequest) => {
               });
               chatHistoryContext.error = error;
             } finally {
-              chatHistoryContext.dispose();
+              chatHistoryContext.dispose()
+                .catch((disposeError) => {
+                  LoggedError.isTurtlesAllTheWayDownBaby(disposeError, {
+                    log: true,
+                    source: 'route:ai:chat onError dispose',
+                    severity: 'error',
+                    data: {
+                      userId: session?.user?.id,
+                      model,
+                      chatHistoryId,
+                    },
+                  });
+                });
             }
           },
           tools: (toolProviders ??= await toolProviderFactory({

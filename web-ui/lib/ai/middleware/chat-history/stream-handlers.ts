@@ -1,3 +1,4 @@
+
 import type {
   LanguageModelV2ToolResultPart,
   LanguageModelV2StreamPart,
@@ -14,50 +15,13 @@ import {
 import { log } from '@/lib/logger';
 import { getNextSequence } from './utility';
 import type { StreamHandlerContext, StreamHandlerResult } from './types';
-import { instrumentStreamChunk } from './instrumentation';
 import { ensureCreateResult } from './stream-handler-result';
 import {
   reserveMessageIds,
   upsertToolMessage,
 } from './import-incoming-message';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-
-// ---------------------------------------------------------------------------
-// Lightweight per-id buffers for explicit streaming types
-// ---------------------------------------------------------------------------
-const OPEN_TEXT_SYM = Symbol.for('chat-history.openTextBuffers');
-
-const OPEN_REASONING_SYM = Symbol.for('chat-history.openReasoningBuffers');
-
-const OPEN_TOOL_INPUT_SYM = Symbol.for('chat-history.openToolInputBuffers');
-
-type ToolInputBuffer = { toolName?: string; value: string };
-
-function getOpenText(context: StreamHandlerContext): Map<string, string> {
-  const bag = context as unknown as Record<PropertyKey, unknown>;
-  if (!bag[OPEN_TEXT_SYM]) {
-    bag[OPEN_TEXT_SYM] = new Map<string, string>();
-  }
-  return bag[OPEN_TEXT_SYM] as Map<string, string>;
-}
-
-function getOpenReasoning(context: StreamHandlerContext): Map<string, string> {
-  const bag = context as unknown as Record<PropertyKey, unknown>;
-  if (!bag[OPEN_REASONING_SYM]) {
-    bag[OPEN_REASONING_SYM] = new Map<string, string>();
-  }
-  return bag[OPEN_REASONING_SYM] as Map<string, string>;
-}
-
-function getOpenToolInput(
-  context: StreamHandlerContext,
-): Map<string, ToolInputBuffer> {
-  const bag = context as unknown as Record<PropertyKey, unknown>;
-  if (!bag[OPEN_TOOL_INPUT_SYM]) {
-    bag[OPEN_TOOL_INPUT_SYM] = new Map<string, ToolInputBuffer>();
-  }
-  return bag[OPEN_TOOL_INPUT_SYM] as Map<string, ToolInputBuffer>;
-}
+import { StreamProcessor } from './stream-processor';
 
 const flushMessageParts = async ({
   context,
@@ -145,180 +109,6 @@ const completePendingMessage = async ({
       ),
     );
   return true;
-};
-
-export const handleToolCall = async (
-  chunk: Extract<LanguageModelV2ToolCall, { type: 'tool-call' }>,
-  context: StreamHandlerContext,
-): Promise<StreamHandlerResult> => {
-  ensureCreateResult(context);
-  try {
-    const { chatId, turnId, generatedText, currentMessageOrder, toolCalls } =
-      context;
-    await drizDb().transaction(async (tx) => {
-      await flushMessageParts({ context });
-      // Safely parse input JSON if present; tolerate empty/invalid inputs
-      let parsedInput: unknown = undefined;
-      const rawInput = (chunk.input ?? '').toString();
-      const trimmed = rawInput.trim();
-      if (trimmed.length > 0) {
-        try {
-          parsedInput = JSON.parse(rawInput);
-        } catch {
-          // keep as undefined; DB column may be JSON-only
-          parsedInput = undefined;
-        }
-      }
-
-      // Create tool message row draft for upsert logic
-      const toolRow = {
-        role: 'tool' as const,
-        statusId: 1,
-        content: generatedText,
-        toolName: chunk.toolName,
-        functionCall: parsedInput ?? null,
-        providerId: chunk.toolCallId,
-        metadata: null,
-        toolResult: null,
-      };
-
-      // Try to upsert the tool message first
-      let upsertedMessageId: number | null = null;
-      try {
-        upsertedMessageId = await upsertToolMessage(
-          tx,
-          chatId,
-          Number(turnId),
-          toolRow,
-        );
-      } catch (error) {
-        // In test environments, upsert might fail - fall back to normal creation
-        log((l) =>
-          l.debug(
-            `Tool message upsert failed, falling back to creation: ${error}`,
-          ),
-        );
-        upsertedMessageId = null;
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let toolCall: any = null;
-      let actualMessageId: number;
-
-      if (upsertedMessageId !== null) {
-        // Message was updated, fetch the existing record
-        actualMessageId = upsertedMessageId;
-        try {
-          const existingMessages = await tx
-            .select()
-            .from(chatMessages)
-            .where(
-              and(
-                eq(chatMessages.chatId, chatId),
-                eq(chatMessages.messageId, actualMessageId),
-              ),
-            )
-            .limit(1)
-            .execute();
-          toolCall = existingMessages[0] || null;
-        } catch (error) {
-          // In test environments, selects might fail - create a mock tool call
-          log((l) =>
-            l.debug(
-              `Failed to fetch updated tool message, creating mock: ${error}`,
-            ),
-          );
-          toolCall = {
-            chatMessageId: 1,
-            messageId: actualMessageId,
-            providerId: chunk.toolCallId,
-            toolName: chunk.toolName,
-            role: 'tool',
-            content: generatedText,
-            functionCall: parsedInput ?? null,
-          };
-        }
-      } else {
-        // No existing message found, create a new one
-        const nextMessageId = await getNextSequence({
-          tx,
-          tableName: 'chat_messages',
-          chatId,
-          turnId: Number(turnId),
-          count: 1,
-        }).then((ids) => ids[0]);
-        actualMessageId = nextMessageId;
-
-        toolCall = (
-          await tx
-            .insert(chatMessages)
-            .values({
-              chatId,
-              turnId: Number(turnId),
-              role: 'tool',
-              content: generatedText,
-              messageId: nextMessageId,
-              providerId: chunk.toolCallId,
-              toolName: chunk.toolName,
-              functionCall: parsedInput ?? null,
-              messageOrder: currentMessageOrder,
-              statusId: 1, // complete status for tool calls
-              metadata: { modifiedTurnId: Number(turnId) },
-            })
-            .returning()
-            .execute()
-        ).at(0);
-      }
-      if (toolCall) {
-        if (!toolCall.providerId) {
-          log((l) =>
-            l.warn(
-              'Tool call was not assigned a provider id, result resolution may fail.',
-              toolCall,
-            ),
-          );
-        }
-        toolCalls.set(toolCall.providerId ?? '[missing]', toolCall);
-
-        log((l) =>
-          l.debug(
-            `Tool message handled for providerId ${chunk.toolCallId}: ${upsertedMessageId !== null ? 'updated' : 'created'} messageId ${actualMessageId}`,
-          ),
-        );
-      } else {
-        log((l) =>
-          l.error('Failed to create or update tool call message', {
-            log: true,
-            data: {
-              chatId,
-              turnId,
-              toolName: chunk.toolName,
-              args: chunk.input,
-              generatedText,
-              wasUpsert: upsertedMessageId !== null,
-            },
-          }),
-        );
-      }
-    });
-
-    return context.createResult({
-      currentMessageId: undefined,
-      currentMessageOrder: currentMessageOrder + 1,
-      generatedText: '',
-    });
-  } catch (error) {
-    log((l) =>
-      l.error('Error handling tool-call chunk', {
-        error,
-        turnId: context.turnId,
-        chatId: context.chatId,
-        toolName: chunk.toolName,
-        args: chunk.input,
-      }),
-    );
-    return context.createResult(false);
-  }
 };
 
 const findPendingToolCall = async ({
@@ -410,53 +200,68 @@ const setTurnError = async ({
   }
 };
 
-export const handleToolResult = async (
-  chunk: LanguageModelV2ToolResultPart,
-  context: StreamHandlerContext,
-): Promise<StreamHandlerResult> => {
-  ensureCreateResult(context);
-  try {
-    const { chatId, turnId, generatedText, messageId, toolCalls } = context;
-    flushMessageParts({ context });
-    await drizDb().transaction(async (tx) => {
-      await completePendingMessage({
-        tx,
-        messageId,
-        chatId,
-        turnId: Number(turnId),
-      });
-      // Try to match against a pending tool call first
-      let pendingCall = await findPendingToolCall({
-        chatId,
-        toolCalls,
-        chunk,
-        tx,
-      });
+export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerContext> {
+  protected async processToolCall(
+    chunk: Extract<LanguageModelV2ToolCall, { type: 'tool-call' }>,
+    context: StreamHandlerContext
+  ): Promise<StreamHandlerResult> {
+    ensureCreateResult(context);
+    try {
+      const { chatId, turnId, generatedText, currentMessageOrder, toolCalls } =
+        context;
+      await drizDb().transaction(async (tx) => {
+        await flushMessageParts({ context });
+        // Safely parse input JSON if present; tolerate empty/invalid inputs
+        let parsedInput: unknown = undefined;
+        const rawInput = (chunk.input ?? '').toString();
+        const trimmed = rawInput.trim();
+        if (trimmed.length > 0) {
+          try {
+            parsedInput = JSON.parse(rawInput);
+          } catch {
+            // keep as undefined; DB column may be JSON-only
+            parsedInput = undefined;
+          }
+        }
 
-      // If no pending call found, try upsert logic
-      if (!pendingCall && chunk.toolCallId) {
         // Create tool message row draft for upsert logic
         const toolRow = {
           role: 'tool' as const,
-          statusId: 2,
+          statusId: 1,
           content: generatedText,
           toolName: chunk.toolName,
-          functionCall: null,
+          functionCall: parsedInput ?? null,
           providerId: chunk.toolCallId,
           metadata: null,
-          toolResult:
-            chunk.output !== undefined ? JSON.stringify(chunk.output) : null,
+          toolResult: null,
         };
 
-        const upsertedMessageId = await upsertToolMessage(
-          tx,
-          chatId,
-          Number(turnId),
-          toolRow,
-        );
+        // Try to upsert the tool message first
+        let upsertedMessageId: number | null = null;
+        try {
+          upsertedMessageId = await upsertToolMessage(
+            tx,
+            chatId,
+            Number(turnId),
+            toolRow,
+          );
+        } catch (error) {
+          // In test environments, upsert might fail - fall back to normal creation
+          log((l) =>
+            l.debug(
+              `Tool message upsert failed, falling back to creation: ${error}`,
+            ),
+          );
+          upsertedMessageId = null;
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let toolCall: any = null;
+        let actualMessageId: number;
 
         if (upsertedMessageId !== null) {
-          // Message was updated via upsert, fetch the record
+          // Message was updated, fetch the existing record
+          actualMessageId = upsertedMessageId;
           try {
             const existingMessages = await tx
               .select()
@@ -464,374 +269,415 @@ export const handleToolResult = async (
               .where(
                 and(
                   eq(chatMessages.chatId, chatId),
-                  eq(chatMessages.messageId, upsertedMessageId),
+                  eq(chatMessages.messageId, actualMessageId),
                 ),
               )
               .limit(1)
               .execute();
-            pendingCall = existingMessages[0] || null;
-
+            toolCall = existingMessages[0] || null;
+          } catch (error) {
+            // In test environments, selects might fail - create a mock tool call
             log((l) =>
               l.debug(
-                `Tool result upserted for providerId ${chunk.toolCallId}, messageId: ${upsertedMessageId}`,
+                `Failed to fetch updated tool message, creating mock: ${error}`,
               ),
             );
-          } catch (error) {
-            // In test environments, selects might fail
+            toolCall = {
+              chatMessageId: 1,
+              messageId: actualMessageId,
+              providerId: chunk.toolCallId,
+              toolName: chunk.toolName,
+              role: 'tool',
+              content: generatedText,
+              functionCall: parsedInput ?? null,
+            };
+          }
+        } else {
+          // No existing message found, create a new one
+          const nextMessageId = await getNextSequence({
+            tx,
+            tableName: 'chat_messages',
+            chatId,
+            turnId: Number(turnId),
+            count: 1,
+          }).then((ids) => ids[0]);
+          actualMessageId = nextMessageId;
+
+          toolCall = (
+            await tx
+              .insert(chatMessages)
+              .values({
+                chatId,
+                turnId: Number(turnId),
+                role: 'tool',
+                content: generatedText,
+                messageId: nextMessageId,
+                providerId: chunk.toolCallId,
+                toolName: chunk.toolName,
+                functionCall: parsedInput ?? null,
+                messageOrder: currentMessageOrder,
+                statusId: 1, // complete status for tool calls
+                metadata: { modifiedTurnId: Number(turnId) },
+              })
+              .returning()
+              .execute()
+          ).at(0);
+        }
+        if (toolCall) {
+          if (!toolCall.providerId) {
             log((l) =>
-              l.debug(`Failed to fetch upserted tool message: ${error}`),
+              l.warn(
+                'Tool call was not assigned a provider id, result resolution may fail.',
+                toolCall,
+              ),
             );
           }
-        }
-      }
+          toolCalls.set(toolCall.providerId ?? '[missing]', toolCall);
 
-      if (pendingCall) {
-        const metadata: Record<PropertyKey, unknown> = pendingCall.metadata
-          ? { ...pendingCall.metadata }
-          : {};
-        let statusId = 2;
-        if (
-          chunk.output.type === 'error-json' ||
-          chunk.output.type === 'error-text'
-        ) {
-          statusId = 3;
-          metadata.toolErrorResult = chunk.output;
-          await setTurnError({ tx, chatId, turnId: Number(turnId), chunk });
-        }
-        if (chunk.providerOptions) {
-          metadata.toolResultProviderMeta = chunk.providerOptions;
-        }
-
-        // Update metadata with turn tracking
-        metadata.modifiedTurnId = Number(turnId);
-
-        await tx
-          .update(chatMessages)
-          .set({
-            statusId,
-            toolResult:
-              chunk.output !== undefined ? JSON.stringify(chunk.output) : null,
-            metadata: metadata,
-            content: `${pendingCall.content ?? ''}\n${generatedText}`,
-          })
-          .where(
-            and(
-              eq(chatMessages.chatId, chatId),
-              eq(chatMessages.turnId, Number(turnId)),
-              eq(chatMessages.messageId, pendingCall.messageId),
+          log((l) =>
+            l.debug(
+              `Tool message handled for providerId ${chunk.toolCallId}: ${upsertedMessageId !== null ? 'updated' : 'created'} messageId ${actualMessageId}`,
             ),
           );
-      } else {
-        log((l) =>
-          l.warn('No pending tool call found for chunk and upsert failed', {
-            chatId,
-            turnId,
-            toolName: chunk.toolName,
-            providerId: chunk.toolCallId,
-          }),
-        );
-      }
-    });
+        } else {
+          log((l) =>
+            l.error('Failed to create or update tool call message', {
+              log: true,
+              data: {
+                chatId,
+                turnId,
+                toolName: chunk.toolName,
+                args: chunk.input,
+                generatedText,
+                wasUpsert: upsertedMessageId !== null,
+              },
+            }),
+          );
+        }
+      });
 
-    return context.createResult({
-      currentMessageId: undefined,
-      generatedText: '',
-    });
-  } catch (error) {
-    LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      data: {
-        chatId: context.chatId,
-        turnId: context.turnId,
-        toolName: chunk.toolName,
-        providerId: chunk.toolCallId,
-      },
-      message: 'Error handling tool-result chunk',
-    });
-    return context.createResult(false);
+      return context.createResult({
+        currentMessageId: undefined,
+        currentMessageOrder: currentMessageOrder + 1,
+        generatedText: '',
+      });
+    } catch (error) {
+      log((l) =>
+        l.error('Error handling tool-call chunk', {
+          error,
+          turnId: context.turnId,
+          chatId: context.chatId,
+          toolName: chunk.toolName,
+          args: chunk.input,
+        }),
+      );
+      return context.createResult(false);
+    }
   }
-};
 
-export async function handleFinish(
-  chunk: Extract<LanguageModelV2StreamPart, { type: 'finish' }>,
-  context: StreamHandlerContext,
-): Promise<StreamHandlerResult> {
-  ensureCreateResult(context);
-  try {
-    // Save token usage if available
-    if (
-      chunk.usage &&
-      context.turnId &&
-      ((chunk.usage.inputTokens ?? 0) > 0 ||
-        (chunk.usage.outputTokens ?? 0) > 0 ||
-        context.messageId !== undefined)
-    ) {
+  protected async processToolResult(
+    chunk: LanguageModelV2ToolResultPart,
+    context: StreamHandlerContext
+  ): Promise<StreamHandlerResult> {
+    ensureCreateResult(context);
+    try {
+      const { chatId, turnId, generatedText, messageId, toolCalls } = context;
+      flushMessageParts({ context });
       await drizDb().transaction(async (tx) => {
-        if (context.messageId) {
+        await completePendingMessage({
+          tx,
+          messageId,
+          chatId,
+          turnId: Number(turnId),
+        });
+        // Try to match against a pending tool call first
+        let pendingCall = await findPendingToolCall({
+          chatId,
+          toolCalls,
+          chunk,
+          tx,
+        });
+
+        // If no pending call found, try upsert logic
+        if (!pendingCall && chunk.toolCallId) {
+          // Create tool message row draft for upsert logic
+          const toolRow = {
+            role: 'tool' as const,
+            statusId: 2,
+            content: generatedText,
+            toolName: chunk.toolName,
+            functionCall: null,
+            providerId: chunk.toolCallId,
+            metadata: null,
+            toolResult:
+              chunk.output !== undefined ? JSON.stringify(chunk.output) : null,
+          };
+
+          const upsertedMessageId = await upsertToolMessage(
+            tx,
+            chatId,
+            Number(turnId),
+            toolRow,
+          );
+
+          if (upsertedMessageId !== null) {
+            // Message was updated via upsert, fetch the record
+            try {
+              const existingMessages = await tx
+                .select()
+                .from(chatMessages)
+                .where(
+                  and(
+                    eq(chatMessages.chatId, chatId),
+                    eq(chatMessages.messageId, upsertedMessageId),
+                  ),
+                )
+                .limit(1)
+                .execute();
+              pendingCall = existingMessages[0] || null;
+
+              log((l) =>
+                l.debug(
+                  `Tool result upserted for providerId ${chunk.toolCallId}, messageId: ${upsertedMessageId}`,
+                ),
+              );
+            } catch (error) {
+              // In test environments, selects might fail
+              log((l) =>
+                l.debug(`Failed to fetch upserted tool message: ${error}`),
+              );
+            }
+          }
+        }
+
+        if (pendingCall) {
+          const metadata: Record<PropertyKey, unknown> = pendingCall.metadata
+            ? { ...pendingCall.metadata }
+            : {};
+          let statusId = 2;
+          if (
+            chunk.output.type === 'error-json' ||
+            chunk.output.type === 'error-text'
+          ) {
+            statusId = 3;
+            metadata.toolErrorResult = chunk.output;
+            await setTurnError({ tx, chatId, turnId: Number(turnId), chunk });
+          }
+          if (chunk.providerOptions) {
+            metadata.toolResultProviderMeta = chunk.providerOptions;
+          }
+
+          // Update metadata with turn tracking
+          metadata.modifiedTurnId = Number(turnId);
+
           await tx
             .update(chatMessages)
             .set({
-              statusId: 2,
+              statusId,
+              toolResult:
+                chunk.output !== undefined ? JSON.stringify(chunk.output) : null,
+              metadata: metadata,
+              content: `${pendingCall.content ?? ''}\n${generatedText}`,
             })
             .where(
               and(
-                eq(chatMessages.chatId, context.chatId),
-                eq(chatMessages.turnId, Number(context.turnId)),
-                eq(chatMessages.messageId, context.messageId),
+                eq(chatMessages.chatId, chatId),
+                eq(chatMessages.turnId, Number(turnId)),
+                eq(chatMessages.messageId, pendingCall.messageId),
               ),
             );
+        } else {
+          log((l) =>
+            l.warn('No pending tool call found for chunk and upsert failed', {
+              chatId,
+              turnId,
+              toolName: chunk.toolName,
+              providerId: chunk.toolCallId,
+            }),
+          );
         }
-        await tx.insert(tokenUsage).values({
-          chatId: context.chatId,
-          turnId: Number(context.turnId),
-          promptTokens: chunk.usage.inputTokens,
-          completionTokens: chunk.usage.outputTokens,
-          totalTokens: chunk.usage.totalTokens,
-        });
       });
+
+      return context.createResult({
+        currentMessageId: undefined,
+        generatedText: '',
+      });
+    } catch (error) {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        data: {
+          chatId: context.chatId,
+          turnId: context.turnId,
+          toolName: chunk.toolName,
+          providerId: chunk.toolCallId,
+        },
+        message: 'Error handling tool-result chunk',
+      });
+      return context.createResult(false);
     }
-    // Tests expect currentMessageId to be undefined in the finish result
-    return context.createResult({ currentMessageId: undefined });
-  } catch (error) {
-    LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      data: {
-        chatId: context.chatId,
-        turnId: context.turnId,
-        usage: chunk.usage,
-      },
-      source: 'chat-middleware::stream-handler:handleFinish',
+  }
+
+  protected async processFinish(
+    chunk: Extract<LanguageModelV2StreamPart, { type: 'finish' }>,
+    context: StreamHandlerContext
+  ): Promise<StreamHandlerResult> {
+    ensureCreateResult(context);
+    try {
+      // Save token usage if available
+      if (
+        chunk.usage &&
+        context.turnId &&
+        ((chunk.usage.inputTokens ?? 0) > 0 ||
+          (chunk.usage.outputTokens ?? 0) > 0 ||
+          context.messageId !== undefined)
+      ) {
+        await drizDb().transaction(async (tx) => {
+          if (context.messageId) {
+            await tx
+              .update(chatMessages)
+              .set({
+                statusId: 2,
+              })
+              .where(
+                and(
+                  eq(chatMessages.chatId, context.chatId),
+                  eq(chatMessages.turnId, Number(context.turnId)),
+                  eq(chatMessages.messageId, context.messageId),
+                ),
+              );
+          }
+          await tx.insert(tokenUsage).values({
+            chatId: context.chatId,
+            turnId: Number(context.turnId),
+            promptTokens: chunk.usage.inputTokens,
+            completionTokens: chunk.usage.outputTokens,
+            totalTokens: chunk.usage.totalTokens,
+          });
+        });
+      }
+      // Tests expect currentMessageId to be undefined in the finish result
+      return context.createResult({ currentMessageId: undefined });
+    } catch (error) {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        data: {
+          chatId: context.chatId,
+          turnId: context.turnId,
+          usage: chunk.usage,
+        },
+        source: 'chat-middleware::stream-handler:handleFinish',
+      });
+      log((l) =>
+        l.error('Error handling finish chunk', {
+          error,
+          turnId: context.turnId,
+          chatId: context.chatId,
+          usage: chunk.usage,
+        }),
+      );
+      return context.createResult(false);
+    }
+  }
+
+  protected async processError(
+    chunk: Extract<LanguageModelV2StreamPart, { type: 'error' }>,
+    context: StreamHandlerContext
+  ): Promise<StreamHandlerResult> {
+    // Append to text for visibility, and store raw
+    context.generatedText =
+      context.generatedText + JSON.stringify(chunk as Record<string, unknown>);
+    context.generatedJSON.push(chunk as Record<string, unknown>);
+    const result = context.createResult({
+      success: true,
+      generatedText: context.generatedText,
     });
-    log((l) =>
-      l.error('Error handling finish chunk', {
-        error,
-        turnId: context.turnId,
-        chatId: context.chatId,
-        usage: chunk.usage,
-      }),
-    );
-    return context.createResult(false);
+    (
+      result as unknown as {
+        chatId: string;
+        turnId: number;
+        messageId?: number;
+      }
+    ).chatId = context.chatId;
+    (
+      result as unknown as {
+        chatId: string;
+        turnId: number;
+        messageId?: number;
+      }
+    ).turnId = context.turnId;
+    (
+      result as unknown as {
+        chatId: string;
+        turnId: number;
+        messageId?: number;
+      }
+    ).messageId = context.messageId;
+    return result;
+  }
+
+  protected async processMetadata(
+    chunk: LanguageModelV2StreamPart,
+    context: StreamHandlerContext
+  ): Promise<StreamHandlerResult> {
+    // Store as-is for observability; these are not text content
+    context.generatedJSON.push(chunk as Record<string, unknown>);
+    return context.createResult(true);
+  }
+
+  protected async processOther(
+    chunk: LanguageModelV2StreamPart,
+    context: StreamHandlerContext
+  ): Promise<StreamHandlerResult> {
+    // Unknown chunk type - treat like error/raw: append to text for visibility
+    context.generatedText =
+      context.generatedText + JSON.stringify(chunk as Record<string, unknown>);
+    return context.createResult({ generatedText: context.generatedText });
   }
 }
 
-export async function processStreamChunk(
+export const processStreamChunk = async (
   chunk: LanguageModelV2StreamPart | LanguageModelV2ToolResultPart,
   context: StreamHandlerContext,
-): Promise<StreamHandlerResult> {
-  ensureCreateResult(context);
-  return await instrumentStreamChunk(chunk.type, context, async () => {
-    switch (chunk.type) {
-      // ----- Text parts -----
-      case 'text-start': {
-        const { id } = chunk as Extract<
-          LanguageModelV2StreamPart,
-          { type: 'text-start' }
-        >;
-        getOpenText(context).set(id, '');
-        return context.createResult(true);
-      }
-      case 'text-delta': {
-        const { id, delta } = chunk as Extract<
-          LanguageModelV2StreamPart,
-          { type: 'text-delta' }
-        >;
-        const map = getOpenText(context);
-        if (!map.has(id)) map.set(id, '');
-        map.set(id, (map.get(id) || '') + delta);
-        return context.createResult({
-          generatedText: context.generatedText + delta,
-        });
-      }
-      case 'text-end': {
-        const { id } = chunk as Extract<
-          LanguageModelV2StreamPart,
-          { type: 'text-end' }
-        >;
-        const map = getOpenText(context);
-        const text = map.get(id) || '';
-        map.delete(id);
-        if (text) context.generatedJSON.push({ type: 'text', text });
-        return context.createResult(true);
-      }
+): Promise<StreamHandlerResult> => {
+  const processor = new ChatHistoryStreamProcessor();
+  return processor.process(chunk, context);
+};
 
-      // ----- Reasoning parts -----
-      case 'reasoning-start': {
-        const { id } = chunk as Extract<
-          LanguageModelV2StreamPart,
-          { type: 'reasoning-start' }
-        >;
-        getOpenReasoning(context).set(id, '');
-        return context.createResult(true);
-      }
-      case 'reasoning-delta': {
-        const { id, delta } = chunk as Extract<
-          LanguageModelV2StreamPart,
-          { type: 'reasoning-delta' }
-        >;
-        const map = getOpenReasoning(context);
-        if (!map.has(id)) map.set(id, '');
-        map.set(id, (map.get(id) || '') + delta);
-        return context.createResult(true);
-      }
-      case 'reasoning-end': {
-        const { id } = chunk as Extract<
-          LanguageModelV2StreamPart,
-          { type: 'reasoning-end' }
-        >;
-        const map = getOpenReasoning(context);
-        const text = map.get(id) || '';
-        map.delete(id);
-        if (text) context.generatedJSON.push({ type: 'reasoning', text });
-        return context.createResult(true);
-      }
+// Export handle functions for backward compatibility if needed, using the processor instance
+// or just keep them for reference if tests import them directly. 
+// However, the prompt asked to update stream-handlers.ts so it remains functionally equivalent but uses the implementation.
+// So I should replace the exports with wrappers around the processor methods or just use the processor.
+// But some tests might import `handleToolCall`, `handleToolResult`, `handleFinish` directly.
+// To stay safe and compatible, I will expose them as standalone functions that use a temporary processor instance,
+// or better yet, make `ChatHistoryStreamProcessor` methods public/static or keep the standalone functions
+// but implementation delegates to the processor logic.
 
-      // ----- Tool input (pre tool-call) -----
-      case 'tool-input-start': {
-        const { id, toolName } = chunk as Extract<
-          LanguageModelV2StreamPart,
-          { type: 'tool-input-start' }
-        >;
-        getOpenToolInput(context).set(id, { toolName, value: '' });
-        return context.createResult(true);
-      }
-      case 'tool-input-delta': {
-        const { id, delta } = chunk as Extract<
-          LanguageModelV2StreamPart,
-          { type: 'tool-input-delta' }
-        >;
-        const map = getOpenToolInput(context);
-        const buf = map.get(id) || { value: '' };
-        buf.value = (buf.value || '') + delta;
-        map.set(id, buf);
-        return context.createResult(true);
-      }
-      case 'tool-input-end': {
-        const { id } = chunk as Extract<
-          LanguageModelV2StreamPart,
-          { type: 'tool-input-end' }
-        >;
-        const map = getOpenToolInput(context);
-        const buf = map.get(id);
-        if (buf) {
-          const t = (buf.value ?? '').trim();
-          if (t.length > 0) {
-            let input: unknown = buf.value;
-            if (
-              (t.startsWith('{') && t.endsWith('}')) ||
-              (t.startsWith('[') && t.endsWith(']'))
-            ) {
-              try {
-                input = JSON.parse(buf.value);
-              } catch {
-                /* keep raw */
-              }
-            }
-            context.generatedJSON.push({
-              type: 'tool-input',
-              id,
-              ...(buf.toolName ? { toolName: buf.toolName } : {}),
-              input,
-            });
-          }
-          map.delete(id);
-        }
-        return context.createResult(true);
-      }
+// Actually, `processStreamChunk` is the main entry point.
+// If tests import `handleToolCall` etc, I need to check.
+// I haven't seen the test file yet.
+// If I assume tests use `processStreamChunk`, I'm fine.
+// If tests use `handleToolCall`, I should export it.
+// Let's implement `handleToolCall` by instantiating the processor and calling `processToolCall`.
 
-      case 'tool-call':
-        return await handleToolCall(chunk, context);
+export const handleToolCall = async (
+  chunk: Extract<LanguageModelV2ToolCall, { type: 'tool-call' }>,
+  context: StreamHandlerContext,
+): Promise<StreamHandlerResult> => {
+  // This is a bit hacky because `processToolCall` is protected.
+  // I'll make a public helper or cast.
+  return new ChatHistoryStreamProcessor()['processToolCall'](chunk, context);
+};
 
-      case 'tool-result':
-        if (!('output' in chunk)) {
-          log((l) =>
-            l.warn('Received tool result without output', {
-              chunk,
-              context,
-            }),
-          );
-          return context.createResult({
-            generatedText: context.generatedText + JSON.stringify(chunk),
-          });
-        }
-        return await handleToolResult(chunk, context);
+export const handleToolResult = async (
+  chunk: LanguageModelV2ToolResultPart,
+  context: StreamHandlerContext,
+): Promise<StreamHandlerResult> => {
+  return new ChatHistoryStreamProcessor()['processToolResult'](chunk, context);
+};
 
-      case 'finish':
-        return await handleFinish(chunk, context);
-
-      // ----- Other parts and fallback handling -----
-      case 'file':
-      case 'source':
-      case 'raw':
-      case 'response-metadata':
-      case 'stream-start': {
-        // Store as-is for observability; these are not text content
-        context.generatedJSON.push(chunk as Record<string, unknown>);
-        return context.createResult(true);
-      }
-
-      case 'error': {
-        // Append to text for visibility, and store raw
-        context.generatedText =
-          context.generatedText +
-          JSON.stringify(chunk as Record<string, unknown>);
-        context.generatedJSON.push(chunk as Record<string, unknown>);
-        const result = context.createResult(true);
-        (
-          result as unknown as {
-            chatId: string;
-            turnId: number;
-            messageId?: number;
-          }
-        ).chatId = context.chatId;
-        (
-          result as unknown as {
-            chatId: string;
-            turnId: number;
-            messageId?: number;
-          }
-        ).turnId = context.turnId;
-        (
-          result as unknown as {
-            chatId: string;
-            turnId: number;
-            messageId?: number;
-          }
-        ).messageId = context.messageId;
-        return result;
-      }
-
-      default: {
-        // Unknown chunk: append to text to match existing tests
-        const appended =
-          context.generatedText +
-          JSON.stringify(chunk as Record<string, unknown>);
-        context.generatedText = appended;
-        const result = context.createResult({
-          generatedText: appended,
-        });
-        (
-          result as unknown as {
-            chatId: string;
-            turnId: number;
-            messageId?: number;
-          }
-        ).chatId = context.chatId;
-        (
-          result as unknown as {
-            chatId: string;
-            turnId: number;
-            messageId?: number;
-          }
-        ).turnId = context.turnId;
-        (
-          result as unknown as {
-            chatId: string;
-            turnId: number;
-            messageId?: number;
-          }
-        ).messageId = context.messageId;
-        return result;
-      }
-    }
-  });
-}
+export const handleFinish = async (
+  chunk: Extract<LanguageModelV2StreamPart, { type: 'finish' }>,
+  context: StreamHandlerContext,
+): Promise<StreamHandlerResult> => {
+  return new ChatHistoryStreamProcessor()['processFinish'](chunk, context);
+};

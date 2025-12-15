@@ -14,7 +14,7 @@ export const register = async () => {
   // Skip instrumentation in local development if no connection string
   if (
     process.env.NODE_ENV === 'development' &&
-    !process.env.AZURE_MONITOR_CONNECTION_STRING
+    !process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING
   ) {
     // Logging is not availalbe until after instrumentation is complete
     console.log('[otel] Instrumentation disabled for local development');

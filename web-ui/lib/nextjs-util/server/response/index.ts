@@ -1,5 +1,6 @@
 import { log, safeSerialize } from '@/lib/logger';
 import { isRunningOnServer } from '@/lib/site-util/env';
+import { Readable } from 'stream';
 
 /**
  * Minimal WHATWG-like Response implementation for server-side use.
@@ -203,6 +204,43 @@ export const nodeStreamToReadableStream = (
     },
   });
 };
+
+/**
+ * Convert a Web API ReadableStream (e.g. from fetch) to a Node.js Readable stream.
+ *
+ * @param webStream - The Web API ReadableStream to convert
+ * @returns A Node.js Readable stream
+ */
+export const webStreamToReadable = (webStream: ReadableStream): Readable => {
+  if (typeof Readable.fromWeb === 'function') {
+    // @ts-expect-error - Readable.fromWeb is available in Node 18+
+    return Readable.fromWeb(webStream);
+  }
+
+  const reader = webStream.getReader();
+  return new Readable({
+    async read() {
+      try {
+        const { done, value } = await reader.read();
+        if (done) {
+          this.push(null);
+        } else {
+          this.push(Buffer.from(value));
+        }
+      } catch (e) {
+        this.destroy(e instanceof Error ? e : new Error(String(e)));
+      }
+    },
+    destroy(err, callback) {
+      reader.cancel(err).then(
+        () => callback(err),
+        (e) => callback(e),
+      );
+    },
+  });
+};
+
+
 
 export const makeResponse = (v: {
   body: Buffer;

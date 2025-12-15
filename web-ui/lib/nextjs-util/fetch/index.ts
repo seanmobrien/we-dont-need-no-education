@@ -1,5 +1,5 @@
-//const localFetch = globalThis.fetch;
+const localFetch = globalThis.fetch;
 
-const localFetch = fetch;
+//const localFetch = fetch;
 
 export { localFetch as fetch };

@@ -31,7 +31,9 @@ jest.mock('@/lib/components/ai/chat-fetch-wrapper', () => ({
 
 describe('ChatPanel Float Functionality', () => {
   it('renders chat panel inline by default', () => {
-    render(<ChatPanel page="test" />);
+    render(<ChatPanel page="test" />, {
+      chatPanel: true,
+    });
 
     expect(
       screen.getByPlaceholderText(/Type your message here/),
@@ -42,7 +44,9 @@ describe('ChatPanel Float Functionality', () => {
   }, 10000);
 
   it('shows float option in menu', async () => {
-    render(<ChatPanel page="test" />);
+    render(<ChatPanel page="test" />, {
+      chatPanel: true,
+    });
 
     // Find and click the menu button (MoreVert icon button)
     const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
@@ -56,7 +60,9 @@ describe('ChatPanel Float Functionality', () => {
   }, 10000);
 
   it('switches to floating mode when Float is clicked', async () => {
-    render(<ChatPanel page="test" />);
+    render(<ChatPanel page="test" />, {
+      chatPanel: true,
+    });
 
     // Find and click the menu button
     const menuButton = screen.getByTestId('button-chat-menu');

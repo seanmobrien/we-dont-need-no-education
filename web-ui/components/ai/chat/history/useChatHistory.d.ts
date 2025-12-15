@@ -2,7 +2,7 @@
  * Type definitions for chat history data hook
  * @module components/chat/history/useChatHistory
  */
-import { type ChatDetails } from '../../../lib/ai/chat/types';
+import { type ChatDetails } from '../../../../lib/ai/chat/types';
 import { UseQueryResult } from '@tanstack/react-query';
 
 declare module '@/components/ai/chat/history/useChatHistory' {
