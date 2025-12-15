@@ -2,11 +2,8 @@ import type {
   JSONValue,
   LanguageModelV2Middleware,
   LanguageModelV2StreamPart,
-  SharedV2ProviderMetadata,
 } from '@ai-sdk/provider';
 import { MiddlewareStateManager } from './state-management';
-import { LanguageModelMiddleware } from 'ai';
-import { PickField } from '@/lib/typescript';
 
 const DEFAULT_TELEMETRY = {
   isEnabled: true,
@@ -75,6 +72,7 @@ function safeJsonParse(jsonString: string): unknown {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const addStructuredOutputs = <TTarget extends Record<any, any> | undefined | null>({
   value,
   target,
@@ -101,32 +99,11 @@ const addStructuredOutputs = <TTarget extends Record<any, any> | undefined | nul
   ) as TTarget & { structuredOutputs: unknown };
 };
 
-const recurseStructuredOutputs = (output: unknown) => (_key: any, value: any) => (
+const recurseStructuredOutputs = (output: unknown) => (_key: unknown, value: unknown) => (
   typeof value === 'object' && value !== null
     ? addStructuredOutputs({ value: output, target: value })
     : value
 );
-
-const experimentalOutputEmpty = (res: Awaited<ReturnType<Required<LanguageModelMiddleware>['wrapGenerate']>>) => {
-  if (res && 'experimental_output' in res) {
-    const output = res.experimental_output;
-    if (
-      output === null ||
-      output === undefined ||
-      (typeof output === 'object' &&
-        Object.keys(output).length === 0)
-    ) {
-      return true;
-    }
-    res.providerMetadata = addStructuredOutputs({
-      value: output,
-      target: res.providerMetadata,
-      transformItem: recurseStructuredOutputs(output),
-    });
-    return false;
-  }
-  return true;
-};
 
 export const originalSetNormalizedDefaultsMiddleware: LanguageModelV2Middleware =
 {

@@ -67,7 +67,8 @@ const hydrateContext = (
         span.setStatus({ code: SpanStatusCode.OK });
       }
       span.end();
-    } catch (e) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_e) {
       // Swallow errors during dispose to avoid masking prior errors
     }
   };
