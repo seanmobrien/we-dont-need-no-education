@@ -78,11 +78,15 @@ const getAppInsights = () => {
 
     // Add telemetry initializers once
     if (!appInsightState.initializersAdded) {
-      const ignoreMessage = ['messageId: 102', '102 message:'];
+      const ignoreRegex = [
+        /.*AI \(Internal\).*/i,
+        /(?:messageId: \d+)|\d+ message:/i
+      ]
       const ignoreNames = [
-        ...ignoreMessage,
         '/api/auth/session',
         '\\api\\auth\\session',
+        '/api/health',
+        '\\api\\health',
         '/static/',
         '/_next/',
         '__nextjs_original-stack-frames',
@@ -96,6 +100,7 @@ const getAppInsights = () => {
               ignoreNames.findIndex(
                 (name) => lookFor.lastIndexOf(name) !== -1,
               ) !== -1
+              || ignoreRegex.some((regex) => regex.test(lookFor))
             ) {
               return false;
             }
@@ -108,7 +113,7 @@ const getAppInsights = () => {
               for (const exception of exceptions) {
                 if (
                   exception.message &&
-                  ignoreMessage.some((msg) => exception.message.includes(msg))
+                  ignoreRegex.some((regex) => regex.test(exception.message))
                 ) {
                   return false;
                 }
