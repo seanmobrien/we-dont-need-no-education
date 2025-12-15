@@ -2,10 +2,12 @@
  * @jest-environment node
  */
 
-jest.mock('got');
 
 import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 import type { Got } from 'got';
+import got from 'got';
+
+const mockGot = got as jest.Mocked<Got>;
 
 /**
  * Tests for ImpersonationThirdParty (Authorization Code flow)
@@ -45,25 +47,7 @@ jest.mock('openid-client', () => {
   };
 });
 
-// Mocks for got HTTP calls
-
-/*
-const mockGot.get = jest.fn();
-const mockGot.post = jest.fn();
-const gotExtended = {
-  get: (...args: any[]) => mockGot.get(...args),
-  post: (...args: any[]) => mockGot.post(...args),
-};
-const gotExtend = jest.fn().mockReturnValue(gotExtended);
-jest.mock('got', () => ({
-  __esModule: true,
-  got: {
-    get: (...args: any[]) => mockGot.get(...args),
-    post: (...args: any[]) => mockGot.post(...args),
-    extend: (...args: any[]) => gotExtend(...args),
-  },
-}));
-*/
+// Mocks for got HTTP calls now handled in global jest.mock-got.ts
 
 let kcAdminMock: any = null;
 
@@ -94,6 +78,7 @@ jest.mock('@/lib/site-util/auth/crypto-service', () => ({
 const redisClient = {
   get: jest.fn().mockResolvedValue(null),
   setEx: jest.fn().mockResolvedValue('OK'),
+  del: jest.fn().mockResolvedValue(1),
 };
 jest.mock('@/lib/redis-client', () => ({
   getRedisClient: jest.fn(async () => redisClient),
@@ -126,13 +111,15 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
     },
   };
 
-  let got: Got = undefined as unknown as Got;
-  let mockGot: jest.Mocked<Got> = undefined as unknown as jest.Mocked<Got>;
+  //let got: Got = undefined as unknown as Got;
+  let mockGot: jest.Mocked<Got> = got as jest.Mocked<Got>;
 
   beforeEach(() => {
+    /*
     jest.mock('got');
 
     got = require('got').got as Got;
+    */
     mockGot = got as jest.Mocked<Got>;
 
     // Ensure env vars used by fromRequest are present

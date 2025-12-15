@@ -54,7 +54,7 @@ export interface MultiModalMessages {
 }
 
 export interface Messages {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system" | "tool";
   content: string | MultiModalMessages;
 }
 

@@ -265,12 +265,8 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         'attempt',
       );
 
-      // Apply connection timeout
-      await this.#safetyUtils.withTimeout(
-        super.start(),
-        CONNECTION_TIMEOUT_MS,
-        'MCP connection',
-      );
+      // Timeout capabilities now built into our fetch implementation
+      await super.start();
 
       // Record successful connection
       MetricsRecorder.recordConnection(
@@ -480,14 +476,9 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         );
       }
 
-      // Apply send timeout
-      await this.#safetyUtils.withTimeout(
-        super.send(message),
-        SEND_TIMEOUT_MS,
-        'MCP message send',
-      );
+      super.send(message),
 
-      span.setStatus({ code: SpanStatusCode.OK });
+        span.setStatus({ code: SpanStatusCode.OK });
       this.#safetyUtils.completeOperation(operationId, 'success');
 
       if (DEBUG_MODE) {

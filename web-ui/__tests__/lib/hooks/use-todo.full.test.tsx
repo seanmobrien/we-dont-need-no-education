@@ -1,3 +1,6 @@
+/**
+ * @jest-environment jsdom
+ */
 let testQueryClient: QueryClient | undefined;
 
 import React, { JSX, PropsWithChildren } from 'react';
@@ -62,7 +65,7 @@ describe('use-todo real implementation', () => {
     const { useTodoLists } = hooks;
 
     const mockData = [{ id: 'l1', title: 'List 1' }];
-    mockFetch.mockResolvedValueOnce(jsonResponse({ data: mockData }));
+    mockFetch.mockResolvedValue(jsonResponse({ data: mockData }));
 
     const { result } = renderHook(() => useTodoLists(), {
       wrapper: TestWrapper,

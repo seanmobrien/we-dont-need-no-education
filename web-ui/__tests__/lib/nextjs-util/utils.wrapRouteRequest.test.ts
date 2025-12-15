@@ -1,6 +1,10 @@
 /**
  * @jest-environment node
  */
+
+jest.unmock('@opentelemetry/api');
+jest.unmock('@opentelemetry/sdk-trace-base');
+
 /**
  * @file utils.wrapRouteRequest.test.ts
  * @description Unit tests for wrapRouteRequest utility

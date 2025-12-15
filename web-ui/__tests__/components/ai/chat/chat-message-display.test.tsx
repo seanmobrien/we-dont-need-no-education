@@ -228,7 +228,7 @@ describe('ChatMessageDisplay', () => {
     // User message should have different background than assistant
     let messageContainer = screen.getByText('Test user message').closest('div');
     expect(messageContainer).toHaveStyle(
-      'background-color: var(--mui-palette-action-hover)',
+      'background-color: rgba(0, 0, 0, 0.04)',
     );
 
     rerender(<ChatMessageDisplay message={mockAssistantMessage} />);
@@ -237,7 +237,7 @@ describe('ChatMessageDisplay', () => {
       .getByText('Test assistant response')
       .closest('div');
     expect(messageContainer).toHaveStyle(
-      'background-color: var(--mui-palette-background-paper)',
+      'background-color: rgb(255, 255, 255)',
     );
   });
 

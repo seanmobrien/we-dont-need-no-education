@@ -1,3 +1,5 @@
+jest.unmock('@opentelemetry/api');
+jest.unmock('@opentelemetry/sdk-trace-base');
 /**
  * @jest-environment node
  * @fileoverview Unit tests for chat history middleware main entry point

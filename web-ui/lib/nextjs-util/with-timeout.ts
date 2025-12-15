@@ -1,4 +1,5 @@
 import { log, safeSerialize } from "@/lib/logger";
+import { TimeoutError } from "../react-util/errors/timeout-error";
 
 export type AwaitedWithTimeout<T> = {
   value: Awaited<T>;
@@ -64,7 +65,7 @@ export const withTimeoutAsError = async <T>(
 ): Promise<T> => {
   const result = await withTimeout(promise, timeoutMs, operation);
   if (result.timedOut) {
-    throw new Error(`${operation ?? 'Operation'} timed out after ${timeoutMs}ms`);
+    throw new TimeoutError(`${operation ?? 'Operation'} timed out after ${timeoutMs}ms`);
   }
   return result.value;
 };

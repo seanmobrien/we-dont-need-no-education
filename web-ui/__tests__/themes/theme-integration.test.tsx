@@ -1,5 +1,4 @@
 import { render, screen } from '@/__tests__/test-utils';
-import { ThemeProvider } from '@/lib/themes/provider';
 import { ThemeSelector } from '@/components/theme/theme-selector';
 
 // Mock Next.js navigation
@@ -9,12 +8,10 @@ jest.mock('next/navigation', () => ({
 
 // Simple test component to verify theme functionality
 const TestComponent = () => (
-  <ThemeProvider defaultTheme="light">
-    <div data-testid="theme-test">
-      <ThemeSelector />
-      <div>Test content</div>
-    </div>
-  </ThemeProvider>
+  <div data-testid="theme-test">
+    <ThemeSelector />
+    <div>Test content</div>
+  </div>
 );
 
 describe('Theme Integration', () => {
@@ -34,7 +31,7 @@ describe('Theme Integration', () => {
   });
 
   it('applies light theme data attribute correctly', () => {
-    render(<TestComponent />);
+    render(<TestComponent />, { theme: 'light' });
     /*
     act(() => {
       waitFor(() => screen.getByLabelText('Change Theme'));
@@ -47,14 +44,12 @@ describe('Theme Integration', () => {
 
   it('switches to dark theme correctly', () => {
     const DarkThemeComponent = () => (
-      <ThemeProvider defaultTheme="dark">
-        <div data-testid="dark-theme-test">
-          <ThemeSelector />
-        </div>
-      </ThemeProvider>
+      <div data-testid="dark-theme-test">
+        <ThemeSelector />
+      </div>
     );
 
-    render(<DarkThemeComponent />);
+    render(<DarkThemeComponent />, { theme: 'dark' });
     /*
     act(() => {
       waitFor(() => screen.getByLabelText('Change Theme'));

@@ -1,5 +1,5 @@
-import { memoryMiddlewareFactory, memoryMiddlewareContextFactory } from '../../../../lib/ai/middleware/memory-middleware';
-import { generateTextWithRetry } from '../../../../lib/ai/core/generate-text-with-retry';
+import { memoryMiddlewareFactory, memoryMiddlewareContextFactory } from '../../../../../lib/ai/middleware/memory-middleware';
+import { generateTextWithRetry } from '../../../../../lib/ai/core/generate-text-with-retry';
 import { getDefinitionsFromText } from '@semanticencoding/core';
 
 const warnMock = jest.fn();
@@ -7,7 +7,7 @@ const verboseMock = jest.fn();
 const debugMock = jest.fn();
 
 // Mocks for external dependencies (use same module IDs as implementation)
-jest.mock('../../../../lib/ai/core/generate-text-with-retry', () => ({
+jest.mock('../../../../../lib/ai/core/generate-text-with-retry', () => ({
   generateTextWithRetry: jest.fn(),
   generatorFactory: jest.fn(),
   generateObjectWithRetryFactory: jest.fn(),
@@ -17,26 +17,26 @@ jest.mock('@semanticencoding/core', () => ({
   getDefinitionsFromText: jest.fn(() => []),
 }));
 
-jest.mock('../../../../lib/ai/aiModelFactory', () => ({
+jest.mock('../../../../../lib/ai/aiModelFactory', () => ({
   aiModelFactory: jest.fn(async () => ({ id: 'mock-model' })),
 }));
 
-jest.mock('../../../../lib/ai/middleware/tool-proxy', () => ({
+jest.mock('../../../../../lib/ai/middleware/tool-proxy', () => ({
   wrapWithToolProxyMiddleware: jest.fn(({ model }) => model),
 }));
 
-jest.mock('../../../../lib/ai/middleware/chat-history', () => ({
+jest.mock('../../../../../lib/ai/middleware/chat-history', () => ({
   chatIdFromParams: jest.fn(() => ({ chatId: 'chat', turnId: 'turn', messageId: 'msg' })),
   createAgentHistoryContext: jest.fn(() => ({ ctx: true })),
   wrapChatHistoryMiddleware: jest.fn(({ model }) => model),
 }));
 
-jest.mock('../../../../lib/logger', () => ({
+jest.mock('../../../../../lib/logger', () => ({
   log: jest.fn((fn) => fn({ verbose: verboseMock, warn: warnMock, debug: debugMock })),
   safeSerialize: jest.fn((value) => JSON.stringify(value)),
 }));
 
-jest.mock('../../../../lib/react-util/errors/logged-error', () => ({
+jest.mock('../../../../../lib/react-util/errors/logged-error', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn((err) => err as Error),
     isLoggedError: jest.fn(() => false),

@@ -1,25 +1,5 @@
 process.env.MEM0_API_BASE_PATH = process.env.MEM0_API_BASE_PATH ?? 'api/v1';
 
-const fetchMock = jest.fn(() =>
-  Promise.resolve({ json: jest.fn(() => Promise.resolve({})) }),
-);
-
-jest.mock('@/lib/nextjs-util/fetch', () => {
-  return {
-    get fetch() {
-      return fetchMock;
-    },
-  };
-});
-
-jest.mock('@/lib/nextjs-util/server/fetch', () => {
-  return {
-    get fetch() {
-      return fetchMock;
-    },
-  };
-});
-
 jest.mock('@/lib/nextjs-util/client-navigate', () => ({
   clientReload: jest.fn().mockImplementation(() => { }),
   clientNavigate: jest.fn().mockImplementation(() => { }),
@@ -697,7 +677,7 @@ export const withRedisConnection = () => {
   }
 };
 
-global.fetch = jest.fn().mockImplementation(() => {
+globalThis.fetch = jest.fn().mockImplementation(() => {
   return Promise.resolve({
     ok: false,
     status: 500,
@@ -988,6 +968,4 @@ afterEach(() => {
   SingletonProvider.Instance.clear();
   // Reset the mock database
   mockDb = mockDbFactory();
-  fetchMock.mockClear();
-
 });

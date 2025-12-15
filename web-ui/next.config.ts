@@ -15,9 +15,11 @@ export const nextConfig: NextConfig = withStripRscPrefixPlugin(
           experimental: {
             webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'INP', 'TTFB', 'FID'],
           },
+          /*
           publicRuntimeConfig: {
             hostname: process.env.NEXT_PUBLIC_HOSTNAME,
           },
+          */
         }),
       ),
     ),

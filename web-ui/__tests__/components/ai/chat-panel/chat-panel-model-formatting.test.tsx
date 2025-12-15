@@ -67,7 +67,9 @@ describe('ChatPanel Model String Formatting', () => {
   });
 
   const renderChatPanel = () => {
-    return render(<ChatPanel page="test-page" />);
+    return render(<ChatPanel page="test-page" />, {
+      chatPanel: true,
+    });
   };
 
   it('formats Azure model string correctly when sending message', async () => {

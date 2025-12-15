@@ -294,6 +294,10 @@ export default class MemoryClient {
     const [isSwaggerDocs, requestUrl] = this.#resolveForwardedApiUrl(url);
     // Make request
     const response = await fetch(requestUrl, {
+      timeout: {
+        connect: 90 * 1000,
+        socket: 60 * 1000,
+      },
       ...options,
       headers: {
         ...this.headers,
@@ -314,10 +318,13 @@ export default class MemoryClient {
     return await response.json();
   }
 
-  _preparePayload(messages: Array<Message>, options: MemoryOptions): object {
-    const payload: any = {};
-    payload.messages = messages;
-    return { ...payload, ...options };
+  #preparePayload(messages: Array<Message>, options: MemoryOptions): object {
+    return {
+      text: JSON.stringify(messages),
+      metadata: options.metadata,
+      infer: options.infer ?? true,
+      app: 'OpenMemory'
+    };
   }
 
   _prepareParams(options: MemoryOptions): Record<string, string> {
@@ -447,7 +454,7 @@ export default class MemoryClient {
         options.version = options.api_version.toString();
       }
 
-      const payload = this._preparePayload(messages, options);
+      const payload = this.#preparePayload(messages, options);
 
       // get payload keys whose value is not null or undefined
       const payloadKeys = Object.keys(payload);

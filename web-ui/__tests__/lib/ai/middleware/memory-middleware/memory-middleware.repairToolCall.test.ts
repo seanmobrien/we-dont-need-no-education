@@ -1,4 +1,4 @@
-import { repairTopMemoriesToolCall } from '../../../../lib/ai/middleware/memory-middleware';
+import { repairTopMemoriesToolCall } from '../../../../../lib/ai/middleware/memory-middleware/repair-top-memories';
 import { InvalidToolInputError, NoSuchToolError, type ToolSet } from 'ai';
 
 type RepairOptions = Parameters<typeof repairTopMemoriesToolCall>[0];
