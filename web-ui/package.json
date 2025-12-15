@@ -7,6 +7,13 @@
   ],
   "type": "module",
   "packageManager": "yarn@1.22.22",
+  "packageManagerConfig": {
+    "ignore-peerdeps": [
+      "@textea/json-viewer@4.0.1:@mui/material",
+      "@textea/json-viewer@4.0.1:react",
+      "@textea/json-viewer@4.0.1:react-dom"
+    ]
+  },
   "engines": {
     "node": "^24.0.0",
     "yarn": ">=1.22.0"
@@ -177,16 +184,16 @@
       }
     },
     "@textea-json-viewer@4.0.1": {
-      "@mui/material": "^7.1.0",
-      "react": "^19.1.0",
-      "react-dom": "^19.1.0"
+      "@mui/material": ">=7.1.0",
+      "react": ">=19.1.0",
+      "react-dom": ">=19.1.0"
     }
   },
   "resolutions": {
     "axios": ">=1.8.2",
     "esbuild": ">=0.25.0",
-    "@textea/json-viewer/**/@mui/material": "^7.1.0",
-    "@textea/json-viewer/**/react": "^19.0.0",
-    "@textea/json-viewer/**/react-dom": "^19.0.0"
+    "@textea/json-viewer/**/@mui/material": "7.1.0",
+    "@textea/json-viewer/**/react": ">=19.0.0",
+    "@textea/json-viewer/**/react-dom": ">=19.0.0"
   }
 }
