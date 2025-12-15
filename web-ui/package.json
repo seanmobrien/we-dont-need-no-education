@@ -108,7 +108,7 @@
     "markdown-to-jsx": "^7.7.6",
     "mcp-handler": "^1.0.2",
     "mui-markdown": "^2.0.1",
-    "next": "^15.5.7",
+    "next": "^15.5.9",
     "next-auth": "^5.0.0-beta.30",
     "node-html-parser": "^7.0.1",
     "openai": "^5.10.2",
