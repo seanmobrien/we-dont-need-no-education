@@ -40,4 +40,4 @@ export declare class StopConditionLibrary<TOOLS extends ToolSet = ToolSet> {
  * @param {function(StopConditionLibrary<TOOLS>): TResult} cb A callback function that receives the library instance.
  * @returns {TResult} The result returned by the callback function.
  */
-export declare const StopConditions: <TOOLS extends ToolSet = ToolSet, TResult = any>(cb: (sc: StopConditionLibrary<TOOLS>) => TResult) => TResult;
+export declare const StopConditions: <TOOLS extends ToolSet = ToolSet, TResult = unknown>(cb: (sc: StopConditionLibrary<TOOLS>) => TResult) => TResult;

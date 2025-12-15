@@ -55,6 +55,7 @@ export const segregateLatestRequest = (prompt: LanguageModelV2Prompt) => {
       }
       prior.push({
         ...p,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         content: filteredContents as any,
       });
     } else {

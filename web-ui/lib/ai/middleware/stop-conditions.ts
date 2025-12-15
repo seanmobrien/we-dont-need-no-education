@@ -17,7 +17,7 @@ export class StopConditionLibrary<TOOLS extends ToolSet = ToolSet> {
   }
 }
 
-export const StopConditions = <TOOLS extends ToolSet = ToolSet, TResult = any>(cb: (sc: StopConditionLibrary<TOOLS>) => TResult): TResult =>
+export const StopConditions = <TOOLS extends ToolSet = ToolSet>(cb: (sc: StopConditionLibrary<TOOLS>) => StopCondition<TOOLS>): StopCondition<TOOLS> =>
   cb(new StopConditionLibrary<TOOLS>());
 
 

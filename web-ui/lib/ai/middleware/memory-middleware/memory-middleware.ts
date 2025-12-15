@@ -45,8 +45,8 @@ export const memoryMiddlewareFactory: (context: MemoryMiddlewareContext) => Lang
         currentMessageOrder: 0,
         generatedText: '',
         generatedJSON: [],
-        toolCalls: new Map<string, any>(),
-      } as any);
+        toolCalls: new Map<string, unknown>(),
+      } as unknown as ChatHistoryContext);
 
       const transformStream = new TransformStream<
         LanguageModelV2StreamPart,

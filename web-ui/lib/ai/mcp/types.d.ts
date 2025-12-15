@@ -24,8 +24,7 @@ declare module '@/lib/ai/mcp/types' {
    *
    * @example
    * ```typescript
-   * import type {
-   *   MCPClient,
+   * import type {*   MCPClient,
    *   ConnectableToolProvider,
    *   ToolProviderFactoryOptions,
    *   UserToolProviderCache
@@ -465,5 +464,73 @@ declare module '@/lib/ai/mcp/types' {
       config: UserToolProviderCacheConfig;
     };
     shutdown(): void;
+  };
+
+  /**
+   * Configuration options for creating an MCP (Model Context Protocol) error.
+   *
+   * This interface defines the structure for error details when creating structured
+   * MCP errors. It aligns with JSON-RPC 2.0 error objects, allowing for
+   * standard error codes, descriptive messages, and optional data payloads.
+   *
+   * These options are typically used when instantiating an MCPError to propagate
+   * protocol-level or application-level errors back to the client or caller.
+   *
+   * @typedef {Object} MCPErrorOptions
+   *
+   * @property {number} code - The numeric error code indicating the error type.
+   *   Should ideally follow JSON-RPC 2.0 error code standards (e.g., -32700 for Parse Error)
+   *   or MCP-specific error codes defined in the protocol spec.
+   * @property {string} [message] - A short, human-readable summary of the error.
+   *   If omitted, a default message corresponding to the error code may be used
+   *   if the error class supports it.
+   * @property {unknown} [data] - Optional primitive or structured value containing
+   *   additional information about the error. Can be used to provide validation
+   *   details, stack traces (in dev), or other context.
+   *
+   * @example
+   * ```typescript
+   * throw new MCPError({
+   *   code: -32602,
+   *   message: "Invalid params",
+   *   data: { field: "prompt", reason: "cannot be empty" }
+   * });
+   * ```
+   *
+   * @see {@link https://www.jsonrpc.org/specification#error_object} for JSON-RPC error structure
+   * @since 1.0.0
+   */
+  /**
+   * Options for constructing an MCP error.
+   *
+   * This interface defines the structure required to create a standard MCP error,
+   * including the error code, an optional descriptive message, and optional
+   * supplementary data. It ensures consistency in error reporting across the MCP system.
+   *
+   * @typedef {Object} MCPErrorOptions
+   *
+   * @property {number} code - The numeric error code indicating the type of error.
+   *   Standard JSON-RPC error codes or MCP-specific error codes should be used.
+   * @property {string} [message] - Optional human-readable description of the error.
+   *   If omitted, a default message corresponding to the error code may be used.
+   * @property {unknown} [data] - Optional additional data providing context or details
+   *   about the error. This can include validation errors, stack traces (in dev),
+   *   or other relevant debugging information.
+   *
+   * @example
+   * ```typescript
+   * const errorOptions: MCPErrorOptions = {
+   *   code: -32602, // Invalid params
+   *   message: "The 'url' parameter is required",
+   *   data: { missingField: "url" }
+   * };
+   * ```
+   *
+   * @since 1.0.0
+   */
+  export type MCPErrorOptions = {
+    code: number;
+    message?: string;
+    data?: unknown;
   };
 }
