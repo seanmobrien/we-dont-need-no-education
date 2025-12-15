@@ -76,9 +76,12 @@ const AllTheProviders = ({
   );
 };
 
-const AllTheProvidersWithFlags = ({ children, theme }: WrapperProps) => {
+const AllTheProvidersWithFlags = ({
+  children,
+  ...wrapperProps
+}: WrapperProps) => {
   return (
-    <AllTheProviders theme={theme}>
+    <AllTheProviders {...wrapperProps}>
       <FlagProvider>{children}</FlagProvider>
     </AllTheProviders>
   );

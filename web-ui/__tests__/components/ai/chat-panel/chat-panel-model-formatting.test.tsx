@@ -69,6 +69,7 @@ describe('ChatPanel Model String Formatting', () => {
   const renderChatPanel = () => {
     return render(<ChatPanel page="test-page" />, {
       chatPanel: true,
+      withFlags: true,
     });
   };
 
