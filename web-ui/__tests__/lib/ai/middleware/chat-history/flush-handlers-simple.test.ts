@@ -22,8 +22,10 @@ import type {
   FlushConfig,
 } from '@/lib/ai/middleware/chat-history/types';
 import { DbDatabaseType } from '@/lib/drizzle-db';
-import { makeMockDb } from '@/__tests__/setup/jest.setup';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
+
+const makeMockDb = () => withJestTestExtensions().makeMockDb();
 
 // Mock the logger
 jest.mock('@/lib/logger', () => ({
