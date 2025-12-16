@@ -15,7 +15,6 @@
  * @version 1.0.0
  */
 
-import { keycloakAdminClientFactory } from '@/lib/auth/keycloak-factories';
 import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
@@ -29,16 +28,44 @@ const getTokenEndpoint = (): string => {
 };
 
 /**
- * Creates the body for client credentials grant
+ * Obtains a Protection API Token (PAT) for service account operations
+ *
+ * This function authenticates using client credentials to obtain a token
+ * that can be used to call Keycloak's Protection API for resource management.
+ *
+ * @returns The access token (PAT)
+ * @throws {Error} If token retrieval fails
  * @internal
+ *
+ * @example
+ * ```typescript
+ * const pat = await getProtectionApiToken();
+ * // Use PAT to call Protection API endpoints
+ * ```
  */
-const createClientCredentialsBody = (): URLSearchParams => {
-  return new URLSearchParams({
+async function getProtectionApiToken(): Promise<string> {
+  const body = new URLSearchParams({
     grant_type: 'client_credentials',
     client_id: env('AUTH_KEYCLOAK_CLIENT_ID'),
     client_secret: env('AUTH_KEYCLOAK_CLIENT_SECRET'),
+    scope: 'uma_protection',
   });
-};
+
+  const res = await fetch(getTokenEndpoint(), {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to get PAT: ${res.statusText}`);
+  }
+
+  const json = await res.json();
+  return json.access_token;
+}
 
 /**
  * Represents a case file resource in Keycloak
@@ -159,43 +186,10 @@ async function findCaseFileResource(
   userId: number,
 ): Promise<CaseFileResource | null> {
   try {
-    const adminClient = await keycloakAdminClientFactory({
-      baseUrl: env('AUTH_KEYCLOAK_ISSUER').replace('/realms/', '/admin/realms/'),
-      realmName: extractRealmFromIssuer(env('AUTH_KEYCLOAK_ISSUER')),
-    });
-
-    // Set access token from service account or admin
-    await adminClient.auth({
-      grantType: 'client_credentials',
-      clientId: env('AUTH_KEYCLOAK_CLIENT_ID'),
-      clientSecret: env('AUTH_KEYCLOAK_CLIENT_SECRET'),
-    });
-
-    // Search for resource by name
-    // Note: Keycloak Admin API doesn't have a direct Protection API endpoint,
-    // so we need to use a custom fetch to the Protection API
     const resourceName = `case-file:${userId}`;
-    const protectionApiUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/protocol/openid-connect/token`;
     
     // Get PAT (Protection API Token)
-    const patResponse = await fetch(protectionApiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'client_credentials',
-        client_id: env('AUTH_KEYCLOAK_CLIENT_ID'),
-        client_secret: env('AUTH_KEYCLOAK_CLIENT_SECRET'),
-      }),
-    });
-
-    if (!patResponse.ok) {
-      throw new Error(`Failed to get PAT: ${patResponse.statusText}`);
-    }
-
-    const patData = await patResponse.json();
-    const pat = patData.access_token;
+    const pat = await getProtectionApiToken();
 
     // Search for the resource
     const resourcesUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/authz/protection/resource_set?name=${encodeURIComponent(resourceName)}`;
@@ -261,20 +255,7 @@ async function createCaseFileResource(
 ): Promise<CaseFileResource> {
   try {
     // Get PAT (Protection API Token)
-    const patResponse = await fetch(getTokenEndpoint(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: createClientCredentialsBody(),
-    });
-
-    if (!patResponse.ok) {
-      throw new Error(`Failed to get PAT: ${patResponse.statusText}`);
-    }
-
-    const patData = await patResponse.json();
-    const pat = patData.access_token;
+    const pat = await getProtectionApiToken();
 
     // Create the resource
     const resourcesUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/authz/protection/resource_set`;
@@ -307,22 +288,10 @@ async function createCaseFileResource(
 }
 
 /**
- * Extracts the realm name from a Keycloak issuer URL
+ * Checks if a user has a specific scope for a case file resource using UMA
  *
- * @param issuer - The Keycloak issuer URL (e.g., 'https://keycloak.example.com/realms/myrealm')
- * @returns The realm name
- * @internal
- */
-function extractRealmFromIssuer(issuer: string): string {
-  const match = issuer.match(/\/realms\/([^/]+)/);
-  if (!match) {
-    throw new Error(`Invalid Keycloak issuer URL: ${issuer}`);
-  }
-  return match[1];
-}
-
-/**
- * Checks if a user has a specific scope for a case file resource
+ * This function performs authorization checking by requesting an RPT (Requesting Party Token)
+ * from Keycloak with the specified permission. The permission format is `{resourceId}#{scope}`.
  *
  * @param userId - The case file user ID
  * @param scope - The required scope (e.g., 'case-file:read')
@@ -333,7 +302,7 @@ function extractRealmFromIssuer(issuer: string): string {
  * ```typescript
  * const canRead = await checkCaseFileAccess(123, CaseFileScope.READ, userToken);
  * if (!canRead) {
- *   return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+ *   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
  * }
  * ```
  */
@@ -343,9 +312,22 @@ export async function checkCaseFileAccess(
   userAccessToken: string,
 ): Promise<boolean> {
   try {
-    const resourceName = `case-file:${userId}`;
+    // First, find the resource to get its ID
+    const resource = await findCaseFileResource(userId);
+    
+    if (!resource || !resource._id) {
+      log((l) =>
+        l.warn({
+          msg: 'Case file resource not found for authorization check',
+          userId,
+          scope,
+        }),
+      );
+      return false;
+    }
 
     // Request an RPT (Requesting Party Token) with entitlement
+    // Use resource ID instead of name for proper UMA authorization
     const response = await fetch(getTokenEndpoint(), {
       method: 'POST',
       headers: {
@@ -355,14 +337,16 @@ export async function checkCaseFileAccess(
       body: new URLSearchParams({
         grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
         audience: env('AUTH_KEYCLOAK_CLIENT_ID'),
-        permission: `${resourceName}#${scope}`,
+        permission: `${resource._id}#${scope}`,
       }),
     });
 
     // If we get a 200, the user has access
     // If we get a 403, the user doesn't have access
     if (response.status === 200) {
-      return true;
+      const rpt = await response.json();
+      // Verify that the RPT contains the permission
+      return Array.isArray(rpt.authorization?.permissions);
     } else if (response.status === 403 || response.status === 401) {
       return false;
     }
@@ -387,5 +371,42 @@ export async function checkCaseFileAccess(
       }),
     );
     return false;
+  }
+}
+
+/**
+ * Gets the Keycloak resource ID for a case file
+ *
+ * This helper function retrieves the Keycloak resource ID that corresponds
+ * to a case file. This is useful when you need to perform operations that
+ * require the resource ID rather than the user ID.
+ *
+ * @param userId - The case file user ID
+ * @returns The Keycloak resource ID if found, null otherwise
+ *
+ * @example
+ * ```typescript
+ * const resourceId = await getCaseFileResourceId(123);
+ * if (resourceId) {
+ *   // Use resourceId for direct permission checks
+ *   console.log('Resource ID:', resourceId);
+ * }
+ * ```
+ */
+export async function getCaseFileResourceId(
+  userId: number,
+): Promise<string | null> {
+  try {
+    const resource = await findCaseFileResource(userId);
+    return resource?._id ?? null;
+  } catch (error) {
+    log((l) =>
+      l.error({
+        msg: 'Error getting case file resource ID',
+        userId,
+        error,
+      }),
+    );
+    return null;
   }
 }

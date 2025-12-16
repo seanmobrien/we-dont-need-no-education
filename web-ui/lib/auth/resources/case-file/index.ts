@@ -12,6 +12,7 @@
 export {
   ensureCaseFileResource,
   checkCaseFileAccess,
+  getCaseFileResourceId,
   CaseFileScope,
   type CaseFileResource,
 } from './case-file-resource';
