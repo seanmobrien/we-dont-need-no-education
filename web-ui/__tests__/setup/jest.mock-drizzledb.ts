@@ -501,7 +501,7 @@ beforeAll(() => {
 });
 beforeEach(() => {
   withJestTestExtensions().makeMockDb = makeMockDb;
-})
+});
 
 afterEach(() => {
   // Reset the mock database
