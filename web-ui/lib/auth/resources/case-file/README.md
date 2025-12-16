@@ -8,6 +8,18 @@ Each case file is represented by a `user_id` in the `users` table, and all `docu
 
 ## Architecture
 
+### 1.1 Responsibilities
+
+| Layer | Responsibility |
+|-----|----------------|
+| Auth.js | Login, logout, session lifecycle, token storage |
+| Keycloak | Identity, UMA authorization, resource & policy evaluation |
+| Next.js API routes | Authorization enforcement + business logic |
+| Database | Case files + mapping to Keycloak resource IDs |
+
+**Key principle**:  
+> Authentication is handled once (Auth.js). Authorization is evaluated per request (Keycloak).
+
 ### Database Schema
 
 - **users table**: Represents case files (one user = one case file)
@@ -43,7 +55,100 @@ Each case file has a corresponding Keycloak resource:
 - **case-file:write**: Modify case file documents and emails
 - **case-file:admin**: Full administrative access (add/remove users, manage sharing)
 
-## Usage
+## 2. Core Authorization Model
+
+### 2.1 Domain Model
+
+- **Case File**
+  - Logical container for emails, attachments, notes, analysis results
+  - Authorization boundary
+- **Case File Document**
+  - Always inherits permissions from its parent case file
+
+### 2.2 Keycloak Representation
+
+- **One Keycloak Resource per Case File**
+- **Resource Type**: `case-file`
+- **Scopes**:
+  - `case-file:read`
+  - `case-file:write`
+  - `case-file:admin`
+
+### 2.3 Ownership & Sharing Rules
+
+- Owner always has **read + write + admin**
+- Owner may grant:
+  - read
+  - write
+  - admin
+- Sharing state is stored as **resource attributes**:
+  - `readers`
+  - `writers`
+  - `admins`
+
+---
+
+## 3. Keycloak Configuration
+
+### 3.1 Clients
+
+#### 3.1.1 Auth.js Login Client
+
+- Client ID: `casefile-web`
+- Type: Confidential
+- Flow: Authorization Code + PKCE
+- Used **only** by Auth.js
+
+#### 3.1.2 Resource Server Client
+
+- Client ID: `casefile-api`
+- Type: Confidential
+- Authorization Enabled: ✅
+- Service Account Enabled: ✅
+- Used for:
+  - UMA permission checks
+  - Protection API calls
+
+---
+
+```typescript
+import { env } from '@/lib/site-util/env';
+
+const authIssues = env('AUTH_KEYCLOAK_ISSUER');
+const authClientId = env('AUTH_KEYCLOAK_CLIENT_ID');
+const authClientSecret = env('AUTH_KEYCLOAK_CLIENT_SECRET');
+const authResourceServiceClient = env('AUTH_KEYCLOAK_CLIENT_ID');
+const authRsourceClientSecret = env('AUTH_KEYCLOAK_CLIENT_SECRET');
+const redirectUri = env('AUTH_KEYCLOAK_REDIRECT_URI') || '';
+const impersonatorUsername = env('AUTH_KEYCLOAK_IMPERSONATOR_USERNAME') || undefined;
+const impersonatorPassword = env('AUTH_KEYCLOAK_IMPERSONATOR_PASSWORD') || undefined,
+const impersonatorOfflineToken: = env('AUTH_KEYCLOAK_IMPERSONATOR_OFFLINE_TOKEN') || undefined,
+```
+> For authorization requests, you’ll also need the client’s service-account credentials to obtain a PAT and to call the Protection API.
+
+@/lib/auth/keycloak-provider.ts - existing auth.js Keycloak provider setup
+
+```typescript
+export const setupKeyCloakProvider = (): Provider[] => {
+  const providerArgs = {
+    clientId: env('AUTH_KEYCLOAK_CLIENT_ID'),
+    clientSecret: env('AUTH_KEYCLOAK_CLIENT_SECRET'),
+    issuer: env('AUTH_KEYCLOAK_ISSUER'),
+    authorization: {
+      params: {
+        access_type: 'offline',
+        prompt: 'consent',
+        response_type: 'code',
+        scope: env('AUTH_KEYCLOAK_SCOPE'),
+      },
+    },
+    allowDangerousEmailAccountLinking: true,
+  };
+  const keycloak = KeyCloak<KeycloakProfile>(providerArgs);
+  return [keycloak];
+};
+```
+> Key point: Auth.js becomes our 'adapter'.  The server gets identity and tokens from auth()
 
 ### Protecting API Endpoints
 
@@ -104,6 +209,139 @@ export const PUT = async (
   return NextResponse.json(updated);
 };
 ```
+
+
+
+## 8. Protection API (Service Account)
+
+### 8.1 Obtain PAT
+
+```ts
+async function getProtectionApiToken(): Promise<string> {
+  const body = new URLSearchParams({
+    grant_type: "client_credentials",
+    client_id: process.env.KEYCLOAK_RS_CLIENT_ID!,
+    client_secret: process.env.KEYCLOAK_RS_CLIENT_SECRET!,
+    scope: "uma_protection",
+  });
+
+  const res = await fetch(
+    `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`,
+    { method: "POST", body }
+  );
+
+  const json = await res.json();
+  return json.access_token;
+}
+```
+
+---
+
+## 9. Case‑File Resource Creation
+
+```ts
+export async function createCaseFileResource(params: {
+  caseFileId: string;
+  ownerUserId: string;
+}): Promise<string> {
+  const pat = await getProtectionApiToken();
+
+  const res = await fetch(
+    `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/authz/protection/resource_set`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${pat}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: `case-file:${params.caseFileId}`,
+        type: "case-file",
+        owner: params.ownerUserId,
+        scopes: [
+          "case-file:read",
+          "case-file:write",
+          "case-file:admin"
+        ],
+        attributes: {
+          readers: [params.ownerUserId],
+          writers: [params.ownerUserId],
+          admins: [params.ownerUserId],
+        },
+      }),
+    }
+  );
+
+  const json = await res.json();
+  return json._id;
+}
+```
+## 10. Authorization Enforcement (UMA)
+
+```ts
+export async function checkCaseFilePermission(params: {
+  userAccessToken: string;
+  resourceId: string;
+  scope: "case-file:read" | "case-file:write" | "case-file:admin";
+}): Promise<boolean> {
+  const body = new URLSearchParams({
+    grant_type: "urn:ietf:params:oauth:grant-type:uma-ticket",
+    audience: process.env.KEYCLOAK_RS_CLIENT_ID!,
+    permission: `${params.resourceId}#${params.scope}`,
+  });
+
+  const res = await fetch(
+    `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${params.userAccessToken}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    }
+  );
+
+  if (!res.ok) return false;
+
+  const rpt = await res.json();
+  return Array.isArray(rpt.authorization?.permissions);
+}
+```
+
+---
+
+## 11. Example API Route
+
+```ts
+// app/api/cases/[caseId]/route.ts
+import { NextResponse } from "next/server";
+import { requireUser } from "@/lib/authHelpers";
+import { checkCaseFilePermission } from "@/lib/authorization";
+
+export async function GET(_: Request, { params }: { params: { caseId: string } }) {
+  const { sub, accessToken } = await requireUser();
+  const resourceId = await getCaseFileResourceId(params.caseId);
+
+  const allowed = await checkCaseFilePermission({
+    userAccessToken: accessToken,
+    resourceId,
+    scope: "case-file:read",
+  });
+
+  if (!allowed) return new NextResponse("Forbidden", { status: 403 });
+
+  return NextResponse.json(await loadCaseFileFromDb(params.caseId));
+}
+```
+
+---
+
+## 12. Sharing / ACL Updates
+
+- Owner must have `case-file:admin`
+- Update `readers`, `writers`, `admins` attributes via Protection API
+- No policy changes required
 
 ### Creating Case File Resources
 
