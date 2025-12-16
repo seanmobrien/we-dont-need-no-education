@@ -178,14 +178,12 @@ export const withRedisConnection = () => {
   process.env.REDIS_URL =
     originalProcessEnv.REDIS_URL || 'redis://test-redis.local:6379';
   if (process.env.REDIS_URL.includes('test-redis.local')) {
-    test.todo('Update REDIS_URL if integration testing is needed.');
+    // NOTE: noop, but this is clearly not an integration test
   }
   process.env.REDIS_PASSWORD =
     originalProcessEnv.REDIS_PASSWORD || 'test-redis-password';
   if (process.env.REDIS_PASSWORD.includes('test-redis-password')) {
-    console.warn(
-      'Using test Redis password. Ensure this is set up correctly for integration tests.',
-    );
+    // NOTE: noop, but this is clearly not an integration test        
   }
 };
 
