@@ -8,15 +8,8 @@
  */
 
 import { log } from '@/lib/logger';
-import type {
-  ConnectableToolProvider,
-  ToolProviderFactoryOptions,
-  ToolProviderSet,
-  MCPClient,
-  MCPClientConfig
-} from '../types';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
-import { toolProxyFactory } from '../tools';
+import EventEmitter from '@protobufjs/eventemitter';
 import type {
   Tool,
   ToolSet,
@@ -27,13 +20,21 @@ import {
   isError,
 } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { InstrumentedSseTransport } from '../instrumented-sse-transport';
-import { clientToolProviderFactory } from './client-tool-provider';
-import { getToolCache } from '../cache';
-import { getStreamingTransportFlag } from '../tool-flags';
-import EventEmitter from '@protobufjs/eventemitter';
 import { withEmittingDispose } from '@/lib/nextjs-util/utils';
 import { SingletonProvider } from '@/lib/typescript';
+
+import type {
+  ConnectableToolProvider,
+  ToolProviderFactoryOptions,
+  ToolProviderSet,
+  MCPClient,
+} from '../types';
+import { InstrumentedSseTransport } from '../instrumented-sse-transport';
+import { getToolCache } from '../cache';
+import { getStreamingTransportFlag } from '../tool-flags';
+import { toolProxyFactory } from '../tools';
+
+import { clientToolProviderFactory } from './client-tool-provider';
 
 const getHttpStreamEnabledFlag = async () => {
   const ret = await getStreamingTransportFlag();
