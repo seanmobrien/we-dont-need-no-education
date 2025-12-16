@@ -27,7 +27,6 @@ import {
 } from '@/lib/nextjs-util/server/utils';
 import type { Span } from '@opentelemetry/api';
 import { ProcessedMemoryAdd } from './types';
-import { request } from 'http';
 
 class APIError extends Error {
   constructor(message: string) {
@@ -58,6 +57,7 @@ type PingResponse = {
   status?: 'ok' | 'error';
   message?: string;
 };
+
 
 export default class MemoryClient {
   apiKey?: string;
@@ -318,7 +318,7 @@ export default class MemoryClient {
     return await response.json();
   }
 
-  #preparePayload(messages: Array<Message>, options: MemoryOptions): object {
+  _preparePayload(messages: Array<Message>, options: MemoryOptions): object {
     return {
       text: JSON.stringify(messages),
       metadata: options.metadata,
@@ -454,7 +454,7 @@ export default class MemoryClient {
         options.version = options.api_version.toString();
       }
 
-      const payload = this.#preparePayload(messages, options);
+      const payload = this._preparePayload(messages, options);
 
       // get payload keys whose value is not null or undefined
       const payloadKeys = Object.keys(payload);

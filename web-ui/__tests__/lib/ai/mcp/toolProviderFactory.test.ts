@@ -9,9 +9,6 @@ setupImpersonationMock();
 // Mock all dependencies first
 const mockGetResolvedPromises = jest.fn() as jest.MockedFunction<any>;
 const mockIsError = jest.fn() as jest.MockedFunction<any>;
-let originalReactUtil:
-  | typeof import('@/lib/react-util/utility-methods')
-  | undefined;
 const mockLoggedError = {
   isTurtlesAllTheWayDownBaby: jest.fn() as jest.MockedFunction<any>,
 };
@@ -47,10 +44,20 @@ jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: mockLoggedError,
 }));
 
+/*
 jest.mock('ai', () => ({
-  experimental_createMCPClient: mockCreateMCPClient,
+  // experimental_createMCPClient: mockCreateMCPClient,
   ToolSet: {},
 }));
+*/
+
+jest.mock('@ai-sdk/mcp', () => {
+  const original = jest.requireActual('@ai-sdk/mcp');
+  return {
+    ...original,
+    experimental_createMCPClient: mockCreateMCPClient,
+  };
+});
 
 jest.mock('@/lib/ai/mcp/instrumented-sse-transport', () => ({
   InstrumentedSseTransport: mockInstrumentedSseTransport,
@@ -87,6 +94,7 @@ import {
 } from '@/lib/ai/mcp/providers';
 import type {
   ConnectableToolProvider,
+  MCPClientConfig,
   ToolProviderFactoryOptions,
 } from '../../../../lib/ai/mcp/types';
 import { ToolSet } from 'ai';
@@ -134,6 +142,7 @@ describe('toolProviderFactory', () => {
     url: 'https://test-mcp-server.com/api',
     headers: () => Promise.resolve({ Authorization: 'Bearer test-token' }),
     allowWrite: false,
+    onUncaughtError: () => { },
   };
 
   const mockMCPClient = {
@@ -153,7 +162,11 @@ describe('toolProviderFactory', () => {
 
     // Set up default implementations
     mockIsError.mockImplementation((error: unknown) => error instanceof Error);
-    mockInstrumentedSseTransport.mockImplementation(() => ({}));
+    mockInstrumentedSseTransport.mockImplementation(() => ({
+      start: jest.fn(() => Promise.resolve()),
+      send: jest.fn(() => Promise.resolve()),
+      close: jest.fn(() => Promise.resolve()),
+    }));
     mockMCPClient.tools.mockResolvedValue(mockTools);
     mockMCPClient.close.mockResolvedValue(undefined);
     mockCreateMCPClient.mockResolvedValue(mockMCPClient);
@@ -195,7 +208,7 @@ describe('toolProviderFactory', () => {
         expect.objectContaining({
           type: 'sse',
           url: mockOptions.url,
-          headers: mockOptions.headers,
+          headers: expect.any(Function),
           onerror: expect.any(Function),
           onclose: expect.any(Function),
         }),
@@ -236,13 +249,16 @@ describe('toolProviderFactory', () => {
     });
 
     it('should handle MCP client uncaught errors', async () => {
-      let uncaughtErrorHandler: (error: unknown) => {
+      let uncaughtErrorHandler: ((error: unknown) => {
         role: string;
         content: Array<{ type: string; text: string }>;
-      };
+      }) | null;
 
-      mockCreateMCPClient.mockImplementation((options: any) => {
-        uncaughtErrorHandler = options.onUncaughtError;
+      mockCreateMCPClient.mockImplementation((options: MCPClientConfig) => {
+        uncaughtErrorHandler = options.onUncaughtError as ((error: unknown) => {
+          role: string;
+          content: Array<{ type: string; text: string }>;
+        });
         return Promise.resolve(mockMCPClient);
       });
 

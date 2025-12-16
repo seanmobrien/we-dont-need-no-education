@@ -23,6 +23,7 @@ const config = {
     '<rootDir>/__tests__/setup/jest.mock-feature-flags.ts',
     '<rootDir>/__tests__/setup/jest.mock-ai.ts',
     '<rootDir>/__tests__/setup/jest.setup.env.ts',
+    '<rootDir>/__tests__/setup/jest.mock-drizzledb.ts',
     '<rootDir>/__tests__/setup/jest.setup.ts',
   ], // Setup file for global imports
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled

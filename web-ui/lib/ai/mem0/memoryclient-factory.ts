@@ -39,8 +39,7 @@ export type ExtendedMemoryClient = MemoryClient & {
  */
 class SchoolLawyerMemoryClient
   extends MemoryClient
-  implements ExtendedMemoryClient
-{
+  implements ExtendedMemoryClient {
   readonly defaultOptions: MemoryOptions;
 
   /**

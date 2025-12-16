@@ -33,6 +33,15 @@
     "@ai-sdk/provider" "2.0.0"
     "@ai-sdk/provider-utils" "3.0.19"
 
+"@ai-sdk/mcp@^0.0.12":
+  version "0.0.12"
+  resolved "https://registry.yarnpkg.com/@ai-sdk/mcp/-/mcp-0.0.12.tgz#b5d910455d218b0dd39f2fb9a1fb21bb4ac1e479"
+  integrity sha512-hyf31U2CmgGexqOLgLfno525pjbqidJLu9pU+XcEwW/PkMcfTFuRq1iD3wbqtAmURRW0qJITiKV+in1B4I23gA==
+  dependencies:
+    "@ai-sdk/provider" "2.0.0"
+    "@ai-sdk/provider-utils" "3.0.19"
+    pkce-challenge "^5.0.0"
+
 "@ai-sdk/openai@2.0.86", "@ai-sdk/openai@^2.0.28":
   version "2.0.86"
   resolved "https://registry.yarnpkg.com/@ai-sdk/openai/-/openai-2.0.86.tgz#0ffe18c09783f7b41a19ef3bebbdc74068a87d46"
@@ -85,17 +94,6 @@
     "@csstools/css-parser-algorithms" "^3.0.4"
     "@csstools/css-tokenizer" "^3.0.3"
     lru-cache "^10.4.3"
-
-"@auth/core@0.40.0":
-  version "0.40.0"
-  resolved "https://registry.yarnpkg.com/@auth/core/-/core-0.40.0.tgz#973262fbbb935d4fd9c3b2a0b32003c2719530c7"
-  integrity sha512-n53uJE0RH5SqZ7N1xZoMKekbHfQgjd0sAEyUbE+IYJnmuQkbvuZnXItCU7d+i7Fj8VGOgqvNO7Mw4YfBTlZeQw==
-  dependencies:
-    "@panva/hkdf" "^1.2.1"
-    jose "^6.0.6"
-    oauth4webapi "^3.3.0"
-    preact "10.24.3"
-    preact-render-to-string "6.5.11"
 
 "@auth/core@0.41.0":
   version "0.41.0"
