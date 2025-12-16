@@ -35,9 +35,6 @@ import EventEmitter from '@protobufjs/eventemitter';
 import { withEmittingDispose } from '@/lib/nextjs-util/utils';
 import { SingletonProvider } from '@/lib/typescript';
 
-type CreateMcpClientFactory = (config: MCPClientConfig) => Promise<MCPClient>;
-
-
 const getHttpStreamEnabledFlag = async () => {
   const ret = await getStreamingTransportFlag();
   return ret.value;
