@@ -57,7 +57,7 @@ const createTransport = async ({
 
   // If http streaming is disabled or sse is explicitly requested
   if (!flagsHttpStreamEnabled || options.sse === true) {
-    const tx: Omit<Transport, 'headers' | 'start' | 'send' | 'close'> & { type: string; url: string; headers?: Record<string, string>; } = {
+    const sseTransportConfig: Omit<Transport, 'headers' | 'start' | 'send' | 'close'> & { type: string; url: string; headers?: Record<string, string>; } = {
       type: 'sse',
       url: options.url,
       headers: typeof options.headers === 'function' ? await options.headers() : options.headers ?? {},
@@ -95,8 +95,8 @@ const createTransport = async ({
     };
     return new InstrumentedSseTransport({
       onerror,
-      ...tx,
-      url: options.url ?? tx.url,
+      ...sseTransportConfig,
+      url: options.url ?? sseTransportConfig.url,
       headers: headerCb,
     });
   }
