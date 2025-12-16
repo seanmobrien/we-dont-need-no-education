@@ -130,6 +130,7 @@ export class SseMCPTransport implements MCPTransport {
 
         if (!response.ok || !response.body) {
           const error = new MCPError({
+            code: response.status,
             message: `MCP SSE Transport Error: ${response.status} ${response.statusText}`,
           });
           LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -280,6 +281,7 @@ export class SseMCPTransport implements MCPTransport {
 
                 if (this.endpoint.origin !== this.url.origin) {
                   throw new MCPError({
+                    code: response.status,
                     message: `MCP SSE Transport Error: Endpoint origin does not match connection origin: ${this.endpoint.origin}`,
                   });
                 }
@@ -304,8 +306,9 @@ export class SseMCPTransport implements MCPTransport {
                   });
                   const e = new MCPError({
                     message: 'MCP SSE Transport Error: Failed to parse message',
-                    cause: error,
+                    code: response.status,
                   });
+                  e.cause = error;
                   this.onerror?.(e);
                   // We do not throw here so we continue processing events after reporting the error
                   resolve();
@@ -438,6 +441,7 @@ export class SseMCPTransport implements MCPTransport {
   async send(message: JSONRPCMessage): Promise<void> {
     if (!this.endpoint || !this.connected) {
       throw new MCPError({
+        code: 400,
         message: 'MCP SSE Transport Error: Not connected',
       });
     }
@@ -459,6 +463,7 @@ export class SseMCPTransport implements MCPTransport {
         if (!response.ok) {
           const text = await response.text().catch(() => null);
           const error = new MCPError({
+            code: response.status,
             message: `MCP SSE Transport Error: POSTing to endpoint (HTTP ${response.status}): ${text}`,
           });
           const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {

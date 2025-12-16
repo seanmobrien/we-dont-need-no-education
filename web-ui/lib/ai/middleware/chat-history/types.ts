@@ -6,8 +6,13 @@ export interface ChatHistoryContext {
   processingTimeMs?: number;
   userId: string;
   chatId?: string;
-  turnId?: string;
+  turnId?: number;
   requestId?: string;
+  messageId?: string;
+  currentMessageOrder?: number;
+  generatedText?: string;
+  generatedJSON?: Array<Record<string, unknown>>;
+  toolCalls?: StreamHandlerContext['toolCalls'];
   model?: string;
   temperature?: number;
   topP?: number;
@@ -90,7 +95,7 @@ export interface FlushConfig {
 
 export interface MessagePersistenceInit {
   chatId: string;
-  turnId: string;
+  turnId: number;
   messageId?: number;
 }
 

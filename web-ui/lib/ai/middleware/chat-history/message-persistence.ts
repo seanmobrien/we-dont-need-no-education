@@ -31,7 +31,6 @@ export const initializeMessagePersistence = async (
     );
     return {
       ...ret,
-      turnId: ret.turnId.toString(),
     };
   } catch (error) {
     // Create enhanced error for better observability

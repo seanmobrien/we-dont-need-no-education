@@ -13,10 +13,11 @@ import type {
   ToolProviderFactoryOptions,
   ToolProviderSet,
   MCPClient,
+  MCPClientConfig
 } from '../types';
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { toolProxyFactory } from '../tools';
-import {
-  experimental_createMCPClient as createMCPClient,
+import type {
   Tool,
   ToolSet,
 } from 'ai';
@@ -27,14 +28,15 @@ import {
 } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { InstrumentedSseTransport } from '../instrumented-sse-transport';
-import { FirstParameter } from '@/lib/typescript';
 import { clientToolProviderFactory } from './client-tool-provider';
 import { getToolCache } from '../cache';
 import { getStreamingTransportFlag } from '../tool-flags';
 import EventEmitter from '@protobufjs/eventemitter';
 import { withEmittingDispose } from '@/lib/nextjs-util/utils';
+import { SingletonProvider } from '@/lib/typescript';
 
-type MCPClientConfig = FirstParameter<typeof createMCPClient>;
+type CreateMcpClientFactory = (config: MCPClientConfig) => Promise<MCPClient>;
+
 
 const getHttpStreamEnabledFlag = async () => {
   const ret = await getStreamingTransportFlag();
@@ -50,15 +52,15 @@ const createTransport = async ({
   onerror,
   userId,
   ...options
-}: McpClientOptions): Promise<MCPClientConfig['transport']> => {
+}: McpClientOptions): Promise<Transport> => {
   const flagsHttpStreamEnabled = await getHttpStreamEnabledFlag();
 
   // If http streaming is disabled or sse is explicitly requested
   if (!flagsHttpStreamEnabled || options.sse === true) {
-    const tx: Omit<MCPClientConfig['transport'], 'headers'> = {
+    const tx: Omit<Transport, 'headers' | 'start' | 'send' | 'close'> & { type: string; url: string; headers?: Record<string, string>; } = {
       type: 'sse',
       url: options.url,
-      headers: options.headers,
+      headers: typeof options.headers === 'function' ? await options.headers() : options.headers ?? {},
       /**
        * Handles SSE connection errors and returns user-friendly error messages.
        * @param {unknown} error - The error that occurred during SSE connection
@@ -81,19 +83,28 @@ const createTransport = async ({
         }
       },
     };
-
     // Create instrumented SSE transport with comprehensive error handling
+
+
+    const deezHeaders = options.headers;
+    const headerCb: (() => Promise<Record<string, string>>) | Record<string, string> = () => {
+      if (!deezHeaders) {
+        return Promise.resolve({} as Record<string, string>);
+      }
+      return typeof deezHeaders === 'function' ? deezHeaders() : Promise.resolve(deezHeaders);
+    };
     return new InstrumentedSseTransport({
-      url: options.url,
       onerror,
       ...tx,
+      url: options.url ?? tx.url,
+      headers: headerCb,
     });
   }
-  const headers = options.headers ? await options.headers() : {};
   // NOTE: We really should implement full auth here, but lets try and work with what we have
   const streamableHttpClientTransport = await import(
     '@modelcontextprotocol/sdk/client/streamableHttp.js'
   ).then((mod) => mod.StreamableHTTPClientTransport);
+  const headers = typeof options.headers === 'function' ? await options.headers() : options.headers ?? {};
   return new streamableHttpClientTransport(new URL(options.url), {
     sessionId: userId ? `user-${userId}` : undefined,
     requestInit: {
@@ -101,17 +112,27 @@ const createTransport = async ({
     },
   });
 };
+
 const createClient = async ({
   onerror,
   userId,
   ...options
 }: McpClientOptions): Promise<MCPClient> => {
-  const transport: MCPClientConfig['transport'] = await createTransport({
+  const transport: Transport = await createTransport({
     onerror,
     userId,
     ...options,
   });
-
+  const createMCPClient = await SingletonProvider.Instance.getOrCreateAsync(
+    "ai-sdk:createMCPClient",
+    async () => {
+      const { experimental_createMCPClient } = (await import('@ai-sdk/mcp'));
+      return experimental_createMCPClient;
+    }
+  );
+  if (!createMCPClient) {
+    throw new Error('Failed to create MCP client - verify ai-sdk/mcp is installed');
+  }
   // Create MCP client with transport and error handling
   const mcpClient = await createMCPClient({
     transport,

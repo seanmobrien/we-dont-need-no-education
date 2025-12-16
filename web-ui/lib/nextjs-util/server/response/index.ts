@@ -1,6 +1,6 @@
 import { log, safeSerialize } from '@/lib/logger';
 import { isRunningOnServer } from '@/lib/site-util/env';
-import { Readable } from 'stream';
+import type { Readable as ReadableType } from 'node:stream';
 
 /**
  * Minimal WHATWG-like Response implementation for server-side use.
@@ -211,7 +211,12 @@ export const nodeStreamToReadableStream = (
  * @param webStream - The Web API ReadableStream to convert
  * @returns A Node.js Readable stream
  */
-export const webStreamToReadable = (webStream: ReadableStream): Readable => {
+export const webStreamToReadable = async (webStream: ReadableStream): Promise<ReadableType> => {
+
+  /*
+  const Readable = (await import('stream').then((m) => m.Readable));
+
+
   if (typeof Readable.fromWeb === 'function') {
     // @ts-expect-error - Readable.fromWeb is available in Node 18+
     return Readable.fromWeb(webStream);
@@ -237,6 +242,10 @@ export const webStreamToReadable = (webStream: ReadableStream): Readable => {
         (e) => callback(e),
       );
     },
+  });
+  */
+  throw new Error('Not implemented', {
+    cause: webStream,
   });
 };
 

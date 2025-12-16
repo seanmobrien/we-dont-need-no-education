@@ -1,18 +1,17 @@
 import type {
-  //experimental_createMCPClient as createMCPClient,
-  //experimental_createMCPClient as createMCPClient,
   ToolSet,
 } from 'ai';
 import type { ImpersonationService } from '@/lib/auth/impersonation';
-import type { Notification, Request, Result } from '@modelcontextprotocol/sdk/types.js';
-import type { Client } from '@modelcontextprotocol/sdk/client'
+import type { Request } from '@modelcontextprotocol/sdk/types.js';
+import type {
+  experimental_MCPClient as MCPClient,
+  experimental_MCPClientConfig as MCPClientConfig
+} from '@ai-sdk/mcp';
 
-
-export type MCPClient<
-  RequestT extends Request = Request,
-  NotificationT extends Notification = Notification,
-  ResultT extends Result = Result
-> = Client<RequestT, NotificationT, ResultT>;
+export type {
+  MCPClient,
+  MCPClientConfig
+};
 
 export type ToolProviderFactoryOptions = {
   url: string;
@@ -21,6 +20,7 @@ export type ToolProviderFactoryOptions = {
   req?: Request;
   impersonation?: ImpersonationService;
   sse?: boolean;
+  onUncaughtError?: (error: unknown) => void;
 };
 
 export type ConnectableToolProvider = {
