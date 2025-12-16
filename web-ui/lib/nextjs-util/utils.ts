@@ -81,6 +81,7 @@ export const deprecate = <T extends (...args: any[]) => any>(
   code = 'DEP000',
 ) => {
   const stack = getStackTrace({ skip: 2, myCodeOnly: true });
+  const formattedMessage = `${message}\n${stack}`;
   const deprecatedFn = function (
     this: ThisParameterType<T>,
     ...args: Parameters<T>
@@ -88,10 +89,10 @@ export const deprecate = <T extends (...args: any[]) => any>(
     const options = { code: code ?? 'DEP000', type: 'DeprecationWarning' };
     if (process.env.NEXT_RUNTIME === 'edge') {
       // process.emitWarning is no bueno on edge or browser runtimes, so we do a console.warn instead
-      warnDeprecatedOffNode(message, options);
+      warnDeprecatedOffNode(formattedMessage, options);
     } else {
       // But is super-awesome on node runtimes, so we use it
-      warnDeprecatedOnNode(message, options);
+      warnDeprecatedOnNode(formattedMessage, options);
     }
     return fn.apply(this, args);
   } as T;
