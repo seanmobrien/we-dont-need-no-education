@@ -1,3 +1,5 @@
+import type { DatabaseType } from "@/lib/drizzle-db/drizzle-types";
+
 const testExtensionFactory = () => {
   return {
     session: {
@@ -10,6 +12,9 @@ const testExtensionFactory = () => {
         image: 'test-image-url',
       },
       expires: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
+    },
+    makeMockDb: () => {
+      return undefined as unknown as DatabaseType;
     },
   };
 };
@@ -26,6 +31,7 @@ type JestTestExtensions = {
     };
     expires: string;
   } | null;
+  makeMockDb: () => DatabaseType;
 };
 
 const TEST_EXTENSIONS = Symbol.for('@noeducation/jest/extensions');

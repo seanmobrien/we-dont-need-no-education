@@ -24,7 +24,6 @@ import { log } from '@/lib/logger';
 import { LanguageModel } from 'ai';
 import { ModelClassification } from '../../middleware/key-rate-limiter/types';
 import { isKeyOf, newUuid } from '@/lib/typescript';
-import { mapHas } from 'jest-mock-extended';
 
 /**
  * Type representing a complete model record with provider information.
@@ -424,7 +423,7 @@ export class ModelMap {
         source: 'ModelMap.refresh',
       })
       this.#whenInitialized.resolve(false);
-      throw error;
+      throw le;
     }
   }
 
@@ -930,7 +929,12 @@ export class ModelMap {
       try {
         const { modelId } = await this.normalizeProviderModelOrThrow(provider, modelName);
         return modelId ? this.#modelIdToQuota.get(modelId) ?? null : null;
-      } catch (e) {
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          extra: { provider, modelName },
+          source: 'ModelMap.loadQuotaFromDatabase',
+        });
         // swallow error in error
       }
       return null;

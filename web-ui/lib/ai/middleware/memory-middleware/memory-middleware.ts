@@ -9,6 +9,7 @@ import { log, safeSerialize } from '@/lib/logger';
 import { MiddlewareStateManager } from '../state-management';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { MemoryMiddlewareAugmentationStrategy, MemoryMiddlewareContext, MemoryMiddlewareOptions } from './types';
+import type { ChatHistoryContext } from '../chat-history/types';
 import { noopStrategyFactory } from './noop-strategy';
 import { directAccessStrategyFactory } from './direct-access';
 import { promptInjectionStrategyFactory } from './prompt-injection-strategy';
@@ -41,12 +42,12 @@ export const memoryMiddlewareFactory: (context: MemoryMiddlewareContext) => Lang
       const streamContext = ensureCreateResult({
         chatId: context.chatId,
         turnId: 0, // Placeholder
-        messageId: undefined, // MessageId is string in context, but maybe number here? Passthrough doesn't strictly depend on it being correct for buffering.
+        messageId: undefined,
         currentMessageOrder: 0,
         generatedText: '',
         generatedJSON: [],
-        toolCalls: new Map<string, any>(),
-      } as any);
+        toolCalls: new Map() as ChatHistoryContext['toolCalls'],
+      });
 
       const transformStream = new TransformStream<
         LanguageModelV2StreamPart,

@@ -1,19 +1,14 @@
-import type {
-  LanguageModelV2,
+import {
   LanguageModelV2CallOptions,
-  LanguageModelV2Message,
-  LanguageModelV2Middleware,
   LanguageModelV2Prompt,
-  LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
-
 import { log, safeSerialize } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { aiModelFactory } from '../../../aiModelFactory';
 import { ChatHistoryContext, createAgentHistoryContext, wrapChatHistoryMiddleware } from '../../chat-history';
 import { generateTextWithRetry } from '../../../core/generate-text-with-retry';
 import { getDefinitionsFromText } from '@semanticencoding/core';
-import { DeepPartial, hasToolCall, NoOutputSpecifiedError, NoSuchToolError, Output, stepCountIs, ToolCallRepairFunction, ToolSet, wrapLanguageModel } from 'ai';
+import { DeepPartial, hasToolCall, NoOutputSpecifiedError, Output, stepCountIs, ToolSet } from 'ai';
 import { StopConditions } from '../../stop-conditions';
 import { type MemoryAugmentationResult, MemoryAugmentationResultSchema } from '../memory-augmentation-result';
 import type { MemoryMiddlewareContext, MemoryMiddlewareAugmentationStrategy } from '../types';
@@ -21,7 +16,7 @@ import { repairTopMemoriesToolCall } from '../repair-top-memories';
 import { segregateLatestRequest } from '../util';
 
 const retrieveMemories = async ({
-  params: { prompt: incomingPrompt, ...params }, context }:
+  params: { prompt: incomingPrompt }, context }:
   { params: LanguageModelV2CallOptions; context: MemoryMiddlewareContext }
 ): Promise<MemoryAugmentationResult | null> => {
   let chatHistoryContext: ChatHistoryContext | undefined = undefined;
@@ -181,6 +176,9 @@ ${JSON.stringify(promptParts.latest, null, 2)}
         LoggedError.isTurtlesAllTheWayDownBaby(err, {
           source: 'memory-middleware:retrieve-memories:chat-history:dispose',
           log: false,
+          data: {
+            outer: safeSerialize(error),
+          }
         });
       });
   }

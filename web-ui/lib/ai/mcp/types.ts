@@ -1,11 +1,17 @@
-import { UnwrapPromise } from '@/lib/typescript';
 import type {
-  experimental_createMCPClient as createMCPClient,
   ToolSet,
 } from 'ai';
 import type { ImpersonationService } from '@/lib/auth/impersonation';
+import type { Request } from '@modelcontextprotocol/sdk/types.js';
+import type {
+  experimental_MCPClient as MCPClient,
+  experimental_MCPClientConfig as MCPClientConfig
+} from '@ai-sdk/mcp';
 
-export type MCPClient = UnwrapPromise<ReturnType<typeof createMCPClient>>;
+export type {
+  MCPClient,
+  MCPClientConfig
+};
 
 export type ToolProviderFactoryOptions = {
   url: string;
@@ -14,6 +20,7 @@ export type ToolProviderFactoryOptions = {
   req?: Request;
   impersonation?: ImpersonationService;
   sse?: boolean;
+  onUncaughtError?: (error: unknown) => void;
 };
 
 export type ConnectableToolProvider = {
@@ -79,4 +86,10 @@ export type UserToolProviderCache = {
     config: UserToolProviderCacheConfig;
   };
   shutdown(): void;
+};
+
+export type MCPErrorOptions = {
+  code: number;
+  message?: string;
+  data?: unknown;
 };

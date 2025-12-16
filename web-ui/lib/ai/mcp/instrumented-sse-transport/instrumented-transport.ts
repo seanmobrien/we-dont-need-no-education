@@ -20,9 +20,7 @@ import { CounterManager } from './metrics/counter-manager';
 import { SessionManager } from './session/session-manager';
 import { TraceContextManager } from './tracing/trace-context';
 import {
-  SafetyUtils,
-  CONNECTION_TIMEOUT_MS,
-  SEND_TIMEOUT_MS,
+  SafetyUtils
 } from './utils/safety-utils';
 import { MessageProcessor } from './message/message-processor';
 import { ImpersonationService } from '@/lib/auth/impersonation';
@@ -30,7 +28,6 @@ import { ImpersonationService } from '@/lib/auth/impersonation';
 type InstrumentedSseTransportOptions = {
   url: string;
   headers?: () => Promise<Record<string, string>>;
-  // impersonation?: ImpersonationService;
   onclose?: () => void;
   onmessage?: (message: JSONRPCMessage) => void;
   onerror: ((error: unknown) => void) | ((error: Error) => void);
@@ -476,9 +473,9 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         );
       }
 
-      super.send(message),
+      await super.send(message);
 
-        span.setStatus({ code: SpanStatusCode.OK });
+      span.setStatus({ code: SpanStatusCode.OK });
       this.#safetyUtils.completeOperation(operationId, 'success');
 
       if (DEBUG_MODE) {

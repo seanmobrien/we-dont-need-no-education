@@ -7,7 +7,7 @@ import {
   type JWTPayload,
 } from 'jose';
 import { LRUCache } from 'lru-cache';
-import { LoggedError } from '../react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 export const KnownScopeValues = ['mcp-tool:read', 'mcp-tool'] as const;
 export type KnownScope = (typeof KnownScopeValues)[number];

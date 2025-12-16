@@ -459,7 +459,7 @@ export class FetchManager implements ServerFetchManager {
           // Use streaming strategy for pure streaming response
           return this.streamingStrategy.handlePureStreaming(
             cacheKey,
-            webStreamToReadable(domResponse.body),
+            await webStreamToReadable(domResponse.body),
             headersLower,
             domResponse.status,
             span,
@@ -469,7 +469,7 @@ export class FetchManager implements ServerFetchManager {
         const bufferedResult =
           await this.bufferingStrategy.handleBufferedResponse(
             cacheKey,
-            webStreamToReadable(domResponse.body),
+            await webStreamToReadable(domResponse.body),
             headersLower,
             domResponse.status,
             normalizedUrl,
@@ -578,7 +578,7 @@ export class FetchManager implements ServerFetchManager {
           // Use streaming strategy for pure streaming response
           return this.streamingStrategy.handlePureStreaming(
             cacheKey,
-            webStreamToReadable(domResponse.body),
+            await webStreamToReadable(domResponse.body),
             headersLower,
             domResponse.status,
             span,
@@ -588,7 +588,7 @@ export class FetchManager implements ServerFetchManager {
         const bufferedResult =
           await this.bufferingStrategy.handleBufferedResponse(
             cacheKey,
-            webStreamToReadable(domResponse.body),
+            await webStreamToReadable(domResponse.body),
             headersLower,
             domResponse.status,
             url,

@@ -2,28 +2,23 @@ import type { StreamHandlerContext, StreamHandlerResult } from './types';
 
 type MaybeCreateResultContext =
   | boolean
-  | (Omit<StreamHandlerContext, 'createResult'> &
-      Pick<Partial<StreamHandlerContext>, 'createResult'>);
+  | (Partial<
+    Omit<StreamHandlerContext, 'createResult'> &
+    Pick<StreamHandlerContext, 'createResult'>>);
 
 export const ensureCreateResult = (
   context?: MaybeCreateResultContext,
 ): StreamHandlerContext => {
-  const thisContext = context ?? {};
+  const thisContext = typeof context === 'boolean' ? { success: context } : context ?? {};
   const thisCreateResult = ((successOrPatch) => {
-    const isSuccessFlag = typeof successOrPatch === 'boolean';
     return {
       success: true,
       ...thisContext,
-      ...(isSuccessFlag
-        ? {
-            success: successOrPatch as boolean,
-          }
-        : successOrPatch),
+      ...(typeof successOrPatch === 'boolean' ? { success: successOrPatch } : successOrPatch ?? {})
     } as StreamHandlerResult;
   }) as StreamHandlerContext['createResult'];
-  const ret = {
+  return {
     createResult: thisCreateResult,
     ...thisCreateResult(context),
-  } as StreamHandlerContext;
-  return ret;
+  };
 };

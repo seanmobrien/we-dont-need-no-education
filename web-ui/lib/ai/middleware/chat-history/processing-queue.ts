@@ -148,7 +148,7 @@ export class ProcessingQueue {
 
 type StreamContext = {
   chatId: string;
-  turnId: string;
+  turnId: number;
   messageId: number | undefined;
   currentMessageOrder: number;
   toolCalls: Map<string, ChatMessagesType>;
@@ -207,8 +207,8 @@ export const enqueueStream = async ({
       controller.enqueue(chunk);
       // Process chunk through queue to maintain FIFO order
       const handlerContext: StreamHandlerContext = ensureCreateResult({
-        chatId: streamContext.chatId!,
-        turnId: parseInt(streamContext.turnId!, 10),
+        chatId: streamContext.chatId,
+        turnId: streamContext.turnId,
         toolCalls: streamContext.toolCalls,
         messageId: streamContext.messageId,
         currentMessageOrder: streamContext.currentMessageOrder,
@@ -245,7 +245,7 @@ export const enqueueStream = async ({
         // Complete message persistence using shared utility
         await safeCompleteMessagePersistence({
           chatId: streamContext.chatId,
-          turnId: Number(streamContext.turnId),
+          turnId: streamContext.turnId,
           messageId: streamContext.messageId,
           generatedText: streamContext.streamedText,
           startTime,
@@ -264,7 +264,7 @@ export const enqueueStream = async ({
           isError(error) ? error : new Error(String(error)),
         );
       }
-      log((l) => l.verbose('=== ChatHistoryMiddleware.flush ===', { streamContext }));
+      log((l) => l.verbose('=== ChatHistoryMiddleware.flush ==='));
       context.turnId = streamContext.turnId;
       generatedText.resolve(streamContext.streamedText);
       if (streamContext.errors.length > 0) {
