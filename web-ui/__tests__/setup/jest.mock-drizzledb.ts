@@ -498,7 +498,7 @@ import { withJestTestExtensions } from '../jest.test-extensions';
 
 beforeAll(() => {
   withJestTestExtensions().makeMockDb = makeMockDb;
-})
+});
 beforeEach(() => {
   withJestTestExtensions().makeMockDb = makeMockDb;
 })
