@@ -9,5 +9,8 @@
   ],
   "devDependencies": {
     "@changesets/cli": "^2.29.8"
+  },
+  "scripts": {
+    "preinstall": "node preinstall.js"
   }
 }
