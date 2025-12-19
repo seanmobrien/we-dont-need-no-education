@@ -16,37 +16,7 @@ import {
   getUserIdFromUnitId,
 } from './case-file-helpers';
 import { log } from '@/lib/logger';
-import { extractToken } from '@/lib/auth/utilities';
-
-/**
- * Extracts and validates the access token from a request
- *
- * @param req - The Next.js request object
- * @param resourceId - The resource ID for logging purposes
- * @returns The access token if valid, or an error response
- * @internal
- */
-async function getValidatedAccessToken(
-  req: NextRequest,
-  resourceId: string | number,
-): Promise<{ token: string } | { error: NextResponse }> {
-  const token = await extractToken(req);
-  if (!token || !token.access_token) {
-    log((l) =>
-      l.warn({
-        msg: 'No access token found in request',
-        resourceId,
-      }),
-    );
-    return {
-      error: NextResponse.json(
-        { error: 'Unauthorized - No access token' },
-        { status: 401 },
-      ),
-    };
-  }
-  return { token: token.access_token };
-}
+import { getValidatedAccessToken } from '../../access-token';
 
 /**
  * Options for case file authorization middleware
@@ -61,14 +31,20 @@ export interface CaseFileAuthOptions {
 /**
  * Result of authorization check
  */
-export interface AuthCheckResult {
+export type AuthCheckResult = {
   /** Whether the user is authorized */
   authorized: boolean;
-  /** The user_id (case file ID) if found */
   userId?: number;
-  /** Error response to return if not authorized */
-  response?: NextResponse;
-}
+} & (
+    {
+      authorized: false;
+      response: NextResponse;
+    } | {
+      authorized: true;
+      userId: number;
+      response?: NextResponse;
+    }
+  );
 
 /**
  * Checks authorization for an email-based route
@@ -100,18 +76,18 @@ export interface AuthCheckResult {
  * };
  * ```
  */
-export async function checkEmailAuthorization(
+export const checkEmailAuthorization = async (
   req: NextRequest,
   emailId: string,
   options: CaseFileAuthOptions,
-): Promise<AuthCheckResult> {
+): Promise<AuthCheckResult> => {
   try {
     // Get user_id from email
     const userId = await getUserIdFromEmailId(emailId);
 
     if (!userId) {
       if (options.allowMissing) {
-        return { authorized: true };
+        return { authorized: true, userId: -1 };
       }
       log((l) =>
         l.warn({
@@ -129,7 +105,7 @@ export async function checkEmailAuthorization(
     }
 
     // Extract and validate access token
-    const tokenResult = await getValidatedAccessToken(req, emailId);
+    const tokenResult = await getValidatedAccessToken({ req, source: `auth-email:${emailId}` });
     if ('error' in tokenResult) {
       return {
         authorized: false,
@@ -183,7 +159,7 @@ export async function checkEmailAuthorization(
       ),
     };
   }
-}
+};
 
 /**
  * Checks authorization for a document unit-based route
@@ -215,18 +191,18 @@ export async function checkEmailAuthorization(
  * };
  * ```
  */
-export async function checkDocumentUnitAuthorization(
+export const checkDocumentUnitAuthorization = async (
   req: NextRequest,
   unitId: number,
   options: CaseFileAuthOptions,
-): Promise<AuthCheckResult> {
+): Promise<AuthCheckResult> => {
   try {
     // Get user_id from document unit
     const userId = await getUserIdFromUnitId(unitId);
 
     if (!userId) {
       if (options.allowMissing) {
-        return { authorized: true };
+        return { authorized: true, userId: -1 };
       }
       log((l) =>
         l.warn({
@@ -244,7 +220,7 @@ export async function checkDocumentUnitAuthorization(
     }
 
     // Extract and validate access token
-    const tokenResult = await getValidatedAccessToken(req, unitId);
+    const tokenResult = await getValidatedAccessToken({ req, source: `auth-doc:${unitId}` });
     if ('error' in tokenResult) {
       return {
         authorized: false,
@@ -298,4 +274,4 @@ export async function checkDocumentUnitAuthorization(
       ),
     };
   }
-}
+};

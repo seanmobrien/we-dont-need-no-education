@@ -1,10 +1,13 @@
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { ComplianceScoresDetailsRepository } from '@/lib/api/email/properties/compliance-scores/compliance-scores-details-repository';
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
+  extractParams,
 } from '@/lib/nextjs-util/server/utils';
+import { CaseFileScope } from '@/lib/auth/resources/case-file/case-file-resource';
+import { checkEmailAuthorization } from '@/lib/auth/resources/case-file/case-file-middleware';
 
 export const dynamic = 'force-dynamic';
 

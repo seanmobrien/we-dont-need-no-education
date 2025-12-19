@@ -32,6 +32,38 @@ import type { Span } from '@opentelemetry/api';
 import type { NextRequest } from 'next/server';
 
 declare module '@/lib/nextjs-util/server/utils' {
+  /**
+   * Extracts and resolves parameters from a Next.js request object.
+   *
+   * This function handles both synchronous and asynchronous parameter extraction,
+   * which is common in Next.js App Router where params can be a Promise.
+   *
+   * @template T - The expected type of the parameters object
+   * @param req - An object containing a params property that can be either T or Promise<T>
+   * @returns A Promise that resolves to the parameters object of type T
+   * @throws {Error} When no params are found in the request object
+   *
+   * @example
+   * ```typescript
+   * // In a Next.js App Router page or API route
+   * interface PageParams {
+   *   id: string;
+   *   category: string;
+   * }
+   *
+   * export default async function Page({ params }: { params: Promise<PageParams> }) {
+   *   const resolvedParams = await extractParams({ params });
+   *   console.log(resolvedParams.id); // string
+   * }
+   *
+   * // With synchronous params (Next.js Pages Router)
+   * const syncParams = await extractParams({ params: { id: '123' } });
+   * ```
+   */
+  export function extractParams<T extends object>(req: {
+    params: T | Promise<T>;
+  }): Promise<T>;
+
 
   /**
    * Sentinel used to explicitly enable a wrapped route/handler during the production build phase.

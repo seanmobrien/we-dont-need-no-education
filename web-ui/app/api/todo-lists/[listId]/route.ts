@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest, extractParams } from '@/lib/nextjs-util/server/utils';
 import { getTodoManager } from '@/lib/ai/tools/todo/todo-manager';
-import { extractParams } from '@/lib/nextjs-util/utils';
 
 export const dynamic = 'force-dynamic';
 

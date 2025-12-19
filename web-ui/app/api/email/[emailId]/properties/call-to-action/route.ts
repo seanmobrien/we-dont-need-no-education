@@ -3,7 +3,7 @@ import {
   wrapRouteRequest,
   buildFallbackGrid,
 } from '@/lib/nextjs-util/server/utils';
-import { extractParams } from '@/lib/nextjs-util/utils';
+import { extractParams } from '@/lib/nextjs-util/server/utils';
 
 import { eq, and, sql } from 'drizzle-orm';
 import { drizDbWithInit, schema } from '@/lib/drizzle-db';

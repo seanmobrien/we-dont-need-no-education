@@ -18,7 +18,7 @@
 import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-
+import { fetch } from '@/lib/nextjs-util/server';
 /**
  * Gets the Keycloak token endpoint URL
  * @internal
@@ -44,10 +44,12 @@ const getTokenEndpoint = (): string => {
  * ```
  */
 async function getProtectionApiToken(): Promise<string> {
+  const client_id = env('AUTH_KEYCLOAK_CLIENT_ID');
+  const client_secret = env('AUTH_KEYCLOAK_CLIENT_SECRET');
   const body = new URLSearchParams({
     grant_type: 'client_credentials',
-    client_id: env('AUTH_KEYCLOAK_CLIENT_ID'),
-    client_secret: env('AUTH_KEYCLOAK_CLIENT_SECRET'),
+    ...(client_id ? { client_id } : {}),
+    ...(client_secret ? { client_secret } : {}),
     scope: 'uma_protection',
   });
 
@@ -187,7 +189,7 @@ async function findCaseFileResource(
 ): Promise<CaseFileResource | null> {
   try {
     const resourceName = `case-file:${userId}`;
-    
+
     // Get PAT (Protection API Token)
     const pat = await getProtectionApiToken();
 
@@ -314,7 +316,7 @@ export async function checkCaseFileAccess(
   try {
     // First, find the resource to get its ID
     const resource = await findCaseFileResource(userId);
-    
+
     if (!resource || !resource._id) {
       log((l) =>
         l.warn({
@@ -328,6 +330,8 @@ export async function checkCaseFileAccess(
 
     // Request an RPT (Requesting Party Token) with entitlement
     // Use resource ID instead of name for proper UMA authorization
+    const audience = env('AUTH_KEYCLOAK_CLIENT_ID');
+
     const response = await fetch(getTokenEndpoint(), {
       method: 'POST',
       headers: {
@@ -336,7 +340,7 @@ export async function checkCaseFileAccess(
       },
       body: new URLSearchParams({
         grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
-        audience: env('AUTH_KEYCLOAK_CLIENT_ID'),
+        ...(audience ? { audience } : {}),
         permission: `${resource._id}#${scope}`,
       }),
     });

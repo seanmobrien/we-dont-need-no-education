@@ -349,12 +349,27 @@ export const addViolations = async ({
       },
     );
 
+
     try {
+      // first extract user id associated with target document
+      const targetDocumentUserId = (await tx
+        .query
+        .documentUnits
+        .findFirst({
+          where: (documentUnits, { eq }) => eq(documentUnits.unitId, emailDocumentId),
+          columns: {
+            userId: true,
+          }
+        }).then(x => x?.userId));
+      if (!targetDocumentUserId) {
+        throw new Error('Target document user id not found');
+      }
       await tx
         .insert(documentUnits)
         .values(
           violationRecords.map(({ violationType, propertyId }) => ({
             emailId,
+            userId: targetDocumentUserId,
             documentType: 'compliance',
             createdOn: new Date(Date.now()).toISOString(),
             content: violationType,

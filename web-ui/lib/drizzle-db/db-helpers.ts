@@ -201,27 +201,27 @@ export const addDocumentRelations = async ({
 
 type AddNoteRetVal<TNotes> =
   TNotes extends Array<string>
-    ? Promise<Array<DocumentPropertyType>>
-    : TNotes extends string
-      ? Promise<DocumentPropertyType>
-      : TNotes extends Array<{
-            policyBasis: string[];
-            tags: string[];
-            note: string;
-          }>
-        ? Promise<Array<DocumentPropertyType>>
-        : TNotes extends { policyBasis: string[]; tags: string[]; note: string }
-          ? Promise<DocumentPropertyType>
-          : TNotes extends []
-            ? Promise<Array<DocumentPropertyType>>
-            : never;
+  ? Promise<Array<DocumentPropertyType>>
+  : TNotes extends string
+  ? Promise<DocumentPropertyType>
+  : TNotes extends Array<{
+    policyBasis: string[];
+    tags: string[];
+    note: string;
+  }>
+  ? Promise<Array<DocumentPropertyType>>
+  : TNotes extends { policyBasis: string[]; tags: string[]; note: string }
+  ? Promise<DocumentPropertyType>
+  : TNotes extends []
+  ? Promise<Array<DocumentPropertyType>>
+  : never;
 
 export const addNotesToDocument = async <
   TNotes extends
-    | string
-    | Array<string>
-    | { policyBasis: string[]; tags: string[]; note: string }
-    | Array<{ policyBasis: string[]; tags: string[]; note: string }>,
+  | string
+  | Array<string>
+  | { policyBasis: string[]; tags: string[]; note: string }
+  | Array<{ policyBasis: string[]; tags: string[]; note: string }>,
 >({
   db,
   notes: notesFromProps,
@@ -243,6 +243,7 @@ export const addNotesToDocument = async <
       emailId: true,
       attachmentId: true,
       documentType: true,
+      userId: true,
     },
     with: {
       docProp: {
@@ -255,7 +256,7 @@ export const addNotesToDocument = async <
   if (!record) {
     throw new Error('Email ID not found for the document');
   }
-  const { emailId, attachmentId, documentType, docProp } = record;
+  const { emailId, attachmentId, documentType, docProp, userId } = record;
   const documentId =
     documentType === 'email' || documentType === 'attachment'
       ? documentIdFromProps
@@ -266,15 +267,15 @@ export const addNotesToDocument = async <
     notes = notesFromProps.map((note) =>
       typeof note === 'string'
         ? {
-            policyBasis: [],
-            tags: [],
-            note,
-          }
+          policyBasis: [],
+          tags: [],
+          note,
+        }
         : {
-            policyBasis: note.policyBasis || [],
-            tags: note.tags || [],
-            note: note.note,
-          },
+          policyBasis: note.policyBasis || [],
+          tags: note.tags || [],
+          note: note.note,
+        },
     );
   } else if (typeof notesFromProps === 'string') {
     notes = [
@@ -295,6 +296,7 @@ export const addNotesToDocument = async <
     const documentRecord = {
       documentPropertyId: propertyId,
       emailId,
+      userId,
       attachmentId,
       documentType: 'note',
       content: note,

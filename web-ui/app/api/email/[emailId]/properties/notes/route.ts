@@ -2,8 +2,8 @@ import { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
+  extractParams
 } from '@/lib/nextjs-util/server/utils';
-import { extractParams } from '@/lib/nextjs-util/utils';
 import { EmailProperty } from '@/data-models/api/email-properties/property-type';
 import { eq, and, ne } from 'drizzle-orm';
 import { drizDbWithInit } from '@/lib/drizzle-db';

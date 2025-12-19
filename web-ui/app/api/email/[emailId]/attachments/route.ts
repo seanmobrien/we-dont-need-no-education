@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { extractParams } from '@/lib/nextjs-util/utils';
+import { extractParams } from '@/lib/nextjs-util/server/utils';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { buildAttachmentDownloadUrl } from '@/lib/api/attachment';
@@ -41,7 +41,7 @@ export async function GET(
     let resolvedEmailId: string | null = null;
     if (isValidUuid(emailId)) {
       resolvedEmailId = emailId;
-      
+
       // Check case file authorization
       const authCheck = await checkEmailAuthorization(req, resolvedEmailId, {
         requiredScope: CaseFileScope.READ,

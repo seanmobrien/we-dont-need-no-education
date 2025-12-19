@@ -2,8 +2,8 @@ import { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
+  extractParams
 } from '@/lib/nextjs-util/server/utils';
-import { extractParams } from '@/lib/nextjs-util/utils';
 import { KeyPointsDetails } from '@/data-models/api/email-properties/extended-properties';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
@@ -70,8 +70,8 @@ export const GET = wrapRouteRequest(
         default:
           return columnName in schema.keyPoints
             ? (schema.keyPoints[
-                columnName as keyof typeof schema.keyPoints
-              ] as PgColumn)
+              columnName as keyof typeof schema.keyPoints
+            ] as PgColumn)
             : undefined;
       }
     };

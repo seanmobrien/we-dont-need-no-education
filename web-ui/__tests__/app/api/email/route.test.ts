@@ -73,12 +73,11 @@ const mockSchema = {
 const mockExtractParams = jest.fn();
 
 // Mock modules
-jest.mock('@/lib/nextjs-util', () => {
+jest.mock('@/lib/nextjs-util/server/utils', () => {
+  const orig = jest.requireActual('@/lib/nextjs-util/server/utils');
   return {
+    ...orig,
     extractParams: mockExtractParams,
-    isLikeNextRequest: jest.fn((req) => {
-      return !!(req && typeof req === 'object' && 'url' in req);
-    }),
   };
 });
 

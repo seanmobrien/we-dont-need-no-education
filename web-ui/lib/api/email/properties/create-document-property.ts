@@ -34,9 +34,11 @@ export const createDocumentProperty = async ({
   data,
   emailId,
   attachmentId,
+  userId: userIdFromProps,
 }: {
   data: typeof documentProperty.$inferInsert;
   emailId: string;
+  userId?: number;
   attachmentId?: number;
 }) => {
   if (!data || typeof data !== 'object') {
@@ -56,6 +58,25 @@ export const createDocumentProperty = async ({
   if (!data.propertyId) {
     data.propertyId = newUuid();
   }
+  let userId: number;
+  if (userIdFromProps) {
+    userId = userIdFromProps;
+  } else {
+    const targetDocumentUserId = (await drizDb()
+      .query
+      .documentUnits
+      .findFirst({
+        where: (documentUnits, { eq }) => eq(documentUnits.emailId, emailId),
+        columns: {
+          userId: true,
+        }
+      }).then(x => x?.userId));
+    if (!targetDocumentUserId) {
+      throw new Error('Target document user id not found');
+    }
+    userId = targetDocumentUserId;
+  }
+
   // First, insert document property record
   await drizDb().insert(documentProperty).values(data).execute();
   // Then create document
@@ -63,6 +84,7 @@ export const createDocumentProperty = async ({
     .insert(documentUnits)
     .values({
       documentPropertyId: data.propertyId,
+      userId,
       emailId,
       attachmentId,
       documentType,

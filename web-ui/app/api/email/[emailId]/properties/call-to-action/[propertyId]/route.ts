@@ -5,7 +5,7 @@ import {
   buildFallbackGrid,
   wrapRouteRequest,
 } from '@/lib/nextjs-util/server/utils';
-import { extractParams } from '@/lib/nextjs-util/utils';
+import { extractParams } from '@/lib/nextjs-util/server/utils';
 import {
   checkEmailAuthorization,
   CaseFileScope,

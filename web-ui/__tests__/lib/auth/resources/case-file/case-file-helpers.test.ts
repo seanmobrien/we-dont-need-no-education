@@ -5,6 +5,7 @@
  * emails and document units for authorization purposes.
  */
 
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 import {
   getUserIdFromEmailId,
   getUserIdFromUnitId,
@@ -63,6 +64,7 @@ describe('Case File Helpers', () => {
     });
 
     it('should handle database errors gracefully', async () => {
+      hideConsoleOutput().setup();
       const mockEmailId = '550e8400-e29b-41d4-a716-446655440000';
 
       mockDrizDbWithInit.mockResolvedValue({

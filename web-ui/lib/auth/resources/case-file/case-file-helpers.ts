@@ -37,7 +37,7 @@ export async function getUserIdFromEmailId(
 ): Promise<number | null> {
   try {
     const db = await drizDbWithInit();
-    
+
     // Find any document unit associated with this email
     const documentUnit = await db.query.documentUnits.findFirst({
       where: (du, { eq }) => eq(du.emailId, emailId),
@@ -90,7 +90,7 @@ export async function getUserIdFromUnitId(
 ): Promise<number | null> {
   try {
     const db = await drizDbWithInit();
-    
+
     const documentUnit = await db.query.documentUnits.findFirst({
       where: (du, { eq }) => eq(du.unitId, unitId),
       columns: {
@@ -142,7 +142,7 @@ export async function getKeycloakUserIdFromUserId(
 ): Promise<string | null> {
   try {
     const db = await drizDbWithInit();
-    
+
     // Find the Keycloak account for this user
     const account = await db.query.accounts.findFirst({
       where: (acc, { and, eq }) =>

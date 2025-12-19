@@ -28,7 +28,7 @@ import {
 import type { RecoveryAction } from '@/lib/error-monitoring/recovery-strategies';
 import { dumpError, LoggedError } from '@/lib/react-util/errors/logged-error';
 
-export const RenderErrorBoundaryFallback = ({
+const RenderErrorBoundaryFallbackComponent = ({
   error,
   resetErrorBoundary,
 }: {
@@ -247,3 +247,8 @@ export const RenderErrorBoundaryFallback = ({
     </Dialog>
   );
 };
+
+export const RenderErrorBoundaryFallback = (props: {
+  error: unknown;
+  resetErrorBoundary: (...args: unknown[]) => void;
+}): React.ReactNode => <RenderErrorBoundaryFallbackComponent {...props} />;
