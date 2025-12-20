@@ -61,7 +61,7 @@ import {
 } from '../types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
-import { caseFileDocumentShape } from '../caseFileDocumentQuery';
+import { caseFileDocumentShape } from '../case-file-document-query';
 import {
   caseFileDocumentErrorCounter,
   getCaseFileDocumentDurationHistogram,

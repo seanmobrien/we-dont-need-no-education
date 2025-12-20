@@ -215,7 +215,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
     pages: {
       signIn: '/auth/signin',
     },
-    session: { strategy: 'jwt' },
+    session: {
+      strategy: 'jwt',
+      maxAge: 30 * 60, // 30 minutes
+      updateAge: 5 * 60, // 5 minutes
+    },
     theme: {
       colorScheme: 'auto', // 'auto' for system preference, 'light' or 'dark'
       logo: '/static/logo/logo-dark.png',

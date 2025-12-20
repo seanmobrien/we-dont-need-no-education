@@ -9,7 +9,7 @@ import { DocumentUnitRepository } from '@/lib/api/document-unit';
 import { wrapRouteRequest, extractParams } from '@/lib/nextjs-util/server/utils';
 import { NextRequest, NextResponse } from 'next/server';
 import { isError } from '@/lib/react-util/utility-methods';
-import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
+import { amendCaseRecord } from '@/lib/ai/tools/amend-case-record';
 import { log } from '@/lib/logger';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 import {

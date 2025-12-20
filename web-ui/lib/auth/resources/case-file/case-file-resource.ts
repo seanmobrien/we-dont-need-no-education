@@ -19,6 +19,10 @@ import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { fetch } from '@/lib/nextjs-util/server';
+import type { NextRequest } from 'next/server';
+import { auth } from '@/auth';
+import { getProviderAccountId, getAccessToken, withRequestProviderAccountId } from '../../access-token';
+import { decodeToken } from '../../utilities';
 /**
  * Gets the Keycloak token endpoint URL
  * @internal
@@ -119,10 +123,10 @@ export enum CaseFileScope {
  * console.log(resource.name); // 'case-file:123'
  * ```
  */
-export async function ensureCaseFileResource(
+export const ensureCaseFileResource = async (
   userId: number,
   keycloakUserId: string,
-): Promise<CaseFileResource> {
+): Promise<CaseFileResource> => {
   try {
     const resourceName = `case-file:${userId}`;
 
@@ -175,7 +179,7 @@ export async function ensureCaseFileResource(
       include: { userId, keycloakUserId },
     });
   }
-}
+};
 
 /**
  * Finds an existing case file resource by user ID
@@ -184,9 +188,9 @@ export async function ensureCaseFileResource(
  * @returns The case file resource if found, null otherwise
  * @internal
  */
-async function findCaseFileResource(
+const findCaseFileResource = async (
   userId: number,
-): Promise<CaseFileResource | null> {
+): Promise<CaseFileResource | null> => {
   try {
     const resourceName = `case-file:${userId}`;
 
@@ -242,7 +246,7 @@ async function findCaseFileResource(
     );
     return null;
   }
-}
+};
 
 /**
  * Creates a new case file resource in Keycloak
@@ -252,9 +256,9 @@ async function findCaseFileResource(
  * @throws {Error} If resource creation fails
  * @internal
  */
-async function createCaseFileResource(
+const createCaseFileResource = async (
   resource: CaseFileResource,
-): Promise<CaseFileResource> {
+): Promise<CaseFileResource> => {
   try {
     // Get PAT (Protection API Token)
     const pat = await getProtectionApiToken();
@@ -287,7 +291,7 @@ async function createCaseFileResource(
       include: { resourceName: resource.name },
     });
   }
-}
+};
 
 /**
  * Checks if a user has a specific scope for a case file resource using UMA
@@ -295,37 +299,72 @@ async function createCaseFileResource(
  * This function performs authorization checking by requesting an RPT (Requesting Party Token)
  * from Keycloak with the specified permission. The permission format is `{resourceId}#{scope}`.
  *
+ * @param req - The request object containing the user's access token
  * @param userId - The case file user ID
  * @param scope - The required scope (e.g., 'case-file:read')
- * @param userAccessToken - The user's access token
  * @returns True if the user has the required scope, false otherwise
  *
  * @example
  * ```typescript
- * const canRead = await checkCaseFileAccess(123, CaseFileScope.READ, userToken);
+ * const canRead = await checkCaseFileAccess(req, 123, CaseFileScope.READ, userToken);
  * if (!canRead) {
  *   return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
  * }
  * ```
  */
-export async function checkCaseFileAccess(
+export const checkCaseFileAccess = async (
+  req: NextRequest,
   userId: number,
-  scope: CaseFileScope,
-  userAccessToken: string,
-): Promise<boolean> {
+  scope: CaseFileScope
+): Promise<boolean> => {
   try {
+    const userAccessToken = await getAccessToken(req);
+    if (!userAccessToken) {
+      // If no user access token is found, always return false; we technically
+      // shouldn't have made it this far but better safe than sorry.
+      return false;
+    }
+
     // First, find the resource to get its ID
-    const resource = await findCaseFileResource(userId);
+    let resource = await findCaseFileResource(userId);
 
     if (!resource || !resource._id) {
-      log((l) =>
-        l.warn({
-          msg: 'Case file resource not found for authorization check',
-          userId,
-          scope,
-        }),
-      );
-      return false;
+      // We could not find the resource - if the user is trying to access
+      // their own case file we should create it.
+      const session = await auth();
+      const sessionUserId = parseInt(session?.user?.id ?? '0', 10);
+      if (sessionUserId === userId) {
+        const providerAccountId = withRequestProviderAccountId(req) ?? await getProviderAccountId(req);
+        if (!providerAccountId) {
+          log((l) =>
+            l.warn({
+              msg: 'Case file resource not found for authorization check',
+              userId,
+              scope,
+            }),
+          );
+          return false;
+        }
+        resource = await ensureCaseFileResource(userId, providerAccountId);
+        if (!resource || !resource._id) {
+          log((l) =>
+            l.warn({
+              msg: 'Unexpected error creating user case file resource',
+              userId,
+              scope,
+            }));
+          return false;
+        }
+      } else {
+        log((l) =>
+          l.warn({
+            msg: 'Case file resource not found for authorization check',
+            userId,
+            scope,
+          }),
+        );
+        return false;
+      }
     }
 
     // Request an RPT (Requesting Party Token) with entitlement
@@ -348,8 +387,11 @@ export async function checkCaseFileAccess(
     // If we get a 200, the user has access
     // If we get a 403, the user doesn't have access
     if (response.status === 200) {
-      const rpt = await response.json();
+      let rpt = await response.json();
       // Verify that the RPT contains the permission
+      if ('access_token' in rpt) {
+        rpt = await decodeToken(rpt.access_token);
+      }
       return Array.isArray(rpt.authorization?.permissions);
     } else if (response.status === 403 || response.status === 401) {
       return false;
@@ -397,9 +439,9 @@ export async function checkCaseFileAccess(
  * }
  * ```
  */
-export async function getCaseFileResourceId(
+export const getCaseFileResourceId = async (
   userId: number,
-): Promise<string | null> {
+): Promise<string | null> => {
   try {
     const resource = await findCaseFileResource(userId);
     return resource?._id ?? null;
@@ -413,4 +455,4 @@ export async function getCaseFileResourceId(
     );
     return null;
   }
-}
+};

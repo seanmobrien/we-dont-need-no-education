@@ -25,7 +25,7 @@ import {
 import {
   amendCaseRecord,
   amendCaseRecordConfig,
-} from '@/lib/ai/tools/amendCaseRecord';
+} from '@/lib/ai/tools/amend-case-record';
 import {
   getMultipleCaseFileDocuments,
   getMultipleCaseFileDocumentsConfig,

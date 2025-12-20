@@ -10,14 +10,15 @@ Each case file is represented by a `user_id` in the `users` table, and all `docu
 
 ### 1.1 Responsibilities
 
-| Layer | Responsibility |
-|-----|----------------|
-| Auth.js | Login, logout, session lifecycle, token storage |
-| Keycloak | Identity, UMA authorization, resource & policy evaluation |
-| Next.js API routes | Authorization enforcement + business logic |
-| Database | Case files + mapping to Keycloak resource IDs |
+| Layer              | Responsibility                                            |
+| ------------------ | --------------------------------------------------------- |
+| Auth.js            | Login, logout, session lifecycle, token storage           |
+| Keycloak           | Identity, UMA authorization, resource & policy evaluation |
+| Next.js API routes | Authorization enforcement + business logic                |
+| Database           | Case files + mapping to Keycloak resource IDs             |
 
-**Key principle**:  
+**Key principle**:
+
 > Authentication is handled once (Auth.js). Authorization is evaluated per request (Keycloak).
 
 ### Database Schema
@@ -35,11 +36,7 @@ Each case file has a corresponding Keycloak resource:
   "name": "case-file:{userId}",
   "type": "case-file",
   "owner": "{keycloakUserId}",
-  "scopes": [
-    "case-file:read",
-    "case-file:write",
-    "case-file:admin"
-  ],
+  "scopes": ["case-file:read", "case-file:write", "case-file:admin"],
   "attributes": {
     "caseFileId": ["{userId}"],
     "readers": ["{keycloakUserId}"],
@@ -124,6 +121,7 @@ const impersonatorUsername = env('AUTH_KEYCLOAK_IMPERSONATOR_USERNAME') || undef
 const impersonatorPassword = env('AUTH_KEYCLOAK_IMPERSONATOR_PASSWORD') || undefined,
 const impersonatorOfflineToken: = env('AUTH_KEYCLOAK_IMPERSONATOR_OFFLINE_TOKEN') || undefined,
 ```
+
 > For authorization requests, you’ll also need the client’s service-account credentials to obtain a PAT and to call the Protection API.
 
 @/lib/auth/keycloak-provider.ts - existing auth.js Keycloak provider setup
@@ -148,7 +146,8 @@ export const setupKeyCloakProvider = (): Provider[] => {
   return [keycloak];
 };
 ```
-> Key point: Auth.js becomes our 'adapter'.  The server gets identity and tokens from auth()
+
+> Key point: Auth.js becomes our 'adapter'. The server gets identity and tokens from auth()
 
 ### Protecting API Endpoints
 
@@ -156,14 +155,17 @@ export const setupKeyCloakProvider = (): Provider[] => {
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server';
-import { checkEmailAuthorization, CaseFileScope } from '@/lib/auth/resources/case-file';
+import {
+  checkEmailAuthorization,
+  CaseFileScope,
+} from '@/lib/auth/resources/case-file';
 
 export const GET = async (
   req: NextRequest,
-  { params }: { params: Promise<{ emailId: string }> }
+  { params }: { params: Promise<{ emailId: string }> },
 ) => {
   const { emailId } = await params;
-  
+
   // Check authorization
   const authCheck = await checkEmailAuthorization(req, emailId, {
     requiredScope: CaseFileScope.READ,
@@ -183,22 +185,21 @@ export const GET = async (
 
 ```typescript
 import { NextRequest, NextResponse } from 'next/server';
-import { checkDocumentUnitAuthorization, CaseFileScope } from '@/lib/auth/resources/case-file';
+import {
+  checkDocumentUnitAuthorization,
+  CaseFileScope,
+} from '@/lib/auth/resources/case-file';
 
 export const PUT = async (
   req: NextRequest,
-  { params }: { params: Promise<{ unitId: string }> }
+  { params }: { params: Promise<{ unitId: string }> },
 ) => {
   const { unitId } = await params;
-  
+
   // Check authorization (write scope for modifications)
-  const authCheck = await checkDocumentUnitAuthorization(
-    req,
-    Number(unitId),
-    {
-      requiredScope: CaseFileScope.WRITE,
-    },
-  );
+  const authCheck = await checkDocumentUnitAuthorization(req, Number(unitId), {
+    requiredScope: CaseFileScope.WRITE,
+  });
 
   if (!authCheck.authorized) {
     return authCheck.response;
@@ -210,8 +211,6 @@ export const PUT = async (
 };
 ```
 
-
-
 ## 8. Protection API (Service Account)
 
 ### 8.1 Obtain PAT
@@ -219,15 +218,15 @@ export const PUT = async (
 ```ts
 async function getProtectionApiToken(): Promise<string> {
   const body = new URLSearchParams({
-    grant_type: "client_credentials",
+    grant_type: 'client_credentials',
     client_id: process.env.KEYCLOAK_RS_CLIENT_ID!,
     client_secret: process.env.KEYCLOAK_RS_CLIENT_SECRET!,
-    scope: "uma_protection",
+    scope: 'uma_protection',
   });
 
   const res = await fetch(
     `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`,
-    { method: "POST", body }
+    { method: 'POST', body },
   );
 
   const json = await res.json();
@@ -249,43 +248,40 @@ export async function createCaseFileResource(params: {
   const res = await fetch(
     `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/authz/protection/resource_set`,
     {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${pat}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         name: `case-file:${params.caseFileId}`,
-        type: "case-file",
+        type: 'case-file',
         owner: params.ownerUserId,
-        scopes: [
-          "case-file:read",
-          "case-file:write",
-          "case-file:admin"
-        ],
+        scopes: ['case-file:read', 'case-file:write', 'case-file:admin'],
         attributes: {
           readers: [params.ownerUserId],
           writers: [params.ownerUserId],
           admins: [params.ownerUserId],
         },
       }),
-    }
+    },
   );
 
   const json = await res.json();
   return json._id;
 }
 ```
+
 ## 10. Authorization Enforcement (UMA)
 
 ```ts
 export async function checkCaseFilePermission(params: {
   userAccessToken: string;
   resourceId: string;
-  scope: "case-file:read" | "case-file:write" | "case-file:admin";
+  scope: 'case-file:read' | 'case-file:write' | 'case-file:admin';
 }): Promise<boolean> {
   const body = new URLSearchParams({
-    grant_type: "urn:ietf:params:oauth:grant-type:uma-ticket",
+    grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
     audience: process.env.KEYCLOAK_RS_CLIENT_ID!,
     permission: `${params.resourceId}#${params.scope}`,
   });
@@ -293,13 +289,13 @@ export async function checkCaseFilePermission(params: {
   const res = await fetch(
     `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`,
     {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Bearer ${params.userAccessToken}`,
-        "Content-Type": "application/x-www-form-urlencoded",
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
       body,
-    }
+    },
   );
 
   if (!res.ok) return false;
@@ -315,21 +311,24 @@ export async function checkCaseFilePermission(params: {
 
 ```ts
 // app/api/cases/[caseId]/route.ts
-import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/authHelpers";
-import { checkCaseFilePermission } from "@/lib/authorization";
+import { NextResponse } from 'next/server';
+import { requireUser } from '@/lib/authHelpers';
+import { checkCaseFilePermission } from '@/lib/authorization';
 
-export async function GET(_: Request, { params }: { params: { caseId: string } }) {
+export async function GET(
+  _: Request,
+  { params }: { params: { caseId: string } },
+) {
   const { sub, accessToken } = await requireUser();
   const resourceId = await getCaseFileResourceId(params.caseId);
 
   const allowed = await checkCaseFilePermission({
     userAccessToken: accessToken,
     resourceId,
-    scope: "case-file:read",
+    scope: 'case-file:read',
   });
 
-  if (!allowed) return new NextResponse("Forbidden", { status: 403 });
+  if (!allowed) return new NextResponse('Forbidden', { status: 403 });
 
   return NextResponse.json(await loadCaseFileFromDb(params.caseId));
 }
@@ -348,7 +347,10 @@ export async function GET(_: Request, { params }: { params: { caseId: string } }
 Resources are typically created automatically when a user signs in. To manually ensure a resource exists:
 
 ```typescript
-import { ensureCaseFileResource, getKeycloakUserIdFromUserId } from '@/lib/auth/resources/case-file';
+import {
+  ensureCaseFileResource,
+  getKeycloakUserIdFromUserId,
+} from '@/lib/auth/resources/case-file';
 
 // Get the Keycloak user ID for the local user
 const keycloakUserId = await getKeycloakUserIdFromUserId(userId);
@@ -363,17 +365,20 @@ if (keycloakUserId) {
 ### Checking Access Programmatically
 
 ```typescript
-import { checkCaseFileAccess, CaseFileScope } from '@/lib/auth/resources/case-file';
+import {
+  checkCaseFileAccess,
+  CaseFileScope,
+} from '@/lib/auth/resources/case-file';
 import { extractToken } from '@/lib/auth/utilities';
 
 const token = await extractToken(request);
 if (token?.access_token) {
   const hasReadAccess = await checkCaseFileAccess(
+    request,
     userId,
     CaseFileScope.READ,
-    token.access_token,
   );
-  
+
   if (hasReadAccess) {
     // User can read this case file
   }
@@ -427,7 +432,7 @@ The `user_id` column was added to `document_units` in migration `0005_supreme_in
 ```sql
 ALTER TABLE "document_units" ADD COLUMN "user_id" integer NOT NULL DEFAULT 3;
 ALTER TABLE "document_units" ALTER COLUMN "user_id" DROP DEFAULT;
-ALTER TABLE "document_units" ADD CONSTRAINT "document_units_user_id_fkey" 
+ALTER TABLE "document_units" ADD CONSTRAINT "document_units_user_id_fkey"
   FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade;
 CREATE INDEX "idx_document_units_user_id" ON "document_units" USING btree ("user_id" int4_ops);
 ```
@@ -452,8 +457,8 @@ var userId = identity.getId();
 
 // Owner has full access
 if (resource.getOwner() === userId) {
-    $evaluation.grant();
-    return;
+  $evaluation.grant();
+  return;
 }
 
 // Check ACL attributes
@@ -461,20 +466,29 @@ var attributes = resource.getAttributes();
 var requestedScopes = $evaluation.getPermission().getScopes();
 
 for (var i = 0; i < requestedScopes.size(); i++) {
-    var scope = requestedScopes.get(i).getName();
-    
-    if (scope === 'case-file:read' && attributes.get('readers').contains(userId)) {
-        $evaluation.grant();
-        return;
-    }
-    if (scope === 'case-file:write' && attributes.get('writers').contains(userId)) {
-        $evaluation.grant();
-        return;
-    }
-    if (scope === 'case-file:admin' && attributes.get('admins').contains(userId)) {
-        $evaluation.grant();
-        return;
-    }
+  var scope = requestedScopes.get(i).getName();
+
+  if (
+    scope === 'case-file:read' &&
+    attributes.get('readers').contains(userId)
+  ) {
+    $evaluation.grant();
+    return;
+  }
+  if (
+    scope === 'case-file:write' &&
+    attributes.get('writers').contains(userId)
+  ) {
+    $evaluation.grant();
+    return;
+  }
+  if (
+    scope === 'case-file:admin' &&
+    attributes.get('admins').contains(userId)
+  ) {
+    $evaluation.grant();
+    return;
+  }
 }
 
 $evaluation.deny();

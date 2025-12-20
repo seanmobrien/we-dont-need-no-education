@@ -115,9 +115,9 @@ export const checkEmailAuthorization = async (
 
     // Check case file access
     const hasAccess = await checkCaseFileAccess(
+      req,
       userId,
-      options.requiredScope,
-      tokenResult.token,
+      options.requiredScope
     );
 
     if (!hasAccess) {
@@ -230,9 +230,9 @@ export const checkDocumentUnitAuthorization = async (
 
     // Check case file access
     const hasAccess = await checkCaseFileAccess(
+      req,
       userId,
-      options.requiredScope,
-      tokenResult.token,
+      options.requiredScope
     );
 
     if (!hasAccess) {
