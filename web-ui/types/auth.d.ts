@@ -233,11 +233,16 @@ declare module '@auth/core/jwt' {
      * Resource access claims associated with the token.
      */
     resource_access?: { [key: string]: string[] };
-
     /**
      * UMA permissions associated with the session.
-     * Map of resource ID to array of allowed scopes.
+     * Array of permissions.
      */
-    permissions?: Record<string, string[]>;
+    authorization?: {
+      permissions?: Array<{
+        scopes: Array<string>;
+        rsid: string;
+        rsname: string;
+      }>;
+    }
   }
 }
