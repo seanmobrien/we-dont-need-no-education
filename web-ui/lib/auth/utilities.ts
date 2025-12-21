@@ -69,15 +69,20 @@ const jwksCache = new LRUCache<string, ReturnType<typeof createRemoteJWKSet>>({
   ttl: 1000 * 60 * 60, // 1 hour - JWKS don't change often
 });
 
-export const decodeToken = async ({
-  token,
-  verify = false,
-  issuer,
-}: {
+export const decodeToken = async (props: {
   token: string;
   verify?: boolean;
   issuer?: string;
-}): Promise<JWTPayload> => {
+} | string): Promise<JWTPayload> => {
+  if (typeof props === 'string') {
+    // If we were only passed a token then loop-back with proper arguments
+    return await decodeToken({ token: props });
+  }
+  const {
+    token,
+    verify = false,
+    issuer,
+  } = props;
   // Simple decode without verification
   if (!verify) {
     return decodeJwt(token);

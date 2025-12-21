@@ -390,7 +390,7 @@ export const checkCaseFileAccess = async (
       let rpt = await response.json();
       // Verify that the RPT contains the permission
       if ('access_token' in rpt) {
-        rpt = await decodeToken(rpt.access_token);
+        rpt = await decodeToken({ token: rpt.access_token });
       }
       return Array.isArray(rpt.authorization?.permissions);
     } else if (response.status === 403 || response.status === 401) {
