@@ -18,60 +18,11 @@
 import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { fetch } from '@/lib/nextjs-util/server';
 import type { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import { getProviderAccountId, getAccessToken, withRequestProviderAccountId } from '../../access-token';
-import { decodeToken } from '../../utilities';
-/**
- * Gets the Keycloak token endpoint URL
- * @internal
- */
-const getTokenEndpoint = (): string => {
-  return `${env('AUTH_KEYCLOAK_ISSUER')}/protocol/openid-connect/token`;
-};
-
-/**
- * Obtains a Protection API Token (PAT) for service account operations
- *
- * This function authenticates using client credentials to obtain a token
- * that can be used to call Keycloak's Protection API for resource management.
- *
- * @returns The access token (PAT)
- * @throws {Error} If token retrieval fails
- * @internal
- *
- * @example
- * ```typescript
- * const pat = await getProtectionApiToken();
- * // Use PAT to call Protection API endpoints
- * ```
- */
-async function getProtectionApiToken(): Promise<string> {
-  const client_id = env('AUTH_KEYCLOAK_CLIENT_ID');
-  const client_secret = env('AUTH_KEYCLOAK_CLIENT_SECRET');
-  const body = new URLSearchParams({
-    grant_type: 'client_credentials',
-    ...(client_id ? { client_id } : {}),
-    ...(client_secret ? { client_secret } : {}),
-    scope: 'uma_protection',
-  });
-
-  const res = await fetch(getTokenEndpoint(), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body,
-  });
-
-  if (!res.ok) {
-    throw new Error(`Failed to get PAT: ${res.statusText}`);
-  }
-
-  const json = await res.json();
-  return json.access_token;
-}
+import { resourceService } from '../resource-service';
+import { authorizationService } from '../authorization-service';
 
 /**
  * Represents a case file resource in Keycloak
@@ -193,49 +144,7 @@ const findCaseFileResource = async (
 ): Promise<CaseFileResource | null> => {
   try {
     const resourceName = `case-file:${userId}`;
-
-    // Get PAT (Protection API Token)
-    const pat = await getProtectionApiToken();
-
-    // Search for the resource
-    const resourcesUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/authz/protection/resource_set?name=${encodeURIComponent(resourceName)}`;
-    const resourcesResponse = await fetch(resourcesUrl, {
-      headers: {
-        Authorization: `Bearer ${pat}`,
-      },
-    });
-
-    if (!resourcesResponse.ok) {
-      if (resourcesResponse.status === 404) {
-        return null;
-      }
-      throw new Error(
-        `Failed to search resources: ${resourcesResponse.statusText}`,
-      );
-    }
-
-    const resourceIds = await resourcesResponse.json();
-    if (!resourceIds || resourceIds.length === 0) {
-      return null;
-    }
-
-    // Get the full resource details
-    const resourceId = resourceIds[0];
-    const resourceUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/authz/protection/resource_set/${resourceId}`;
-    const resourceResponse = await fetch(resourceUrl, {
-      headers: {
-        Authorization: `Bearer ${pat}`,
-      },
-    });
-
-    if (!resourceResponse.ok) {
-      throw new Error(
-        `Failed to get resource details: ${resourceResponse.statusText}`,
-      );
-    }
-
-    const resource = await resourceResponse.json();
-    return resource as CaseFileResource;
+    return await resourceService().findAuthorizedResource<CaseFileResource>(resourceName);
   } catch (error) {
     log((l) =>
       l.error({
@@ -260,29 +169,7 @@ const createCaseFileResource = async (
   resource: CaseFileResource,
 ): Promise<CaseFileResource> => {
   try {
-    // Get PAT (Protection API Token)
-    const pat = await getProtectionApiToken();
-
-    // Create the resource
-    const resourcesUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/authz/protection/resource_set`;
-    const createResponse = await fetch(resourcesUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${pat}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(resource),
-    });
-
-    if (!createResponse.ok) {
-      const errorText = await createResponse.text();
-      throw new Error(
-        `Failed to create resource: ${createResponse.statusText} - ${errorText}`,
-      );
-    }
-
-    const createdResource = await createResponse.json();
-    return { ...resource, _id: createdResource._id };
+    return await resourceService().createAuthorizedResource(resource);
   } catch (error) {
     throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
@@ -320,8 +207,7 @@ export const checkCaseFileAccess = async (
   try {
     const userAccessToken = await getAccessToken(req);
     if (!userAccessToken) {
-      // If no user access token is found, always return false; we technically
-      // shouldn't have made it this far but better safe than sorry.
+      // If no user access token is found, always return false
       return false;
     }
 
@@ -367,46 +253,15 @@ export const checkCaseFileAccess = async (
       }
     }
 
-    // Request an RPT (Requesting Party Token) with entitlement
-    // Use resource ID instead of name for proper UMA authorization
-    const audience = env('AUTH_KEYCLOAK_CLIENT_ID');
+    // Use AuthorizationService to check access
+    const result = await authorizationService(auth => auth.checkResourceFileAccess({
+      resourceId: resource._id!,
+      scope: scope,
+      audience: env('AUTH_KEYCLOAK_CLIENT_ID'),
+      bearerToken: userAccessToken,
+    }));
 
-    const response = await fetch(getTokenEndpoint(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: `Bearer ${userAccessToken}`,
-      },
-      body: new URLSearchParams({
-        grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
-        ...(audience ? { audience } : {}),
-        permission: `${resource._id}#${scope}`,
-      }),
-    });
-
-    // If we get a 200, the user has access
-    // If we get a 403, the user doesn't have access
-    if (response.status === 200) {
-      let rpt = await response.json();
-      // Verify that the RPT contains the permission
-      if ('access_token' in rpt) {
-        rpt = await decodeToken({ token: rpt.access_token });
-      }
-      return Array.isArray(rpt.authorization?.permissions);
-    } else if (response.status === 403 || response.status === 401) {
-      return false;
-    }
-
-    // For other status codes, log and return false
-    log((l) =>
-      l.warn({
-        msg: 'Unexpected response when checking case file access',
-        status: response.status,
-        userId,
-        scope,
-      }),
-    );
-    return false;
+    return result.success;
   } catch (error) {
     log((l) =>
       l.error({

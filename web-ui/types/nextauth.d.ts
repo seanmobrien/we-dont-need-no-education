@@ -197,6 +197,12 @@ declare module 'next-auth' {
      * Essential for database queries and user-specific operations.
      */
     id: number;
+
+    /**
+     * UMA permissions associated with the session.
+     * Map of resource ID to array of allowed scopes.
+     */
+    permissions?: Record<string, string[]>;
   }
 }
 
@@ -250,5 +256,11 @@ declare module 'next-auth/jwt' {
      * Resource access claims associated with the token.
      */
     resource_access?: { [key: string]: string[] };
+
+    /**
+     * UMA permissions associated with the token.
+     * Map of resource ID to array of allowed scopes.
+     */
+    permissions?: Record<string, string[]>;
   }
 }

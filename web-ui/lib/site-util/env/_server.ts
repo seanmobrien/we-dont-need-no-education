@@ -426,7 +426,7 @@ const serverEnvSchema = z
     AUTH_KEYCLOAK_SCOPE: z
       .string()
       .optional()
-      .default('openid mcp_tool')
+      .default('openid')
       .describe(
         'Keycloak OAuth scope for authentication (optional). Example: openid mcp_tool',
       ),

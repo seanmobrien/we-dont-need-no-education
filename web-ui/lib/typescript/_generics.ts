@@ -32,3 +32,20 @@ export const forOneOrMany = <TInput, TOutput>(
     ? Array<TOutput>
     : TOutput;
 };
+
+
+interface ServiceInstanceOverloads<TService> {
+  (): TService;
+  <TResult>(callback: (service: TService) => TResult): TResult;
+}
+
+export const serviceInstanceOverloadsFactory =
+  <TService>(serviceFactory: () => TService): ServiceInstanceOverloads<TService> =>
+    <TResult>(
+      callback?: (service: TService) => TResult
+    ): TResult | TService => {
+      if (typeof callback === 'function') {
+        return callback(serviceFactory());
+      }
+      return serviceFactory();
+    };
