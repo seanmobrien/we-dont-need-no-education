@@ -1,3 +1,10 @@
+import type { IsNotNull, UnionToTuple } from './_types';
+import type {
+  AbortablePromise,
+  OperationCancelledError,
+} from './abortable-promise';
+
+
 /**
  * Type declarations for type guard utilities.
  *
@@ -9,13 +16,9 @@
  * preserves strong typing by exposing refined TypeScript predicates.
  */
 
-declare module '@/lib/typescript/_guards' {
-  import type { IsNotNull, UnionToTuple } from '@/lib/typescript/_types';
-  import type {
-    AbortablePromise,
-    OperationCancelledError,
-  } from '@/lib/typescript/abortable-promise';
 
+
+declare module '@/lib/typescript/_guards' {
   /**
    * Checks whether the provided error instance represents an aborted async
    * operation.
@@ -193,4 +196,30 @@ declare module '@/lib/typescript/_guards' {
   export function isNotNull<T>(
     value: T | null | undefined,
   ): value is IsNotNull<T>;
+
+  /**
+   * A branded type representing a valid UUID string.
+   *
+   * @example
+   * ```typescript
+   * const uuid: BrandedUuid = '123e4567-e89b-12d3-a456-426614174000';
+   * ```
+   */
+  export type BrandedUuid = `${string}-${string}-${string}-${string}-${string}`;
+
+  /**
+   * Type guard that verifies a candidate value is a valid UUID string.
+   *
+   * @param check - Unknown value to validate.
+   * @returns `true` when the value matches the UUID format; otherwise `false`.
+   *
+   * @example
+   * ```typescript
+   * if (isValidUuid(value)) {
+   *   // value is now typed as BrandedUuid
+   *   console.log(value);
+   * }
+   * ```
+   */
+  export function isValidUuid(check: unknown): check is BrandedUuid;
 }

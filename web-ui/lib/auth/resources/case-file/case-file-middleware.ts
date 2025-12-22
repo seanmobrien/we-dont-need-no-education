@@ -12,12 +12,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkCaseFileAccess, CaseFileScope } from './case-file-resource';
 import {
-  getUserIdFromEmailId,
   getUserIdFromUnitId,
 } from './case-file-helpers';
 import { log } from '@/lib/logger';
 import { getValidatedAccessToken } from '../../access-token';
-
+import { resolveCaseFileId } from '@/lib/api/document-unit/resolve-case-file-id';
 /**
  * Options for case file authorization middleware
  */
@@ -76,14 +75,15 @@ export type AuthCheckResult = {
  * };
  * ```
  */
-export const checkEmailAuthorization = async (
+export const checkCaseFileAuthorization = async (
   req: NextRequest,
-  emailId: string,
+  caseFileDocumentId: string | number,
   options: CaseFileAuthOptions,
 ): Promise<AuthCheckResult> => {
   try {
     // Get user_id from email
-    const userId = await getUserIdFromEmailId(emailId);
+    const unitId = await resolveCaseFileId(caseFileDocumentId);
+    const userId = unitId ? await getUserIdFromUnitId(unitId) : undefined;
 
     if (!userId) {
       if (options.allowMissing) {
@@ -91,21 +91,21 @@ export const checkEmailAuthorization = async (
       }
       log((l) =>
         l.warn({
-          msg: 'No user_id found for email',
-          emailId,
+          msg: 'No user_id found for case file document ID',
+          caseFileDocumentId,
         }),
       );
       return {
         authorized: false,
         response: NextResponse.json(
-          { error: 'Case file not found for this email' },
+          { error: 'Case file not found for this document unit' },
           { status: 404 },
         ),
       };
     }
 
     // Extract and validate access token
-    const tokenResult = await getValidatedAccessToken({ req, source: `auth-email:${emailId}` });
+    const tokenResult = await getValidatedAccessToken({ req, source: `auth-email:${caseFileDocumentId}` });
     if ('error' in tokenResult) {
       return {
         authorized: false,
@@ -124,7 +124,7 @@ export const checkEmailAuthorization = async (
       log((l) =>
         l.warn({
           msg: 'User does not have required scope for case file',
-          emailId,
+          caseFileDocumentId,
           userId,
           scope: options.requiredScope,
         }),
@@ -147,7 +147,7 @@ export const checkEmailAuthorization = async (
     log((l) =>
       l.error({
         msg: 'Error during authorization check',
-        emailId,
+        caseFileDocumentId,
         error,
       }),
     );
@@ -195,83 +195,5 @@ export const checkDocumentUnitAuthorization = async (
   req: NextRequest,
   unitId: number,
   options: CaseFileAuthOptions,
-): Promise<AuthCheckResult> => {
-  try {
-    // Get user_id from document unit
-    const userId = await getUserIdFromUnitId(unitId);
-
-    if (!userId) {
-      if (options.allowMissing) {
-        return { authorized: true, userId: -1 };
-      }
-      log((l) =>
-        l.warn({
-          msg: 'No user_id found for document unit',
-          unitId,
-        }),
-      );
-      return {
-        authorized: false,
-        response: NextResponse.json(
-          { error: 'Case file not found for this document unit' },
-          { status: 404 },
-        ),
-      };
-    }
-
-    // Extract and validate access token
-    const tokenResult = await getValidatedAccessToken({ req, source: `auth-doc:${unitId}` });
-    if ('error' in tokenResult) {
-      return {
-        authorized: false,
-        response: tokenResult.error,
-      };
-    }
-
-    // Check case file access
-    const hasAccess = await checkCaseFileAccess(
-      req,
-      userId,
-      options.requiredScope
-    );
-
-    if (!hasAccess) {
-      log((l) =>
-        l.warn({
-          msg: 'User does not have required scope for case file',
-          unitId,
-          userId,
-          scope: options.requiredScope,
-        }),
-      );
-      return {
-        authorized: false,
-        userId,
-        response: NextResponse.json(
-          {
-            error: 'Forbidden - Insufficient permissions for this case file',
-            required: options.requiredScope,
-          },
-          { status: 403 },
-        ),
-      };
-    }
-
-    return { authorized: true, userId };
-  } catch (error) {
-    log((l) =>
-      l.error({
-        msg: 'Error during authorization check',
-        unitId,
-        error,
-      }),
-    );
-    return {
-      authorized: false,
-      response: NextResponse.json(
-        { error: 'Internal server error during authorization' },
-        { status: 500 },
-      ),
-    };
-  }
-};
+): Promise<AuthCheckResult> =>
+  checkCaseFileAuthorization(req, unitId, options);

@@ -84,3 +84,10 @@ export const isPromise = <T = void>(check: unknown): check is Promise<T> =>
 export const isNotNull = <T>(
   value: T | null | undefined,
 ): value is IsNotNull<T> => !!value;
+
+export type BrandedUuid = `${string}-${string}-${string}-${string}-${string}`;
+
+export const isValidUuid = (check: unknown): check is BrandedUuid => {
+  const uuidRegex = /[0-9a-z]{8}-[0-9a-z]{4}-4[0-9a-z]{3}-[89ABab][0-9a-z]{3}-[0-9a-z]{12}/i;
+  return typeof check === 'string' && uuidRegex.test(check);
+};

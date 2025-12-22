@@ -360,7 +360,7 @@ const mockDbFactory = (): DatabaseMockType => {
       } else if (prop === 'then') {
         if ((target as ProxiedDb)[INITIALIZED] === true) {
           return jest.fn((onOk, onError) => {
-            let p = qb.execute().then((result) => {
+            let p = qb.execute().then((result: unknown) => {
               (target as ProxiedDb)[INITIALIZED] = false;
               return result;
             });
