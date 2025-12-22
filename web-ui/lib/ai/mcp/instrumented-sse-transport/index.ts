@@ -21,13 +21,5 @@ export { SessionManager, type SpanState } from './session/session-manager';
 // Tracing utilities
 export { TraceContextManager } from './tracing/trace-context';
 
-// Safety utilities
-export {
-  SafetyUtils,
-  CONNECTION_TIMEOUT_MS,
-  SEND_TIMEOUT_MS,
-  type OperationMetrics,
-} from './utils/safety-utils';
-
 // Message processing
 export { MessageProcessor } from './message/message-processor';

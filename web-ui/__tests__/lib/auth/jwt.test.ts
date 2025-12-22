@@ -1,134 +1,101 @@
 import { jwt } from '@/lib/auth/jwt';
-import { refreshAccessToken } from '@/lib/auth/refresh-token';
-import { isRunningOnEdge, isRunningOnServer } from '@/lib/site-util/env';
-import { JWT } from 'next-auth/jwt';
+import { JWT } from '@auth/core/jwt';
 
 // Mock dependencies
-jest.mock('@/lib/auth/refresh-token');
-// jest.mock('@/lib/site-util/env');
-/*
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(),
-  Logger: jest.fn(),
-}));
-*/
 jest.mock('@/lib/auth/utilities', () => ({
   decodeToken: jest.fn(),
 }));
 
-// Mock dynamic import
-const mockUpdateAccountTokens = jest.fn();
-jest.mock('@/lib/auth/server/update-account-tokens', () => ({
-  updateAccountTokens: mockUpdateAccountTokens,
+jest.mock('@/lib/logger', () => ({
+  log: jest.fn(),
 }));
 
+// We don't need to mock refresh-token or env or update-account-tokens anymore 
+// because jwt.ts doesn't use them.
+
 describe('jwt callback', () => {
+  const mockUser = {
+    id: '1',
+    account_id: 123,
+    email: 'test@example.com',
+  };
+
+  const mockAccount = {
+    provider: 'keycloak',
+    type: 'oauth',
+    providerAccountId: 'sub-123',
+    access_token: 'secret_access_token',
+    refresh_token: 'secret_refresh_token',
+    expires_in: 300, // 5 minutes
+    id_token: 'mock_id_token',
+  };
+
   const mockToken: JWT = {
     name: 'Test User',
     email: 'test@example.com',
     sub: '123',
-    id: 1,
-    access_token: 'valid_access_token',
-    refresh_token: 'valid_refresh_token',
-    expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour future
-    iat: 1000,
-    exp: 1000,
-    jti: 'uuid',
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (isRunningOnEdge as jest.Mock).mockReturnValue(false); // Default to Node env
   });
 
-  it('should return token as is if not expired', async () => {
-    const result = await jwt({ token: mockToken, user: undefined, account: undefined });
-    expect(result).toEqual(mockToken);
-    expect(refreshAccessToken).not.toHaveBeenCalled();
-  });
+  describe('Initial Sign-In (user and account present)', () => {
+    it('should NOT store access_token or refresh_token in the JWT', async () => {
+      // @ts-expect-error - mock types
+      const result = await jwt({ token: { ...mockToken }, user: mockUser, account: mockAccount });
 
-  it('should refresh token if expired', async () => {
-    const expiredToken = {
-      ...mockToken,
-      expires_at: Math.floor(Date.now() / 1000) - 3600, // 1 hour past
-    };
-
-    const refreshedToken = {
-      ...expiredToken,
-      access_token: 'new_access_token',
-      expires_at: Math.floor(Date.now() / 1000) + 3600
-    };
-
-    (refreshAccessToken as jest.Mock).mockResolvedValue(refreshedToken);
-
-    const result = await jwt({ token: expiredToken, user: undefined, account: undefined });
-
-    expect(result).toEqual(refreshedToken);
-    expect(refreshAccessToken).toHaveBeenCalledWith(expiredToken);
-  });
-
-  it('should return error if refresh fails', async () => {
-    const expiredToken = {
-      ...mockToken,
-      expires_at: Math.floor(Date.now() / 1000) - 3600,
-    };
-
-    (refreshAccessToken as jest.Mock).mockResolvedValue({
-      ...expiredToken,
-      error: 'RefreshAccessTokenError'
+      expect(result.access_token).toBeUndefined();
+      expect(result.refresh_token).toBeUndefined();
     });
 
-    const result = await jwt({ token: expiredToken, user: undefined, account: undefined });
-    expect(result.error).toBe('RefreshAccessTokenError');
-  });
+    it('should set expires_at to 2 hours in the future (plus/minus small delta)', async () => {
+      const now = Math.floor(Date.now() / 1000);
+      // @ts-expect-error - mock types
+      const result = await jwt({ token: { ...mockToken }, user: mockUser, account: mockAccount });
 
-  it('should trigger database update on server if refresh succeeds', async () => {
-    const expiredToken = {
-      ...mockToken,
-      expires_at: Math.floor(Date.now() / 1000) - 3600,
-    };
-    const refreshedToken = {
-      ...expiredToken,
-      access_token: 'new_access_token',
-      refresh_token: 'new_refresh_token',
-      expires_at: Math.floor(Date.now() / 1000) + 3600,
-      idToken: 'new_id_token'
-    };
-    (refreshAccessToken as jest.Mock).mockResolvedValue(refreshedToken);
-    (isRunningOnEdge as jest.Mock).mockReturnValue(false);
-    (isRunningOnServer as jest.Mock).mockReturnValue(true);
+      const expectedExpiry = now + (2 * 60 * 60); // 2 hours
 
-    await jwt({ token: expiredToken, user: undefined, account: undefined });
+      // Allow 5 second variance
+      expect(Number(result.expires_at)).toBeGreaterThanOrEqual(expectedExpiry - 5);
+      expect(Number(result.expires_at)).toBeLessThanOrEqual(expectedExpiry + 5);
+    });
 
-    // Slight delay to allow async fire-and-forget to run
-    await new Promise(resolve => setTimeout(resolve, 10));
+    it('should copy user id and account_id', async () => {
+      // @ts-expect-error - mock types
+      const result = await jwt({ token: { ...mockToken }, user: mockUser, account: mockAccount });
 
-    expect(mockUpdateAccountTokens).toHaveBeenCalledWith(1, {
-      accessToken: 'new_access_token',
-      refreshToken: 'new_refresh_token',
-      expiresAt: refreshedToken.expires_at,
-      idToken: 'new_id_token'
+      expect(result.id).toBe(mockUser.id);
+      expect(result.account_id).toBe(mockUser.account_id);
     });
   });
 
-  it('should NOT trigger database update on Edge', async () => {
-    const expiredToken = {
-      ...mockToken,
-      expires_at: Math.floor(Date.now() / 1000) - 3600,
-    };
-    const refreshedToken = {
-      ...expiredToken,
-      access_token: 'new_access_token',
-      expires_at: Math.floor(Date.now() / 1000) + 3600
-    };
+  describe('Subsequent Calls (only token present)', () => {
+    it('should return the token as-is', async () => {
+      const existingToken: JWT = {
+        ...mockToken,
+        id: '1',
+        account_id: 123,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+      };
 
-    (refreshAccessToken as jest.Mock).mockResolvedValue(refreshedToken);
-    (isRunningOnEdge as jest.Mock).mockReturnValue(true);
+      const result = await jwt({ token: existingToken, user: undefined, account: undefined });
 
-    await jwt({ token: expiredToken, user: undefined, account: undefined });
+      expect(result).toBe(existingToken);
+    });
 
-    await new Promise(resolve => setTimeout(resolve, 10));
+    it('should NOT attempt refresh even if "expired" relative to access token logic', async () => {
+      // Logic for refreshing was removed, so this is just verifying no side effects/errors
+      const expiredToken: JWT = {
+        ...mockToken,
+        expires_at: Math.floor(Date.now() / 1000) - 3600, // Expired 1 hour ago
+      };
 
-    expect(mockUpdateAccountTokens).not.toHaveBeenCalled();
+      const result = await jwt({ token: expiredToken, user: undefined, account: undefined });
+
+      // Should just return the expired token, Middleware/Session will handle it
+      expect(result).toBe(expiredToken);
+      expect(result.error).toBeUndefined();
+    });
   });
 });

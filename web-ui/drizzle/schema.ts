@@ -261,12 +261,12 @@ export const documentProperty = pgTable(
       name: 'document_property_email_property_type',
     }),
     /*
-	foreignKey({
-			columns: [table.documentId],
-			foreignColumns: [documentUnits.unitId],
-			name: "document_property_emails"
-		}).onUpdate("cascade").onDelete("cascade"),
-		*/
+  foreignKey({
+      columns: [table.documentId],
+      foreignColumns: [documentUnits.unitId],
+      name: "document_property_emails"
+    }).onUpdate("cascade").onDelete("cascade"),
+    */
   ],
 );
 
@@ -453,6 +453,7 @@ export const accounts = pgTable(
     accessToken: text('access_token'),
     // You can use { mode: "bigint" } if numbers are exceeding js number limitations
     expiresAt: bigint('expires_at', { mode: 'number' }),
+    refreshExpiresAt: bigint('refresh_expires_at', { mode: 'number' }),
     tokenType: text('token_type'),
     scope: text(),
     idToken: text('id_token'),
@@ -516,7 +517,7 @@ export const emailAttachments = pgTable(
       'gin',
       table.extractedTextTsv.asc().nullsLast().op('tsvector_ops'),
     ),
-		*/
+    */
     index('idx_email_attachments_email_id').using(
       'btree',
       table.emailId.asc().nullsLast().op('uuid_ops'),

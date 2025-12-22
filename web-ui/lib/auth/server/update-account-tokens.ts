@@ -1,13 +1,23 @@
 import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { eq, and } from 'drizzle-orm';
 import { log } from '@/lib/logger';
+import { decodeToken } from '../utilities';
+import type { JWT } from '@auth/core/jwt';
 
 const getExpiresAt = (value: unknown) => {
-  const expiresAt = Number(value);
-  if (!isNaN(expiresAt) && isFinite(expiresAt)) {
+  const expiresAt = Number(value ?? 0);
+  if (!isNaN(expiresAt) && isFinite(expiresAt) && expiresAt !== 0) {
     return expiresAt;
   }
   return undefined;
+};
+
+const getExpiresAtFromToken = async (token: string | JWT | undefined) => {
+  if (!token) {
+    return undefined;
+  }
+  const decoded = typeof token === 'string' ? await decodeToken(token) : token;
+  return decoded ? decoded.exp : undefined;
 };
 
 /**
@@ -23,6 +33,7 @@ export const updateAccountTokens = async (
     accessToken?: string;
     refreshToken?: string;
     expiresAt?: number;
+    refreshExpiresAt?: number;
     exp?: number;
     expires_at?: number;
     idToken?: string;
@@ -35,12 +46,21 @@ export const updateAccountTokens = async (
   try {
     const expiresAt = getExpiresAt(tokens.expiresAt) ??
       getExpiresAt(tokens.exp) ??
-      getExpiresAt(tokens.expires_at);
+      getExpiresAt(tokens.expires_at) ??
+      await getExpiresAtFromToken(tokens.accessToken) ??
+      Date.now();
+
+    const refreshExpiresAt = tokens.refreshToken
+      ? getExpiresAt(tokens.refreshExpiresAt)
+      ?? await getExpiresAtFromToken(tokens.refreshToken)
+      ?? expiresAt
+      : undefined;
     const fields = {
       ...(tokens.accessToken ? { accessToken: tokens.accessToken } : {}),
       ...(tokens.refreshToken ? { refreshToken: tokens.refreshToken } : {}),
-      ...(expiresAt ? { expiresAt } : {}),
       ...(tokens.idToken ? { idToken: tokens.idToken } : {}),
+      ...(expiresAt ? { expiresAt } : {}),
+      ...(refreshExpiresAt ? { refreshExpiresAt } : {}),
     };
     if (Object.keys(fields).length === 0) {
       return;

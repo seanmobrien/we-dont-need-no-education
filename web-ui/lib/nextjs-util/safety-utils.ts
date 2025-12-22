@@ -6,7 +6,7 @@
  */
 
 import { Span, SpanStatusCode } from '@opentelemetry/api';
-import { tracer, MetricsRecorder, DEBUG_MODE } from '../metrics/otel-metrics';
+import { tracer, MetricsRecorder, DEBUG_MODE } from '../ai/mcp/instrumented-sse-transport/metrics/otel-metrics';
 import { isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
@@ -119,24 +119,15 @@ export class SafetyUtils {
           message: isError(error) ? error.message : String(error),
         });
 
-        log((l) =>
-          l.error(`MCP Transport ${operationName} failed`, {
-            data: {
-              error: isError(error) ? error.message : String(error),
-              duration,
-              stack: isError(error) ? error.stack : undefined,
-            },
-          }),
-        );
-
-        // Convert to LoggedError and pass to error handler
-        const loggedError = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-          log: false, // Already logged above
-          source: `MCP Transport ${operationName}`,
-          data: { operationName, duration },
+        const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: false,
+          source: operationName,
+          include: { duration },
         });
 
-        errorHandler(loggedError);
+        errorHandler(le);
+
+        le.writeToLog({ source: operationName });
       } finally {
         span?.end();
       }
@@ -194,3 +185,14 @@ export class SafetyUtils {
     return withTimeoutAsError(promise, timeoutMs, operation);
   }
 }
+
+export const createSafeErrorHandler = (handler: (error: unknown) => void, url?: string) =>
+  new SafetyUtils(url ?? 'url://null').createSafeErrorHandler(handler);
+
+export const createSafeAsyncWrapper = <T extends unknown[], R>(
+  operationName: string,
+  fn: (...args: T) => R | Promise<R>,
+  errorHandler: (error: unknown) => void,
+  url?: string,
+) =>
+  new SafetyUtils(url ?? 'url://null').createSafeAsyncWrapper(operationName, fn, errorHandler);

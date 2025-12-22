@@ -23,6 +23,7 @@ import { auth } from '@/auth';
 import { getProviderAccountId, getAccessToken, withRequestProviderAccountId } from '../../access-token';
 import { resourceService } from '../resource-service';
 import { authorizationService } from '../authorization-service';
+import { createSafeAsyncWrapper } from '@/lib/nextjs-util/safety-utils';
 
 /**
  * Represents a case file resource in Keycloak
@@ -170,21 +171,8 @@ const findCaseFileResource = async (
  * @throws {Error} If resource creation fails
  * @internal
  */
-const createCaseFileResource = async (
-  resource: Omit<CaseFileResource, '_id'>,
-): Promise<CaseFileResource> => {
-  try {
-    return await resourceService().createAuthorizedResource(resource);
-  } catch (error) {
-    throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      source: 'createCaseFileResource',
-      msg: 'Failed to create case file resource',
-      include: { resourceName: resource.name },
-    });
-  }
-};
-
+const createCaseFileResource = (resource: Omit<CaseFileResource, '_id'>): Promise<CaseFileResource> =>
+  resourceService().createAuthorizedResource(resource);
 /**
  * Checks if a user has a specific scope for a case file resource using UMA
  *
@@ -218,7 +206,6 @@ export const checkCaseFileAccess = async (
 
     // First, find the resource to get its ID
     let resource = await findCaseFileResource(userId);
-
     if (!resource || !resource._id) {
       // We could not find the resource - if the user is trying to access
       // their own case file we should create it.
@@ -299,20 +286,8 @@ export const checkCaseFileAccess = async (
  * }
  * ```
  */
-export const getCaseFileResourceId = async (
-  userId: number,
-): Promise<string | null> => {
-  try {
-    const resource = await findCaseFileResource(userId);
-    return resource?._id ?? null;
-  } catch (error) {
-    log((l) =>
-      l.error({
-        msg: 'Error getting case file resource ID',
-        userId,
-        error,
-      }),
-    );
-    return null;
-  }
-};
+export const getCaseFileResourceId = createSafeAsyncWrapper(
+  'getCaseFileResourceId',
+  (async (userId: number): Promise<string | null> => (await findCaseFileResource(userId))?._id ?? null),
+  () => { }
+);

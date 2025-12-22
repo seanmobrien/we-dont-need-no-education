@@ -9,7 +9,7 @@ import {
 } from './../../utility-methods';
 import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
 import { asKnownSeverityLevel } from '@/lib/logger/constants';
-import type { TurtleRecursionParams, LoggedErrorOptions, ErrorReportArgs } from './types';
+import type { TurtleRecursionParams, LoggedErrorOptions, ErrorReportArgs, ErrorLogFactory } from './types';
 import { ProgressEventError } from '../progress-event-error';
 import mitt from 'next/dist/shared/lib/mitt';
 
@@ -88,7 +88,6 @@ export class LoggedError extends Error {
       source = 'Turtles, baby',
       message,
       critical,
-      errorLogFactory = standardErrorLogFactory,
       ...itsRecusionMan
     } = options ?? ({ log: false } as TurtleRecursionParams)
     let shouldLog = logFromProps;
@@ -171,29 +170,47 @@ export class LoggedError extends Error {
     // Now we have our error and we know whether it's eligible for emitting...all thats left
     // to do is actually emit it :)
     if (shouldLog) {
-      // And if so, emit away!
-      const logObject = errorLogFactory({
-        error: e,
+      newLoggedError.writeToLog({
         source,
         message,
         ...itsRecusionMan,
       });
-      LoggedError.#errorReportEmitter.emit('errorReported', {
-        error: e,
-        severity: asKnownSeverityLevel(logObject.severity),
-        context: {
-          stack: getStackTrace({ skip: 2 }),
-          ...{
-            ...logObject,
-            error: undefined,
-            source,
-            message,
-          },
-        },
-      });
     }
     // And finally return the fancy new LoggedError instance
     return newLoggedError;
+  }
+
+  writeToLog({
+    source,
+    message,
+    errorLogFactory = standardErrorLogFactory,
+    ...itsRecusionMan
+  }: {
+    source: string;
+    message?: string;
+    errorLogFactory?: ErrorLogFactory;
+    [key: string]: unknown
+  }) {
+    // And if so, emit away!
+    const logObject = errorLogFactory({
+      error: this,
+      include: itsRecusionMan,
+      source,
+      message,
+    });
+    LoggedError.#errorReportEmitter.emit('errorReported', {
+      error: this,
+      severity: asKnownSeverityLevel(logObject.severity),
+      context: {
+        stack: getStackTrace({ skip: 2 }),
+        ...{
+          ...logObject,
+          error: undefined,
+          source,
+          message,
+        },
+      },
+    });
   }
 
   // Builds a descriptive message from various input types, handling recursion and cycles.

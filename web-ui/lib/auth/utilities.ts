@@ -88,7 +88,7 @@ export const decodeToken = async (props: {
   const {
     token,
     verify = false,
-    issuer,
+    issuer = env('AUTH_KEYCLOAK_ISSUER'),
   } = props;
   // Simple decode without verification
   if (!verify) {
@@ -96,7 +96,7 @@ export const decodeToken = async (props: {
   }
 
   // Verification requires an issuer
-  const issuerUrl = issuer || env('AUTH_KEYCLOAK_ISSUER');
+  const issuerUrl = issuer;
   if (!issuerUrl) {
     throw new Error(
       'Issuer URL required for token verification. Provide issuer parameter or set AUTH_KEYCLOAK_ISSUER environment variable.',

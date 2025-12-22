@@ -48,7 +48,7 @@ export const refreshAccessToken = async (token: JWT): Promise<JWT> => {
 
     return {
       ...token,
-      access_token: refreshedTokens.access_token,
+      access_token: refreshedTokens.access_token ?? token.access_token,
       expires_at: Math.floor(Date.now() / 1000) + (refreshedTokens.expires_in ?? 0),
       // Fall back to old refresh token if new one is not returned
       refresh_token: refreshedTokens.refresh_token ?? token.refresh_token,

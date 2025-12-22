@@ -1,11 +1,9 @@
 import type { JWT } from '@auth/core/jwt';
 import type { Account } from '@auth/core/types';
-import type { NextAuthUserWithAccountId } from './types';
 import type { AdapterUser } from '@auth/core/adapters';
+import { log } from '@/lib/logger';
 import { decodeToken } from './utilities';
-import { log } from '../logger';
-import { refreshAccessToken } from './refresh-token';
-import { isRunningOnEdge, isRunningOnServer } from '@/lib/site-util/env';
+import type { NextAuthUserWithAccountId } from './types';
 
 /**
  * JWT callback used by NextAuth to shape the JWT sent to the client and stored
@@ -52,12 +50,18 @@ export const jwt = async ({
 }) => {
   // 1. Initial Sign-In: Update token with account data
   if (account && user) {
-    const expiresIn = typeof account.expires_in === 'number' ? account.expires_in : 0;
-    // Store tokens and expiry
-    token.access_token = account.access_token;
-    token.refresh_token = account.refresh_token;
-    token.expires_at = Math.floor(Date.now() / 1000) + expiresIn;
-    token.idToken = account.id_token;
+    // We do NOT store access_token or refresh_token in the JWT Cookie anymore.
+    // They are stored in the DB (via Drizzle Adapter) and retrieved server-side in the session callback.
+    // token.access_token = account.access_token;
+    // token.refresh_token = account.refresh_token; 
+
+    // Set a long-lived session expiry for the Cookie (e.g. 2 hours) to decouple it from Access Token expiry (5 mins).
+    // This allows the Middleware to pass authenticated (but potentially expired-access-token) users to the Server,
+    // where the session callback will handle the DB-based token refresh transparently.
+    const sessionDuration = 2 * 60 * 60; // 2 hours in seconds
+    token.expires_at = Math.floor(Date.now() / 1000) + sessionDuration;
+
+    // token.idToken = account.id_token; 
   }
 
   // When a user is present (typically during sign-in), copy canonical ids
@@ -109,49 +113,14 @@ export const jwt = async ({
     }
   }
 
-  // 2. Token Rotation Logic
-  // If token has expired (and we have specific expiry set), try to refresh
-  if (token.expires_at && Date.now() > (Number(token.expires_at) * 1000)) {
-    if (!token.refresh_token) {
-      log(l => l.warn('Token expired but no refresh_token available'));
-      return { ...token, error: 'RefreshAccessTokenError' };
-    }
+  // 2. Token Rotation Logic REMOVED
+  // We no longer handle token refresh in the JWT callback (Edge or Server).
+  // It is handled in the Session callback (Server-Only) using DB-backed tokens.
+  // This avoids the "Half-Open" state where Edge refreshes but cannot save to DB.
 
-    try {
-      const refreshedToken = await refreshAccessToken(token);
-
-      if (refreshedToken.error) {
-      }
-
-      // Sync to Database if on Server (Node.js)
-      if (isRunningOnServer() && !isRunningOnEdge()) {
-        // Fire and forget - update valid logic
-        (async () => {
-          try {
-            // Dynamic import to avoid bundling server code in Edge
-            const { updateAccountTokens } = await import('./server/update-account-tokens');
-            // token.id is mapped to user.id which is the internal user ID
-            const userId = Number(token.id);
-            if (userId) {
-              await updateAccountTokens(userId, {
-                accessToken: refreshedToken.access_token,
-                refreshToken: refreshedToken.refresh_token,
-                expiresAt: Number(refreshedToken.expires_at ?? refreshedToken.exp),
-                idToken: refreshedToken.idToken
-              });
-            }
-          } catch (e) {
-            log(l => l.error('Failed to sync refreshed tokens to DB', e));
-          }
-        })();
-      }
-
-      return refreshedToken;
-    } catch (refreshErr) {
-      log(l => l.error('Unexpected error refreshing token', refreshErr));
-      return { ...token, error: 'RefreshAccessTokenError' };
-    }
-  }
+  // Always return the (possibly mutated) token. NextAuth will serialize this
+  // value and include it in the session cookie / client-side JWT.
+  return token;
 
   // Always return the (possibly mutated) token. NextAuth will serialize this
   // value and include it in the session cookie / client-side JWT.

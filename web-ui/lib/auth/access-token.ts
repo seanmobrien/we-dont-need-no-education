@@ -5,51 +5,76 @@ import { log } from '../logger/core';
 
 const accessTokenOnRequest: unique symbol = Symbol();
 
-interface RequestWithAccessTokenOverloads {
-  (req: NextRequest): string | undefined;
-  (req: NextRequest, value: { token: string; providerAccountId: string; }): NextRequest;
-}
-
-type RequestWithAccessToken = NextRequest & {
-  [accessTokenOnRequest]?: { token: string; providerAccountId: string; };
+type RequestWithAccessTokenCache = {
+  access_token: string;
+  refresh_token: string | undefined;
+  id_token: string | undefined;
+  expires_at: number | undefined;
+  refresh_expires_at: number | undefined;
+  providerAccountId: string;
 };
 
-export const withRequestAccessToken: RequestWithAccessTokenOverloads = (
+interface RequestWithAccessTokenOverloads {
+  (req: NextRequest): string | undefined;
+  (req: NextRequest, value: RequestWithAccessTokenCache): NextRequest;
+}
+
+
+
+type RequestWithAccessToken = NextRequest & {
+  [accessTokenOnRequest]?: RequestWithAccessTokenCache;
+};
+
+export const withRequestTokens = (
   req: NextRequest,
-  value?: { token: string; providerAccountId: string; },
-): // any used to support the interface pattern
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  any => {
+  value?: RequestWithAccessTokenCache,
+): RequestWithAccessTokenCache | undefined => {
   const withToken = req as RequestWithAccessToken;
   if (value) {
     if (!value.providerAccountId) {
       throw new Error('providerAccountId is required');
     }
-    if (!value.token) {
+    if (!value.access_token) {
       throw new Error('token is required');
     }
-    withToken[accessTokenOnRequest] = value;
-    return req;
+    withToken[accessTokenOnRequest] = {
+      ...(withToken[accessTokenOnRequest] ?? {}),
+      ...value,
+    };
   }
-  return withToken[accessTokenOnRequest]?.token;
+  const ret = withToken[accessTokenOnRequest];
+  return ret ? {
+    access_token: ret.access_token,
+    refresh_token: ret.refresh_token ?? undefined,
+    id_token: ret.id_token ?? undefined,
+    expires_at: ret.expires_at,
+    refresh_expires_at: ret.refresh_expires_at,
+    providerAccountId: ret.providerAccountId,
+  } : undefined;
 };
 
-export const withRequestProviderAccountId = (
+
+export const withRequestAccessToken: RequestWithAccessTokenOverloads = (
   req: NextRequest,
-): string | undefined => {
-  const withProviderAccountId = req as RequestWithAccessToken;
-  return withProviderAccountId[accessTokenOnRequest]?.providerAccountId;
-};
+  value?: RequestWithAccessTokenCache,
+)
+  // Any necessary to support the interface pattern
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  : any => withRequestTokens(req, value)?.access_token;
 
 
-export const getAccessToken = async (req: NextRequest) => {
-  const ret = withRequestAccessToken(req);
-  if (typeof ret === 'string') {
+export const withRequestProviderAccountId = (req: NextRequest) =>
+  withRequestTokens(req)?.providerAccountId;
+
+
+export const getRequestTokens = async (req: NextRequest) => {
+  const ret = withRequestTokens(req);
+  if (!!ret) {
     return ret;
   }
   const session = await auth();
   const sessionUserId = parseInt(session?.user?.id ?? '0', 10);
-  let token: string | undefined;
+  let token: RequestWithAccessTokenCache | undefined;
   if (!isNaN(sessionUserId) && sessionUserId > 0) {
     const data = await drizDbWithInit(async (db) => {
       const accountRecord = await db.query.accounts.findFirst({
@@ -60,30 +85,30 @@ export const getAccessToken = async (req: NextRequest) => {
           ),
       });
       return accountRecord && accountRecord.accessToken && accountRecord.providerAccountId
-        ? { token: accountRecord.accessToken, providerAccountId: accountRecord.providerAccountId }
+        ? {
+          access_token: accountRecord.accessToken,
+          refresh_token: accountRecord.refreshToken ?? undefined,
+          id_token: accountRecord.idToken ?? undefined,
+          expires_at: accountRecord.expiresAt ? Number(accountRecord.expiresAt) : Date.now(),
+          refresh_expires_at: accountRecord.refreshExpiresAt ? Number(accountRecord.refreshExpiresAt) : Date.now(),
+          providerAccountId: accountRecord.providerAccountId
+        }
         : undefined;
     });
     if (data) {
-      // Save token and provider account id in request
-      withRequestAccessToken(req, data);
-      token = data.token;
+      // Save tokens and provider account id in request
+      withRequestTokens(req, data);
+      token = data;
     }
   }
   return token;
 };
 
-export const getProviderAccountId = async (req: NextRequest) => {
-  // Try to get as-is
-  const ret = withRequestProviderAccountId(req);
-  if (typeof ret === 'string') {
-    return ret;
-  }
-  // If not found, calling getAccessToken will populate it
-  await getAccessToken(req);
-  // Return the provider account id or undefined if getAccessToken found nothing
-  return withRequestProviderAccountId(req);
-};
+export const getAccessToken = async (req: NextRequest) =>
+  (await getRequestTokens(req))?.access_token;
 
+export const getProviderAccountId = async (req: NextRequest) =>
+  (await getRequestTokens(req))?.providerAccountId;
 
 export const getValidatedAccessToken = async (
   { req, source }: {
