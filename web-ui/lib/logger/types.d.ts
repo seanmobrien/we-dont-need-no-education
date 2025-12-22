@@ -143,14 +143,6 @@ declare module '@/lib/logger/types' {
    */
   export interface LogEventOverloads {
     /**
-     * Logs an event with the specified name.
-     *
-     * @param eventName - The name of the event to log
-     * @returns A promise that resolves when the event is logged
-     */
-    (eventName: string): Promise<void>;
-
-    /**
      * Logs an event with the specified name and measurements.
      *
      * @param eventName - The name of the event to log
@@ -159,17 +151,8 @@ declare module '@/lib/logger/types' {
      */
     (
       eventName: string,
-      measurements: Record<string, number | string>,
+      measurements?: Record<string, number | string>,
     ): Promise<void>;
-
-    /**
-     * Logs an event with the specified severity and name.
-     *
-     * @param severity - The severity level of the event
-     * @param eventName - The name of the event to log
-     * @returns A promise that resolves when the event is logged
-     */
-    (severity: EventSeverity, eventName: string): Promise<void>;
 
     /**
      * Logs an event with the specified severity, name, and measurements.
@@ -182,7 +165,7 @@ declare module '@/lib/logger/types' {
     (
       severity: EventSeverity,
       eventName: string,
-      measurements: Record<string, number | string>,
+      measurements?: Record<string, number | string>,
     ): Promise<void>;
   }
 }

@@ -89,12 +89,6 @@ export type EventSeverity = keyof ILogger;
 
 export interface LogEventOverloads {
   /**
-   * Logs an event with the specified name.
-   * @param {string} eventName - The name of the event to log.
-   * @returns {Promise<void>} A promise that resolves when the event is logged.
-   */
-  (eventName: string): Promise<void>;
-  /**
    * Logs an event with the specified name and measurements.
    * @param {string} eventName - The name of the event to log.
    * @param {Record<string, number>} measurements - A record of measurements associated with the event.
@@ -102,15 +96,9 @@ export interface LogEventOverloads {
    */
   (
     eventName: string,
-    measurements: Record<string, number | string>,
+    measurements?: Record<string, number | string>,
   ): Promise<void>;
-  /**
-   * Logs an event with the specified severity and name.
-   * @param {EventSeverity} severity - The severity level of the event.
-   * @param {string} eventName - The name of the event to log.
-   * @returns {Promise<void>} A promise that resolves when the event is logged.
-   */
-  (severity: EventSeverity, eventName: string): Promise<void>;
+
   /**
    * Logs an event with the specified severity, name, and measurements.
    * @param {EventSeverity} severity - The severity level of the event.
@@ -121,6 +109,6 @@ export interface LogEventOverloads {
   (
     severity: EventSeverity,
     eventName: string,
-    measurements: Record<string, number | string>,
+    measurements?: Record<string, number | string>,
   ): Promise<void>;
 }

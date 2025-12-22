@@ -23,6 +23,24 @@ const CACHE_OPTIONS = {
   ttl: 1000 * 60 * 5, // 5 minutes TTL (Keycloak tokens usually last longer, but this is safe)
 };
 
+type BaseAttributes = Record<string, string | string[] | Record<string, unknown>>;
+
+export type BasicResourceRecord<TAttributes extends BaseAttributes = BaseAttributes> = {
+  /** Unique resource ID in Keycloak */
+  _id: string;
+  /** Resource name: case-file:{userId} */
+  name: string;
+  /** Resource type identifier */
+  type?: string;
+  /** Keycloak user ID of the owner */
+  owner?: string;
+  /** Associated scopes for this resource */
+  scopes?: string[];
+  /** Resource attributes */
+  attributes: TAttributes;
+};
+
+
 /**
  * Service for managing Keycloak resources
  */
@@ -121,47 +139,44 @@ export class ResourceService {
    * Finds an authorized resource by name
    *
    * @param name - The name of the resource to find
-   * @returns The resource if found, null otherwise
+   * @returns The resource if found, null if no match is found.  Throws an error if the request fails.
    */
-  public async findAuthorizedResource<TResource>(name: string): Promise<TResource | null> {
+  public async findAuthorizedResource<
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    TResource extends BasicResourceRecord<any>,
+    TAttributes extends
+    TResource extends BasicResourceRecord<infer TInferAttributes>
+    ? TInferAttributes
+    : never
+    = TResource extends BasicResourceRecord<infer TInferAttributes>
+    ? TInferAttributes
+    : never
+  >(name: string): Promise<BasicResourceRecord<TAttributes> | null> {
     try {
       const pat = await this.getProtectionApiToken();
-      const resourcesUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/authz/protection/resource_set?name=${encodeURIComponent(name)}`;
 
-      const resourcesResponse = await fetch(resourcesUrl, {
+      // First find the resource ID by name
+      const queryUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/authz/protection/resource_set?name=${encodeURIComponent(name)}`;
+      const queryRes = await fetch(queryUrl, {
         headers: {
           Authorization: `Bearer ${pat}`,
         },
       });
 
-      if (!resourcesResponse.ok) {
-        if (resourcesResponse.status === 404) {
+      if (!queryRes.ok) {
+        if (queryRes.status === 404) {
           return null;
         }
-        throw new Error(`Failed to search resources: ${resourcesResponse.statusText}`);
+        throw new Error(`Failed to search resources: ${queryRes.statusText}`);
       }
 
-      const resourceIds = await resourcesResponse.json();
+      const resourceIds = await queryRes.json();
       if (!resourceIds || resourceIds.length === 0) {
         return null;
       }
 
-      // Get the full resource details
-
-      const resourceId = resourceIds[0];
-      const resourceUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/authz/protection/resource_set/${resourceId}`;
-      const resourceResponse = await fetch(resourceUrl, {
-        headers: {
-          Authorization: `Bearer ${pat}`,
-        },
-      });
-
-      if (!resourceResponse.ok) {
-        throw new Error(`Failed to get resource details: ${resourceResponse.statusText}`);
-      }
-
-      const resource = await resourceResponse.json();
-      return resource as TResource;
+      // Then get the full resource details using the first ID found
+      return await this.getAuthorizedResource<TResource, TAttributes>(resourceIds[0]);
     } catch (error) {
       throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
@@ -173,12 +188,56 @@ export class ResourceService {
   }
 
   /**
+   * Gets an authorized resource by its ID
+   *
+   * @param id - The ID of the resource to get
+   * @returns The resource if found, null if no match is found.  Throws an error if the request fails.
+   */
+  public async getAuthorizedResource<
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    TResource extends BasicResourceRecord<any>,
+    TAttributes extends
+    TResource extends BasicResourceRecord<infer TInferAttributes>
+    ? TInferAttributes
+    : never
+  >(id: string): Promise<BasicResourceRecord<TAttributes> | null> {
+    try {
+      const pat = await this.getProtectionApiToken();
+      const resourceUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/authz/protection/resource_set/${id}`;
+
+      const resourceResponse = await fetch(resourceUrl, {
+        headers: {
+          Authorization: `Bearer ${pat}`,
+        },
+      });
+
+      if (!resourceResponse.ok) {
+        if (resourceResponse.status === 404) {
+          return null;
+        }
+        throw new Error(`Failed to get resource details: ${resourceResponse.statusText}`);
+      }
+      const resource = await resourceResponse.json() as BasicResourceRecord<TAttributes>;
+      return resource;
+    } catch (error) {
+      throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'ResourceService.getAuthorizedResource',
+        msg: 'Failed to get authorized resource',
+        include: { resourceId: id },
+      });
+    }
+  };
+
+  /**
    * Creates a new authorized resource
    *
    * @param resource - The resource to create
    * @returns The created resource
    */
-  public async createAuthorizedResource<TResource extends { _id?: string; name: string }>(resource: TResource): Promise<TResource> {
+  public async createAuthorizedResource<
+    TResource extends { _id?: string; name: string },
+  >(resource: TResource): Promise<TResource & { _id: string }> {
     try {
       const pat = await this.getProtectionApiToken();
       const resourcesUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/authz/protection/resource_set`;
@@ -197,8 +256,8 @@ export class ResourceService {
         throw new Error(`Failed to create resource: ${createResponse.statusText} - ${errorText}`);
       }
 
-      const createdResource = await createResponse.json();
-      return { ...resource, _id: createdResource._id };
+      const createdResource = await createResponse.json() as TResource;
+      return { ...createdResource, _id: createdResource._id! };
     } catch (error) {
       throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,

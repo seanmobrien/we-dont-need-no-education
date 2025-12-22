@@ -103,7 +103,8 @@ export const isRunningOnClient = (): boolean => {
  * @returns {boolean} `true` if running on the edge, otherwise `false`.
  */
 export const isRunningOnEdge = (): boolean =>
-  process.env.NEXT_RUNTIME === 'edge';
+  process.env.NEXT_RUNTIME === 'edge' ||
+  (process.env.NEXT_RUNTIME ?? '').toLowerCase() === 'edge';
 
 /**
  * A collection of Zod processors for various environment variables.

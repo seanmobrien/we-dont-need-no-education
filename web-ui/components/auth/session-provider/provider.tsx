@@ -28,6 +28,7 @@ import { fetch } from '@/lib/nextjs-util/fetch';
 import { Session } from '@auth/core/types';
 import { useNotifications } from '@toolpad/core';
 import { LoggedError } from '@/lib/react-util';
+import { InvalidGrantError } from '@/lib/auth/errors';
 
 export const SessionContext = createContext<SessionContextType<object> | null>(
   null,
@@ -115,6 +116,11 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
     refetchOnWindowFocus: true,
     refetchOnMount: false,
   });
+
+  // Check for fatal session errors
+  if (data?.data?.error === 'RefreshAccessTokenError') {
+    throw new InvalidGrantError('Session refresh failed');
+  }
 
   const { mutateAsync } = useMutation({
     mutationKey: ['upload-public-key'],

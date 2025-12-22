@@ -1,3 +1,5 @@
+import type { ServiceInstanceOverloads } from '../../typescript/_generics';
+
 /**
  * Authorization Service module declaration
  * @module @/lib/auth/resources/authorization-service
@@ -53,5 +55,5 @@ declare module '@/lib/auth/resources/authorization-service' {
   /**
    * Singleton instance of AuthorizationService
    */
-  export const authorizationService: AuthorizationService;
+  export const authorizationService: ServiceInstanceOverloads<AuthorizationService>;
 }

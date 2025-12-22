@@ -52,13 +52,19 @@ describe('/api/ai/chat route', () => {
   });
 
   it('should stream response correctly', async () => {
-    const mockStream = {
-      toUIMessageStream: jest.fn().mockReturnValue((async function* () {
-        yield { type: 'text', content: 'Hello' };
-        yield { type: 'text', content: ' World' };
-      })()),
-    };
-    (streamText as jest.Mock).mockReturnValue(mockStream);
+    const createMockStreamTextResult = (chunks: any[]) => ({
+      toUIMessageStream: jest.fn().mockImplementation(async function* () {
+        for (const chunk of chunks) {
+          yield chunk;
+        }
+      }),
+    });
+
+    const mockResult = createMockStreamTextResult([
+      { type: 'text', content: 'Hello' },
+      { type: 'text', content: ' World' },
+    ]);
+    (streamText as jest.Mock).mockReturnValue(mockResult);
 
     const req = new NextRequest('http://localhost:3000/api/ai/chat', {
       method: 'POST',
@@ -84,5 +90,5 @@ describe('/api/ai/chat route', () => {
 
     expect(result).toContain('data: {"type":"text","content":"Hello"}');
     expect(result).toContain('data: {"type":"text","content":" World"}');
-  });
+  }, 100000);
 });

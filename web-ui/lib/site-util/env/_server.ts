@@ -132,6 +132,10 @@ const buildRawInstance = () => {
       process.env.AUTH_KEYCLOAK_IMPERSONATOR_OFFLINE_TOKEN,
     /** Keycloak OAuth scope for authentication. Example: 'openid profile email roles mcp-tool' */
     AUTH_KEYCLOAK_SCOPE: process.env.AUTH_KEYCLOAK_SCOPE,
+    /** Name of the Keycloak resource controlling chat access; used for resolution if resource ID is not provided.  Example: 'mcp-tool' */
+    AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_NAME: process.env.AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_ID,
+    /** ID of the Keycloak resource controlling chat access; example 'cd6fd773-2f10-4b32-aba9-9fd491ba9576'. */
+    AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_ID: process.env.AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_ID,
     /** Redis connection URL for caching and session storage. Example: 'redis://localhost:6379' */
     REDIS_URL: process.env.REDIS_URL,
     /** Redis password for authentication. Example: 'redis-secret-password' */
@@ -459,6 +463,19 @@ const serverEnvSchema = z
       .describe(
         'Keycloak impersonator offline token for user impersonation tokens (optional). Example: admin',
       ),
+
+    AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_NAME: z
+      .string()
+      .describe(
+        'Keycloak resource name for MCP tool access; used for failover resolution if resource ID is not provided or invalid. Example: mcp-tool',
+      )
+      .default('mcp-tool'),
+    AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_ID: z
+      .string()
+      .describe(
+        'Keycloak resource ID for MCP tool access evaluation. Example: cd6fd773-2f10-4b32-aba9-9fd491ba9576',
+      )
+      .default('cd6fd773-2f10-4b32-aba9-9fd491ba9576'),
     REDIS_URL: z
       .string()
       .min(1)

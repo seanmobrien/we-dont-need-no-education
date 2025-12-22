@@ -11,7 +11,7 @@ declare module '@/lib/auth/utilities' {
    * Constant array of known permission scopes.
    * Values: 'mcp-tool:read', 'mcp-tool'
    */
-  export const KnownScopeValues: readonly ['mcp-tool:read', 'mcp-tool'];
+  export const KnownScopeValues: readonly ['mcp-tool:read', 'mcp-tool:write'];
 
   /**
    * Type representing one of the known scopes.

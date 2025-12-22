@@ -98,6 +98,13 @@ declare module '@auth/core/types' {
      */
     resource_access?: { [key: string]: string[] };
 
+
+    /**
+     * Error code from the authentication strategy (e.g. "RefreshAccessTokenError").
+     * 
+     */
+    error?: unknown;
+
     /**
      * UMA permissions associated with the session.
      * Map of resource ID to array of allowed scopes.

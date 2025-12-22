@@ -6,10 +6,9 @@ import {
   type JWTPayload,
 } from 'jose';
 import { LRUCache } from 'lru-cache';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { env } from '@/lib/site-util/env';
 
-export const KnownScopeValues = ['mcp-tool:read', 'mcp-tool'] as const;
+export const KnownScopeValues = ['mcp-tool:read', 'mcp-tool:write'] as const;
 export type KnownScope = (typeof KnownScopeValues)[number];
 export const KnownScopeIndex = {
   ToolRead: 0,
@@ -55,10 +54,18 @@ export const extractToken = async (req: Request): Promise<JWT | null> => {
     }
     return ret;
   } catch (error) {
-    LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      source: 'auth-utilities::extractToken',
-    });
+    try {
+      // Delay-load loggederror to prevent circular dependency
+      const LoggedError = await import('@/lib/react-util/errors/logged-error').then((m) => m.LoggedError);
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'auth-utilities::extractToken',
+      });
+    } catch (e) {
+      // Suppress / console-log only error-within-an-error
+      console.info(e);
+    }
+
     return null;
   }
 };

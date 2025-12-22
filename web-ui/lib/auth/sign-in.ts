@@ -16,14 +16,11 @@
  */
 
 import { Account, Awaitable, Profile, User } from '@auth/core/types';
-import { drizDbWithInit, schema } from '@/lib/drizzle-db';
-import { and, eq } from 'drizzle-orm';
 import { log, logEvent } from '@/lib/logger';
-import { getAppInsights } from '@/instrument/browser';
 import { CredentialInput } from '@auth/core/providers';
 import { AdapterUser } from '@auth/core/adapters';
 import { LoggedError } from '../react-util';
-
+import { updateAccountTokens } from './server/update-account-tokens';
 /**
  * Persist token fields for an external OAuth account to the local `accounts`
  * table. This function will only write fields that are present on the
@@ -45,44 +42,25 @@ import { LoggedError } from '../react-util';
  * @param params.account - OAuth provider account object (may include tokens)
  * @param params.user - User object (not used currently but kept for future use)
  */
-const updateAccountTokens = async ({
+const updateAccount = ({
   account,
+  user: { id: userId } = {} as User,
 }: {
   user: User | AdapterUser;
-  account: Account | Record<string, unknown>;
-}) => {
-  const { accounts } = schema;
-  const fields: Record<string, string> = {};
-  if (account.id_token) {
-    fields.idToken = String(account.id_token);
-  }
-  if (account.access_token) {
-    fields.accessToken = String(account.access_token);
-  }
-  if (account.refresh_token) {
-    fields.refreshToken = String(account.refresh_token);
-  }
-  if (account.expires_at) {
-    const expiresAt = Number(account.expires_at);
-    if (!isNaN(expiresAt) && isFinite(expiresAt)) {
-      fields.expires_at = String(expiresAt);
-    }
-  }
-  if (Object.keys(fields).length === 0) {
-    return;
-  }
-  await drizDbWithInit((db) =>
-    db
-      .update(accounts)
-      .set(fields)
-      .where(
-        and(
-          eq(accounts.provider, String(account.provider)),
-          eq(accounts.providerAccountId, String(account.providerAccountId)),
-        ),
-      ),
-  );
-};
+  account: (Account | Record<string, unknown>) & {
+    access_token?: string;
+    refresh_token?: string;
+    expires_at?: number;
+    exp?: number;
+    id_token?: string;
+  };
+}) => updateAccountTokens(userId!, {
+  accessToken: account.access_token,
+  refreshToken: account.refresh_token,
+  expiresAt: account.expires_at,
+  exp: account.exp,
+  idToken: account.id_token,
+});
 
 /**
  * NextAuth `signIn` callback implementation.
@@ -144,59 +122,50 @@ export const signIn: (params: {
     account,
   }:
     | {
-        user: User | AdapterUser;
-        account?: Account | Record<string, unknown> | null;
-      }
+      user: User | AdapterUser;
+      account?: Account | Record<string, unknown> | null;
+    }
     | undefined = {
-    user: undefined as unknown as User | AdapterUser,
-    account: undefined,
-  },
+      user: undefined as unknown as User | AdapterUser,
+      account: undefined,
+    },
 ): Promise<boolean | string> => {
-  if (account && account.providerAccountId) {
-    switch (account.provider) {
-      case 'keycloak':
-        // Persist tokens for Keycloak. We intentionally do not
-        // await here to avoid delaying the sign-in flow; failures will
-        // propagate if required but we don't want telemetry to block UX.
-        updateAccountTokens({ user, account }).catch((err) => {
-          LoggedError.isTurtlesAllTheWayDownBaby(err, {
-            source: 'auth.signIn.updateAccountTokens',
-            log: true,
-            data: {
-              user,
-              account,
-            },
+    if (account && account.providerAccountId) {
+      switch (account.provider) {
+        case 'keycloak':
+          // Persist tokens for Keycloak. We intentionally do not
+          // await here to avoid delaying the sign-in flow; failures will
+          // propagate if required but we don't want telemetry to block UX.
+          updateAccount({ user, account }).catch((err) => {
+            LoggedError.isTurtlesAllTheWayDownBaby(err, {
+              source: 'auth.signIn.updateAccount',
+              log: true,
+              data: {
+                user,
+                account,
+              },
+            });
+            return Promise.resolve(false);
           });
-          return false;
-        });
-        break;
-      default:
-        log((l) =>
-          l.error(`Unhandled provider ${account?.provider} in signIn`),
-        );
-        break;
+          break;
+        default:
+          log((l) =>
+            l.warn(`Unhandled provider ${account?.provider} in signIn`),
+          );
+          break;
+      }
     }
-  }
 
-  // Log local telemetry and report a lightweight event to AppInsights when available
-  logEvent('signIn');
-  try {
-    const appInsights = getAppInsights();
-    if (appInsights && typeof appInsights.trackEvent === 'function') {
-      // Use minimal properties – avoid logging tokens or sensitive data
-      appInsights.trackEvent(
-        { name: 'signIn' },
-        {
-          provider: account?.provider ?? 'unknown',
-          providerAccountId: account?.providerAccountId
-            ? String(account.providerAccountId).slice(0, 8)
-            : undefined,
-        },
-      );
-    }
-  } catch (err) {
-    // Keep sign-in resilient: log and continue
-    log((l) => l.debug('signIn: AppInsights trackEvent failed', err));
-  }
-  return true;
-};
+    // Log local telemetry and report a lightweight event to AppInsights when available
+    logEvent('signIn', {
+      provider: account?.provider?.toString() ?? 'unknown',
+      ...(
+        account && account.providerAccountId ? {
+          providerAccountId: String(account.providerAccountId)
+            .slice(0, 8),
+          userId: user.id,
+        } : {}
+      ),
+    });
+    return true;
+  };

@@ -41,6 +41,12 @@ declare module '@/lib/auth/types' {
      * This is simply the account email address w/ a SHA-256 hash applied.
      */
     hash?: string;
+
+    // Keycloak tokens
+    accessToken?: string;
+    refreshToken?: string;
+    expiresAt?: number;
+    error?: string;
   };
   /**
    * Session shape used across the application that includes the extended user type.

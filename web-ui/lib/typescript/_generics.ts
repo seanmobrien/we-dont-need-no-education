@@ -34,7 +34,7 @@ export const forOneOrMany = <TInput, TOutput>(
 };
 
 
-interface ServiceInstanceOverloads<TService> {
+export interface ServiceInstanceOverloads<TService> {
   (): TService;
   <TResult>(callback: (service: TService) => TResult): TResult;
 }

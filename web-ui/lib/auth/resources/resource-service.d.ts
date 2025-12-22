@@ -1,3 +1,5 @@
+import type { ServiceInstanceOverloads } from '../../typescript/_generics';
+
 /**
  * Resource Service module declaration
  * @module @/lib/auth/resources/resource-service
@@ -37,6 +39,15 @@ declare module '@/lib/auth/resources/resource-service' {
     public findAuthorizedResource<TResource>(name: string): Promise<TResource | null>;
 
     /**
+     * Gets an authorized resource by its ID
+     *
+     * @template TResource
+     * @param {string} id - The ID of the resource to get
+     * @returns {Promise<TResource | null>} The resource if found, null otherwise
+     */
+    public getAuthorizedResource<TResource>(id: string): Promise<TResource | null>;
+
+    /**
      * Creates a new authorized resource
      *
      * @template TResource
@@ -49,5 +60,5 @@ declare module '@/lib/auth/resources/resource-service' {
   /**
    * Singleton instance of ResourceService
    */
-  export const resourceService: ResourceService;
+  export const resourceService: ServiceInstanceOverloads<ResourceService>;
 }

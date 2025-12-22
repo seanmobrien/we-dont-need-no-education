@@ -29,13 +29,13 @@ import { authorizationService } from '../authorization-service';
  */
 export interface CaseFileResource {
   /** Unique resource ID in Keycloak */
-  _id?: string;
+  _id: string;
   /** Resource name: case-file:{userId} */
   name: string;
   /** Resource type identifier */
-  type: string;
+  type?: string;
   /** Keycloak user ID of the owner */
-  owner: string;
+  owner?: string;
   /** Associated scopes for this resource */
   scopes: string[];
   /** ACL attributes */
@@ -95,7 +95,7 @@ export const ensureCaseFileResource = async (
     }
 
     // Create new resource
-    const newResource: CaseFileResource = {
+    const newResource: Omit<CaseFileResource, '_id'> = {
       name: resourceName,
       type: 'case-file',
       owner: keycloakUserId,
@@ -144,15 +144,20 @@ const findCaseFileResource = async (
 ): Promise<CaseFileResource | null> => {
   try {
     const resourceName = `case-file:${userId}`;
-    return await resourceService().findAuthorizedResource<CaseFileResource>(resourceName);
+    const resource = await resourceService().findAuthorizedResource<CaseFileResource>(resourceName);
+    if (!resource) {
+      return null;
+    }
+    return {
+      scopes: ['openid'],
+      ...resource,
+    };
   } catch (error) {
-    log((l) =>
-      l.error({
-        msg: 'Error finding case file resource',
-        userId,
-        error,
-      }),
-    );
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'findCaseFileResource',
+      include: { userId },
+    });
     return null;
   }
 };
@@ -166,7 +171,7 @@ const findCaseFileResource = async (
  * @internal
  */
 const createCaseFileResource = async (
-  resource: CaseFileResource,
+  resource: Omit<CaseFileResource, '_id'>,
 ): Promise<CaseFileResource> => {
   try {
     return await resourceService().createAuthorizedResource(resource);

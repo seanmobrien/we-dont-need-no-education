@@ -98,5 +98,8 @@ export const session = async ({
       });
     }
   }
+  if (token.error) {
+    session.error = token.error;
+  }
   return session;
 };

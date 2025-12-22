@@ -199,6 +199,11 @@ declare module 'next-auth' {
     id: number;
 
     /**
+     * Error code from the authentication strategy (e.g. "RefreshAccessTokenError").
+     */
+    error?: string;
+
+    /**
      * UMA permissions associated with the session.
      * Map of resource ID to array of allowed scopes.
      */
@@ -256,6 +261,18 @@ declare module 'next-auth/jwt' {
      * Resource access claims associated with the token.
      */
     resource_access?: { [key: string]: string[] };
+
+    /**
+     * Timestamp (in seconds) when the access token expires.
+     * Used to determine if the token needs to be refreshed.
+     */
+    expires_at?: number;
+
+    /**
+     * Error code or message if token refresh fails.
+     * Common value: "RefreshAccessTokenError".
+     */
+    error?: unknown;
     /**
      * UMA permissions associated with the session.
      * Array of permissions.
