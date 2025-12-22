@@ -5,6 +5,7 @@
  * emails and document units for authorization purposes.
  */
 
+import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 import {
   getUserIdFromEmailId,
@@ -28,6 +29,9 @@ describe('Case File Helpers', () => {
   });
 
   describe('getUserIdFromEmailId', () => {
+    beforeEach(() => {
+      withJestTestExtensions().suppressDeprecation = true;
+    });
     it('should return user_id for valid email', async () => {
       const mockEmailId = '550e8400-e29b-41d4-a716-446655440000';
       const mockUserId = 123;

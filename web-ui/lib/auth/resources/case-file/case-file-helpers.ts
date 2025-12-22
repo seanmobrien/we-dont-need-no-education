@@ -9,8 +9,10 @@
  * @version 1.0.0
  */
 
+import { resolveCaseFileId } from '@/lib/api/document-unit/resolve-case-file-id';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
+import { deprecate } from '@/lib/nextjs-util/utils';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
@@ -32,31 +34,11 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
  * }
  * ```
  */
-export async function getUserIdFromEmailId(
+export const getUserIdFromEmailId = deprecate(async function getUserIdFromEmailId(
   emailId: string,
 ): Promise<number | null> {
   try {
-    const db = await drizDbWithInit();
-
-    // Find any document unit associated with this email
-    const documentUnit = await db.query.documentUnits.findFirst({
-      where: (du, { eq }) => eq(du.emailId, emailId),
-      columns: {
-        userId: true,
-      },
-    });
-
-    if (!documentUnit) {
-      log((l) =>
-        l.debug({
-          msg: 'No document unit found for email',
-          emailId,
-        }),
-      );
-      return null;
-    }
-
-    return documentUnit.userId;
+    return getUserIdFromUnitId(emailId);
   } catch (error) {
     throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
@@ -65,7 +47,9 @@ export async function getUserIdFromEmailId(
       include: { emailId },
     });
   }
-}
+}, 'getUserIdFromEmailId is deprecated. Use getUserIdFromUnitId instead.',
+  'DEP003'
+);
 
 /**
  * Extracts the user_id (case file ID) associated with a given document unit ID
@@ -86,9 +70,19 @@ export async function getUserIdFromEmailId(
  * ```
  */
 export async function getUserIdFromUnitId(
-  unitId: number,
+  documentUnitId: number | string | undefined,
 ): Promise<number | null> {
   try {
+    const unitId = await resolveCaseFileId(documentUnitId);
+    if (!unitId) {
+      log((l) =>
+        l.debug({
+          msg: 'null/undefined unitId provided',
+          unitId,
+        }),
+      );
+      return null;
+    }
     const db = await drizDbWithInit();
 
     const documentUnit = await db.query.documentUnits.findFirst({
@@ -114,7 +108,7 @@ export async function getUserIdFromUnitId(
       log: true,
       source: 'getUserIdFromUnitId',
       msg: 'Failed to get user_id from unit_id',
-      include: { unitId },
+      include: { unitId: documentUnitId },
     });
   }
 }

@@ -15,8 +15,11 @@ import { isValidUuid, BrandedUuid } from "@/lib/typescript/_guards";
  * @returns A promise that resolves to the unit ID as a number, or `undefined` if not found.
  */
 export const resolveCaseFileId = async (
-  documentId: number | string,
+  documentId: number | string | undefined,
 ): Promise<number | undefined> => {
+  if (!documentId) {
+    return undefined;
+  }
   let parsedId: number | undefined;
   if (typeof documentId === 'string') {
     const isUuid = isValidUuid(documentId);
@@ -46,12 +49,12 @@ export const resolveCaseFileId = async (
       );
     } else {
       parsedId = parseInt(documentId, 10);
-      if (isNaN(parsedId)) {
+      if (isNaN(parsedId) || parsedId < 1) {
         parsedId = undefined;
       }
     }
   } else if (typeof documentId === 'number') {
-    parsedId = documentId;
+    parsedId = documentId < 1 ? undefined : documentId;
   } else {
     parsedId = undefined;
   }

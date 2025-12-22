@@ -16,6 +16,7 @@ const testExtensionFactory = () => {
     makeMockDb: () => {
       return undefined as unknown as DatabaseType;
     },
+    suppressDeprecation: false,
   };
 };
 
@@ -32,6 +33,7 @@ type JestTestExtensions = {
     expires: string;
   } | null;
   makeMockDb: () => DatabaseType;
+  suppressDeprecation: boolean;
 };
 
 const TEST_EXTENSIONS = Symbol.for('@noeducation/jest/extensions');

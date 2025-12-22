@@ -44,12 +44,12 @@ describe('resolveCaseFileId', () => {
 
     it('should handle zero', async () => {
       const result = await resolveCaseFileId(0);
-      expect(result).toBe(0);
+      expect(result).not.toBeDefined();
     });
 
     it('should handle negative numbers', async () => {
       const result = await resolveCaseFileId(-1);
-      expect(result).toBe(-1);
+      expect(result).not.toBeDefined();
     });
   });
 

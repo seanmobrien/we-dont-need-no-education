@@ -9,8 +9,11 @@ const config = {
     },
   },
   // Ensure environment globals (Response/Request/Headers) are available before modules load
-  setupFiles: ['<rootDir>/__tests__/setup/jest.mock-log.ts'],
+  setupFiles: [
+    /*'<rootDir>/__tests__/setup/jest.mock-log.ts'*/
+  ],
   setupFilesAfterEnv: [
+    '<rootDir>/__tests__/setup/jest.mock-log.ts',
     '<rootDir>/__tests__/setup/jest.env-vars.ts',
     '<rootDir>/__tests__/setup/jest.mock-got.ts',
     '<rootDir>/__tests__/setup/jest.mock-opentelemetry.ts',
