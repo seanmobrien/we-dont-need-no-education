@@ -6,12 +6,13 @@ import { EmailMessage } from '@/data-models/api/email-message';
 import { ContactSummary } from '@/data-models/api/contact';
 import { query } from '@/lib/neondb';
 import { log } from '@/lib/logger';
-
+import { auth } from '@/auth';
 /**
  * Request model for creating emails via the service
  */
 export type CreateEmailRequest = {
   senderId: number;
+  userId?: number;
   subject: string;
   body: string;
   sentOn?: Date | string;
@@ -102,15 +103,15 @@ export class EmailService {
       const sender: ContactSummary =
         senderResult.length > 0
           ? {
-              contactId: senderResult[0].contact_id as number,
-              name: senderResult[0].name as string,
-              email: senderResult[0].email as string,
-            }
+            contactId: senderResult[0].contact_id as number,
+            name: senderResult[0].name as string,
+            email: senderResult[0].email as string,
+          }
           : {
-              contactId: emailDomain.senderId,
-              name: 'Unknown',
-              email: 'unknown@example.com',
-            };
+            contactId: emailDomain.senderId,
+            name: 'Unknown',
+            email: 'unknown@example.com',
+          };
 
       // Fetch recipients information
       const recipientsResult = await query(
@@ -165,9 +166,20 @@ export class EmailService {
         throw new Error('Sender ID is required');
       }
 
+      let userId = request.userId;
+      if (!userId) {
+        const session = await auth();
+        userId = session?.user?.id ? Number(session.user.id) : undefined;
+        if (!userId) {
+          throw new Error('User ID is required');
+        }
+      }
+
+
       // Create the email using the repository
       const emailDomain: Omit<EmailDomain, 'emailId'> = {
         senderId,
+        userId,
         subject: request.subject,
         emailContents: request.body,
         sentTimestamp: request.sentOn || new Date(),
@@ -188,8 +200,8 @@ export class EmailService {
         : new Date();
       await query(
         (sql) => sql`
-          INSERT INTO document_units (email_id, content, created_on, document_type)
-          VALUES (${createdEmail.emailId}, ${createdEmail.emailContents}, ${importDate}, 'email')
+          INSERT INTO document_units (email_id, user_id, content, created_on, document_type)
+          VALUES (${createdEmail.emailId}, ${userId}, ${createdEmail.emailContents}, ${importDate}, 'email')
         `,
       );
 

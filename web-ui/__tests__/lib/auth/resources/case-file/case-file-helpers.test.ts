@@ -1,183 +1,73 @@
-/**
- * @fileoverview Tests for Case File Helper Functions
- *
- * These tests verify the helper functions that extract user_id from
- * emails and document units for authorization purposes.
- */
+/* @jest-environment node */
 
-import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
+import { getAccessibleUserIds } from '@/lib/auth/resources/case-file/case-file-helpers';
+import { authorizationService } from '@/lib/auth/resources/authorization-service';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
-import {
-  getUserIdFromEmailId,
-  getUserIdFromUnitId,
-  getKeycloakUserIdFromUserId,
-} from '@/lib/auth/resources/case-file/case-file-helpers';
-import { drizDbWithInit } from '@/lib/drizzle-db';
 
-// Mock the database
-jest.mock('@/lib/drizzle-db', () => ({
-  drizDbWithInit: jest.fn(),
-}));
+// Mock the authorization service
+jest.mock('@/lib/auth/resources/authorization-service');
 
-describe('Case File Helpers', () => {
-  const mockDrizDbWithInit = drizDbWithInit as jest.MockedFunction<
-    typeof drizDbWithInit
-  >;
+describe('getAccessibleUserIds', () => {
+  const mockToken = 'mock-access-token';
+  const mockGetUserEntitlements = jest.fn();
+
+  beforeAll(() => {
+    // Setup the mock implementation for the authorizationService factory
+    (authorizationService as unknown as jest.Mock).mockImplementation((callback) => {
+      const mockService = {
+        getUserEntitlements: mockGetUserEntitlements,
+      };
+      return callback(mockService);
+    });
+  });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
+    mockGetUserEntitlements.mockReset();
   });
 
-  describe('getUserIdFromEmailId', () => {
-    beforeEach(() => {
-      withJestTestExtensions().suppressDeprecation = true;
-    });
-    it('should return user_id for valid email', async () => {
-      const mockEmailId = '550e8400-e29b-41d4-a716-446655440000';
-      const mockUserId = 123;
+  it('should return allowed user IDs from case-file resources', async () => {
+    mockGetUserEntitlements.mockResolvedValue([
+      { rsname: 'case-file:101', scopes: ['read'] },
+      { rsname: 'case-file:102', scopes: ['write'] },
+      { rsname: 'other-resource:999', scopes: ['read'] }, // Should be ignored
+      { rsname: 'case-file:invalid', scopes: ['read'] }, // Should be ignored (NaN)
+    ]);
 
-      mockDrizDbWithInit.mockResolvedValue({
-        query: {
-          documentUnits: {
-            findFirst: jest.fn().mockResolvedValue({
-              userId: mockUserId,
-            }),
-          },
-        },
-      } as any);
+    const result = await getAccessibleUserIds(mockToken);
 
-      const result = await getUserIdFromEmailId(mockEmailId);
-
-      expect(result).toBe(mockUserId);
-    });
-
-    it('should return null for non-existent email', async () => {
-      const mockEmailId = '550e8400-e29b-41d4-a716-446655440000';
-
-      mockDrizDbWithInit.mockResolvedValue({
-        query: {
-          documentUnits: {
-            findFirst: jest.fn().mockResolvedValue(null),
-          },
-        },
-      } as any);
-
-      const result = await getUserIdFromEmailId(mockEmailId);
-
-      expect(result).toBeNull();
-    });
-
-    it('should handle database errors gracefully', async () => {
-      hideConsoleOutput().setup();
-      const mockEmailId = '550e8400-e29b-41d4-a716-446655440000';
-
-      mockDrizDbWithInit.mockResolvedValue({
-        query: {
-          documentUnits: {
-            findFirst: jest
-              .fn()
-              .mockRejectedValue(new Error('Database connection failed')),
-          },
-        },
-      } as any);
-
-      await expect(getUserIdFromEmailId(mockEmailId)).rejects.toThrow();
-    });
+    expect(result).toHaveLength(2);
+    expect(result).toContain(101);
+    expect(result).toContain(102);
+    expect(mockGetUserEntitlements).toHaveBeenCalledWith(mockToken);
   });
 
-  describe('getUserIdFromUnitId', () => {
-    it('should return user_id for valid document unit', async () => {
-      const mockUnitId = 12345;
-      const mockUserId = 123;
+  it('should return the current user ID when no entitlements found', async () => {
+    mockGetUserEntitlements.mockResolvedValue([]);
 
-      mockDrizDbWithInit.mockResolvedValue({
-        query: {
-          documentUnits: {
-            findFirst: jest.fn().mockResolvedValue({
-              userId: mockUserId,
-            }),
-          },
-        },
-      } as any);
+    const result = await getAccessibleUserIds(mockToken);
 
-      const result = await getUserIdFromUnitId(mockUnitId);
-
-      expect(result).toBe(mockUserId);
-    });
-
-    it('should return null for non-existent document unit', async () => {
-      const mockUnitId = 99999;
-
-      mockDrizDbWithInit.mockResolvedValue({
-        query: {
-          documentUnits: {
-            findFirst: jest.fn().mockResolvedValue(null),
-          },
-        },
-      } as any);
-
-      const result = await getUserIdFromUnitId(mockUnitId);
-
-      expect(result).toBeNull();
-    });
+    expect(result).toEqual([123]);
   });
 
-  describe('getKeycloakUserIdFromUserId', () => {
-    it('should return Keycloak provider account ID for valid user', async () => {
-      const mockUserId = 123;
-      const mockKeycloakId = 'keycloak-uuid-123';
+  it('should deduplicate user IDs', async () => {
+    mockGetUserEntitlements.mockResolvedValue([
+      { rsname: 'case-file:101', scopes: ['read'] },
+      { rsname: 'case-file:101', scopes: ['write'] },
+      { rsname: 'case-file:123', scopes: ['write'] },
+    ]);
 
-      mockDrizDbWithInit.mockResolvedValue({
-        query: {
-          accounts: {
-            findFirst: jest.fn().mockResolvedValue({
-              providerAccountId: mockKeycloakId,
-            }),
-          },
-        },
-      } as any);
+    const result = await getAccessibleUserIds(mockToken);
 
-      const result = await getKeycloakUserIdFromUserId(mockUserId);
+    expect(result).toEqual([101, 123]);
+  });
 
-      expect(result).toBe(mockKeycloakId);
-    });
+  it('should handle errors gracefully by throwing LoggedError', async () => {
+    hideConsoleOutput().setup();
+    const error = new Error('Network error');
+    mockGetUserEntitlements.mockRejectedValue(error);
 
-    it('should return null when no Keycloak account exists', async () => {
-      const mockUserId = 123;
-
-      mockDrizDbWithInit.mockResolvedValue({
-        query: {
-          accounts: {
-            findFirst: jest.fn().mockResolvedValue(null),
-          },
-        },
-      } as any);
-
-      const result = await getKeycloakUserIdFromUserId(mockUserId);
-
-      expect(result).toBeNull();
-    });
-
-    it('should only query for Keycloak provider accounts', async () => {
-      const mockUserId = 123;
-      const mockFindFirst = jest.fn().mockResolvedValue(null);
-
-      mockDrizDbWithInit.mockResolvedValue({
-        query: {
-          accounts: {
-            findFirst: mockFindFirst,
-          },
-        },
-      } as any);
-
-      await getKeycloakUserIdFromUserId(mockUserId);
-
-      // Verify the where clause filters for Keycloak provider
-      expect(mockFindFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          columns: { providerAccountId: true },
-        }),
-      );
-    });
+    await expect(getAccessibleUserIds(mockToken)).rejects.toThrow(LoggedError);
   });
 });

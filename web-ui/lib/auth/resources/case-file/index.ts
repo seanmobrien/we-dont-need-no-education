@@ -1,13 +1,3 @@
-/**
- * @fileoverview Case File Authorization Module
- *
- * This module provides a complete solution for managing case file authorization
- * using Keycloak Authorization Services. It includes resource management,
- * access checks, and helper utilities for integrating authorization into API endpoints.
- *
- * @module lib/auth/resources/case-file
- * @version 1.0.0
- */
 
 export {
   ensureCaseFileResource,

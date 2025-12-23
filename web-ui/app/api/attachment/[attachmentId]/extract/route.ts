@@ -3,9 +3,9 @@ import { wrapRouteRequest, extractParams } from '@/lib/nextjs-util/server/utils'
 import { BlobServiceClient } from '@azure/storage-blob';
 import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
-import { AttachmentRepository } from '@/lib/api/attachment';
+import { EmailAttachmentDrizzleRepository } from '@/lib/api/attachment';
 
-const attachmentRepository = new AttachmentRepository();
+const attachmentRepository = new EmailAttachmentDrizzleRepository();
 
 export const POST = wrapRouteRequest(
   async (

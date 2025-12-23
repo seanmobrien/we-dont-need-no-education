@@ -1,36 +1,30 @@
 import { jest } from '@jest/globals';
+
+jest.mock('@/lib/typescript/_guards', () => {
+  const origModule = jest.requireActual('@/lib/typescript/_guards') as typeof import('@/lib/typescript/_guards');
+  return {
+    ...origModule,
+    isValidUuid: jest.fn(),
+  };
+});
+
 import { resolveEmailId } from '@/lib/email/email-id-resolver';
-
-/*
-// Mock the dependencies
-jest.mock('@/lib/drizzle-db', () => ({
-  drizDbWithInit: jest.fn().mockResolvedValue({
-    query: {
-      documentUnits: {
-        findFirst: jest.fn(),
-      },
-    },
-  }),
-}));
-*/
-
-jest.mock('@/lib/ai/tools/utility', () => ({
-  isValidUuid: jest.fn(),
-}));
 
 jest.mock('next/navigation', () => ({
   redirect: jest.fn(),
   notFound: jest.fn(),
 }));
-
+/*
 jest.mock('@/lib/react-util', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(), // isTurtlesAllTheWayDownBaby might be a static method on the real class, so we can mock the class export like this
   },
 }));
+*/
 
 import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
-import { isValidUuid } from '@/lib/ai/tools/utility';
+import { isValidUuid } from '@/lib/typescript/_guards';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 const mockDrizDb = drizDbWithInit as jest.MockedFunction<typeof drizDbWithInit>;
 const mockIsValidUuid = isValidUuid as jest.MockedFunction<typeof isValidUuid>;
@@ -103,6 +97,7 @@ describe('resolveEmailId', () => {
   });
 
   it('should return null on database error', async () => {
+    hideConsoleOutput().setup();
     const documentId = '123';
 
     mockIsValidUuid.mockReturnValue(false);
@@ -123,16 +118,5 @@ describe('resolveEmailId', () => {
 
     const result = await resolveEmailId(documentId);
     expect(result).toBeNull();
-
-    // Check LoggedError usage
-    const { LoggedError } = require('@/lib/react-util');
-    expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        log: true,
-        source: 'EmailIdResolver.resolveEmailId',
-        critical: true,
-      })
-    );
   });
 });

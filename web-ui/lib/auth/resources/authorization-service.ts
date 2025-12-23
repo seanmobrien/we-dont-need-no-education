@@ -179,6 +179,78 @@ export class AuthorizationService {
       return { success: false, code: 500 };
     }
   }
+
+  /**
+   * Retrieves all permissions (entitlements) for the user.
+   *
+   * @param bearerToken - The user's access token
+   * @param audience - Optional audience
+   * @returns A list of entitlements (permissions)
+   */
+  public async getUserEntitlements(
+    bearerToken: string,
+    audience?: string
+  ): Promise<Array<{ rsid?: string; rsname?: string; scopes?: string[] }>> {
+    const targetAudience = audience || env('AUTH_KEYCLOAK_CLIENT_ID');
+
+    // We need to request a generic RPT without a specific permission to get all entitlements
+    // https://www.keycloak.org/docs/latest/authorization_services/#_obtaining_permissions
+
+    try {
+      if (!bearerToken) {
+        log((l) => l.warn('No bearer token provided for entitlement check'));
+        return [];
+      }
+
+      const body = new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
+        ...(targetAudience ? { audience: targetAudience } : {}),
+      });
+
+      const response = await fetch(this.getTokenEndpoint(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Bearer ${bearerToken}`,
+        },
+        body,
+      });
+
+      if (response.status !== 200) {
+        const text = await response.text();
+        log((l) =>
+          l.warn({
+            msg: 'Failed to retrieve entitlements',
+            status: response.status,
+            response: text,
+          }),
+        );
+        return [];
+      }
+
+      const rpt = await response.json();
+      const accessToken = rpt.access_token;
+
+      if (!accessToken) {
+        return [];
+      }
+
+      const decodedToken = await decodeToken(accessToken);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const permissions = (decodedToken as any).authorization?.permissions || [];
+      return permissions;
+
+    } catch (error) {
+      log((l) =>
+        l.error({
+          msg: 'Error retrieving user entitlements',
+          error,
+        }),
+      );
+      return [];
+    }
+  }
 }
 
 export const authorizationService = serviceInstanceOverloadsFactory(() => AuthorizationService.Instance);

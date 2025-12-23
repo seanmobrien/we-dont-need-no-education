@@ -41,15 +41,16 @@ const extractEmailId = async <T extends { emailId: string }>(req: {
     return { emailId: null };
   }
   // If so try and look it up
-  const doc = await (
-    await drizDbWithInit()
-  ).query.documentUnits.findFirst({
-    where: (d, { eq }) => eq(d.unitId, documentId),
-    columns: {
-      unitId: true,
-      emailId: true,
-    },
-  });
+  const doc = await
+    drizDbWithInit(db => {
+      return db.query.documentUnits.findFirst({
+        where: (d, { eq }) => eq(d.unitId, documentId),
+        columns: {
+          unitId: true,
+          emailId: true,
+        },
+      })
+    });
   if (doc) {
     // And if we found it, return the email id with the doc id for context
     return { emailId: doc.emailId, documentId: doc.unitId };
@@ -139,37 +140,6 @@ export const GET = wrapRouteRequest(
         ...(documentId ? { documentId } : {}),
       };
       return NextResponse.json(result, { status: 200 });
-      /*
-    // Fetch detailed email data        
-    const result = await query(
-      (sql) => sql`
-        SELECT 
-          e.email_id,
-          e.subject,
-          e.email_contents,
-          e.sent_timestamp,
-          e.thread_id,
-          e.parent_id,
-          sender.contact_id AS senderId,
-          sender.name AS senderName,
-          sender.email AS senderEmail,
-          COALESCE(json_agg(
-            json_build_object(
-              'recipient_id', recipient.contact_id,
-              'recipient_name', recipient.name,
-              'recipient_email', recipient.email
-            )
-          ) FILTER (WHERE recipient.contact_id IS NOT NULL), '[]') AS recipients
-        FROM emails e
-        JOIN contacts sender ON e.sender_id = sender.contact_id
-        LEFT JOIN email_recipients er ON e.email_id = er.email_id
-        LEFT JOIN contacts recipient ON er.recipient_id = recipient.contact_id
-        WHERE e.email_id = ${emailId}
-        GROUP BY e.email_id, sender.contact_id, sender.name, sender.email;
-      `,
-      { transform: mapRecordToObject },
-    );
-      */
     } catch (error) {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,

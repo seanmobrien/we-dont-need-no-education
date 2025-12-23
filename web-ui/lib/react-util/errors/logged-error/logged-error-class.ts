@@ -263,7 +263,8 @@ export class LoggedError extends Error {
   }
 
   // Constructor overloads to handle various input scenarios.
-  private constructor(
+  // IMPORTANT: Prefer LoggedError.isTurtlesAllTheWayDownBaby to calling constructor directly.
+  constructor(
     message: string | LoggedErrorOptions | Error,
     options?:
       | (Omit<LoggedErrorOptions, 'error'> &

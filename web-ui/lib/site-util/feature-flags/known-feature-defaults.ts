@@ -21,7 +21,7 @@ const DEFAULT_REDIS_STORAGE_CONFIG = {
 
 const DEFAULT_ENHANCED_FETCH_CONFIG = {
   timeout: {
-    lookup: 1 * 100,
+    lookup: 1 * 200,
     connect: 1 * 1000,
     secureConnect: 1 * 1000,
     socket: 60 * 1000,

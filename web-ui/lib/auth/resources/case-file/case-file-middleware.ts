@@ -1,14 +1,3 @@
-/**
- * @fileoverview Case File Authorization Middleware
- *
- * This module provides middleware utilities for protecting API routes with
- * case file authorization checks. It integrates with Keycloak to verify
- * that users have the required permissions before accessing case file data.
- *
- * @module lib/auth/resources/case-file/case-file-middleware
- * @version 1.0.0
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { checkCaseFileAccess, CaseFileScope } from './case-file-resource';
 import {
@@ -17,21 +6,13 @@ import {
 import { log } from '@/lib/logger';
 import { getValidatedAccessToken } from '../../access-token';
 import { resolveCaseFileId } from '@/lib/api/document-unit/resolve-case-file-id';
-/**
- * Options for case file authorization middleware
- */
+
 export interface CaseFileAuthOptions {
-  /** The required scope for access */
   requiredScope: CaseFileScope;
-  /** Whether to allow access if no user_id is found (defaults to false) */
   allowMissing?: boolean;
 }
 
-/**
- * Result of authorization check
- */
 export type AuthCheckResult = {
-  /** Whether the user is authorized */
   authorized: boolean;
   userId?: number;
 } & (
@@ -45,38 +26,8 @@ export type AuthCheckResult = {
     }
   );
 
-/**
- * Checks authorization for an email-based route
- *
- * This function extracts the user_id associated with the email and verifies
- * that the requesting user has the required scope for that case file.
- *
- * @param req - The Next.js request object
- * @param emailId - The email ID from the route parameter
- * @param options - Authorization options
- * @returns Authorization check result
- *
- * @example
- * ```typescript
- * export const GET = async (
- *   req: NextRequest,
- *   { params }: { params: Promise<{ emailId: string }> }
- * ) => {
- *   const { emailId } = await params;
- *   const authCheck = await checkEmailAuthorization(req, emailId, {
- *     requiredScope: CaseFileScope.READ,
- *   });
- *
- *   if (!authCheck.authorized) {
- *     return authCheck.response;
- *   }
- *
- *   // Proceed with authorized request...
- * };
- * ```
- */
 export const checkCaseFileAuthorization = async (
-  req: NextRequest,
+  req: NextRequest | undefined,
   caseFileDocumentId: string | number,
   options: CaseFileAuthOptions,
 ): Promise<AuthCheckResult> => {
@@ -161,36 +112,6 @@ export const checkCaseFileAuthorization = async (
   }
 };
 
-/**
- * Checks authorization for a document unit-based route
- *
- * This function extracts the user_id associated with the document unit and
- * verifies that the requesting user has the required scope for that case file.
- *
- * @param req - The Next.js request object
- * @param unitId - The document unit ID from the route parameter
- * @param options - Authorization options
- * @returns Authorization check result
- *
- * @example
- * ```typescript
- * export const GET = async (
- *   req: NextRequest,
- *   { params }: { params: Promise<{ unitId: string }> }
- * ) => {
- *   const { unitId } = await params;
- *   const authCheck = await checkDocumentUnitAuthorization(req, Number(unitId), {
- *     requiredScope: CaseFileScope.READ,
- *   });
- *
- *   if (!authCheck.authorized) {
- *     return authCheck.response;
- *   }
- *
- *   // Proceed with authorized request...
- * };
- * ```
- */
 export const checkDocumentUnitAuthorization = async (
   req: NextRequest,
   unitId: number,

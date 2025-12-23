@@ -36,39 +36,23 @@ jest.mock('@/lib/api/email/email-service', () => ({
 }));
 
 // Mock authorization checks to always allow access in tests
-jest.mock('@/lib/auth/resources/case-file', () => ({
-  checkEmailAuthorization: jest.fn().mockResolvedValue({ authorized: true }),
-  checkDocumentUnitAuthorization: jest
-    .fn()
-    .mockResolvedValue({ authorized: true }),
-  CaseFileScope: {
-    READ: 'case-file:read',
-    WRITE: 'case-file:write',
-    ADMIN: 'case-file:admin',
-  },
-}));
-
-// Define mocks for [emailId]/route.ts (drizzle-based individual email operations)
-const mockDbQuery = {
-  emails: {
-    findFirst: jest.fn(),
-  },
-  documentUnits: {
-    findFirst: jest.fn(),
-  },
-};
-
-const mockDbDelete = jest.fn();
-const mockSchema = {
-  emails: {
-    emailId: 'emailId',
-    senderId: 'senderId',
-  },
-  contacts: {
-    name: 'name',
-    email: 'email',
-  },
-};
+jest.mock('@/lib/auth/resources/case-file', () => {
+  const origModule = jest.requireActual('@/lib/auth/resources/case-file');
+  return {
+    ...origModule,
+    checkEmailAuthorization: jest.fn().mockResolvedValue({ authorized: true }),
+    checkDocumentUnitAuthorization: jest
+      .fn()
+      .mockResolvedValue({ authorized: true }),
+    CaseFileScope: {
+      READ: 'case-file:read',
+      WRITE: 'case-file:write',
+      ADMIN: 'case-file:admin',
+    },
+    getUserIdFromUnitId: jest.fn(() => Promise.resolve(123)),
+    getAccessibleUserIds: jest.fn(() => Promise.resolve([123])),
+  };
+});
 
 const mockExtractParams = jest.fn();
 
@@ -80,29 +64,6 @@ jest.mock('@/lib/nextjs-util/server/utils', () => {
     extractParams: mockExtractParams,
   };
 });
-
-const mockDrizDbFactory = jest.fn(() => {
-  const mockDb = makeMockDb();
-
-  return {
-    ...mockDb,
-    query: mockDbQuery,
-    delete: mockDbDelete,
-  };
-});
-
-jest.mock('@/lib/drizzle-db', () => {
-  return {
-    drizDbWithInit: (cb?: (db: unknown) => unknown): Promise<unknown> => {
-      const db = mockDrizDbFactory();
-      const normalCallback = cb ?? ((x) => x);
-      return Promise.resolve(normalCallback(db));
-    },
-    drizDb: mockDrizDbFactory,
-    schema: mockSchema,
-  };
-});
-
 jest.mock('@/lib/components/mui/data-grid/queryHelpers');
 
 import { NextRequest } from 'next/server';
@@ -117,9 +78,12 @@ import {
   count_cta,
 } from '@/lib/api/email/drizzle/query-parts';
 import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
+import { getAccessibleUserIds, getUserIdFromUnitId } from '@/lib/auth/resources/case-file';
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
-const makeMockDb = () => withJestTestExtensions().makeMockDb();
 
+let mockDb = withJestTestExtensions().makeMockDb();
+let mockDbQuery = mockDb?.query!;
+let mockDbDelete = mockDb?.delete! as jest.Mock;
 
 describe('Email API', () => {
   beforeEach(() => {
@@ -137,9 +101,9 @@ describe('Email API', () => {
     Object.values(mockEmailService).forEach((mock) => mock.mockReset());
 
     // Reset drizzle mocks (for [emailId]/route.ts)
-    mockDbQuery.emails.findFirst.mockReset();
-    mockDbQuery.documentUnits.findFirst.mockReset();
-    mockDbDelete.mockReset();
+    mockDb = withJestTestExtensions().makeMockDb();
+    mockDbQuery = mockDb.query;
+    mockDbDelete = mockDb.delete as jest.Mock;
 
     // Reset extractParams mock
     mockExtractParams.mockReset();
@@ -147,6 +111,7 @@ describe('Email API', () => {
       const params = await req.params;
       return params;
     });
+    (getAccessibleUserIds as jest.Mock).mockImplementation(() => [123]);
   });
 
   describe('POST /api/email', () => {
@@ -316,7 +281,7 @@ describe('Email API', () => {
       } as unknown as NextRequest;
 
       // Mock service to throw an error that would result in 404
-      const error = new Error('Email not found');
+      const error = new Error("Case file not found for this document unit");
       mockEmailService.updateEmail.mockRejectedValue(error);
 
       const res = await PUT(req);
@@ -352,7 +317,8 @@ describe('Email API', () => {
   describe('GET /api/email/id', () => {
     beforeEach(() => {
       // Additional setup for drizzle-based GET tests
-      mockDbQuery.documentUnits.findFirst.mockResolvedValue(null);
+      (mockDbQuery.documentUnits.findFirst as jest.Mock).mockResolvedValue(null);
+
     });
 
     it('should return email details if emailId is provided', async () => {
@@ -375,7 +341,7 @@ describe('Email API', () => {
         emailRecipients: [],
       };
 
-      mockDbQuery.emails.findFirst.mockResolvedValue(mockEmailRecord);
+      (mockDbQuery.emails.findFirst as jest.Mock).mockImplementation(() => Promise.resolve(mockEmailRecord));
 
       const res = await GetWithId(req, {
         params: Promise.resolve({ emailId: ValidEmailId }),
@@ -403,14 +369,14 @@ describe('Email API', () => {
         url: 'http://localhost/api/email?emailId=1',
       } as unknown as NextRequest;
 
-      mockDbQuery.emails.findFirst.mockResolvedValue(null);
+      (mockDbQuery.emails.findFirst as jest.Mock).mockImplementation(() => Promise.resolve(null));
       const res = await GetWithId(req, {
         params: Promise.resolve({ emailId: ValidEmailId }),
       });
 
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({
-        error: 'Email not found',
+        error: "Email not found",
       });
     });
 
@@ -420,12 +386,12 @@ describe('Email API', () => {
         url: `http://localhost/api/email/${documentId}`,
       } as unknown as NextRequest;
 
-      // Mock document lookup to return email ID
-      mockDbQuery.documentUnits.findFirst.mockResolvedValue({
+      // Mock document lookup to return email ID      
+
+      (mockDbQuery.documentUnits.findFirst as jest.Mock).mockResolvedValue({
         unitId: documentId,
         emailId: ValidEmailId,
       });
-
       const mockEmailRecord = {
         emailId: ValidEmailId,
         subject: 'Test Subject',
@@ -441,7 +407,8 @@ describe('Email API', () => {
         emailRecipients: [],
       };
 
-      mockDbQuery.emails.findFirst.mockResolvedValue(mockEmailRecord);
+      (mockDbQuery.emails.findFirst as jest.Mock).mockResolvedValue(mockEmailRecord);
+
 
       const res = await GetWithId(req, {
         params: Promise.resolve({ emailId: documentId.toString() }),
@@ -559,7 +526,7 @@ describe('Email API', () => {
 
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({
-        error: 'Email not found',
+        error: "Email not found",
       });
     });
 

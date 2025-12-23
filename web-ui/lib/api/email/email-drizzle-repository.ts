@@ -2,7 +2,12 @@ import { BaseDrizzleRepository } from '../_baseDrizzleRepository';
 import { emails } from '@/drizzle/schema';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { eq } from 'drizzle-orm';
+import { eq, inArray, SQL } from 'drizzle-orm';
+import { auth } from '@/auth';
+import { CaseFileScope, checkCaseFileAccess, getAccessibleUserIds } from '@/lib/auth/resources/case-file';
+import { checkCaseFileAuthorization } from '@/lib/auth/resources/case-file/case-file-middleware';
+import { AccessDeniedError } from '@/lib/react-util/errors/access-denied-error';
+import { unwrapPromise } from '@/lib/typescript';
 
 /**
  * Base repository interface supports object repository implementation
@@ -16,6 +21,8 @@ type BaseEmailDrizzleRepository = BaseDrizzleRepository<EmailDomain, 'emailId'>;
 export type EmailDomain = {
   /** Unique identifier of the email */
   emailId: string;
+  /** ID of the user */
+  userId: number;
   /** ID of the sender contact */
   senderId: number;
   /** Email subject */
@@ -44,6 +51,7 @@ const mapRecordToEmailDomain = (
   record: Record<string, unknown>,
 ): EmailDomain => ({
   emailId: record.emailId as string,
+  userId: record.userId as number,
   senderId: record.senderId as number,
   subject: record.subject as string,
   emailContents: record.emailContents as string,
@@ -64,6 +72,7 @@ const mapRecordToEmailDomainSummary = (
   record: Record<string, unknown>,
 ): Partial<EmailDomain> => ({
   emailId: record.emailId as string,
+  userId: record.userId as number,
   senderId: record.senderId as number,
   subject: record.subject as string,
   sentTimestamp: record.sentTimestamp as string,
@@ -103,8 +112,7 @@ const mapRecordToEmailDomainSummary = (
  */
 export class EmailDrizzleRepository
   extends BaseDrizzleRepository<EmailDomain, 'emailId'>
-  implements BaseEmailDrizzleRepository
-{
+  implements BaseEmailDrizzleRepository {
   constructor() {
     super({
       table: emails,
@@ -122,11 +130,11 @@ export class EmailDrizzleRepository
    * @param obj - The data object to validate
    * @throws {ValidationError} When validation fails
    */
-  protected validate<TMethod extends keyof BaseEmailDrizzleRepository>(
+  protected async validate<TMethod extends keyof BaseEmailDrizzleRepository>(
     method: TMethod,
     obj: Record<string, unknown>,
-  ): void {
-    super.validate(method, obj);
+  ): Promise<void> {
+    await unwrapPromise(super.validate(method, obj));
 
     const email = obj as Partial<EmailDomain>;
 
@@ -139,6 +147,23 @@ export class EmailDrizzleRepository
           });
         }
         break;
+      case 'delete':
+        if (!email.emailId) {
+          throw new ValidationError({
+            field: 'emailId',
+            source: 'EmailDrizzleRepository::delete',
+          });
+        }
+        if (!await checkCaseFileAuthorization(
+          undefined,
+          email.emailId,
+          {
+            requiredScope: CaseFileScope.WRITE,
+          }
+        )) {
+          throw new AccessDeniedError('Access denied');
+        }
+        break;
       case 'update':
         if (!email.emailId) {
           throw new ValidationError({
@@ -146,6 +171,16 @@ export class EmailDrizzleRepository
             source: 'EmailDrizzleRepository::update',
           });
         }
+        if (!await checkCaseFileAuthorization(
+          undefined,
+          email.emailId,
+          {
+            requiredScope: CaseFileScope.WRITE,
+          }
+        )) {
+          throw new AccessDeniedError('Access denied');
+        }
+
         // At least one field besides emailId must be provided for update
         const updateFields = [
           'senderId',
@@ -168,11 +203,27 @@ export class EmailDrizzleRepository
           });
         }
         break;
+      case 'get':
+        if (!email.emailId) {
+          throw new ValidationError({
+            field: 'emailId',
+            source: 'EmailDrizzleRepository::get',
+          });
+        }
+        if (!await checkCaseFileAuthorization(
+          undefined,
+          email.emailId,
+          {
+            requiredScope: CaseFileScope.READ,
+          }
+        )) {
+          throw new AccessDeniedError('Access denied');
+        }
+        break;
       default:
         break;
     }
   }
-
   /**
    * Prepares data for database insert operations
    * Maps domain object fields to database column names
@@ -180,11 +231,20 @@ export class EmailDrizzleRepository
    * @param model - Email domain object without ID
    * @returns Database insert data
    */
-  protected prepareInsertData(
+  protected async prepareInsertData(
     model: Omit<EmailDomain, 'emailId'>,
-  ): Record<string, unknown> {
+  ): Promise<Record<string, unknown>> {
+    if (!model.userId) {
+      const session = await auth();
+      const checkUserId = session?.user?.id;
+      if (!checkUserId) {
+        throw new Error('User ID is required');
+      }
+      model.userId = parseInt(checkUserId, 10);
+    }
     return {
       sender_id: model.senderId,
+      user_id: model.userId,
       subject: model.subject,
       email_contents: model.emailContents,
       sent_timestamp: model.sentTimestamp || new Date(),
@@ -242,7 +302,17 @@ export class EmailDrizzleRepository
           .execute()
           .then((x) => x.at(0)),
       );
-      return record ? this.config.recordMapper(record) : null;
+      if (record) {
+        const hasAccess = await checkCaseFileAccess(
+          undefined,
+          record.userId as number,
+          CaseFileScope.READ
+        );
+        if (hasAccess) {
+          return this.config.recordMapper(record);
+        }
+      }
+      return null;
     } catch (error) {
       this.logDatabaseError('findByGlobalMessageId', error);
       throw error;

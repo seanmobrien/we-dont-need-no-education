@@ -12,7 +12,7 @@ import {
   buildFallbackGrid,
   wrapRouteRequest,
 } from '@/lib/nextjs-util/server/utils';
-import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { drizDbWithInit, schema, sql } from '@/lib/drizzle-db';
 import {
   count_kpi,
   count_attachments,
@@ -20,7 +20,7 @@ import {
   count_responsive_actions,
   count_cta,
 } from '@/lib/api/email/drizzle/query-parts';
-import { eq } from 'drizzle-orm';
+import { eq, and, inArray, isNull } from 'drizzle-orm';
 // count_kpi import removed; not used in this route currently
 import {
   DrizzleSelectQuery,
@@ -28,6 +28,8 @@ import {
   selectForGrid,
 } from '@/lib/components/mui/data-grid/queryHelpers';
 import { ContactSummary, EmailMessageSummary } from '@/data-models';
+import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
+import { getAccessToken } from '@/lib/auth/access-token';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +48,8 @@ export const dynamic = 'force-dynamic';
  */
 export const GET = wrapRouteRequest(
   async (req: NextRequest) => {
+    const normalAccessToken = await getAccessToken(req);
+    const eligibleUserIds = await getAccessibleUserIds(normalAccessToken);
     const results = await drizDbWithInit(async (db) => {
       // Correlated subquery returning a JSONB array of recipient objects for each email
       const attachments = count_attachments({ db });
@@ -94,14 +98,28 @@ export const GET = wrapRouteRequest(
           count_attachments: attachments.countAttachments,
         })
         .from(schema.emails)
+        // Inner join to document units with user id allow-list provides access filter
+        .innerJoin(schema.documentUnits, and(
+          and(
+            eq(schema.emails.emailId, schema.documentUnits.emailId),
+            eq(schema.documentUnits.documentType, 'email')
+          ),
+          inArray(schema.documentUnits.userId, eligibleUserIds)
+        ))
+        // Inner join to contacts to get sender name and email
         .innerJoin(
           schema.contacts,
           eq(schema.emails.senderId, schema.contacts.contactId),
         )
+        // Full join to attachments to get attachment count
         .fullJoin(attachments, eq(schema.emails.emailId, attachments.emailId))
+        // Full join to kpi to get kpi count
         .fullJoin(countKpi, eq(schema.emails.emailId, countKpi.targetId))
+        // Full join to notes to get note count
         .fullJoin(countNotes, eq(schema.emails.emailId, countNotes.targetId))
+        // Full join to cta to get cta count
         .fullJoin(countCta, eq(schema.emails.emailId, countCta.targetId))
+        // Full join to responsive actions to get responsive action count
         .fullJoin(countRa, eq(schema.emails.emailId, countRa.targetId));
       return await selectForGrid<EmailMessageSummary>({
         req,

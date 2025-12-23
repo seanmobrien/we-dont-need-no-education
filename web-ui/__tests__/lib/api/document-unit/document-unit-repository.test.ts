@@ -1,3 +1,5 @@
+/* @jest-environment node */
+
 import { DocumentUnitRepository } from '@/lib/api/document-unit';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 
@@ -108,17 +110,17 @@ describe('DocumentUnitRepository', () => {
     expect(obj).toHaveProperty('embedded_on');
   });
 
-  test('getQueryProperties returns query with parameter placeholder and provided id', () => {
+  test('getQueryProperties returns query with parameter placeholder and provided id', async () => {
     const repo = new DocumentUnitRepository();
-    const [sql, params] = (repo as any).getQueryProperties(123);
+    const [sql, params] = await (repo as any).getQueryProperties(123);
     expect(sql).toContain('WHERE unit_id = $1');
     expect(params).toEqual([123]);
   });
 
-  test('getListQueryProperties includes pending embed WHERE when configured', () => {
+  test('getListQueryProperties includes pending embed WHERE when configured', async () => {
     const repo = new DocumentUnitRepository({ pendingEmbed: true });
-    const [sql, , countSql] = (repo as any).getListQueryProperties();
-    expect(sql).toContain('WHERE du.embedded_on IS NULL');
+    const [sql, , countSql] = await (repo as any).getListQueryProperties();
+    expect(sql).toContain('AND du.embedded_on IS NULL');
     // normalize whitespace in the count SQL and assert the key parts exist
     expect(countSql).toContain('FROM document_units du');
     expect(countSql).toContain('du.embedded_on IS NULL');

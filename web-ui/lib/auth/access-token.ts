@@ -12,6 +12,7 @@ type RequestWithAccessTokenCache = {
   expires_at: number | undefined;
   refresh_expires_at: number | undefined;
   providerAccountId: string;
+  userId: number;
 };
 
 interface RequestWithAccessTokenOverloads {
@@ -26,13 +27,17 @@ type RequestWithAccessToken = NextRequest & {
 };
 
 export const withRequestTokens = (
-  req: NextRequest,
+  req: NextRequest | undefined,
   value?: RequestWithAccessTokenCache,
 ): RequestWithAccessTokenCache | undefined => {
+  if (!req) { return undefined; }
   const withToken = req as RequestWithAccessToken;
   if (value) {
     if (!value.providerAccountId) {
       throw new Error('providerAccountId is required');
+    }
+    if (!value.userId) {
+      throw new Error('userId is required');
     }
     if (!value.access_token) {
       throw new Error('token is required');
@@ -50,12 +55,13 @@ export const withRequestTokens = (
     expires_at: ret.expires_at,
     refresh_expires_at: ret.refresh_expires_at,
     providerAccountId: ret.providerAccountId,
+    userId: ret.userId,
   } : undefined;
 };
 
 
 export const withRequestAccessToken: RequestWithAccessTokenOverloads = (
-  req: NextRequest,
+  req: NextRequest | undefined,
   value?: RequestWithAccessTokenCache,
 )
   // Any necessary to support the interface pattern
@@ -63,11 +69,11 @@ export const withRequestAccessToken: RequestWithAccessTokenOverloads = (
   : any => withRequestTokens(req, value)?.access_token;
 
 
-export const withRequestProviderAccountId = (req: NextRequest) =>
+export const withRequestProviderAccountId = (req: NextRequest | undefined) =>
   withRequestTokens(req)?.providerAccountId;
 
 
-export const getRequestTokens = async (req: NextRequest) => {
+export const getRequestTokens = async (req: NextRequest | undefined) => {
   const ret = withRequestTokens(req);
   if (!!ret) {
     return ret;
@@ -91,7 +97,8 @@ export const getRequestTokens = async (req: NextRequest) => {
           id_token: accountRecord.idToken ?? undefined,
           expires_at: accountRecord.expiresAt ? Number(accountRecord.expiresAt) : Date.now(),
           refresh_expires_at: accountRecord.refreshExpiresAt ? Number(accountRecord.refreshExpiresAt) : Date.now(),
-          providerAccountId: accountRecord.providerAccountId
+          providerAccountId: accountRecord.providerAccountId,
+          userId: sessionUserId,
         }
         : undefined;
     });
@@ -104,15 +111,15 @@ export const getRequestTokens = async (req: NextRequest) => {
   return token;
 };
 
-export const getAccessToken = async (req: NextRequest) =>
+export const getAccessToken = async (req: NextRequest | undefined) =>
   (await getRequestTokens(req))?.access_token;
 
-export const getProviderAccountId = async (req: NextRequest) =>
+export const getProviderAccountId = async (req: NextRequest | undefined) =>
   (await getRequestTokens(req))?.providerAccountId;
 
 export const getValidatedAccessToken = async (
   { req, source }: {
-    req: NextRequest;
+    req: NextRequest | undefined;
     source?: string;
   }
 ): Promise<{ token: string } | { error: NextResponse }> => {

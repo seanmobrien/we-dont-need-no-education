@@ -127,7 +127,7 @@ export class EmailAttachmentDrizzleRepository extends BaseDrizzleRepository<
    */
   protected prepareUpdateData(
     model: Partial<EmailAttachment>,
-  ): Record<string, unknown> {
+  ): Record<string, unknown> | Promise<Record<string, unknown>> {
     // Exclude non-updatable fields and fields not in database schema
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { attachmentId, emailId, extractedTextTsv, ...updateFields } = model;

@@ -29,6 +29,12 @@ export type DocumentUnitSummary = {
   unitId: number;
 
   /**
+   * The identifier of the associated user, if applicable. Null if not associated with a user.
+   * This is important for understanding the context of the document unit.
+   */
+  userId: number;
+
+  /**
    * The identifier of the associated email, if applicable. Null if not associated with an email.
    * This is important for understanding the context of the document unit.
    * For emails, identifies the email to which the document unit belongs.

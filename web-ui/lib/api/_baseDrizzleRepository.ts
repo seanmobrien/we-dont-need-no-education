@@ -5,7 +5,7 @@ import {
   IObjectRepositoryExt,
 } from './_types';
 import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
-import { PartialExceptFor } from '@/lib/typescript';
+import { PartialExceptFor, unwrapPromise } from '@/lib/typescript';
 import { eq, count, SQL } from 'drizzle-orm';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
@@ -52,8 +52,8 @@ function detectPrimaryKey<T extends object, KId extends keyof T>(
     const tableName = config.tableName || getTableConfig(config.table).name;
     throw new Error(
       `Unable to auto-detect primary key for table ${tableName}. ` +
-        `Please provide idColumn and idField explicitly in the config. ` +
-        `Error: ${error instanceof Error ? error.message : String(error)}`,
+      `Please provide idColumn and idField explicitly in the config. ` +
+      `Error: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }
@@ -71,8 +71,7 @@ function detectPrimaryKey<T extends object, KId extends keyof T>(
 export abstract class BaseDrizzleRepository<
   T extends object,
   KId extends keyof T,
-> implements ObjectRepository<T, KId>
-{
+> implements ObjectRepository<T, KId> {
   protected readonly config: DrizzleRepositoryConfig<T, KId>;
   protected readonly idColumn: PgColumn;
   protected readonly idField: KId;
@@ -102,7 +101,7 @@ export abstract class BaseDrizzleRepository<
   protected validate<TMethod extends keyof ObjectRepository<T, KId>>(
     method: TMethod,
     obj: Record<string, unknown>,
-  ): void {
+  ): (void | Promise<void>) {
     // NO-OP by default, can be overridden
     log((l) =>
       l.silly(`Validating ${String(method)} operation`, {
@@ -110,6 +109,7 @@ export abstract class BaseDrizzleRepository<
         tableName: this.tableName,
       }),
     );
+    return Promise.resolve();
   }
 
   /**
@@ -124,7 +124,7 @@ export abstract class BaseDrizzleRepository<
       const offset = (page - 1) * num;
 
       // Get the query conditions from subclasses (if any)
-      const queryConditions = this.buildQueryConditions();
+      const queryConditions = await unwrapPromise(this.buildQueryConditions());
 
       const validDb = await drizDbWithInit();
       // Build count query with the same conditions
@@ -182,7 +182,7 @@ export abstract class BaseDrizzleRepository<
    */
   async get(recordId: T[KId]): Promise<T | null> {
     try {
-      this.validate('get', { [this.idField]: recordId });
+      await unwrapPromise(this.validate('get', { [this.idField]: recordId }));
 
       const records = await drizDbWithInit((db) =>
         db
@@ -223,9 +223,9 @@ export abstract class BaseDrizzleRepository<
    */
   async create(model: Omit<T, KId>): Promise<T> {
     try {
-      this.validate('create', model);
+      await unwrapPromise(this.validate('create', model));
 
-      const insertData = this.prepareInsertData(model);
+      const insertData = await unwrapPromise(this.prepareInsertData(model));
       const records = await drizDbWithInit((db) =>
         db.insert(this.config.table).values(insertData).returning(),
       );
@@ -256,9 +256,9 @@ export abstract class BaseDrizzleRepository<
     model: PartialExceptFor<T, KId> & Required<Pick<T, KId>>,
   ): Promise<T> {
     try {
-      this.validate('update', model);
+      await unwrapPromise(this.validate('update', model));
 
-      const updateData = this.prepareUpdateData(model);
+      const updateData = await unwrapPromise(this.prepareUpdateData(model));
       const records = await drizDbWithInit((db) =>
         db
           .update(this.config.table)
@@ -295,7 +295,7 @@ export abstract class BaseDrizzleRepository<
    */
   async delete(recordId: T[KId]): Promise<boolean> {
     try {
-      this.validate('delete', { [this.idField]: recordId });
+      await unwrapPromise(this.validate('delete', { [this.idField]: recordId }));
 
       const record = await drizDbWithInit((db) =>
         db
@@ -353,7 +353,7 @@ export abstract class BaseDrizzleRepository<
    *
    * @returns Query conditions that will be applied to both count and data queries
    */
-  protected buildQueryConditions(): SQL | undefined {
+  protected buildQueryConditions(): (SQL | undefined) | Promise<SQL | undefined> {
     // By default, no additional conditions (return all records)
     return undefined;
   }
@@ -364,7 +364,7 @@ export abstract class BaseDrizzleRepository<
    */
   protected abstract prepareInsertData(
     model: Omit<T, KId>,
-  ): Record<string, unknown>;
+  ): Record<string, unknown> | Promise<Record<string, unknown>>;
 
   /**
    * Prepares data for update operations.
@@ -372,7 +372,7 @@ export abstract class BaseDrizzleRepository<
    */
   protected abstract prepareUpdateData(
     model: Partial<T>,
-  ): Record<string, unknown>;
+  ): Record<string, unknown> | Promise<Record<string, unknown>>;
 
   /**
    * Logs database errors with consistent formatting.

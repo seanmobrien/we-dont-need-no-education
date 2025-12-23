@@ -1,4 +1,4 @@
-import type { DatabaseType } from "@/lib/drizzle-db/drizzle-types";
+import type { DatabaseMockType } from "./setup/jest.mock-drizzle";
 
 const testExtensionFactory = () => {
   return {
@@ -14,7 +14,7 @@ const testExtensionFactory = () => {
       expires: new Date(Date.now() + 1000 * 60 * 60).toISOString(),
     },
     makeMockDb: () => {
-      return undefined as unknown as DatabaseType;
+      return undefined as unknown as DatabaseMockType;
     },
     suppressDeprecation: false,
   };
@@ -32,7 +32,7 @@ type JestTestExtensions = {
     };
     expires: string;
   } | null;
-  makeMockDb: () => DatabaseType;
+  makeMockDb: () => DatabaseMockType;
   suppressDeprecation: boolean;
 };
 

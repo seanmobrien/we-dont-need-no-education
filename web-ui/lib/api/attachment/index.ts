@@ -1,10 +1,5 @@
-import { BaseObjectRepository } from '../_baseObjectRepository';
-import { ObjectRepository } from '../_types';
-import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter } from '@/lib/typescript';
-import { EmailAttachment } from '@/data-models/api/attachment';
-
 export { buildAttachmentDownloadUrl } from './download-url-builder';
+/*
 
 const attachmentSummaryRecordMap = (record: Record<string, unknown>) => ({
   attachmentId: Number(record.attachment_id),
@@ -128,6 +123,7 @@ export class AttachmentRepository extends BaseObjectRepository<
     ];
   }
 }
+*/
 
 // Export the Drizzle-based repository
 export { EmailAttachmentDrizzleRepository } from './drizzle-repository';

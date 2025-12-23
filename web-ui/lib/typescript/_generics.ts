@@ -5,6 +5,8 @@
  * These utilities help reduce duplication when authoring APIs that
  * accept either scalar or array inputs.
  */
+import { isPromise } from "./_guards";
+
 
 /**
  * Describes a callable that can process either a single input value or an array
@@ -49,3 +51,12 @@ export const serviceInstanceOverloadsFactory =
       }
       return serviceFactory();
     };
+
+export const unwrapPromise = async <T>(value: T | Promise<T>): Promise<T> => {
+  let res: T | Promise<T> = value;
+  while (res && isPromise(res)) {
+    res = await res;
+  }
+  return res as T;
+};
+

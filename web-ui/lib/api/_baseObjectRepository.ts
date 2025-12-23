@@ -23,8 +23,7 @@ import { AbstractObjectRepository } from './abstractObjectRepository';
  */
 export class BaseObjectRepository<T extends object, KId extends keyof T>
   extends AbstractObjectRepository<T>
-  implements ObjectRepository<T, KId>
-{
+  implements ObjectRepository<T, KId> {
   /**
    * The name of the table in the database.
    * @type {string}
@@ -89,7 +88,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Array<any>,
     string,
-  ] {
+  ] | Promise<[string, Array<any>, string]> {
     throw new Error('Method not implemented.');
   }
 
@@ -99,13 +98,13 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    * @returns {[string, Array<any>]} A tuple containing a `TemplateStringsArray` and an array of any type.
    * @throws {Error} An error indicating that the method is not implemented.
    */
-  protected getCreateQueryProperties({}: FirstParameter<
+  protected getCreateQueryProperties({ }: FirstParameter<
     ObjectRepository<T, KId>['create']
   >): [
-    string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Array<any>,
-  ] {
+      string,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      Array<any>,
+    ] {
     throw new Error('Method not implemented.');
   }
 
@@ -115,13 +114,17 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    * @returns {[string, Array<any>]} A tuple containing a TemplateStringsArray and an array of any type.
    * @throws {Error} If the method is not implemented.
    */
-  protected getQueryProperties({}: FirstParameter<
+  protected getQueryProperties({ }: FirstParameter<
     ObjectRepository<T, KId>['get']
   >): [
     string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Array<any>,
-  ] {
+  ] | Promise<[
+    string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Array<any>,
+  ]> {
     throw new Error('Method not implemented.');
   }
 
@@ -131,12 +134,12 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    * @returns {[Record<string, any>]} An object containing the properties for the update query.
    * @throws {Error} Throws an error if the method is not implemented.
    */
-  protected getUpdateQueryProperties({}: FirstParameter<
+  protected getUpdateQueryProperties({ }: FirstParameter<
     ObjectRepository<T, KId>['update']
   >): [
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Record<string, any>,
-  ] {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      Record<string, any>,
+    ] {
     throw new Error('Method not implemented.');
   }
 
@@ -146,9 +149,12 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    * @param {PaginationStats} [pagination] - Optional pagination parameters.
    * @returns {Promise<PaginatedResultset<Partial<T>>>} A promise that resolves to a paginated result set of partial items.
    */
-  list(pagination?: PaginationStats): Promise<PaginatedResultset<Partial<T>>> {
-    const [sqlQuery, values, sqlCountQuery] = this.getListQueryProperties();
-    return this.defaultListImpl(
+  async list(pagination?: PaginationStats): Promise<PaginatedResultset<Partial<T>>> {
+    const queryProps = this.getListQueryProperties();
+    const [sqlQuery, values, sqlCountQuery] = Array.isArray(queryProps)
+      ? queryProps
+      : await queryProps;
+    return await this.defaultListImpl(
       { sqlQuery, values, sqlCountQuery },
       pagination,
     );
@@ -202,9 +208,10 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
   get(recordId: T[KId]): Promise<T | null> {
     return this.innerGet(
       () => this.validate('get', recordId),
-      () => {
-        const [sqlImp, sqlArgs] = this.getQueryProperties(recordId);
-        return query(
+      async () => {
+        const qp = this.getQueryProperties(recordId);
+        const [sqlImp, sqlArgs] = Array.isArray(qp) ? qp : await qp;
+        return await query(
           (sql) => this.forwardCallToDb<false, false>(sql, sqlImp, sqlArgs),
           {
             transform: this.mapRecordToObject,
