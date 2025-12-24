@@ -73,7 +73,7 @@ const mockEmitWarningImpl = (message: string, options?: { emitDepth?: number }) 
 
 
 beforeEach(() => {
-  if (typeof process !== undefined && typeof process.emitWarning === 'function') {
+  if (typeof process !== 'undefined' && typeof process.emitWarning === 'function') {
     emitWarningMock = jest.spyOn(process, 'emitWarning');
     emitWarningMock.mockImplementation(mockEmitWarningImpl);
   }
