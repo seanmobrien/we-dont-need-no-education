@@ -126,23 +126,23 @@ describe('DocumentUnitRepository', () => {
     expect(countSql).toContain('du.embedded_on IS NULL');
   });
 
-  test('validate throws on invalid get id (string)', () => {
+  test('validate throws on invalid get id (string)', async () => {
     const repo = new DocumentUnitRepository();
-    expect(() => repo.validate('get' as any, 'not-a-number' as any)).toThrow(
+    await expect(repo.validate('get' as any, 'not-a-number' as any)).rejects.toThrow(
       ValidationError,
     );
   });
 
-  test('validate throws on invalid get id (array)', () => {
+  test('validate throws on invalid get id (array)', async () => {
     const repo = new DocumentUnitRepository();
-    expect(() => repo.validate('get' as any, ['nope'] as any)).toThrow(
+    await expect(repo.validate('get' as any, ['nope'] as any)).rejects.toThrow(
       ValidationError,
     );
   });
 
-  test('validate default branch throws for invalid documentType on update', () => {
+  test('validate default branch throws for invalid documentType on update', async () => {
     const repo = new DocumentUnitRepository();
     const bad: any = { documentType: 'not-a-type' };
-    expect(() => repo.validate('update' as any, bad)).toThrow(ValidationError);
+    await expect(repo.validate('update' as any, bad)).rejects.toThrow(ValidationError);
   });
 });

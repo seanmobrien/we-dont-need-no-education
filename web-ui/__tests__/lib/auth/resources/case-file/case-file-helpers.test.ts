@@ -37,9 +37,10 @@ describe('getAccessibleUserIds', () => {
 
     const result = await getAccessibleUserIds(mockToken);
 
-    expect(result).toHaveLength(2);
+    expect(result).toHaveLength(3);
     expect(result).toContain(101);
     expect(result).toContain(102);
+    expect(result).toContain(123);
     expect(mockGetUserEntitlements).toHaveBeenCalledWith(mockToken);
   });
 
