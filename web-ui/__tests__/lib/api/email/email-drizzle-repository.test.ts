@@ -49,9 +49,6 @@ jest.mock('@/drizzle/schema', () => {
   return {
     emails: mockEmails,
   };
-  return {
-    emails: mockEmails,
-  };
 });
 
 // Mock checkCaseFileAuthorization
