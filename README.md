@@ -20,7 +20,22 @@ This platform combines a modern web interface with sophisticated AI-powered back
 
 ## Architecture
 
-### Frontend (`/web-ui/`)
+### Monorepo Structure
+
+This project uses a traditional monorepo structure with [Turborepo](https://turbo.build/) for efficient build orchestration. See [MONOREPO_GUIDE.md](./MONOREPO_GUIDE.md) for detailed migration information.
+
+```
+├── packages/
+│   └── app/           # Main Next.js frontend application (formerly web-ui/)
+├── chat/              # Java backend with AI processing
+├── db/                # Database schema and migrations
+├── turbo.json         # Turborepo configuration
+└── jest.config.mjs    # Root test configuration
+```
+
+**Note**: The monorepo migration is in progress. Core libraries (`lib/*`) will be extracted into standalone packages under `packages/` for better modularity and reusability.
+
+### Frontend (`/packages/app/`)
 
 - **Framework**: Next.js 15.x with TypeScript
 - **UI Library**: Material UI with data grid components
@@ -55,9 +70,9 @@ This platform combines a modern web interface with sophisticated AI-powered back
 ### Frontend Setup
 
 ```bash
-cd web-ui
-npm install
-npm run dev
+cd packages/app
+yarn install
+yarn dev
 ```
 
 ### Backend Setup
@@ -80,20 +95,23 @@ Create appropriate `.env` files with:
 ## Project Structure
 
 ```
-├── web-ui/           # Next.js frontend application for victims and advocates
-├── chat/             # Java backend with AI processing for evidence analysis
-│   ├── core/         # Core utilities and shared functionality
-│   ├── scb-core/     # Victim advocacy core models and repositories
-│   ├── scb-embed/    # Document embedding and evidence search
-│   └── scb-chatbot/  # Main AI assistant for case building
-├── db/               # Database schema and migrations
-└── docs/             # Additional documentation
+├── packages/
+│   └── app/           # Next.js frontend application for victims and advocates
+├── chat/              # Java backend with AI processing for evidence analysis
+│   ├── core/          # Core utilities and shared functionality
+│   ├── scb-core/      # Victim advocacy core models and repositories
+│   ├── scb-embed/     # Document embedding and evidence search
+│   └── scb-chatbot/   # Main AI assistant for case building
+├── db/                # Database schema and migrations
+├── turbo.json         # Turborepo build orchestration
+└── MONOREPO_GUIDE.md  # Detailed monorepo migration guide
 ```
 
 ## Module Documentation
 
+- [Monorepo Guide](./MONOREPO_GUIDE.md) - Comprehensive monorepo structure and migration guide
 - [Chat Backend README](./chat/README.md) - Comprehensive guide to the Java backend for evidence analysis
-- [Web UI README](./web-ui/README.md) - Frontend application documentation for victim advocacy interface
+- [Web App README](./packages/app/README.md) - Frontend application documentation for victim advocacy interface
 - [Core Module](./chat/core/README.md) - Shared utilities and common functionality
 - [SCB Core](./chat/scb-core/README.md) - Core models and data access layer for case management
 - [SCB Embed](./chat/scb-embed/README.md) - Document embedding and evidence search functionality
