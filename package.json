@@ -3,14 +3,20 @@
   "version": "0.0.0",
   "private": true,
   "workspaces": [
-    "web-ui",
-    "!web-ui/submodules",
-    "web-ui/submodules/*"
+    "packages/*"
   ],
   "devDependencies": {
-    "@changesets/cli": "^2.29.8"
+    "@changesets/cli": "^2.29.8",
+    "turbo": "^2.3.3"
   },
   "scripts": {
-    "preinstall": "node preinstall.js"
-  }
+    "preinstall": "node preinstall.js",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:e2e": "turbo run test:e2e",
+    "lint": "turbo run lint"
+  },
+  "packageManager": "yarn@1.22.22"
 }
