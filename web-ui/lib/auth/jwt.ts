@@ -121,8 +121,4 @@ export const jwt = async ({
   // Always return the (possibly mutated) token. NextAuth will serialize this
   // value and include it in the session cookie / client-side JWT.
   return token;
-
-  // Always return the (possibly mutated) token. NextAuth will serialize this
-  // value and include it in the session cookie / client-side JWT.
-  return token;
 };

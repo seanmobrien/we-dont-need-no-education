@@ -133,7 +133,7 @@ const buildRawInstance = () => {
     /** Keycloak OAuth scope for authentication. Example: 'openid profile email roles mcp-tool' */
     AUTH_KEYCLOAK_SCOPE: process.env.AUTH_KEYCLOAK_SCOPE,
     /** Name of the Keycloak resource controlling chat access; used for resolution if resource ID is not provided.  Example: 'mcp-tool' */
-    AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_NAME: process.env.AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_ID,
+    AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_NAME: process.env.AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_NAME,
     /** ID of the Keycloak resource controlling chat access; example 'cd6fd773-2f10-4b32-aba9-9fd491ba9576'. */
     AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_ID: process.env.AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_ID,
     /** Redis connection URL for caching and session storage. Example: 'redis://localhost:6379' */

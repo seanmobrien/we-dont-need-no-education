@@ -122,10 +122,10 @@ export const getAccessibleUserIds: AccessTokenOrRequestOverloads<number[]> = asy
     for (const entitlement of entitlements) {
       if (entitlement.rsname && entitlement.rsname.startsWith('case-file:')) {
         const idPart = entitlement.rsname.split(':')[1];
-        const userId = parseInt(idPart, 10);
-        if (!isNaN(userId)) {
-          accessibleUserIds.add(userId);
-          foundThisId = foundThisId || userId === userId;
+        const parsedUserId = parseInt(idPart, 10);
+        if (!isNaN(parsedUserId)) {
+          accessibleUserIds.add(parsedUserId);
+          foundThisId = foundThisId || parsedUserId === userId;
         }
       }
     }

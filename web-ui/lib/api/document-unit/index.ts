@@ -86,12 +86,13 @@ export class DocumentUnitRepository extends BaseObjectRepository<
    * @param obj - The object to validate.
    * @throws {ValidationError} If validation fails.
    */
-  validate<TMethod extends keyof ObjectRepository<DocumentUnit, 'unitId'>>(
+  async validate<TMethod extends keyof ObjectRepository<DocumentUnit, 'unitId'>>(
     method: TMethod,
     obj: FirstParameter<
       Pick<ObjectRepository<DocumentUnit, 'unitId'>, TMethod>[TMethod]
     >,
-  ): void {
+  ): Promise<void> {
+
     switch (method) {
       case 'create':
         break;
@@ -112,6 +113,7 @@ export class DocumentUnitRepository extends BaseObjectRepository<
             source: 'DocumentUnitsRepository',
           });
         }
+
         break;
       case 'create':
         const asCreateModel = obj as DocumentUnit;

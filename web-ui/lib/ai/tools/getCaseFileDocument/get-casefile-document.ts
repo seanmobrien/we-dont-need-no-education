@@ -204,10 +204,6 @@ export const getMultipleCaseFileDocuments = async ({
     }),
   );
   const attributes = {
-    // has_goals: Boolean(goals.length),
-    // has_reasoning: Boolean(reasoning),
-    // goals_count: goals.length,
-
     initial_document_count: requests.length,
     valid_document_count: resolvedRequests.length,
   };
