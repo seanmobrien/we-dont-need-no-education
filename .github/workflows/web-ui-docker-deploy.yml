@@ -96,7 +96,7 @@ jobs:
           echo "::group::Creating build environment file"
           
           # Create .env.production.local with all build-time variables
-          cat << 'ENV_EOF' > ./packages/app/.env.production.local
+          cat << 'ENV_EOF' > ./web-ui/packages/app/.env.production.local
           # Public variables (safe to embed in client bundle)
           NEXT_PUBLIC_MUI_LICENSE=${{ secrets.NEXT_PUBLIC_MUI_LICENSE }}
           NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
@@ -140,12 +140,12 @@ jobs:
           ENV_EOF
           
           # Validate the file was created
-          if [ ! -f ./packages/app/.env.production.local ]; then
+          if [ ! -f ./web-ui/packages/app/.env.production.local ]; then
             echo "::error::Failed to create .env.production.local file"
             exit 1
           fi
           
-          echo "✅ Build environment file created with $(wc -l < ./packages/app/.env.production.local) variables"
+          echo "✅ Build environment file created with $(wc -l < ./web-ui/packages/app/.env.production.local) variables"
           echo "::endgroup::"
 
       - name: Extract Docker metadata
@@ -164,8 +164,8 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v5
         with:
-          context: ./packages/app
-          file: ./packages/app/Dockerfile
+          context: ./web-ui/packages/app
+          file: ./web-ui/packages/app/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -213,13 +213,13 @@ jobs:
             OPENID_KEY_TEXT=${{ secrets.OPENID_KEY_TEXT }}
             FLAGSMITH_SDK_KEY=${{ secrets.FLAGSMITH_SDK_KEY }}
           secret-files: |
-            "env_file=./packages/app/.env.production.local"
+            "env_file=./web-ui/packages/app/.env.production.local"
 
       # Clean up sensitive files immediately after build
       - name: Cleanup sensitive files
         if: always()
         run: |
-          rm -f ./packages/app/.env.production.local
+          rm -f ./web-ui/packages/app/.env.production.local
           echo "✅ Sensitive files removed"
 
       # Extract and validate deploy tag with audit logging

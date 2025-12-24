@@ -2,19 +2,19 @@
 
 ## Overview
 
-This document describes the monorepo refactoring of the Title IX Victim Advocacy Platform from a single `web-ui` application to a traditional monorepo structure with packages under `packages/`.
+This document describes the monorepo refactoring of the Title IX Victim Advocacy Platform from a single `web-ui` application to a traditional monorepo structure with packages under `web-ui/packages/`. This maintains clear separation between the Node.js frontend (web-ui) and Java backend (chat) solutions.
 
 ## Completed Work (Phase 1)
 
 ### Infrastructure Setup ✅
-1. **Root Package Configuration**
-   - Updated `package.json` to use `packages/*` workspace
+1. **Workspace Structure**
+   - Created `web-ui/packages/` directory for monorepo packages
+   - Moved application code to `web-ui/web-ui/packages/app/`
    - Added Turborepo (`turbo@^2.3.3`) for build orchestration
-   - Added monorepo-level scripts (dev, build, test, lint)
    - Set explicit `packageManager` to `yarn@1.22.22`
 
 2. **Build Orchestration**
-   - Created `turbo.json` with task pipelines for:
+   - Created `web-ui/turbo.json` with task pipelines for:
      - `build`: Builds packages with dependency order
      - `dev`: Development mode (no caching)
      - `test`: Unit tests with coverage
@@ -23,30 +23,47 @@ This document describes the monorepo refactoring of the Title IX Victim Advocacy
 
 3. **Testing Infrastructure**
    - Created root `jest.config.mjs` for coordinating package tests
-   - Configured to collect coverage from all packages
+   - Configured to collect coverage from all packages in `web-ui/packages/*`
    - Set up project references for multi-package testing
 
 4. **Main Application Move**
-   - Moved `web-ui/` → `packages/app/` using `git mv` (preserves history)
+   - Moved original `web-ui/` → `web-ui/web-ui/packages/app/` using `git mv` (preserves history)
    - Updated package name from `compliance-theater` → `@repo/app`
-   - Removed nested workspace configuration from app package.json
+   - Created `web-ui/package.json` as workspace root
 
 5. **CI/CD Updates**
-   - Updated `.github/workflows/web-ui-docker-deploy.yml` to use `packages/app` paths
-   - All Docker build contexts now point to `./packages/app`
+   - Updated `.github/workflows/web-ui-docker-deploy.yml` to use `web-ui/packages/app` paths
+   - Updated `.github/workflows/maven.yml` to reference `web-ui/yarn.lock`
+   - All Docker build contexts now point to `./web-ui/packages/app`
    - Environment file generation updated for new structure
 
 6. **Repository Cleanup**
    - Removed obsolete `web-ui/Dockerfile` ignore rule from `.gitignore`
    - Preserved all existing `.gitignore` rules for monorepo
 
+## Repository Structure
+
+```
+/
+├── web-ui/                    # Node.js workspace root
+│   ├── packages/
+│   │   └── app/              # Main Next.js application
+│   ├── package.json          # Workspace configuration
+│   ├── turbo.json            # Build orchestration
+│   └── yarn.lock             # Dependency lock file
+├── chat/                     # Java backend (separate)
+├── package.json              # Root workspace (links to web-ui)
+├── jest.config.mjs           # Root test configuration
+└── turbo.json                # Optional root turbo config
+```
+
 ## Remaining Work
 
 ### Phase 2: Extract Core Library Packages
 
 Each package extraction follows this pattern:
-1. Create `packages/[name]/` directory
-2. Move source files from `packages/app/lib/[name]`
+1. Create `web-ui/web-ui/packages/[name]/` directory
+2. Move source files from `web-ui/web-ui/packages/app/lib/[name]`
 3. Create package.json with proper exports
 4. Create tsconfig.json for TypeScript
 5. Set up package-specific jest.config.mjs
@@ -56,57 +73,57 @@ Each package extraction follows this pattern:
 #### Packages to Extract
 
 **Critical Infrastructure** (extract first, few dependencies):
-- `packages/lib-logger` ← `packages/app/lib/logger`
-- `packages/lib-typescript` ← `packages/app/lib/typescript`
-- `packages/lib-send-api-request` ← `packages/app/lib/send-api-request`
+- `web-ui/packages/lib-logger` ← `web-ui/packages/app/lib/logger`
+- `web-ui/packages/lib-typescript` ← `web-ui/packages/app/lib/typescript`
+- `web-ui/packages/lib-send-api-request` ← `web-ui/packages/app/lib/send-api-request`
 
 **Data Layer** (depends on logger, typescript):
-- `packages/lib-database` ← merge:
-  - `packages/app/drizzle/`
-  - `packages/app/lib/drizzle-db/`
-  - `packages/app/lib/neondb/`
-- `packages/lib-redis-client` ← `packages/app/lib/redis-client`
+- `web-ui/packages/lib-database` ← merge:
+  - `web-ui/packages/app/drizzle/`
+  - `web-ui/packages/app/lib/drizzle-db/`
+  - `web-ui/packages/app/lib/neondb/`
+- `web-ui/packages/lib-redis-client` ← `web-ui/packages/app/lib/redis-client`
 
 **Utilities** (depends on above):
-- `packages/lib-site-util` ← `packages/app/lib/site-util`
-- `packages/lib-react-util` ← `packages/app/lib/react-util`
-- `packages/lib-nextjs-util` ← `packages/app/lib/nextjs-util`
+- `web-ui/packages/lib-site-util` ← `web-ui/packages/app/lib/site-util`
+- `web-ui/packages/lib-react-util` ← `web-ui/packages/app/lib/react-util`
+- `web-ui/packages/lib-nextjs-util` ← `web-ui/packages/app/lib/nextjs-util`
 
 **Authentication** (depends on database):
-- `packages/lib-auth` ← `packages/app/lib/auth`
+- `web-ui/packages/lib-auth` ← `web-ui/packages/app/lib/auth`
 
 **Error Handling** (depends on logger):
-- `packages/lib-error-monitoring` ← `packages/app/lib/error-monitoring`
+- `web-ui/packages/lib-error-monitoring` ← `web-ui/packages/app/lib/error-monitoring`
 
 ### Phase 3: Extract Feature Packages
 
 **Instrumentation** (depends on logger, error-monitoring):
-- `packages/instrument` ← `packages/app/instrument/`
+- `web-ui/packages/instrument` ← `web-ui/packages/app/instrument/`
 
 **Data Models** (depends on database):
-- `packages/data-models` ← `packages/app/data-models/`
+- `web-ui/packages/data-models` ← `web-ui/packages/app/data-models/`
 
 **Components** (depends on react-util, themes):
-- `packages/components` ← merge:
-  - `packages/app/components/`
-  - `packages/app/lib/components/`
+- `web-ui/packages/components` ← merge:
+  - `web-ui/packages/app/components/`
+  - `web-ui/packages/app/lib/components/`
 
 **Optional Feature Libraries** (evaluate if worth extracting):
-- `packages/lib-ai` ← `packages/app/lib/ai/`
-- `packages/lib-api` ← `packages/app/lib/api/`
-- `packages/lib-email` ← `packages/app/lib/email/`
-- `packages/lib-hooks` ← `packages/app/lib/hooks/`
-- `packages/lib-config` ← `packages/app/lib/config/`
-- `packages/lib-styles` ← `packages/app/lib/styles/`
-- `packages/lib-themes` ← `packages/app/lib/themes/`
+- `web-ui/packages/lib-ai` ← `web-ui/packages/app/lib/ai/`
+- `web-ui/packages/lib-api` ← `web-ui/packages/app/lib/api/`
+- `web-ui/packages/lib-email` ← `web-ui/packages/app/lib/email/`
+- `web-ui/packages/lib-hooks` ← `web-ui/packages/app/lib/hooks/`
+- `web-ui/packages/lib-config` ← `web-ui/packages/app/lib/config/`
+- `web-ui/packages/lib-styles` ← `web-ui/packages/app/lib/styles/`
+- `web-ui/packages/lib-themes` ← `web-ui/packages/app/lib/themes/`
 
 ### Phase 4: Test Utilities
 
 **Shared Test Infrastructure**:
-- `packages/test-utils` ← extract from:
-  - `packages/app/__tests__/setup/jest.setup.ts`
-  - `packages/app/__tests__/test-utils.tsx`
-  - `packages/app/__tests__/mocks/`
+- `web-ui/packages/test-utils` ← extract from:
+  - `web-ui/packages/app/__tests__/setup/jest.setup.ts`
+  - `web-ui/packages/app/__tests__/test-utils.tsx`
+  - `web-ui/packages/app/__tests__/mocks/`
   - Common test helpers and fixtures
 
 ### Phase 5: Import Path Updates
@@ -168,12 +185,12 @@ Each package needs:
 - Tests can be run independently: `yarn workspace @repo/lib-logger test`
 
 **Integration Tests**:
-- Stay in `packages/app/__tests__/`
+- Stay in `web-ui/packages/app/__tests__/`
 - Test interactions between packages
 - Use workspace protocol to reference packages
 
 **E2E Tests**:
-- Stay in `packages/app/tests/e2e/`
+- Stay in `web-ui/packages/app/tests/e2e/`
 - Test full application behavior
 - Use Playwright with monorepo paths
 
@@ -200,12 +217,12 @@ yarn test:e2e
 - Respects dependency order
 
 **Docker Builds**:
-- Main Dockerfile stays in `packages/app/`
+- Main Dockerfile stays in `web-ui/packages/app/`
 - Uses workspace dependencies via Yarn
 - Build context includes root for workspace resolution
 
 **GitHub Actions**:
-- Already updated for `packages/app` paths
+- Already updated for `web-ui/packages/app` paths
 - May need updates when packages are extracted
 - Should leverage Turbo's caching in CI
 
@@ -213,11 +230,11 @@ yarn test:e2e
 
 ### Adding a New Package
 
-1. Create directory: `packages/new-package/`
+1. Create directory: `web-ui/packages/new-package/`
 2. Create package.json with `@repo/new-package` name
 3. Create `src/index.ts` as main entry point
 4. Create `tsconfig.json` extending root
-5. Add to `packages/app/package.json` dependencies:
+5. Add to `web-ui/packages/app/package.json` dependencies:
    ```json
    "@repo/new-package": "workspace:*"
    ```

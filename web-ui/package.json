@@ -1,16 +1,12 @@
 {
-  "name": "compliance-theater-mono-root",
+  "name": "web-ui-workspace",
   "version": "0.0.0",
   "private": true,
   "workspaces": [
-    "web-ui/packages/*"
+    "packages/*"
   ],
-  "devDependencies": {
-    "@changesets/cli": "^2.29.8",
-    "turbo": "^2.3.3"
-  },
+  "packageManager": "yarn@1.22.22",
   "scripts": {
-    "preinstall": "node preinstall.js",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test",
@@ -18,5 +14,7 @@
     "test:e2e": "turbo run test:e2e",
     "lint": "turbo run lint"
   },
-  "packageManager": "yarn@1.22.22"
+  "devDependencies": {
+    "turbo": "^2.3.3"
+  }
 }

@@ -9,19 +9,19 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
 ### ✅ Phase 1: Infrastructure Setup (100% Complete)
 
 1. **Monorepo Configuration**
-   - Updated root `package.json` with `packages/*` workspace
+   - Updated root `package.json` with `web-ui/packages/*` workspace
    - Added Turborepo (`turbo@^2.3.3`) for build orchestration
    - Created `turbo.json` with task pipelines for build, dev, test, lint
    - Set explicit package manager to `yarn@1.22.22`
 
 2. **Application Restructuring**
-   - Moved `web-ui/` → `packages/app/` (using git mv to preserve history)
+   - Moved `web-ui/` → `web-ui/packages/app/` (using git mv to preserve history)
    - Updated package name from `compliance-theater` → `@repo/app`
    - Removed nested workspace configuration
 
 3. **CI/CD Updates**
    - Updated `.github/workflows/web-ui-docker-deploy.yml`
-   - All paths changed from `./web-ui` to `./packages/app`
+   - All paths changed from `./web-ui` to `./web-ui/packages/app`
    - Docker build context updated
    - Environment file generation updated
 
@@ -46,46 +46,46 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
 
 **Priority Order** (extract in this sequence to respect dependencies):
 
-1. **`packages/lib-logger`** ← `packages/app/lib/logger`
+1. **`web-ui/packages/lib-logger`** ← `web-ui/packages/app/lib/logger`
    - No dependencies, needed by almost everything
    - Estimated: 2-3 hours
 
-2. **`packages/lib-typescript`** ← `packages/app/lib/typescript`
+2. **`web-ui/packages/lib-typescript`** ← `web-ui/packages/app/lib/typescript`
    - No dependencies, utility types
    - Estimated: 1-2 hours
 
-3. **`packages/lib-send-api-request`** ← `packages/app/lib/send-api-request`
+3. **`web-ui/packages/lib-send-api-request`** ← `web-ui/packages/app/lib/send-api-request`
    - Depends on logger
    - Estimated: 2 hours
 
-4. **`packages/lib-database`** ← merge:
-   - `packages/app/drizzle/`
-   - `packages/app/lib/drizzle-db/`
-   - `packages/app/lib/neondb/`
+4. **`web-ui/packages/lib-database`** ← merge:
+   - `web-ui/packages/app/drizzle/`
+   - `web-ui/packages/app/lib/drizzle-db/`
+   - `web-ui/packages/app/lib/neondb/`
    - Depends on logger, typescript
    - Estimated: 4-6 hours (merge complexity)
 
-5. **`packages/lib-redis-client`** ← `packages/app/lib/redis-client`
+5. **`web-ui/packages/lib-redis-client`** ← `web-ui/packages/app/lib/redis-client`
    - Depends on logger
    - Estimated: 2 hours
 
-6. **`packages/lib-site-util`** ← `packages/app/lib/site-util`
+6. **`web-ui/packages/lib-site-util`** ← `web-ui/packages/app/lib/site-util`
    - Depends on logger, typescript
    - Estimated: 2-3 hours
 
-7. **`packages/lib-react-util`** ← `packages/app/lib/react-util`
+7. **`web-ui/packages/lib-react-util`** ← `web-ui/packages/app/lib/react-util`
    - Depends on logger, typescript
    - Estimated: 3-4 hours
 
-8. **`packages/lib-nextjs-util`** ← `packages/app/lib/nextjs-util`
+8. **`web-ui/packages/lib-nextjs-util`** ← `web-ui/packages/app/lib/nextjs-util`
    - Depends on logger, typescript, react-util
    - Estimated: 3-4 hours
 
-9. **`packages/lib-auth`** ← `packages/app/lib/auth`
+9. **`web-ui/packages/lib-auth`** ← `web-ui/packages/app/lib/auth`
    - Depends on database, logger
    - Estimated: 4-5 hours (complex dependencies)
 
-10. **`packages/lib-error-monitoring`** ← `packages/app/lib/error-monitoring`
+10. **`web-ui/packages/lib-error-monitoring`** ← `web-ui/packages/app/lib/error-monitoring`
     - Depends on logger
     - Estimated: 2-3 hours
 
@@ -93,17 +93,17 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
 
 ### 🎯 Phase 3: Extract Feature Packages (0% Complete)
 
-1. **`packages/instrument`** ← `packages/app/instrument/`
+1. **`web-ui/packages/instrument`** ← `web-ui/packages/app/instrument/`
    - Depends on logger, error-monitoring
    - Estimated: 3-4 hours
 
-2. **`packages/data-models`** ← `packages/app/data-models/`
+2. **`web-ui/packages/data-models`** ← `web-ui/packages/app/data-models/`
    - Depends on database
    - Estimated: 3-4 hours
 
-3. **`packages/components`** ← merge:
-   - `packages/app/components/`
-   - `packages/app/lib/components/`
+3. **`web-ui/packages/components`** ← merge:
+   - `web-ui/packages/app/components/`
+   - `web-ui/packages/app/lib/components/`
    - Depends on react-util, themes
    - Estimated: 6-8 hours (large, many files)
 
@@ -115,8 +115,8 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
 
 ### 🧪 Phase 4: Testing Infrastructure (0% Complete)
 
-1. **`packages/test-utils`**
-   - Extract from `packages/app/__tests__/setup/` and `__tests__/test-utils.tsx`
+1. **`web-ui/packages/test-utils`**
+   - Extract from `web-ui/packages/app/__tests__/setup/` and `__tests__/test-utils.tsx`
    - Estimated: 4-6 hours
 
 2. **Update Test Imports**
@@ -222,7 +222,7 @@ Extract packages in small batches (2-3 at a time) following dependency order, ve
    mkdir -p packages/lib-logger/src
    
    # Move files
-   git mv packages/app/lib/logger packages/lib-logger/src
+   git mv web-ui/packages/app/lib/logger packages/lib-logger/src
    
    # Create package.json (use template from MONOREPO_GUIDE.md)
    # Create tsconfig.json

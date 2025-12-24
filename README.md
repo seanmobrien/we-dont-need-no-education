@@ -22,20 +22,23 @@ This platform combines a modern web interface with sophisticated AI-powered back
 
 ### Monorepo Structure
 
-This project uses a traditional monorepo structure with [Turborepo](https://turbo.build/) for efficient build orchestration. See [MONOREPO_GUIDE.md](./MONOREPO_GUIDE.md) for detailed migration information.
+This project uses a traditional monorepo structure with [Turborepo](https://turbo.build/) for efficient build orchestration. The Node.js frontend lives under `web-ui/` while the Java backend is in `chat/`, maintaining clear separation between the two solutions. See [MONOREPO_GUIDE.md](./MONOREPO_GUIDE.md) for detailed migration information.
 
 ```
-├── packages/
-│   └── app/           # Main Next.js frontend application (formerly web-ui/)
+├── web-ui/
+│   ├── packages/
+│   │   └── app/       # Main Next.js frontend application
+│   ├── package.json   # Web UI workspace configuration
+│   └── turbo.json     # Build orchestration
 ├── chat/              # Java backend with AI processing
 ├── db/                # Database schema and migrations
-├── turbo.json         # Turborepo configuration
+├── package.json       # Root workspace configuration
 └── jest.config.mjs    # Root test configuration
 ```
 
-**Note**: The monorepo migration is in progress. Core libraries (`lib/*`) will be extracted into standalone packages under `packages/` for better modularity and reusability.
+**Note**: The monorepo migration is in progress. Core libraries (`lib/*`) will be extracted into standalone packages under `web-ui/packages/` for better modularity and reusability.
 
-### Frontend (`/packages/app/`)
+### Frontend (`/web-ui/packages/app/`)
 
 - **Framework**: Next.js 15.x with TypeScript
 - **UI Library**: Material UI with data grid components
@@ -70,7 +73,7 @@ This project uses a traditional monorepo structure with [Turborepo](https://turb
 ### Frontend Setup
 
 ```bash
-cd packages/app
+cd web-ui
 yarn install
 yarn dev
 ```
@@ -95,15 +98,16 @@ Create appropriate `.env` files with:
 ## Project Structure
 
 ```
-├── packages/
-│   └── app/           # Next.js frontend application for victims and advocates
+├── web-ui/
+│   └── packages/
+│       └── app/       # Next.js frontend application for victims and advocates
 ├── chat/              # Java backend with AI processing for evidence analysis
 │   ├── core/          # Core utilities and shared functionality
 │   ├── scb-core/      # Victim advocacy core models and repositories
 │   ├── scb-embed/     # Document embedding and evidence search
 │   └── scb-chatbot/   # Main AI assistant for case building
 ├── db/                # Database schema and migrations
-├── turbo.json         # Turborepo build orchestration
+├── package.json       # Root workspace configuration
 └── MONOREPO_GUIDE.md  # Detailed monorepo migration guide
 ```
 
@@ -111,7 +115,7 @@ Create appropriate `.env` files with:
 
 - [Monorepo Guide](./MONOREPO_GUIDE.md) - Comprehensive monorepo structure and migration guide
 - [Chat Backend README](./chat/README.md) - Comprehensive guide to the Java backend for evidence analysis
-- [Web App README](./packages/app/README.md) - Frontend application documentation for victim advocacy interface
+- [Web App README](./web-ui/packages/app/README.md) - Frontend application documentation for victim advocacy interface
 - [Core Module](./chat/core/README.md) - Shared utilities and common functionality
 - [SCB Core](./chat/scb-core/README.md) - Core models and data access layer for case management
 - [SCB Embed](./chat/scb-embed/README.md) - Document embedding and evidence search functionality
