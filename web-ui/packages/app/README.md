@@ -1,5 +1,7 @@
 # NoEducation Web UI
 
+> **Note**: This application is part of the `web-ui` monorepo workspace. For workspace-level commands and information about other packages, see the [workspace README](../../README.md).
+
 A modern, AI-powered evidence management and analysis platform built with Next.js 15, Material UI 7, and multiple AI providers. This application provides intelligent email processing, document analysis, and chat-based evidence exploration with advanced multi-provider AI integration.
 
 ## Overview
@@ -81,7 +83,7 @@ This web application provides a comprehensive platform for email evidence manage
 ## Project Structure
 
 ```
-web-ui/
+web-ui/packages/app/
 ├── app/                           # Next.js App Router pages
 │   ├── api/                      # API routes and server functions
 │   │   ├── ai/                   # AI model endpoints
@@ -139,16 +141,18 @@ web-ui/
 ### Installation
 
 ```bash
-# Install dependencies (yarn required)
+# From the workspace root (web-ui/)
+cd web-ui
 yarn install
 
-# Set up environment variables
-cp .env.example .env.local
+# Or run from repository root
+cd /path/to/repository
+yarn  # Installs all workspaces
 ```
 
 ### Environment Configuration
 
-Create `.env.local` with required configuration:
+Create `.env.local` in the `web-ui/packages/app/` directory with required configuration:
 
 ```bash
 # Database
@@ -186,6 +190,9 @@ GOOGLE_CLIENT_SECRET="your-google-client-secret"
 ### Database Setup
 
 ```bash
+# From the app directory
+cd web-ui/packages/app
+
 # Generate database schema
 yarn drizzle-generate
 
@@ -199,7 +206,12 @@ npx drizzle-kit studio
 ### Development Server
 
 ```bash
-# Start development server
+# From workspace root (recommended)
+cd web-ui
+yarn dev
+
+# Or from app directory
+cd web-ui/packages/app
 yarn dev
 
 # Start in debug mode
@@ -750,3 +762,18 @@ const result = await generateText({
   messages: [{ role: 'user', content: 'Analyze this content...' }],
 });
 ```
+
+## Related Documentation
+
+- **Workspace README**: [../../README.md](../../README.md) - Monorepo workspace information and commands
+- **Root README**: [../../../README.md](../../../README.md) - Repository overview and architecture
+- **Monorepo Guide**: [../../../MONOREPO_GUIDE.md](../../../MONOREPO_GUIDE.md) - Detailed monorepo migration guide
+- **Java Backend**: [../../../chat/README.md](../../../chat/README.md) - Evidence analysis and AI processing backend
+
+## License
+
+See [LICENSE.md](../../../LICENSE.md) for licensing information.
+
+---
+
+**Part of the Title IX Victim Advocacy Platform** - Empowering victims through technology
