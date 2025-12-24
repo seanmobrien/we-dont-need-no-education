@@ -13,8 +13,8 @@ import {
   buildFallbackGrid,
   wrapRouteRequest,
 } from '@/lib/nextjs-util/server/utils';
-import { drizDbWithInit, schema, sql } from '@/lib/drizzle-db';
-import { eq, and, inArray, isNull } from 'drizzle-orm';
+import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { eq, and, inArray } from 'drizzle-orm';
 // count_kpi import removed; not used in this route currently
 import {
   DrizzleSelectQuery,

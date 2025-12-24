@@ -1,5 +1,4 @@
 import { FetchResponse } from '@/lib/nextjs-util/server/response/index';
-import { Readable } from 'stream';
 
 // Polyfill Headers/Response/ReadableStream if needed for Jest environment
 if (!global.Headers) {

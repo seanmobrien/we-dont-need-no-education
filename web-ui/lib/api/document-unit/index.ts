@@ -16,9 +16,7 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob';
 import { env } from '@/lib/site-util/env';
-import { authorizationService } from '@/lib/auth/resources/authorization-service';
 import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
-import { sql } from '@/lib/neondb';
 import { pgDbWithInit } from '@/lib/neondb/connection';
 
 /**

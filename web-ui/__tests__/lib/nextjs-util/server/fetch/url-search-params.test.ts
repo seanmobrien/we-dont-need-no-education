@@ -27,7 +27,7 @@ describe('normalizeRequestInit', () => {
     const params = new URLSearchParams({ foo: 'bar' });
     const customContentType = 'application/x-www-form-urlencoded; charset=iso-8859-1';
 
-    const [url, options] = normalizeRequestInit({
+    const [, options] = normalizeRequestInit({
       requestInfo: 'https://example.com',
       requestInit: {
         method: 'POST',
@@ -53,7 +53,7 @@ describe('normalizeRequestInit', () => {
 
   it('should handle non-URLSearchParams body normally', () => {
     const body = JSON.stringify({ foo: 'bar' });
-    const [url, options] = normalizeRequestInit({
+    const [, options] = normalizeRequestInit({
       requestInfo: 'https://example.com',
       requestInit: {
         method: 'POST',
