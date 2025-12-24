@@ -53,7 +53,7 @@ jobs:
         with:
           node-version: '24.x'
           cache: yarn
-          cache-dependency-path: ./web-ui/yarn.lock
+          cache-dependency-path: 'web-ui/yarn.lock'
 
       - name: Setup kernel for react native, increase watchers
         run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
