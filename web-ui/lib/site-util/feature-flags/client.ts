@@ -1,5 +1,5 @@
 import { createFlagsmithInstance } from 'flagsmith/isomorphic';
-import type { HasFeatureOptions, IFlagsmith } from 'flagsmith';
+import type { IFlagsmith } from 'flagsmith';
 import { type KnownFeatureType, isKnownFeatureType } from './known-feature';
 import { AllFeatureFlagsDefault } from './known-feature-defaults';
 
@@ -9,7 +9,7 @@ import type {
   FeatureFlagValueType,
 } from './types';
 import { extractFlagValue } from './util';
-import { globalSingleton, globalSingletonAsync, SingletonProvider } from '@/lib/typescript';
+import { globalSingletonAsync } from '@/lib/typescript';
 
 // Client-bound Flagsmith instance used for client-side flag evaluation.
 export const flagsmithClient = async () => {

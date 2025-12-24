@@ -88,6 +88,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Array<any>,
     string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ] | Promise<[string, Array<any>, string]> {
     throw new Error('Method not implemented.');
   }

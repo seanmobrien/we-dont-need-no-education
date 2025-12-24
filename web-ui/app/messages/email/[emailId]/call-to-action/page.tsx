@@ -6,6 +6,7 @@ import { ChatPanel, ChatPanelLayout } from '@/components/ai/chat-panel';
 import { extractParams } from '@/lib/nextjs-util/server/utils';
 import { resolveEmailIdWithRedirect } from '@/lib/email/email-id-resolver';
 import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 
 export const generateMetadata = async (): Promise<Metadata> => {
   return {
@@ -17,10 +18,13 @@ const Page = async (args: { params: Promise<{ emailId: string }> }) => {
   const { emailId: emailIdParam } = await extractParams(args);
 
   // Resolve email ID and handle redirects for document IDs
-  await resolveEmailIdWithRedirect(
+  const normalEmailId = await resolveEmailIdWithRedirect(
     emailIdParam,
     '/messages/email/[emailId]/call-to-action',
   );
+  if (!normalEmailId) {
+    notFound();
+  }
 
   const session = await auth();
 

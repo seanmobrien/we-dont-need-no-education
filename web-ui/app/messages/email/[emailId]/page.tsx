@@ -6,6 +6,7 @@ import { resolveEmailIdWithRedirect } from '@/lib/email/email-id-resolver';
 import { Box } from '@mui/material';
 import React from 'react';
 import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 
 export const generateMetadata = async (): Promise<Metadata> => {
   return {
@@ -23,6 +24,10 @@ const Home = async (args: { params: Promise<{ emailId: string }> }) => {
   );
 
   const session = await auth();
+
+  if (!emailId) {
+    notFound();
+  }
 
   return (
     <EmailDashboardLayout session={session}>

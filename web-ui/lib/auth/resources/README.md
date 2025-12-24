@@ -206,7 +206,7 @@ const ids1 = await getAccessibleUserIds(userAccessToken);
 const ids2 = await getAccessibleUserIds(req);
 
 // 3. No arguments (implicit resolution)
-const ids3 = await getAccessibleUserIds();
+const ids3 = await getAccessibleUserIds(undefined);
 ```
 
 ### Middleware Example

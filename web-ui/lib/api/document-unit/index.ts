@@ -150,7 +150,7 @@ export class DocumentUnitRepository extends BaseObjectRepository<
     const wherePendingEmbed = this.#pendingEmbed
       ? ' AND du.embedded_on IS NULL'
       : '';
-    const availableCaseFiles = await getAccessibleUserIds();
+    const availableCaseFiles = await getAccessibleUserIds(undefined) ?? [];
     const whereAvailableCaseFiles = availableCaseFiles.length > 0
       ? ` AND du.user_id IN (${availableCaseFiles.join(',')})`
       : ' AND 1=-1';
@@ -191,7 +191,7 @@ export class DocumentUnitRepository extends BaseObjectRepository<
   protected async getQueryProperties(recordId: number): Promise<[string, Array<unknown>]> {
     const sql = await pgDbWithInit();
 
-    const availableCaseFiles = await getAccessibleUserIds();
+    const availableCaseFiles = await getAccessibleUserIds(undefined) ?? [];
     const whereAvailableCaseFiles = availableCaseFiles.length > 0
       ? sql` du.user_id IN ${sql('(' + availableCaseFiles.join(',') + ')')}`
       : sql` 1=-1`;

@@ -2,7 +2,6 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { isValidUuid } from '@/lib/typescript/_guards';
 import { redirect, notFound } from 'next/navigation';
 import { LoggedError } from '../react-util';
-import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { SiteRoute } from '../site-util/url-builder/_types';
 
 /**
@@ -29,7 +28,6 @@ export async function resolveEmailIdWithRedirect(
       emailId,
     ) as SiteRoute;
     redirect(redirectPath);
-    return emailId;
   }
   return emailId;
 }
