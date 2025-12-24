@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { SessionProvider } from '@/components/auth/session-provider/provider';
 import { useQuery } from '@tanstack/react-query';
 import { InvalidGrantError } from '@/lib/auth/errors';
