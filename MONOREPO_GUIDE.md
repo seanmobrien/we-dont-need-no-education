@@ -2,16 +2,17 @@
 
 ## Overview
 
-This document describes the monorepo refactoring of the Title IX Victim Advocacy Platform from a single `web-ui` application to a traditional monorepo structure with packages under `web-ui/packages/`. This maintains clear separation between the Node.js frontend (web-ui) and Java backend (chat) solutions.
+This document describes the monorepo refactoring of the Title IX Victim Advocacy Platform from a single `web-ui` application to a traditional monorepo structure with packages under `web-ui/packages/`. This maintains clear separation between the Node.js frontend (web-ui) and Java backend (chat) solutions, with web-ui as a fully self-contained monorepo.
 
 ## Completed Work (Phase 1)
 
 ### Infrastructure Setup ✅
 1. **Workspace Structure**
    - Created `web-ui/packages/` directory for monorepo packages
-   - Moved application code to `web-ui/web-ui/packages/app/`
+   - Moved application code to `web-ui/packages/app/`
    - Added Turborepo (`turbo@^2.3.3`) for build orchestration
    - Set explicit `packageManager` to `yarn@1.22.22`
+   - Made web-ui completely self-contained with all config files
 
 2. **Build Orchestration**
    - Created `web-ui/turbo.json` with task pipelines for:
@@ -22,12 +23,12 @@ This document describes the monorepo refactoring of the Title IX Victim Advocacy
      - `lint`: Linting across packages
 
 3. **Testing Infrastructure**
-   - Created root `jest.config.mjs` for coordinating package tests
-   - Configured to collect coverage from all packages in `web-ui/packages/*`
+   - Created `web-ui/jest.config.mjs` for coordinating package tests
+   - Configured to collect coverage from all packages in `packages/*`
    - Set up project references for multi-package testing
 
 4. **Main Application Move**
-   - Moved original `web-ui/` → `web-ui/web-ui/packages/app/` using `git mv` (preserves history)
+   - Moved original `web-ui/` → `web-ui/packages/app/` using `git mv` (preserves history)
    - Updated package name from `compliance-theater` → `@repo/app`
    - Created `web-ui/package.json` as workspace root
 
@@ -38,23 +39,24 @@ This document describes the monorepo refactoring of the Title IX Victim Advocacy
    - Environment file generation updated for new structure
 
 6. **Repository Cleanup**
-   - Removed obsolete `web-ui/Dockerfile` ignore rule from `.gitignore`
+   - Removed redundant root-level files (turbo.json, yarn.lock)
+   - All Node.js configuration lives in `web-ui/`
+   - Root package.json simplified to delegate to web-ui
    - Preserved all existing `.gitignore` rules for monorepo
 
 ## Repository Structure
 
 ```
 /
-├── web-ui/                    # Node.js workspace root
+├── web-ui/                    # Node.js monorepo (self-contained)
 │   ├── packages/
 │   │   └── app/              # Main Next.js application
 │   ├── package.json          # Workspace configuration
 │   ├── turbo.json            # Build orchestration
+│   ├── jest.config.mjs       # Test configuration
 │   └── yarn.lock             # Dependency lock file
-├── chat/                     # Java backend (separate)
-├── package.json              # Root workspace (links to web-ui)
-├── jest.config.mjs           # Root test configuration
-└── turbo.json                # Optional root turbo config
+├── chat/                     # Java backend (separate Maven project)
+└── package.json              # Root (delegates to web-ui)
 ```
 
 ## Remaining Work

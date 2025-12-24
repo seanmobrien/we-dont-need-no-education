@@ -22,18 +22,19 @@ This platform combines a modern web interface with sophisticated AI-powered back
 
 ### Monorepo Structure
 
-This project uses a traditional monorepo structure with [Turborepo](https://turbo.build/) for efficient build orchestration. The Node.js frontend lives under `web-ui/` while the Java backend is in `chat/`, maintaining clear separation between the two solutions. See [MONOREPO_GUIDE.md](./MONOREPO_GUIDE.md) for detailed migration information.
+This project uses a traditional monorepo structure with [Turborepo](https://turbo.build/) for efficient build orchestration. The Node.js frontend lives under `web-ui/` as a self-contained monorepo, while the Java backend is in `chat/`, maintaining clear separation between the two solutions. See [MONOREPO_GUIDE.md](./MONOREPO_GUIDE.md) for detailed migration information.
 
 ```
-├── web-ui/
+├── web-ui/              # Node.js monorepo (self-contained)
 │   ├── packages/
-│   │   └── app/       # Main Next.js frontend application
-│   ├── package.json   # Web UI workspace configuration
-│   └── turbo.json     # Build orchestration
-├── chat/              # Java backend with AI processing
-├── db/                # Database schema and migrations
-├── package.json       # Root workspace configuration
-└── jest.config.mjs    # Root test configuration
+│   │   └── app/        # Main Next.js frontend application
+│   ├── package.json    # Web UI workspace configuration
+│   ├── turbo.json      # Build orchestration
+│   ├── jest.config.mjs # Test configuration
+│   └── yarn.lock       # Dependency lock file
+├── chat/               # Java backend with AI processing
+├── db/                 # Database schema and migrations
+└── package.json        # Root (delegates to web-ui)
 ```
 
 **Note**: The monorepo migration is in progress. Core libraries (`lib/*`) will be extracted into standalone packages under `web-ui/packages/` for better modularity and reusability.
