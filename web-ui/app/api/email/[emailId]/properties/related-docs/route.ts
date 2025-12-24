@@ -4,12 +4,16 @@ import { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
+  extractParams
 } from '@/lib/nextjs-util/server/utils';
-import { extractParams } from '@/lib/nextjs-util/utils';
 import { CallToActionDetails } from '@/data-models/api/email-properties/extended-properties';
 import { eq, and } from 'drizzle-orm';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
+import {
+  checkCaseFileAuthorization,
+  CaseFileScope,
+} from '@/lib/auth/resources/case-file';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
 import { DefaultEmailColumnMap } from '@/lib/components/mui/data-grid/server';
@@ -22,6 +26,14 @@ const columnMap = {
 export const GET = wrapRouteRequest(
   async (req: NextRequest, args: { params: Promise<{ emailId: string }> }) => {
     const { emailId } = await extractParams<{ emailId: string }>(args);
+
+    // Check case file authorization
+    const authCheck = await checkCaseFileAuthorization(req, emailId, {
+      requiredScope: CaseFileScope.READ,
+    });
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
 
     const db = await drizDbWithInit();
 

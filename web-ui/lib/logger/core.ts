@@ -1,8 +1,9 @@
 import pino from 'pino';
-import { env, isRunningOnServer } from '@/lib/site-util/env';
+import { env, isRunningOnServer, isRunningOnClient, isRunningOnEdge } from '@/lib/site-util/env';
 import { WrappedLogger } from './wrapped-logger';
 import type { ILogger, EventSeverity, LogEventOverloads } from './types';
 import { CustomAppInsightsEvent } from './event';
+import { safeSerialize } from './safe-serialize';
 
 let _logger: ILogger;
 
@@ -38,11 +39,11 @@ export const logger = (): Promise<ILogger> =>
         const transport = isJest
           ? undefined
           : {
-              target: 'pino-pretty',
-              options: {
-                colorize: true,
-              },
-            };
+            target: 'pino-pretty',
+            options: {
+              colorize: true,
+            },
+          };
 
         _logger = pino<'verbose' | 'silly', false>({
           level: normalizeLogLevel(env('NEXT_PUBLIC_LOG_LEVEL_CLIENT')),
@@ -93,5 +94,27 @@ export const logEvent: LogEventOverloads = (
   } else {
     event = new CustomAppInsightsEvent(severityOrEvent);
   }
+
+  if (isRunningOnClient() && !isRunningOnEdge()) {
+    return (async () => {
+      try {
+        const insightsLibrary = await import('@/instrument/browser');
+        const appInsights = insightsLibrary.getAppInsights();
+        if (appInsights && typeof appInsights.trackEvent === 'function') {
+          appInsights.trackEvent(
+            { name: event.event },
+            event.measurements,
+          );
+        }
+      } catch (error) {
+        // fallback to pino-based log hook if direct call fails
+        await log((l) => {
+          l[severity](event);
+          l.error(`Unexpected error reporting client-side event: ${safeSerialize(error)}`);
+        });
+      }
+    })();
+  }
+  // Pino will intercept this log and send to OTel
   return log((l) => l[severity](event));
 };

@@ -47,6 +47,15 @@ const mockFetchConfig = jest.fn(() => ({
   enhanced: false,
   dedup_writerequests: true,
   trace_level: 'info' as const,
+  timeout: {
+    lookup: undefined,
+    connect: undefined,
+    secureConnect: undefined,
+    socket: undefined,
+    response: undefined,
+    send: undefined,
+    request: undefined,
+  }
 }));
 
 jest.mock('@/lib/nextjs-util/server/fetch/fetch-config', () => ({

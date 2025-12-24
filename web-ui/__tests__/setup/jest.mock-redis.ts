@@ -23,6 +23,7 @@ type RedisClientMock = {
     [key: string, start: number, stop: number]
   >;
   zRem: jest.Mock<Promise<number>, [key: string, member: string]>;
+  exists: jest.Mock<Promise<number>, [keys: string | string[]]>;
   expire: jest.Mock<Promise<number>, [key: string, ttl: number]>;
   flushDb: jest.Mock<Promise<'OK'>, []>;
   on: jest.Mock<
@@ -67,6 +68,10 @@ jest.mock('redis', () => {
         quit: jest.fn(() => Promise.resolve('OK')),
         get: jest.fn((key: string) => {
           return Promise.resolve(mockRedisData.get(key) || null);
+        }),
+        exists: jest.fn((keys: string | string[]) => {
+          const keysArray = Array.isArray(keys) ? keys : [keys];
+          return Promise.resolve(keysArray.length);
         }),
         set: jest.fn((key: string, value: string, options?: any) => {
           mockRedisData.set(key, value);

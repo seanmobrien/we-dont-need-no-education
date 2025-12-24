@@ -61,7 +61,7 @@ import {
 } from '../types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
-import { caseFileDocumentShape } from '../caseFileDocumentQuery';
+import { caseFileDocumentShape } from '../case-file-document-query';
 import {
   caseFileDocumentErrorCounter,
   getCaseFileDocumentDurationHistogram,
@@ -204,10 +204,6 @@ export const getMultipleCaseFileDocuments = async ({
     }),
   );
   const attributes = {
-    // has_goals: Boolean(goals.length),
-    // has_reasoning: Boolean(reasoning),
-    // goals_count: goals.length,
-
     initial_document_count: requests.length,
     valid_document_count: resolvedRequests.length,
   };

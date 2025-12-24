@@ -1,13 +1,10 @@
- 
-// Mock the database connection
+import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 
-import { DbDatabaseType, drizDb, drizDbWithInit } from '@/lib/drizzle-db';
-/*
-const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
-const actualSchema = jest.requireActual('/lib/drizzle-db/schema');
-const mockDb = actualDrizzle.drizzle.mock({ actualSchema });
-*/
-let mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
+// Mock the database connection
+import type { DbDatabaseType } from '@/lib/drizzle-db';
+
+// HACK: This hack is a little ugly, but OK because beforeEach will initialize before each test
+let mockDb: jest.Mocked<DbDatabaseType> = withJestTestExtensions().makeMockDb() as jest.Mocked<DbDatabaseType>;
 
 // Mock LoggedError
 jest.mock('@/lib/react-util/errors/logged-error', () => ({
@@ -18,7 +15,9 @@ jest.mock('@/lib/react-util/errors/logged-error', () => ({
 
 import {
   resolveCaseFileId,
-  resolveCaseFileIdBatch,
+} from '@/lib/api/document-unit/resolve-case-file-id';
+import {
+  resolveCaseFileIdBatch
 } from '@/lib/ai/tools/utility';
 // import { db } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
@@ -26,9 +25,9 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 const mockLoggedError = LoggedError as jest.Mocked<typeof LoggedError>;
 
 describe('resolveCaseFileId', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     // jest.clearAllMocks();
-    mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
+    mockDb = withJestTestExtensions().makeMockDb() as jest.Mocked<DbDatabaseType>;
     (mockDb.query.documentUnits.findFirst as jest.Mock).mockImplementation(
       () => {
         return Promise.resolve(1);
@@ -45,12 +44,12 @@ describe('resolveCaseFileId', () => {
 
     it('should handle zero', async () => {
       const result = await resolveCaseFileId(0);
-      expect(result).toBe(0);
+      expect(result).not.toBeDefined();
     });
 
     it('should handle negative numbers', async () => {
       const result = await resolveCaseFileId(-1);
-      expect(result).toBe(-1);
+      expect(result).not.toBeDefined();
     });
   });
 
@@ -196,12 +195,10 @@ describe('resolveCaseFileIdBatch', () => {
   beforeEach(() => {
     // mockDb.query.documentUnits.findMany.mockClear();
     mockLoggedError.isTurtlesAllTheWayDownBaby.mockClear();
+    mockDb = withJestTestExtensions().makeMockDb() as jest.Mocked<DbDatabaseType>;
   });
 
   describe('with empty input', () => {
-    beforeEach(() => {
-      mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
-    });
     it('should return empty array for empty input', async () => {
       const result = await resolveCaseFileIdBatch([]);
       expect(result).toEqual([]);
@@ -210,9 +207,7 @@ describe('resolveCaseFileIdBatch', () => {
   });
 
   describe('with only numeric inputs', () => {
-    beforeEach(() => {
-      mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
-    });
+
     it('should return all numeric IDs as-is', async () => {
       const requests = [
         { caseFileId: 123 },
@@ -232,9 +227,7 @@ describe('resolveCaseFileIdBatch', () => {
   });
 
   describe('with only string numeric inputs', () => {
-    beforeEach(() => {
-      mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
-    });
+
     it('should parse and return numeric values', async () => {
       const requests = [
         { caseFileId: '123' },
@@ -257,21 +250,18 @@ describe('resolveCaseFileIdBatch', () => {
     const uuid1 = '12345678-1234-4567-8901-123456789012';
     const uuid2 = '87654321-4321-4321-8901-210987654321';
 
-    const setupMockRecords = (
+    const setupMockRecords = async (
       source: Array<{
         unitId: number;
         documentPropertyId?: string | null;
         emailId?: string | null;
       }>,
     ) => {
-      mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
       const mockRecords = [...source];
 
       // Note: drizDbWithInit is already globally mocked, so we just need to set up
       // the findMany mock to return the expected records
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue(
-        mockRecords,
-      );
+      (mockDb.query.documentUnits.findMany as jest.Mock).mockImplementation(() => Promise.resolve(mockRecords));
 
       return mockRecords;
     };
@@ -320,9 +310,6 @@ describe('resolveCaseFileIdBatch', () => {
   });
 
   describe('with mixed input types', () => {
-    beforeEach(() => {
-      mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
-    });
     it('should handle combination of numbers, numeric strings, and UUIDs', async () => {
       const uuid = '12345678-1234-4567-8901-123456789012';
       const requests = [
@@ -369,9 +356,6 @@ describe('resolveCaseFileIdBatch', () => {
   });
 
   describe('database error handling', () => {
-    beforeEach(() => {
-      mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
-    });
     it('should handle database query errors', async () => {
       const uuid = '12345678-1234-4567-8901-123456789012';
       const requests = [{ caseFileId: uuid }];
@@ -389,9 +373,6 @@ describe('resolveCaseFileIdBatch', () => {
   });
 
   describe('edge cases', () => {
-    beforeEach(() => {
-      mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
-    });
     it('should handle requests with only invalid UUIDs', async () => {
       const requests = [
         { caseFileId: '12345678-1234-5678-9012-123456789012' }, // version 5, not 4

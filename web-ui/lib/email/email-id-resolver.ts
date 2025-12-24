@@ -1,8 +1,7 @@
 import { drizDbWithInit } from '@/lib/drizzle-db';
-import { isValidUuid } from '@/lib/ai/tools/utility';
+import { isValidUuid } from '@/lib/typescript/_guards';
 import { redirect, notFound } from 'next/navigation';
 import { LoggedError } from '../react-util';
-import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { SiteRoute } from '../site-util/url-builder/_types';
 
 /**
@@ -15,60 +14,22 @@ import { SiteRoute } from '../site-util/url-builder/_types';
 export async function resolveEmailIdWithRedirect(
   emailIdParam: string,
   currentPath: string,
-): Promise<string> {
+): Promise<string | null> {
+  const emailId = await resolveEmailId(emailIdParam);
   // If no email id provided, show 404
-  if (!emailIdParam) {
+  if (!emailId) {
     notFound();
+    return null;
   }
-
-  // Check if it's already a valid UUID (email ID)
-  if (isValidUuid(emailIdParam)) {
-    return emailIdParam;
-  }
-
-  // Try to parse as document unit ID (numeric)
-  const documentId = Number(emailIdParam);
-  if (!documentId || Number.isNaN(documentId)) {
-    // Invalid format - not UUID and not a valid number
-    notFound();
-  }
-
-  // Look up the email ID associated with this document unit ID
-  try {
-    const doc = await (
-      await drizDbWithInit()
-    ).query.documentUnits.findFirst({
-      where: (d, { eq, isNotNull, and }) =>
-        and(eq(d.unitId, documentId), isNotNull(d.emailId)),
-      columns: {
-        unitId: true,
-        emailId: true,
-      },
-    });
-
-    if (!doc || !doc.emailId) {
-      // No matching document found
-      notFound();
-    }
-
-    // Document ID was used - redirect to the email ID equivalent
+  // Document ID was used - redirect to the email ID equivalent
+  if (emailIdParam !== emailId) {
     const redirectPath = currentPath.replace(
       `[emailId]`,
-      doc.emailId,
+      emailId,
     ) as SiteRoute;
     redirect(redirectPath);
-  } catch (error) {
-    if (isRedirectError(error)) {
-      throw error;
-    }
-    LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      source: 'EmailIdResolver',
-      message: 'Failed to resolve document ID to email ID',
-      critical: true,
-    });
-    notFound();
   }
+  return emailId;
 }
 
 /**

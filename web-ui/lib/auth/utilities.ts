@@ -1,5 +1,4 @@
 import { getToken, type JWT } from '@auth/core/jwt';
-import { env } from '@/lib/site-util/env';
 import {
   decodeJwt,
   jwtVerify,
@@ -7,9 +6,9 @@ import {
   type JWTPayload,
 } from 'jose';
 import { LRUCache } from 'lru-cache';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { env } from '@/lib/site-util/env';
 
-export const KnownScopeValues = ['mcp-tool:read', 'mcp-tool'] as const;
+export const KnownScopeValues = ['mcp-tool:read', 'mcp-tool:write'] as const;
 export type KnownScope = (typeof KnownScopeValues)[number];
 export const KnownScopeIndex = {
   ToolRead: 0,
@@ -55,69 +54,49 @@ export const extractToken = async (req: Request): Promise<JWT | null> => {
     }
     return ret;
   } catch (error) {
-    LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      source: 'auth-utilities::extractToken',
-    });
+    try {
+      // Delay-load loggederror to prevent circular dependency
+      const LoggedError = await import('@/lib/react-util/errors/logged-error').then((m) => m.LoggedError);
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'auth-utilities::extractToken',
+      });
+    } catch (e) {
+      // Suppress / console-log only error-within-an-error
+      console.info(e);
+    }
+
     return null;
   }
 };
 
-/**
- * Cache for JWKS remote key sets to avoid repeated fetches.
- * Keys: issuer URL
- * Values: jose RemoteJWKSet instances
- */
+
 const jwksCache = new LRUCache<string, ReturnType<typeof createRemoteJWKSet>>({
-  max: 10, // Most apps use 1-2 issuers
+  max: 5, // Most apps use 1-2 issuers
   ttl: 1000 * 60 * 60, // 1 hour - JWKS don't change often
 });
 
-/**
- * Decodes a JWT token with optional signature verification.
- *
- * @param options - Configuration options
- * @param options.token - The JWT token string to decode
- * @param options.verify - Whether to verify the token signature (default: false)
- * @param options.issuer - Optional issuer URL override. If not provided and verify=true,
- *                         uses AUTH_KEYCLOAK_ISSUER environment variable
- *
- * @returns The decoded JWT payload
- *
- * @throws {Error} If token is invalid, signature verification fails, or JWKS fetch fails
- *
- * @example
- * // Simple decode without verification
- * const payload = await decodeToken({ token: myToken, verify: false });
- *
- * @example
- * // Decode with signature verification using default issuer
- * const payload = await decodeToken({ token: myToken, verify: true });
- *
- * @example
- * // Decode with custom issuer
- * const payload = await decodeToken({
- *   token: myToken,
- *   verify: true,
- *   issuer: 'https://custom-auth.example.com/realms/my-realm'
- * });
- */
-export const decodeToken = async ({
-  token,
-  verify = false,
-  issuer,
-}: {
+export const decodeToken = async (props: {
   token: string;
   verify?: boolean;
   issuer?: string;
-}): Promise<JWTPayload> => {
+} | string): Promise<JWTPayload> => {
+  if (typeof props === 'string') {
+    // If we were only passed a token then loop-back with proper arguments
+    return await decodeToken({ token: props });
+  }
+  const {
+    token,
+    verify = false,
+    issuer = env('AUTH_KEYCLOAK_ISSUER'),
+  } = props;
   // Simple decode without verification
   if (!verify) {
     return decodeJwt(token);
   }
 
   // Verification requires an issuer
-  const issuerUrl = issuer || env('AUTH_KEYCLOAK_ISSUER');
+  const issuerUrl = issuer;
   if (!issuerUrl) {
     throw new Error(
       'Issuer URL required for token verification. Provide issuer parameter or set AUTH_KEYCLOAK_ISSUER environment variable.',

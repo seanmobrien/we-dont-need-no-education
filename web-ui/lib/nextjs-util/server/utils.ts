@@ -18,6 +18,7 @@ import {
 } from '@opentelemetry/api';
 import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
+import { isPromise } from '@/lib/typescript/_guards';
 
 
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');
@@ -29,7 +30,17 @@ const globalBuildFallback = {
 } as const;
 
 
-
+export const extractParams = async <T extends object>(req: {
+  params: T | Promise<T>;
+}): Promise<T> => {
+  if (!req.params) {
+    throw new Error('No params found');
+  }
+  if (isPromise(req.params)) {
+    return await req.params;
+  }
+  return req.params;
+};
 
 export const wrapRouteRequest = <
   A extends

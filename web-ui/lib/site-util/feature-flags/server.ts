@@ -19,6 +19,7 @@ import { extractFlagValue } from './util';
 
 import { fetch as serverFetch } from '@/lib/nextjs-util/server/fetch';
 import { log } from '@/lib/logger';
+import { FlagsmithRedisCache } from './flagsmith-cache';
 
 
 
@@ -99,6 +100,10 @@ export const flagsmithServerFactory = (options?: Partial<FlagsmithConfig>): Flag
       ? thisFlagDefaultHander
       : defaultFlagHandler,
     fetch: definesFetch ? thisFetch : serverFetch,
+    cache: new FlagsmithRedisCache({
+      lru: { max: 20, ttl: 20 * 60 },
+      redis: { ttl: 60 * 60, keyPrefix: 'flagsmith_edge_cache:' },
+    }),
     ...restOptions
   };
   return new Flagsmith(config);

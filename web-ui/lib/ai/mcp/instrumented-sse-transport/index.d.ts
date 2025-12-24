@@ -1,4 +1,7 @@
-/**
+import type { JSONRPCMessage } from '../ai.sdk/json-rpc-message';
+import type { Span } from '@opentelemetry/api';
+
+/** 
  * Ambient module declarations for the instrumented SSE transport package.
  *
  * These declarations provide rich JSDoc and editor experience while keeping
@@ -6,16 +9,162 @@
  * `@/lib/ai/mcp/instrumented-sse-transport` module or its submodules.
  */
 
-declare module '@/lib/ai/mcp/instrumented-sse-transport/traceable-transport-client' {
+declare module '@/lib/ai/mcp/instrumented-sse-transport/metrics/otel-metrics' {
+  /** Operational mode string: 'WARNING' | 'DEBUG' */
+  export const OTEL_MODE: string;
+
+  /** True when running in debug mode */
+  export const DEBUG_MODE: boolean;
+
+  /** Tracer instance (OpenTelemetry) — declared opaque for consumers */
+  export const tracer: unknown;
+
+  /** Meter instance (OpenTelemetry) — declared opaque for consumers */
+  export const meter: unknown;
+
+  /** Lightweight helper/recorder exported for diagnostics */
+  export class MetricsRecorder {
+    constructor(name?: string);
+    record(...args: unknown[]): void;
+  }
+}
+
+declare module '@/lib/ai/mcp/instrumented-sse-transport/metrics/counter-manager' {
+  /** Active counters snapshot */
+  export type ActiveCounters = {
+    activeSessions: number;
+    activeToolCalls: number;
+  };
+
+  /** Manages and exposes counters used by the instrumented transport */
+  export class CounterManager {
+    constructor();
+    getActiveCounters(): ActiveCounters;
+    reset(): void;
+    incrementSessions(delta?: number): void;
+    incrementToolCalls(delta?: number): void;
+  }
+}
+
+declare module '@/lib/ai/mcp/instrumented-sse-transport/session/session-manager' {
+
+  /** Internal span/session state exposed for debugging */
+  export type SpanState = {
+    span: Span | unknown;
+    createdAt: number;
+    lastActivity: number;
+    messageCount: number;
+    isToolCall?: boolean;
+    toolCallMethod?: string;
+  };
+
+  /** Session manager that tracks active sessions and their span state. */
+  export class SessionManager {
+    constructor();
+    getAllSessions(): SpanState[];
+    getSession(id: string): SpanState | undefined;
+    endSession(id: string): void;
+  }
+}
+
+declare module '@/lib/ai/mcp/instrumented-sse-transport/tracing/trace-context' {
   /**
-   * Minimal JSON-RPC message shape used by the instrumented transport.
-   *
-   * The runtime defines a full Zod-backed union (`JSONRPCMessage`) with
-   * request/response/notification/error variants. For the purposes of
-   * the instrumented transport ambient declarations we expose an opaque
-   * but documented alias so editors show helpful context while keeping the
-   * declaration self-contained.
+   * Trace context utilities used to inject/extract trace headers for HTTP calls.
+   * The concrete implementation uses OpenTelemetry APIs.
    */
+  export class TraceContextManager {
+    /** Inject trace context into headers (returns mutated headers) */
+    inject(headers: Record<string, string>): Record<string, string>;
+
+    /** Extract trace context from incoming headers (returns opaque context) */
+    extract(headers: Record<string, string>): unknown;
+  }
+}
+
+
+declare module '@/lib/ai/mcp/instrumented-sse-transport/message/message-processor' {
+
+  /** MessageProcessor encapsulates processing of incoming JSON-RPC messages */
+  export class MessageProcessor {
+    constructor();
+    process(message: JSONRPCMessage): Promise<void>;
+  }
+}
+
+declare module '@/lib/ai/mcp/instrumented-sse-transport' {
+  /** Operational mode string: 'WARNING' | 'DEBUG' */
+  export const OTEL_MODE: string;
+
+  /** True when running in debug mode */
+  export const DEBUG_MODE: boolean;
+
+  /** Tracer instance (OpenTelemetry) — declared opaque for consumers */
+  export const tracer: unknown;
+
+  /** Meter instance (OpenTelemetry) — declared opaque for consumers */
+  export const meter: unknown;
+
+  /** Lightweight helper/recorder exported for diagnostics */
+  export class MetricsRecorder {
+    constructor(name?: string);
+    record(...args: unknown[]): void;
+  }
+  /** Active counters snapshot */
+  export type ActiveCounters = {
+    activeSessions: number;
+    activeToolCalls: number;
+  };
+
+  /** Manages and exposes counters used by the instrumented transport */
+  export class CounterManager {
+    constructor();
+    getActiveCounters(): ActiveCounters;
+    reset(): void;
+    incrementSessions(delta?: number): void;
+    incrementToolCalls(delta?: number): void;
+  }
+  /** Internal span/session state exposed for debugging */
+  export type SpanState = {
+    span: Span | unknown;
+    createdAt: number;
+    lastActivity: number;
+    messageCount: number;
+    isToolCall?: boolean;
+    toolCallMethod?: string;
+  };
+
+  /** Session manager that tracks active sessions and their span state. */
+  export class SessionManager {
+    constructor();
+    getAllSessions(): SpanState[];
+    getSession(id: string): SpanState | undefined;
+    endSession(id: string): void;
+  }
+  /**
+ * Trace context utilities used to inject/extract trace headers for HTTP calls.
+ * The concrete implementation uses OpenTelemetry APIs.
+ */
+  export class TraceContextManager {
+    /** Inject trace context into headers (returns mutated headers) */
+    inject(headers: Record<string, string>): Record<string, string>;
+
+    /** Extract trace context from incoming headers (returns opaque context) */
+    extract(headers: Record<string, string>): unknown;
+  }
+  /** MessageProcessor encapsulates processing of incoming JSON-RPC messages */
+  export class MessageProcessor {
+    constructor();
+    process(message: JSONRPCMessage): Promise<void>;
+  }
+  /**
+     * Minimal JSON-RPC message shape used by the instrumented transport.
+     *
+     * The runtime defines a full Zod-backed union (`JSONRPCMessage`) with
+     * request/response/notification/error variants. For the purposes of
+     * the instrumented transport ambient declarations we expose an opaque
+     * but documented alias so editors show helpful context while keeping the
+     * declaration self-contained.
+     */
   export type JSONRPCMessage = unknown;
 
   /**
@@ -44,7 +193,6 @@ declare module '@/lib/ai/mcp/instrumented-sse-transport/traceable-transport-clie
     send(message: JSONRPCMessage): Promise<void>;
   }
 
-  import type { ActiveCounters } from '@/lib/ai/mcp/instrumented-sse-transport/metrics/counter-manager';
 
   /**
    * Options passed to the instrumented SSE transport constructor.
@@ -95,145 +243,6 @@ declare module '@/lib/ai/mcp/instrumented-sse-transport/traceable-transport-clie
     name: string;
     initialize?(transport: InstrumentedSseTransport): Promise<void> | void;
   }
-}
 
-declare module '@/lib/ai/mcp/instrumented-sse-transport/instrumented-transport-refactored' {
-  export {
-    InstrumentedSseTransport,
-    type TransportPlugin,
-  } from '@/lib/ai/mcp/instrumented-sse-transport/traceable-transport-client';
-}
-
-declare module '@/lib/ai/mcp/instrumented-sse-transport/metrics/otel-metrics' {
-  /** Operational mode string: 'WARNING' | 'DEBUG' */
-  export const OTEL_MODE: string;
-
-  /** True when running in debug mode */
-  export const DEBUG_MODE: boolean;
-
-  /** Tracer instance (OpenTelemetry) — declared opaque for consumers */
-  export const tracer: unknown;
-
-  /** Meter instance (OpenTelemetry) — declared opaque for consumers */
-  export const meter: unknown;
-
-  /** Lightweight helper/recorder exported for diagnostics */
-  export class MetricsRecorder {
-    constructor(name?: string);
-    record(...args: unknown[]): void;
-  }
-}
-
-declare module '@/lib/ai/mcp/instrumented-sse-transport/metrics/counter-manager' {
-  /** Active counters snapshot */
-  export type ActiveCounters = {
-    activeSessions: number;
-    activeToolCalls: number;
-  };
-
-  /** Manages and exposes counters used by the instrumented transport */
-  export class CounterManager {
-    constructor();
-    getActiveCounters(): ActiveCounters;
-    reset(): void;
-    incrementSessions(delta?: number): void;
-    incrementToolCalls(delta?: number): void;
-  }
-}
-
-declare module '@/lib/ai/mcp/instrumented-sse-transport/session/session-manager' {
-  import type { Span } from '@opentelemetry/api';
-
-  /** Internal span/session state exposed for debugging */
-  export type SpanState = {
-    span: Span | unknown;
-    createdAt: number;
-    lastActivity: number;
-    messageCount: number;
-    isToolCall?: boolean;
-    toolCallMethod?: string;
-  };
-
-  /** Session manager that tracks active sessions and their span state. */
-  export class SessionManager {
-    constructor();
-    getAllSessions(): SpanState[];
-    getSession(id: string): SpanState | undefined;
-    endSession(id: string): void;
-  }
-}
-
-declare module '@/lib/ai/mcp/instrumented-sse-transport/tracing/trace-context' {
-  /**
-   * Trace context utilities used to inject/extract trace headers for HTTP calls.
-   * The concrete implementation uses OpenTelemetry APIs.
-   */
-  export class TraceContextManager {
-    /** Inject trace context into headers (returns mutated headers) */
-    inject(headers: Record<string, string>): Record<string, string>;
-
-    /** Extract trace context from incoming headers (returns opaque context) */
-    extract(headers: Record<string, string>): unknown;
-  }
-}
-
-declare module '@/lib/ai/mcp/instrumented-sse-transport/utils/safety-utils' {
-  /** Timeout constants used across the instrumented transport */
-  export const CONNECTION_TIMEOUT_MS: number;
-  export const SEND_TIMEOUT_MS: number;
-
-  /** Operation-level metrics recorded for safety instrumentation */
-  export type OperationMetrics = {
-    startTime: number;
-    durationMs?: number;
-    success?: boolean;
-    error?: unknown;
-  };
-
-  /** Safety and helper utilities used by the transport */
-  export const SafetyUtils: {
-    withTimeout<T>(p: Promise<T>, ms: number, label?: string): Promise<T>;
-    isAbortError(err: unknown): boolean;
-  };
-}
-
-declare module '@/lib/ai/mcp/instrumented-sse-transport/message/message-processor' {
-  import type { JSONRPCMessage } from '@/lib/ai/mcp/ai.sdk/json-rpc-message';
-
-  /** MessageProcessor encapsulates processing of incoming JSON-RPC messages */
-  export class MessageProcessor {
-    constructor();
-    process(message: JSONRPCMessage): Promise<void>;
-  }
-}
-
-declare module '@/lib/ai/mcp/instrumented-sse-transport' {
-  export {
-    InstrumentedSseTransport,
-    type TransportPlugin,
-  } from '@/lib/ai/mcp/instrumented-sse-transport/instrumented-transport-refactored';
-  export {
-    MetricsRecorder,
-    OTEL_MODE,
-    DEBUG_MODE,
-    tracer,
-    meter,
-  } from '@/lib/ai/mcp/instrumented-sse-transport/metrics/otel-metrics';
-  export {
-    CounterManager,
-    type ActiveCounters,
-  } from '@/lib/ai/mcp/instrumented-sse-transport/metrics/counter-manager';
-  export {
-    SessionManager,
-    type SpanState,
-  } from '@/lib/ai/mcp/instrumented-sse-transport/session/session-manager';
-  export { TraceContextManager } from '@/lib/ai/mcp/instrumented-sse-transport/tracing/trace-context';
-  export {
-    SafetyUtils,
-    CONNECTION_TIMEOUT_MS,
-    SEND_TIMEOUT_MS,
-    type OperationMetrics,
-  } from '@/lib/ai/mcp/instrumented-sse-transport/utils/safety-utils';
-  export { MessageProcessor } from '@/lib/ai/mcp/instrumented-sse-transport/message/message-processor';
-  export { InstrumentedSseTransport as OriginalInstrumentedSseTransport } from '@/lib/ai/mcp/instrumented-sse-transport/traceable-transport-client';
+  export { InstrumentedSseTransport as OriginalInstrumentedSseTransport };
 }

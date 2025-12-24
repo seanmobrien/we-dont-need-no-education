@@ -16,6 +16,8 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob';
 import { env } from '@/lib/site-util/env';
+import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
+import { pgDbWithInit } from '@/lib/neondb/connection';
 
 /**
  * Repository for managing `DocumentUnit` objects.
@@ -84,12 +86,13 @@ export class DocumentUnitRepository extends BaseObjectRepository<
    * @param obj - The object to validate.
    * @throws {ValidationError} If validation fails.
    */
-  validate<TMethod extends keyof ObjectRepository<DocumentUnit, 'unitId'>>(
+  async validate<TMethod extends keyof ObjectRepository<DocumentUnit, 'unitId'>>(
     method: TMethod,
     obj: FirstParameter<
       Pick<ObjectRepository<DocumentUnit, 'unitId'>, TMethod>[TMethod]
     >,
-  ): void {
+  ): Promise<void> {
+
     switch (method) {
       case 'create':
         break;
@@ -110,6 +113,7 @@ export class DocumentUnitRepository extends BaseObjectRepository<
             source: 'DocumentUnitsRepository',
           });
         }
+
         break;
       case 'create':
         const asCreateModel = obj as DocumentUnit;
@@ -144,10 +148,14 @@ export class DocumentUnitRepository extends BaseObjectRepository<
    *
    * @returns A tuple containing the SQL query, parameters, and count query.
    */
-  protected getListQueryProperties(): [string, Array<unknown>, string] {
+  protected async getListQueryProperties(): Promise<[string, Array<unknown>, string]> {
     const wherePendingEmbed = this.#pendingEmbed
-      ? ' WHERE du.embedded_on IS NULL'
+      ? ' AND du.embedded_on IS NULL'
       : '';
+    const availableCaseFiles = await getAccessibleUserIds(undefined) ?? [];
+    const whereAvailableCaseFiles = availableCaseFiles.length > 0
+      ? ` AND du.user_id IN (${availableCaseFiles.join(',')})`
+      : ' AND 1=-1';
     return [
       `SELECT du.*, ea.file_path, e.thread_id,
   ARRAY(
@@ -167,10 +175,12 @@ export class DocumentUnitRepository extends BaseObjectRepository<
     FROM document_units du
     LEFT JOIN email_attachments ea ON du.attachment_id = ea.attachment_id
     LEFT JOIN emails e ON du.email_id = e.email_id
+    WHERE 1=1
     ${wherePendingEmbed} 
+    ${whereAvailableCaseFiles}
     ORDER BY du.unit_id`.toString(),
       [],
-      `SELECT COUNT(*) as records FROM document_units du ${wherePendingEmbed}`.toString(),
+      `SELECT COUNT(*) as records FROM document_units du ${wherePendingEmbed} ${whereAvailableCaseFiles}`.toString(),
     ];
   }
 
@@ -180,14 +190,20 @@ export class DocumentUnitRepository extends BaseObjectRepository<
    * @param recordId - The ID of the record to fetch.
    * @returns A tuple containing the SQL query and parameters.
    */
-  protected getQueryProperties(recordId: number): [string, Array<unknown>] {
+  protected async getQueryProperties(recordId: number): Promise<[string, Array<unknown>]> {
+    const sql = await pgDbWithInit();
+
+    const availableCaseFiles = await getAccessibleUserIds(undefined) ?? [];
+    const whereAvailableCaseFiles = availableCaseFiles.length > 0
+      ? sql` du.user_id IN ${sql('(' + availableCaseFiles.join(',') + ')')}`
+      : sql` 1=-1`;
     return [
       `SELECT du.*, ea.file_path, e.thread_id,
   ARRAY(
     SELECT e.email_id
     FROM document_property ep
     JOIN emails e ON ep.property_value = e.global_message_id
-    WHERE ep.email_id = du.email_id
+    WHERE ep.email_id = du.email_id    
       AND ep.document_property_type_id = 22
   ) AS related_email_ids,
   (
@@ -199,7 +215,9 @@ export class DocumentUnitRepository extends BaseObjectRepository<
   ) AS parent_email_id
     FROM document_units du
     LEFT JOIN emails e ON du.email_id = e.email_id
-    LEFT JOIN email_attachments ea ON du.attachment_id = ea.attachment_id WHERE unit_id = $1`,
+    LEFT JOIN email_attachments ea ON du.attachment_id = ea.attachment_id WHERE unit_id = $1
+    AND ${whereAvailableCaseFiles}
+    `,
       [recordId],
     ];
   }
@@ -217,10 +235,11 @@ export class DocumentUnitRepository extends BaseObjectRepository<
     content,
     documentType,
     embeddingModel,
+    userId,
   }: DocumentUnit): [string, Array<unknown>] {
     return [
-      `INSERT INTO document_units (email_id, attachment_id, email_property_id, content, document_type, embedding_model) 
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      `INSERT INTO document_units (email_id, attachment_id, email_property_id, content, document_type, embedding_model, user_id) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [
         emailId,
         attachmentId,
@@ -228,6 +247,7 @@ export class DocumentUnitRepository extends BaseObjectRepository<
         content,
         documentType,
         embeddingModel,
+        userId,
       ],
     ];
   }
@@ -272,6 +292,7 @@ export class DocumentUnitRepository extends BaseObjectRepository<
   ): DocumentUnitSummary => {
     const ret: DocumentUnitSummary = {
       unitId: Number(record.unit_id),
+      userId: Number(record.user_id),
       emailId: record.email_id ? String(record.email_id) : null,
       attachmentId: record.attachment_id ? Number(record.attachment_id) : null,
       emailPropertyId: record.email_property_id

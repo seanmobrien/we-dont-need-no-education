@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest, extractParams } from '@/lib/nextjs-util/server/utils';
 import { getTodoManager } from '@/lib/ai/tools/todo/todo-manager';
 import {
   validateCreateTodoItem,
   validateUpdateTodoItem,
 } from '@/lib/api/todo/todo-validation';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { extractParams } from '@/lib/nextjs-util/utils';
 
 export const dynamic = 'force-dynamic';
 

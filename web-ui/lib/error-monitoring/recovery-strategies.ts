@@ -210,6 +210,23 @@ export const recoveryStrategies: RecoveryStrategy[] = [
     defaultAction: 'login-redirect',
   },
   {
+    errorType: ErrorType.AUTHENTICATION,
+    detect: (error) => error.name === 'InvalidGrantError',
+    actions: [
+      {
+        id: 'clear-session',
+        label: 'Clear Session',
+        description: 'Your session has expired. Please sign in again.',
+        action: async () => {
+          const { signOut } = await import('next-auth/react');
+          await signOut({ callbackUrl: '/auth/signin' });
+        },
+        automatic: false,
+      },
+    ],
+    defaultAction: 'clear-session',
+  },
+  {
     errorType: ErrorType.PERMISSION,
     detect: (error) => classifyError(error) === ErrorType.PERMISSION,
     actions: [

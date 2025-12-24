@@ -66,4 +66,20 @@ declare module '@/lib/typescript/_generics' {
     forOne: (input: TInput) => TOutput,
     input: TInput | Array<TInput>,
   ): TInput extends Array<TInput> ? Array<TOutput> : TOutput;
+
+  /**
+   * Useful for normalizing return types from functions that may return either a value or a promise.
+   * Unwraps a value or promise to a consistently awaitable promise, with nested promises being flattened.
+   *
+   * @template T - Type of the value or promise.
+   * @param value - Value or promise to unwrap.
+   * @returns A promise resolving to the value.
+   *
+   * @example
+   * ```typescript
+   * const result = await unwrapPromise('hello'); // Promise<'hello'>
+   * const result2 = await unwrapPromise(Promise.resolve('hello')); // Promise<'hello'>
+   * ```
+   */
+  export function unwrapPromise<T>(value: T | Promise<T>): Promise<T>;
 }

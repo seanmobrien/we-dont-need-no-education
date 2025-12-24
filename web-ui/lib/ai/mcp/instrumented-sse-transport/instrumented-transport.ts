@@ -21,7 +21,7 @@ import { SessionManager } from './session/session-manager';
 import { TraceContextManager } from './tracing/trace-context';
 import {
   SafetyUtils
-} from './utils/safety-utils';
+} from '../../../nextjs-util/safety-utils';
 import { MessageProcessor } from './message/message-processor';
 import { ImpersonationService } from '@/lib/auth/impersonation';
 
@@ -116,9 +116,9 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       }
 
       // Initialize module dependencies
+      this.#safetyUtils = new SafetyUtils(opts.url);
       this.#counterManager = new CounterManager();
       this.#sessionManager = new SessionManager(opts.url, this.#counterManager);
-      this.#safetyUtils = new SafetyUtils(opts.url);
       this.#messageProcessor = new MessageProcessor(
         opts.url,
         this.#sessionManager,

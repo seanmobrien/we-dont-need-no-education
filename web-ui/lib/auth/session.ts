@@ -5,6 +5,7 @@ import type { Session } from '@auth/core/types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger/core';
 import { decodeToken } from './utilities';
+import { isRunningOnEdge } from '@/lib/site-util/env';
 
 const hashFromServer = async (input: string): Promise<string> => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -98,5 +99,65 @@ export const session = async ({
       });
     }
   }
+  if (token.error) {
+    session.error = token.error;
+  }
+  // When running on Server (Node), load the latest tokens from the DB to ensure freshness
+  if (typeof window === 'undefined' && session?.user?.id && !isRunningOnEdge()) {
+    try {
+      const { getAccountTokens } = await import('./server/get-account-tokens');
+      const dbTokens = await getAccountTokens(session.user.id);
+
+      if (dbTokens?.accessToken) {
+        // Check for expiry
+        const expiresAt = dbTokens.expiresAt;
+        if (expiresAt && Date.now() > expiresAt * 1000 && dbTokens.refreshToken) {
+          // Token expired, refresh it!
+          log(l => l.info('Session callback: Token expired in DB, refreshing...'));
+          const { refreshAccessToken } = await import('./refresh-token');
+          const { updateAccountTokens } = await import('./server/update-account-tokens');
+
+          // Construct a temporary token object for refresh
+          // Construct a temporary token object for refresh
+          const tempToken = {
+            access_token: dbTokens.accessToken,
+            refresh_token: dbTokens.refreshToken,
+            expires_at: expiresAt,
+          } as JWT;
+
+          const refreshed = await refreshAccessToken(tempToken);
+
+          if (refreshed.error) {
+            session.error = refreshed.error;
+          } else {
+            // Save new tokens to DB
+            await updateAccountTokens(session.user.id, {
+              accessToken: refreshed.access_token,
+              refreshToken: refreshed.refresh_token,
+              expiresAt: Number(refreshed.expires_at ?? 0),
+              idToken: refreshed.idToken
+            });
+
+            // Use new access token
+            const decodedNew = await decodeToken({ token: refreshed.access_token!, verify: false });
+            if (decodedNew?.resource_access) {
+              session.resource_access = { ...decodedNew.resource_access, ...session.resource_access };
+            }
+          }
+        } else {
+          // Valid token from DB. Ensure resource_access is up to date if not in JWT
+          if (!session.resource_access) {
+            const decoded = await decodeToken({ token: dbTokens.accessToken, verify: false });
+            if (decoded?.resource_access) {
+              session.resource_access = decoded.resource_access as Session['resource_access'];
+            }
+          }
+        }
+      }
+    } catch (dbError) {
+      log(l => l.error('Error syncing session with DB tokens', dbError));
+    }
+  }
+
   return session;
 };

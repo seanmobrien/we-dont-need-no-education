@@ -9,6 +9,8 @@ import {
 } from '@/lib/api/email/util';
 import { query, queryExt } from '@/lib/neondb';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { getAccessibleUserIds } from '@/lib/auth/resources/case-file/case-file-helpers';
+import { NEVER_USE_USER_ID } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +45,8 @@ export const GET = wrapRouteRequest(
       if (expand !== 'true' && expand !== '1') {
         return NextResponse.json(threadRecord[0], { status: 200 });
       }
+      const eligibleUserIds = await getAccessibleUserIds(req) ?? [NEVER_USE_USER_ID];
+
       // pull away
       const result = await queryExt(
         (sql) => sql`SELECT 
@@ -63,9 +67,11 @@ export const GET = wrapRouteRequest(
            ) FILTER (WHERE recipient.contact_id IS NOT NULL), '[]') AS recipients
          FROM emails e
          JOIN contacts sender ON e.sender_id = sender.contact_id
+         JOIN document_units du ON e.email_id = du.email_id
          LEFT JOIN email_recipients er ON e.email_id = er.email_id
          LEFT JOIN contacts recipient ON er.recipient_id = recipient.contact_id
-         WHERE e.thread_id = ${threadIdNumber}           
+         WHERE e.thread_id = ${threadIdNumber}
+           AND du.user_id = ANY(${eligibleUserIds})
          GROUP BY e.email_id, sender.contact_id, sender.name, sender.email
          ORDER BY e.sent_timestamp DESC;
        `,

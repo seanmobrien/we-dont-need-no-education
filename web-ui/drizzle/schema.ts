@@ -135,6 +135,7 @@ export const documentUnits = pgTable(
     ),
     embeddingModel: varchar('embedding_model', { length: 255 }),
     embeddedOn: timestamp('embedded_on', { mode: 'string' }),
+    userId: integer('user_id').notNull(),
   },
   (table) => [
     index('idx_document_units_attachment').using(
@@ -144,6 +145,10 @@ export const documentUnits = pgTable(
     index('idx_document_units_email').using(
       'btree',
       table.emailId.asc().nullsLast().op('uuid_ops'),
+    ),
+    index('idx_document_units_user_id').using(
+      'btree',
+      table.userId.asc().nullsLast().op('int4_ops'),
     ),
     foreignKey({
       columns: [table.attachmentId],
@@ -159,6 +164,11 @@ export const documentUnits = pgTable(
       columns: [table.documentPropertyId],
       foreignColumns: [documentProperty.propertyId],
       name: 'document_units_email_property_id_fkey1',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'document_units_user_id_fkey',
     }).onDelete('cascade'),
     check(
       'document_type_check_allowed_values',
@@ -178,6 +188,9 @@ export const chats = pgTable(
     }).defaultNow(),
     title: text(),
     metadata: jsonb(),
+    allTheTokens: integer('all_the_tokens').notNull().default(0),
+    allTheMessages: integer('all_the_messages').notNull().default(0),
+    allTheTurns: integer('all_the_turns').notNull().default(0),
   },
   (table) => [
     index('idx_chats_created_at').using(
@@ -251,12 +264,12 @@ export const documentProperty = pgTable(
       name: 'document_property_email_property_type',
     }),
     /*
-	foreignKey({
-			columns: [table.documentId],
-			foreignColumns: [documentUnits.unitId],
-			name: "document_property_emails"
-		}).onUpdate("cascade").onDelete("cascade"),
-		*/
+  foreignKey({
+      columns: [table.documentId],
+      foreignColumns: [documentUnits.unitId],
+      name: "document_property_emails"
+    }).onUpdate("cascade").onDelete("cascade"),
+    */
   ],
 );
 
@@ -443,6 +456,7 @@ export const accounts = pgTable(
     accessToken: text('access_token'),
     // You can use { mode: "bigint" } if numbers are exceeding js number limitations
     expiresAt: bigint('expires_at', { mode: 'number' }),
+    refreshExpiresAt: bigint('refresh_expires_at', { mode: 'number' }),
     tokenType: text('token_type'),
     scope: text(),
     idToken: text('id_token'),
@@ -506,7 +520,7 @@ export const emailAttachments = pgTable(
       'gin',
       table.extractedTextTsv.asc().nullsLast().op('tsvector_ops'),
     ),
-		*/
+    */
     index('idx_email_attachments_email_id').using(
       'btree',
       table.emailId.asc().nullsLast().op('uuid_ops'),
@@ -720,6 +734,11 @@ export const emails = pgTable(
     emailId: uuid('email_id').defaultRandom().primaryKey().notNull(),
     parentId: uuid('parent_id'),
     documentType: text('document_type').generatedAlwaysAs(sql`'email'::text`),
+    countAttachments: integer('count_attachments').notNull().default(0),
+    countKpi: integer('count_kpi').notNull().default(0),
+    countNotes: integer('count_notes').notNull().default(0),
+    countCta: integer('count_cta').notNull().default(0),
+    countResponsiveActions: integer('count_responsive_actions').notNull().default(0),
   },
   (table) => [
     index('fki_fk_emails_parent_email').using(

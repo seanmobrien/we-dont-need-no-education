@@ -1,4 +1,4 @@
- 
+
 /**
  * Test utilities: Drizzle ORM query builder mock types and helpers.
  *
@@ -13,6 +13,8 @@
  * The goal is to enable expressive, type-safe test doubles without leaking
  * implementation details of the real database layer.
  */
+import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
+
 /**
  * List of query builder method names that tests commonly stub.
  *
@@ -200,4 +202,8 @@ export type IMockInsertBuilder = {
   __getRecords: <T>() => T[];
   /** Reset all jest mocks and internal state to their initial condition. */
   __resetMocks: () => void;
+};
+
+export type DatabaseMockType = DbDatabaseType & {
+  __queryBuilder: IMockQueryBuilder;
 };

@@ -46,7 +46,23 @@ export interface ErrorReporterConfig {
   maxStoredErrors: number;
   environment: KnownEnvironmentType;
   debounce?: ErrorReporterConfigDebounceParams;
+  // Circuit Breaker Config
+  triggerMax?: number;          // Max errors in window before triggering suppression
+  triggerTtl?: number;          // Window size for trigger count / Suppression duration
+  switchMax?: number;           // Max trigger trips before permanent switch
+  switchTtl?: number;           // Window size for switch count
+  triggerTimeout?: number;      // Duration to suppress when triggered
 }
+
+export type CircuitBreakerConfig = {
+  triggerMax: number;
+  triggerTtl: number;
+  switchMax: number;
+  switchTtl: number;
+  triggerTimeout: number;
+};
+
+
 
 export type ErrorReportResult = Omit<SuppressionResult, 'rule'> & {
   report: ErrorReport;

@@ -5,8 +5,9 @@ import {
   ValidCaseFileRequestProps,
 } from './types';
 import { isError } from '@/lib/react-util/utility-methods';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
+import { BrandedUuid, isValidUuid as isValidUuidImpl } from '@/lib/typescript/_guards';
+import { resolveCaseFileId as resolveCaseFileIdImpl, resolveCaseFileIdBatch as resolveCaseFileIdBatchImpl } from '@/lib/api/document-unit/resolve-case-file-id';
+import { deprecate } from '@/lib/nextjs-util';
 
 interface ToolCallbackResultOverloads {
   <T>(result: T): ToolCallbackResult<T>;
@@ -32,24 +33,24 @@ export const toolCallbackResultFactory: ToolCallbackResultOverloads = <T>(
   }
   return Array.isArray(result)
     ? {
-        content: [{ type: 'text', text: 'tool success' }],
-        structuredContent: {
-          result: {
-            isError: false,
-            items: result as T extends Array<infer U> ? Array<U> : never,
-          },
+      content: [{ type: 'text', text: 'tool success' }],
+      structuredContent: {
+        result: {
+          isError: false,
+          items: result as T extends Array<infer U> ? Array<U> : never,
         },
-      }
+      },
+    }
     : {
-        content: [{ type: 'text', text: 'tool success' }],
-        structuredContent: {
-          result: {
-            isError: false,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            value: result as T extends Array<any> ? never : T,
-          },
+      content: [{ type: 'text', text: 'tool success' }],
+      structuredContent: {
+        result: {
+          isError: false,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          value: result as T extends Array<any> ? never : T,
         },
-      };
+      },
+    };
 };
 
 export const toolCallbackResultSchemaFactory = <T extends ZodRawShape>(
@@ -109,10 +110,10 @@ export const toolCallbackArrayResultSchemaFactory = <T extends ZodRawShape>(
  * @param id - The string to validate as a UUID v4.
  * @returns `true` if the string is a valid UUID v4, otherwise `false`.
  */
-export const isValidUuid = (id: string): boolean =>
-  /[0-9a-z]{8}-[0-9a-z]{4}-4[0-9a-z]{3}-[89ABab][0-9a-z]{3}-[0-9a-z]{12}/i.test(
-    id,
-  );
+export const isValidUuid = deprecate(isValidUuidImpl,
+  'isValidUuid is deprecated, import from @/lib/typescript/_guards',
+  'DEP0002'
+);
 
 /**
  * Resolves a case file's unit ID from a given document identifier.
@@ -125,48 +126,11 @@ export const isValidUuid = (id: string): boolean =>
  * @param documentId - The identifier of the document, which can be a number or a string.
  * @returns A promise that resolves to the unit ID as a number, or `undefined` if not found.
  */
-export const resolveCaseFileId = async (
-  documentId: number | string,
-): Promise<number | undefined> => {
-  let parsedId: number | undefined;
-  if (typeof documentId === 'string') {
-    const isUuid = isValidUuid(documentId);
-    if (isUuid) {
-      parsedId = await drizDb()
-        .query.documentUnits.findFirst({
-          where: (du, { eq, and, or }) =>
-            or(
-              and(eq(du.emailId, documentId), eq(du.documentType, 'email')),
-              eq(du.documentPropertyId, documentId),
-            ),
-          columns: {
-            unitId: true,
-          },
-        })
-        .then((result) => result?.unitId)
-        .catch((err) => {
-          LoggedError.isTurtlesAllTheWayDownBaby(err, {
-            log: true,
-            source: 'resolveCaseFileId',
-            message:
-              'Error querying for case file ID - validate document ID format',
-            include: { documentId },
-          });
-          return undefined;
-        });
-    } else {
-      parsedId = parseInt(documentId, 10);
-      if (isNaN(parsedId)) {
-        parsedId = undefined;
-      }
-    }
-  } else if (typeof documentId === 'number') {
-    parsedId = documentId;
-  } else {
-    parsedId = undefined;
-  }
-  return parsedId;
-};
+export const resolveCaseFileId = deprecate(
+  resolveCaseFileIdImpl,
+  'resolveCaseFileId is deprecated, import from @/lib/api/document-unit/resolve-case-file-id',
+  'DEP0003'
+);
 
 /**
  * Resolves a batch of case file identifiers to their corresponding numeric IDs.
@@ -185,81 +149,8 @@ export const resolveCaseFileId = async (
  */
 export const resolveCaseFileIdBatch = async (
   requests: Array<CaseFileRequestProps>,
-): Promise<Array<ValidCaseFileRequestProps>> => {
-  // First, split up into valid and pending sets, dropping anything so invalid we wont even try
-  const { valid, pending } = requests.reduce(
-    (acc, request) => {
-      // If input is a number then it is valid
-      if (typeof request.caseFileId === 'number') {
-        acc.valid.push({ caseFileId: request.caseFileId });
-        return acc;
-      }
-      // If input is a string, check if it's a UUID or numeric string
-      if (typeof request.caseFileId === 'string') {
-        // First check if it's a valid UUID
-        if (isValidUuid(request.caseFileId)) {
-          acc.pending.push(request);
-          return acc;
-        }
-
-        // Then check if it's a valid numeric string
-        const check = request.caseFileId.trim();
-        if (/^-?\d+$/.test(check)) {
-          const parsedId = parseInt(request.caseFileId, 10);
-          if (!isNaN(parsedId)) {
-            acc.valid.push({
-              ...request,
-              caseFileId: parsedId,
-            });
-          }
-        }
-        return acc;
-      }
-      // All other values are so hosed we just drop them
-      return acc;
-    },
-    {
-      valid: [] as Array<ValidCaseFileRequestProps>,
-      pending: [] as Array<CaseFileRequestProps>,
-    },
-  );
-  // Now lets try and look up these GUIDs
-  const guids = pending.map((r) => r.caseFileId as string);
-  if (!guids.length) {
-    return valid;
-  }
-  const records = await drizDbWithInit((db) => {
-    return db.query.documentUnits.findMany({
-      where: (du, { and, or, eq, inArray }) =>
-        or(
-          and(inArray(du.emailId, guids), eq(du.documentType, 'email')),
-          inArray(du.documentPropertyId, guids),
-        ),
-      columns: {
-        unitId: true,
-        documentPropertyId: true,
-        emailId: true,
-      },
-    });
-  });
-  // Now use records to translate pending into valid
-  const { resolved } = pending.reduce(
-    (acc, request) => {
-      const record = records.find(
-        (r) =>
-          r.documentPropertyId === request.caseFileId ||
-          r.emailId === request.caseFileId,
-      );
-      if (record) {
-        request.caseFileId = record.unitId;
-        acc.resolved.push({
-          ...request,
-          caseFileId: record.unitId,
-        });
-      }
-      return acc;
-    },
-    { resolved: valid },
-  );
-  return resolved;
-};
+): Promise<Array<ValidCaseFileRequestProps>> =>
+  resolveCaseFileIdBatchImpl(requests, {
+    getValue: (input: CaseFileRequestProps) => input.caseFileId,
+    setValue: (input: CaseFileRequestProps, value: number | BrandedUuid) => ({ ...input, caseFileId: value }),
+  }) as Promise<Array<ValidCaseFileRequestProps>>;

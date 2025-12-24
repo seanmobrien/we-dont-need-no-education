@@ -10,6 +10,8 @@ import {
 import z from 'zod';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { checkCaseFileAuthorization } from '@/lib/auth/resources/case-file/case-file-middleware';
+import { CaseFileScope } from '@/lib/auth/resources/case-file/case-file-resource';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +25,16 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
 
   try {
     if (!!id) {
+      const caseAccess = await checkCaseFileAuthorization(
+        req,
+        id,
+        {
+          requiredScope: CaseFileScope.READ,
+        }
+      );
+      if (!caseAccess.authorized) {
+        return caseAccess.response;
+      }
       const parsedId = Array.isArray(id) ? id : String(id).split(',');
       const rawRecords = await getMultipleCaseFileDocuments({
         requests: parsedId.map((id) => ({

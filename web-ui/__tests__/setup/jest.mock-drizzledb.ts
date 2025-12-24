@@ -8,6 +8,7 @@ import {
   MockDbQueryCallbackResult,
   MockDbQueryRecord,
   QueryBuilderMethodValues,
+  DatabaseMockType,
 } from './jest.mock-drizzle';
 import {
   FirstParameter,
@@ -86,9 +87,6 @@ export class MockQueryBuilder implements IMockQueryBuilder {
 }
 
 type DatabaseType = DbDatabaseType;
-export type DatabaseMockType = DatabaseType & {
-  __queryBuilder: MockQueryBuilder;
-};
 const mockDbFactory = (): DatabaseMockType => {
   const db = mockDeep<DatabaseType>() as unknown as DatabaseMockType;
   const qb = db as unknown as IMockQueryBuilder;
@@ -360,7 +358,7 @@ const mockDbFactory = (): DatabaseMockType => {
       } else if (prop === 'then') {
         if ((target as ProxiedDb)[INITIALIZED] === true) {
           return jest.fn((onOk, onError) => {
-            let p = qb.execute().then((result) => {
+            let p = qb.execute().then((result: unknown) => {
               (target as ProxiedDb)[INITIALIZED] = false;
               return result;
             });
@@ -492,10 +490,10 @@ import { withJestTestExtensions } from '../jest.test-extensions';
 
 
 beforeAll(() => {
-  withJestTestExtensions().makeMockDb = makeMockDb;
+  withJestTestExtensions().makeMockDb = makeMockDb as () => DatabaseMockType;
 });
 beforeEach(() => {
-  withJestTestExtensions().makeMockDb = makeMockDb;
+  withJestTestExtensions().makeMockDb = makeMockDb as () => DatabaseMockType;
 });
 
 afterEach(() => {

@@ -9,6 +9,7 @@ import type {
   FeatureFlagValueType,
 } from './types';
 import { extractFlagValue } from './util';
+import { globalSingletonAsync } from '@/lib/typescript';
 
 // Client-bound Flagsmith instance used for client-side flag evaluation.
 export const flagsmithClient = async () => {
@@ -34,9 +35,14 @@ const identify = async ({
   userId: string | undefined;
 }): Promise<IFlagsmith<string, string> | null> => {
   const normalUserId = userId ?? 'anonymous';
-
   try {
-    const server = await flagsmithClient();
+    const server = await globalSingletonAsync(
+      '@no-education/lib/site-util/flags/client/flagsmith-client',
+      () => flagsmithClient()
+    );
+    if (!server) {
+      throw new Error('Unexpected failure initializing Flagsmith client.');
+    }
     if (server.identity === normalUserId) {
       return server;
     }
@@ -58,19 +64,26 @@ export const getFeatureFlag = async <T extends KnownFeatureType>(
 ): Promise<FeatureFlagValueType<typeof flagKey> | null> => {
   try {
     const server = await identify({ userId });
-    if (!server)
+    if (!server) {
       return (
         defaultValue ??
         (AllFeatureFlagsDefault[flagKey] as FeatureFlagValueType<
           typeof flagKey
         >)
       );
+    }
     if (!server.initialised) {
       await server.getFlags();
     }
-    const flag = server?.getAllFlags()[flagKey];
+    const hasFeature = server.hasFeature(flagKey, false);
+    console.log('context looks like', server.getContext())
+    const featureValue = hasFeature ? server.getValue(flagKey) : null;
     return (
-      extractFlagValue(flagKey, flag) ??
+      extractFlagValue(flagKey, {
+        enabled: hasFeature,
+        value: featureValue,
+        isDefault: false,
+      }) ??
       defaultValue ??
       (AllFeatureFlagsDefault[flagKey] as FeatureFlagValueType<typeof flagKey>)
     );
@@ -92,13 +105,18 @@ export const getAllFeatureFlags = async (userId?: string) => {
     if (!server) {
       return AllFeatureFlagsDefault;
     }
-    const flags = server.getAllFlags();
-    return Object.entries(flags).reduce(
+    if (!server.initialised) {
+      await server.getFlags();
+    }
+    return Object.entries(server.getAllFlags()).reduce(
       (acc, [key, value]) => {
         if (isKnownFeatureType(key)) {
-          const flagValue = extractFlagValue(key, value);
-          if (flagValue !== null) {
-            acc[key] = flagValue;
+          // Call getValue to trigger analytics reporting
+          if (server.hasFeature(key)) {
+            const flagValue = extractFlagValue(key, value);
+            if (flagValue !== null) {
+              acc[key] = flagValue;
+            }
           }
         }
         return acc;

@@ -9,7 +9,9 @@ import {
 } from '@/lib/components/mui/data-grid/queryHelpers';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { SQL, eq, count, sum, lte, gt } from 'drizzle-orm/sql';
+import { SQL, lte, inArray } from 'drizzle-orm/sql';
+import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
+import { NEVER_USE_USER_ID } from '@/lib/constants';
 
 /**
  * Chat summary interface for the data grid
@@ -107,43 +109,10 @@ export const GET = wrapRouteRequest(
       const viewType = url.searchParams.get('viewType') || 'user';
       const isSystemView = viewType === 'system';
 
+      const accessibleUsers = await getAccessibleUserIds(req) ?? [NEVER_USE_USER_ID];
+
       // Define the base query for chats
       const result = await drizDbWithInit((db) => {
-        const qSumTokens = db
-          .select({
-            chatId: schema.tokenUsage.chatId,
-            totalTokens: sum(schema.tokenUsage.totalTokens).as(
-              'all_the_tokens',
-            ),
-          })
-          .from(schema.tokenUsage)
-          .groupBy(schema.tokenUsage.chatId)
-          .as('tblTokens');
-        // Sum messages
-        const qSumMessages = db
-          .select({
-            chatId: schema.chatMessages.chatId,
-            totalMessages: count().as('all_the_messages'),
-          })
-          .from(schema.chatMessages)
-          .groupBy(schema.chatMessages.chatId)
-          .as('tblMessages');
-        // Sum turns
-        const qSumTurns = db
-          .select({
-            chatId: schema.chatTurns.chatId,
-            totalTurns: count().as('all_the_turns'),
-          })
-          .from(schema.chatTurns)
-          .groupBy(schema.chatTurns.chatId)
-          .as('tblTurns');
-
-        // Sum tokens by chat
-        const columnTurns: SQL.Aliased = qSumTurns.totalTurns;
-        // count(schema.chatTurns.turnId).as('all_the_turns');
-        const columnTokens: SQL.Aliased = qSumTokens.totalTokens;
-        const columnMessages: SQL.Aliased = qSumMessages.totalMessages;
-
         const query = db
           .select({
             id: schema.chats.id,
@@ -151,25 +120,27 @@ export const GET = wrapRouteRequest(
             userId: schema.chats.userId,
             createdAt: schema.chats.createdAt,
             chatMetadata: schema.chats.metadata,
-            totalTokens: columnTokens,
-            totalMessages: columnMessages,
-            totalTurns: columnTurns,
+            totalTokens: schema.chats.allTheTokens,
+            totalMessages: schema.chats.allTheMessages,
+            totalTurns: schema.chats.allTheTurns,
           })
           .from(schema.chats)
-          .leftJoin(qSumTokens, eq(qSumTokens.chatId, schema.chats.id))
-          .leftJoin(qSumMessages, eq(qSumMessages.chatId, schema.chats.id))
-          .leftJoin(qSumTurns, eq(qSumTurns.chatId, schema.chats.id));
+          ;
 
         // Apply the user/system filter
         const filteredQuery = isSystemView
           ? query.where(lte(schema.chats.userId, 0))
-          : query.where(gt(schema.chats.userId, 0));
+          : query.where(inArray(schema.chats.userId, accessibleUsers));
 
         return selectForGrid<ChatSummary>({
           req,
           query: filteredQuery as unknown as DrizzleSelectQuery,
           getColumn: (c) =>
-            getColumnFromName(c, { columnTokens, columnMessages, columnTurns }),
+            getColumnFromName(c, {
+              columnTokens: schema.chats.allTheTokens,
+              columnMessages: schema.chats.allTheMessages,
+              columnTurns: schema.chats.allTheTurns,
+            }),
           columnMap,
           recordMapper,
           defaultSort: [{ field: 'created_at', sort: 'desc' }],

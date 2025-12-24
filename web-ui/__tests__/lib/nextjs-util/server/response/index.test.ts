@@ -44,9 +44,33 @@ const createReadableStream = (
 };
 
 describe('FetchResponse', () => {
-  // ... (rest of file)
 
   describe('constructor', () => {
+
+
+
+    it('should accept a Buffer body', async () => {
+      const buffer = Buffer.from('Hello World');
+      const response = new FetchResponse(buffer);
+      expect(await response.text()).toBe('Hello World');
+    });
+
+    it('should accept a ReadableStream body', async () => {
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('Stream Data'));
+          controller.close();
+        },
+      });
+      const response = new FetchResponse(stream);
+      expect(await response.text()).toBe('Stream Data');
+    });
+
+    it('should handle null body', async () => {
+      const response = new FetchResponse(null);
+      expect(await response.text()).toBe('');
+    });
+
     it('should create a response with default values', async () => {
       const response = new FetchResponse(Buffer.from('test'));
 
@@ -181,6 +205,25 @@ describe('FetchResponse', () => {
     });
   });
 
+
+  describe('Body Property', () => {
+    it('should expose body as ReadableStream when initialized with Buffer', () => {
+      const response = new FetchResponse(Buffer.from('test'));
+      expect(response.body).toBeInstanceOf(ReadableStream);
+    });
+
+    it('should expose body as ReadableStream when initialized with Stream', () => {
+      const stream = new ReadableStream({ start(c) { c.close(); } });
+      const response = new FetchResponse(stream);
+      expect(response.body).toBe(stream);
+    });
+
+    it('should have pipeThrough method on body', () => {
+      const response = new FetchResponse(Buffer.from('test'));
+      expect(typeof response.body?.pipeThrough).toBe('function');
+    });
+  });
+
   describe('arrayBuffer()', () => {
     it('should return ArrayBuffer from body', async () => {
       const data = Buffer.from([1, 2, 3, 4, 5]);
@@ -192,6 +235,12 @@ describe('FetchResponse', () => {
       expect(new Uint8Array(arrayBuffer)).toEqual(new Uint8Array([1, 2, 3, 4, 5]));
     });
 
+    it('should return arrayBuffer()', async () => {
+      const response = new FetchResponse(Buffer.from('test'));
+      const ab = await response.arrayBuffer();
+      expect(ab.byteLength).toBe(4);
+      expect(new TextDecoder().decode(ab)).toBe('test');
+    });
     it('should handle empty buffer', async () => {
       const response = new FetchResponse(Buffer.alloc(0));
       const arrayBuffer = await response.arrayBuffer();
@@ -219,6 +268,27 @@ describe('FetchResponse', () => {
       const stream = response.stream();
 
       expect(stream).toBeInstanceOf(ReadableStream);
+    });
+
+
+    it('should clone() buffered response', async () => {
+      const response = new FetchResponse(Buffer.from('test'));
+      const clone = response.clone();
+      expect(await response.text()).toBe('test');
+      expect(await clone.text()).toBe('test');
+    });
+
+    it('should clone() streamed response', async () => {
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('Stream Data'));
+          controller.close();
+        },
+      });
+      const response = new FetchResponse(stream);
+      const clone = response.clone();
+      expect(await response.text()).toBe('Stream Data');
+      expect(await clone.text()).toBe('Stream Data');
     });
 
     it('should stream body content', async () => {

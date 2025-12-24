@@ -60,6 +60,15 @@ jest.mock('@/lib/nextjs-util/server/fetch', () => {
   };
 });
 
+jest.mock('@/lib/nextjs-util/dynamic-fetch', () => {
+  let mockFetch = jest.fn().mockImplementation(() => {
+    return makeResponse();
+  });
+  return {
+    fetch: mockFetch
+  };
+});
+
 import { fetch as clientFetch } from '@/lib/nextjs-util/fetch';
 import { fetch as serverFetch } from '@/lib/nextjs-util/server/fetch';
 import got from 'got';

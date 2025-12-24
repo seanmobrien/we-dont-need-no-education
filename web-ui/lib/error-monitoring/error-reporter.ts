@@ -8,7 +8,7 @@ import {
   ErrorReporterConfig,
   ErrorReporterInterface,
   IContextEnricher,
-  ErrorReporterConfigDebounceParams,
+
   ErrorReportResult,
 } from './types';
 import { isRunningOnEdge } from '../site-util/env';
@@ -17,6 +17,9 @@ import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
 import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
 import { shouldSuppressError } from './utility';
 import { type ErrorReportArgs, LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LRUCache } from 'lru-cache';
+import { StrategyCollectionFactory } from './strategies/strategy-collection-factory';
+import { CircuitBreaker } from './circuit-breaker';
 export { ErrorSeverity };
 
 export type {
@@ -27,19 +30,7 @@ export type {
   ErrorReporterInterface,
 };
 
-const isGtagClient = <T>(
-  check: T,
-): check is T & {
-  gtag: (
-    signal: string,
-    event: string,
-    params: Record<string, unknown>,
-  ) => void;
-} =>
-  typeof check === 'object' &&
-  check !== null &&
-  'gtag' in check &&
-  typeof check.gtag === 'function';
+
 
 const asEnvironment = (input: string): KnownEnvironmentType => {
   return ['development', 'staging', 'production'].includes(input)
@@ -70,6 +61,11 @@ const defaultConfig: ErrorReporterConfig = {
   enableLocalStorage: true,
   maxStoredErrors: 50,
   environment: asEnvironment(process.env.NODE_ENV),
+  triggerMax: 10,
+  triggerTtl: 1.5 * 60 * 1000,
+  switchMax: 3,
+  switchTtl: 5 * 60 * 1000,
+  triggerTimeout: 3 * 60 * 1000,
 };
 
 const isContextEnricher = (check: unknown): check is IContextEnricher =>
@@ -84,16 +80,34 @@ const ERROR_REPORTER_SINGLETON_KEY =
 export class ErrorReporter implements ErrorReporterInterface {
   readonly #errorReportHandler: ((args: ErrorReportArgs) => void);
   private config: ErrorReporterConfig;
-  private debounceSettings: ErrorReporterConfigDebounceParams;
-  private debounceSet = new Map<string, number>();
-  private lastDebounceCleanup = Date.now();
+  private debounceCache: LRUCache<string, number>;
+  private circuitBreaker: CircuitBreaker | null = null;
+  #globalEventHandlers: {
+    error?: (event: ErrorEvent) => void;
+    rejection?: (event: PromiseRejectionEvent) => void;
+  } = {};
 
   private constructor(config: ErrorReporterConfig) {
     this.config = config;
-    this.debounceSettings = config.debounce ?? {
-      debounceIntervalMs: 60000,
-      debounceCleanupIntervalMs: 300000,
-    };
+
+    // Initialize LRU Cache for debounce
+    const debounceIntervalMs = config.debounce?.debounceIntervalMs ?? 240000; // 4 mins default
+    // We don't need explicit cleanup interval as LRUCache handles ttl
+    this.debounceCache = new LRUCache<string, number>({
+      max: 500, // Reasonable max size to prevent memory leaks
+      ttl: debounceIntervalMs,
+    });
+
+    // Initialize Circuit Breaker if configured
+    if (config.triggerMax && config.triggerTtl) {
+      this.circuitBreaker = new CircuitBreaker({
+        triggerMax: config.triggerMax,
+        triggerTtl: config.triggerTtl,
+        switchMax: config.switchMax ?? 10, // Default or ensure required in type if strictly needed
+        switchTtl: config.switchTtl ?? 60000,
+        triggerTimeout: config.triggerTimeout ?? 30000,
+      });
+    }
     this.#errorReportHandler = (args: ErrorReportArgs) => {
       let severity: ErrorSeverity | undefined;
       try {
@@ -156,32 +170,13 @@ export class ErrorReporter implements ErrorReporterInterface {
       // Without a fingerprint we don't have a basis to debounce
       return false;
     }
-    const now = Date.now();
-    const lastReported = this.debounceSet.get(report.fingerprint);
-    // If we are below the debounce interval then skip reporting
-    if (
-      lastReported &&
-      now - lastReported < this.debounceSettings.debounceIntervalMs
-    ) {
+    // Check if the fingerprint is in the cache
+    if (this.debounceCache.has(report.fingerprint)) {
       return true;
     }
-    // Update last reported time for this fingerprint
-    this.debounceSet.set(report.fingerprint, now);
 
-    // Periodically clean up old entries to prevent memory bloat
-    if (
-      now - this.lastDebounceCleanup >
-      this.debounceSettings.debounceCleanupIntervalMs
-    ) {
-      this.lastDebounceCleanup = now;
-      const expirationTime = now - this.debounceSettings.debounceIntervalMs;
-      for (const [fingerprint, timestamp] of this.debounceSet.entries()) {
-        if (timestamp < expirationTime) {
-          this.debounceSet.delete(fingerprint);
-        }
-      }
-    }
-
+    // Add to cache with current timestamp
+    this.debounceCache.set(report.fingerprint, Date.now());
     return false;
   }
 
@@ -300,59 +295,50 @@ export class ErrorReporter implements ErrorReporterInterface {
       if (result.suppress && result.completely) {
         return result;
       }
-      // Standard logging
-      if (this.config.enableStandardLogging) {
-        const source = report.context.source ?? 'ErrorReporter';
-        log((l) =>
-          l.error({
-            source,
-            body: JSON.stringify(report!.error),
-            severity: report!.severity,
-            fingerprint: report!.fingerprint,
-            tags: report!.tags,
-            context: report!.context,
-            [Symbol.toStringTag]: `${source}: (${report!.fingerprint ?? 'no fingerprint'}) ${report!.error.message}`,
-          }),
-        );
-        result.logged = true;
+
+      // Check Circuit Breaker
+      if (this.circuitBreaker && this.circuitBreaker.getState() !== 'closed') {
+        // If circuit is open, suppress external reporting but allow console/logging based on 'completely' flag
+        // However, circuit breaker usually means "stop reporting to valid backends".
+        // Use a special rule for circuit breaker
+        Object.assign(result, {
+          suppress: true,
+          completely: true, // Circuit breaker stops everything usually? Or just downstream?
+          // User requirement: "All errors are suppressed for trigger timeout period" 
+          // So completely = true is correct per user req "all errors are suppressed"
+          rule: 'circuit-breaker',
+        });
+      } else if (this.circuitBreaker) {
+        // Record potential error if not suppressed by other rules
+        if (!result.suppress) {
+          this.circuitBreaker.recordError();
+        }
       }
 
-      // Console logging for development
-      if (this.config.enableConsoleLogging) {
-        console.group(`🐛 Error Report [${severity.toUpperCase()}]`);
-        console.error('Error:', report.error);
-        console.table(report.context);
-        console.groupEnd();
-        result.console = true;
+      // Execute enabled strategies
+      // Pass the current result (which contains suppression info) to the factory
+      const strategies = StrategyCollectionFactory.createStrategies(this.config, result);
+
+      for (const strategy of strategies) {
+        try {
+          const strategyResult = await strategy.execute(report, this.config);
+          Object.assign(result, strategyResult);
+        } catch (strategyError) {
+          log((l) =>
+            l.error('Error executing reporting strategy', {
+              cause: safeSerialize(error),
+              strategyError: safeSerialize(strategyError),
+            }),
+          );
+        }
       }
 
-      if (result.suppress) {
-        return result;
-      }
-
-      // Store error locally for offline analysis
-      if (this.config.enableLocalStorage && typeof window !== 'undefined') {
-        this.storeErrorLocally(report);
-        result.stored = true;
-      }
-
-      // Report to external services
-      if (this.config.enableExternalReporting) {
-        await Promise.allSettled([
-          this.reportToGoogleAnalytics(report),
-          this.reportToApplicationInsights(report),
-          // Add other monitoring services here
-        ]);
-        result.reported = true;
-      }
     } catch (reportingError) {
       // Avoid infinite loops - just log to console
-      log((l) =>
-        l.error('Error in error reporting system', {
-          cause: safeSerialize(error, { maxObjectDepth: 2 }),
-          reportingError: safeSerialize(reportingError),
-        }),
-      );
+      console.error('Error in error reporting system', {
+        cause: safeSerialize(error, { maxObjectDepth: 2 }),
+        reportingError: safeSerialize(reportingError),
+      });
       if (!result) {
         result = {
           report: report ?? {
@@ -402,6 +388,8 @@ export class ErrorReporter implements ErrorReporterInterface {
     });
   }
 
+
+
   /**
    * Set up global error handlers
    */
@@ -410,31 +398,51 @@ export class ErrorReporter implements ErrorReporterInterface {
     if (isRunningOnEdge()) {
       log((l) => l.info('setupGlobalHandlers::edge'));
     }
-
-    // Unhandled errors
-    window.addEventListener('error', (event) => {
-      this.reportError(
-        event.error || new Error(event.message),
-        ErrorSeverity.HIGH,
-        {
-          url: window.location.href,
-          breadcrumbs: ['global-error-handler'],
-          additionalData: {
-            filename: event.filename,
-            lineno: event.lineno,
-            colno: event.colno,
+    const eventHandlers = {
+      error: (event: ErrorEvent) => {
+        event.stopPropagation();
+        event.preventDefault()
+        this.reportError(
+          event.error || new Error(event.message),
+          ErrorSeverity.HIGH,
+          {
+            url: window.location.href,
+            breadcrumbs: ['global-error-handler'],
+            additionalData: {
+              filename: event.filename,
+              lineno: event.lineno,
+              colno: event.colno,
+            },
           },
-        },
-      );
-    });
-
+        );
+      },
+      rejection: (event: PromiseRejectionEvent) => {
+        event.stopPropagation();
+        event.preventDefault()
+        this.reportUnhandledRejection(event.reason, event.promise);
+      },
+    };
+    // Pro-active cleanup as we are about to replace event handlers
+    this.removeGlobalHandlers();
+    // Unhandled errors
+    window.addEventListener('error', eventHandlers.error);
     // Unhandled promise rejections
-    window.addEventListener('unhandledrejection', (event) => {
-      this.reportUnhandledRejection(event.reason, event.promise);
-    });
+    window.addEventListener('unhandledrejection', eventHandlers.rejection);
+    this.#globalEventHandlers = eventHandlers;
+  }
 
-    // LoggedError emitted messages
-    this.subscribeToErrorReports();
+  public removeGlobalHandlers(): void {
+    if (typeof window === 'undefined') return;
+    if (isRunningOnEdge()) {
+      log((l) => l.info('removeGlobalHandlers::edge'));
+    }
+    if (this.#globalEventHandlers.error) {
+      window.removeEventListener('error', this.#globalEventHandlers.error);
+    }
+    if (this.#globalEventHandlers.rejection) {
+      window.removeEventListener('unhandledrejection', this.#globalEventHandlers.rejection);
+    }
+    this.#globalEventHandlers = {};
   }
 
   /**
@@ -571,8 +579,10 @@ export class ErrorReporter implements ErrorReporterInterface {
   public subscribeToErrorReports(): void {
     try {
       // Defensively unsubscribe to avoid duplicate registration
-      LoggedError.unsubscribeFromErrorReports(this.#errorReportHandler);
+      this.unsubscribeFromErrorReports();
+      // Subscribe handlers
       LoggedError.subscribeToErrorReports(this.#errorReportHandler);
+      this.setupGlobalHandlers();
     } catch (e) {
       this.reportError(e, ErrorSeverity.HIGH, {
         additionalData: {
@@ -584,6 +594,7 @@ export class ErrorReporter implements ErrorReporterInterface {
   public unsubscribeFromErrorReports(): void {
     try {
       LoggedError.unsubscribeFromErrorReports(this.#errorReportHandler);
+      this.removeGlobalHandlers();
     } catch (e) {
       this.reportError(e, ErrorSeverity.HIGH, {
         additionalData: {
@@ -608,171 +619,6 @@ export class ErrorReporter implements ErrorReporterInterface {
       userAgent: context.userAgent?.substring(0, 50) || 'unknown',
       errorBoundary: context.errorBoundary || 'none',
     };
-  }
-
-  /**
-   * Store error in localStorage for offline analysis
-   */
-  private storeErrorLocally(report: ErrorReport): void {
-    try {
-      if (typeof localStorage === 'undefined') {
-        return;
-      }
-      const stored = JSON.parse(localStorage.getItem('error-reports') || '[]');
-      stored.push({
-        ...report,
-        error: {
-          name: report.error.name,
-          message: report.error.message,
-          stack: report.error.stack,
-        },
-      });
-
-      // Keep only the most recent errors
-      const trimmed = stored.slice(-this.config.maxStoredErrors);
-      localStorage.setItem('error-reports', JSON.stringify(trimmed));
-    } catch {
-      // Storage failed, ignore
-    }
-  }
-
-  /**
-   * Report to Google Analytics if available
-   */
-  private async reportToGoogleAnalytics(report: ErrorReport): Promise<void> {
-    if (typeof window !== 'undefined' && isGtagClient(window)) {
-      window.gtag('event', 'exception', {
-        description: report.error.message,
-        fatal: report.severity === ErrorSeverity.CRITICAL,
-        error_severity: report.severity,
-        error_fingerprint: report.fingerprint,
-      });
-    }
-  }
-
-  private async server_reportToApplicationInsights(
-    report: ErrorReport,
-  ): Promise<void> {
-    try {
-      // Dynamic import so code doesn't hard-depend on OpenTelemetry at runtime
-      const otel = await import('@opentelemetry/api');
-      const { trace, context, SpanStatusCode } =
-        otel as typeof import('@opentelemetry/api');
-
-      const activeSpan = trace.getSpan(context.active());
-      // Build safe attributes: ensure values are primitive (strings)
-      const safeAttributes: Record<string, string> = {
-        'error.fingerprint': report.fingerprint ?? '',
-        ...(report.tags ?? {}),
-        severity: String(report.severity),
-        context: safeSerialize(JSON.stringify(report.context || {})),
-      };
-
-      // If there is an active and still-recording span, attach the error there.
-      // Span.isRecording() is the official guard to know if the span can accept events/attributes.
-      if (
-        activeSpan &&
-        typeof (activeSpan as { isRecording: () => boolean }).isRecording ===
-        'function' &&
-        (activeSpan as { isRecording: () => boolean }).isRecording()
-      ) {
-        try {
-          activeSpan.setAttributes(safeAttributes);
-        } catch {
-          // ignore attribute errors
-        }
-        activeSpan.recordException(report.error);
-        activeSpan.setStatus({
-          code: SpanStatusCode.ERROR,
-          message: report.error.message,
-        });
-        activeSpan.addEvent('error.reported', {
-          context: safeAttributes.context,
-        } as import('@opentelemetry/api').Attributes);
-        return;
-      }
-
-      // If there was an active span but it has ended (or no active span), create a new
-      // short-lived span that is linked to the original span context so the error stays
-      // correlated to the same trace.
-      const tracer = trace.getTracer('noeducation/error-reporter');
-      const links = activeSpan
-        ? [{ context: activeSpan.spanContext() }]
-        : undefined;
-      const span = tracer.startSpan('error.report', {
-        attributes: safeAttributes,
-        links,
-      });
-      try {
-        span.recordException(report.error);
-        span.setStatus({
-          code: SpanStatusCode.ERROR,
-          message: report.error.message,
-        });
-        span.addEvent('error.reported', {
-          context: safeAttributes.context,
-        });
-      } finally {
-        span.end();
-      }
-    } catch (err) {
-      log((l) => l.warn('OpenTelemetry error reporting failed', err));
-    }
-  }
-
-  private async client_reportToApplicationInsights(
-    report: ErrorReport,
-  ): Promise<void> {
-    await import('@/instrument/browser').then((m) => {
-      const appInsights = m.getAppInsights();
-      if (appInsights) {
-        appInsights.trackException({
-          exception: report.error,
-          severityLevel: this.mapSeverityToAppInsights(report.severity),
-          properties: {
-            ...report.tags,
-            ...report.context,
-            fingerprint: report.fingerprint,
-          },
-        });
-      }
-    });
-  }
-
-  /**
-   * Report to Application Insights if available
-   */
-  private async reportToApplicationInsights(
-    report: ErrorReport,
-  ): Promise<void> {
-    if (typeof window === 'undefined') {
-      await this.server_reportToApplicationInsights(report);
-      return;
-    }
-    if (process.env.NEXT_RUNTIME === 'EDGE') {
-      log((l) => l.debug('Would report to Application Insights:', report));
-      return;
-    }
-    await this.client_reportToApplicationInsights(report);
-  }
-
-  /**
-   * Map our ErrorSeverity enum to Application Insights KnownSeverityLevel
-   */
-  private mapSeverityToAppInsights(severity: ErrorSeverity): number {
-    // Using numeric values that correspond to Application Insights KnownSeverityLevel enum
-    // Based on the pattern: error -> Error, warn -> Warning, info -> Information, default -> Verbose
-    switch (severity) {
-      case ErrorSeverity.CRITICAL:
-      case ErrorSeverity.HIGH:
-        return 3; // KnownSeverityLevel.Error
-      case ErrorSeverity.MEDIUM:
-        return 2; // KnownSeverityLevel.Warning
-      case ErrorSeverity.LOW:
-        return 1; // KnownSeverityLevel.Information
-      default:
-        return 0; // KnownSeverityLevel.Verbose
-    }
   }
 
   /**
@@ -820,10 +666,3 @@ export const errorReporter: ErrorReporterInstanceOverloads = (
   }
   return cb(reporter);
 };
-
-/*
-// Auto-setup global handlers
-if (typeof window !== 'undefined') {
-  // errorReporter.setupGlobalHandlers();
-}
-*/

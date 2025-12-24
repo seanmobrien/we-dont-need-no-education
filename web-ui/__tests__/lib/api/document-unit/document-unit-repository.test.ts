@@ -1,3 +1,5 @@
+/* @jest-environment node */
+
 import { DocumentUnitRepository } from '@/lib/api/document-unit';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 
@@ -108,39 +110,39 @@ describe('DocumentUnitRepository', () => {
     expect(obj).toHaveProperty('embedded_on');
   });
 
-  test('getQueryProperties returns query with parameter placeholder and provided id', () => {
+  test('getQueryProperties returns query with parameter placeholder and provided id', async () => {
     const repo = new DocumentUnitRepository();
-    const [sql, params] = (repo as any).getQueryProperties(123);
+    const [sql, params] = await (repo as any).getQueryProperties(123);
     expect(sql).toContain('WHERE unit_id = $1');
     expect(params).toEqual([123]);
   });
 
-  test('getListQueryProperties includes pending embed WHERE when configured', () => {
+  test('getListQueryProperties includes pending embed WHERE when configured', async () => {
     const repo = new DocumentUnitRepository({ pendingEmbed: true });
-    const [sql, , countSql] = (repo as any).getListQueryProperties();
-    expect(sql).toContain('WHERE du.embedded_on IS NULL');
+    const [sql, , countSql] = await (repo as any).getListQueryProperties();
+    expect(sql).toContain('AND du.embedded_on IS NULL');
     // normalize whitespace in the count SQL and assert the key parts exist
     expect(countSql).toContain('FROM document_units du');
     expect(countSql).toContain('du.embedded_on IS NULL');
   });
 
-  test('validate throws on invalid get id (string)', () => {
+  test('validate throws on invalid get id (string)', async () => {
     const repo = new DocumentUnitRepository();
-    expect(() => repo.validate('get' as any, 'not-a-number' as any)).toThrow(
+    await expect(repo.validate('get' as any, 'not-a-number' as any)).rejects.toThrow(
       ValidationError,
     );
   });
 
-  test('validate throws on invalid get id (array)', () => {
+  test('validate throws on invalid get id (array)', async () => {
     const repo = new DocumentUnitRepository();
-    expect(() => repo.validate('get' as any, ['nope'] as any)).toThrow(
+    await expect(repo.validate('get' as any, ['nope'] as any)).rejects.toThrow(
       ValidationError,
     );
   });
 
-  test('validate default branch throws for invalid documentType on update', () => {
+  test('validate default branch throws for invalid documentType on update', async () => {
     const repo = new DocumentUnitRepository();
     const bad: any = { documentType: 'not-a-type' };
-    expect(() => repo.validate('update' as any, bad)).toThrow(ValidationError);
+    await expect(repo.validate('update' as any, bad)).rejects.toThrow(ValidationError);
   });
 });

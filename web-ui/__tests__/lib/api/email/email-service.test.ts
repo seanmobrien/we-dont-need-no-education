@@ -26,10 +26,6 @@ jest.mock('@/lib/neondb', () => ({
   query: jest.fn(),
 }));
 
-// Mock logger
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(),
-}));
 
 describe('EmailService', () => {
   let service: EmailService;
@@ -48,6 +44,7 @@ describe('EmailService', () => {
     it('should retrieve a single email with full details', async () => {
       const mockEmailDomain: EmailDomain = {
         emailId: 'email-1',
+        userId: 123,
         senderId: 1,
         subject: 'Test Subject',
         emailContents: 'Test Body',
@@ -125,7 +122,7 @@ describe('EmailService', () => {
         ],
       };
 
-      const mockCreatedEmail: EmailDomain = {
+      const mockCreatedEmail: any = {
         emailId: 'new-email-id',
         senderId: 1,
         subject: 'New Email',
@@ -177,6 +174,7 @@ describe('EmailService', () => {
 
       expect(mockRepository.create).toHaveBeenCalledWith({
         senderId: 1,
+        userId: 123,
         subject: 'New Email',
         emailContents: 'Email body',
         sentTimestamp: '2023-01-01T00:00:00Z',

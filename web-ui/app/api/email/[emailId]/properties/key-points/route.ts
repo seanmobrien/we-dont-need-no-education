@@ -2,18 +2,30 @@ import { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
+  extractParams
 } from '@/lib/nextjs-util/server/utils';
-import { extractParams } from '@/lib/nextjs-util/utils';
 import { KeyPointsDetails } from '@/data-models/api/email-properties/extended-properties';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
 import { PgColumn } from 'drizzle-orm/pg-core';
+import {
+  checkCaseFileAuthorization,
+  CaseFileScope,
+} from '@/lib/auth/resources/case-file';
 
 export const GET = wrapRouteRequest(
   async (req: NextRequest, args: { params: Promise<{ emailId: string }> }) => {
     const { emailId } = await extractParams<{ emailId: string }>(args);
+
+    // Check case file authorization
+    const authCheck = await checkCaseFileAuthorization(req, emailId, {
+      requiredScope: CaseFileScope.READ,
+    });
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
 
     const db = await drizDbWithInit();
 
@@ -58,8 +70,8 @@ export const GET = wrapRouteRequest(
         default:
           return columnName in schema.keyPoints
             ? (schema.keyPoints[
-                columnName as keyof typeof schema.keyPoints
-              ] as PgColumn)
+              columnName as keyof typeof schema.keyPoints
+            ] as PgColumn)
             : undefined;
       }
     };

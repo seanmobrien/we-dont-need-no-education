@@ -7,7 +7,7 @@ import {
   PickField,
 } from '@/lib/typescript';
 import { LikeNextRequest } from '@/lib/nextjs-util/types';
-import { extractParams } from '@/lib/nextjs-util/utils';
+import { extractParams } from '@/lib/nextjs-util/server/utils';
 import {
   isRequestOrApiRequest,
   isNextResponse,
@@ -25,8 +25,8 @@ type KeysFromModel<
   TRepositoryModel,
   TRepositoryKey extends keyof TRepositoryModel,
 > = {
-  [key in TRepositoryKey]: PickField<TRepositoryModel, key>;
-};
+    [key in TRepositoryKey]: PickField<TRepositoryModel, key>;
+  };
 
 export class RepositoryCrudController<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,25 +36,25 @@ export class RepositoryCrudController<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     any
   >
-    ? TInferModel
-    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      any = TRepository extends BaseObjectRepository<infer TInferModel, any>
-    ? TInferModel
-    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      any,
+  ? TInferModel
+  : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any = TRepository extends BaseObjectRepository<infer TInferModel, any>
+  ? TInferModel
+  : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any,
   TRepositoryKey extends TRepository extends BaseObjectRepository<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     any,
     infer TInferKey
   >
-    ? TInferKey
-    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      any = TRepository extends BaseObjectRepository<any, infer TInferKey>
-    ? TInferKey
-    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      any,
+  ? TInferKey
+  : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any = TRepository extends BaseObjectRepository<any, infer TInferKey>
+  ? TInferKey
+  : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any,
 > {
-  constructor(private repository: TRepository) {}
+  constructor(private repository: TRepository) { }
 
   async list(): Promise<
     NextResponse<
@@ -141,13 +141,13 @@ export class RepositoryCrudController<
   async listFromRepository(
     ...pageStats:
       | [
-          (
-            r: TRepository,
-          ) => Promise<PaginatedResultset<Partial<TRepositoryModel>>>,
-        ]
+        (
+          r: TRepository,
+        ) => Promise<PaginatedResultset<Partial<TRepositoryModel>>>,
+      ]
       | FunctionArguments<
-          ObjectRepository<TRepositoryModel, TRepositoryKey>['list']
-        >
+        ObjectRepository<TRepositoryModel, TRepositoryKey>['list']
+      >
       | FunctionArguments<TRepository['list']>
   ): Promise<
     NextResponse<
@@ -239,9 +239,9 @@ export class RepositoryCrudController<
   async getFromRepository(
     ...args:
       | FunctionArguments<
-          | TRepository['get']
-          | ObjectRepository<TRepositoryModel, TRepositoryKey>['get']
-        >
+        | TRepository['get']
+        | ObjectRepository<TRepositoryModel, TRepositoryKey>['get']
+      >
       | [(repository: TRepository) => Promise<TRepositoryModel>]
   ): Promise<NextResponse<TRepositoryModel | { error: string }>> {
     try {
@@ -249,7 +249,7 @@ export class RepositoryCrudController<
         args?.length === 1 && typeof args[0] === 'function'
           ? args[0]
           : (r: TRepository) =>
-              r.get.bind(r)(args as FunctionArguments<TRepository['get']>);
+            r.get.bind(r)(args as FunctionArguments<TRepository['get']>);
       const result = await theCallback(this.repository);
       if (!result) {
         return NextResponse.json(
@@ -290,8 +290,8 @@ export class RepositoryCrudController<
 
   async extractKeyFromParams<
     TReqParams extends
-      | KeysFromModel<TRepositoryModel, TRepositoryKey>
-      | Partial<TRepositoryModel>,
+    | KeysFromModel<TRepositoryModel, TRepositoryKey>
+    | Partial<TRepositoryModel>,
   >(
     req: LikeNextRequest | TRepositoryKey,
     withParams?: { params: TReqParams | Promise<TReqParams> },
@@ -377,9 +377,9 @@ export class RepositoryCrudController<
   async createFromRepository(
     ...args:
       | FunctionArguments<
-          | ObjectRepository<TRepositoryModel, TRepositoryKey>['create']
-          | TRepository['create']
-        >
+        | ObjectRepository<TRepositoryModel, TRepositoryKey>['create']
+        | TRepository['create']
+      >
       | [(repository: TRepository) => Promise<TRepositoryModel>]
   ): Promise<
     NextResponse<TRepositoryModel | { success: false; error: string }>
@@ -396,20 +396,20 @@ export class RepositoryCrudController<
         createdRecord =
           typeof args[0] === 'function'
             ? await (
-                args[0] as (
-                  repository: TRepository,
-                ) => Promise<TRepositoryModel>
-              )(this.repository)
+              args[0] as (
+                repository: TRepository,
+              ) => Promise<TRepositoryModel>
+            )(this.repository)
             : await this.repository.create(
-                args[0] as FunctionArguments<TRepository['create']>,
-              );
+              args[0] as FunctionArguments<TRepository['create']>,
+            );
 
         return createdRecord
           ? NextResponse.json(createdRecord, { status: 200 })
           : NextResponse.json(
-              { success: false, error: `Record not found` },
-              { status: 404 },
-            );
+            { success: false, error: `Record not found` },
+            { status: 404 },
+          );
       } else {
         createdRecord = await this.repository.create.bind(this.repository)(
           args as FunctionArguments<
@@ -420,9 +420,9 @@ export class RepositoryCrudController<
       return createdRecord
         ? NextResponse.json(createdRecord, { status: 200 })
         : NextResponse.json(
-            { success: false, error: `Record not found` },
-            { status: 404 },
-          );
+          { success: false, error: `Record not found` },
+          { status: 404 },
+        );
     } catch (error) {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
@@ -478,9 +478,9 @@ export class RepositoryCrudController<
   async updateFromRepository(
     ...args:
       | FunctionArguments<
-          | TRepository['update']
-          | ObjectRepository<TRepositoryModel, TRepositoryKey>['update']
-        >
+        | TRepository['update']
+        | ObjectRepository<TRepositoryModel, TRepositoryKey>['update']
+      >
       | [(repository: TRepository) => Promise<TRepositoryModel>]
   ): Promise<
     NextResponse<TRepositoryModel | { success: false; error: string }>
@@ -497,19 +497,19 @@ export class RepositoryCrudController<
         updatedRecord =
           typeof args[0] === 'function'
             ? await (
-                args[0] as (
-                  repository: TRepository,
-                ) => Promise<TRepositoryModel>
-              )(this.repository)
+              args[0] as (
+                repository: TRepository,
+              ) => Promise<TRepositoryModel>
+            )(this.repository)
             : await this.repository.update(
-                args[0] as FunctionArguments<TRepository['update']>,
-              );
+              args[0] as FunctionArguments<TRepository['update']>,
+            );
         return updatedRecord
           ? NextResponse.json(updatedRecord, { status: 200 })
           : NextResponse.json(
-              { success: false, error: `Record not found` },
-              { status: 404 },
-            );
+            { success: false, error: `Record not found` },
+            { status: 404 },
+          );
       } else {
         updatedRecord = await this.repository.update.bind(this.repository)(
           args as FunctionArguments<TRepository['update']>,
@@ -518,9 +518,9 @@ export class RepositoryCrudController<
       return updatedRecord
         ? NextResponse.json(updatedRecord, { status: 200 })
         : NextResponse.json(
-            { success: false, error: `Record not found` },
-            { status: 404 },
-          );
+          { success: false, error: `Record not found` },
+          { status: 404 },
+        );
     } catch (error) {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
@@ -558,8 +558,8 @@ export class RepositoryCrudController<
     ...args:
       | FunctionArguments<TRepository['delete']>
       | FunctionArguments<
-          ObjectRepository<TRepositoryModel, TRepositoryKey>['delete']
-        >
+        ObjectRepository<TRepositoryModel, TRepositoryKey>['delete']
+      >
       | [(repository: TRepository) => Promise<boolean>]
   ): Promise<
     NextResponse<{ success: true } | { success: false; error: string }>
@@ -577,14 +577,14 @@ export class RepositoryCrudController<
           typeof args[0] === 'function'
             ? await args[0](this.repository)
             : await this.repository.delete(
-                args[0] as FunctionArguments<TRepository['delete']>,
-              );
+              args[0] as FunctionArguments<TRepository['delete']>,
+            );
         return wasDeleted
           ? NextResponse.json({ success: true }, { status: 200 })
           : NextResponse.json(
-              { success: false, error: `Record not found` },
-              { status: 404 },
-            );
+            { success: false, error: `Record not found` },
+            { status: 404 },
+          );
       } else {
         wasDeleted = await this.repository.delete.bind(this.repository)(
           args as FunctionArguments<TRepository['delete']>,
@@ -593,9 +593,9 @@ export class RepositoryCrudController<
       return wasDeleted
         ? NextResponse.json({ success: true }, { status: 200 })
         : NextResponse.json(
-            { success: false, error: `Record not found` },
-            { status: 404 },
-          );
+          { success: false, error: `Record not found` },
+          { status: 404 },
+        );
     } catch (error) {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,

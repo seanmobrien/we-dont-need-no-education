@@ -1,12 +1,10 @@
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes for SSE connections
-import type { Session } from '@auth/core/types';
 import { log, safeSerialize } from '@/lib/logger';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { createMcpHandler } from 'mcp-handler';
 import {
-  extractToken,
   KnownScopeIndex,
   KnownScopeValues,
 } from '@/lib/auth/utilities';
@@ -25,7 +23,7 @@ import {
 import {
   amendCaseRecord,
   amendCaseRecordConfig,
-} from '@/lib/ai/tools/amendCaseRecord';
+} from '@/lib/ai/tools/amend-case-record';
 import {
   getMultipleCaseFileDocuments,
   getMultipleCaseFileDocumentsConfig,
@@ -58,7 +56,10 @@ import {
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { FirstParameter } from '@/lib/typescript';
 import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
-import { auth } from '@/auth';
+import { env } from '@/lib/site-util/env';
+import { type BasicResourceRecord, resourceService } from '@/lib/auth/resources/resource-service';
+import { authorizationService } from '@/lib/auth/resources/authorization-service';
+import { getAccessToken } from '@/lib/auth/access-token';
 
 type McpConfig = Exclude<Parameters<typeof createMcpHandler>[2], undefined>;
 type OnEventHandler = Exclude<McpConfig['onEvent'], undefined>;
@@ -233,49 +234,78 @@ const onMcpEvent = (event: McpEvent, ...args: unknown[]) => {
   }
 };
 
-const checkAccess = async (req: NextRequest) => {
-  const checkResource = (
-    resource_access: { [key: string]: string[] } | undefined,
-  ) => {
-    if (!resource_access) {
-      log((l) => l.warn('No resource access found in session'));
+
+type CheckAccessProps = {
+  req: NextRequest;
+  readWrite?: boolean;
+};
+
+const checkAccess = async (props: NextRequest | CheckAccessProps) => {
+  const TOOL_RESOURCE_NAME = env('AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_NAME');
+  const TOOL_RESOURCE_ID = env('AUTH_KEYCLOAK_MCP_TOOL_RESOURCE_ID');
+
+  const reqFromProps = 'req' in props
+    ? props
+    : {
+      req: props,
+      readWrite: false,
+    };
+  const {
+    req: requestFromProps,
+    readWrite: readWriteAccess,
+  } = reqFromProps;
+
+  const findResource = async () => {
+    let toolResourceRecord: BasicResourceRecord | null = null;
+    const rs = resourceService();
+    try {
+
+      toolResourceRecord = await rs.getAuthorizedResource(TOOL_RESOURCE_ID);
+      if (!toolResourceRecord) {
+        toolResourceRecord = await rs.findAuthorizedResource(TOOL_RESOURCE_NAME);
+      }
+    } catch (error) {
+      throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'checkAccess',
+        include: { TOOL_RESOURCE_NAME, TOOL_RESOURCE_ID },
+      });
+    }
+    return toolResourceRecord;
+  };
+
+
+  try {
+    const toolResourceRecord = await findResource();
+    if (!toolResourceRecord) {
+      log((l) => l.warn('No tool resource found'));
       return false;
     }
-    const mcpToolAccess = resource_access['mcp-tool'];
-    if (!mcpToolAccess) {
-      log((l) => l.warn('No mcp-tool access found in session resource access'));
+    const bearerToken = await getAccessToken(requestFromProps);
+    if (!bearerToken) {
+      log((l) => l.warn('No bearer token found'));
       return false;
     }
-    if (
-      !mcpToolAccess.includes(KnownScopeValues[KnownScopeIndex.ToolRead]) &&
-      !mcpToolAccess.includes(KnownScopeValues[KnownScopeIndex.ToolReadWrite])
-    ) {
-      log((l) => l.warn(
-        'tool-read or tool-write scope not found in mcp-tool access',
-        mcpToolAccess,
-      ));;
+    const checkResult = await
+      authorizationService(svc => svc.checkResourceFileAccess({
+        bearerToken,
+        resourceId: toolResourceRecord._id!,
+        scope: readWriteAccess === true ? 'mcp-tool:write' : 'mcp-tool:read'
+      }));
+    if (!checkResult || !checkResult.success) {
+      // Access denied
       return false;
     }
     return true;
-  };
-  const checkSession = async () => {
-    const session: Session | null = await auth();
-    if (!session) {
-      log((l) => l.warn('No session found'));
-      return false;
-    }
-    return checkResource(session.resource_access);
-  };
-  const checkToken = async () => {
-    const token = await extractToken(req);
-    if (!token) {
-      log((l) => l.warn('No token found'));
-      return false;
-    }
-    return checkResource(token.resource_access);
-  };
-  const check = await Promise.all([checkSession(), checkToken()]);
-  return check[0] || check[1];
+  } catch (error) {
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'checkAccess',
+      include: { TOOL_RESOURCE_NAME, TOOL_RESOURCE_ID },
+    });
+    // Hard fail for exceptions
+    return false;
+  }
 };
 
 const handler = wrapRouteRequest(

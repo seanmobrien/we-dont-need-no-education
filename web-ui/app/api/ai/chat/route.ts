@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic';
 import {
   streamText,
   convertToModelMessages,
-  UIMessage,
   stepCountIs,
   hasToolCall,
 } from 'ai';
@@ -14,7 +13,7 @@ import { getUserToolProviderCache } from '@/lib/ai/mcp/cache';
 import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
 import { env } from '@/lib/site-util/env';
 import { auth } from '@/auth';
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { isTruthy } from '@/lib/react-util/utility-methods';
@@ -25,6 +24,8 @@ import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
 import type { User } from '@auth/core/types';
 import { wrapMemoryMiddleware } from '@/lib/ai/middleware/memory-middleware';
+import { streamingMessageResponse } from '@/lib/ai/chat/streamed-result';
+
 // Allow streaming responses up to 360 seconds
 //const maxDuration = 60 * 1000 * 360;
 
@@ -316,73 +317,14 @@ export const POST = (req: NextRequest) => {
           })).tools,
         });
 
-        // Create a merged UI message chunk stream so we can inject a structured
-        // `data-error-notify-retry` chunk when a rate limit is detected. We use the
-        // SDK's `toUIMessageStream()` AsyncIterable then forward each chunk as an
-        // SSE data event, and append our retry data chunk if needed.
-        const uiChunkIterable = result.toUIMessageStream<UIMessage>({
-          // preserve defaults; originalMessages aren't required here because we
-          // will forward all chunks and emit an explicit data part when needed.
-        });
-
-        async function* mergedChunks() {
-          try {
-            for await (const chunk of uiChunkIterable) {
-              yield chunk as unknown as Record<string, unknown>;
-            }
-          } finally {
-            // After the SDK stream completes, if we detected a rate limit during
-            // streaming, emit a structured data chunk that the client UI can
-            // recognize and handle.
-            if (isRateLimitError) {
-              const retryAt = new Date(Date.now() + retryAfter * 1000);
-              yield {
-                type: 'data-error-notify-retry',
-                id: `${threadId ?? 'not-set'}:retry`,
-                data: {
-                  model: model,
-                  retryAt: retryAt.toISOString(),
-                },
-                transient: false,
-              } as Record<string, unknown>;
-            }
-          }
-        }
-
-        const encoder = new TextEncoder();
-        const stream = new ReadableStream<Uint8Array>({
-          async start(controller) {
-            try {
-              for await (const chunk of mergedChunks()) {
-                const payload = JSON.stringify(chunk);
-                controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
-              }
-              log((l) => l.verbose('Chat: Stream closing normally', { chatHistoryId }));
-              controller.close();
-            } catch (err) {
-              controller.error(LoggedError.isTurtlesAllTheWayDownBaby(err, {
-                log: true,
-                source: 'route:ai:chat mergedChunks',
-                severity: 'error',
-                data: {
-                  chatHistoryId,
-                  model,
-                  isRateLimitError,
-                  retryAfter,
-                },
-              }));
-            }
-          },
-          cancel(reason) {
-            log((l) => l.warn('Stream cancelled', { reason, chatHistoryId }));
-            // noop
-          },
-        });
-
-        return new Response(stream, {
-          headers: {
-            'Content-Type': 'text/event-stream;charset=utf-8',
-            'Cache-Control': 'no-cache, no-transform',
+        return streamingMessageResponse({
+          result,
+          context: {
+            chatHistoryId,
+            threadId,
+            model,
+            getIsRateLimitError: () => isRateLimitError,
+            getRetryAfter: () => retryAfter,
           },
         });
       } catch (error) {

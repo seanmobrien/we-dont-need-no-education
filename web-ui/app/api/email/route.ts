@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 // (normalizeNullableNumeric no longer needed directly; handled in validation module)
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { NEVER_USE_USER_ID } from '@/lib/constants';
 
 import { EmailService } from '@/lib/api/email/email-service';
 import {
@@ -13,14 +14,7 @@ import {
   wrapRouteRequest,
 } from '@/lib/nextjs-util/server/utils';
 import { drizDbWithInit, schema } from '@/lib/drizzle-db';
-import {
-  count_kpi,
-  count_attachments,
-  count_notes,
-  count_responsive_actions,
-  count_cta,
-} from '@/lib/api/email/drizzle/query-parts';
-import { eq } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 // count_kpi import removed; not used in this route currently
 import {
   DrizzleSelectQuery,
@@ -28,6 +22,8 @@ import {
   selectForGrid,
 } from '@/lib/components/mui/data-grid/queryHelpers';
 import { ContactSummary, EmailMessageSummary } from '@/data-models';
+import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
+import { getAccessToken } from '@/lib/auth/access-token';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,30 +42,26 @@ export const dynamic = 'force-dynamic';
  */
 export const GET = wrapRouteRequest(
   async (req: NextRequest) => {
+    const normalAccessToken = await getAccessToken(req);
+    const eligibleUserIds = await getAccessibleUserIds(normalAccessToken) ?? [NEVER_USE_USER_ID];
     const results = await drizDbWithInit(async (db) => {
-      // Correlated subquery returning a JSONB array of recipient objects for each email
-      const attachments = count_attachments({ db });
-      const countKpi = count_kpi({ db });
-      const countNotes = count_notes({ db });
-      const countRa = count_responsive_actions({ db });
-      const countCta = count_cta({ db });
 
       const getColumn = (columnName: string) => {
         switch (columnName) {
           case 'sentOn':
             return schema.emails.sentTimestamp;
-          case 'count_attachments':
-            return attachments.countAttachments;
-          case 'count_kpi':
-            return countKpi.targetCount;
-          case 'count_notes':
-            return countNotes.targetCount;
-          case 'count_cta':
-            return countCta.targetCount;
-          case 'count_responsive_actions':
-            return countRa.targetCount;
           case 'sender':
             return schema.contacts.name;
+          case 'count_cta':
+            return schema.emails.countCta;
+          case 'count_kpi':
+            return schema.emails.countKpi;
+          case 'count_notes':
+            return schema.emails.countNotes;
+          case 'count_responsive_actions':
+            return schema.emails.countResponsiveActions;
+          case 'count_attachments':
+            return schema.emails.countAttachments;
           default:
             return getEmailColumn({ columnName, table: schema.emails });
         }
@@ -87,22 +79,26 @@ export const GET = wrapRouteRequest(
           parentEmailId: schema.emails.parentId,
           importedFromId: schema.emails.importedFromId,
           globalMessageId: schema.emails.globalMessageId,
-          count_kpi: countKpi.targetCount,
-          count_notes: countNotes.targetCount,
-          count_cta: countCta.targetCount,
-          count_responsive_actions: countRa.targetCount,
-          count_attachments: attachments.countAttachments,
+          count_kpi: schema.emails.countKpi,
+          count_notes: schema.emails.countNotes,
+          count_cta: schema.emails.countCta,
+          count_responsive_actions: schema.emails.countResponsiveActions,
+          count_attachments: schema.emails.countAttachments,
         })
         .from(schema.emails)
+        // Inner join to document units with user id allow-list provides access filter
+        .innerJoin(schema.documentUnits, and(
+          and(
+            eq(schema.emails.emailId, schema.documentUnits.emailId),
+            eq(schema.documentUnits.documentType, 'email')
+          ),
+          inArray(schema.documentUnits.userId, eligibleUserIds)
+        ))
+        // Inner join to contacts to get sender name and email
         .innerJoin(
           schema.contacts,
           eq(schema.emails.senderId, schema.contacts.contactId),
         )
-        .fullJoin(attachments, eq(schema.emails.emailId, attachments.emailId))
-        .fullJoin(countKpi, eq(schema.emails.emailId, countKpi.targetId))
-        .fullJoin(countNotes, eq(schema.emails.emailId, countNotes.targetId))
-        .fullJoin(countCta, eq(schema.emails.emailId, countCta.targetId))
-        .fullJoin(countRa, eq(schema.emails.emailId, countRa.targetId));
       return await selectForGrid<EmailMessageSummary>({
         req,
         query: bq as unknown as DrizzleSelectQuery,

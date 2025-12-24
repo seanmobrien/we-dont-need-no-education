@@ -7,23 +7,36 @@ import {
 } from '@/lib/api/email/properties/email-property-repository';
 import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 import { db } from '@/lib/neondb';
-import { extractParams } from '@/lib/nextjs-util/utils';
+import { extractParams } from '@/lib/nextjs-util/server/utils';
 import { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
 } from '@/lib/nextjs-util/server/utils';
+import {
+  checkCaseFileAuthorization,
+  CaseFileScope,
+} from '@/lib/auth/resources/case-file';
 
 export const dynamic = 'force-dynamic';
 
 export const GET = wrapRouteRequest(
   async (req: NextRequest, args: { params: Promise<{ emailId: string }> }) => {
+    const { emailId } = await extractParams<{ emailId: string }>(args);
+
+    // Check case file authorization
+    const authCheck = await checkCaseFileAuthorization(req, emailId, {
+      requiredScope: CaseFileScope.READ,
+    });
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
+
     const controller = new RepositoryCrudController(
       new EmailPropertyRepository(),
     );
 
     return controller.listFromRepository(async (r) => {
-      const { emailId } = await extractParams<{ emailId: string }>(args);
       return r.innerQuery((q) =>
         q.list(
           (num, page, offset) =>

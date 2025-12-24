@@ -8,7 +8,6 @@ import {
   isNextApiResponse,
 } from './guards';
 import { LikeNextRequest, LikeNextResponse } from './types';
-import { isPromise } from '../typescript';
 import { getStackTrace } from './get-stack-trace';
 
 type HeadersLikeNextRequestOrResponse = {
@@ -54,17 +53,7 @@ export const getHeaderValue = (
   return null;
 };
 
-export const extractParams = async <T extends object>(req: {
-  params: T | Promise<T>;
-}): Promise<T> => {
-  if (!req.params) {
-    throw new Error('No params found');
-  }
-  if (isPromise(req.params)) {
-    return await req.params;
-  }
-  return req.params;
-};
+
 
 // When we're running on node we can process.emitWarning
 const warnDeprecatedOnNode = (message: string, options: { code: string; type: string; }) =>

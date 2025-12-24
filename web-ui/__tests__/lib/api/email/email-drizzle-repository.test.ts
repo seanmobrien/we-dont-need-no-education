@@ -1,12 +1,11 @@
- 
- 
+/* @jest-environment node */
 
 import {
   EmailDrizzleRepository,
   EmailDomain,
 } from '@/lib/api/email/email-drizzle-repository';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
- 
+
 import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
 /*
 // Mock drizzle-db
@@ -52,13 +51,30 @@ jest.mock('@/drizzle/schema', () => {
   };
 });
 
+// Mock checkCaseFileAuthorization
+jest.mock('@/lib/auth/resources/case-file/case-file-middleware', () => ({
+  checkCaseFileAuthorization: jest.fn().mockResolvedValue(true),
+}));
+
+// Mock checkCaseFileAccess
+jest.mock('@/lib/auth/resources/case-file', () => ({
+  checkCaseFileAccess: jest.fn().mockResolvedValue(true),
+  CaseFileScope: { READ: 'read', WRITE: 'write' },
+  getAccessibleUserIds: jest.fn().mockResolvedValue([]),
+}));
+
+// Mock auth
+jest.mock('@/auth', () => ({
+  auth: jest.fn().mockResolvedValue({ user: { id: '123' } }),
+}));
+
 describe('EmailDrizzleRepository', () => {
   let repository: EmailDrizzleRepository;
 
   let mockDb: any;
 
   beforeEach(() => {
-    // Clear all mocks
+
     // jest.clearAllMocks();
 
     // Create repository instance
@@ -82,81 +98,83 @@ describe('EmailDrizzleRepository', () => {
   });
 
   describe('validation', () => {
-    it('should validate create operation with required fields', () => {
+    it('should validate create operation with required fields', async () => {
       const validEmail: Omit<EmailDomain, 'emailId'> = {
         senderId: 1,
+        userId: 123,
         subject: 'Test Subject',
         emailContents: 'Test content',
         sentTimestamp: new Date(),
       };
 
       // Should not throw for valid data
-      expect(() => {
-        (repository as any).validate('create', validEmail);
-      }).not.toThrow();
+      expect(async () => {
+        await ((repository as any).validate('create', validEmail) as Promise<void>);
+      }).resolves.not.toThrow();
     });
 
-    it('should throw ValidationError for create operation missing required fields', () => {
+    it('should throw ValidationError for create operation missing required fields', async () => {
       const invalidEmail = {
         senderId: 1,
         // Missing subject and emailContents
       };
 
-      expect(() => {
-        (repository as any).validate('create', invalidEmail);
-      }).toThrow(ValidationError);
+      expect(async () => {
+        await ((repository as any).validate('create', invalidEmail) as Promise<void>);
+      }).rejects.toThrow(ValidationError);
 
-      expect(() => {
-        (repository as any).validate('create', invalidEmail);
-      }).toThrow('senderId||subject||emailContents');
+      expect(async () => {
+        await ((repository as any).validate('create', invalidEmail) as Promise<void>);
+      }).rejects.toThrow('subject||emailContents');
     });
 
-    it('should validate update operation with emailId', () => {
+    it('should validate update operation with emailId', async () => {
       const validUpdate: Partial<EmailDomain> = {
         emailId: 'test-uuid',
         subject: 'Updated Subject',
       };
 
-      expect(() => {
-        (repository as any).validate('update', validUpdate);
+      await expect(async () => {
+        await (repository as any).validate('update', validUpdate);
       }).not.toThrow();
     });
 
-    it('should throw ValidationError for update operation missing emailId', () => {
+    it('should throw ValidationError for update operation missing emailId', async () => {
       const invalidUpdate = {
         subject: 'Updated Subject',
         // Missing emailId
       };
 
-      expect(() => {
-        (repository as any).validate('update', invalidUpdate);
-      }).toThrow(ValidationError);
+      await expect(async () => {
+        await (repository as any).validate('update', invalidUpdate);
+      }).rejects.toThrow(ValidationError);
 
-      expect(() => {
-        (repository as any).validate('update', invalidUpdate);
-      }).toThrow('emailId');
+      await expect(async () => {
+        await (repository as any).validate('update', invalidUpdate);
+      }).rejects.toThrow('emailId');
     });
 
-    it('should throw ValidationError for update operation with only emailId', () => {
+    it('should throw ValidationError for update operation with only emailId', async () => {
       const invalidUpdate = {
         emailId: 'test-uuid',
         // No other fields to update
       };
 
-      expect(() => {
-        (repository as any).validate('update', invalidUpdate);
-      }).toThrow(ValidationError);
+      await expect(async () => {
+        await (repository as any).validate('update', invalidUpdate);
+      }).rejects.toThrow(ValidationError);
 
-      expect(() => {
-        (repository as any).validate('update', invalidUpdate);
-      }).toThrow('At least one field is required for update');
+      await expect(async () => {
+        await (repository as any).validate('update', invalidUpdate);
+      }).rejects.toThrow('At least one field is required for update');
     });
   });
 
   describe('prepareInsertData', () => {
-    it('should map domain object to database columns', () => {
+    it('should map domain object to database columns', async () => {
       const emailDomain: Omit<EmailDomain, 'emailId'> = {
         senderId: 123,
+        userId: undefined as unknown as number,
         subject: 'Test Subject',
         emailContents: 'Test content',
         sentTimestamp: '2023-01-01T00:00:00Z',
@@ -166,10 +184,11 @@ describe('EmailDrizzleRepository', () => {
         globalMessageId: 'global-message-123',
       };
 
-      const result = (repository as any).prepareInsertData(emailDomain);
+      const result = await (repository as any).prepareInsertData(emailDomain);
 
       expect(result).toEqual({
         sender_id: 123,
+        user_id: 123,
         subject: 'Test Subject',
         email_contents: 'Test content',
         sent_timestamp: '2023-01-01T00:00:00Z',
@@ -180,18 +199,19 @@ describe('EmailDrizzleRepository', () => {
       });
     });
 
-    it('should handle optional fields with null values', () => {
-      const emailDomain: Omit<EmailDomain, 'emailId'> = {
+    it('should handle optional fields with null values', async () => {
+      const emailDomain: any = {
         senderId: 123,
         subject: 'Test Subject',
         emailContents: 'Test content',
         sentTimestamp: '2023-01-01T00:00:00Z',
       };
 
-      const result = (repository as any).prepareInsertData(emailDomain);
+      const result = await (repository as any).prepareInsertData(emailDomain);
 
       expect(result).toEqual({
         sender_id: 123,
+        user_id: 123,
         subject: 'Test Subject',
         email_contents: 'Test content',
         sent_timestamp: '2023-01-01T00:00:00Z',
@@ -202,14 +222,14 @@ describe('EmailDrizzleRepository', () => {
       });
     });
 
-    it('should provide default sentTimestamp if not provided', () => {
+    it('should provide default sentTimestamp if not provided', async () => {
       const emailDomain: any = {
         senderId: 123,
         subject: 'Test Subject',
         emailContents: 'Test content',
       };
 
-      const result = (repository as any).prepareInsertData(emailDomain);
+      const result = await (repository as any).prepareInsertData(emailDomain);
 
       expect(result.sent_timestamp).toBeInstanceOf(Date);
       expect(result.sender_id).toBe(123);
@@ -281,7 +301,11 @@ describe('EmailDrizzleRepository', () => {
         },
       ]);
 
+
+
       const result = await repository.findByGlobalMessageId('global-123');
+
+
 
       expect(result).toEqual({
         emailId: 'test-uuid',

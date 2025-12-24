@@ -4,11 +4,15 @@ import {
   wrapRouteRequest,
 } from '@/lib/nextjs-util/server/utils';
 
-import { extractParams } from '@/lib/nextjs-util/utils';
+import { extractParams } from '@/lib/nextjs-util/server/utils';
 import { CallToActionResponseDetails } from '@/data-models/api/email-properties/extended-properties';
 import { eq, and, sql } from 'drizzle-orm';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
+import {
+  checkCaseFileAuthorization,
+  CaseFileScope,
+} from '@/lib/auth/resources/case-file';
 import {
   getEmailColumn,
   selectForGrid,
@@ -26,6 +30,14 @@ export const dynamic = 'force-dynamic';
 export const GET = wrapRouteRequest(
   async (req: NextRequest, args: { params: Promise<{ emailId: string }> }) => {
     const { emailId } = await extractParams<{ emailId: string }>(args);
+
+    // Check case file authorization
+    const authCheck = await checkCaseFileAuthorization(req, emailId, {
+      requiredScope: CaseFileScope.READ,
+    });
+    if (!authCheck.authorized) {
+      return authCheck.response;
+    }
 
     const db = await drizDbWithInit();
 

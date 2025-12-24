@@ -97,6 +97,19 @@ declare module '@auth/core/types' {
      * Resource access claims associated with the token.
      */
     resource_access?: { [key: string]: string[] };
+
+
+    /**
+     * Error code from the authentication strategy (e.g. "RefreshAccessTokenError").
+     * 
+     */
+    error?: unknown;
+
+    /**
+     * UMA permissions associated with the session.
+     * Map of resource ID to array of allowed scopes.
+     */
+    permissions?: Record<string, string[]>;
   }
   export type AuthConfig = BaseAuthConfig & {
     callbacks: BaseAuthConfig['callbacks'] & {
@@ -227,5 +240,16 @@ declare module '@auth/core/jwt' {
      * Resource access claims associated with the token.
      */
     resource_access?: { [key: string]: string[] };
+    /**
+     * UMA permissions associated with the session.
+     * Array of permissions.
+     */
+    authorization?: {
+      permissions?: Array<{
+        scopes: Array<string>;
+        rsid: string;
+        rsname: string;
+      }>;
+    }
   }
 }

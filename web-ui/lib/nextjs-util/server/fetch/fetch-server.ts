@@ -139,6 +139,32 @@ export const normalizeRequestInit = ({
   let init: (Omit<RequestInitWithTimeout, 'timeout'> & { timeout?: Partial<EnhancedFetchConfig['timeout']> }) = {
     ...requestInit,
   };
+
+  // Handle URLSearchParams body
+  if (init.body instanceof URLSearchParams) {
+    init.body = init.body.toString();
+    if (!init.headers) {
+      init.headers = {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      };
+    } else if (Array.isArray(init.headers)) {
+      init.headers.push(['Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8']);
+    } else if (init.headers instanceof Headers) {
+      if (!init.headers.has('Content-Type')) {
+        init.headers.set('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8');
+      }
+    } else {
+      // Record<string, string | string[]>
+      // Check if Content-Type exists case-insensitively
+      const hasContentType = Object.keys(init.headers).some(k => k.toLowerCase() === 'content-type');
+      if (!hasContentType) {
+        init.headers = {
+          ...init.headers,
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        };
+      }
+    }
+  }
   if (!requestInfo) {
     throw new Error('Invalid requestInfo');
   }

@@ -3,6 +3,7 @@ import { EmailDashboardLayout } from '@/components/email-message/dashboard-layou
 import { TimelineAgentInterface } from '@/components/ai/timeline-agent';
 import { resolveEmailIdWithRedirect } from '@/lib/email/email-id-resolver';
 import { Box } from '@mui/system';
+import { notFound } from 'next/navigation';
 
 interface PageProps {
   params: Promise<{
@@ -20,6 +21,9 @@ const Page = async ({ params }: PageProps) => {
     emailIdParam,
     `/messages/email/[emailId]/call-to-action/${propertyId}/timeline`,
   );
+  if (!emailId) {
+    notFound();
+  }
 
   return (
     <EmailDashboardLayout session={session}>
