@@ -4,8 +4,9 @@ import { log } from '@/lib/logger';
 import { deprecate } from '@/lib/nextjs-util/utils';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { authorizationService } from '../authorization-service';
-import { getAccessToken } from '../../access-token';
-import { auth } from '@/auth';
+import { normalizedAccessToken } from '../../access-token';
+import type { NextRequest } from 'next/server';
+import { AccessTokenOrRequestOverloads } from '../../types';
 
 export const getUserIdFromEmailId = deprecate(async function getUserIdFromEmailId(
   emailId: string,
@@ -24,9 +25,9 @@ export const getUserIdFromEmailId = deprecate(async function getUserIdFromEmailI
   'DEP003'
 );
 
-export async function getUserIdFromUnitId(
+export const getUserIdFromUnitId = async (
   documentUnitId: number | string | undefined,
-): Promise<number | null> {
+): Promise<number | null> => {
   try {
     const unitId = await resolveCaseFileId(documentUnitId);
     if (!unitId) {
@@ -68,9 +69,9 @@ export async function getUserIdFromUnitId(
   }
 }
 
-export async function getKeycloakUserIdFromUserId(
+export const getKeycloakUserIdFromUserId = async (
   userId: number,
-): Promise<string | null> {
+): Promise<string | null> => {
   try {
     const db = await drizDbWithInit();
 
@@ -102,20 +103,19 @@ export async function getKeycloakUserIdFromUserId(
       include: { userId },
     });
   }
-}
+};
 
-export async function getAccessibleUserIds(
-  userAccessToken?: string,
-): Promise<number[]> {
+export const getAccessibleUserIds: AccessTokenOrRequestOverloads<number[]> = async (
+  userAccessToken?: string | NextRequest | undefined,
+): Promise<number[]> => {
   try {
-    const normalAccessToken = userAccessToken ?? await getAccessToken(undefined);
-    if (!normalAccessToken) {
+    const normalizedInput = await normalizedAccessToken(userAccessToken);
+    if (!normalizedInput) {
+      log((l) => l.warn('No credentials available for entitlement check.'));
       return [];
     }
-    const { user: { id: userIdFromSession } = { id: null } } = await auth() ?? { user: { id: null } };
-    const userId = userIdFromSession ? Number(userIdFromSession) : undefined;
-
-    const entitlements = await authorizationService(s => s.getUserEntitlements(normalAccessToken));
+    const { accessToken: bearerToken, userId } = normalizedInput;
+    const entitlements = await authorizationService(s => s.getUserEntitlements(bearerToken));
 
     const accessibleUserIds = new Set<number>();
     let foundThisId = false;
@@ -141,5 +141,5 @@ export async function getAccessibleUserIds(
       msg: 'Failed to get accessible user IDs',
     });
   }
-}
+};
 

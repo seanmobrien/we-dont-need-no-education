@@ -188,6 +188,9 @@ export const chats = pgTable(
     }).defaultNow(),
     title: text(),
     metadata: jsonb(),
+    allTheTokens: integer('all_the_tokens').notNull().default(0),
+    allTheMessages: integer('all_the_messages').notNull().default(0),
+    allTheTurns: integer('all_the_turns').notNull().default(0),
   },
   (table) => [
     index('idx_chats_created_at').using(
@@ -731,6 +734,11 @@ export const emails = pgTable(
     emailId: uuid('email_id').defaultRandom().primaryKey().notNull(),
     parentId: uuid('parent_id'),
     documentType: text('document_type').generatedAlwaysAs(sql`'email'::text`),
+    countAttachments: integer('count_attachments').notNull().default(0),
+    countKpi: integer('count_kpi').notNull().default(0),
+    countNotes: integer('count_notes').notNull().default(0),
+    countCta: integer('count_cta').notNull().default(0),
+    countResponsiveActions: integer('count_responsive_actions').notNull().default(0),
   },
   (table) => [
     index('fki_fk_emails_parent_email').using(

@@ -3,7 +3,7 @@ import { CallToActionResponseDetailsRepository } from '@/lib/api/email/propertie
 import { NextRequest } from 'next/server';
 import { wrapRouteRequest, extractParams } from '@/lib/nextjs-util/server/utils';
 import {
-  checkEmailAuthorization,
+  checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
 
@@ -17,7 +17,7 @@ export const GET = wrapRouteRequest(
     const { emailId } = await extractParams(args);
 
     // Check case file authorization
-    const authCheck = await checkEmailAuthorization(req, emailId, {
+    const authCheck = await checkCaseFileAuthorization(req, emailId, {
       requiredScope: CaseFileScope.READ,
     });
     if (!authCheck.authorized) {
@@ -39,7 +39,7 @@ export const PUT = wrapRouteRequest(
     const { emailId } = await extractParams(args);
 
     // Check case file authorization
-    const authCheck = await checkEmailAuthorization(req, emailId, {
+    const authCheck = await checkCaseFileAuthorization(req, emailId, {
       requiredScope: CaseFileScope.WRITE,
     });
     if (!authCheck.authorized) {
@@ -61,7 +61,7 @@ export const DELETE = wrapRouteRequest(
     const { emailId } = await extractParams(args);
 
     // Check case file authorization
-    const authCheck = await checkEmailAuthorization(req, emailId, {
+    const authCheck = await checkCaseFileAuthorization(req, emailId, {
       requiredScope: CaseFileScope.WRITE,
     });
     if (!authCheck.authorized) {
@@ -82,7 +82,7 @@ export const POST = wrapRouteRequest(
     const { emailId } = await extractParams(args);
 
     // Check case file authorization
-    const authCheck = await checkEmailAuthorization(req, emailId, {
+    const authCheck = await checkCaseFileAuthorization(req, emailId, {
       requiredScope: CaseFileScope.WRITE,
     });
     if (!authCheck.authorized) {

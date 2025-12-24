@@ -14,29 +14,10 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { decodeToken } from '../utilities';
 import { log } from '@/lib/logger';
 import { serviceInstanceOverloadsFactory, SingletonProvider } from '@/lib/typescript';
+import type { ResourceEntitlement, CheckAccessResult, CheckAccessOptions } from './types';
+import { NextRequest } from 'next/server';
+import { normalizedAccessToken } from '../access-token';
 
-/**
- * Options for checking resource access
- */
-export interface CheckAccessOptions {
-  /** The specific resource ID in Keycloak */
-  resourceId: string;
-  /** The scope to check (e.g., 'case-file:read') */
-  scope?: string;
-  /** Optional audience for the token */
-  audience?: string;
-  /** The user's access token (Bearer) */
-  bearerToken?: string;
-  /** Optional array of permissions to verify in the response */
-  permissions?: string[];
-}
-
-/**
- * Result of the access check
- */
-export type CheckAccessResult =
-  | { success: true; accessToken: string; permissions: Record<string, string[]> }
-  | { success: false; code: number };
 
 /**
  * Service for handling authorization checks
@@ -81,13 +62,13 @@ export class AuthorizationService {
    * @returns The result of the authorization check
    */
   public async checkResourceFileAccess(options: CheckAccessOptions): Promise<CheckAccessResult> {
-    const { resourceId, scope, audience, bearerToken, permissions } = options;
-
-    if (!bearerToken) {
-      log((l) => l.warn('No bearer token provided for authorization check'));
+    const { resourceId, scope, audience, permissions } = options;
+    const normalToken = await normalizedAccessToken(options?.bearerToken);
+    if (!normalToken) {
+      log((l) => l.warn('No authentication context availbale for authorization check'));
       return { success: false, code: 401 };
     }
-
+    const { accessToken: bearerToken } = normalToken;
     try {
       // Build permission string: resourceId#scope or just resourceId
       const permissionParam = scope ? `${resourceId}#${scope}` : resourceId;
@@ -188,20 +169,29 @@ export class AuthorizationService {
    * @returns A list of entitlements (permissions)
    */
   public async getUserEntitlements(
+    req: NextRequest | undefined,
+    audience?: string
+  ): Promise<Array<ResourceEntitlement>>;
+  public async getUserEntitlements(
     bearerToken: string,
     audience?: string
-  ): Promise<Array<{ rsid?: string; rsname?: string; scopes?: string[] }>> {
+  ): Promise<Array<ResourceEntitlement>>;
+  public async getUserEntitlements(
+    reqOrBearerToken: NextRequest | string | undefined,
+    audience?: string,
+  ): Promise<Array<ResourceEntitlement>> {
+    const normalizedInput = await normalizedAccessToken(reqOrBearerToken, { skipUserId: true });
+    if (!normalizedInput) {
+      log((l) => l.warn('No credentials available for entitlement check.'));
+      return [];
+    }
+    const { accessToken: bearerToken } = normalizedInput;
     const targetAudience = audience || env('AUTH_KEYCLOAK_CLIENT_ID');
 
     // We need to request a generic RPT without a specific permission to get all entitlements
     // https://www.keycloak.org/docs/latest/authorization_services/#_obtaining_permissions
 
     try {
-      if (!bearerToken) {
-        log((l) => l.warn('No bearer token provided for entitlement check'));
-        return [];
-      }
-
       const body = new URLSearchParams({
         grant_type: 'urn:ietf:params:oauth:grant-type:uma-ticket',
         ...(targetAudience ? { audience: targetAudience } : {}),

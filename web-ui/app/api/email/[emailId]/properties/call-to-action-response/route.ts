@@ -10,7 +10,7 @@ import { eq, and, sql } from 'drizzle-orm';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import {
-  checkEmailAuthorization,
+  checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
 import {
@@ -32,7 +32,7 @@ export const GET = wrapRouteRequest(
     const { emailId } = await extractParams<{ emailId: string }>(args);
 
     // Check case file authorization
-    const authCheck = await checkEmailAuthorization(req, emailId, {
+    const authCheck = await checkCaseFileAuthorization(req, emailId, {
       requiredScope: CaseFileScope.READ,
     });
     if (!authCheck.authorized) {

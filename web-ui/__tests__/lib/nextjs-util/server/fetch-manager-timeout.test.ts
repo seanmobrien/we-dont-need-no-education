@@ -26,7 +26,7 @@ describe('FetchManager Timeout Normalization', () => {
     expect(options.timeout).toBeDefined();
     expect(options.timeout).toEqual({
       connect: 30000,
-      lookup: 100,
+      lookup: 200,
       request: 60000,
       response: 30000,
       secureConnect: 1000,
@@ -52,7 +52,7 @@ describe('FetchManager Timeout Normalization', () => {
 
     expect(options.timeout).toEqual({
       connect: 1000,
-      lookup: 100,
+      lookup: 200,
       request: 15000,
       response: 30000,
       secureConnect: 1000,
@@ -79,7 +79,7 @@ describe('FetchManager Timeout Normalization', () => {
 
     expect(options.timeout).toEqual({
       connect: 1000,
-      lookup: 100,
+      lookup: 200,
       request: 60000,
       response: 30000,
       secureConnect: 1000,

@@ -98,6 +98,9 @@ This module leverages `AuthorizationService` and `ResourceService` singleton pro
 
 ### 1. Checking Access
 
+> **Note**: Methods like `checkResourceFileAccess` and `getUserEntitlements` support flexible input for credentials. You can pass a raw `bearerToken` string, a `NextRequest` object (which will be checked for an `Authorization` header or session cookie), or `undefined` (which attempts to fallback to the active session).
+
+
 To check if a user has access to a resource, use the `authorizationService` helper.
 
 ```typescript
@@ -108,7 +111,8 @@ const result = await authorizationService(service => service.checkResourceFileAc
   resourceId: 'keycloak-resource-uuid',
   scope: 'case-file:read',
   audience: env('AUTH_KEYCLOAK_CLIENT_ID'),
-  bearerToken: userAccessToken
+  // bearerToken can be a string, NextRequest, or omitted (resolves from context)
+  bearerToken: req 
 }));
 
 if (result.success) {
@@ -138,6 +142,30 @@ if (!resource) {
 }
 ```
 
+### 3. Retrieving Entitlements
+
+To retrieve all permissions (entitlements) granted to the user by Keycloak, use `getUserEntitlements`. This is useful for listing resources the user has access to without checking them one by one.
+
+```typescript
+// 1. Using a bearer token string
+const entitlements = await authorizationService(service => 
+  service.getUserEntitlements(userAccessToken)
+);
+
+// 2. Using NextRequest (extracts token header or session)
+const entitlementsFromReq = await authorizationService(service => 
+  service.getUserEntitlements(req)
+);
+
+// 3. Using implicit context (resolves from Keycloak session)
+const entitlementsImplicit = await authorizationService(service => 
+  service.getUserEntitlements(undefined)
+);
+
+// entitlements is an array of permission objects
+// [ { rsid: '...', rsname: '...', scopes: [...] }, ... ]
+```
+
 ---
 
 ## Case File Module API
@@ -162,6 +190,23 @@ High-level check that handles resource lookup and token validation.
 import { checkCaseFileAccess, CaseFileScope } from '@/lib/auth/resources/case-file';
 
 const canRead = await checkCaseFileAccess(req, userId, CaseFileScope.READ);
+```
+
+### Listing Authorized Case Files
+
+To determine which case files a user can access (e.g., to filter a list or checking for global access), use `getAccessibleUserIds`. This internally fetches the user's entitlements and filters them for case file resources.
+
+```typescript
+import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
+
+// 1. Pass a token string
+const ids1 = await getAccessibleUserIds(userAccessToken);
+
+// 2. Pass a request object
+const ids2 = await getAccessibleUserIds(req);
+
+// 3. No arguments (implicit resolution)
+const ids3 = await getAccessibleUserIds();
 ```
 
 ### Middleware Example

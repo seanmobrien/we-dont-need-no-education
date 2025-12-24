@@ -9,7 +9,7 @@ import { extractParams } from '@/lib/nextjs-util/server/utils';
 import { eq } from 'drizzle-orm';
 import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 import {
-  checkEmailAuthorization,
+  checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
 
@@ -75,7 +75,7 @@ export const GET = wrapRouteRequest(
     }
 
     // Check case file authorization
-    const authCheck = await checkEmailAuthorization(req, emailId, {
+    const authCheck = await checkCaseFileAuthorization(req, emailId, {
       requiredScope: CaseFileScope.READ,
     });
     if (!authCheck.authorized) {
@@ -188,7 +188,7 @@ export const DELETE = wrapRouteRequest(
     }
 
     // Check case file authorization (write scope required for deletion)
-    const authCheck = await checkEmailAuthorization(req, emailId, {
+    const authCheck = await checkCaseFileAuthorization(req, emailId, {
       requiredScope: CaseFileScope.WRITE,
     });
     if (!authCheck.authorized) {

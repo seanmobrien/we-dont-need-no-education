@@ -2,25 +2,16 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { log } from '../logger/core';
+import type {
+  NormalizedAccessToken,
+  NormalizeAccessTokenOptions,
+  RequestWithAccessTokenCache,
+  RequestWithAccessTokenOverloads,
+  AccessTokenOrRequestOverloadsExt
+} from './types';
+import { LoggedError } from '../react-util/errors/logged-error';
 
 const accessTokenOnRequest: unique symbol = Symbol();
-
-type RequestWithAccessTokenCache = {
-  access_token: string;
-  refresh_token: string | undefined;
-  id_token: string | undefined;
-  expires_at: number | undefined;
-  refresh_expires_at: number | undefined;
-  providerAccountId: string;
-  userId: number;
-};
-
-interface RequestWithAccessTokenOverloads {
-  (req: NextRequest): string | undefined;
-  (req: NextRequest, value: RequestWithAccessTokenCache): NextRequest;
-}
-
-
 
 type RequestWithAccessToken = NextRequest & {
   [accessTokenOnRequest]?: RequestWithAccessTokenCache;
@@ -137,3 +128,52 @@ export const getValidatedAccessToken = async (
   }
   return { token: accessToken };
 }
+export const normalizedAccessToken: AccessTokenOrRequestOverloadsExt = async (
+  userAccessToken: string | NextRequest | undefined,
+  options?: NormalizeAccessTokenOptions
+): Promise<NormalizedAccessToken | undefined> => {
+  const { skipUserId = false } = options ?? {};
+  try {
+    if (userAccessToken) {
+      // Handle incoming access tokens
+      if (typeof userAccessToken === 'string') {
+        // This gets tricky - the user id in the token is the keycloak id, not the user_id...so we'll
+        // need to pull it out of session, while allowing the caller to skip this step if they don't
+        // need the user_id.
+        let thisUserId: number;
+        if (skipUserId === true) {
+          thisUserId = 0;
+        } else {
+          const { user: { id: userIdFromSession } = { id: null } } = await auth() ?? { user: { id: null } };
+          const parsedUserId = parseInt(userIdFromSession ?? '', 10);
+          if (!isNaN(parsedUserId) && isFinite(parsedUserId)) {
+            thisUserId = parsedUserId;
+          } else {
+            thisUserId = 0;
+          }
+        }
+        return {
+          accessToken: userAccessToken,
+          userId: thisUserId,
+        };
+      }
+      // Otherwise pull token and user id from request with database fallback
+      const { access_token, userId: userIdFromRequest } = await getRequestTokens(userAccessToken) ?? {};
+      return access_token ? {
+        accessToken: access_token,
+        userId: userIdFromRequest ?? 0,
+      } : undefined;
+    }
+    const { access_token, userId: userIdFromRequest } = await getRequestTokens(undefined) ?? {};
+    return access_token ? {
+      accessToken: access_token,
+      userId: userIdFromRequest ?? 0,
+    } : undefined;
+  } catch (error) {
+    throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'normalizedAccessToken',
+      msg: 'Failed to normalize access token',
+    });
+  }
+};

@@ -1,3 +1,7 @@
+/* @jest-environment node */
+/**
+ * @fileoverview Unit tests for ResourceService and AuthorizationService
+ */
 /**
  * @fileoverview Unit tests for ResourceService and AuthorizationService
  */
@@ -5,7 +9,8 @@
 import { resourceService } from '@/lib/auth/resources/resource-service';
 import { authorizationService } from '@/lib/auth/resources/authorization-service';
 import { fetch } from '@/lib/nextjs-util/server';
-import { decodeToken } from '@/lib/auth/utilities';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
+
 
 // Mock dependencies
 jest.mock('@/lib/nextjs-util/server', () => ({
@@ -267,25 +272,7 @@ describe('AuthorizationService', () => {
   });
 });
 
-/**
- * @fileoverview Unit tests for ResourceService and AuthorizationService
- */
 
-import { resourceService } from '@/lib/auth/resources/resource-service';
-import { authorizationService } from '@/lib/auth/resources/authorization-service';
-import { fetch } from '@/lib/nextjs-util/server';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
-
-
-
-// Mock decodeToken
-jest.mock('@/lib/auth/utilities', () => ({
-  decodeToken: jest.fn().mockResolvedValue({
-    authorization: {
-      permissions: [{ rsid: 'resource-123', scopes: ['case-file:read'] }],
-    },
-  }),
-}));
 
 describe('ResourceService', () => {
 

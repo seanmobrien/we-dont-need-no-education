@@ -13,7 +13,7 @@ import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { and, eq } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
 import {
-  checkEmailAuthorization,
+  checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
 
@@ -24,7 +24,7 @@ export const GET = wrapRouteRequest(
     const { emailId } = await extractParams<{ emailId: string }>(args);
 
     // Check case file authorization
-    const authCheck = await checkEmailAuthorization(req, emailId, {
+    const authCheck = await checkCaseFileAuthorization(req, emailId, {
       requiredScope: CaseFileScope.READ,
     });
     if (!authCheck.authorized) {

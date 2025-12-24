@@ -71,20 +71,5 @@ declare module '@/lib/auth/resources/case-file/case-file-middleware' {
     options: CaseFileAuthOptions,
   ): Promise<AuthCheckResult>;
 
-  /**
-   * Checks authorization for a document unit-based route
-   *
-   * This function extracts the user_id associated with the document unit and
-   * verifies that the requesting user has the required scope for that case file.
-   *
-   * @param req - The Next.js request object
-   * @param unitId - The document unit ID from the route parameter
-   * @param options - Authorization options
-   * @returns Authorization check result
-   */
-  export function checkDocumentUnitAuthorization(
-    req: NextRequest,
-    unitId: number,
-    options: CaseFileAuthOptions,
-  ): Promise<AuthCheckResult>;
+
 }

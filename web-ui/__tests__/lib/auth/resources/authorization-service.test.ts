@@ -1,3 +1,5 @@
+/* @jest-environment node */
+
 import { AuthorizationService } from '@/lib/auth/resources/authorization-service';
 import { fetch } from '@/lib/nextjs-util/server';
 import { decodeToken } from '@/lib/auth/utilities';

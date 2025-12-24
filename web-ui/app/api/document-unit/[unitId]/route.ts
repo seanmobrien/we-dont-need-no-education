@@ -13,7 +13,7 @@ import { amendCaseRecord } from '@/lib/ai/tools/amend-case-record';
 import { log } from '@/lib/logger';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 import {
-  checkDocumentUnitAuthorization,
+  checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
 export const dynamic = 'force-dynamic';
@@ -26,7 +26,7 @@ export const GET = wrapRouteRequest(
       const { unitId } = await extractParams(args);
 
       // Check case file authorization
-      const authCheck = await checkDocumentUnitAuthorization(
+      const authCheck = await checkCaseFileAuthorization(
         req,
         Number(unitId),
         {
@@ -72,7 +72,7 @@ export const PUT = wrapRouteRequest(
     const { unitId } = await extractParams(args);
 
     // Check case file authorization (write scope required)
-    const authCheck = await checkDocumentUnitAuthorization(
+    const authCheck = await checkCaseFileAuthorization(
       req,
       Number(unitId),
       {
@@ -115,7 +115,7 @@ export const DELETE = wrapRouteRequest(
     const { unitId } = await extractParams(args);
 
     // Check case file authorization (write scope required)
-    const authCheck = await checkDocumentUnitAuthorization(
+    const authCheck = await checkCaseFileAuthorization(
       req,
       Number(unitId),
       {
@@ -141,7 +141,7 @@ export const POST = wrapRouteRequest(
     const { unitId } = await extractParams(data);
 
     // Check case file authorization (write scope required)
-    const authCheck = await checkDocumentUnitAuthorization(
+    const authCheck = await checkCaseFileAuthorization(
       req,
       Number(unitId),
       {

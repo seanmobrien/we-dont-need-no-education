@@ -3,6 +3,7 @@
  * @module @/lib/auth/access-token
  */
 import type { NextRequest, NextResponse } from 'next/server';
+import type { NormalizedAccessToken, NormalizeAccessTokenOptions } from './types';
 
 declare module '@/lib/auth/access-token' {
   /**
@@ -74,4 +75,54 @@ declare module '@/lib/auth/access-token' {
     req: NextRequest;
     source?: string;
   }): Promise<{ token: string } | { error: NextResponse }>;
+
+
+  /**
+   * Normalizes an access token by decoding it and extracting its contents.
+   *
+   * @function normalizedAccessToken
+   * @description This function takes an access token (either a string or a request object)
+   * and returns a normalized object containing the token's contents.
+   * If the token is invalid or cannot be decoded, it returns undefined.
+   *
+   * @param {string} userAccessToken - The access token to normalize.
+   * @param {NormalizeAccessTokenOptions} [options] - Optional options for normalizing the token.
+   * @returns {Promise<NormalizedAccessToken | undefined>} The normalized access token object if successful, otherwise undefined.
+   */
+  export function normalizedAccessToken(
+    userAccessToken: string,
+    options?: NormalizeAccessTokenOptions
+  ): Promise<NormalizedAccessToken | undefined>;
+  /**
+   * Normalizes an access token by decoding it and extracting its contents.
+   *
+   * @function normalizedAccessToken
+   * @description This function takes an access token (either a string or a request object)
+   * and returns a normalized object containing the token's contents.
+   * If the token is invalid or cannot be decoded, it returns undefined.
+   *
+   * @param {string | NextRequest} userAccessToken - The access token to normalize.
+   * @param {NormalizeAccessTokenOptions} [options] - Optional options for normalizing the token.
+   * @returns {Promise<NormalizedAccessToken | undefined>} The normalized access token object if successful, otherwise undefined.
+   */
+  export function normalizedAccessToken(
+    req: NextRequest | undefined,
+    options?: NormalizeAccessTokenOptions
+  ): Promise<NormalizedAccessToken | undefined>;
+  /**
+   * Normalizes an access token by decoding it and extracting its contents.
+   *
+   * @function normalizedAccessToken
+   * @description This function takes an access token (either a string or a request object)
+   * and returns a normalized object containing the token's contents.
+   * If the token is invalid or cannot be decoded, it returns undefined.
+   *
+   * @param {string | NextRequest} userAccessTokenOrRequest - The access token to normalize.
+   * @param {NormalizeAccessTokenOptions} [options] - Optional options for normalizing the token.
+   * @returns {Promise<NormalizedAccessToken | undefined>} The normalized access token object if successful, otherwise undefined.
+   */
+  export function normalizedAccessToken(
+    userAccessTokenOrRequest: NextRequest | undefined | string,
+    options?: NormalizeAccessTokenOptions
+  ): Promise<NormalizedAccessToken | undefined>;
 }

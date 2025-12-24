@@ -29,8 +29,6 @@ const mockEmailService = {
   findEmailIdByGlobalMessageId: jest.fn(),
 };
 
-jest.mock('@/lib/api/email/drizzle/query-parts');
-
 jest.mock('@/lib/api/email/email-service', () => ({
   EmailService: jest.fn().mockImplementation(() => mockEmailService),
 }));
@@ -40,8 +38,7 @@ jest.mock('@/lib/auth/resources/case-file', () => {
   const origModule = jest.requireActual('@/lib/auth/resources/case-file');
   return {
     ...origModule,
-    checkEmailAuthorization: jest.fn().mockResolvedValue({ authorized: true }),
-    checkDocumentUnitAuthorization: jest
+    checkCaseFileAuthorization: jest
       .fn()
       .mockResolvedValue({ authorized: true }),
     CaseFileScope: {
@@ -70,13 +67,7 @@ import { NextRequest } from 'next/server';
 import { POST, PUT, GET } from '@/app/api/email/route';
 import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
-import {
-  count_kpi,
-  count_attachments,
-  count_notes,
-  count_responsive_actions,
-  count_cta,
-} from '@/lib/api/email/drizzle/query-parts';
+
 import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 import { getAccessibleUserIds, getUserIdFromUnitId } from '@/lib/auth/resources/case-file';
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
@@ -87,15 +78,6 @@ let mockDbDelete = mockDb?.delete! as jest.Mock;
 
 describe('Email API', () => {
   beforeEach(() => {
-    (count_kpi as jest.Mock).mockReturnValue({ targetCount: 'count-kpi' });
-    (count_attachments as jest.Mock).mockReturnValue({
-      countAttachments: 'count-kpi',
-    });
-    (count_notes as jest.Mock).mockReturnValue({ targetCount: 'count-kpi' });
-    (count_cta as jest.Mock).mockReturnValue({ targetCount: 'count-kpi' });
-    (count_responsive_actions as jest.Mock).mockReturnValue({
-      targetCount: 'count-kpi',
-    });
 
     // Reset EmailService mocks
     Object.values(mockEmailService).forEach((mock) => mock.mockReset());

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 // (normalizeNullableNumeric no longer needed directly; handled in validation module)
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { NEVER_USE_USER_ID } from '@/lib/constants';
 
 import { EmailService } from '@/lib/api/email/email-service';
 import {
@@ -13,13 +14,6 @@ import {
   wrapRouteRequest,
 } from '@/lib/nextjs-util/server/utils';
 import { drizDbWithInit, schema, sql } from '@/lib/drizzle-db';
-import {
-  count_kpi,
-  count_attachments,
-  count_notes,
-  count_responsive_actions,
-  count_cta,
-} from '@/lib/api/email/drizzle/query-parts';
 import { eq, and, inArray, isNull } from 'drizzle-orm';
 // count_kpi import removed; not used in this route currently
 import {
@@ -49,31 +43,25 @@ export const dynamic = 'force-dynamic';
 export const GET = wrapRouteRequest(
   async (req: NextRequest) => {
     const normalAccessToken = await getAccessToken(req);
-    const eligibleUserIds = await getAccessibleUserIds(normalAccessToken);
+    const eligibleUserIds = await getAccessibleUserIds(normalAccessToken) ?? [NEVER_USE_USER_ID];
     const results = await drizDbWithInit(async (db) => {
-      // Correlated subquery returning a JSONB array of recipient objects for each email
-      const attachments = count_attachments({ db });
-      const countKpi = count_kpi({ db });
-      const countNotes = count_notes({ db });
-      const countRa = count_responsive_actions({ db });
-      const countCta = count_cta({ db });
 
       const getColumn = (columnName: string) => {
         switch (columnName) {
           case 'sentOn':
             return schema.emails.sentTimestamp;
-          case 'count_attachments':
-            return attachments.countAttachments;
-          case 'count_kpi':
-            return countKpi.targetCount;
-          case 'count_notes':
-            return countNotes.targetCount;
-          case 'count_cta':
-            return countCta.targetCount;
-          case 'count_responsive_actions':
-            return countRa.targetCount;
           case 'sender':
             return schema.contacts.name;
+          case 'count_cta':
+            return schema.emails.countCta;
+          case 'count_kpi':
+            return schema.emails.countKpi;
+          case 'count_notes':
+            return schema.emails.countNotes;
+          case 'count_responsive_actions':
+            return schema.emails.countResponsiveActions;
+          case 'count_attachments':
+            return schema.emails.countAttachments;
           default:
             return getEmailColumn({ columnName, table: schema.emails });
         }
@@ -91,11 +79,11 @@ export const GET = wrapRouteRequest(
           parentEmailId: schema.emails.parentId,
           importedFromId: schema.emails.importedFromId,
           globalMessageId: schema.emails.globalMessageId,
-          count_kpi: countKpi.targetCount,
-          count_notes: countNotes.targetCount,
-          count_cta: countCta.targetCount,
-          count_responsive_actions: countRa.targetCount,
-          count_attachments: attachments.countAttachments,
+          count_kpi: schema.emails.countKpi,
+          count_notes: schema.emails.countNotes,
+          count_cta: schema.emails.countCta,
+          count_responsive_actions: schema.emails.countResponsiveActions,
+          count_attachments: schema.emails.countAttachments,
         })
         .from(schema.emails)
         // Inner join to document units with user id allow-list provides access filter
@@ -111,16 +99,6 @@ export const GET = wrapRouteRequest(
           schema.contacts,
           eq(schema.emails.senderId, schema.contacts.contactId),
         )
-        // Full join to attachments to get attachment count
-        .fullJoin(attachments, eq(schema.emails.emailId, attachments.emailId))
-        // Full join to kpi to get kpi count
-        .fullJoin(countKpi, eq(schema.emails.emailId, countKpi.targetId))
-        // Full join to notes to get note count
-        .fullJoin(countNotes, eq(schema.emails.emailId, countNotes.targetId))
-        // Full join to cta to get cta count
-        .fullJoin(countCta, eq(schema.emails.emailId, countCta.targetId))
-        // Full join to responsive actions to get responsive action count
-        .fullJoin(countRa, eq(schema.emails.emailId, countRa.targetId));
       return await selectForGrid<EmailMessageSummary>({
         req,
         query: bq as unknown as DrizzleSelectQuery,

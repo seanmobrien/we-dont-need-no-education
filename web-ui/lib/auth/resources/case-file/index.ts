@@ -15,8 +15,7 @@ export {
 } from './case-file-helpers';
 
 export {
-  checkCaseFileAuthorization as checkEmailAuthorization,
-  checkDocumentUnitAuthorization,
+  checkCaseFileAuthorization,
   type CaseFileAuthOptions,
   type AuthCheckResult,
 } from './case-file-middleware';

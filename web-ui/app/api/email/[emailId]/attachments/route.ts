@@ -6,7 +6,7 @@ import { buildAttachmentDownloadUrl } from '@/lib/api/attachment';
 import { getAbsoluteUrl } from '@/lib/site-util/url-builder';
 import { isValidUuid } from '@/lib/ai/tools/utility';
 import {
-  checkEmailAuthorization,
+  checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
 
@@ -43,7 +43,7 @@ export async function GET(
       resolvedEmailId = emailId;
 
       // Check case file authorization
-      const authCheck = await checkEmailAuthorization(req, resolvedEmailId, {
+      const authCheck = await checkCaseFileAuthorization(req, resolvedEmailId, {
         requiredScope: CaseFileScope.READ,
       });
       if (!authCheck.authorized) {
@@ -72,7 +72,7 @@ export async function GET(
       }
 
       // Check case file authorization
-      const authCheck = await checkEmailAuthorization(req, resolvedEmailId, {
+      const authCheck = await checkCaseFileAuthorization(req, resolvedEmailId, {
         requiredScope: CaseFileScope.READ,
       });
       if (!authCheck.authorized) {

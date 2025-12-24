@@ -112,9 +112,3 @@ export const checkCaseFileAuthorization = async (
   }
 };
 
-export const checkDocumentUnitAuthorization = async (
-  req: NextRequest,
-  unitId: number,
-  options: CaseFileAuthOptions,
-): Promise<AuthCheckResult> =>
-  checkCaseFileAuthorization(req, unitId, options);

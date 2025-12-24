@@ -12,8 +12,7 @@ import type {
   getAccessibleUserIds,
 } from './case-file-helpers';
 import type {
-  checkCaseFileAuthorization as checkEmailAuthorization,
-  checkDocumentUnitAuthorization,
+  checkCaseFileAuthorization,
   CaseFileAuthOptions,
   AuthCheckResult,
 } from './case-file-middleware';
@@ -34,8 +33,7 @@ declare module '@/lib/auth/resources/case-file' {
     getUserIdFromUnitId,
     getKeycloakUserIdFromUserId,
     getAccessibleUserIds,
-    checkEmailAuthorization,
-    checkDocumentUnitAuthorization,
+    checkCaseFileAuthorization,
     CaseFileAuthOptions,
     AuthCheckResult,
   };
