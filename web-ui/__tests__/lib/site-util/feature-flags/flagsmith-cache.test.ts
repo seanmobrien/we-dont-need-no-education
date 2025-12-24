@@ -1,19 +1,14 @@
 import { FlagsmithRedisCache } from '@/lib/site-util/feature-flags/flagsmith-cache';
 import { getRedisClient } from '@/lib/redis-client';
 import { Flags } from 'flagsmith-nodejs';
-import { mock } from 'jest-mock-extended';
 import type { RedisClientType } from 'redis';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
-jest.mock('@/lib/redis-client');
-
 describe('FlagsmithRedisCache', () => {
-  const mockRedisClient = mock<RedisClientType>();
-  const mockGetRedisClient = getRedisClient as jest.Mock;
+  let mockRedisClient: jest.Mocked<RedisClientType>;
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockGetRedisClient.mockResolvedValue(mockRedisClient);
+  beforeEach(async () => {
+    mockRedisClient = await getRedisClient() as jest.Mocked<RedisClientType>;
   });
 
   it('should construct with default options', async () => {
@@ -24,7 +19,6 @@ describe('FlagsmithRedisCache', () => {
     // Let's verify Redis default keyPrefix by doing a set
     await cache.set('test-key', new Flags({}));
 
-    expect(mockGetRedisClient).toHaveBeenCalled();
     expect(mockRedisClient.set).toHaveBeenCalledWith(
       'flagsmith:test-key',
       expect.any(String),
