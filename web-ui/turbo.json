@@ -23,12 +23,12 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"],
+      "outputs": [],
       "inputs": ["**/*.test.ts", "**/*.test.tsx", "__tests__/**/*"]
     },
     "test:unit": {
       "dependsOn": ["^build"],
-      "outputs": ["coverage/**"]
+      "outputs": []
     },
     "test:e2e": {
       "dependsOn": ["build"],
