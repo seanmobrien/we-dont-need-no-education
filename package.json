@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "workspaces": [
-    "web-ui"
+    "web-ui",
+    "web-ui/packages/*"
   ],
   "devDependencies": {
     "@changesets/cli": "^2.29.8"
