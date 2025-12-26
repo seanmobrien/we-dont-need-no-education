@@ -96,7 +96,7 @@ describe('wrapRouteRequest tracing', () => {
     expect(options?.attributes?.['route.params']).toBeDefined();
     expect(typeof options?.attributes?.['request.headers']).toBe('string');
     const headers = JSON.parse(options?.attributes?.['request.headers']);
-    // Sensitive headers should be redacted (authorization is omitted by serializer)
+    // Sensitive headers should not leak: authorization is removed entirely, others are redacted
     expect(headers.authorization).toBeUndefined();
     expect(headers.cookie).toBe('***');
     expect(headers['x-api-key']).toBe('***');
