@@ -36,7 +36,6 @@ describe('wrapRouteRequest tracing', () => {
         status: 201,
         json: async () => ({ ok: true }),
       } as Response;
-      //return new Response(JSON.stringify({ ok: true }), { status: 201 });
     });
 
     // Build a minimal Request-like object with W3C trace headers.
