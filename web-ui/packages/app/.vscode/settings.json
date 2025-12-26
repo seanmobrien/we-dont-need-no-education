@@ -4,7 +4,7 @@
   "github.copilot.chat.codeGeneration.useInstructionFiles": true,
   "github.copilot.chat.reviewSelection.instructions": [
     {
-      "file": ".github/copilot/instructions/typescript-react.md",
+      "file": "web-ui/instructions/typescript-react.instructions.md",
       "name": "typescript-react",
       "description": "Use this instruction file for TypeScript React projects to get tailored code suggestions"
     },
