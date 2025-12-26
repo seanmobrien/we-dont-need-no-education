@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-  extractParams
+  extractParams,
 } from '@/lib/nextjs-util/server/utils';
 import { KeyPointsDetails } from '@/data-models/api/email-properties/extended-properties';
 import { drizDbWithInit } from '@/lib/drizzle-db';
@@ -14,6 +14,7 @@ import {
   checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
+import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
 
 export const GET = wrapRouteRequest(
   async (req: NextRequest, args: { params: Promise<{ emailId: string }> }) => {
@@ -24,7 +25,10 @@ export const GET = wrapRouteRequest(
       requiredScope: CaseFileScope.READ,
     });
     if (!authCheck.authorized) {
-      return authCheck.response;
+      return (
+        authCheck.response ??
+        unauthorizedServiceResponse({ req, scopes: ['case-file:read'] })
+      );
     }
 
     const db = await drizDbWithInit();
@@ -70,8 +74,8 @@ export const GET = wrapRouteRequest(
         default:
           return columnName in schema.keyPoints
             ? (schema.keyPoints[
-              columnName as keyof typeof schema.keyPoints
-            ] as PgColumn)
+                columnName as keyof typeof schema.keyPoints
+              ] as PgColumn)
             : undefined;
       }
     };

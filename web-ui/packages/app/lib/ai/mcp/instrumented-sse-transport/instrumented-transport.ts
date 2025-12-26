@@ -19,9 +19,7 @@ import { tracer, MetricsRecorder, DEBUG_MODE } from './metrics/otel-metrics';
 import { CounterManager } from './metrics/counter-manager';
 import { SessionManager } from './session/session-manager';
 import { TraceContextManager } from './tracing/trace-context';
-import {
-  SafetyUtils
-} from '../../../nextjs-util/safety-utils';
+import { SafetyUtils } from '../../../nextjs-util/safety-utils';
 import { MessageProcessor } from './message/message-processor';
 import { ImpersonationService } from '@/lib/auth/impersonation';
 
@@ -292,6 +290,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         );
         return;
       }
+
       // Record failed connection
       MetricsRecorder.recordConnection(
         this.url?.toString() || 'unknown',
@@ -308,9 +307,9 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         code: SpanStatusCode.ERROR,
         message: isError(error) ? error.message : String(error),
       });
+      debugger;
 
       this.#safetyUtils.completeOperation(operationId, 'error');
-
       log((l) =>
         l.error('Failed to start MCP Client Transport', {
           data: {

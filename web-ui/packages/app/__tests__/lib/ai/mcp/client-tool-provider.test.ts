@@ -1,7 +1,8 @@
+/* @jest-environment node */
+
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 
 setupImpersonationMock();
-
 
 import { clientToolProviderFactory } from '@/lib/ai/mcp/providers';
 

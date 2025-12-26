@@ -68,10 +68,10 @@ const safeSerializeImpl = (
       if (isNaN(theMaxLen)) {
         // But were explicitly passed a maxLen
         actualMaxLen = opsFromProps.maxLen
-          // Then use that maxLen
-          ? opsFromProps.maxLen
-          // Otherwise, use 7000 chars / the current depth; truncated properties lead to shorter objects.
-          : 7000 / (currentDepth + 1);
+          ? // Then use that maxLen
+            opsFromProps.maxLen
+          : // Otherwise, use 7000 chars / the current depth; truncated properties lead to shorter objects.
+            7000 / (currentDepth + 1);
       } else {
         // Otherwise, use the maxLen passed in with standard defaults
         actualMaxLen = theMaxLen;
@@ -113,36 +113,53 @@ const safeSerializeImpl = (
         }
         const keys = objKeys.slice(0, maxPropertyDepth);
         // Serialize each property recursively.
-        const parentPath = opsFromProps.parentPath ? `${opsFromProps.parentPath}.` : '';
+        const parentPath = opsFromProps.parentPath
+          ? `${opsFromProps.parentPath}.`
+          : '';
+        // never serialize sensitive props
+        const SkipProperties = [
+          'password',
+          'authorization',
+          'token',
+          'accesskey',
+          'secret',
+          'apikey',
+        ];
         // Let applyMaxLength handle truncation using the object-style maxLen with backoff
-        return applyMaxLength(JSON.stringify(
-          keys.reduce(
-            (acc, key) => {
-              // Skip properties that don't match the filter
-              const propertyPath = parentPath + key;
-              if (!opsFromProps.propertyFilter(key, propertyPath)) {
-                return acc;
-              }
-              const value = obj[key];
-              // Save serialization space by skipping undefined and null values
-              if (value !== undefined && value !== null) {
-                if (visited.has(value)) {
-                  acc[key] = '[circular]';
-                } else {
-                  // Recursively serialize the child property with circular reference protection
-                  acc[key] = safeSerializeImpl(value, {
-                    ...opsFromProps,
-                    currentDepth: currentDepth + 1,
-                    parentPath: propertyPath,
-                    visited,
-                  });
+        return applyMaxLength(
+          JSON.stringify(
+            keys.reduce(
+              (acc, key) => {
+                // Skip properties that don't match the filter
+                const propertyPath = parentPath + key;
+                if (
+                  !opsFromProps.propertyFilter(key, propertyPath) ||
+                  SkipProperties.includes(key?.toLowerCase())
+                ) {
+                  return acc;
                 }
-              }
-              return acc;
-            },
-            {} as Record<string, unknown>,
+                const value = obj[key];
+                // Save serialization space by skipping undefined and null values
+                if (value !== undefined && value !== null) {
+                  if (visited.has(value)) {
+                    acc[key] = '[circular]';
+                  } else {
+                    // Recursively serialize the child property with circular reference protection
+                    acc[key] = safeSerializeImpl(value, {
+                      ...opsFromProps,
+                      currentDepth: currentDepth + 1,
+                      parentPath: propertyPath,
+                      visited,
+                    });
+                  }
+                }
+                return acc;
+              },
+              {} as Record<string, unknown>,
+            ),
           ),
-        ), NaN);
+          NaN,
+        );
       } finally {
         visited.add(v);
       }
@@ -165,12 +182,12 @@ const safeServerDescriptor = (srv: unknown) => {
       : undefined;
     const transportType =
       transport &&
-        typeof (transport as Record<string, unknown>)['type'] === 'string'
+      typeof (transport as Record<string, unknown>)['type'] === 'string'
         ? ((transport as Record<string, unknown>)['type'] as string)
         : null;
     const transportUrl =
       transport &&
-        typeof (transport as Record<string, unknown>)['url'] === 'string'
+      typeof (transport as Record<string, unknown>)['url'] === 'string'
         ? ((transport as Record<string, unknown>)['url'] as string)
         : null;
     return {
@@ -202,9 +219,9 @@ export const safeArgsSummary = (
   const ops = getSafeSerializerOptions(options);
   return Array.isArray(args)
     ? args
-      .slice(0, ops.maxIterations)
-      .map((a) => safeSerialize(a, ops))
-      .join(', ')
+        .slice(0, ops.maxIterations)
+        .map((a) => safeSerialize(a, ops))
+        .join(', ')
     : safeSerialize(String(args));
 };
 

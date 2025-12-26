@@ -103,7 +103,24 @@ const getOpenIdClientModule = () => {
   return openIdClientModule;
 };
 
-// no-op: query builder not needed with openid-client's authorizationUrl
+const ADMIN_USER_CONTEXT: unique symbol = Symbol(
+  '@no-education/ImpersonationThirdParty.ADMIN_USER_CONTEXT',
+);
+const ADMIN_USER_CONTEXT_ID = '__admin';
+
+type AdminUserContext = UserContext & {
+  userId: typeof ADMIN_USER_CONTEXT_ID;
+  readonly [ADMIN_USER_CONTEXT]: true;
+};
+
+const isSystemUserContext = (check: unknown): check is AdminUserContext => {
+  return (
+    typeof check === 'object' &&
+    check !== null &&
+    ADMIN_USER_CONTEXT in check &&
+    check[ADMIN_USER_CONTEXT] === true
+  );
+};
 
 /**
  * ImpersonationThirdParty – uses KC Admin Client, openid-client, and got/tough-cookie
@@ -191,6 +208,30 @@ export class ImpersonationThirdParty implements ImpersonationService {
     }
   }
 
+  static async forAdmin(): Promise<ImpersonationThirdParty | undefined> {
+    try {
+      const config = ImpersonationThirdParty.#getConfig();
+      if (!config) {
+        return undefined;
+      }
+      const adminContext: AdminUserContext = {
+        userId: ADMIN_USER_CONTEXT_ID,
+        [ADMIN_USER_CONTEXT]: true,
+      };
+      const self = new ImpersonationThirdParty(adminContext, config);
+      await self.initializeClients();
+      return self;
+    } catch (error) {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'ImpersonationThirdParty.forAdmin',
+        severity: 'error',
+        message: 'Failed creating ImpersonationThirdParty for admin',
+      });
+      return undefined;
+    }
+  }
+
   private async initializeClients(): Promise<void> {
     // OIDC discovery and client
     this.oidcConfig = await getOpenIdClientModule().discovery(
@@ -220,6 +261,24 @@ export class ImpersonationThirdParty implements ImpersonationService {
     return await tracer.startActiveSpan(
       'impersonation.getImpersonatedToken',
       async (span) => {
+        if (isSystemUserContext(this.userContext)) {
+          span.setAttribute('impersonation.userId', 'system');
+          span.setAttribute('impersonation.admin', true);
+          try {
+            return await this.#adminTokenStore.getAdminToken(forceRefresh);
+          } catch (error) {
+            span.recordException(error as Error);
+            span.setStatus({ code: SpanStatusCode.ERROR });
+            throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+              log: true,
+              source: 'ImpersonationThirdParty.getImpersonatedToken',
+            });
+          } finally {
+            try {
+              span.end();
+            } catch {}
+          }
+        }
         span.setAttribute('impersonation.userId', this.userContext.userId);
         if (this.userContext.email)
           span.setAttribute('impersonation.email', this.userContext.email);

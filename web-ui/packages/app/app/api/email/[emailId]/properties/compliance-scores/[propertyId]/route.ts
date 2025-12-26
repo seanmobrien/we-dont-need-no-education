@@ -8,6 +8,7 @@ import {
 } from '@/lib/nextjs-util/server/utils';
 import { CaseFileScope } from '@/lib/auth/resources/case-file/case-file-resource';
 import { checkCaseFileAuthorization } from '@/lib/auth/resources/case-file/case-file-middleware';
+import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,10 @@ export const GET = wrapRouteRequest(
       requiredScope: CaseFileScope.READ,
     });
     if (!authCheck.authorized) {
-      return authCheck.response;
+      return (
+        authCheck.response ??
+        unauthorizedServiceResponse({ req, scopes: ['case-file:read'] })
+      );
     }
 
     const controller = new RepositoryCrudController(
@@ -46,7 +50,10 @@ export const PUT = wrapRouteRequest(
       requiredScope: CaseFileScope.WRITE,
     });
     if (!authCheck.authorized) {
-      return authCheck.response;
+      return (
+        authCheck.response ??
+        unauthorizedServiceResponse({ req, scopes: ['case-file:write'] })
+      );
     }
 
     const controller = new RepositoryCrudController(
@@ -68,7 +75,10 @@ export const DELETE = wrapRouteRequest(
       requiredScope: CaseFileScope.WRITE,
     });
     if (!authCheck.authorized) {
-      return authCheck.response;
+      return (
+        authCheck.response ??
+        unauthorizedServiceResponse({ req, scopes: ['case-file:write'] })
+      );
     }
 
     const controller = new RepositoryCrudController(

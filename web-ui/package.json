@@ -8,6 +8,7 @@
   "packageManager": "yarn@1.22.22",
   "scripts": {
     "dev": "turbo run dev",
+    "debug": "turbo run debug",
     "build": "turbo run build",
     "test": "turbo run test",
     "test:unit": "turbo run test:unit",

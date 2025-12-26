@@ -1,3 +1,5 @@
+/* @jest-environment node */
+
 import {
   EmailService,
   CreateEmailRequest,
@@ -25,7 +27,6 @@ jest.mock('@/lib/api/email/email-drizzle-repository', () => ({
 jest.mock('@/lib/neondb', () => ({
   query: jest.fn(),
 }));
-
 
 describe('EmailService', () => {
   let service: EmailService;

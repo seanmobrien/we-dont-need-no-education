@@ -1,3 +1,4 @@
+/* @jest-environment node */
 
 /**
  * @fileoverview Unit tests for ProcessingQueue class

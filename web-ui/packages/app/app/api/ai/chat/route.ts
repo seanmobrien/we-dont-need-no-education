@@ -17,7 +17,10 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { isTruthy } from '@/lib/react-util/utility-methods';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server';
+import {
+  unauthorizedServiceResponse,
+  wrapRouteRequest,
+} from '@/lib/nextjs-util/server';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
@@ -127,10 +130,7 @@ export const POST = (req: NextRequest) => {
         !session.user ||
         process.env.NEXT_PHASE === 'phase-production-build'
       ) {
-        return new Response('Unauthorized', { status: 401 });
-      }
-      if (!session || !session.user) {
-        throw new Error('Unauthorized');
+        return unauthorizedServiceResponse({ req, scopes: ['mcp-tools:read'] });
       }
       const {
         // activePage,
@@ -143,7 +143,10 @@ export const POST = (req: NextRequest) => {
       } = await extractRequestParams(req);
       // Validate args
       if (!Array.isArray(messages) || messages.length === 0) {
-        return new Response('Invalid messages format', { status: 400 });
+        return NextResponse.json(
+          { error: 'Invalid messages format' },
+          { status: 400 },
+        );
       }
       const chatHistoryId = id ?? `${threadId}:${generateChatId().id}`;
 
@@ -164,11 +167,11 @@ export const POST = (req: NextRequest) => {
           model,
         });
         // Wrap the base model with chat history middleware
-        // and memory middleware        
+        // and memory middleware
         const modelWithHistory = wrapMemoryMiddleware({
           model: wrapChatHistoryMiddleware({
             model: await aiModelFactory(model),
-            chatHistoryContext
+            chatHistoryContext,
           }),
           toolProviders,
           mem0Enabled: !memoryDisabled,
@@ -207,7 +210,8 @@ export const POST = (req: NextRequest) => {
           stopWhen: [
             stepCountIs(150),
             hasToolCall('askConfirmation'),
-            ({ steps }) => steps.every(step => step.finishReason !== 'tool-calls')
+            ({ steps }) =>
+              steps.every((step) => step.finishReason !== 'tool-calls'),
           ],
           onError: async (error) => {
             LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -246,19 +250,18 @@ export const POST = (req: NextRequest) => {
                 return;
               }
             } finally {
-              chatHistoryContext.dispose()
-                .catch((disposeError) => {
-                  LoggedError.isTurtlesAllTheWayDownBaby(disposeError, {
-                    log: true,
-                    source: 'route:ai:chat onError dispose',
-                    severity: 'error',
-                    data: {
-                      userId: session?.user?.id,
-                      model,
-                      chatHistoryId,
-                    },
-                  });
+              chatHistoryContext.dispose().catch((disposeError) => {
+                LoggedError.isTurtlesAllTheWayDownBaby(disposeError, {
+                  log: true,
+                  source: 'route:ai:chat onError dispose',
+                  severity: 'error',
+                  data: {
+                    userId: session?.user?.id,
+                    model,
+                    chatHistoryId,
+                  },
                 });
+              });
             }
           },
           onFinish: async (/*evt*/) => {
@@ -292,19 +295,18 @@ export const POST = (req: NextRequest) => {
               });
               chatHistoryContext.error = error;
             } finally {
-              chatHistoryContext.dispose()
-                .catch((disposeError) => {
-                  LoggedError.isTurtlesAllTheWayDownBaby(disposeError, {
-                    log: true,
-                    source: 'route:ai:chat onError dispose',
-                    severity: 'error',
-                    data: {
-                      userId: session?.user?.id,
-                      model,
-                      chatHistoryId,
-                    },
-                  });
+              chatHistoryContext.dispose().catch((disposeError) => {
+                LoggedError.isTurtlesAllTheWayDownBaby(disposeError, {
+                  log: true,
+                  source: 'route:ai:chat onError dispose',
+                  severity: 'error',
+                  data: {
+                    userId: session?.user?.id,
+                    model,
+                    chatHistoryId,
+                  },
                 });
+              });
             }
           },
           tools: (toolProviders ??= await toolProviderFactory({

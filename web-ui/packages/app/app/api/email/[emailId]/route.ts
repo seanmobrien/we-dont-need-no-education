@@ -12,6 +12,7 @@ import {
   checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
+import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
 
 /**
  * Extracts the emailId out of the route parameters, with some magic to support document IDs if that's what we were given.
@@ -41,16 +42,15 @@ const extractEmailId = async <T extends { emailId: string }>(req: {
     return { emailId: null };
   }
   // If so try and look it up
-  const doc = await
-    drizDbWithInit(db => {
-      return db.query.documentUnits.findFirst({
-        where: (d, { eq }) => eq(d.unitId, documentId),
-        columns: {
-          unitId: true,
-          emailId: true,
-        },
-      })
+  const doc = await drizDbWithInit((db) => {
+    return db.query.documentUnits.findFirst({
+      where: (d, { eq }) => eq(d.unitId, documentId),
+      columns: {
+        unitId: true,
+        emailId: true,
+      },
     });
+  });
   if (doc) {
     // And if we found it, return the email id with the doc id for context
     return { emailId: doc.emailId, documentId: doc.unitId };
@@ -79,7 +79,10 @@ export const GET = wrapRouteRequest(
       requiredScope: CaseFileScope.READ,
     });
     if (!authCheck.authorized) {
-      return authCheck.response;
+      return (
+        authCheck.response ??
+        unauthorizedServiceResponse({ req, scopes: ['case-file:read'] })
+      );
     }
 
     try {
@@ -192,7 +195,10 @@ export const DELETE = wrapRouteRequest(
       requiredScope: CaseFileScope.WRITE,
     });
     if (!authCheck.authorized) {
-      return authCheck.response;
+      return (
+        authCheck.response ??
+        unauthorizedServiceResponse({ req, scopes: ['case-file:write'] })
+      );
     }
 
     try {

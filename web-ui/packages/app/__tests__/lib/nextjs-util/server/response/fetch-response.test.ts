@@ -1,3 +1,5 @@
+/* @jest-environment node */
+
 import { FetchResponse } from '@/lib/nextjs-util/server/response/index';
 
 // Polyfill Headers/Response/ReadableStream if needed for Jest environment
@@ -14,9 +16,7 @@ if (!global.TextEncoder) {
 }
 
 describe('FetchResponse', () => {
-  describe('Constructor', () => {
-
-  });
+  describe('Constructor', () => {});
 
   describe('Methods', () => {
     it('should return text()', async () => {
@@ -28,6 +28,5 @@ describe('FetchResponse', () => {
       const response = new FetchResponse(Buffer.from('{"foo":"bar"}'));
       expect(await response.json()).toEqual({ foo: 'bar' });
     });
-
   });
 });

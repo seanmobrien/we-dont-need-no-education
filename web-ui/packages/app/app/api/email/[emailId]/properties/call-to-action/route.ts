@@ -18,6 +18,7 @@ import {
   selectForGrid,
 } from '@/lib/components/mui/data-grid/queryHelpers';
 import { CallToActionDetails } from '@/data-models/api/email-properties/extended-properties';
+import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,10 @@ export const GET = wrapRouteRequest(
       requiredScope: CaseFileScope.READ,
     });
     if (!authCheck.authorized) {
-      return authCheck.response;
+      return (
+        authCheck.response ??
+        unauthorizedServiceResponse({ req, scopes: ['case-file:read'] })
+      );
     }
 
     const db = await drizDbWithInit();

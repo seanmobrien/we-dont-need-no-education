@@ -182,8 +182,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
     };
   }
   if (!dynamicImports.auth.session) {
-    dynamicImports.auth.session = await import('@/lib/auth/session');
+    if (
+      typeof window === 'undefined' &&
+      process.env.NEXT_RUNTIME !== 'nodejs'
+    ) {
+      dynamicImports.auth.session = await import(
+        '@/lib/auth/session/session-edge'
+      );
+    } else if (
+      typeof window === 'undefined' &&
+      process.env.NEXT_RUNTIME === 'nodejs'
+    ) {
+      dynamicImports.auth.session = await import(
+        '@/lib/auth/session/session-nodejs'
+      );
+    }
     if (!dynamicImports.auth.session.session) {
+      // Should only get here if the import failed or we were unable to match
+      // the runtime environment
       throw new Error('Failed to load session callback');
     }
   }

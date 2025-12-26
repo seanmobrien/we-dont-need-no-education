@@ -53,3 +53,5 @@ export const fromUserId = async ({
     return service;
   });
 };
+
+export const forAdmin = () => ImpersonationThirdParty.forAdmin();

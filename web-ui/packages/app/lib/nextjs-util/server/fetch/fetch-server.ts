@@ -1,4 +1,8 @@
-import got, { Response as GotResponse, OptionsInit, OptionsOfBufferResponseBody } from 'got';
+import got, {
+  Response as GotResponse,
+  OptionsInit,
+  OptionsOfBufferResponseBody,
+} from 'got';
 import type { Readable } from 'stream';
 import type { IncomingMessage } from 'http';
 import { EventEmitter } from 'events';
@@ -10,15 +14,24 @@ import {
 type Handler = (...args: unknown[]) => void;
 import { getRedisClient } from '@/lib/redis-client';
 import { makeResponse, webStreamToReadable } from '../response';
-import { fetchConfig, fetchConfigSync, FETCH_MANAGER_SINGLETON_KEY } from './fetch-config';
+import {
+  fetchConfig,
+  fetchConfigSync,
+  FETCH_MANAGER_SINGLETON_KEY,
+} from './fetch-config';
 import { LoggedError } from '@/lib/react-util';
 import { createInstrumentedSpan } from '../utils';
-import { log } from '@/lib/logger';
+import { log, safeSerialize } from '@/lib/logger';
 import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
 import { CacheStrategies } from './cache-strategies';
 import { StreamingStrategy } from './streaming-strategy';
 import { BufferingStrategy } from './buffering-strategy';
-import type { CachedValue, RequestInfo, RequestInit, ServerFetchManager } from './fetch-types';
+import type {
+  CachedValue,
+  RequestInfo,
+  RequestInit,
+  ServerFetchManager,
+} from './fetch-types';
 import { EnhancedFetchConfig } from '@/lib/site-util/feature-flags/types';
 import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
 import { withTimeout } from '../../with-timeout';
@@ -59,11 +72,13 @@ const DEFAULT_CONFIG: FetchManagerConfig = {
   timeout: AllFeatureFlagsDefault.models_fetch_enhanced.timeout,
 };
 
-
-
 const mergeHeaders = (
   target: Record<string, string | string[] | undefined>,
-  source: Headers | Record<string, string | string[]> | [string, string | string[]][] | undefined
+  source:
+    | Headers
+    | Record<string, string | string[]>
+    | [string, string | string[]][]
+    | undefined,
 ) => {
   if (!source) return;
 
@@ -73,7 +88,10 @@ const mergeHeaders = (
     return Object.keys(obj).find((k) => k.toLowerCase() === lower) || key;
   };
 
-  const processEntry = (key: string, value: string | string[] | undefined | null) => {
+  const processEntry = (
+    key: string,
+    value: string | string[] | undefined | null,
+  ) => {
     if (value === undefined || value === null) return;
 
     const matchingKey = getMatchingKey(target, key);
@@ -122,9 +140,9 @@ const mergeHeaders = (
   }
 };
 
-type RequestInitWithTimeout = (Omit<RequestInit, 'timeout'> & {
+type RequestInitWithTimeout = Omit<RequestInit, 'timeout'> & {
   timeout?: number | Partial<EnhancedFetchConfig['timeout']>;
-});
+};
 
 export const normalizeRequestInit = ({
   requestInfo,
@@ -136,7 +154,9 @@ export const normalizeRequestInit = ({
   defaults?: Partial<OptionsInit>;
 }): [string, OptionsInit] => {
   let url: string;
-  let init: (Omit<RequestInitWithTimeout, 'timeout'> & { timeout?: Partial<EnhancedFetchConfig['timeout']> }) = {
+  let init: Omit<RequestInitWithTimeout, 'timeout'> & {
+    timeout?: Partial<EnhancedFetchConfig['timeout']>;
+  } = {
     ...requestInit,
   };
 
@@ -148,15 +168,23 @@ export const normalizeRequestInit = ({
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
       };
     } else if (Array.isArray(init.headers)) {
-      init.headers.push(['Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8']);
+      init.headers.push([
+        'Content-Type',
+        'application/x-www-form-urlencoded;charset=UTF-8',
+      ]);
     } else if (init.headers instanceof Headers) {
       if (!init.headers.has('Content-Type')) {
-        init.headers.set('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        init.headers.set(
+          'Content-Type',
+          'application/x-www-form-urlencoded;charset=UTF-8',
+        );
       }
     } else {
       // Record<string, string | string[]>
       // Check if Content-Type exists case-insensitively
-      const hasContentType = Object.keys(init.headers).some(k => k.toLowerCase() === 'content-type');
+      const hasContentType = Object.keys(init.headers).some(
+        (k) => k.toLowerCase() === 'content-type',
+      );
       if (!hasContentType) {
         init.headers = {
           ...init.headers,
@@ -169,12 +197,13 @@ export const normalizeRequestInit = ({
     throw new Error('Invalid requestInfo');
   }
   if (initTimeout) {
-    init.timeout = typeof initTimeout === 'number'
-      ? {
-        connect: initTimeout,
-        socket: initTimeout,
-      }
-      : initTimeout ?? {};
+    init.timeout =
+      typeof initTimeout === 'number'
+        ? {
+            connect: initTimeout,
+            socket: initTimeout,
+          }
+        : (initTimeout ?? {});
   }
 
   if (typeof requestInfo === 'string') {
@@ -188,14 +217,14 @@ export const normalizeRequestInit = ({
           connect: requestInfo.timeout,
           socket: requestInfo.timeout,
           ...init.timeout,
-        }
+        };
       } else if (typeof requestInfo.timeout === 'object') {
         init.timeout = {
           ...requestInfo.timeout,
           ...init.timeout,
         };
       } else {
-        log(l => l.warn(`Unrecognized timeout type: ${requestInfo.timeout}`));
+        log((l) => l.warn(`Unrecognized timeout type: ${requestInfo.timeout}`));
       }
     }
     // Timeout has been normalized as timeout under init.timeout,
@@ -239,7 +268,9 @@ export const normalizeRequestInit = ({
   for (const [k, v] of Object.entries(options)) {
     const key = k as keyof OptionsInit;
     if (!!v) {
-      (cleanOptions as Record<typeof key, OptionsInit[keyof OptionsInit]>)[key] = v;
+      (cleanOptions as Record<typeof key, OptionsInit[keyof OptionsInit]>)[
+        key
+      ] = v;
     }
   }
 
@@ -256,8 +287,6 @@ export const normalizeRequestInit = ({
 
   return [url, cleanOptions];
 };
-
-
 
 export class FetchManager implements ServerFetchManager {
   private cache: LRUCache<string, Promise<CachedValue>>;
@@ -372,7 +401,6 @@ export class FetchManager implements ServerFetchManager {
           log: true,
         });
       }
-
     }
 
     // Update timeout always
@@ -416,9 +444,13 @@ export class FetchManager implements ServerFetchManager {
         },
         throwHttpErrors: false,
         responseType: 'buffer',
-      }
+      },
     });
-    log((l) => l.info(`GOT Fetch: About to read [${url}] using - ${JSON.stringify(gotOptions)}`));
+    log((l) =>
+      l.info(
+        `GOT Fetch: About to read [${url}] using - ${safeSerialize(gotOptions, { maxObjectDepth: 4, maxPropertyDepth: 20 })}`,
+      ),
+    );
     await this.semManager.sem.acquire();
     try {
       const res: GotResponse<Buffer> = await got(
@@ -456,7 +488,7 @@ export class FetchManager implements ServerFetchManager {
         timeout: {
           ...this.config.timeout,
         },
-      }
+      },
     });
     const method = (options.method || 'GET').toUpperCase();
     const cacheKey = `${method}:${normalizedUrl}`;
@@ -464,7 +496,11 @@ export class FetchManager implements ServerFetchManager {
     if (!enhanced) {
       const instrumented = await createInstrumentedSpan({
         spanName: 'fetch.get',
-        attributes: { 'http.method': 'GET', 'http.url': normalizedUrl, 'http.enhanced-fetch': false },
+        attributes: {
+          'http.method': 'GET',
+          'http.url': normalizedUrl,
+          'http.enhanced-fetch': false,
+        },
       });
       return await instrumented.executeWithContext(async (span) => {
         const domResponse = await this.#doDomFetch(normalizedUrl, options);
@@ -489,6 +525,7 @@ export class FetchManager implements ServerFetchManager {
             headersLower,
             domResponse.status,
             span,
+            false,
           );
         }
         // Use buffering strategy for non-streaming responses
@@ -500,6 +537,7 @@ export class FetchManager implements ServerFetchManager {
             domResponse.status,
             normalizedUrl,
             span,
+            false,
           );
         return bufferedResult.response;
       });
@@ -512,7 +550,7 @@ export class FetchManager implements ServerFetchManager {
       const releaseOnce = () => {
         try {
           this.semManager.sem.release();
-        } catch { }
+        } catch {}
       };
       stream.on('end', releaseOnce);
       stream.on('error', releaseOnce);
@@ -525,7 +563,7 @@ export class FetchManager implements ServerFetchManager {
 
   #isEnhancedEnabled(): Promise<boolean> {
     return fetchConfig()
-      .then(x => x.enhanced)
+      .then((x) => x.enhanced)
       .catch((e) => {
         LoggedError.isTurtlesAllTheWayDownBaby(e, {
           source: 'fetch:enhanced-enabled-fail',
@@ -551,8 +589,7 @@ export class FetchManager implements ServerFetchManager {
       );
       // the only timeout we handle here is request timeout
       return normalInit.timeout?.request
-        ? withTimeout(domReq, normalInit.timeout.request)
-          .then((x) => {
+        ? withTimeout(domReq, normalInit.timeout.request).then((x) => {
             if (x.timedOut) {
               controller.abort();
               throw new TimeoutError();
@@ -563,7 +600,6 @@ export class FetchManager implements ServerFetchManager {
     }
     throw new Error('No fetch implementation found');
   }
-
 
   /**
    * Enhanced fetch implementation with multi-layer caching and streaming support.
@@ -583,7 +619,11 @@ export class FetchManager implements ServerFetchManager {
       // handle as traditional fetch
       const instrumented = await createInstrumentedSpan({
         spanName: `fetch.${method}`,
-        attributes: { 'http.method': method, 'http.url': url, 'http.enhanced-fetch': false },
+        attributes: {
+          'http.method': method,
+          'http.url': url,
+          'http.enhanced-fetch': false,
+        },
       });
       return await instrumented.executeWithContext(async (span) => {
         const domResponse = await this.#doDomFetch(url, normalInit);
@@ -608,6 +648,7 @@ export class FetchManager implements ServerFetchManager {
             headersLower,
             domResponse.status,
             span,
+            false,
           );
         }
         // Use buffering strategy for non-streaming responses
@@ -619,6 +660,7 @@ export class FetchManager implements ServerFetchManager {
             domResponse.status,
             url,
             span,
+            false,
           );
         return bufferedResult.response;
       });
@@ -627,7 +669,11 @@ export class FetchManager implements ServerFetchManager {
     if (method === 'GET') {
       const instrumented = await createInstrumentedSpan({
         spanName: 'fetch.get',
-        attributes: { 'http.method': 'GET', 'http.url': url, 'http.enhanced-fetch': true },
+        attributes: {
+          'http.method': 'GET',
+          'http.url': url,
+          'http.enhanced-fetch': true,
+        },
       });
       return await instrumented.executeWithContext(async (span) => {
         // Try memory cache (L1)
@@ -702,6 +748,7 @@ export class FetchManager implements ServerFetchManager {
               headersLower,
               resHead.statusCode ?? 200,
               span,
+              true,
             );
           }
 
@@ -714,6 +761,7 @@ export class FetchManager implements ServerFetchManager {
               resHead.statusCode ?? 200,
               url,
               span,
+              true,
             );
           return bufferedResult.response;
         } catch (err) {
@@ -737,10 +785,17 @@ export class FetchManager implements ServerFetchManager {
     // non-GET: do a normal got fetch limited by semaphore
     const instrumented = await createInstrumentedSpan({
       spanName: 'fetch.non_get',
-      attributes: { 'http.method': method, 'http.url': url, 'http.enhanced-fetch': true },
+      attributes: {
+        'http.method': method,
+        'http.url': url,
+        'http.enhanced-fetch': true,
+      },
     });
     return await instrumented.executeWithContext(async (span) => {
-      const v = await this.doGotFetch(url, normalInit as unknown as RequestInit);
+      const v = await this.doGotFetch(
+        url,
+        normalInit as unknown as RequestInit,
+      );
       span.setAttribute('http.status_code', v.statusCode);
       return makeResponse(v);
     });
@@ -772,8 +827,12 @@ export const resetFetchManager = (): void => {
   SingletonProvider.Instance.delete(FETCH_MANAGER_SINGLETON_KEY);
 };
 
-export const serverFetch = async (input: RequestInfo, init?: RequestInitWithTimeout) =>
-  getFetchManager().fetch(input, init);
+export const serverFetch = async (
+  input: RequestInfo,
+  init?: RequestInitWithTimeout,
+) => getFetchManager().fetch(input, init);
 
-export const fetchStream = async (input: RequestInfo, init?: RequestInitWithTimeout) =>
-  getFetchManager().fetchStream(input, init);
+export const fetchStream = async (
+  input: RequestInfo,
+  init?: RequestInitWithTimeout,
+) => getFetchManager().fetchStream(input, init);

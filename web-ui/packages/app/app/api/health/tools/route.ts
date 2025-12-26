@@ -3,7 +3,7 @@ import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import type { User } from '@auth/core/types';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import type { NextRequest } from 'next/server';
-
+import { NextResponse } from 'next/server';
 import { getMem0EnabledFlag } from '@/lib/ai/mcp/tool-flags';
 
 const getExpectedProviderCount = async () => {
@@ -39,7 +39,7 @@ const toolProviderFactory = async ({
 export const GET = wrapRouteRequest(async (req: NextRequest) => {
   const session = await auth();
   if (!session?.user) {
-    return Response.json(
+    return NextResponse.json(
       { status: 401, message: 'Unauthorized' },
       { status: 401 },
     );
@@ -54,7 +54,7 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
   const tools = Array.from(new Set<string>(Object.keys(toolProviders.tools)));
   // do we have client-hosted tools?
   if (!toolProviders.isHealthy) {
-    return Response.json(
+    return NextResponse.json(
       { status: 'error', message: 'No tools available' },
       { status: 200 },
     );
@@ -72,5 +72,5 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
     status = 'ok';
     message = 'All systems operational';
   }
-  return Response.json({ status, message, tools }, { status: 200 });
+  return NextResponse.json({ status, message, tools }, { status: 200 });
 });

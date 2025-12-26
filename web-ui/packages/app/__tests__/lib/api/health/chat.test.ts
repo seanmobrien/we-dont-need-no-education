@@ -1,3 +1,5 @@
+/* @jest-environment node */
+
 import { checkChatHealth } from '../../../../lib/api/health/chat';
 import { getRedisClient } from '@/lib/redis-client';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
@@ -26,7 +28,14 @@ describe('checkChatHealth', () => {
     (setupDefaultTools as jest.Mock).mockResolvedValue({
       isHealthy: true,
       providers: [{}, {}], // 2 providers
-      tools: { tool1: {}, tool2: {}, tool3: {}, tool4: {}, tool5: {}, tool6: {} }, // > 5 tools
+      tools: {
+        tool1: {},
+        tool2: {},
+        tool3: {},
+        tool4: {},
+        tool5: {},
+        tool6: {},
+      }, // > 5 tools
       [Symbol.dispose]: jest.fn(),
     });
 
@@ -49,7 +58,14 @@ describe('checkChatHealth', () => {
     (setupDefaultTools as jest.Mock).mockResolvedValue({
       isHealthy: true,
       providers: [{}, {}],
-      tools: { tool1: {}, tool2: {}, tool3: {}, tool4: {}, tool5: {}, tool6: {} },
+      tools: {
+        tool1: {},
+        tool2: {},
+        tool3: {},
+        tool4: {},
+        tool5: {},
+        tool6: {},
+      },
       [Symbol.dispose]: jest.fn(),
     });
     (getMem0EnabledFlag as jest.Mock).mockResolvedValue({ value: false });
@@ -86,4 +102,3 @@ describe('checkChatHealth', () => {
     expect(result.tools?.status).toBe('warning');
   });
 });
-

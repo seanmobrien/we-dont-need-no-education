@@ -76,6 +76,7 @@ export const handleCacheJail = async (
   context: string = '',
 ): Promise<void> => {
   const jailKey = createJailKey(cacheKey);
+  debugger;
 
   try {
     // Get current jail data

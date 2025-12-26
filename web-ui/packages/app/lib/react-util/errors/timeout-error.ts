@@ -1,4 +1,4 @@
-import { getStackTrace } from "@/lib/nextjs-util";
+import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
 
 export class TimeoutError extends Error {
   constructor(message?: string) {

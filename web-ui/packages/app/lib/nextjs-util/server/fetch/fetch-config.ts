@@ -18,12 +18,13 @@
  * - No breaking changes
  */
 
-import {
-  wellKnownFlagSync,
-} from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import { wellKnownFlagSync } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 //import { isFlagsmithServerReady } from '@/lib/site-util/feature-flags/known-feature-defaults';
 
-import type { AutoRefreshFeatureFlag, MinimalNodeFlagsmith } from '@/lib/site-util/feature-flags/types';
+import type {
+  AutoRefreshFeatureFlag,
+  MinimalNodeFlagsmith,
+} from '@/lib/site-util/feature-flags/types';
 import type { FetchConfig } from './fetch-types';
 import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
 import { flagsmithServerFactory } from '@/lib/site-util/feature-flags/server';
@@ -50,7 +51,11 @@ const fetchConfigFlagsmithFactory = (): MinimalNodeFlagsmith => {
     const thisServer = fetchConfigFlagsmith;
     fetchConfigFlagsmith = undefined;
     try {
-      if (thisServer) {
+      if (
+        thisServer &&
+        'close' in thisServer &&
+        typeof thisServer.close === 'function'
+      ) {
         await thisServer.close();
       }
     } catch (error) {
@@ -79,62 +84,74 @@ class FetchConfigManager {
 
   constructor() {
     this.#models_fetch_concurrency =
-      wellKnownFlagSync<'models_fetch_concurrency'>('models_fetch_concurrency', {
+      wellKnownFlagSync<'models_fetch_concurrency'>(
+        'models_fetch_concurrency',
+        {
+          load: false,
+          salt: FETCH_CONFIG_SALT,
+          flagsmith: fetchConfigFlagsmithFactory,
+        },
+      );
+    this.#fetch_cache_ttl = wellKnownFlagSync<'models_fetch_cache_ttl'>(
+      'models_fetch_cache_ttl',
+      {
         load: false,
         salt: FETCH_CONFIG_SALT,
-        flagsmith: fetchConfigFlagsmithFactory
-      });
-    this.#fetch_cache_ttl = wellKnownFlagSync<'models_fetch_cache_ttl'>(
-      'models_fetch_cache_ttl', {
-      load: false,
-      salt: FETCH_CONFIG_SALT,
-      flagsmith: fetchConfigFlagsmithFactory
-    }
+        flagsmith: fetchConfigFlagsmithFactory,
+      },
     );
     this.#models_fetch_enhanced = wellKnownFlagSync<'models_fetch_enhanced'>(
-      'models_fetch_enhanced', {
-      load: false,
-      salt: FETCH_CONFIG_SALT,
-      flagsmith: fetchConfigFlagsmithFactory
-    }
+      'models_fetch_enhanced',
+      {
+        load: false,
+        salt: FETCH_CONFIG_SALT,
+        flagsmith: fetchConfigFlagsmithFactory,
+      },
     );
     this.#models_fetch_trace_level =
-      wellKnownFlagSync<'models_fetch_trace_level'>('models_fetch_trace_level', {
-        load: false,
-        salt: FETCH_CONFIG_SALT,
-        flagsmith: fetchConfigFlagsmithFactory
-      });
+      wellKnownFlagSync<'models_fetch_trace_level'>(
+        'models_fetch_trace_level',
+        {
+          load: false,
+          salt: FETCH_CONFIG_SALT,
+          flagsmith: fetchConfigFlagsmithFactory,
+        },
+      );
     this.#models_fetch_stream_buffer =
       wellKnownFlagSync<'models_fetch_stream_buffer'>(
-        'models_fetch_stream_buffer', {
-        load: false,
-        salt: FETCH_CONFIG_SALT,
-        flagsmith: fetchConfigFlagsmithFactory
-      }
+        'models_fetch_stream_buffer',
+        {
+          load: false,
+          salt: FETCH_CONFIG_SALT,
+          flagsmith: fetchConfigFlagsmithFactory,
+        },
       );
     this.#fetch_stream_max_chunks =
       wellKnownFlagSync<'models_fetch_stream_max_chunks'>(
-        'models_fetch_stream_max_chunks', {
-        load: false,
-        salt: FETCH_CONFIG_SALT,
-        flagsmith: fetchConfigFlagsmithFactory
-      }
+        'models_fetch_stream_max_chunks',
+        {
+          load: false,
+          salt: FETCH_CONFIG_SALT,
+          flagsmith: fetchConfigFlagsmithFactory,
+        },
       );
     this.#fetch_stream_max_total_bytes =
       wellKnownFlagSync<'models_fetch_stream_max_total_bytes'>(
-        'models_fetch_stream_max_total_bytes', {
-        load: false,
-        salt: FETCH_CONFIG_SALT,
-        flagsmith: fetchConfigFlagsmithFactory
-      }
+        'models_fetch_stream_max_total_bytes',
+        {
+          load: false,
+          salt: FETCH_CONFIG_SALT,
+          flagsmith: fetchConfigFlagsmithFactory,
+        },
       );
     this.#fetch_dedup_writerequests =
       wellKnownFlagSync<'models_fetch_dedup_writerequests'>(
-        'models_fetch_dedup_writerequests', {
-        load: false,
-        salt: FETCH_CONFIG_SALT,
-        flagsmith: fetchConfigFlagsmithFactory
-      }
+        'models_fetch_dedup_writerequests',
+        {
+          load: false,
+          salt: FETCH_CONFIG_SALT,
+          flagsmith: fetchConfigFlagsmithFactory,
+        },
       );
   }
 
@@ -163,7 +180,9 @@ class FetchConfigManager {
       fetch_stream_detect_buffer: streamBuffer?.detect ?? false,
       fetch_cache_ttl: this.#fetch_cache_ttl.value,
       enhanced: !!enhancedConfig,
-      timeout: enhancedConfig ? enhancedConfig.timeout : AllFeatureFlagsDefault.models_fetch_enhanced.timeout,
+      timeout: enhancedConfig
+        ? enhancedConfig.timeout
+        : AllFeatureFlagsDefault.models_fetch_enhanced.timeout,
       trace_level: this.#models_fetch_trace_level.value,
       fetch_stream_max_chunks: this.#fetch_stream_max_chunks.value,
       fetch_stream_max_total_bytes: this.#fetch_stream_max_total_bytes.value,

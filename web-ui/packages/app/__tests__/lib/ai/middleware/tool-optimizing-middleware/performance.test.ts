@@ -8,8 +8,6 @@
  * @module __tests__/lib/ai/middleware/tool-optimizing-middleware/performance.test.ts
  */
 
-
-
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();
 
@@ -358,6 +356,10 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
         inputSchema: { type: 'object', properties: {} },
       })) as LanguageModelV2FunctionTool[];
 
+      if (global.gc) {
+        global.gc();
+      }
+
       const initialMemory = process.memoryUsage().heapUsed;
 
       for (let i = 0; i < iterations; i++) {
@@ -372,6 +374,10 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
       }
 
       const finalMemory = process.memoryUsage().heapUsed;
+      if (global.gc) {
+        global.gc();
+      }
+
       const memoryGrowth = finalMemory - initialMemory;
 
       // Allow for reasonable memory growth (less than 10MB)

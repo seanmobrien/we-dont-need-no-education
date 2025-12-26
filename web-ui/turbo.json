@@ -17,6 +17,10 @@
       "cache": false,
       "persistent": true
     },
+    "debug": {
+      "cache": false,
+      "persistent": true
+    },
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"],

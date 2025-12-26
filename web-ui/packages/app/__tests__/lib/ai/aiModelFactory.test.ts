@@ -1,8 +1,4 @@
-/**
- * @jest-environment jsdom
- */
-
-
+/* @jest-environment node */
 
 // Mock middleware
 jest.mock('@/lib/ai/middleware', () => ({

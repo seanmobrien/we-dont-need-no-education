@@ -1,3 +1,5 @@
+/* @jest-environment node */
+
 /**
  * @fileoverview Simple unit tests for chat history flush handlers
  *
@@ -26,11 +28,6 @@ import { hideConsoleOutput } from '@/__tests__/test-utils';
 import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 
 const makeMockDb = () => withJestTestExtensions().makeMockDb();
-
-// Mock the logger
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(),
-}));
 
 // Mock instrumentation functions that might be called
 jest.mock('@/lib/ai/middleware/chat-history/instrumentation', () => ({

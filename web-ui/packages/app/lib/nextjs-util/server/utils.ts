@@ -20,7 +20,6 @@ import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
 import { isPromise } from '@/lib/typescript/_guards';
 
-
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');
 
 export const buildFallbackGrid = { rows: [], rowCount: 0 };
@@ -28,7 +27,6 @@ export const buildFallbackGrid = { rows: [], rowCount: 0 };
 const globalBuildFallback = {
   __status: 'Service disabled during build.',
 } as const;
-
 
 export const extractParams = async <T extends object>(req: {
   params: T | Promise<T>;
@@ -44,13 +42,13 @@ export const extractParams = async <T extends object>(req: {
 
 export const wrapRouteRequest = <
   A extends
-  | []
-  | [NextRequest]
-  | [Request]
-  | [NextRequest, Pick<WrappedResponseContext<TContext>, 'params'>]
-  | [NextRequest, WrappedResponseContext<TContext>]
-  | [Request, Pick<WrappedResponseContext<TContext>, 'params'>]
-  | [Request, WrappedResponseContext<TContext>],
+    | []
+    | [NextRequest]
+    | [Request]
+    | [NextRequest, Pick<WrappedResponseContext<TContext>, 'params'>]
+    | [NextRequest, WrappedResponseContext<TContext>]
+    | [Request, Pick<WrappedResponseContext<TContext>, 'params'>]
+    | [Request, WrappedResponseContext<TContext>],
   TContext extends Record<string, unknown> = Record<string, unknown>,
 >(
   fn: (...args: A) => Promise<Response | NextResponse | undefined>,
@@ -96,15 +94,18 @@ export const wrapRouteRequest = <
             return res;
           }
 
-          const appStartupState = await tracer.startActiveSpan('app.startup.check', async (startupSpan) => {
-            try {
-              const state = await startup();
-              startupSpan.setAttribute('app.startup_state', state);
-              return state;
-            } finally {
-              startupSpan.end();
-            }
-          });
+          const appStartupState = await tracer.startActiveSpan(
+            'app.startup.check',
+            async (startupSpan) => {
+              try {
+                const state = await startup();
+                startupSpan.setAttribute('app.startup_state', state);
+                return state;
+              } finally {
+                startupSpan.end();
+              }
+            },
+          );
 
           if (appStartupState === 'done') {
             const res = Response.json(buildFallback ?? globalBuildFallback, {
@@ -213,7 +214,11 @@ export const wrapRouteRequest = <
           }
           return errResponse;
         } finally {
-          span.end();
+          try {
+            span.end();
+          } catch {
+            // ignore span end errors
+          }
         }
       },
     );
@@ -403,17 +408,17 @@ export const createInstrumentedSpan = async ({
       ): Promise<TResult> => {
         // No-op span for when OpenTelemetry is not available
         const noOpSpan = {
-          setAttributes: () => { },
-          setStatus: () => { },
-          recordException: () => { },
-          end: () => { },
+          setAttributes: () => {},
+          setStatus: () => {},
+          recordException: () => {},
+          end: () => {},
           spanContext: () => ({}) as SpanContext,
-          setAttribute: () => { },
-          addEvent: () => { },
-          addLink: () => { },
-          addLinks: () => { },
+          setAttribute: () => {},
+          addEvent: () => {},
+          addLink: () => {},
+          addLinks: () => {},
           isRecording: () => false,
-          updateName: () => { },
+          updateName: () => {},
         } as unknown as Span;
         return fn(noOpSpan);
       },

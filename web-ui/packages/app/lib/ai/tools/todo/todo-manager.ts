@@ -64,8 +64,8 @@ export class TodoManager {
   ): Promise<Todo> {
     const list = await (options?.listId
       ? this.getTodoList(options.listId, {
-        session: options?.session,
-      })
+          session: options?.session,
+        })
       : this.ensureDefaultList({ session: options?.session }));
     if (!list) {
       throw new ApiRequestError(
@@ -248,7 +248,10 @@ export class TodoManager {
     if (!activeSession) {
       throw new ApiRequestError(
         'No session available',
-        unauthorizedServiceResponse(),
+        unauthorizedServiceResponse({
+          req: undefined,
+          scopes: ['mcp-tools:read'],
+        }),
       );
     }
     const [prefix] = await TodoManager.generateTodoPrefix({
@@ -738,14 +741,20 @@ export class TodoManager {
     if (!activeSession) {
       throw new ApiRequestError(
         'No session available',
-        unauthorizedServiceResponse(),
+        unauthorizedServiceResponse({
+          req: undefined,
+          scopes: ['mcp-tools:read'],
+        }),
       );
     }
     const userId = activeSession.user?.id;
     if (!userId) {
       throw new ApiRequestError(
         'Session does not contain user information',
-        unauthorizedServiceResponse(),
+        unauthorizedServiceResponse({
+          req: undefined,
+          scopes: ['mcp-tools:read'],
+        }),
       );
     }
     const prefix = `todo::user-${userId}::`;
@@ -779,7 +788,10 @@ export class TodoManager {
     if (!isValid) {
       throw new ApiRequestError(
         'User does not have access to this todo item',
-        unauthorizedServiceResponse(),
+        unauthorizedServiceResponse({
+          req: undefined,
+          scopes: ['mcp-tools:read'],
+        }),
       );
     }
     return [activeSession, options.check];

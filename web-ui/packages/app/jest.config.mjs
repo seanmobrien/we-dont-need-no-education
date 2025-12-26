@@ -40,7 +40,7 @@ const config = {
 
   // Concurrency configuration to prevent hanging issues
   // maxWorkers: process.env.CI ? 2 : '50%', // Limit workers in CI, use 50% of cores locally
-  maxConcurrency: 5, // Limit concurrent tests to prevent resource contention
+  // maxConcurrency: 5, // Limit concurrent tests to prevent resource contention
 
   moduleNameMapper: {
     '@/instrumentation(.*)$':
@@ -94,7 +94,7 @@ const config = {
   // Additional stability configurations for concurrent testing
   testTimeout: 1000, // Increase timeout to 30 seconds for slower tests
   openHandlesTimeout: 1000, // Allow 1 second for open handles cleanup
-  forceExit: false, // Don't force exit to allow proper cleanup
+  // forceExit: false, // Don't force exit to allow proper cleanup
 
   // Mock configuration
   clearMocks: true, // Clear mock calls between tests

@@ -1,3 +1,5 @@
+/* @jest-environment node */
+
 import React from 'react';
 import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 
@@ -26,7 +28,6 @@ jest.mock('next/navigation', () => ({
 
 const setSession = (userId: number | null) => {
   if (userId == null) {
-    // authMock.mockImplementation(() => Promise.resolve(null));
     withJestTestExtensions().session = null;
   } else {
     withJestTestExtensions().session!.user.id = String(userId);

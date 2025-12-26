@@ -6,11 +6,13 @@ import type {
   FeatureFlagValueType,
   MinimalNodeFlagsmith,
   GetFeatureFlagOptions,
-
 } from './types';
 
 import { type KnownFeatureType, isKnownFeatureType } from './known-feature';
-import { AllFeatureFlagsDefault, FLAGSMITH_SERVER_SINGLETON_KEY } from './known-feature-defaults';
+import {
+  AllFeatureFlagsDefault,
+  FLAGSMITH_SERVER_SINGLETON_KEY,
+} from './known-feature-defaults';
 
 import { globalSingleton } from '@/lib/typescript';
 import { env } from '../env';
@@ -20,8 +22,6 @@ import { extractFlagValue } from './util';
 import { fetch as serverFetch } from '@/lib/nextjs-util/server/fetch';
 import { log } from '@/lib/logger';
 import { FlagsmithRedisCache } from './flagsmith-cache';
-
-
 
 /**
  * Type guard to check if a value is a NativeFlag.
@@ -80,7 +80,9 @@ export const defaultFlagHandler = (flagKey: string) => {
   return { enabled: false, value: undefined, isDefault: true };
 };
 
-export const flagsmithServerFactory = (options?: Partial<FlagsmithConfig>): Flagsmith => {
+export const flagsmithServerFactory = (
+  options?: Partial<FlagsmithConfig>,
+): Flagsmith => {
   const normalOptions = options ?? {};
   const definesFetch = 'fetch' in normalOptions;
   const definesDefaultFlagHandler = 'defaultFlagHandler' in normalOptions;
@@ -89,6 +91,9 @@ export const flagsmithServerFactory = (options?: Partial<FlagsmithConfig>): Flag
     fetch: thisFetch,
     ...restOptions
   } = normalOptions;
+  const theDefaultFlagHandler = definesDefaultFlagHandler
+    ? thisFlagDefaultHander
+    : defaultFlagHandler;
   const config: FlagsmithConfig = {
     environmentKey: env('FLAGSMITH_SDK_KEY'),
     apiUrl: env('NEXT_PUBLIC_FLAGSMITH_API_URL'),
@@ -96,18 +101,17 @@ export const flagsmithServerFactory = (options?: Partial<FlagsmithConfig>): Flag
     enableLocalEvaluation: false,
     requestTimeoutSeconds: 60,
     retries: 2,
-    defaultFlagHandler: definesDefaultFlagHandler
-      ? thisFlagDefaultHander
-      : defaultFlagHandler,
+    defaultFlagHandler: theDefaultFlagHandler,
     fetch: definesFetch ? thisFetch : serverFetch,
     cache: new FlagsmithRedisCache({
       lru: { max: 20, ttl: 20 * 60 },
       redis: { ttl: 60 * 60, keyPrefix: 'flagsmith_edge_cache:' },
+      defaultFlagHandler: theDefaultFlagHandler,
     }),
-    ...restOptions
+    ...restOptions,
   };
   return new Flagsmith(config);
-}
+};
 
 // Server-bound Flagsmith instance used for server-side flag evaluation.
 export const flagsmithServer = (): Flagsmith | undefined =>
@@ -129,7 +133,13 @@ export const flagsmithServer = (): Flagsmith | undefined =>
     },
   );
 
-const identify = async ({ userId, flagsmith: flagsmithFactory }: { userId?: string; flagsmith?: () => MinimalNodeFlagsmith }): Promise<Flags> => {
+const identify = async ({
+  userId,
+  flagsmith: flagsmithFactory,
+}: {
+  userId?: string;
+  flagsmith?: () => MinimalNodeFlagsmith;
+}): Promise<Flags> => {
   try {
     if (!userId) {
       const session = await auth();
@@ -142,7 +152,9 @@ const identify = async ({ userId, flagsmith: flagsmithFactory }: { userId?: stri
     if (flagsmith) {
       return await flagsmith.getIdentityFlags(userId);
     }
-    log((l) => l.warn('[Flagsmith::identify] Flagsmith server instance not available.'));
+    log((l) =>
+      l.warn('[Flagsmith::identify] Flagsmith server instance not available.'),
+    );
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       source: 'Flagsmith::identify',
@@ -152,7 +164,9 @@ const identify = async ({ userId, flagsmith: flagsmithFactory }: { userId?: stri
   return {} as Flags;
 };
 
-const normalizeFeatureFlagOptions = (options: string | GetFeatureFlagOptions | undefined): GetFeatureFlagOptions => {
+const normalizeFeatureFlagOptions = (
+  options: string | GetFeatureFlagOptions | undefined,
+): GetFeatureFlagOptions => {
   if (typeof options === 'string' || options === undefined) {
     return { userId: options };
   }

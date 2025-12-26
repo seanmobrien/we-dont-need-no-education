@@ -17,18 +17,8 @@ import { TestVirtualizedChat } from '@/components/ai/chat/test-virtualized-chat'
 jest.mock('@/components/ai/chat/virtualized-chat-display', () => ({
   VirtualizedChatDisplay: ({ turns }: { turns: any[] }) => (
     <div data-testid="virtualized-chat">
-      {turns.map((turn, index) => (
-        <div key={turn.turnId || index} data-testid={`turn-${turn.turnId}`}>
-          Turn {turn.turnId}
-          {turn.messages.map((msg: any, msgIndex: number) => (
-            <div
-              key={msg.messageId || msgIndex}
-              data-testid={`message-${msg.role}`}
-            >
-              {msg.role}: {msg.content?.substring(0, 50)}...
-            </div>
-          ))}
-        </div>
+      {turns.map((turn, i) => (
+        <div key={turn.turnId ?? i} />
       ))}
     </div>
   ),

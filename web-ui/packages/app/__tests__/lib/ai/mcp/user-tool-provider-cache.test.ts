@@ -1,3 +1,5 @@
+/* @jest-environment node */
+
 import type {
   ToolProviderSet,
   UserToolProviderCache as UserToolProviderCacheType,
@@ -32,7 +34,7 @@ const makeToolSet = (input: Partial<ToolProviderSet>) => {
     providers: [],
     isHealthy: true,
     ...input,
-  } as ToolProviderSet
+  } as ToolProviderSet;
 };
 // Mock the ToolProviderSet
 const mockToolProviderSet = makeToolSet({});

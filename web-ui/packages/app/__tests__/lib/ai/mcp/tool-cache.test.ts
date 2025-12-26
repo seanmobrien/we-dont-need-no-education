@@ -1,3 +1,5 @@
+/* @jest-environment node */
+
 /**
  * Jest tests for MCP tool caching functionality
  * Tests the cache key generation, storage, retrieval, and invalidation logic

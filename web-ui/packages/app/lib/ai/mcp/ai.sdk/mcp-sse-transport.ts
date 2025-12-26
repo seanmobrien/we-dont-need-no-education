@@ -4,8 +4,8 @@ import {
   EventSourceMessage,
   EventSourceParserStream,
 } from '@ai-sdk/provider-utils';
-import { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared/transport.js'
-import { MCPError } from '../mcp-error'
+import { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { MCPError } from '../mcp-error';
 import { JSONRPCMessage, JSONRPCMessageSchema } from './json-rpc-message';
 import { log, safeSerialize } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
@@ -16,8 +16,9 @@ import type { Span } from '@opentelemetry/api';
 
 const MCP_CONNECTION_TIMEOUT = {
   socket: 5 * 60 * 1000,
-  connect: 60 * 1000,
+  connect: 90 * 1000,
   request: 15 * 60 * 1000,
+  lookup: 400,
 };
 
 export class SseMCPTransport implements MCPTransport {
@@ -242,24 +243,23 @@ export class SseMCPTransport implements MCPTransport {
               log((l) => l.verbose('SSE Transport: Waiting for next event'));
               const { done, value } = await reader.read();
               log((l) =>
-                l.info(`SSE Transport (Done: ${done}): Received [${safeSerialize(value?.event)}] event.\n\tData: ${safeSerialize(value?.data)}`, {
-                  attribs: {
-                    done,
-                    hasValue: !!value,
-                    event: safeSerialize(value?.event),
-                    dataLength: value?.data?.length,
-                  }
-                }),
+                l.info(
+                  `SSE Transport (Done: ${done}): Received [${safeSerialize(value?.event)}] event.\n\tData: ${safeSerialize(value?.data)}`,
+                  {
+                    attribs: {
+                      done,
+                      hasValue: !!value,
+                      event: safeSerialize(value?.event),
+                      dataLength: value?.data?.length,
+                    },
+                  },
+                ),
               );
 
               if (done) {
                 if (this.connected) {
                   this.connected = false;
-                  log((l) =>
-                    l.warn(
-                      `SSE connection closed unexpectedly!`,
-                    ),
-                  );
+                  log((l) => l.warn(`SSE connection closed unexpectedly!`));
                 }
                 return;
               }

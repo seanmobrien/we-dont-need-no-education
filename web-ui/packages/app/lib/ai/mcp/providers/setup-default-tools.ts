@@ -33,7 +33,10 @@ import { toolProviderSetFactory } from './tool-provider-factory';
 import { env } from '@/lib/site-util/env';
 import { ToolProviderFactoryOptions, ToolProviderSet } from '../types';
 import { NextRequest } from 'next/server';
-import { fromUserId as fromUser } from '@/lib/auth/impersonation/impersonation-factory';
+import {
+  forAdmin,
+  fromUserId as fromUser,
+} from '@/lib/auth/impersonation/impersonation-factory';
 import type { User } from '@auth/core/types';
 import { encode, getToken } from '@auth/core/jwt';
 import { getMem0EnabledFlag, getStreamingTransportFlag } from '../tool-flags';
@@ -148,7 +151,12 @@ export const setupDefaultTools = async ({
     });
   }
   if (memoryEnabled && globalMem0Enabled.value) {
-    const impersonation = await fromUser({ user });
+    const impersonation = await (user ? fromUser({ user }) : forAdmin());
+    if (!impersonation) {
+      throw new Error(
+        'Impersonation context is required for memory tool setup',
+      );
+    }
     options.push({
       allowWrite: true,
       sse: true,
@@ -156,9 +164,7 @@ export const setupDefaultTools = async ({
         ...defaultHeaders,
         'cache-control': 'no-cache, no-transform',
         'content-encoding': 'none',
-        Authorization: impersonation
-          ? `Bearer ${impersonation ? await impersonation.getImpersonatedToken() : ''}`
-          : `APIKey ${env('MEM0_API_KEY')}`,
+        Authorization: `Bearer ${impersonation ? await impersonation.getImpersonatedToken() : ''}`,
       }),
       url: `${env('MEM0_API_HOST')}/mcp/${env('MEM0_PROJECT_ID')}/sse`,
     });

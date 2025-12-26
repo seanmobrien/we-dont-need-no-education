@@ -9,7 +9,10 @@ import { ServerApplicationInsightsStrategy } from './server-application-insights
 import { EdgeApplicationInsightsStrategy } from './edge-application-insights-strategy';
 
 export class StrategyCollectionFactory {
-  static createStrategies(config: ErrorReporterConfig, suppression: Partial<ErrorReportResult> = {}): ReportActionStrategy[] {
+  static createStrategies(
+    config: ErrorReporterConfig,
+    suppression: Partial<ErrorReportResult> = {},
+  ): ReportActionStrategy[] {
     // 2) if suppress=true, completely=true then no strategies execute
     if (suppression.suppress && suppression.completely) {
       return [];
@@ -17,7 +20,9 @@ export class StrategyCollectionFactory {
 
     // 3) if suppress=true, completely=false then console-strategy executes but no other strategies do
     if (suppression.suppress && !suppression.completely) {
-      return config.enableConsoleLogging ? [new ConsoleReportingStrategy()] : [];
+      return config.enableConsoleLogging
+        ? [new ConsoleReportingStrategy()]
+        : [];
     }
 
     // 1) if suppress=false, no impact, all configured strategies run
@@ -40,7 +45,7 @@ export class StrategyCollectionFactory {
 
       // Select appropriate App Insights strategy based on environment
       if (typeof window === 'undefined') {
-        if (process.env.NEXT_RUNTIME === 'EDGE') {
+        if ((process.env.NEXT_RUNTIME ?? '').toLowerCase() === 'edge') {
           strategies.push(new EdgeApplicationInsightsStrategy());
         } else {
           strategies.push(new ServerApplicationInsightsStrategy());

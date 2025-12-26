@@ -1,5 +1,6 @@
+/* @jest-environment node */
+
 import { normalizeRequestInit } from '@/lib/nextjs-util/server/fetch/fetch-server';
-import { OptionsInit } from 'got';
 
 // Mock Headers if not globally available in test environment
 if (!global.Headers) {
@@ -40,7 +41,7 @@ describe('normalizeRequestInit', () => {
         normalizeRequestInit({
           requestInfo: null as any,
           requestInit: undefined,
-        })
+        }),
       ).toThrow('Invalid requestInfo');
     });
   });
@@ -63,7 +64,6 @@ describe('normalizeRequestInit', () => {
       });
       expect(options.method).toBe('POST');
     });
-
   });
 
   describe('Header Merging', () => {
@@ -83,7 +83,10 @@ describe('normalizeRequestInit', () => {
       // mergeHeaders(headers, defaults.headers) -> headers['Content-Type'] = 'text/plain'
       // mergeHeaders(headers, init.headers) -> matches 'Content-Type'. Existing is string. New is string. -> ['text/plain', 'application/json']
 
-      expect(options.headers?.['Content-Type']).toEqual(['text/plain', 'application/json']);
+      expect(options.headers?.['Content-Type']).toEqual([
+        'text/plain',
+        'application/json',
+      ]);
     });
 
     it('should merge array values', () => {
@@ -126,8 +129,13 @@ describe('normalizeRequestInit', () => {
     it('should ignore null/undefined values', () => {
       const [_, options] = normalizeRequestInit({
         requestInfo: 'https://example.com',
-        requestInit: { headers: { 'X-Null': null as unknown as string, 'X-Undefined': undefined as unknown as string } },
-        defaults: { headers: { 'X-Valid': 'true' } }
+        requestInit: {
+          headers: {
+            'X-Null': null as unknown as string,
+            'X-Undefined': undefined as unknown as string,
+          },
+        },
+        defaults: { headers: { 'X-Valid': 'true' } },
       });
       expect(options.headers).toEqual({ 'X-Valid': 'true' });
     });

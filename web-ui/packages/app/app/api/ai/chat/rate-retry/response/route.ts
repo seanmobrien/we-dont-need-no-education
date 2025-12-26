@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
+import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
 // import { authOptions } from '@/auth';
 
 export const dynamic = 'force-dynamic';
@@ -108,10 +109,7 @@ export const POST = wrapRouteRequest(
       // Check authentication
       const session = await auth();
       if (!session) {
-        return NextResponse.json(
-          { error: 'Authentication required' },
-          { status: 401 },
-        );
+        return unauthorizedServiceResponse({ req, scopes: ['case-file:read'] });
       }
 
       // Get request ID from request body

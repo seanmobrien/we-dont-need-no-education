@@ -64,7 +64,13 @@
  *     through the `normalize` logic (extracted if you want stronger tests).
  */
 import type { NextConfig } from 'next';
-import type { WebpackCompilation, WebpackPlugin, WebpackCompiler, RawSourceClassProps, WebpackAsset } from "./types";
+import type {
+  WebpackCompilation,
+  WebpackPlugin,
+  WebpackCompiler,
+  RawSourceClassProps,
+  WebpackAsset,
+} from './types';
 
 /**
  * Webpack plugin object normalizing nextjs source maps.
@@ -109,7 +115,8 @@ export const StripRscPrefixPlugin: WebpackPlugin = {
                 const normalize = (s: string): string => {
                   if (!s.includes('(rsc)') && !s.includes('(ssr)')) return s;
                   // Correct grouping: match "(rsc)" or "(ssr)" token at start.
-                  let out = s.replace(/^\/?\((?:rsc|ssr)\)\/(?:\.\/*)?/, '/');
+                  //let out = s.replace(/^\/?\((?:rsc|ssr)\)\/(?:\.\/*)?/, '/');
+                  let out = s.replace(/\((?:rsc|ssr)\)\/(?:\.\/*)?/, '/');
                   // Guard against accidental doubled slashes after replacement.
                   out = out.replace(/^\/+/, '/');
                   return out;
@@ -132,18 +139,16 @@ export const StripRscPrefixPlugin: WebpackPlugin = {
   },
 };
 
-export const withStripRscPrefixPlugin = <
-  TArg extends NextConfig
->(
-  nextConfig: TArg
+export const withStripRscPrefixPlugin = <TArg extends NextConfig>(
+  nextConfig: TArg,
 ): TArg => {
-    const originalWebpack = nextConfig.webpack;
-    return {
-      ...nextConfig,
-      webpack: ((config, args) => {
-        config = originalWebpack?.(config, args) ?? config;
-        config.plugins.push(StripRscPrefixPlugin);
-        return config;
-      }) as NextConfig['webpack'],
-    } as TArg;
+  const originalWebpack = nextConfig.webpack;
+  return {
+    ...nextConfig,
+    webpack: ((config, args) => {
+      config = originalWebpack?.(config, args) ?? config;
+      config.plugins.push(StripRscPrefixPlugin);
+      return config;
+    }) as NextConfig['webpack'],
+  } as TArg;
 };

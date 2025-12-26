@@ -20,6 +20,7 @@ import {
 import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
 import { DefaultEmailColumnMap } from '@/lib/components/mui/data-grid/server';
 import { PgColumn } from 'drizzle-orm/pg-core';
+import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
 
 const columnMap = {
   ...DefaultEmailColumnMap,
@@ -36,7 +37,10 @@ export const GET = wrapRouteRequest(
       requiredScope: CaseFileScope.READ,
     });
     if (!authCheck.authorized) {
-      return authCheck.response;
+      return (
+        authCheck.response ??
+        unauthorizedServiceResponse({ req, scopes: ['case-file:read'] })
+      );
     }
 
     const db = await drizDbWithInit();

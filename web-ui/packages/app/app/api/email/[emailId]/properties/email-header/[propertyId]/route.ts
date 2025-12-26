@@ -1,11 +1,15 @@
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { EmailHeaderDetailsRepository } from '@/lib/api/email/properties/email-headers/email-header-details-repository';
 import { NextRequest } from 'next/server';
-import { wrapRouteRequest, extractParams } from '@/lib/nextjs-util/server/utils';
+import {
+  wrapRouteRequest,
+  extractParams,
+} from '@/lib/nextjs-util/server/utils';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
+import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +25,10 @@ export const GET = wrapRouteRequest(
       requiredScope: CaseFileScope.READ,
     });
     if (!authCheck.authorized) {
-      return authCheck.response;
+      return (
+        authCheck.response ??
+        unauthorizedServiceResponse({ req, scopes: ['case-file:read'] })
+      );
     }
 
     const controller = new RepositoryCrudController(
@@ -43,7 +50,10 @@ export const PUT = wrapRouteRequest(
       requiredScope: CaseFileScope.WRITE,
     });
     if (!authCheck.authorized) {
-      return authCheck.response;
+      return (
+        authCheck.response ??
+        unauthorizedServiceResponse({ req, scopes: ['case-file:write'] })
+      );
     }
 
     const controller = new RepositoryCrudController(
@@ -65,7 +75,10 @@ export const DELETE = wrapRouteRequest(
       requiredScope: CaseFileScope.WRITE,
     });
     if (!authCheck.authorized) {
-      return authCheck.response;
+      return (
+        authCheck.response ??
+        unauthorizedServiceResponse({ req, scopes: ['case-file:write'] })
+      );
     }
 
     const controller = new RepositoryCrudController(

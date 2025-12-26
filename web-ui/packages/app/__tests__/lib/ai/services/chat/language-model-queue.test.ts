@@ -1,3 +1,5 @@
+/* @jest-environment node */
+
 /**
  * @fileoverview Tests for the LanguageModelQueue class
  */

@@ -1,3 +1,5 @@
+/* @jest-environment node */
+
 /**
  * @file health-check.test.ts
  * @description Unit tests for memory health check types and utility functions
@@ -109,5 +111,4 @@ describe('Memory Health Check Types', () => {
       expect(result).toBe('error');
     });
   });
-
 });

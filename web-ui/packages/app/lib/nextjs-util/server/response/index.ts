@@ -1,41 +1,58 @@
 import { log, safeSerialize } from '@/lib/logger';
+import { isAbortError, LoggedError } from '@/lib/react-util';
 import { isRunningOnServer } from '@/lib/site-util/env';
 import type { Readable as ReadableType } from 'node:stream';
 
+const toUint8 = (
+  chunk: Uint8Array<ArrayBuffer> | string,
+): Uint8Array<ArrayBuffer> =>
+  typeof chunk === 'string'
+    ? new TextEncoder().encode(chunk)
+    : (new Uint8Array(chunk) as Uint8Array<ArrayBuffer>);
+
 /**
  * Minimal WHATWG-like Response implementation for server-side use.
- * Provides text(), json(), arrayBuffer(), headers and status.
+ * Extends the built-in Response so downstream code can treat it like a
+ * standard response while we keep control over buffered/stream bodies.
  */
-export class FetchResponse {
+export class FetchResponse extends Response {
   private _buffer: Buffer;
-  streamBody: ReadableStream<Uint8Array> | null = null;
-  status: number;
-  headers: Headers;
+  streamBody: ReadableStream<Uint8Array<ArrayBuffer>> | null = null;
+  private _status: number;
+  private _bodyUsed = false;
 
   constructor(
-    body: Buffer | ReadableStream<Uint8Array> | null,
+    body: Buffer | ReadableStream<Uint8Array<ArrayBuffer>> | null,
     init: { status?: number; headers?: Record<string, string> } = {},
   ) {
+    // Initialize base Response with no body; we override accessors to use our
+    // controlled buffer/stream.
+    const headers = new Headers(init.headers);
+    const requestedStatus = init.status ?? 200;
+    // Response ctor enforces 200-599; keep caller's status separately so we can
+    // represent non-standard codes like 199 without throwing.
+    const safeStatus =
+      requestedStatus >= 200 && requestedStatus <= 599 ? requestedStatus : 200;
+    super(null, { status: safeStatus, headers });
+    this._status = requestedStatus;
+
     if (body instanceof ReadableStream) {
       this.streamBody = body;
       this._buffer = Buffer.alloc(0);
     } else {
       this._buffer = body || Buffer.alloc(0);
     }
-    this.status = init.status ?? 200;
-    this.headers = new Headers();
-    for (const [k, v] of Object.entries(init.headers ?? {})) {
-      this.headers.append(k, v);
-    }
   }
 
-  private _bodyUsed = false;
+  override get status(): number {
+    return this._status;
+  }
 
-  get bodyUsed(): boolean {
+  override get bodyUsed(): boolean {
     return this._bodyUsed;
   }
 
-  get body(): ReadableStream<Uint8Array> | null {
+  override get body(): ReadableStream<Uint8Array<ArrayBuffer>> | null {
     if (this.streamBody) {
       return this.streamBody;
     }
@@ -50,7 +67,7 @@ export class FetchResponse {
     return null;
   }
 
-  ok() {
+  override get ok(): boolean {
     return this.status >= 200 && this.status < 300;
   }
 
@@ -94,14 +111,6 @@ export class FetchResponse {
       const result = await this.consumeStream();
       return new TextDecoder().decode(result);
     }
-    // For buffers, we don't strictly enforce bodyUsed to maintain backward compatibility
-    // but we should probably set it? Standard Response sets it even for buffers.
-    // Let's set it to be safe and standard-compliant.
-    if (this._bodyUsed) {
-      // Optional: throw if strictly following spec, but existing code might rely on re-reading.
-      // We'll allow re-reading buffers for now as per plan decision.
-    }
-    // this._bodyUsed = true; // Uncomment to enforce strict bodyUsed for buffers
     return this._buffer.toString('utf8');
   }
 
@@ -128,7 +137,7 @@ export class FetchResponse {
     });
   }
 
-  clone(): FetchResponse {
+  override clone(): Response {
     if (this.streamBody) {
       if (this._bodyUsed) {
         throw new TypeError('Cannot clone: body is already used');
@@ -147,7 +156,7 @@ export class FetchResponse {
   }
 
   // Provide a Web API ReadableStream for callers that prefer streaming the buffered body
-  stream(): ReadableStream<Uint8Array> {
+  stream(): ReadableStream<Uint8Array<ArrayBuffer>> {
     if (this.streamBody) {
       if (this._bodyUsed) {
         throw new TypeError('Body is unusable');
@@ -183,26 +192,151 @@ export default FetchResponse;
  */
 export const nodeStreamToReadableStream = (
   nodeStream: NodeJS.ReadableStream,
-): ReadableStream<Uint8Array> => {
+): ReadableStream<Uint8Array<ArrayBuffer>> => {
+  if (!nodeStream) {
+    throw new TypeError('nodeStream is required');
+  }
+  let closed = false;
+  let onData: ((chunk: Uint8Array<ArrayBuffer> | string) => void) | undefined;
+  let onEnd: (() => void) | undefined;
+  let onError: ((error: unknown) => void) | undefined;
+
+  const remove = (event: string, handler?: (...args: unknown[]) => void) => {
+    if (!handler) return;
+    if (typeof nodeStream.off === 'function') {
+      nodeStream.off(event, handler as (...args: unknown[]) => void);
+    } else {
+      nodeStream.removeListener(event, handler as (...args: unknown[]) => void);
+    }
+  };
+
+  const cleanup = () => {
+    remove('data', onData as (...args: unknown[]) => void);
+    remove('end', onEnd);
+    remove('error', onError);
+    closed = true;
+  };
+
   return new ReadableStream({
     start(controller) {
-      nodeStream.on('data', (chunk: Buffer | string) => {
-        const data =
-          typeof chunk === 'string'
-            ? new TextEncoder().encode(chunk)
-            : new Uint8Array(chunk);
-        controller.enqueue(data);
-      });
+      onData = (chunk: Uint8Array<ArrayBuffer> | string) => {
+        if (closed) return; // avoid enqueue after close/error/cancel
+        controller.enqueue(toUint8(chunk));
+      };
 
-      nodeStream.on('end', () => {
+      onEnd = () => {
+        if (closed) return;
+        cleanup();
         controller.close();
-      });
+      };
 
-      nodeStream.on('error', (error) => {
+      onError = (error: unknown) => {
+        if (closed) return;
+        cleanup();
         controller.error(error);
-      });
+      };
+
+      nodeStream.on('data', onData);
+      nodeStream.once('end', onEnd);
+      nodeStream.once('error', onError);
+    },
+    cancel(reason?: unknown) {
+      if (closed) return;
+      cleanup();
+
+      const destroy = (nodeStream as { destroy?: (error?: unknown) => void })
+        .destroy;
+      if (typeof destroy === 'function') {
+        destroy.call(nodeStream, reason instanceof Error ? reason : undefined);
+        return;
+      }
+
+      const returnFn = (nodeStream as { return?: () => void }).return;
+      if (typeof returnFn === 'function') {
+        returnFn.call(nodeStream);
+        return;
+      }
+
+      const closeFn = (nodeStream as { close?: () => void }).close;
+      if (typeof closeFn === 'function') {
+        closeFn.call(nodeStream);
+      }
     },
   });
+};
+
+const convertWebStreamOnNode = async (webStream: ReadableStream) => {
+  let streamModule = await import('stream').then((mod) => mod.default);
+  if (!streamModule?.Readable) {
+    try {
+      // Fallback for older Node versions
+      streamModule = await import('node:stream').then((mod) => mod.default);
+    } catch {
+      // ignore error-in-error
+    }
+  }
+  const { Readable } = streamModule;
+  if (!Readable) {
+    throw new SyntaxError(
+      'Readable stream not available in the imported stream module',
+    );
+  }
+  if (typeof Readable.fromWeb === 'function') {
+    // @ts-expect-error - Readable.fromWeb is available in Node 18+
+    return Readable.fromWeb(webStream);
+  }
+  const reader = webStream.getReader();
+  let closed = false;
+  const readable = new Readable({
+    async read() {
+      if (closed) return;
+      try {
+        const { done, value } = await reader.read();
+        if (done) {
+          closed = true;
+          this.push(null);
+        } else {
+          this.push(Buffer.from(value));
+        }
+      } catch (e) {
+        // NO-OP on abort errors, as they are expected
+        if (!isAbortError(e)) {
+          LoggedError.isTurtlesAllTheWayDownBaby(e, {
+            source: 'convertWebStreamFromNode.read',
+            log: true,
+            critical: false,
+          });
+        }
+        this.destroy(e instanceof Error ? e : new Error(String(e)));
+      }
+    },
+    emitClose: true,
+    destroy(err, callback) {
+      if (closed) {
+        callback(err);
+        return;
+      }
+      closed = true;
+      reader.cancel(err).then(
+        () => callback(err),
+        (e) => callback(e),
+      );
+    },
+  });
+  const onClose = () => {
+    if (closed) return;
+    closed = false;
+    readable?.off('close', onClose);
+  };
+  readable.on('close', onClose);
+  return readable;
+};
+
+const convertWebStreamOnEdge = async (webStream: ReadableStream) => {
+  const { ReadableWebToNodeStream } = await import(
+    'readable-web-to-node-stream'
+  );
+  return new ReadableWebToNodeStream(webStream) as unknown as ReadableType;
 };
 
 /**
@@ -211,45 +345,15 @@ export const nodeStreamToReadableStream = (
  * @param webStream - The Web API ReadableStream to convert
  * @returns A Node.js Readable stream
  */
-export const webStreamToReadable = async (webStream: ReadableStream): Promise<ReadableType> => {
-
-  /*
-  const Readable = (await import('stream').then((m) => m.Readable));
-
-
-  if (typeof Readable.fromWeb === 'function') {
-    // @ts-expect-error - Readable.fromWeb is available in Node 18+
-    return Readable.fromWeb(webStream);
+export const webStreamToReadable = (
+  webStream: ReadableStream,
+): Promise<ReadableType> => {
+  if (typeof window === 'undefined' && process.env.NEXT_RUNTIME === 'nodejs') {
+    return convertWebStreamOnNode(webStream);
+  } else {
+    return convertWebStreamOnEdge(webStream);
   }
-
-  const reader = webStream.getReader();
-  return new Readable({
-    async read() {
-      try {
-        const { done, value } = await reader.read();
-        if (done) {
-          this.push(null);
-        } else {
-          this.push(Buffer.from(value));
-        }
-      } catch (e) {
-        this.destroy(e instanceof Error ? e : new Error(String(e)));
-      }
-    },
-    destroy(err, callback) {
-      reader.cancel(err).then(
-        () => callback(err),
-        (e) => callback(e),
-      );
-    },
-  });
-  */
-  throw new Error('Not implemented', {
-    cause: webStream,
-  });
 };
-
-
 
 export const makeResponse = (v: {
   body: Buffer;
@@ -260,7 +364,7 @@ export const makeResponse = (v: {
     status: v.statusCode,
     headers: v.headers,
   });
-  return resp as unknown as Response;
+  return resp;
 };
 
 /**
@@ -313,7 +417,7 @@ export const makeJsonResponse = (
   const bodyBuffer = Buffer.from(jsonBody, 'utf8');
   const resp = new FetchResponse(bodyBuffer, responseInit);
 
-  return resp as unknown as Response;
+  return resp;
 };
 
 /**
@@ -321,8 +425,8 @@ export const makeJsonResponse = (
  * The returned object exposes .stream() to get the ReadableStream, and minimal metadata.
  */
 export const makeStreamResponse = (
-  stream: ReadableStream<Uint8Array>,
+  stream: ReadableStream<Uint8Array<ArrayBuffer>>,
   init: { status?: number; headers?: Record<string, string> } = {},
 ): Response => {
-  return new FetchResponse(stream, init) as unknown as Response;
+  return new FetchResponse(stream, init);
 };

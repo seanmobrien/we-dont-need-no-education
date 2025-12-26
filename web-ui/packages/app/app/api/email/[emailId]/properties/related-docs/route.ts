@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-  extractParams
+  extractParams,
 } from '@/lib/nextjs-util/server/utils';
 import { CallToActionDetails } from '@/data-models/api/email-properties/extended-properties';
 import { eq, and } from 'drizzle-orm';
@@ -18,6 +18,7 @@ import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
 import { DefaultEmailColumnMap } from '@/lib/components/mui/data-grid/server';
 import { PgColumn } from 'drizzle-orm/pg-core';
+import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
 
 const columnMap = {
   ...DefaultEmailColumnMap,
@@ -32,7 +33,10 @@ export const GET = wrapRouteRequest(
       requiredScope: CaseFileScope.READ,
     });
     if (!authCheck.authorized) {
-      return authCheck.response;
+      return (
+        authCheck.response ??
+        unauthorizedServiceResponse({ req, scopes: ['case-file:read'] })
+      );
     }
 
     const db = await drizDbWithInit();

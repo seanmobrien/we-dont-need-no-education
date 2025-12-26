@@ -49,10 +49,10 @@ export const FloatingTodoDialog: React.FC<FloatingTodoDialogProps> = ({
   const { mutate: toggleTodo } = useToggleTodo(listId || '');
 
   React.useEffect(() => {
-    if (lastCompletionTime) {
+    if (listId && lastCompletionTime) {
       refetch();
     }
-  }, [lastCompletionTime, refetch]);
+  }, [lastCompletionTime, listId, refetch]);
 
   const handleToggle = useCallback(
     (todo: Todo) => {

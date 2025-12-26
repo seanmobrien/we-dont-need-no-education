@@ -1,18 +1,42 @@
-/**
- * @jest-environment node
- */
-
 jest.unmock('@opentelemetry/api');
 jest.unmock('@opentelemetry/sdk-trace-base');
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { trace } from '@opentelemetry/api';
+
+// Provide a minimal Response/Headers polyfill for Node test runtime
+if (typeof global.Response === 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { Response: NodeResponse, Headers } = require('node-fetch');
+  class PolyfillResponse extends NodeResponse {
+    static json(body: unknown, init?: ResponseInit): Response {
+      const headers = new Headers(init?.headers);
+      if (!headers.has('content-type')) {
+        headers.set('content-type', 'application/json');
+      }
+      return new NodeResponse(JSON.stringify(body), {
+        ...init,
+        headers,
+      }) as unknown as Response;
+    }
+  }
+  // @ts-expect-error - assign to global for tests
+  global.Response = PolyfillResponse;
+  if (typeof global.Headers === 'undefined') {
+    global.Headers = Headers;
+  }
+}
 
 describe('wrapRouteRequest tracing', () => {
   test('extracts parent from trace headers and sets attributes', async () => {
     // Create a dummy handler
 
     const handler = wrapRouteRequest(async (_req: any) => {
-      return new Response(JSON.stringify({ ok: true }), { status: 201 });
+      return {
+        ok: true,
+        status: 201,
+        json: async () => ({ ok: true }),
+      } as Response;
+      //return new Response(JSON.stringify({ ok: true }), { status: 201 });
     });
 
     // Build a minimal Request-like object with W3C trace headers.
@@ -50,7 +74,7 @@ describe('wrapRouteRequest tracing', () => {
           parent: any,
           fn: (span: any) => Promise<Response> | Response,
         ) => {
-          return await ((fn ?? options)(mockSpan));
+          return await (fn ?? options)(mockSpan);
         },
       );
     const getTracerSpy = jest
@@ -73,8 +97,8 @@ describe('wrapRouteRequest tracing', () => {
     expect(options?.attributes?.['route.params']).toBeDefined();
     expect(typeof options?.attributes?.['request.headers']).toBe('string');
     const headers = JSON.parse(options?.attributes?.['request.headers']);
-    // Sensitive headers should be redacted
-    expect(headers.authorization).toBe('***');
+    // Sensitive headers should be redacted (authorization is omitted by serializer)
+    expect(headers.authorization).toBeUndefined();
     expect(headers.cookie).toBe('***');
     expect(headers['x-api-key']).toBe('***');
     // Non-sensitive preserved
@@ -123,7 +147,7 @@ describe('wrapRouteRequest tracing', () => {
           parent: any,
           fn: (span: any) => Promise<Response> | Response,
         ) => {
-          return await ((fn ?? options)(mockSpan));
+          return await (fn ?? options)(mockSpan);
         },
       );
     const getTracerSpy = jest
@@ -144,7 +168,7 @@ describe('wrapRouteRequest tracing', () => {
     expect(options?.attributes?.['http.method']).toBe('GET');
     expect(typeof options?.attributes?.['route.params']).toBe('string');
     const headers = JSON.parse(options?.attributes?.['request.headers']);
-    expect(headers.authorization).toBe('***');
+    expect(headers.authorization).toBeUndefined();
     expect(headers.cookie).toBe('***');
     expect(headers['x-api-key']).toBe('***');
     expect(headers['x-non-sensitive']).toBe('value');

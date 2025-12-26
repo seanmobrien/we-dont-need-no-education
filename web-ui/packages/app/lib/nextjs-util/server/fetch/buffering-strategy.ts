@@ -78,6 +78,7 @@ export class BufferingStrategy {
     statusCode: number,
     url: string,
     span: { setAttribute(key: string, value: unknown): void },
+    shouldReleaseSemaphore = true,
   ): Promise<BufferedResult> {
     const chunks: Buffer[] = [];
     let bufferedBytes = 0;
@@ -169,7 +170,7 @@ export class BufferingStrategy {
       this.cacheBufferedToRedis(cacheKey, value);
 
       // Release semaphore
-      this.releaseSemaphore('buffered');
+      if (shouldReleaseSemaphore) this.releaseSemaphore('buffered');
 
       span.setAttribute('http.status_code', statusCode);
       return {
@@ -202,13 +203,15 @@ export class BufferingStrategy {
       }
 
       // Release semaphore when stream completes
-      const releaseOnce = () => {
-        this.releaseSemaphore('large-buffer');
-      };
+      if (shouldReleaseSemaphore) {
+        const releaseOnce = () => {
+          this.releaseSemaphore('large-buffer');
+        };
 
-      const ee3 = pass as unknown as EventEmitter;
-      ee3.on('end', releaseOnce);
-      ee3.on('error', releaseOnce);
+        const ee3 = pass as unknown as EventEmitter;
+        ee3.on('end', releaseOnce);
+        ee3.on('error', releaseOnce);
+      }
 
       span.setAttribute('http.status_code', statusCode);
       return {
@@ -261,7 +264,7 @@ export class BufferingStrategy {
     this.cacheBufferedToRedis(cacheKey, value);
 
     // Release semaphore
-    this.releaseSemaphore('final');
+    if (shouldReleaseSemaphore) this.releaseSemaphore('final');
 
     span.setAttribute('http.status_code', statusCode);
     return {

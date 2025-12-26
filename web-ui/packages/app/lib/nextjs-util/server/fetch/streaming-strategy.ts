@@ -77,6 +77,7 @@ export class StreamingStrategy {
     headers: Record<string, string>,
     statusCode: number,
     span: { setAttribute(key: string, value: unknown): void },
+    shouldReleaseSemaphore = true,
   ): Response {
     const config = this.deps.fetchConfig();
 
@@ -93,20 +94,22 @@ export class StreamingStrategy {
     }
 
     // Release semaphore when stream ends or errors
-    const releaseOnce = () => {
-      try {
-        this.deps.releaseSemaphore();
-      } catch (semErr) {
-        LoggedError.isTurtlesAllTheWayDownBaby(semErr, {
-          source: 'streaming-strategy:semaphore:release',
-          log: true,
-        });
-      }
-    };
+    if (shouldReleaseSemaphore) {
+      const releaseOnce = () => {
+        try {
+          this.deps.releaseSemaphore();
+        } catch (semErr) {
+          LoggedError.isTurtlesAllTheWayDownBaby(semErr, {
+            source: 'streaming-strategy:semaphore:release',
+            log: true,
+          });
+        }
+      };
 
-    const ee = stream as unknown as EventEmitter;
-    ee.on('end', releaseOnce as Handler);
-    ee.on('error', releaseOnce as Handler);
+      const ee = stream as unknown as EventEmitter;
+      ee.on('end', releaseOnce as Handler);
+      ee.on('error', releaseOnce as Handler);
+    }
 
     span.setAttribute('http.status_code', statusCode);
     return makeStreamResponse(nodeStreamToReadableStream(stream), {

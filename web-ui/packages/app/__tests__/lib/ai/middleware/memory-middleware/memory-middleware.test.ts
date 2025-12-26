@@ -1,6 +1,9 @@
-import { memoryMiddlewareFactory, memoryMiddlewareContextFactory } from '../../../../../lib/ai/middleware/memory-middleware';
+/* @jest-environment node */
+import {
+  memoryMiddlewareFactory,
+  memoryMiddlewareContextFactory,
+} from '../../../../../lib/ai/middleware/memory-middleware';
 import { generateTextWithRetry } from '../../../../../lib/ai/core/generate-text-with-retry';
-import { getDefinitionsFromText } from '@semanticencoding/core';
 
 const warnMock = jest.fn();
 const verboseMock = jest.fn();
@@ -26,13 +29,19 @@ jest.mock('../../../../../lib/ai/middleware/tool-proxy', () => ({
 }));
 
 jest.mock('../../../../../lib/ai/middleware/chat-history', () => ({
-  chatIdFromParams: jest.fn(() => ({ chatId: 'chat', turnId: 'turn', messageId: 'msg' })),
+  chatIdFromParams: jest.fn(() => ({
+    chatId: 'chat',
+    turnId: 'turn',
+    messageId: 'msg',
+  })),
   createAgentHistoryContext: jest.fn(() => ({ ctx: true })),
   wrapChatHistoryMiddleware: jest.fn(({ model }) => model),
 }));
 
 jest.mock('../../../../../lib/logger', () => ({
-  log: jest.fn((fn) => fn({ verbose: verboseMock, warn: warnMock, debug: debugMock })),
+  log: jest.fn((fn) =>
+    fn({ verbose: verboseMock, warn: warnMock, debug: debugMock }),
+  ),
   safeSerialize: jest.fn((value) => JSON.stringify(value)),
 }));
 
@@ -66,7 +75,11 @@ describe('memoryMiddleware.transformParams', () => {
     const params = { prompt: [{ role: 'user', content: 'hi' }] } as any;
     const middleware = memoryMiddlewareFactory(context);
 
-    const result = await middleware.transformParams!({ type: 'generate', model: {} as any, params });
+    const result = await middleware.transformParams!({
+      type: 'generate',
+      model: {} as any,
+      params,
+    });
 
     expect(result).toBe(params);
     expect(generateTextWithRetry).not.toHaveBeenCalled();
@@ -87,7 +100,11 @@ describe('memoryMiddleware.transformParams', () => {
     const params = { prompt: [{ role: 'user', content: 'hello' }] } as any;
     const middleware = memoryMiddlewareFactory(context);
 
-    const result = await middleware.transformParams!({ type: 'generate', model: {} as any, params });
+    const result = await middleware.transformParams!({
+      type: 'generate',
+      model: {} as any,
+      params,
+    });
 
     expect(result.prompt).toHaveLength(2);
     expect(result.prompt?.[0].role).toBe('system');
@@ -119,7 +136,11 @@ describe('memoryMiddleware.transformParams', () => {
     const params = { prompt: [{ role: 'user', content: 'hi' }] } as any;
     const middleware = memoryMiddlewareFactory(context);
 
-    const result = await middleware.transformParams!({ type: 'generate', model: {} as any, params });
+    const result = await middleware.transformParams!({
+      type: 'generate',
+      model: {} as any,
+      params,
+    });
 
     expect(jest.isMockFunction(generateTextWithRetry)).toBe(true);
     expect(result.prompt).toHaveLength(1);

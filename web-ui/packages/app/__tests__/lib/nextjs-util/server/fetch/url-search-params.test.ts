@@ -1,3 +1,4 @@
+/* @jest-environment node */
 
 import { normalizeRequestInit } from '@/lib/nextjs-util/server/fetch/fetch-server';
 
@@ -18,14 +19,17 @@ describe('normalizeRequestInit', () => {
 
     expect(url).toBe('https://example.com');
     expect(options.body).toBe(params.toString());
-    expect(options.headers).toEqual(expect.objectContaining({
-      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-    }));
+    expect(options.headers).toEqual(
+      expect.objectContaining({
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      }),
+    );
   });
 
   it('should not overwrite existing Content-Type when converting URLSearchParams', () => {
     const params = new URLSearchParams({ foo: 'bar' });
-    const customContentType = 'application/x-www-form-urlencoded; charset=iso-8859-1';
+    const customContentType =
+      'application/x-www-form-urlencoded; charset=iso-8859-1';
 
     const [, options] = normalizeRequestInit({
       requestInfo: 'https://example.com',
@@ -47,7 +51,7 @@ describe('normalizeRequestInit', () => {
 
     // Actually, let's just check it contains the custom one.
     expect(options.headers).toMatchObject({
-      'Content-Type': customContentType
+      'Content-Type': customContentType,
     });
   });
 
@@ -58,11 +62,13 @@ describe('normalizeRequestInit', () => {
       requestInit: {
         method: 'POST',
         body,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       },
     });
 
     expect(options.body).toBe(body);
-    expect(options.headers).toMatchObject({ 'Content-Type': 'application/json' });
+    expect(options.headers).toMatchObject({
+      'Content-Type': 'application/json',
+    });
   });
 });

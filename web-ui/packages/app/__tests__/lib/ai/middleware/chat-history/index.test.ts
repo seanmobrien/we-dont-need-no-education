@@ -1,7 +1,8 @@
+/* @jest-environment node */
+
 jest.unmock('@opentelemetry/api');
 jest.unmock('@opentelemetry/sdk-trace-base');
 /**
- * @jest-environment node
  * @fileoverview Unit tests for chat history middleware main entry point
  *
  * These tests verify the middleware creation, stream transformation,
@@ -439,32 +440,32 @@ describe('Chat History Middleware', () => {
     const callWrapGenerate = async (middleware: LanguageModelV2Middleware) => {
       return middleware.wrapGenerate
         ? await middleware.wrapGenerate({
-          doGenerate: mockDoGenerate,
-          doStream: jest.fn(),
-          params: mockParams,
-          model: {
-            specificationVersion: 'v2',
-            provider: '',
-            supportedUrls: {},
-            modelId: '',
-            doGenerate: () =>
-              Promise.resolve({
-                warnings: [],
-                finishReason: 'stop',
-                usage: { promptTokens: 10, completionTokens: 20 },
-                content: [
-                  {
-                    type: 'text-delta',
-                    delta: 'Generated text response',
-                    id: 'generated-response',
-                  },
-                ],
-              } as unknown as ReturnType<LanguageModelV2['doGenerate']>),
-            doStream: (() => {
-              return Promise.resolve();
-            }) as unknown as LanguageModelV2['doStream'],
-          },
-        })
+            doGenerate: mockDoGenerate,
+            doStream: jest.fn(),
+            params: mockParams,
+            model: {
+              specificationVersion: 'v2',
+              provider: '',
+              supportedUrls: {},
+              modelId: '',
+              doGenerate: () =>
+                Promise.resolve({
+                  warnings: [],
+                  finishReason: 'stop',
+                  usage: { promptTokens: 10, completionTokens: 20 },
+                  content: [
+                    {
+                      type: 'text-delta',
+                      delta: 'Generated text response',
+                      id: 'generated-response',
+                    },
+                  ],
+                } as unknown as ReturnType<LanguageModelV2['doGenerate']>),
+              doStream: (() => {
+                return Promise.resolve();
+              }) as unknown as LanguageModelV2['doStream'],
+            },
+          })
         : undefined;
     };
 

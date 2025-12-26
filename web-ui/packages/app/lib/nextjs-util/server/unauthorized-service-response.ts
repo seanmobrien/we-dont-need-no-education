@@ -1,5 +1,4 @@
-import { NextRequest } from 'next/server';
-import { makeJsonResponse } from './response';
+import { NextRequest, NextResponse } from 'next/server';
 import { SessionTokenKey } from '@/lib/auth/utilities';
 import { env } from '@/lib/site-util/env';
 
@@ -15,7 +14,7 @@ export const unauthorizedServiceResponse = ({
   };
   const isAuthenticated = !!req?.cookies?.get(SessionTokenKey())?.value?.length;
   const resourceMetadataPath = `/.well-known/oauth-protected-resource${nextUrl.pathname}`;
-  return makeJsonResponse(
+  return NextResponse.json(
     { error: 'Unauthorized', message: 'Active session required.' },
     {
       status: isAuthenticated ? 403 : 401,

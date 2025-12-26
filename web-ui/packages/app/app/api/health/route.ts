@@ -30,7 +30,7 @@ import { checkChatHealth } from '@/lib/api/health/chat';
  *
  * Example Successful Response:
  * {
- *   "memory": { 
+ *   "memory": {
  *      "status": "ok",
  *      "db": { "status": "ok" },
  *      "vectorStore": { "status": "ok" },
@@ -45,7 +45,7 @@ import { checkChatHealth } from '@/lib/api/health/chat';
  *     "queue": { "status": "ok" },
  *     "tools": { "status": "ok" },
  *   }
- * } 
+ * }
  */
 
 import {
@@ -104,10 +104,18 @@ function transformMemoryResponse(
   return {
     status,
     db: { status: details?.system_db_available ? 'healthy' : 'error' },
-    vectorStore: { status: details?.vector_store_available ? 'healthy' : 'error' },
-    graphStore: { status: details?.graph_store_available ? 'healthy' : 'error' },
-    historyStore: { status: details?.history_store_available ? 'healthy' : 'error' },
-    authService: { status: details?.auth_service?.healthy ? 'healthy' : 'error' },
+    vectorStore: {
+      status: details?.vector_store_available ? 'healthy' : 'error',
+    },
+    graphStore: {
+      status: details?.graph_store_available ? 'healthy' : 'error',
+    },
+    historyStore: {
+      status: details?.history_store_available ? 'healthy' : 'error',
+    },
+    authService: {
+      status: details?.auth_service?.healthy ? 'healthy' : 'error',
+    },
   };
 }
 
@@ -146,7 +154,7 @@ async function checkMemoryHealth(): Promise<MemoryHealthCheckResponse> {
     // Cache the raw mem0 response and return it directly
     try {
       cache.set(healthResponse);
-    } catch { }
+    } catch {}
     return healthResponse;
   } catch (error) {
     // If we can't reach the memory service, consider everything an error
@@ -195,7 +203,7 @@ async function checkMemoryHealth(): Promise<MemoryHealthCheckResponse> {
     try {
       const cache = await getMemoryHealthCache();
       cache.set(fallback);
-    } catch { }
+    } catch {}
     return fallback;
   }
 }
@@ -207,7 +215,7 @@ async function checkMemoryHealth(): Promise<MemoryHealthCheckResponse> {
  */
 export const GET = wrapRouteRequest(async () => {
   // Get memory health asynchronously with timeout; checkMemoryHealth caches raw mem0 response
-  const memoryHealthPromise = Promise.race([
+  const memoryHealth = await Promise.race([
     checkMemoryHealth(),
     new Promise<MemoryHealthCheckResponse>((resolve) =>
       setTimeout(
@@ -253,23 +261,22 @@ export const GET = wrapRouteRequest(async () => {
     ),
   ]);
 
-  const [memoryHealth] = await Promise.all([memoryHealthPromise]);
-
   const databaseStatus = await checkDatabaseHealth();
 
   const chatHealth = await Promise.race([
     checkChatHealth(),
-    new Promise<HealthCheckStatusEntry<'cache' | 'queue' | 'tools'>>((resolve) =>
-      setTimeout(
-        () =>
-          resolve({
-            status: 'error',
-            tools: { status: 'error' },
-            cache: { status: 'error' },
-            queue: { status: 'error' },
-          }),
-        90 * 1000,
-      ),
+    new Promise<HealthCheckStatusEntry<'cache' | 'queue' | 'tools'>>(
+      (resolve) =>
+        setTimeout(
+          () =>
+            resolve({
+              status: 'error',
+              tools: { status: 'error' },
+              cache: { status: 'error' },
+              queue: { status: 'error' },
+            }),
+          180 * 1000,
+        ),
     ),
   ]);
 
