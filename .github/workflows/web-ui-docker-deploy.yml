@@ -164,8 +164,8 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v5
         with:
-          context: ./web-ui/packages/app
-          file: ./web-ui/packages/app/Dockerfile
+          context: ./web-ui
+          file: ./web-ui/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

@@ -1,0 +1,219 @@
+# syntax=docker/dockerfile:1.7
+# Multi-stage build aligned with the monorepo (web-ui root) and Next.js standalone output
+
+ARG RATE_RETRY_INTERVAL_MINUTES
+ARG NEXT_PUBLIC_HOSTNAME
+ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
+ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
+ARG NEXT_PUBLIC_FLAGSMITH_API_URL
+ARG NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
+ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
+ARG OTEL_SERVICE_NAME
+ARG OTEL_RESOURCE_ATTRIBUTES
+ARG AZURE_OPENAI_ENDPOINT
+ARG AZURE_AISEARCH_ENDPOINT
+ARG AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
+ARG AZURE_AISEARCH_POLICY_INDEX_NAME
+ARG AZURE_STORAGE_CONNECTION_STRING
+ARG AZURE_STORAGE_ACCOUNT_NAME
+ARG MEM0_API_HOST
+ARG MEM0_UI_HOST
+ARG MEM0_USERNAME
+
+FROM node:24-alpine AS base
+
+ARG RATE_RETRY_INTERVAL_MINUTES
+ARG NEXT_PUBLIC_HOSTNAME
+ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
+ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
+ARG NEXT_PUBLIC_FLAGSMITH_API_URL
+ARG NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
+ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
+ARG OTEL_SERVICE_NAME
+ARG OTEL_RESOURCE_ATTRIBUTES
+ARG AZURE_OPENAI_ENDPOINT
+ARG AZURE_AISEARCH_ENDPOINT
+ARG AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
+ARG AZURE_AISEARCH_POLICY_INDEX_NAME
+ARG AZURE_STORAGE_CONNECTION_STRING
+ARG AZURE_STORAGE_ACCOUNT_NAME
+ARG MEM0_API_HOST
+ARG MEM0_UI_HOST
+ARG MEM0_USERNAME
+
+ENV PYTHONUNBUFFERED=1
+
+# System deps for canvas / fonts used by Next.js build
+RUN apk add --no-cache \
+    libc6-compat \
+    dcron \
+    curl \
+    build-base \
+    cairo-dev \
+    pango-dev \
+    jpeg-dev \
+    giflib-dev \
+    fontconfig-dev \
+    freetype-dev \
+    python3-dev \
+    python3 \
+    py3-pip \
+    pixman \
+  && ln -sf python3 /usr/bin/python
+
+FROM base AS pruner
+WORKDIR /repo
+
+# Install turbo CLI for pruning (small global install avoids full node_modules)
+RUN npm install -g turbo@2.3.3
+
+# Copy workspace to compute prune graph
+COPY --link=true . .
+
+# Produce a pruned workspace for the app package
+RUN turbo prune --scope=@repo/app --docker
+
+# Dependencies layer uses pruned workspace
+FROM base AS deps
+WORKDIR /app
+
+# Copy pruned package manifests and lockfile
+COPY --link=true --from=pruner /repo/out/json/ ./
+COPY --link=true --from=pruner /repo/out/yarn.lock ./yarn.lock
+
+RUN yarn install --frozen-lockfile
+
+# Build layer with pruned source
+FROM deps AS builder
+WORKDIR /app
+
+COPY --link=true --from=pruner /repo/out/full/ ./
+
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT
+ENV AZURE_AISEARCH_ENDPOINT=$AZURE_AISEARCH_ENDPOINT
+ENV AZURE_AISEARCH_DOCUMENTS_INDEX_NAME=$AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
+ENV AZURE_AISEARCH_POLICY_INDEX_NAME=$AZURE_AISEARCH_POLICY_INDEX_NAME
+ENV AZURE_STORAGE_CONNECTION_STRING=$AZURE_STORAGE_CONNECTION_STRING
+ENV AZURE_STORAGE_ACCOUNT_NAME=$AZURE_STORAGE_ACCOUNT_NAME
+ENV OTEL_SERVICE_NAME=$OTEL_SERVICE_NAME
+ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
+ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
+ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
+ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
+ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
+ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
+ENV NEXT_PUBLIC_FLAGSMITH_API_URL=$NEXT_PUBLIC_FLAGSMITH_API_URL
+ENV NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID=$NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
+ENV MEM0_API_HOST=$MEM0_API_HOST
+ENV MEM0_UI_HOST=$MEM0_UI_HOST
+ENV MEM0_USERNAME=$MEM0_USERNAME
+ENV FOR_STANDALONE=1
+ENV IS_BUILDING=1
+
+RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
+  --mount=type=secret,id=AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING \
+  --mount=type=secret,id=AZURE_MONITOR_CONNECTION_STRING \
+  --mount=type=secret,id=REDIS_URL \
+  --mount=type=secret,id=REDIS_PASSWORD \
+  --mount=type=secret,id=DATABASE_URL \
+  --mount=type=secret,id=AZURE_API_KEY \
+  --mount=type=secret,id=AZURE_AISEARCH_KEY \
+  --mount=type=secret,id=AUTH_GOOGLE_SECRET \
+  --mount=type=secret,id=AUTH_GOOGLE_APIKEY \
+  --mount=type=secret,id=AZURE_STORAGE_ACCOUNT_KEY \
+  --mount=type=secret,id=AZURE_STORAGE_CONNECTION_STRING \
+  --mount=type=secret,id=AUTH_GOOGLE_ID \
+  --mount=type=secret,id=OPENID_KEY_TEXT \
+  --mount=type=secret,id=FLAGSMITH_SDK_KEY \
+  SECRETS=/run/secrets; \
+  export NEXT_PUBLIC_MUI_LICENSE="$(cat $SECRETS/NEXT_PUBLIC_MUI_LICENSE 2>/dev/null || true)"; \
+  export AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING="$(cat $SECRETS/AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING 2>/dev/null || true)"; \
+  export AZURE_MONITOR_CONNECTION_STRING="$(cat $SECRETS/AZURE_MONITOR_CONNECTION_STRING 2>/dev/null || true)"; \
+  export REDIS_URL="$(cat $SECRETS/REDIS_URL 2>/dev/null || true)"; \
+  export REDIS_PASSWORD="$(cat $SECRETS/REDIS_PASSWORD 2>/dev/null || true)"; \
+  export DATABASE_URL="$(cat $SECRETS/DATABASE_URL 2>/dev/null || true)"; \
+  export AZURE_API_KEY="$(cat $SECRETS/AZURE_API_KEY 2>/dev/null || true)"; \
+  export AZURE_AISEARCH_KEY="$(cat $SECRETS/AZURE_AISEARCH_KEY 2>/dev/null || true)"; \
+  export AUTH_GOOGLE_SECRET="$(cat $SECRETS/AUTH_GOOGLE_SECRET 2>/dev/null || true)"; \
+  export AUTH_GOOGLE_APIKEY="$(cat $SECRETS/AUTH_GOOGLE_APIKEY 2>/dev/null || true)"; \
+  export AZURE_STORAGE_ACCOUNT_KEY="$(cat $SECRETS/AZURE_STORAGE_ACCOUNT_KEY 2>/dev/null || true)"; \
+  export AZURE_STORAGE_CONNECTION_STRING="$(cat $SECRETS/AZURE_STORAGE_CONNECTION_STRING 2>/dev/null || true)"; \
+  export AUTH_GOOGLE_ID="$(cat $SECRETS/AUTH_GOOGLE_ID 2>/dev/null || true)"; \
+  export OPENID_KEY_TEXT="$(cat $SECRETS/OPENID_KEY_TEXT 2>/dev/null || true)"; \
+  export FLAGSMITH_SDK_KEY="$(cat $SECRETS/FLAGSMITH_SDK_KEY 2>/dev/null || true)"; \
+  yarn --cwd packages/app run build
+
+RUN rm -f packages/app/.env.production.local
+
+# Production image
+FROM base AS runner
+WORKDIR /app/packages/app
+
+ARG RATE_RETRY_INTERVAL_MINUTES
+ARG NEXT_PUBLIC_HOSTNAME
+ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
+ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
+ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
+ARG OTEL_SERVICE_NAME
+ARG OTEL_RESOURCE_ATTRIBUTES
+ARG AZURE_OPENAI_ENDPOINT
+ARG AZURE_AISEARCH_ENDPOINT
+ARG AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
+ARG AZURE_AISEARCH_POLICY_INDEX_NAME
+ARG AZURE_STORAGE_CONNECTION_STRING
+ARG AZURE_STORAGE_ACCOUNT_NAME
+ARG MEM0_API_HOST
+ARG MEM0_UI_HOST
+ARG MEM0_USERNAME
+
+LABEL co.obapps.vendor="OBrien Applications"
+LABEL co.obapps.name="Compliance Tracker Web UI"
+LABEL org.opencontainers.image.description="A web UI for the Compliance Tracker application."
+LABEL org.opencontainers.image.authors="stopbullyingpriorlake@gmail.com"
+LABEL org.opencontainers.image.licenses="EJL-1.0"
+
+ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
+ENV NODE_ENV=production
+ENV FOR_STANDALONE=1
+ENV AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT
+ENV AZURE_AISEARCH_ENDPOINT=$AZURE_AISEARCH_ENDPOINT
+ENV AZURE_AISEARCH_DOCUMENTS_INDEX_NAME=$AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
+ENV AZURE_AISEARCH_POLICY_INDEX_NAME=$AZURE_AISEARCH_POLICY_INDEX_NAME
+ENV AZURE_STORAGE_CONNECTION_STRING=$AZURE_STORAGE_CONNECTION_STRING
+ENV AZURE_STORAGE_ACCOUNT_NAME=$AZURE_STORAGE_ACCOUNT_NAME
+ENV OTEL_SERVICE_NAME=$OTEL_SERVICE_NAME
+ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
+ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
+ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
+ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
+ENV MEM0_API_HOST=$MEM0_API_HOST
+ENV MEM0_UI_HOST=$MEM0_UI_HOST
+ENV MEM0_USERNAME=$MEM0_USERNAME
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 --shell /bin/sh nextjs \
+  && mkdir -p /app/scripts
+
+# Copy runtime artifacts for self-hosted Next.js (non-standalone)
+COPY --link=true --from=builder /app/node_modules /app/node_modules
+COPY --link=true --from=builder /app/packages/app/.next ./.next
+COPY --link=true --from=builder /app/packages/app/public ./public
+COPY --link=true --from=builder /app/packages/app/package.json ./package.json
+COPY --link=true --from=builder /app/packages/app/next.config.* ./
+COPY --link=true --from=builder /app/packages/app/scripts ./scripts
+
+# Set up cron for rate retry processing
+RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs \
+  && crontab -u nextjs /etc/crontabs/nextjs
+
+RUN mkdir -p /var/log && chown nextjs:nodejs /var/log && chown -R nextjs:nodejs /app && chmod +x /app/scripts/*.sh
+
+EXPOSE 3000
+EXPOSE 9229
+
+CMD ["sh", "-c", "crond && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -c 'NODE_OPTIONS="$NODE_OPTIONS --inspect=0.0.0.0:9229" node node_modules/next/dist/bin/next start -H 0.0.0.0 -p 3000'; else su nextjs -c 'node node_modules/next/dist/bin/next start -H 0.0.0.0 -p 3000'; fi"]
