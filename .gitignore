@@ -5,6 +5,7 @@ node_modules
 /.pnp
 .pnp.*
 .yarn/*
+**/.yarn-cache
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
@@ -25,6 +26,9 @@ out/
 .DS_Store
 *.pem
 com.chrome.devtools.json
+
+#turbo
+.turbo
 
 # debug
 npm-debug.log*
@@ -52,6 +56,5 @@ next-env.d.ts
 *.lilith
 logs
 attachments
-web-ui/Dockerfile
 db/backups/prod_current_nodropdb.sql
 db/backups/prod_current.sql

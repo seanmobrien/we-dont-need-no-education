@@ -1,89 +1,32 @@
 {
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Next.js: debug server-side",
             "type": "node",
             "request": "launch",
+            "name": "Yarn Debug (launch)",
+            "runtimeExecutable": "yarn",
+            "runtimeArgs": [
+                "debug"
+            ],
             "cwd": "${workspaceFolder}",
-            "runtimeExecutable": "npm",
-            "sourceMapRenames": true,
-            "runtimeArgs": [
-                "--inspect",
-                "--experimental-modules",
-                "--preserve-symlinks",
-                "run-script",
-                "dev"
-            ]
-        },
-        {
-            "name": "Next.js: debug trace deprecation",
-            "type": "node",
-            "request": "launch",
-            "runtimeExecutable": "npm",
-            "console": "internalConsole",
-            "internalConsoleOptions": "openOnFirstSessionStart",
-            "localRoot": "${workspaceFolder}",
-            "remoteRoot": "${workspaceFolder}",
-            "resolveSourceMapLocations": [
-                "${workspaceFolder}/**",
-                "!**/node_modules/**"
-            ],
-            "showAsyncStacks": true,
-            "skipFiles": [
-                "(rsc)/**",
-                "(instrument)/**",
-                "<node_internals>/**",
-                "**/node_modules/**",
-                "**/.next/**",
-                "**/out/**",
-                "**/.vercel/**",
-                "**/.turbo/**",
-                "**/.expo/**",
-                "**/.expo-shared/**",
-                "**/.vscode/**"
-            ],
-            "outputCapture": "std",
-            "runtimeArgs": [
-                "--experimental-modules",
-                "--inspect",
-                "--trace-deprecation",
-                "--trace-warnings",
-                "run-script",
-                "dev"
-            ]
-        },
-        {
-            "name": "Next.js: debug client-side",
-            "type": "chrome",
-            "request": "launch",
-            "url": "http://localhost:3000"
-        },
-        {
-            "name": "Launch Chrome",
-            "request": "launch",
-            "type": "chrome",
-            "url": "http://localhost:3000",
-            "webRoot": "${workspaceFolder}"
-        },
-        {
-            "name": "Next.js: debug full stack",
-            "type": "node",
-            "request": "launch",
-            "program": "${workspaceFolder}/node_modules/.bin/next",
-            "runtimeArgs": [
-                "--inspect"
-            ],
+            "console": "integratedTerminal",
             "skipFiles": [
                 "<node_internals>/**"
-            ],
-            "serverReadyAction": {
-                "action": "debugWithEdge",
-                "killOnServerStop": true,
-                "pattern": "- Local:.+(https?://.+)",
-                "uriFormat": "%s",
-                "webRoot": "${workspaceFolder}"
-            }
+            ]
+        },
+        {
+            "type": "node",
+            "request": "attach",
+            "name": "Attach to Yarn Debug",
+            "port": 9229,
+            "restart": true,
+            "skipFiles": [
+                "<node_internals>/**"
+            ]
         }
     ]
 }

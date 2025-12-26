@@ -3,14 +3,19 @@
   "version": "0.0.0",
   "private": true,
   "workspaces": [
-    "web-ui",
-    "!web-ui/submodules",
-    "web-ui/submodules/*"
+    "web-ui"
   ],
   "devDependencies": {
     "@changesets/cli": "^2.29.8"
   },
   "scripts": {
-    "preinstall": "node preinstall.js"
-  }
+    "preinstall": "node preinstall.js",
+    "dev": "cd web-ui && yarn dev",
+    "build": "cd web-ui && yarn build",
+    "test": "cd web-ui && yarn test",
+    "test:unit": "cd web-ui && yarn test:unit",
+    "test:e2e": "cd web-ui && yarn test:e2e",
+    "lint": "cd web-ui && yarn lint"
+  },
+  "packageManager": "yarn@1.22.22"
 }

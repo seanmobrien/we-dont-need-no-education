@@ -80,7 +80,7 @@ jobs:
         with:
           node-version: "24.x"
           cache: yarn
-          cache-dependency-path: ./web-ui/yarn.lock
+          cache-dependency-path: 'web-ui/yarn.lock'
 
       - name: Run yarn install
         working-directory: ./web-ui

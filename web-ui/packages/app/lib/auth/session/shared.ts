@@ -1,0 +1,74 @@
+import type { JWT } from '@auth/core/jwt';
+import type { SessionWithAccountId } from '../types';
+import type { Session } from '@auth/core/types';
+
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { decodeToken } from '../utilities';
+
+export const setupSession = async ({
+  session: sessionFromProps,
+  token,
+  hash,
+}: {
+  hash: (input: string) => Promise<string>;
+  session: Session;
+  token: JWT;
+}): Promise<SessionWithAccountId> => {
+  const session = sessionFromProps as SessionWithAccountId;
+  if (session && !session.user && token && (token.id || token.email)) {
+    // support loading session user from token if not present
+    session.user = {} as SessionWithAccountId['user'];
+  }
+  if (session.user) {
+    if (token.id) {
+      session.user.id = String(token.id);
+    }
+    if (token.name && !session.user.name) {
+      session.user.name = String(token.name);
+    }
+    if (token.email && !session.user.email) {
+      session.user.email = String(token.email);
+    }
+    if (token.subject && !session.user.subject) {
+      session.user.subject = String(token.subject);
+    }
+    if (token.account_id !== undefined) {
+      // Store account_id for use in the sesion callback
+      session.user.account_id = token.account_id;
+    }
+
+    if (session.user.email) {
+      // Generate SHA256 hash of user email
+      const hashedEmail = await hash(session.user.email);
+      if (hashedEmail) {
+        session.user.hash = hashedEmail;
+      }
+    }
+  }
+  if (token.resource_access) {
+    session.resource_access = {
+      ...token.resource_access,
+    };
+  } else if (token.access_token) {
+    try {
+      const accessToken = await decodeToken({
+        token: String(token.access_token),
+        verify: false,
+      });
+      if (accessToken.resource_access) {
+        session.resource_access = {
+          ...accessToken.resource_access,
+        };
+      }
+    } catch (e) {
+      LoggedError.isTurtlesAllTheWayDownBaby(e, {
+        log: true,
+        source: 'authjs:session.decode-access-token',
+      });
+    }
+  }
+  if (token.error) {
+    session.error = token.error;
+  }
+  return session;
+};
