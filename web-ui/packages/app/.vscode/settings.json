@@ -7,11 +7,6 @@
       "file": "web-ui/instructions/typescript-react.instructions.md",
       "name": "typescript-react",
       "description": "Use this instruction file for TypeScript React projects to get tailored code suggestions"
-    },
-    {
-      "file": ".github/copilot/instructions/vercel-ai.md",
-      "name": "vercel-ai",
-      "description": "Use this instruction file for Vercel AI projects to get tailored code suggestions"
     }
   ],
   "editor.tabSize": 2,
