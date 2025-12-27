@@ -1,9 +1,4 @@
-import type {
-  EventSeverity,
-  SendCustomEventListener,
-  SendCustomEventPayload,
-} from './types';
-import { CustomAppInsightsEvent } from './event';
+import type { SendCustomEventListener, SendCustomEventPayload } from './types';
 
 const listeners = new Set<SendCustomEventListener>();
 

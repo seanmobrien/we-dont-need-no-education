@@ -8,9 +8,10 @@ import type {
   EventSeverity,
   SimpleLogger,
   LogEventOverloads,
+  ICustomAppInsightsEvent,
 } from './types';
 import type { KnownSeverityLevel } from './constants';
-import type { ICustomAppInsightsEvent, CustomAppInsightsEvent } from './event';
+import type { CustomAppInsightsEvent } from './event';
 import type { errorLogFactory } from './utilities';
 import type { logger, log, logEvent } from './core';
 import type { simpleScopedLogger } from './simple-scoped-logger';

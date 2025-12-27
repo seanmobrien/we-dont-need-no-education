@@ -1,4 +1,3 @@
-import { CustomAppInsightsEvent } from './event';
 import type {
   ILogger,
   EventSeverity,
