@@ -1,21 +1,22 @@
-/**
- * Abstract logger base class
- * @module @/lib/logger/abstract-logger
- */
-
 import type { ILogger } from './types';
-declare module '@/lib/logger/abstract-logger' {
-  /**
-   * Abstract base class for logger implementations.
-   */
-  export abstract class AbstractLogger implements ILogger {
-    abstract info(message: string | object, ...args: unknown[]): void;
-    abstract error(message: string | object, ...args: unknown[]): void;
-    abstract warn(message: string | object, ...args: unknown[]): void;
-    abstract debug(message: string | object, ...args: unknown[]): void;
-    abstract fatal(message: string | object, ...args: unknown[]): void;
-    abstract verbose(message: string | object, ...args: unknown[]): void;
-    abstract silly(message: string | object, ...args: unknown[]): void;
-    abstract trace(message: string | object, ...args: unknown[]): void;
-  }
+export declare class AbstractLogger implements ILogger {
+    constructor();
+    protected logInfoMessage(record: object): void;
+    protected logErrorMessage(record: object): void;
+    protected logWarnMessage(record: object): void;
+    protected logDebugMessage(record: object): void;
+    protected logFatalMessage(record: object): void;
+    protected logVerboseMessage(record: object): void;
+    protected logSillyMessage(record: object): void;
+    protected logTraceMessage(record: object): void;
+    protected buildLogRecord(message: string | Record<string, unknown> | Error | object, ...args: unknown[]): [object];
+    info(message: string | object, ...args: unknown[]): void;
+    error(message: string | object, ...args: unknown[]): void;
+    warn(message: string | object, ...args: unknown[]): void;
+    debug(message: string | object, ...args: unknown[]): void;
+    fatal(message: string | object, ...args: unknown[]): void;
+    verbose(message: string | object, ...args: unknown[]): void;
+    silly(message: string | object, ...args: unknown[]): void;
+    trace(message: string | object, ...args: unknown[]): void;
 }
+//# sourceMappingURL=abstract-logger.d.ts.map

@@ -69,23 +69,33 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
    - Depends on logger
    - Estimated: 2 hours
 
-6. **`web-ui/packages/lib-site-util`** ← `web-ui/packages/app/lib/site-util`
-   - Depends on logger, typescript
+6. **`web-ui/packages/lib-site-util-env`** ← `web-ui/packages/app/lib/site-util/env` ✅ **COMPLETED**
+   - Extracted as standalone package with type-safe environment variable access
+   - Zod validation for client/server environments
+   - Foundation for per-package environment schemas
+   - Estimated: 2-3 hours (DONE)
+
+7. **`web-ui/packages/lib-site-util`** ← `web-ui/packages/app/lib/site-util`
+   - Depends on logger, typescript, lib-site-util-env
    - Estimated: 2-3 hours
 
-7. **`web-ui/packages/lib-react-util`** ← `web-ui/packages/app/lib/react-util`
+7. **`web-ui/packages/lib-site-util`** ← `web-ui/packages/app/lib/site-util`
+   - Depends on logger, typescript, lib-site-util-env
+   - Estimated: 2-3 hours
+
+8. **`web-ui/packages/lib-react-util`** ← `web-ui/packages/app/lib/react-util`
    - Depends on logger, typescript
    - Estimated: 3-4 hours
 
-8. **`web-ui/packages/lib-nextjs-util`** ← `web-ui/packages/app/lib/nextjs-util`
+9. **`web-ui/packages/lib-nextjs-util`** ← `web-ui/packages/app/lib/nextjs-util`
    - Depends on logger, typescript, react-util
    - Estimated: 3-4 hours
 
-9. **`web-ui/packages/lib-auth`** ← `web-ui/packages/app/lib/auth`
-   - Depends on database, logger
-   - Estimated: 4-5 hours (complex dependencies)
+10. **`web-ui/packages/lib-auth`** ← `web-ui/packages/app/lib/auth`
+    - Depends on database, logger
+    - Estimated: 4-5 hours (complex dependencies)
 
-10. **`web-ui/packages/lib-error-monitoring`** ← `web-ui/packages/app/lib/error-monitoring`
+11. **`web-ui/packages/lib-error-monitoring`** ← `web-ui/packages/app/lib/error-monitoring`
     - Depends on logger
     - Estimated: 2-3 hours
 

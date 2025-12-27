@@ -76,7 +76,7 @@ import {
   CaseFileResponseShape,
 } from '../schemas/case-file-request-props-shape';
 import z from 'zod';
-import { env } from '@/lib/site-util/env';
+import { env } from '@repo/lib-site-util-env';
 import { compactCaseFileDocument } from './compact-casefile-document';
 
 /**

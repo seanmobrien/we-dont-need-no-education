@@ -3,7 +3,7 @@ import type { IFlagsmith } from 'flagsmith';
 import { type KnownFeatureType, isKnownFeatureType } from './known-feature';
 import { AllFeatureFlagsDefault } from './known-feature-defaults';
 
-import { env } from '../env';
+import { env } from '@repo/lib-site-util-env';
 import { LoggedError } from '@/lib/react-util';
 import type {
   FeatureFlagValueType,

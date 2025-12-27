@@ -1,23 +1,18 @@
-/**
- * Wrapped logger implementation
- * @module @/lib/logger/wrapped-logger
- */
-
+import { AbstractLogger } from './abstract-logger';
 import type { ILogger } from './types';
-declare module '@/lib/logger/wrapped-logger' {
-  /**
-   * Wrapped logger that provides additional functionality around a base logger.
-   */
-  export class WrappedLogger implements ILogger {
+export declare class WrappedLogger extends AbstractLogger {
+    #private;
+    /**
+     *
+     */
     constructor(logger: ILogger);
-
-    info(message: string | object, ...args: unknown[]): void;
-    error(message: string | object, ...args: unknown[]): void;
-    warn(message: string | object, ...args: unknown[]): void;
-    debug(message: string | object, ...args: unknown[]): void;
-    fatal(message: string | object, ...args: unknown[]): void;
-    verbose(message: string | object, ...args: unknown[]): void;
-    silly(message: string | object, ...args: unknown[]): void;
-    trace(message: string | object, ...args: unknown[]): void;
-  }
+    protected logInfoMessage(record: object): void;
+    protected logErrorMessage(record: object): void;
+    protected logWarnMessage(record: object): void;
+    protected logDebugMessage(record: object): void;
+    protected logFatalMessage(record: object): void;
+    protected logVerboseMessage(record: object): void;
+    protected logSillyMessage(record: object): void;
+    protected logTraceMessage(record: object): void;
 }
+//# sourceMappingURL=wrapped-logger.d.ts.map

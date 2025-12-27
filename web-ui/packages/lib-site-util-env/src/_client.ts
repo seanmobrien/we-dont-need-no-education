@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { isAiLanguageModelType, AiLanguageModelType } from '@/lib/ai/client';
+import { isAiLanguageModelType, AiLanguageModelType } from '@repo/app/lib/ai/client';
 import { getMappedSource, ZodProcessors } from './_common';
 
 /**

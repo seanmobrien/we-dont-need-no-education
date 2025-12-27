@@ -1,6 +1,6 @@
 import { OAuth2Client } from 'google-auth-library';
 import { ICredential, CredentialOptions } from './_types';
-import { env } from '../env';
+import { env } from '@repo/lib-site-util-env';
 import { UrlBuilder } from '../url-builder/_impl';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';

@@ -3,7 +3,7 @@
  * These are extracted from auth.ts for testability
  */
 
-import { env } from '@/lib/site-util/env';
+import { env } from '@repo/lib-site-util-env';
 
 /**
  * Validates that the application is running on localhost for local development auth bypass.

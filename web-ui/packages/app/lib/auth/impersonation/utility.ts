@@ -1,4 +1,4 @@
-import { env } from '@/lib/site-util/env';
+import { env } from '@repo/lib-site-util-env';
 import type { AdminTokenConfig } from './impersonation.types';
 import { log } from '@/lib/logger';
 

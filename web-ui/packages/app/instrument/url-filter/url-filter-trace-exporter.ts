@@ -6,7 +6,7 @@ import { UrlFilterEngine } from './url-filter-engine';
 import { UrlFilterOptions } from './url-filter-rules';
 import { LRUCache } from 'lru-cache';
 import { globalRequiredSingleton, globalSingleton } from '@/lib/typescript/singleton-provider';
-import { env } from '@/lib/site-util/env';
+import { env } from '@repo/lib-site-util-env';
 
 /*
  * Global LRU cache tracking filtered span IDs.

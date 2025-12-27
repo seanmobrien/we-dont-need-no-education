@@ -1,5 +1,5 @@
 import type { JWT } from '@auth/core/jwt';
-import { env } from '@/lib/site-util/env';
+import { env } from '@repo/lib-site-util-env';
 import { fetch } from '@/lib/nextjs-util/dynamic-fetch';
 import { InvalidGrantError } from '@/lib/auth/errors';
 
