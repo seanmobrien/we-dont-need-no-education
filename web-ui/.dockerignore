@@ -1,0 +1,38 @@
+# Dependency directories
+node_modules
+**/node_modules
+
+# Build outputs
+.next
+**/.next
+.turbo
+coverage
+
+# Logs and diagnostics
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Editor and tooling
+.vscode
+.idea
+.DS_Store
+
+# Local env and secrets
+#.env
+#.env.*
+*.local
+
+# Git
+.git
+.gitignore
+
+# Cache
+.yarn-cache
+.pnpm-store
+
+# Tests
+coverage
+**/coverage
+tests

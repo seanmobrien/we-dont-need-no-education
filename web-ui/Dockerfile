@@ -71,7 +71,7 @@ RUN npm install -g turbo@2.3.3
 COPY --link=true . .
 
 # Produce a pruned workspace for the app package
-RUN turbo prune --scope=@repo/app --docker
+RUN turbo prune --scope=compliance-theater --docker
 
 # Dependencies layer uses pruned workspace
 FROM base AS deps
