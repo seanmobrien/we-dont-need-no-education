@@ -2,8 +2,8 @@ import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/prop
 import { isDocumentUnitType } from '@/data-models/api/document-unit';
 import { documentProperty, documentUnits } from '@/drizzle/schema';
 import { drizDb } from '@/lib/drizzle-db';
-import { newUuid } from '@/lib/typescript';
-import { log } from '@/lib/logger';
+import { newUuid } from '@compliance-theater/lib-typescript';
+import { log } from '@compliance-theater/lib-logger';
 import { eq } from 'drizzle-orm';
 
 export const mapPropertyTypeToDocumentType = (typeId: number): string => {

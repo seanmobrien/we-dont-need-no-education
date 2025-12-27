@@ -1,4 +1,4 @@
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import {
   toolCallbackResultFactory,
   toolCallbackResultSchemaFactory,

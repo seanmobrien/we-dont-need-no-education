@@ -3,7 +3,7 @@ import type { MemoryMiddlewareAugmentationStrategy } from '../types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { fromRequest } from '@/lib/auth/impersonation';
 import { Messages } from '@/lib/ai/mem0/lib/client/types';
-import { log, safeSerialize } from '@/lib/logger';
+import { log, safeSerialize } from '@compliance-theater/lib-logger';
 
 export const onOutputGenerated: MemoryMiddlewareAugmentationStrategy['onOutputGenerated'] = async ({
   output,

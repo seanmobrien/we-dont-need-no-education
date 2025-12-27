@@ -1,5 +1,5 @@
 import { getRetryErrorInfo } from '@/lib/ai/chat';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { temporarilyDisableModel } from '@/lib/ai/aiModelFactory';
 import { rateLimitMetrics } from './metrics';
 import type { ModelClassification, ModelFailoverConfig } from './types';

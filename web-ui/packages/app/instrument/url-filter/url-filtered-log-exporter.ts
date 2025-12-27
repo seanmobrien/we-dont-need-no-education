@@ -15,7 +15,7 @@ import type { AnyValue, AnyValueMap } from '@opentelemetry/api-logs';
 import type { ExportResult } from '@opentelemetry/core';
 import { UrlFilterEngine } from './url-filter-engine';
 import { UrlFilterOptions } from './url-filter-rules';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 
 export class UrlFilteredLogExporter
   extends UrlFilterEngine

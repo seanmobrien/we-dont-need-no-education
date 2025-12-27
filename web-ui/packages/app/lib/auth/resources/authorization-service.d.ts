@@ -1,4 +1,4 @@
-import type { ServiceInstanceOverloads } from '../../typescript/_generics';
+import type { ServiceInstanceOverloads } from '@compliance-theater/lib-typescript/_generics';
 
 /**
  * Authorization Service module declaration

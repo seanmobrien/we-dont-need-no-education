@@ -1,7 +1,7 @@
 import { PaginationStats, PaginatedResultset } from '@/data-models/_types';
-import { log } from '../logger';
+import { log } from '@compliance-theater/lib-logger';
 import { query, queryExt, TransformedFullQueryResults } from '@/lib/neondb';
-import { FirstParameter, PartialExceptFor } from '../typescript';
+import { FirstParameter, PartialExceptFor } from '@compliance-theater/lib-typescript';
 import {
   IObjectRepositoryExt,
   ObjectRepository,

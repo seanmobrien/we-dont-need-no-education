@@ -7,7 +7,7 @@
  */
 
 import { getToolCache, MCPToolCache } from './tool-cache';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { getCacheEnabledFlag, getCacheEnabledFlagSync } from '../tool-flags';
 
 /**

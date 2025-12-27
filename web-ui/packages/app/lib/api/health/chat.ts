@@ -3,7 +3,7 @@ import {
   HealthCheckStatusEntry,
   HealthCheckStatusCode,
 } from '@/lib/hooks/types';
-import { globalRequiredSingleton } from '@/lib/typescript/singleton-provider';
+import { globalRequiredSingleton } from '@compliance-theater/lib-typescript/singleton-provider';
 import { getRedisClient } from '@/lib/redis-client';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getMem0EnabledFlag } from '@/lib/ai/mcp/tool-flags';

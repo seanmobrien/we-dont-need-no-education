@@ -4,7 +4,7 @@ import {
   addSendCustomEventListener,
   type SendCustomEventListener,
   type SendCustomEventPayload,
-} from '@/lib/logger';
+} from '@compliance-theater/lib-logger';
 import {
   ApplicationInsights,
   DistributedTracingModes,

@@ -1,6 +1,6 @@
 import { getRedisClient } from '@/lib/redis-client';
 import { drizDbWithInit, schema, sql } from '@/lib/drizzle-db';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   ModelQuota,
@@ -10,7 +10,7 @@ import {
   TokenUsageData,
 } from '../../middleware/tokenStatsTracking/types';
 import { ModelMap } from './model-map';
-import { SingletonProvider } from '@/lib/typescript';
+import { SingletonProvider } from '@compliance-theater/lib-typescript';
 
 const REGISTRY_KEY = '@noeducation/model-stats:TokenStatsService';
 

@@ -1,4 +1,4 @@
-import { isKeyOf } from '../typescript';
+import { isKeyOf } from '@compliance-theater/lib-typescript';
 
 export interface EmailHeader {
   name?: string | null;

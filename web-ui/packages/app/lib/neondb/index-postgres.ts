@@ -4,8 +4,8 @@ import { pgDb, pgDbWithInit } from './connection';
 import { isDbError } from './_guards';
 import { CommandMeta, IResultset } from './types';
 import { isTypeBranded, TypeBrandSymbol } from '../react-util';
-import { ExcludeExactMatch } from '../typescript';
-import { log } from '../logger';
+import { ExcludeExactMatch } from '@compliance-theater/lib-typescript';
+import { log } from '@compliance-theater/lib-logger';
 import {
   PostgresSql,
   PostgresRowList as RowList,

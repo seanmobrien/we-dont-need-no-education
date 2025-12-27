@@ -1,0 +1,35 @@
+{
+  "name": "@compliance-theater/lib-typescript",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript utility types and helpers",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b tsconfig.json",
+    "test": "jest",
+    "lint": "echo 'Linting lib-typescript...'"
+  },
+  "dependencies": {
+    "@compliance-theater/lib-logger": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5",
+    "jest": "^30.0.5",
+    "ts-jest": "^29.3.4"
+  }
+}

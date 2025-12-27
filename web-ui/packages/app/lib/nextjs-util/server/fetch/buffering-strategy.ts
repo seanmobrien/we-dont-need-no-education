@@ -20,7 +20,7 @@ import {
   makeStreamResponse,
   nodeStreamToReadableStream,
 } from './../response';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import type { BufferingStrategyDeps, CachedValue } from './fetch-types';
 import type { EventEmitter } from 'events';
 import type { Readable } from 'stream';

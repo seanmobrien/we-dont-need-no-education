@@ -5,10 +5,10 @@ import {
   IObjectRepositoryExt,
 } from './_types';
 import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
-import { PartialExceptFor, unwrapPromise } from '@/lib/typescript';
+import { PartialExceptFor, unwrapPromise } from '@compliance-theater/lib-typescript';
 import { eq, count, SQL } from 'drizzle-orm';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import { PgColumn } from 'drizzle-orm/pg-core';
 

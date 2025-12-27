@@ -1,14 +1,14 @@
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { getFeatureFlag } from './server';
-import { log } from '@/lib/logger/core';
+import { log } from '@compliance-theater/lib-logger/core';
 import { auth } from '@/auth';
 import { isKnownFeatureType } from './known-feature';
 import { AllFeatureFlagsDefault } from './known-feature-defaults';
 import type { KnownFeatureValueType, KnownFeatureType, AutoRefreshFeatureFlag, AutoRefreshFeatureFlagOptions, WellKnownFlagOptions, MinimalNodeFlagsmith } from './types';
 import fastEqual from 'fast-deep-equal/es6';
-import { SingletonProvider } from '@/lib/typescript/singleton-provider';
+import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider';
 import EventEmitter from '@protobufjs/eventemitter';
-import { safeSerialize } from '@/lib/logger/safe-serialize';
+import { safeSerialize } from '@compliance-theater/lib-logger/safe-serialize';
 
 const DEFAULT_TTL_MS = 3 * 60 * 1000; // 3 minutes
 

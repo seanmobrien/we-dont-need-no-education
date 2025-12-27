@@ -18,7 +18,7 @@ import { importIncomingMessage } from '@/lib/ai/middleware/chat-history/import-i
 import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
 import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
 import { generateChatId } from '@/lib/ai/core';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import type { DbTransactionType } from '@/lib/drizzle-db';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';

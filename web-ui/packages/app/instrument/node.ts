@@ -22,7 +22,7 @@ import { config } from './common';
 import AfterManager from '@/lib/site-util/after';
 import UrlFilteredSpanExporter from './url-filter/url-filter-trace-exporter';
 import UrlFilteredLogExporter from './url-filter/url-filtered-log-exporter';
-import { GlobalWithMyGlobal } from '@/lib/typescript/singleton-provider/types';
+import { GlobalWithMyGlobal } from '@compliance-theater/lib-typescript/singleton-provider/types';
 
 enum KnownSeverityLevel {
   Verbose = 'Verbose',

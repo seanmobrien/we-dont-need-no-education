@@ -1,7 +1,7 @@
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { zodToStructure } from '@/lib/typescript';
+import { zodToStructure } from '@compliance-theater/lib-typescript';
 import { GenerateTextResult, ToolSet } from 'ai';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import { DocumentResource } from '../documentResource';
 import { DocumentSchema } from '../schemas';

@@ -20,9 +20,9 @@ import {
   violationDetails,
 } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { toolCallbackResultFactory } from './utility';
-import { newUuid } from '@/lib/typescript';
+import { newUuid } from '@compliance-theater/lib-typescript';
 import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';
 import {
   drizDb,

@@ -2,7 +2,7 @@
     "testing.automaticallyOpenTestResults": "neverOpen",
     "typescript.tsdk": "node_modules/typescript/lib",
     "typescript.enablePromptUseWorkspaceTsdk": true,
-    "jest.jestCommandLine": "yarn --cwd packages/app test --",
+    "jest.jestCommandLine": "yarn --cwd . workspaces run test",
     "jest.runAllTestsFirst": false,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "[typescript]": {

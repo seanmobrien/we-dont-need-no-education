@@ -6,7 +6,7 @@ import {
 import { cacheSuccessfulResponse, handleCacheJail } from './cacheOperations';
 import { getCacheConfig } from './config';
 import type { getRedisClient } from '@/lib/redis-client';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 
 const config = getCacheConfig();
 

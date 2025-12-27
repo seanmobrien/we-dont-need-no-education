@@ -1,6 +1,6 @@
 import { resolveCaseFileId } from '@/lib/api/document-unit/resolve-case-file-id';
 import { drizDbWithInit } from '@/lib/drizzle-db';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { deprecate } from '@/lib/nextjs-util/utils';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { authorizationService } from '../authorization-service';

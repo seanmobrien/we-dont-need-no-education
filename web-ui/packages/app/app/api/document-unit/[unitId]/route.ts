@@ -13,7 +13,7 @@ import {
 import { NextRequest, NextResponse } from 'next/server';
 import { isError } from '@/lib/react-util/utility-methods';
 import { amendCaseRecord } from '@/lib/ai/tools/amend-case-record';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 import {
   checkCaseFileAuthorization,

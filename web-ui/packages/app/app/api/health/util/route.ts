@@ -1,6 +1,6 @@
 import { wrapRouteRequest } from "@/lib/nextjs-util/server";
-import { isKeyOf } from "@/lib/typescript";
-import { SingletonProvider } from "@/lib/typescript/singleton-provider/provider";
+import { isKeyOf } from "@compliance-theater/lib-typescript";
+import { SingletonProvider } from "@compliance-theater/lib-typescript/singleton-provider/provider";
 import { NextRequest, NextResponse } from "next/server";
 
 const HealthActionValues = [

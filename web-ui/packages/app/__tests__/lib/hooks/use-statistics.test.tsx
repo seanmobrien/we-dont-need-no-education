@@ -12,7 +12,7 @@ import type { ModelStat, QueueInfo } from '@/types/statistics';
 import { fetch } from '@/lib/nextjs-util/fetch';
 import { act, renderHook, waitFor } from '@/__tests__/test-utils';
 import { RefObject } from 'react';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { isError } from '@/lib/react-util/utility-methods';
 import { assert } from 'console';
 

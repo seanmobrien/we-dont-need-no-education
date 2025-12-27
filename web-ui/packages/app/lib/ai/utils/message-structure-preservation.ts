@@ -20,7 +20,7 @@ import {
   createMessageStructureOptions,
   isPreservationEnabled,
 } from '@/lib/ai/types/message-structure-preservation';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 
 /**
  * Cache for preservation decisions to improve performance

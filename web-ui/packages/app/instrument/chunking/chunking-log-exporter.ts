@@ -13,7 +13,7 @@ import type {
 import type { AnyValueMap } from '@opentelemetry/api-logs';
 import type { ExportResult } from '@opentelemetry/core';
 import { LoggedError } from '@/lib/react-util';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 
 export type LogChunkingOptions = {
   /** Maximum characters allowed in any single property or body before chunking */

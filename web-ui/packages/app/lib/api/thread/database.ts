@@ -1,8 +1,8 @@
 import { query, queryExt } from '@/lib/neondb';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
-import { PartialExceptFor } from '@/lib/typescript';
-import { log } from '@/lib/logger';
+import { PartialExceptFor } from '@compliance-theater/lib-typescript';
+import { log } from '@compliance-theater/lib-logger';
 import type { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import type { Thread, ThreadSummary } from '@/data-models/api/thread';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';

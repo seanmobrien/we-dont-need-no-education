@@ -3,7 +3,7 @@
  */
 
 import { GET } from '@/app/api/health/probe/[probe_type]/route';
-import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider/provider';
 
 // Mock DB health module
 jest.mock('@/lib/api/health/database', () => ({

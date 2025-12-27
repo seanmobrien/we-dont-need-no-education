@@ -35,7 +35,7 @@ import { isGridFilterModel } from '../../guards';
 import { columnMapFactory, parseFilterOptions } from '../utility';
 import { isTruthy } from '@/lib/react-util/utility-methods';
 import { schema } from '@/lib/drizzle-db';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import type {
   BuildDrizzleAttachmentOrEmailFilterProps,
   BuildDrizzleItemFilterProps,

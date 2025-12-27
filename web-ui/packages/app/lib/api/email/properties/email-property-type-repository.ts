@@ -9,7 +9,7 @@ import {
   lookupEmailPropertyType,
 } from '@/data-models/_utilities';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter } from '@/lib/typescript';
+import { FirstParameter } from '@compliance-theater/lib-typescript';
 import { BaseObjectRepository } from '../../_baseObjectRepository';
 import { ObjectRepository } from '../../_types';
 

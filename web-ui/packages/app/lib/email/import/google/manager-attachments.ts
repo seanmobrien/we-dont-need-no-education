@@ -1,6 +1,6 @@
 import { ImportStage } from '@/data-models/api/import/email-message';
 import { AdditionalStageOptions, StageProcessorContext } from '../types';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
 import { Semaphore, SemaphoreManager } from '@/lib/nextjs-util/semaphore-manager';
 

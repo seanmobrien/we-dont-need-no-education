@@ -1,10 +1,10 @@
 import {
   isAiProviderType,
 } from '@/lib/ai/core';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import {
   globalRequiredSingleton,
-} from '@/lib/typescript';
+} from '@compliance-theater/lib-typescript';
 import { LoggedError } from '@/lib/react-util';
 import { getModelFlag } from './util';
 

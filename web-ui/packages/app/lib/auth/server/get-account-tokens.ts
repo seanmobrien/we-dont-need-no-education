@@ -1,6 +1,6 @@
 import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { eq, and } from 'drizzle-orm';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 
 /**
  * Retrieves the user's account tokens from the database.

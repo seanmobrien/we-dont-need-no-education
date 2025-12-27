@@ -16,7 +16,7 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
 
 2. **Application Restructuring**
    - Moved `web-ui/` → `web-ui/packages/app/` (using git mv to preserve history)
-   - Updated package name from `compliance-theater` → `@repo/app`
+   - Updated package name from `compliance-theater` → `@compliance-theater/app`
    - Removed nested workspace configuration
 
 3. **CI/CD Updates**
@@ -49,43 +49,50 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
 1. **`web-ui/packages/lib-logger`** ← `web-ui/packages/app/lib/logger`
    - No dependencies, needed by almost everything
    - Estimated: 2-3 hours
+  
+2. **`web-ui/packages/lib-env` ← `web-ui/packages/app/lib/site-util/env`
+   - No dependencies, needed by almost everything
+   - Functionality will need to be slightly reworked for maximum effectiveness.  Specifically
+     - Each library that references site-util/env should be able to define a minimal schema for the environment variables it cares about
+     - Should continue to get the same intellisense / client vs. server schema / Zod-based validation of env vars at runtime we cuurently have
+   - Estimated: 2-3 hours
 
-2. **`web-ui/packages/lib-typescript`** ← `web-ui/packages/app/lib/typescript`
+3. **`web-ui/packages/lib-typescript`** ← `web-ui/packages/app/lib/typescript`
    - No dependencies, utility types
    - Estimated: 1-2 hours
 
-3. **`web-ui/packages/lib-send-api-request`** ← `web-ui/packages/app/lib/send-api-request`
+4. **`web-ui/packages/lib-send-api-request`** ← `web-ui/packages/app/lib/send-api-request`
    - Depends on logger
    - Estimated: 2 hours
 
-4. **`web-ui/packages/lib-database`** ← merge:
+5. **`web-ui/packages/lib-database`** ← merge:
    - `web-ui/packages/app/drizzle/`
    - `web-ui/packages/app/lib/drizzle-db/`
    - `web-ui/packages/app/lib/neondb/`
    - Depends on logger, typescript
    - Estimated: 4-6 hours (merge complexity)
 
-5. **`web-ui/packages/lib-redis-client`** ← `web-ui/packages/app/lib/redis-client`
+6. **`web-ui/packages/lib-redis-client`** ← `web-ui/packages/app/lib/redis-client`
    - Depends on logger
    - Estimated: 2 hours
 
-6. **`web-ui/packages/lib-site-util`** ← `web-ui/packages/app/lib/site-util`
+7. **`web-ui/packages/lib-site-util`** ← `web-ui/packages/app/lib/site-util`
    - Depends on logger, typescript
    - Estimated: 2-3 hours
 
-7. **`web-ui/packages/lib-react-util`** ← `web-ui/packages/app/lib/react-util`
+8. **`web-ui/packages/lib-react-util`** ← `web-ui/packages/app/lib/react-util`
    - Depends on logger, typescript
    - Estimated: 3-4 hours
 
-8. **`web-ui/packages/lib-nextjs-util`** ← `web-ui/packages/app/lib/nextjs-util`
+9. **`web-ui/packages/lib-nextjs-util`** ← `web-ui/packages/app/lib/nextjs-util`
    - Depends on logger, typescript, react-util
    - Estimated: 3-4 hours
 
-9. **`web-ui/packages/lib-auth`** ← `web-ui/packages/app/lib/auth`
+10. **`web-ui/packages/lib-auth`** ← `web-ui/packages/app/lib/auth`
    - Depends on database, logger
    - Estimated: 4-5 hours (complex dependencies)
 
-10. **`web-ui/packages/lib-error-monitoring`** ← `web-ui/packages/app/lib/error-monitoring`
+11. **`web-ui/packages/lib-error-monitoring`** ← `web-ui/packages/app/lib/error-monitoring`
     - Depends on logger
     - Estimated: 2-3 hours
 
@@ -132,7 +139,7 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
 ### 📝 Phase 5: Documentation & CI/CD (0% Complete)
 
 1. **Update Import Paths**
-   - Change `@/lib/*` to `@repo/lib-*`
+   - Change `@/lib/*` to `@compliance-theater/lib-*`
    - Use find/replace scripts
    - Estimated: 4-6 hours
 
@@ -247,7 +254,7 @@ Extract packages in small batches (2-3 at a time) following dependency order, ve
 
 2. **Test After Each Change**: Don't move to next package until current one works
 
-3. **Use Workspace Protocol**: Always reference packages as `"@repo/package-name": "workspace:*"`
+3. **Use Workspace Protocol**: Always reference packages as `"@compliance-theater/package-name": "workspace:*"`
 
 4. **Preserve Git History**: Use `git mv` when moving files
 

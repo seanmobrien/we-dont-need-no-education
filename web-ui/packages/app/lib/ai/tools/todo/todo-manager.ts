@@ -1,12 +1,12 @@
 import { auth } from '@/auth';
 import { Session } from '@auth/core/types';
-import { log, logEvent } from '@/lib/logger';
+import { log, logEvent } from '@compliance-theater/lib-logger';
 import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
 import { ApiRequestError } from '@/lib/send-api-request';
 import {
   globalRequiredSingletonAsync,
   SingletonProvider,
-} from '@/lib/typescript/singleton-provider';
+} from '@compliance-theater/lib-typescript/singleton-provider';
 import { NextResponse } from 'next/server';
 import type { TodoStorageStrategy } from './storage';
 import { InMemoryStorageStrategy } from './storage';

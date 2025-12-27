@@ -1,4 +1,4 @@
-import { SingletonProvider } from '@/lib/typescript';
+import { SingletonProvider } from '@compliance-theater/lib-typescript';
 import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
 
 const NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID = 'test-environment-id';

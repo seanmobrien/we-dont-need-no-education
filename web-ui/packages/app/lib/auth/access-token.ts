@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { drizDbWithInit } from '@/lib/drizzle-db';
-import { log } from '../logger/core';
+import { log } from '@compliance-theater/lib-logger';
 import type {
   NormalizedAccessToken,
   NormalizeAccessTokenOptions,

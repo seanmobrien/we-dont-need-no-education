@@ -3,7 +3,7 @@ import type {
   LanguageModelV2,
   LanguageModelV2TextPart,
 } from '@ai-sdk/provider';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import {
   SerializableLanguageModelMiddleware,
   SerializableMiddleware,
@@ -16,7 +16,7 @@ import {
   isStateRestorationRequest,
 } from './create-stateful-middleware';
 import { generateText, wrapLanguageModel } from 'ai';
-import { SingletonProvider } from '@/lib/typescript';
+import { SingletonProvider } from '@compliance-theater/lib-typescript';
 
 export class MiddlewareStateManager {
   static readonly #REGISTRY_KEY = Symbol.for(

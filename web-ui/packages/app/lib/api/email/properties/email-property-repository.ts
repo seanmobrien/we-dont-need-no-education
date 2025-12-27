@@ -3,7 +3,7 @@ import {
   EmailPropertyTypeTypeValues,
 } from '@/data-models/api/email-properties/property-type';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter, newUuid } from '@/lib/typescript';
+import { FirstParameter, newUuid } from '@compliance-theater/lib-typescript';
 import { BaseObjectRepository } from '../../_baseObjectRepository';
 import { ObjectRepository } from '../../_types';
 

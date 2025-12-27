@@ -10,7 +10,7 @@ import {
   defaultConfigFromEnv,
 } from '@/lib/auth/impersonation/utility';
 import type { AdminTokenConfig } from '@/lib/auth/impersonation/impersonation.types';
-import { type ILogger, log } from '@/lib/logger';
+import { type ILogger, log } from '@compliance-theater/lib-logger';
 // Mock the dependencies
 
 describe('impersonation/utility', () => {

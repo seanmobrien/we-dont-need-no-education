@@ -9,7 +9,7 @@ import type {
   FeatureFlagValueType,
 } from './types';
 import { extractFlagValue } from './util';
-import { globalSingletonAsync } from '@/lib/typescript';
+import { globalSingletonAsync } from '@compliance-theater/lib-typescript';
 
 // Client-bound Flagsmith instance used for client-side flag evaluation.
 export const flagsmithClient = async () => {

@@ -23,7 +23,7 @@ jest.mock('@/lib/react-util', () => ({
 */
 
 import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
-import { isValidUuid } from '@/lib/typescript/_guards';
+import { isValidUuid } from '@compliance-theater/lib-typescript/_guards';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 const mockDrizDb = drizDbWithInit as jest.MockedFunction<typeof drizDbWithInit>;

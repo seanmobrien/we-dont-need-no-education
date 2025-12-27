@@ -34,7 +34,7 @@ This document describes the monorepo refactoring of the Title IX Victim Advocacy
 4. **Main Application Move**
 
    - Moved original `web-ui/` → `web-ui/packages/app/` using `git mv` (preserves history)
-   - Updated package name from `compliance-theater` → `@repo/app`
+   - Updated package name from `compliance-theater` → `@compliance-theater/app`
    - Created `web-ui/package.json` as workspace root
 
 5. **CI/CD Updates**
@@ -84,6 +84,7 @@ Each package extraction follows this pattern:
 **Critical Infrastructure** (extract first, few dependencies):
 
 - `web-ui/packages/lib-logger` ← `web-ui/packages/app/lib/logger`
+- `web-ui/packages/lib-env` ← `web-ui/packages/app/lib/site-util/env` NOTE: This functionality will need to be reworked slightly to become more generic
 - `web-ui/packages/lib-typescript` ← `web-ui/packages/app/lib/typescript`
 - `web-ui/packages/lib-send-api-request` ← `web-ui/packages/app/lib/send-api-request`
 
@@ -97,7 +98,7 @@ Each package extraction follows this pattern:
 
 **Utilities** (depends on above):
 
-- `web-ui/packages/lib-site-util` ← `web-ui/packages/app/lib/site-util`
+- `web-ui/packages/lib-site-util` ← `web-ui/packages/app/lib/site-util` NOTE: Extend @compliance-theater/env to include all currently exported variables in env object schemas
 - `web-ui/packages/lib-react-util` ← `web-ui/packages/app/lib/react-util`
 - `web-ui/packages/lib-nextjs-util` ← `web-ui/packages/app/lib/nextjs-util`
 
@@ -150,13 +151,13 @@ Each package extraction follows this pattern:
 After extracting each package, update all imports:
 
 - From: `@/lib/logger`
-- To: `@repo/lib-logger`
+- To: `@compliance-theater/lib-logger`
 
 Use this script pattern:
 
 ```bash
 find packages/app -type f \( -name "*.ts" -o -name "*.tsx" \) \
-  -exec sed -i 's|@/lib/logger|@repo/lib-logger|g' {} \;
+  -exec sed -i 's|@/lib/logger|@compliance-theater/lib-logger|g' {} \;
 ```
 
 ### Phase 6: Package.json Templates
@@ -165,7 +166,7 @@ Each package needs:
 
 ```json
 {
-  "name": "@repo/[package-name]",
+  "name": "@compliance-theater/[package-name]",
   "version": "0.1.0",
   "private": true,
   "main": "./dist/index.js",
@@ -202,7 +203,7 @@ Each package needs:
 
 - Each package has `__tests__/` or `src/__tests__/`
 - Each package has `jest.config.mjs` extending root config
-- Tests can be run independently: `yarn workspace @repo/lib-logger test`
+- Tests can be run independently: `yarn workspace @compliance-theater/lib-logger test`
 
 **Integration Tests**:
 
@@ -223,7 +224,7 @@ Each package needs:
 yarn test
 
 # Specific package
-yarn workspace @repo/lib-logger test
+yarn workspace @compliance-theater/lib-logger test
 
 # All unit tests
 yarn test:unit
@@ -257,16 +258,16 @@ yarn test:e2e
 ### Adding a New Package
 
 1. Create directory: `web-ui/packages/new-package/`
-2. Create package.json with `@repo/new-package` name
+2. Create package.json with `@compliance-theater/new-package` name
 3. Create `src/index.ts` as main entry point
 4. Create `tsconfig.json` extending root
 5. Add to `web-ui/packages/app/package.json` dependencies:
 
    ```json
-   "@repo/new-package": "workspace:*"
+   "@compliance-theater/new-package": "workspace:*"
    ```
 
-6. Import in code: `import { something } from '@repo/new-package'`
+6. Import in code: `import { something } from '@compliance-theater/new-package'`
 7. Run `yarn install` to link workspace
 
 ### Making Changes
@@ -279,9 +280,9 @@ yarn test:e2e
 
 ### Debugging
 
-- Use `yarn workspace @repo/package-name <script>` to run package scripts
-- Use `turbo run build --filter=@repo/package-name` to build specific package
-- Check `node_modules/@repo/` for symlinked packages
+- Use `yarn workspace @compliance-theater/package-name <script>` to run package scripts
+- Use `turbo run build --filter=@compliance-theater/package-name` to build specific package
+- Check `node_modules/@compliance-theater/` for symlinked packages
 - Use `yarn workspaces info` to see dependency graph
 
 ## Migration Checklist
@@ -289,6 +290,7 @@ yarn test:e2e
 - [x] Phase 1: Infrastructure Setup
 - [ ] Phase 2: Extract Core Libraries
   - [ ] lib-logger
+  - [ ] lib-env
   - [ ] lib-typescript
   - [ ] lib-send-api-request
   - [ ] lib-database (merge drizzle + drizzle-db + neondb)

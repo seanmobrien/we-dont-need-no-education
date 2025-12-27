@@ -20,10 +20,10 @@ import {
   ProviderPrimaryNameType,
   ProviderPrimaryNameTypeValues,
 } from './provider-map';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { LanguageModel } from 'ai';
 import { ModelClassification } from '../../middleware/key-rate-limiter/types';
-import { isKeyOf, newUuid } from '@/lib/typescript';
+import { isKeyOf, newUuid } from '@compliance-theater/lib-typescript';
 
 /**
  * Type representing a complete model record with provider information.

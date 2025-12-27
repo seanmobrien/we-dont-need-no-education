@@ -1,7 +1,7 @@
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import type { Todo, TodoList } from '../types';
 import type { TodoStorageStrategy, StorageStrategyConfig } from './types';
-import { globalRequiredSingleton, SingletonProvider } from '@/lib/typescript';
+import { globalRequiredSingleton, SingletonProvider } from '@compliance-theater/lib-typescript';
 
 const GLOBAL_INSTANCE: symbol = Symbol.for(
   '@noeducation/ai/InMemoryStorageStrategy',

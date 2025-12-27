@@ -9,7 +9,7 @@ import { LRUCache } from 'lru-cache';
 import { getRedisClient } from '@/lib/redis-client';
 import { LoggedError } from '@/lib/react-util';
 import type { LruCacheConfig, RedisCacheConfig } from '@/lib/react-util/types';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 
 type Flag = Flags['flags'][string];
 

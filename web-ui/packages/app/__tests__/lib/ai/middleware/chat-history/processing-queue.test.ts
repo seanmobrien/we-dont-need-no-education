@@ -18,7 +18,7 @@ setupImpersonationMock();
 
 import { ProcessingQueue } from '@/lib/ai/middleware/chat-history/processing-queue';
 import { processStreamChunk } from '@/lib/ai/middleware/chat-history/stream-handlers';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
 import { ensureCreateResult } from '@/lib/ai/middleware/chat-history/stream-handler-result';

@@ -21,8 +21,8 @@ import {
 } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
-import { isKeyOf } from '@/lib/typescript';
-import { log } from '@/lib/logger';
+import { isKeyOf } from '@compliance-theater/lib-typescript';
+import { log } from '@compliance-theater/lib-logger';
 
 /**
  * Primary provider canonical names.

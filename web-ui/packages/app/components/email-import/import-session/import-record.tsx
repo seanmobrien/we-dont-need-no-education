@@ -19,9 +19,9 @@ import {
   queryImportStatus,
   importEmailRecord,
 } from '@/lib/api/email/import/google';
-import { isAbortablePromise } from '@/lib/typescript';
+import { isAbortablePromise } from '@compliance-theater/lib-typescript';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import {
   TableRow,
   TableCell,

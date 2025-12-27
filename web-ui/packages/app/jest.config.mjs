@@ -47,7 +47,15 @@ const config = {
       '<rootDir>/__tests__/setup/jest.mock-instrumentation.ts', // Mock instrumentation module
     '^@/lib/site-util/metrics.*$':
       '<rootDir>/__tests__/setup/jest.mock-metrics.ts', // Alias for lib imports
+    '^@/lib/logger(.*)$': '<rootDir>/../lib-logger/src$1',
+    '^@/lib/typescript(.*)$': '<rootDir>/../lib-typescript/src$1',
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
+    '^@compliance-theater/lib-logger(.*)$':
+      '<rootDir>/../lib-logger/src$1', // Resolve workspace logger package for tests
+    '^@compliance-theater/lib-typescript(.*)$':
+      '<rootDir>/../lib-typescript/src$1', // Resolve workspace TS utils package for tests
+    '^/lib/logger(.*)$': '<rootDir>/../lib-logger/src$1',
+    '^/lib/typescript(.*)$': '<rootDir>/../lib-typescript/src$1',
     //'^~@/(.*)$': '<rootDir>/__tests__/$1', // Alias for module imports
     '^zodex$': '<rootDir>/__tests__/mocks/zodex.js',
     '^prexit$': '<rootDir>/__tests__/setup/jest.mock-prexit.ts', // Mock prexit module

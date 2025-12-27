@@ -1,11 +1,11 @@
 import type { ReadableSpan, SpanExporter } from '@opentelemetry/sdk-trace-base';
 import type { ExportResult } from '@opentelemetry/core';
 import type { AttributeValue } from '@opentelemetry/api';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { UrlFilterEngine } from './url-filter-engine';
 import { UrlFilterOptions } from './url-filter-rules';
 import { LRUCache } from 'lru-cache';
-import { globalRequiredSingleton, globalSingleton } from '@/lib/typescript/singleton-provider';
+import { globalRequiredSingleton, globalSingleton } from '@compliance-theater/lib-typescript/singleton-provider';
 import { env } from '@/lib/site-util/env';
 
 /*

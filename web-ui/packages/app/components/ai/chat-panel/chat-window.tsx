@@ -5,7 +5,7 @@ import { UIMessage } from 'ai';
 import { Loading } from '@/components/general/loading';
 import { ChatMessageV2 } from './chat-message';
 import { createElementMeasurer } from '@/lib/components/ai/height-estimators';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
 
 const elementMeasurer = createElementMeasurer();

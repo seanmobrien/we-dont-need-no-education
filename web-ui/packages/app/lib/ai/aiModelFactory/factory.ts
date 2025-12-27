@@ -16,7 +16,7 @@ import {
   AiModelTypeValue_Embedding,
   AiModelTypeValue_GoogleEmbedding,
 } from '@/lib/ai/core/unions';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 
 import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
 import { cacheWithRedis } from '../middleware/cacheWithRedis';
@@ -28,7 +28,7 @@ import {
   globalRequiredSingleton,
   isNotNull,
   SingletonProvider,
-} from '@/lib/typescript';
+} from '@compliance-theater/lib-typescript';
 import {
   isAutoRefreshFeatureFlag,
 } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';

@@ -12,7 +12,7 @@ import type { JSONRPCMessage } from '../ai.sdk';
 
 import { isAbortError, isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 
 // Import refactored modules
 import { tracer, MetricsRecorder, DEBUG_MODE } from './metrics/otel-metrics';

@@ -9,7 +9,7 @@ import {
   AdditionalStageOptions,
 } from '../types';
 import { query, queryExt } from '@/lib/neondb';
-import { CustomAppInsightsEvent, log } from '@/lib/logger';
+import { CustomAppInsightsEvent, log } from '@compliance-theater/lib-logger';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
 

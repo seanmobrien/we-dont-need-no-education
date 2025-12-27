@@ -4,7 +4,7 @@ import type {
   ErrorReporterInterface,
   ErrorReportResult,
 } from '@/lib/error-monitoring/types';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 
 /**
  * Provides access to the shared ErrorReporter instance used by LoggedError.

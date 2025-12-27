@@ -21,8 +21,8 @@ import {
 } from './fetch-config';
 import { LoggedError } from '@/lib/react-util';
 import { createInstrumentedSpan } from '../utils';
-import { log, safeSerialize } from '@/lib/logger';
-import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
+import { log, safeSerialize } from '@compliance-theater/lib-logger';
+import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider/provider';
 import { CacheStrategies } from './cache-strategies';
 import { StreamingStrategy } from './streaming-strategy';
 import { BufferingStrategy } from './buffering-strategy';

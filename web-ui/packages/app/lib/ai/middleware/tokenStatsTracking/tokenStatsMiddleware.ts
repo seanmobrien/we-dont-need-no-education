@@ -1,5 +1,5 @@
 import { getInstance } from '../../services/model-stats/token-stats-service';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import {
   QuotaCheckResult,
   QuotaEnforcementError,

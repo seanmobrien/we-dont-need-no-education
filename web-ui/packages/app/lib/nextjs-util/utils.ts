@@ -1,6 +1,6 @@
 import EventEmitter from '@protobufjs/eventemitter';
 import type { IncomingMessage, OutgoingMessage, ServerResponse } from 'http';
-import { log } from '@/lib/logger/core';
+import { log } from '@compliance-theater/lib-logger/core';
 import {
   isNextApiRequest,
   isNextRequest,

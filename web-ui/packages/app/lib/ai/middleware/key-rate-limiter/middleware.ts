@@ -12,7 +12,7 @@ import type {
   RateLimitRetryContext,
   RateLimitFactoryOptions,
 } from './types';
-import { log } from '@/lib/logger';
+import { log } from '@compliance-theater/lib-logger';
 import { checkModelAvailabilityAndFallback } from './model-availability';
 import {
   handleRateLimitError,
