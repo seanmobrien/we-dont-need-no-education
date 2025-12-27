@@ -3,7 +3,7 @@ import { checkCaseFileAccess, CaseFileScope } from './case-file-resource';
 import {
   getUserIdFromUnitId,
 } from './case-file-helpers';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { getValidatedAccessToken } from '../../access-token';
 import { resolveCaseFileId } from '@/lib/api/document-unit/resolve-case-file-id';
 

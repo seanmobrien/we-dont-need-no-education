@@ -1,6 +1,6 @@
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { getFeatureFlag } from './server';
-import { log } from '@/lib/logger/core';
+import { log } from '@repo/lib-logger/core';
 import { auth } from '@/auth';
 import { isKnownFeatureType } from './known-feature';
 import { AllFeatureFlagsDefault } from './known-feature-defaults';
@@ -8,7 +8,7 @@ import type { KnownFeatureValueType, KnownFeatureType, AutoRefreshFeatureFlag, A
 import fastEqual from 'fast-deep-equal/es6';
 import { SingletonProvider } from '@/lib/typescript/singleton-provider';
 import EventEmitter from '@protobufjs/eventemitter';
-import { safeSerialize } from '@/lib/logger/safe-serialize';
+import { safeSerialize } from '@repo/lib-logger/safe-serialize';
 
 const DEFAULT_TTL_MS = 3 * 60 * 1000; // 3 minutes
 

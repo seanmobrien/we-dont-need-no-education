@@ -13,7 +13,7 @@ import { handleResponseCaching } from './cacheStrategy';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { newUuid } from '@/lib/typescript/_record-decorators';
 import { MiddlewareStateManager } from '../state-management';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 
 // Enterprise configuration and metrics
 const config = getCacheConfig();

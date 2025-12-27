@@ -4,7 +4,7 @@ import {
   addSendCustomEventListener,
   type SendCustomEventListener,
   type SendCustomEventPayload,
-} from '@/lib/logger';
+} from '@repo/lib-logger';
 import {
   ApplicationInsights,
   DistributedTracingModes,

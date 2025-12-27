@@ -2,7 +2,7 @@ import { schema } from '@/lib/drizzle-db/schema';
 import type { ChatMessagesType, DbTransactionType } from '@/lib/drizzle-db';
 import { ChatHistoryContext, ToolStatus } from './types';
 import { eq, desc, and } from 'drizzle-orm';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { getNextSequence, getNewMessages, getItemOutput } from './utility';
 import { generateChatId } from '@/lib/ai/core';
 import type {

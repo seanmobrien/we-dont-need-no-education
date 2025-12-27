@@ -1,7 +1,7 @@
 import {
   isAiProviderType,
 } from '@/lib/ai/core';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import {
   globalRequiredSingleton,
 } from '@/lib/typescript';

@@ -11,7 +11,7 @@ import type {
   ProcessedResponse,
   ModelClassification,
 } from '@/lib/ai/middleware/key-rate-limiter/types';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { createAgentHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';

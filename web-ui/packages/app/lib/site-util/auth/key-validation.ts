@@ -1,4 +1,4 @@
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { SingletonProvider } from '@/lib/typescript';
 
 const KEY_VALIDATION_STORAGE_KEY = 'lastKeyValidation';

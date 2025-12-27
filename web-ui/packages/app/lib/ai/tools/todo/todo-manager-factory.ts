@@ -1,5 +1,5 @@
 import type { StorageStrategyConfig, StorageStrategyType } from './storage';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 

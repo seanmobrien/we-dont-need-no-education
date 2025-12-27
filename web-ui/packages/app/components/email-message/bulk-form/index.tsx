@@ -12,7 +12,7 @@ import {
   RecordWithDirtyState,
 } from '@/lib/typescript';
 import ContactDropdown from '@/components/contact/contact-dropdown';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import React from 'react';
 import ContactRecipients from '@/components/contact/contact-recipients';
 import EmailSelect from '../select';

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { wrapRouteRequest, extractParams } from '@/lib/nextjs-util/server/utils';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { env } from '@/lib/site-util/env';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { EmailAttachmentDrizzleRepository } from '@/lib/api/attachment';
 
 const attachmentRepository = new EmailAttachmentDrizzleRepository();

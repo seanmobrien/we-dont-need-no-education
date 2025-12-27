@@ -1,4 +1,10 @@
-import { getStackTrace } from '../nextjs-util/get-stack-trace';
+// Simple stack trace helper to avoid external dependencies
+const getStackTrace = (options?: { skip?: number }): string => {
+  const stack = new Error().stack || '';
+  if (!options?.skip) return stack;
+  const lines = stack.split('\n');
+  return lines.slice(options.skip + 1).join('\n');
+};
 
 export type DbError = Error & {
   code: number;

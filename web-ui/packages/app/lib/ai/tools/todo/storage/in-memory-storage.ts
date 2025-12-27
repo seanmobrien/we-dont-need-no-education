@@ -1,4 +1,4 @@
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import type { Todo, TodoList } from '../types';
 import type { TodoStorageStrategy, StorageStrategyConfig } from './types';
 import { globalRequiredSingleton, SingletonProvider } from '@/lib/typescript';

@@ -6,7 +6,7 @@
  */
 
 import { activeSessionsGauge, activeToolCallsGauge } from './otel-metrics';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { DEBUG_MODE } from './otel-metrics';
 
 export interface ActiveCounters {

@@ -1,8 +1,8 @@
 import {
   addSendCustomEventListener,
   emitSendCustomEvent,
-} from '../../../lib/logger/log-emitter';
-import { CustomAppInsightsEvent } from '../../../lib/logger/event';
+} from '../src/log-emitter';
+import { CustomAppInsightsEvent } from '../src/event';
 
 const makeLoggerEvent = (name = 'test-event') =>
   new CustomAppInsightsEvent(name);

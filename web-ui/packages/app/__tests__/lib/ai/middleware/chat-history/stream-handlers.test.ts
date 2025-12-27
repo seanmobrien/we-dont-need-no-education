@@ -17,7 +17,7 @@ import {
 import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
 import { chatMessages, tokenUsage } from '@/drizzle/schema';
 import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
 import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 import { hideConsoleOutput } from '@/__tests__/test-utils';

@@ -1,7 +1,7 @@
 import type { ReadableSpan, SpanExporter } from '@opentelemetry/sdk-trace-base';
 import type { ExportResult } from '@opentelemetry/core';
 import type { AttributeValue } from '@opentelemetry/api';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { UrlFilterEngine } from './url-filter-engine';
 import { UrlFilterOptions } from './url-filter-rules';
 import { LRUCache } from 'lru-cache';

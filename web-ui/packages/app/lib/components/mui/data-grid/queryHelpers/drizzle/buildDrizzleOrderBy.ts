@@ -10,7 +10,7 @@
  */
 
 import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import type { GridSortModel } from '@mui/x-data-grid-pro';
 import { asc, desc, SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';

@@ -50,7 +50,7 @@ import {
 import { NextRequest } from 'next/server';
 import { LikeNextRequest } from '@/lib/nextjs-util/types';
 
-import { ILogger, log } from '@/lib/logger';
+import { ILogger, log } from '@repo/lib-logger';
 
 // Mock logger
 // Mock Drizzle imports

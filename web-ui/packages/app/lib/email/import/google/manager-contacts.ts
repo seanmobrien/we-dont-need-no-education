@@ -5,7 +5,7 @@ import {
 } from '../types';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
 import { ImportStage } from '@/data-models/api/import/email-message';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { mapContacts } from './utilities';
 import { ContactRepository } from '@/lib/api/contacts/database';
 

@@ -5,7 +5,7 @@ import {
   SequentialThinkingServer,
 } from './sequential-thinking-server';
 import { isError } from '@/lib/react-util/utility-methods';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import z from 'zod';
 
 let sequentialThinkingTool: SequentialThinkingServer | undefined = undefined;

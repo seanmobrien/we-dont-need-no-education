@@ -1,4 +1,4 @@
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
 

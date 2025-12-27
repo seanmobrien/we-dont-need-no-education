@@ -13,7 +13,7 @@ import type {
   UserToolProviderCache,
   UserToolProviderCacheConfig,
 } from '../types';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
 import { globalRequiredSingleton } from '@/lib/typescript';

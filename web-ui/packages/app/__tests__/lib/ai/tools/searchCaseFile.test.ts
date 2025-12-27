@@ -18,7 +18,7 @@ import {
   hybridDocumentSearchFactory,
 } from '@/lib/ai/services/search';
 
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 describe('searchCaseFile', () => {

@@ -5,7 +5,7 @@ import {
 } from '@ai-sdk/provider';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { createHash } from 'crypto';
 // import { v4 as uuidv4 } from 'uuid';
 import { appMeters, hashUserId } from '@/lib/site-util/metrics';

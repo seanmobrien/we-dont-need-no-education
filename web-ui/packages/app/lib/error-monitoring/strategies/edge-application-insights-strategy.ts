@@ -1,4 +1,4 @@
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { ErrorReport, ErrorReportResult } from '../types';
 import { ReportActionStrategy } from './report-action-strategy';
 

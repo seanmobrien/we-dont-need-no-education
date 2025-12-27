@@ -21,7 +21,7 @@ import {
   getNewMessages,
 } from '@/lib/ai/middleware/chat-history/utility';
 import { generateChatId } from '@/lib/ai/core';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import type { DbTransactionType } from '@/lib/drizzle-db';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';

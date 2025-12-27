@@ -1,4 +1,4 @@
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { gmail_v1 } from 'googleapis';
 import { ArrayElement } from '@/lib/typescript';
 import { isParsedHeaderMap, ParsedHeaderMap } from '../../parsedHeaderMap';

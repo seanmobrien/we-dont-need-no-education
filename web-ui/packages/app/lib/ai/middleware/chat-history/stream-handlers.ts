@@ -12,7 +12,7 @@ import {
   drizDb,
   schema,
 } from '@/lib/drizzle-db';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { getNextSequence } from './utility';
 import type { StreamHandlerContext, StreamHandlerResult } from './types';
 import { ensureCreateResult } from './stream-handler-result';

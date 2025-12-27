@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes for SSE connections
-import { log, safeSerialize } from '@/lib/logger';
+import { log, safeSerialize } from '@repo/lib-logger';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { createMcpHandler } from 'mcp-handler';

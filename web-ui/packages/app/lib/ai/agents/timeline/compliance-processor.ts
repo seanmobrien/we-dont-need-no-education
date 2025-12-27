@@ -1,5 +1,5 @@
 import { TimelineAgent } from './agent';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { TimelineEntry, ComplianceRating, TimelineSummary } from './types';
 import TimelineAgentFactory from './agent';
 

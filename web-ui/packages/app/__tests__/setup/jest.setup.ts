@@ -114,7 +114,7 @@ import { FormatAlignCenterSharp } from '@mui/icons-material';
 import { createElement } from 'react';
 import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
 import instrument, { getAppInsights } from '@/instrument/browser';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import {
   FirstParameter,
   isKeyOf,

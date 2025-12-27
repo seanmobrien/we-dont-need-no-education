@@ -12,7 +12,7 @@
  * @see {@link SingletonStorageStrategy} for the interface this implements
  */
 
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import {
   GlobalWithMyGlobal,
   SingletonStorageKey,

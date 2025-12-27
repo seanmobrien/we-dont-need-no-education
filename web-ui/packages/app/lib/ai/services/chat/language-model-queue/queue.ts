@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getRedisClient } from '@/lib/redis-client';
 import { countTokens } from '../../../core/count-tokens';
 import { auth } from '@/auth';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import type {
   LanguageModelQueueOptions,
   QueuedRequest,

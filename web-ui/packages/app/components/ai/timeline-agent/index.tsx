@@ -44,7 +44,7 @@ import {
   ProcessingResult,
   ComplianceRating,
 } from '@/lib/ai/agents/timeline/types';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { ClientTimelineAgent } from '@/lib/ai/agents/timeline/agent';
 import { useNotifications } from '@toolpad/core/useNotifications';
 

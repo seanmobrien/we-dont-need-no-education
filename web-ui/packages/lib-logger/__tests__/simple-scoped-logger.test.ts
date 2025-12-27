@@ -1,8 +1,8 @@
-import { simpleScopedLogger } from '../../../lib/logger/simple-scoped-logger';
-import { log } from '../../../lib/logger/core';
-import type { ILogger } from '../../../lib/logger/types';
+import { simpleScopedLogger } from '../src/simple-scoped-logger';
+import { log } from '../src/core';
+import type { ILogger } from '../src/types';
 
-jest.mock('@/lib/logger/core', () => ({
+jest.mock('../src/core', () => ({
   log: jest.fn(),
 }));
 

@@ -6,7 +6,7 @@ import {
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
 import { ImportStage } from '@/data-models/api/import/email-message';
 import { createStagingRecord } from '@/lib/api/email/import/google';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 
 class StagedManager extends TransactionalStateManagerBase {
   constructor(stage: ImportStage, options: AdditionalStageOptions) {

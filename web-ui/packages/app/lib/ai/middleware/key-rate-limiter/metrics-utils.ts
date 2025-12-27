@@ -1,5 +1,5 @@
 import { rateLimitMetrics } from './metrics';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import type { ModelClassification } from './types';
 
 export function recordRequestMetrics(

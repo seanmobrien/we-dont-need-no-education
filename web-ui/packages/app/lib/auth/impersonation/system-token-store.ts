@@ -30,7 +30,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 
 import { CookieJar } from 'tough-cookie';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { got } from 'got';
 import { parse as parseHtml } from 'node-html-parser';
 import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';

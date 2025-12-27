@@ -7,7 +7,7 @@
 import type { JWT } from '@auth/core/jwt';
 import type { Session } from '@auth/core/types';
 import { setupSession } from './shared';
-import { log } from '@/lib/logger/core';
+import { log } from '@repo/lib-logger/core';
 import { decodeToken } from '../utilities';
 import { getAccountTokens } from '../server/get-account-tokens';
 import { createHash } from 'crypto';

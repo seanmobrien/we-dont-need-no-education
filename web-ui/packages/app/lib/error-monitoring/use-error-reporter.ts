@@ -4,7 +4,7 @@ import {
   ErrorSeverity,
   type ErrorContext,
 } from './error-reporter';
-import { log } from '@/lib/logger/core';
+import { log } from '@repo/lib-logger/core';
 
 export const useErrorReporter = () => {
   const reporter = errorReporter();

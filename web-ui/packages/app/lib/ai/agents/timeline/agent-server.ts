@@ -21,7 +21,7 @@ import {
 } from '@/lib/ai/middleware/chat-history';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { auth } from '@/auth';
 import { generateTextWithRetry } from '@/lib/ai/core/generate-text-with-retry';
 

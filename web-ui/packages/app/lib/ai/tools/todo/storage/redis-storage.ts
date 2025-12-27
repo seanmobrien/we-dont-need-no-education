@@ -2,7 +2,7 @@ import type { RedisClientType } from '@/lib/redis-client';
 import { getRedisClient } from '@/lib/redis-client';
 import type { Todo, TodoList } from '../types';
 import type { TodoStorageStrategy, StorageStrategyConfig } from './types';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 const DEFAULT_TTL = 86400; // 24 hours

@@ -22,7 +22,7 @@ import { isAnnotatedRetryMessage } from '@/lib/ai/core/guards';
 import type { AiModelType } from '@/lib/ai/core/unions';
 import type { AnnotatedRetryMessage } from '@/lib/ai/core/types';
 import { splitIds, generateChatId } from '@/lib/ai/core/chat-ids';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
 import { getReactPlugin } from '@/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';

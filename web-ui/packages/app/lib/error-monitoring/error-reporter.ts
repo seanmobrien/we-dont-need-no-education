@@ -1,5 +1,5 @@
 import { isError } from '@/lib/react-util/utility-methods';
-import { log, safeSerialize } from '@/lib/logger';
+import { log, safeSerialize } from '@repo/lib-logger';
 import {
   ErrorSeverity,
   KnownEnvironmentType,

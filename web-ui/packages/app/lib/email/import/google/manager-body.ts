@@ -9,7 +9,7 @@ import {
   ImportSourceMessage,
   ImportStage,
 } from '@/data-models/api/import/email-message';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { gmail_v1 } from 'googleapis';
 import { mapContacts } from './utilities';
 import { ContactRepository } from '@/lib/api/contacts/database';

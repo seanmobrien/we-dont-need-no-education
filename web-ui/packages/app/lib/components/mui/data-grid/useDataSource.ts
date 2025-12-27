@@ -19,7 +19,7 @@ import {
   QueryClient,
   // QueryClient,
 } from '@tanstack/react-query';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 // import { has } from 'lodash';
 
 /**

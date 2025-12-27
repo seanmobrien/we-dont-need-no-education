@@ -12,7 +12,7 @@ import { env } from '@/lib/site-util/env';
 import { fetch } from '@/lib/nextjs-util/server';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { decodeToken } from '../utilities';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { serviceInstanceOverloadsFactory, SingletonProvider } from '@/lib/typescript';
 import type { ResourceEntitlement, CheckAccessResult, CheckAccessOptions } from './types';
 import { NextRequest } from 'next/server';

@@ -7,7 +7,7 @@
  * @author NoEducation Team
  */
 
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import EventEmitter from '@protobufjs/eventemitter';
 import type {

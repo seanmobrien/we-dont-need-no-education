@@ -55,8 +55,8 @@ jest.mock('@/lib/logger', () => {
   };
 });
 
-import { logger, log } from '@/lib/logger/core';
-import { log as log2 } from '@/lib/logger';
+import { logger, log } from '@repo/lib-logger/core';
+import { log as log2 } from '@repo/lib-logger';
 import { errorReporter } from '@/lib/error-monitoring';
 import { withJestTestExtensions } from '../jest.test-extensions';
 

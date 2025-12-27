@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { Session } from '@auth/core/types';
-import { log, logEvent } from '@/lib/logger';
+import { log, logEvent } from '@repo/lib-logger';
 import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
 import { ApiRequestError } from '@/lib/send-api-request';
 import {

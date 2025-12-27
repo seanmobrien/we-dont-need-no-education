@@ -20,7 +20,7 @@ import { LoggedError } from '@/lib/react-util';
 import { extractFlagValue } from './util';
 
 import { fetch as serverFetch } from '@/lib/nextjs-util/server/fetch';
-import { log } from '@/lib/logger';
+import { log } from '@repo/lib-logger';
 import { FlagsmithRedisCache } from './flagsmith-cache';
 
 /**
