@@ -1,9 +1,34 @@
 // Simple stack trace helper to avoid external dependencies
-export const getStackTrace = (options?: { skip?: number }): string => {
-  const stack = new Error().stack || '';
-  if (!options?.skip) return stack;
-  const lines = stack.split('\n');
-  return lines.slice(options.skip + 1).join('\n');
+export const getStackTrace = ({
+  skip = 1,
+  max,
+  myCodeOnly = true,
+}: { skip?: number; max?: number; myCodeOnly?: boolean } = {}): string => {
+  const originalStackFrames = new Error().stack?.split('\n') ?? [];
+  let stackFrames = [...originalStackFrames];
+  if (myCodeOnly && stackFrames) {
+    const mustNotInclude = [
+      'node_modules',
+      'internal/',
+      'bootstrap_node.js',
+      'webpack-runtime',
+    ];
+    stackFrames = stackFrames
+      .filter(
+        (frame, idx, arr) =>
+          frame.trim().length > 0 &&
+          (idx === arr.length - 1 ||
+            idx === 0 ||
+            mustNotInclude.every((x) => !frame.includes(x))),
+      )
+      .map((f) => f.trim());
+    if (!stackFrames.length && originalStackFrames.length) {
+      stackFrames = originalStackFrames;
+    }
+  }
+  return stackFrames?.length
+    ? stackFrames.slice(skip ?? 1, max).join('\n')
+    : '';
 };
 
 export type DbError = Error & {

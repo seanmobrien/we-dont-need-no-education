@@ -1,4 +1,4 @@
-import { log } from '../logger';
+import { log } from '@compliance-theater/lib-logger';
 import { isError } from './utility-methods';
 import { LoggedError } from './errors/logged-error';
 

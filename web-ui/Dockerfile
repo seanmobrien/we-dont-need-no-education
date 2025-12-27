@@ -219,4 +219,4 @@ RUN mkdir -p /var/log \
 EXPOSE 3000
 EXPOSE 9229
 
-CMD ["sh", "-c", "crond && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -c 'NODE_OPTIONS="$NODE_OPTIONS --inspect=0.0.0.0:9229" node node_modules/next/dist/bin/next start -H 0.0.0.0 -p 3000'; else su nextjs -c 'node node_modules/next/dist/bin/next start -H 0.0.0.0 -p 3000'; fi"]
+CMD ["sh", "-c", "crond && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -c \"NODE_OPTIONS=\\\"$NODE_OPTIONS --inspect=0.0.0.0:9229\\\" node node_modules/next/dist/bin/next start -H 0.0.0.0 -p 3000\"; else su nextjs -c \"node node_modules/next/dist/bin/next start -H 0.0.0.0 -p 3000\"; fi"]

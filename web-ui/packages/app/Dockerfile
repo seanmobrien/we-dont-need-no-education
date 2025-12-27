@@ -257,4 +257,4 @@ EXPOSE 9229
 # https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
 # Start cron daemon as root, then switch to nextjs user to run the server
 # If RUN_DEBUGGER=1, start Node.js with inspector enabled
-CMD ["sh", "-c", "crond && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -c 'node --inspect=0.0.0.0:9229 server.js'; else su nextjs -c 'node server.js'; fi"]
+CMD ["sh", "-c", "crond && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -c \"node --inspect=0.0.0.0:9229 server.js\"; else su nextjs -c \"node server.js\"; fi"]

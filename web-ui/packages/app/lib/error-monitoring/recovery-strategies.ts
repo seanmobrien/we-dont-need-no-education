@@ -3,7 +3,7 @@
  * Provides automatic and manual recovery mechanisms
  */
 
-import { log } from '../logger';
+import { log } from '@compliance-theater/lib-logger';
 import { clientNavigateSignIn, clientReload } from '../nextjs-util';
 import { isRunningOnEdge } from '../site-util/env';
 
