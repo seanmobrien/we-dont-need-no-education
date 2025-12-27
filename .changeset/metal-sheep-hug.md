@@ -1,5 +1,5 @@
 ---
-"compliance-theater/app": minor
+"@compliance-theater/app": minor
 ---
 
 Converted to monorepo
