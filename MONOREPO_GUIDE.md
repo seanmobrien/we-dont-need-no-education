@@ -293,6 +293,7 @@ yarn test:e2e
   - [ ] lib-send-api-request
   - [ ] lib-database (merge drizzle + drizzle-db + neondb)
   - [ ] lib-redis-client
+  - [x] lib-site-util-env ✅
   - [ ] lib-site-util
   - [ ] lib-react-util
   - [ ] lib-nextjs-util
