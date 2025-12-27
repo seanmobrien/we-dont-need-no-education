@@ -7,7 +7,7 @@
  * @author NoEducation Team
  */
 
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import EventEmitter from '@protobufjs/eventemitter';
 import type {
@@ -21,7 +21,7 @@ import {
 } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { withEmittingDispose } from '@/lib/nextjs-util/utils';
-import { SingletonProvider } from '@repo/lib-typescript';
+import { SingletonProvider } from '@compliance-theater/lib-typescript';
 
 import type {
   ConnectableToolProvider,

@@ -16,7 +16,7 @@
  */
 
 import { Account, Awaitable, Profile, User } from '@auth/core/types';
-import { log, logEvent } from '@repo/lib-logger';
+import { log, logEvent } from '@compliance-theater/lib-logger';
 import { CredentialInput } from '@auth/core/providers';
 import { AdapterUser } from '@auth/core/adapters';
 import { LoggedError } from '../react-util';

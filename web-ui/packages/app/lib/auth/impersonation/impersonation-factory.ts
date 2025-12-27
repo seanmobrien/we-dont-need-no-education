@@ -2,7 +2,7 @@ import type { ImpersonationService } from './impersonation.types';
 import { ImpersonationThirdParty } from './impersonation.thirdparty';
 import { ImpersonationServiceCache } from './impersonation-service-cache';
 import { auth } from '@/auth';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import type { User } from '@auth/core/types';
 
 /**

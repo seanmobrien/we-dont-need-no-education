@@ -1,9 +1,18 @@
 import pino from 'pino';
-import { env, isRunningOnServer } from '@/lib/site-util/env';
 import { WrappedLogger } from './wrapped-logger';
 import type { ILogger, EventSeverity, LogEventOverloads } from './types';
 import { CustomAppInsightsEvent } from './event';
 import { emitSendCustomEvent } from './log-emitter';
+
+// Inline environment check to avoid external dependencies
+const isRunningOnServer = (): boolean => {
+  return typeof window === 'undefined';
+};
+
+// Inline environment variable access to avoid external dependencies
+const env = (key: string): string | undefined => {
+  return process.env[key];
+};
 
 let _logger: ILogger;
 

@@ -27,7 +27,7 @@ import {
 } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
 import type { DrizzleSelectQuery } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/types';
 import { NextRequest } from 'next/server';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 
 // Mock logger
 const mockLogger = {

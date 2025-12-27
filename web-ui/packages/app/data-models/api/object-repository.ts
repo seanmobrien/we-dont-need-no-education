@@ -1,4 +1,4 @@
-import { PartialExceptFor } from '@repo/lib-typescript';
+import { PartialExceptFor } from '@compliance-theater/lib-typescript';
 import { PaginationStats, PaginatedResultset } from '../_types';
 import { ContactSummary, Contact } from './contact';
 

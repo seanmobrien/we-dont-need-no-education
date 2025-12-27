@@ -1,4 +1,4 @@
-import { isKeyOf } from '@repo/lib-typescript';
+import { isKeyOf } from '@compliance-theater/lib-typescript';
 
 export const BooleanFeatureFlagValues = [
   'mem0_mcp_tools_enabled',

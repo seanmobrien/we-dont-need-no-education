@@ -1,5 +1,5 @@
 import { isError } from '@/lib/react-util/utility-methods';
-import { log, safeSerialize } from '@repo/lib-logger';
+import { log, safeSerialize } from '@compliance-theater/lib-logger';
 import {
   ErrorSeverity,
   KnownEnvironmentType,
@@ -14,7 +14,7 @@ import {
 import { isRunningOnEdge } from '../site-util/env';
 import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
 import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
-import { SingletonProvider } from '@repo/lib-typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider/provider';
 import { shouldSuppressError } from './utility';
 import { type ErrorReportArgs, LoggedError } from '@/lib/react-util/errors/logged-error';
 import { LRUCache } from 'lru-cache';

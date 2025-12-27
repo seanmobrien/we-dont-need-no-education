@@ -1,7 +1,7 @@
 import { drizDbWithInit } from "@/lib/drizzle-db";
 import { LoggedError } from "@/lib/react-util/errors/logged-error";
-import { ArrayElement } from "@repo/lib-typescript";
-import { isValidUuid, BrandedUuid } from "@repo/lib-typescript/_guards";
+import { ArrayElement } from "@compliance-theater/lib-typescript";
+import { isValidUuid, BrandedUuid } from "@compliance-theater/lib-typescript/_guards";
 
 /**
  * Resolves a case file's unit ID from a given document identifier.

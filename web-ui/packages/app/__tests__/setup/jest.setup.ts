@@ -114,13 +114,13 @@ import { FormatAlignCenterSharp } from '@mui/icons-material';
 import { createElement } from 'react';
 import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
 import instrument, { getAppInsights } from '@/instrument/browser';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import {
   FirstParameter,
   isKeyOf,
   isPromise,
   SingletonProvider,
-} from '@repo/lib-typescript';
+} from '@compliance-theater/lib-typescript';
 import { result, xorBy } from 'lodash';
 
 import { ITraits } from 'flagsmith/react';

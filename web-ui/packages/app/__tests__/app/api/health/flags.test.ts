@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { SingletonProvider } from '@repo/lib-typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider/provider';
 
 jest.mock('@/lib/site-util/feature-flags/server', () => ({
   getFeatureFlag: jest.fn(),

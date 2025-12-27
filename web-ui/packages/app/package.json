@@ -1,5 +1,5 @@
 {
-  "name": "@repo/app",
+  "name": "@compliance-theater/app",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -42,8 +42,8 @@
     "test:long": "jest --testTimeout=60000"
   },
   "dependencies": {
-    "@repo/lib-logger": "0.1.0",
-    "@repo/lib-typescript": "0.1.0",
+    "@compliance-theater/lib-logger": "0.1.0",
+    "@compliance-theater/lib-typescript": "0.1.0",
     "@ai-sdk/azure": "^2.0.20",
     "@ai-sdk/google": "^2.0.8",
     "@ai-sdk/mcp": "^0.0.12",

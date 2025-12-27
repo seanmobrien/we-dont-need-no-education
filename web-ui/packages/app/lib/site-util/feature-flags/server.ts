@@ -14,13 +14,13 @@ import {
   FLAGSMITH_SERVER_SINGLETON_KEY,
 } from './known-feature-defaults';
 
-import { globalSingleton } from '@repo/lib-typescript';
+import { globalSingleton } from '@compliance-theater/lib-typescript';
 import { env } from '../env';
 import { LoggedError } from '@/lib/react-util';
 import { extractFlagValue } from './util';
 
 import { fetch as serverFetch } from '@/lib/nextjs-util/server/fetch';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { FlagsmithRedisCache } from './flagsmith-cache';
 
 /**

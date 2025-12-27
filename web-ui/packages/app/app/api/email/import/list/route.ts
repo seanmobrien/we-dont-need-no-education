@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { query } from '@/lib/neondb';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 

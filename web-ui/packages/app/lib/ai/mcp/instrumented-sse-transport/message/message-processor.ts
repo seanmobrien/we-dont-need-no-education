@@ -9,7 +9,7 @@ import type { JSONRPCMessage } from '../../ai.sdk';
 import { SessionManager } from '../session/session-manager';
 import { MetricsRecorder, DEBUG_MODE } from '../metrics/otel-metrics';
 import { CounterManager } from '../metrics/counter-manager';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { LoggedError } from '@/lib/react-util';
 
 /**

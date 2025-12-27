@@ -1,5 +1,5 @@
 import { drizDbWithInit } from '@/lib/drizzle-db';
-import { isValidUuid } from '@repo/lib-typescript/_guards';
+import { isValidUuid } from '@compliance-theater/lib-typescript/_guards';
 import { redirect, notFound } from 'next/navigation';
 import { LoggedError } from '../react-util';
 import { SiteRoute } from '../site-util/url-builder/_types';

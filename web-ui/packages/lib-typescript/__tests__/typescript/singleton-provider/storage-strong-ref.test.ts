@@ -1,6 +1,6 @@
-import { StrongReferenceStorage } from '@repo/lib-typescript/singleton-provider/storage-strong-ref';
-import { SingletonStorageKey } from '@repo/lib-typescript/singleton-provider/types';
-import { log } from '@repo/lib-logger';
+import { StrongReferenceStorage } from '@compliance-theater/lib-typescript/singleton-provider/storage-strong-ref';
+import { SingletonStorageKey } from '@compliance-theater/lib-typescript/singleton-provider/types';
+import { log } from '@compliance-theater/lib-logger';
 
 describe('StrongReferenceStorage', () => {
   let storage: StrongReferenceStorage;

@@ -12,8 +12,8 @@ import { env } from '@/lib/site-util/env';
 import { fetch } from '@/lib/nextjs-util/server';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { LRUCache } from 'lru-cache';
-import { SingletonProvider } from '@repo/lib-typescript';
-import { serviceInstanceOverloadsFactory } from '@repo/lib-typescript/_generics';
+import { SingletonProvider } from '@compliance-theater/lib-typescript';
+import { serviceInstanceOverloadsFactory } from '@compliance-theater/lib-typescript/_generics';
 
 /**
  * Configuration for the ResourceService cache

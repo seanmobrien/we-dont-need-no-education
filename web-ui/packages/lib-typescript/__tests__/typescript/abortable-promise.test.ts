@@ -10,7 +10,7 @@
 import {
   AbortablePromise,
   type OperationCancelledError,
-} from '@repo/lib-typescript/abortable-promise';
+} from '@compliance-theater/lib-typescript/abortable-promise';
 
 describe.skip('AbortablePromise', () => {
   describe('Static Methods', () => {

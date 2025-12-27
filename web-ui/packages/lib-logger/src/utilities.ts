@@ -1,5 +1,5 @@
 // Simple stack trace helper to avoid external dependencies
-const getStackTrace = (options?: { skip?: number }): string => {
+export const getStackTrace = (options?: { skip?: number }): string => {
   const stack = new Error().stack || '';
   if (!options?.skip) return stack;
   const lines = stack.split('\n');

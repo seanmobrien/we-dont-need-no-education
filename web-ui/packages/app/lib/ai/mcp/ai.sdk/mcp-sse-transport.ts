@@ -7,7 +7,7 @@ import {
 import { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { MCPError } from '../mcp-error';
 import { JSONRPCMessage, JSONRPCMessageSchema } from './json-rpc-message';
-import { log, safeSerialize } from '@repo/lib-logger';
+import { log, safeSerialize } from '@compliance-theater/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { isAbortError } from '@/lib/react-util/utility-methods';
 import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';

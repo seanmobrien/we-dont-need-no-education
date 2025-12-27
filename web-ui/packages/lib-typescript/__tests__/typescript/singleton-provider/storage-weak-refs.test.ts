@@ -1,5 +1,5 @@
-import { WeakReferenceStorage } from '@repo/lib-typescript/singleton-provider/storage-weak-refs';
-import { SingletonStorageKey } from '@repo/lib-typescript/singleton-provider/types';
+import { WeakReferenceStorage } from '@compliance-theater/lib-typescript/singleton-provider/storage-weak-refs';
+import { SingletonStorageKey } from '@compliance-theater/lib-typescript/singleton-provider/types';
 
 describe('WeakReferenceStorage', () => {
   let storage: WeakReferenceStorage;

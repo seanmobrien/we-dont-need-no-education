@@ -26,7 +26,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { query, queryExt } from '@/lib/neondb';
 import { sendApiRequest } from '@/lib/send-api-request';
-import { ICancellablePromise, ICancellablePromiseExt } from '@repo/lib-typescript';
+import { ICancellablePromise, ICancellablePromiseExt } from '@compliance-theater/lib-typescript';
 import { managerMapFactory } from '@/lib/email/import/google/managermapfactory';
 import { ImportManagerMap } from '@/lib/email/import/types';
 import { TransactionalStateManagerBase } from '@/lib/email/import/default/transactional-statemanager';

@@ -7,7 +7,7 @@ import { auth } from '@/auth';
 import { CaseFileScope, checkCaseFileAccess } from '@/lib/auth/resources/case-file';
 import { checkCaseFileAuthorization } from '@/lib/auth/resources/case-file/case-file-middleware';
 import { AccessDeniedError } from '@/lib/react-util/errors/access-denied-error';
-import { unwrapPromise } from '@repo/lib-typescript';
+import { unwrapPromise } from '@compliance-theater/lib-typescript';
 
 /**
  * Base repository interface supports object repository implementation

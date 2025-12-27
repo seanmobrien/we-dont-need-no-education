@@ -10,9 +10,9 @@
 import { createHash } from 'crypto';
 import { ToolSet } from 'ai';
 import { getRedisClient, RedisClientType } from '@/lib/redis-client';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { SingletonProvider } from '@repo/lib-typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider/provider';
 import type { ToolProviderFactoryOptions } from '../types';
 import type {
   ToolCacheConfig,

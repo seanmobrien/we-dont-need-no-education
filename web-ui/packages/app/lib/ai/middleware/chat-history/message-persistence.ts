@@ -1,7 +1,7 @@
 import type { LanguageModelV2CallOptions, SharedV2ProviderOptions } from '@ai-sdk/provider';
 import { JSONValue } from 'ai';
 import { drizDb } from '@/lib/drizzle-db';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type {
   ChatHistoryContext,

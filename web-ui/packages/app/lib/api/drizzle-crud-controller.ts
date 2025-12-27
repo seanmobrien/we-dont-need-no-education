@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BaseDrizzleRepository } from './_baseDrizzleRepository';
-import { PickField } from '@repo/lib-typescript';
+import { PickField } from '@compliance-theater/lib-typescript';
 import { LikeNextRequest } from '@/lib/nextjs-util/types';
 import { isRequestOrApiRequest } from '@/lib/nextjs-util/guards';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';

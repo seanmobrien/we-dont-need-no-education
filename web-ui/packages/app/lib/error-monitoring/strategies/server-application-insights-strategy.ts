@@ -1,4 +1,4 @@
-import { log, safeSerialize } from '@repo/lib-logger';
+import { log, safeSerialize } from '@compliance-theater/lib-logger';
 import { ErrorReport, ErrorReportResult } from '../types';
 import { ReportActionStrategy } from './report-action-strategy';
 

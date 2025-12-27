@@ -2,12 +2,12 @@ import { drizDbWithInit, type DbDatabaseType, schema } from '@/lib/drizzle-db';
 import type { ChatToolType } from '@/lib/drizzle-db/drizzle-types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import type {
   LanguageModelV2ProviderDefinedTool,
   LanguageModelV2FunctionTool,
 } from '@ai-sdk/provider';
-import { SingletonProvider } from '@repo/lib-typescript';
+import { SingletonProvider } from '@compliance-theater/lib-typescript';
 
 type ToolMapEntry = ChatToolType;
 type ToolIdType = ChatToolType['chatToolId'];

@@ -1,6 +1,6 @@
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@/lib/site-util/env';
-import { log, safeSerialize } from '@repo/lib-logger';
+import { log, safeSerialize } from '@compliance-theater/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { startup } from '@/lib/site-util/app-startup';
 import type { NextRequest, NextResponse } from 'next/server';
@@ -18,7 +18,7 @@ import {
 } from '@opentelemetry/api';
 import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
-import { isPromise } from '@repo/lib-typescript/_guards';
+import { isPromise } from '@compliance-theater/lib-typescript/_guards';
 
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');
 

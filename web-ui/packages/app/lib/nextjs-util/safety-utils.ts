@@ -9,7 +9,7 @@ import { Span, SpanStatusCode } from '@opentelemetry/api';
 import { tracer, MetricsRecorder, DEBUG_MODE } from '../ai/mcp/instrumented-sse-transport/metrics/otel-metrics';
 import { isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { withTimeoutAsError } from '@/lib/nextjs-util/with-timeout';
 
 // Timeout constants

@@ -13,10 +13,10 @@ import type {
   UserToolProviderCache,
   UserToolProviderCacheConfig,
 } from '../types';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
-import { globalRequiredSingleton } from '@repo/lib-typescript';
+import { globalRequiredSingleton } from '@compliance-theater/lib-typescript';
 
 /**
  * Cache for maintaining ToolProviderSet instances per user across HTTP requests.

@@ -1,4 +1,4 @@
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { isModelAvailable } from '@/lib/ai/aiModelFactory';
 import { rateLimitQueueManager } from './queue-manager';
 import { rateLimitMetrics } from './metrics';

@@ -2,9 +2,9 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { sql } from '@/lib/drizzle-db/drizzle-sql';
 import { LoggedError } from '@/lib/react-util';
 import InMemoryCache from '@/lib/api/health/base-cache';
-import { globalRequiredSingleton } from '@repo/lib-typescript/singleton-provider';
+import { globalRequiredSingleton } from '@compliance-theater/lib-typescript/singleton-provider';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
-import { SingletonProvider } from '@repo/lib-typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider/provider';
 
 export class DatabaseHealthCache extends InMemoryCache<{
   status: 'healthy' | 'warning' | 'error';

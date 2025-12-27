@@ -1,6 +1,6 @@
 import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { eq, and } from 'drizzle-orm';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { decodeToken } from '../utilities';
 import type { JWT } from '@auth/core/jwt';
 

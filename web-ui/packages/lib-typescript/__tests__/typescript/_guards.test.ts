@@ -3,7 +3,7 @@ import {
   isMemberOfUnion,
   isOperationCancelledError,
   isValidUuid,
-} from '@repo/lib-typescript/_guards';
+} from '@compliance-theater/lib-typescript/_guards';
 
 describe('isKeyOf', () => {
   it('should return true if the key is a key of the given object', () => {

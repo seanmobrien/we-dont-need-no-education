@@ -1,7 +1,7 @@
 import type { JWT } from '@auth/core/jwt';
 import type { Account } from '@auth/core/types';
 import type { AdapterUser } from '@auth/core/adapters';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { decodeToken } from './utilities';
 import type { NextAuthUserWithAccountId } from './types';
 

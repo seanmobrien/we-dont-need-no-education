@@ -12,13 +12,12 @@
  * @see {@link SingletonStorageStrategy} for the interface this implements
  */
 
-import { log } from '@repo/lib-logger';
+import { log, getStackTrace } from '@compliance-theater/lib-logger';
 import {
   GlobalWithMyGlobal,
   SingletonStorageKey,
   SingletonStorageStrategy,
 } from './types';
-import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
 
 const STORED_MAP_KEY = Symbol.for(
   '@no-education/typescript/SingletonProvider/StrongReferenceStorage/GlobalMap',

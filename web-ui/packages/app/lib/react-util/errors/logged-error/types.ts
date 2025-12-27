@@ -1,5 +1,5 @@
 import type { ErrorContext } from "@/lib/error-monitoring/types";
-import type { KnownSeverityLevel } from "@repo/lib-logger";
+import type { KnownSeverityLevel } from "@compliance-theater/lib-logger";
 
 export type LoggedErrorOptions = ErrorOptions & {
   error: Error;

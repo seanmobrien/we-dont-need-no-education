@@ -18,7 +18,7 @@ import { DialogProps } from '@mui/material/Dialog';
 import { PaperProps } from '@mui/material/Paper';
 import React, { JSX, PropsWithChildren } from 'react';
 import DialogAction from '@mui/material/DialogActions';
-import { FirstParameter } from '@repo/lib-typescript';
+import { FirstParameter } from '@compliance-theater/lib-typescript';
 type DialogActionProps = FirstParameter<typeof DialogAction>;
 /**
  * Represents the dimensions of a dialog or component.

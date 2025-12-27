@@ -2,7 +2,7 @@ import { checkDatabaseHealth } from '@/lib/api/health/database';
 import { getMemoryHealthCache, determineHealthStatus } from '@/lib/api/health/memory';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { SingletonProvider } from '@repo/lib-typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider/provider';
 import { NextRequest, NextResponse } from 'next/server';
 import type { Span } from '@opentelemetry/api';
 import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';

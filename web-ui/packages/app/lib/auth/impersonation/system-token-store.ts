@@ -30,7 +30,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 
 import { CookieJar } from 'tough-cookie';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { got } from 'got';
 import { parse as parseHtml } from 'node-html-parser';
 import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
@@ -47,7 +47,7 @@ import type {
   FormLoginResult,
 } from './impersonation.types';
 import { defaultConfigFromEnv } from './utility';
-import { SingletonProvider } from '@repo/lib-typescript';
+import { SingletonProvider } from '@compliance-theater/lib-typescript';
 
 let openIdClientModule: {
   discovery: Function;

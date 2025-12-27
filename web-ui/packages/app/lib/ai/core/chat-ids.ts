@@ -1,4 +1,4 @@
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 
 /**
  * Creates a seeded pseudo-random number generator function using a linear congruential generator algorithm.

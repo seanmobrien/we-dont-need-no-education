@@ -2,7 +2,7 @@ import {
   LanguageModelV2CallOptions,
   LanguageModelV2Prompt,
 } from '@ai-sdk/provider';
-import { log, safeSerialize } from '@repo/lib-logger';
+import { log, safeSerialize } from '@compliance-theater/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { aiModelFactory } from '../../../aiModelFactory';
 import { ChatHistoryContext, createAgentHistoryContext, wrapChatHistoryMiddleware } from '../../chat-history';

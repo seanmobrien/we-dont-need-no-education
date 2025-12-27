@@ -1,4 +1,4 @@
-import { log, safeSerialize } from '@repo/lib-logger';
+import { log, safeSerialize } from '@compliance-theater/lib-logger';
 import { isAbortError, LoggedError } from '@/lib/react-util';
 import { isRunningOnServer } from '@/lib/site-util/env';
 import type { Readable as ReadableType } from 'node:stream';

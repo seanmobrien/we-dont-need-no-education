@@ -4,7 +4,7 @@ import {
   getImportMessageSource,
 } from '../../_utilitites';
 import { query, queryExt } from '@/lib/neondb';
-import { newUuid } from '@repo/lib-typescript';
+import { newUuid } from '@compliance-theater/lib-typescript';
 import {
   DefaultImportManager,
   queueStagedAttachments,

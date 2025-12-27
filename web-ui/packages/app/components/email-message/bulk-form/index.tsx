@@ -10,9 +10,9 @@ import {
   setRecordDirty,
   isRecordDirty,
   RecordWithDirtyState,
-} from '@repo/lib-typescript';
+} from '@compliance-theater/lib-typescript';
 import ContactDropdown from '@/components/contact/contact-dropdown';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import React from 'react';
 import ContactRecipients from '@/components/contact/contact-recipients';
 import EmailSelect from '../select';

@@ -1,4 +1,4 @@
-import { globalRequiredSingleton } from '@repo/lib-typescript';
+import { globalRequiredSingleton } from '@compliance-theater/lib-typescript';
 import { metrics } from '@opentelemetry/api';
 
 const meter = metrics.getMeter('key-rate-limiter', '1.0.0');

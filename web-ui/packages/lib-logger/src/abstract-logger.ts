@@ -1,4 +1,17 @@
-import { isError, isRecord, LoggedError } from '@/lib/react-util/core';
+// Inline utility functions to avoid external dependencies
+const isError = (value: unknown): value is Error => {
+  return value instanceof Error || (
+    typeof value === 'object' &&
+    value !== null &&
+    'message' in value &&
+    'stack' in value
+  );
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+};
+
 import {
   ApplicationInsightsBaseType,
   ApplicationInsightsCustomEventName,
@@ -158,10 +171,11 @@ export class AbstractLogger implements ILogger {
     this.logInfoMessage(...this.buildLogRecord(message, ...args));
   }
   error(message: string | object, ...args: unknown[]): void {
-    const logArguments = this.buildLogRecord(
-      LoggedError.isTurtlesAllTheWayDownBaby(message),
-      ...args,
+    // Convert message to Error if it's not already an error
+    const errorMessage = isError(message) ? message : new Error(
+      typeof message === 'string' ? message : JSON.stringify(message)
     );
+    const logArguments = this.buildLogRecord(errorMessage, ...args);
     this.logErrorMessage(...logArguments);
   }
   warn(message: string | object, ...args: unknown[]): void {

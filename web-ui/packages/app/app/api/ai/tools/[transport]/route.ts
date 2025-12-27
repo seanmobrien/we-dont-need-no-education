@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes for SSE connections
-import { log, safeSerialize } from '@repo/lib-logger';
+import { log, safeSerialize } from '@compliance-theater/lib-logger';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { createMcpHandler } from 'mcp-handler';
@@ -54,7 +54,7 @@ import {
   toggleTodoConfig,
 } from '@/lib/ai/tools/todo';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { FirstParameter } from '@repo/lib-typescript';
+import type { FirstParameter } from '@compliance-theater/lib-typescript';
 import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 import { env } from '@/lib/site-util/env';
 import { type BasicResourceRecord, resourceService } from '@/lib/auth/resources/resource-service';

@@ -1,7 +1,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 // Fixed chalk import for ESM
 import chalk from 'chalk';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 
 interface ThoughtData {
   thought: string;

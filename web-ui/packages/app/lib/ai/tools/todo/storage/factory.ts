@@ -5,7 +5,7 @@ import type {
 } from './types';
 import { InMemoryStorageStrategy } from './in-memory-storage';
 import { RedisStorageStrategy } from './redis-storage';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**

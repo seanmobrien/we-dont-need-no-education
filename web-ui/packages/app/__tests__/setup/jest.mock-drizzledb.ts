@@ -15,7 +15,7 @@ import {
   isKeyOf,
   isPromise,
   SingletonProvider,
-} from '@repo/lib-typescript';
+} from '@compliance-theater/lib-typescript';
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
 const actualSchema = jest.requireActual('/lib/drizzle-db/schema');

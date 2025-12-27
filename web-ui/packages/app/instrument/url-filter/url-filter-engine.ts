@@ -6,7 +6,7 @@ import {
   UrlFilterOptions,
 } from './url-filter-rules';
 import { LRUCache } from 'lru-cache';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { hash } from 'node:crypto'; // or use a fast-hash library
 import { LoggedError } from '@/lib/react-util';
 

@@ -1,4 +1,4 @@
-import { log, safeSerialize } from "@repo/lib-logger";
+import { log, safeSerialize } from "@compliance-theater/lib-logger";
 import { TimeoutError } from "../react-util/errors/timeout-error";
 
 export type AwaitedWithTimeout<T> = {

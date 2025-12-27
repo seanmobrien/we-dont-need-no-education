@@ -6,7 +6,7 @@ import type {
 } from './types/health-check';
 import { fromRequest, ImpersonationService } from '@/lib/auth/impersonation';
 import { env } from '@/lib/site-util/env';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 
 /**
  * Options for configuring the MemoryClient instance.

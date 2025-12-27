@@ -1,4 +1,4 @@
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { LoggedError } from '@/lib/react-util';
 import { appMeters } from '@/lib/site-util/metrics';
 

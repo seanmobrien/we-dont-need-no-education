@@ -60,7 +60,7 @@ import {
   ValidCaseFileRequestProps,
 } from '../types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { caseFileDocumentShape } from '../case-file-document-query';
 import {
   caseFileDocumentErrorCounter,

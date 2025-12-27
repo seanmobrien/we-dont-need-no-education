@@ -1,6 +1,6 @@
 'use client';
 
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { isError } from '@/lib/react-util/utility-methods';
 import {
   useState,

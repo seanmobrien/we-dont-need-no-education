@@ -16,7 +16,7 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
 
 2. **Application Restructuring**
    - Moved `web-ui/` → `web-ui/packages/app/` (using git mv to preserve history)
-   - Updated package name from `compliance-theater` → `@repo/app`
+   - Updated package name from `compliance-theater` → `@compliance-theater/app`
    - Removed nested workspace configuration
 
 3. **CI/CD Updates**
@@ -139,7 +139,7 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
 ### 📝 Phase 5: Documentation & CI/CD (0% Complete)
 
 1. **Update Import Paths**
-   - Change `@/lib/*` to `@repo/lib-*`
+   - Change `@/lib/*` to `@compliance-theater/lib-*`
    - Use find/replace scripts
    - Estimated: 4-6 hours
 
@@ -254,7 +254,7 @@ Extract packages in small batches (2-3 at a time) following dependency order, ve
 
 2. **Test After Each Change**: Don't move to next package until current one works
 
-3. **Use Workspace Protocol**: Always reference packages as `"@repo/package-name": "workspace:*"`
+3. **Use Workspace Protocol**: Always reference packages as `"@compliance-theater/package-name": "workspace:*"`
 
 4. **Preserve Git History**: Use `git mv` when moving files
 

@@ -8,7 +8,7 @@
  */
 
 import type { ImpersonationService } from './index';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 interface CachedImpersonationService {

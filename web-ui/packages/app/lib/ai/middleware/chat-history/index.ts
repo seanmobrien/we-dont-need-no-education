@@ -9,7 +9,7 @@ import type { ChatHistoryContext } from './types';
 import { enqueueStream, ProcessingQueue } from './processing-queue';
 import { JSONValue, simulateReadableStream, wrapLanguageModel } from 'ai';
 import { MiddlewareStateManager } from '../state-management';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { ToolMap } from '../../services/model-stats/tool-map';
 import { createToolOptimizingMiddleware } from '../tool-optimizing-middleware';
 export type { ChatHistoryContext } from './types';

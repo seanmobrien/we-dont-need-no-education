@@ -18,7 +18,7 @@ import {
   setUuid,
   type RecordWithDirtyState,
   type RecordWithUuid,
-} from '@repo/lib-typescript/_record-decorators';
+} from '@compliance-theater/lib-typescript/_record-decorators';
 
 describe('_record-decorators', () => {
   describe('getDecoratorSymbols', () => {

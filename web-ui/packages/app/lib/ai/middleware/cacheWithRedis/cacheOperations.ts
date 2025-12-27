@@ -3,7 +3,7 @@ import { getCacheConfig } from './config';
 import { metricsCollector } from './metrics';
 import { createJailKey } from './cacheKeys';
 import type { getRedisClient } from '@/lib/redis-client';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { LanguageModelV2Content } from '@ai-sdk/provider';
 

@@ -13,7 +13,7 @@ import {
   apiRequestHelperFactory,
   ApiRequestHelper,
 } from '@/lib/send-api-request';
-import { ICancellablePromiseExt } from '@repo/lib-typescript';
+import { ICancellablePromiseExt } from '@compliance-theater/lib-typescript';
 
 const apiRequest = <TResult>(
   cb: (

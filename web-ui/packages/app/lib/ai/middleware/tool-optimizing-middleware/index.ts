@@ -9,7 +9,7 @@ import type {
 import { LoggedError } from '@/lib/react-util';
 import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
 import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { appMeters, hashUserId } from '@/lib/site-util/metrics';
 
 const toolOptimizationCounter = appMeters.createCounter(

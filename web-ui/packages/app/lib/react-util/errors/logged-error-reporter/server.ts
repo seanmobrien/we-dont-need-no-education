@@ -1,6 +1,6 @@
 import type { ErrorReporterInterface } from '@/lib/error-monitoring/types';
 import { ErrorReporter } from '@/lib/error-monitoring/error-reporter';
-import { SingletonProvider } from '@repo/lib-typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider/provider';
 
 const REPORTER_SINGLETON_KEY =
   '@noeducation/lib/react-util/errors/logged-error-reporter/server';

@@ -3,7 +3,7 @@ import { ObjectRepository } from '@/lib/api/_types';
 import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 import { query } from '@/lib/neondb';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter } from '@repo/lib-typescript';
+import { FirstParameter } from '@compliance-theater/lib-typescript';
 import { GridSortModel } from '@mui/x-data-grid-pro';
 
 export type StagedAttachment = {

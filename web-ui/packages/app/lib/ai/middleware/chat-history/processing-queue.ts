@@ -2,7 +2,7 @@ import type {
   LanguageModelV2CallOptions,
   LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { Semaphore } from '@/lib/nextjs-util/semaphore-manager';
 import { ensureCreateResult } from './stream-handler-result';
 import { processStreamChunk } from './stream-handlers';

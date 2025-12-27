@@ -11,7 +11,7 @@ import {
   type StageProcessorContext,
 } from './types';
 import { managerMapFactory } from './google/managermapfactory';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { isError } from '@/lib/react-util/utility-methods';
 import { NextRequest } from 'next/server';

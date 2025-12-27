@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest, extractParams } from '@/lib/nextjs-util/server/utils';
 import { query, queryExt } from '@/lib/neondb';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { globalContactCache } from '@/data-models/api';
 import { isTruthy } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';

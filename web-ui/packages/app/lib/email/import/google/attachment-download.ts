@@ -1,5 +1,5 @@
 import { BlobServiceClient } from '@azure/storage-blob';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 import { googleProviderFactory } from '@/app/api/email/import/[provider]/_googleProviderFactory';
 import { query } from '@/lib/neondb';
 import type { StagedAttachment } from '@/lib/api/email/import/staged-attachment';

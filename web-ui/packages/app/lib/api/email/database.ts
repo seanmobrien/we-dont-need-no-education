@@ -1,5 +1,5 @@
 import { ValidationError } from '@/lib/react-util/errors';
-import { FirstParameter, newUuid } from '@repo/lib-typescript';
+import { FirstParameter, newUuid } from '@compliance-theater/lib-typescript';
 import { ObjectRepository } from '../_types';
 import {
   EmailMessageAttachment,

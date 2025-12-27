@@ -4,7 +4,7 @@ import {
   type UIMessage,
 } from 'ai';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@repo/lib-logger';
+import { log } from '@compliance-theater/lib-logger';
 
 type StreamTextResult<TOOLS extends ToolSet, NEVER> = ReturnType<typeof streamText<TOOLS, NEVER>>;
 

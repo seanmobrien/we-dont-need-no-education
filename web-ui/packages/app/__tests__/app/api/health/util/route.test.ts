@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import { POST } from '@/app/api/health/util/route';
-import { SingletonProvider } from '@repo/lib-typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider/provider';
 import { NextRequest } from 'next/server';
 
 // Mock SingletonProvider
