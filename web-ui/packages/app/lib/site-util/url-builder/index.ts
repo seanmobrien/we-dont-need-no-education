@@ -5,7 +5,7 @@ export type {
   UrlBuilderInfo,
   UrlMap,
 } from './_types';
-import { env } from '../env';
+import { env } from '@repo/lib-site-util-env';
 import { mappedUrlBuilderFactory } from './_from-map';
 
 export { mappedUrlBuilderFactory };

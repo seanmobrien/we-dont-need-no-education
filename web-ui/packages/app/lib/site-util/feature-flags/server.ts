@@ -15,7 +15,7 @@ import {
 } from './known-feature-defaults';
 
 import { globalSingleton } from '@/lib/typescript';
-import { env } from '../env';
+import { env } from '@repo/lib-site-util-env';
 import { LoggedError } from '@/lib/react-util';
 import { extractFlagValue } from './util';
 

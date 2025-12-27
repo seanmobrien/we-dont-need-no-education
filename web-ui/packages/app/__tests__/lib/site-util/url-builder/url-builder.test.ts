@@ -1,4 +1,4 @@
-jest.mock('@/lib/site-util/env');
+jest.mock('@repo/lib-site-util-env');
 
 import { UrlBuilder } from '@/lib/site-util/url-builder/_impl';
 import { mappedUrlBuilderFactory } from '@/lib/site-util/url-builder/_from-map';

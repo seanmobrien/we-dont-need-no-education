@@ -4,25 +4,25 @@
   "private": true,
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
-  "types": "./src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.d.ts",
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
     "./_common": {
-      "types": "./src/_common.ts",
+      "types": "./dist/_common.d.ts",
       "import": "./dist/_common.mjs",
       "require": "./dist/_common.js"
     },
     "./_client": {
-      "types": "./src/_client.ts",
+      "types": "./dist/_client.d.ts",
       "import": "./dist/_client.mjs",
       "require": "./dist/_client.js"
     },
     "./_server": {
-      "types": "./src/_server.ts",
+      "types": "./dist/_server.d.ts",
       "import": "./dist/_server.mjs",
       "require": "./dist/_server.js"
     }
