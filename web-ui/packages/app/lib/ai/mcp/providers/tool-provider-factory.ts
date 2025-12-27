@@ -21,7 +21,7 @@ import {
 } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { withEmittingDispose } from '@/lib/nextjs-util/utils';
-import { SingletonProvider } from '@/lib/typescript';
+import { SingletonProvider } from '@repo/lib-typescript';
 
 import type {
   ConnectableToolProvider,

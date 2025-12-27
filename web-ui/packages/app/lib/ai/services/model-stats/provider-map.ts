@@ -21,7 +21,7 @@ import {
 } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
-import { isKeyOf } from '@/lib/typescript';
+import { isKeyOf } from '@repo/lib-typescript';
 import { log } from '@repo/lib-logger';
 
 /**

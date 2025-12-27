@@ -120,7 +120,7 @@ import {
   isKeyOf,
   isPromise,
   SingletonProvider,
-} from '@/lib/typescript';
+} from '@repo/lib-typescript';
 import { result, xorBy } from 'lodash';
 
 import { ITraits } from 'flagsmith/react';

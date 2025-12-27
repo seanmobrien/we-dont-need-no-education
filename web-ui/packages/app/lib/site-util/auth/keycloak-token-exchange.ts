@@ -4,7 +4,7 @@ import { getToken } from '@auth/core/jwt';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
 import { env } from '../env';
-import { SingletonProvider } from '@/lib/typescript';
+import { SingletonProvider } from '@repo/lib-typescript';
 
 export interface KeycloakConfig {
   issuer: string;

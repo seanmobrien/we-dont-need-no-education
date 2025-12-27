@@ -1,5 +1,5 @@
-import { AbortablePromise } from '@/lib/typescript/abortable-promise';
-import { unwrapPromise } from '@/lib/typescript/_generics';
+import { AbortablePromise } from '@repo/lib-typescript/abortable-promise';
+import { unwrapPromise } from '@repo/lib-typescript/_generics';
 
 describe('unwrapPromise', () => {
   it('should return scalar value as-is', async () => {

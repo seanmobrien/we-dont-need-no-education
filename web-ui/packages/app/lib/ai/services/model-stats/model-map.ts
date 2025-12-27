@@ -23,7 +23,7 @@ import {
 import { log } from '@repo/lib-logger';
 import { LanguageModel } from 'ai';
 import { ModelClassification } from '../../middleware/key-rate-limiter/types';
-import { isKeyOf, newUuid } from '@/lib/typescript';
+import { isKeyOf, newUuid } from '@repo/lib-typescript';
 
 /**
  * Type representing a complete model record with provider information.

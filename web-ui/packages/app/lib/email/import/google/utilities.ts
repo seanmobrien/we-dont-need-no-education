@@ -1,6 +1,6 @@
 import { log } from '@repo/lib-logger';
 import { gmail_v1 } from 'googleapis';
-import { ArrayElement } from '@/lib/typescript';
+import { ArrayElement } from '@repo/lib-typescript';
 import { isParsedHeaderMap, ParsedHeaderMap } from '../../parsedHeaderMap';
 import { ParsedContact, RecipientType } from '../types';
 

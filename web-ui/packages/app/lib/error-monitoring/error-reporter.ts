@@ -14,7 +14,7 @@ import {
 import { isRunningOnEdge } from '../site-util/env';
 import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
 import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
-import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
+import { SingletonProvider } from '@repo/lib-typescript/singleton-provider/provider';
 import { shouldSuppressError } from './utility';
 import { type ErrorReportArgs, LoggedError } from '@/lib/react-util/errors/logged-error';
 import { LRUCache } from 'lru-cache';

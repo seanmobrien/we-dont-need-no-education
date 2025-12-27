@@ -33,7 +33,7 @@ import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
 import { onClientToolRequest } from '@/lib/ai/client';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { FirstParameter } from '@/lib/typescript';
+import { FirstParameter } from '@repo/lib-typescript';
 import { panelStableStyles } from './styles';
 import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
 import type { KnownFeatureValueType } from '@/lib/site-util/feature-flags/types';

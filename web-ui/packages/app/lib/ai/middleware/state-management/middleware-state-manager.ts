@@ -16,7 +16,7 @@ import {
   isStateRestorationRequest,
 } from './create-stateful-middleware';
 import { generateText, wrapLanguageModel } from 'ai';
-import { SingletonProvider } from '@/lib/typescript';
+import { SingletonProvider } from '@repo/lib-typescript';
 
 export class MiddlewareStateManager {
   static readonly #REGISTRY_KEY = Symbol.for(

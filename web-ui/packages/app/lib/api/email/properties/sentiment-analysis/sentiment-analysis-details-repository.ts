@@ -1,7 +1,7 @@
 import { BaseObjectRepository } from '../../../_baseObjectRepository';
 import { ObjectRepository } from '../../../_types';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter, newUuid } from '@/lib/typescript';
+import { FirstParameter, newUuid } from '@repo/lib-typescript';
 import { EmailSentimentAnalysisDetails } from '@/data-models/api';
 import {
   EmailPropertyRepository,

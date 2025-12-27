@@ -11,7 +11,7 @@ import { handleCacheHit, handleCacheMiss } from './cacheEventHandlers';
 import { createStreamFromCachedText } from './streamUtils';
 import { handleResponseCaching } from './cacheStrategy';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { newUuid } from '@/lib/typescript/_record-decorators';
+import { newUuid } from '@repo/lib-typescript/_record-decorators';
 import { MiddlewareStateManager } from '../state-management';
 import { log } from '@repo/lib-logger';
 

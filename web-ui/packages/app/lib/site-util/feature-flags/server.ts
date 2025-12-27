@@ -14,7 +14,7 @@ import {
   FLAGSMITH_SERVER_SINGLETON_KEY,
 } from './known-feature-defaults';
 
-import { globalSingleton } from '@/lib/typescript';
+import { globalSingleton } from '@repo/lib-typescript';
 import { env } from '../env';
 import { LoggedError } from '@/lib/react-util';
 import { extractFlagValue } from './util';

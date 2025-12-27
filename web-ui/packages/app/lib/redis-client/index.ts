@@ -1,4 +1,4 @@
-import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
+import { SingletonProvider } from '@repo/lib-typescript/singleton-provider/provider';
 import { createClient, RedisClientType } from 'redis';
 import { env } from '@/lib/site-util/env';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';

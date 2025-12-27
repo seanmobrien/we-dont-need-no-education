@@ -54,7 +54,7 @@ import {
   toggleTodoConfig,
 } from '@/lib/ai/tools/todo';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { FirstParameter } from '@/lib/typescript';
+import type { FirstParameter } from '@repo/lib-typescript';
 import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 import { env } from '@/lib/site-util/env';
 import { type BasicResourceRecord, resourceService } from '@/lib/auth/resources/resource-service';

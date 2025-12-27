@@ -6,7 +6,7 @@ import { ApiRequestError } from '@/lib/send-api-request';
 import {
   globalRequiredSingletonAsync,
   SingletonProvider,
-} from '@/lib/typescript/singleton-provider';
+} from '@repo/lib-typescript/singleton-provider';
 import { NextResponse } from 'next/server';
 import type { TodoStorageStrategy } from './storage';
 import { InMemoryStorageStrategy } from './storage';

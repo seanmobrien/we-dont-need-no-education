@@ -5,7 +5,7 @@ import {
   isKeyOf,
   PartialExceptFor,
   PickField,
-} from '@/lib/typescript';
+} from '@repo/lib-typescript';
 import { LikeNextRequest } from '@/lib/nextjs-util/types';
 import { extractParams } from '@/lib/nextjs-util/server/utils';
 import {

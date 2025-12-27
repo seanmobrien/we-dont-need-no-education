@@ -2,7 +2,7 @@ import { EmbeddingModelV2 } from '@ai-sdk/provider';
 import { createEmbeddingModel } from '../../aiModelFactory';
 import { embed } from 'ai';
 import { IEmbeddingService } from './types';
-import { globalRequiredSingleton, SingletonProvider } from '@/lib/typescript';
+import { globalRequiredSingleton, SingletonProvider } from '@repo/lib-typescript';
 
 export class EmbeddingService implements IEmbeddingService {
   private static get globalEmbeddingModel(): Promise<EmbeddingModelV2<string>> {

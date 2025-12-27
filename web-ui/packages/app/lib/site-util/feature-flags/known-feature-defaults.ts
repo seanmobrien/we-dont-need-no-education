@@ -8,7 +8,7 @@ import type {
   ModelProviderFactoryConfig,
   EnhancedFetchConfig,
 } from './types';
-import { SingletonProvider } from '@/lib/typescript/singleton-provider';
+import { SingletonProvider } from '@repo/lib-typescript/singleton-provider';
 
 const DEFAULT_IN_MEMORY_STORAGE_CONFIG =
   {} as const satisfies StorageStrategyConfig;

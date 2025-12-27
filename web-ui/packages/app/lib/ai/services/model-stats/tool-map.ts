@@ -7,7 +7,7 @@ import type {
   LanguageModelV2ProviderDefinedTool,
   LanguageModelV2FunctionTool,
 } from '@ai-sdk/provider';
-import { SingletonProvider } from '@/lib/typescript';
+import { SingletonProvider } from '@repo/lib-typescript';
 
 type ToolMapEntry = ChatToolType;
 type ToolIdType = ChatToolType['chatToolId'];

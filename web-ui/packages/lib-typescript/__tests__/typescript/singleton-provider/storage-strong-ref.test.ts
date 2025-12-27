@@ -1,5 +1,5 @@
-import { StrongReferenceStorage } from '@/lib/typescript/singleton-provider/storage-strong-ref';
-import { SingletonStorageKey } from '@/lib/typescript/singleton-provider/types';
+import { StrongReferenceStorage } from '@repo/lib-typescript/singleton-provider/storage-strong-ref';
+import { SingletonStorageKey } from '@repo/lib-typescript/singleton-provider/types';
 import { log } from '@repo/lib-logger';
 
 describe('StrongReferenceStorage', () => {

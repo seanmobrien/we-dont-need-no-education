@@ -42,7 +42,7 @@
  * ```
  */
 
-import type { FirstParameter } from '@/lib/typescript';
+import type { FirstParameter } from '@repo/lib-typescript';
 import type { DbFullSchemaType, DbDatabaseType } from './schema';
 
 /**

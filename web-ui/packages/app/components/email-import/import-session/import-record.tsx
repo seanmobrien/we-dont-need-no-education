@@ -19,7 +19,7 @@ import {
   queryImportStatus,
   importEmailRecord,
 } from '@/lib/api/email/import/google';
-import { isAbortablePromise } from '@/lib/typescript';
+import { isAbortablePromise } from '@repo/lib-typescript';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@repo/lib-logger';
 import {

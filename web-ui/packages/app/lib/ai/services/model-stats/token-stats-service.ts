@@ -10,7 +10,7 @@ import {
   TokenUsageData,
 } from '../../middleware/tokenStatsTracking/types';
 import { ModelMap } from './model-map';
-import { SingletonProvider } from '@/lib/typescript';
+import { SingletonProvider } from '@repo/lib-typescript';
 
 const REGISTRY_KEY = '@noeducation/model-stats:TokenStatsService';
 

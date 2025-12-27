@@ -47,7 +47,7 @@ import type {
   FormLoginResult,
 } from './impersonation.types';
 import { defaultConfigFromEnv } from './utility';
-import { SingletonProvider } from '@/lib/typescript';
+import { SingletonProvider } from '@repo/lib-typescript';
 
 let openIdClientModule: {
   discovery: Function;

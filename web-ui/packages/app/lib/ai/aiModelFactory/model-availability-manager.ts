@@ -4,7 +4,7 @@ import {
 import { log } from '@repo/lib-logger';
 import {
   globalRequiredSingleton,
-} from '@/lib/typescript';
+} from '@repo/lib-typescript';
 import { LoggedError } from '@/lib/react-util';
 import { getModelFlag } from './util';
 

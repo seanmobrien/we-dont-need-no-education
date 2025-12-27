@@ -7,7 +7,7 @@ import { log } from '@repo/lib-logger';
 import { query, queryExt } from '@/lib/neondb';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
-import { PartialExceptFor } from '@/lib/typescript';
+import { PartialExceptFor } from '@repo/lib-typescript';
 import { RecipientType } from '@/lib/email/import/types';
 import { AbstractObjectRepository } from '../abstractObjectRepository';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';

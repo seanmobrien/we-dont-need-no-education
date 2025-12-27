@@ -10,7 +10,7 @@ import {
   apiRequestHelperFactory,
   ApiRequestHelper,
 } from '@/lib/send-api-request';
-import { ICancellablePromiseExt } from '@/lib/typescript';
+import { ICancellablePromiseExt } from '@repo/lib-typescript';
 
 const apiRequest = <TResult>(
   cb: (api: ApiRequestHelper, builder: typeof siteMap.api.email) => TResult,

@@ -10,7 +10,7 @@ import {
   setRecordDirty,
   isRecordDirty,
   RecordWithDirtyState,
-} from '@/lib/typescript';
+} from '@repo/lib-typescript';
 import ContactDropdown from '@/components/contact/contact-dropdown';
 import { log } from '@repo/lib-logger';
 import React from 'react';

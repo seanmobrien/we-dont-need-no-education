@@ -1,6 +1,6 @@
 import { log } from '@repo/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
+import { SingletonProvider } from '@repo/lib-typescript/singleton-provider/provider';
 
 /**
  * Handler invoked by AfterManager queued operations.

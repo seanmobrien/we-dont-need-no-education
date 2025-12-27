@@ -5,7 +5,7 @@ import { log } from '@repo/lib-logger';
 import { UrlFilterEngine } from './url-filter-engine';
 import { UrlFilterOptions } from './url-filter-rules';
 import { LRUCache } from 'lru-cache';
-import { globalRequiredSingleton, globalSingleton } from '@/lib/typescript/singleton-provider';
+import { globalRequiredSingleton, globalSingleton } from '@repo/lib-typescript/singleton-provider';
 import { env } from '@/lib/site-util/env';
 
 /*

@@ -1,6 +1,6 @@
 import { getRedisClient } from '@/lib/redis-client';
 import type { RateLimitedRequest, ProcessedResponse } from './types';
-import { SingletonProvider } from '@/lib/typescript';
+import { SingletonProvider } from '@repo/lib-typescript';
 
 const REDIS_PREFIX = 'rate-limit';
 const EXPIRATION_HOURS = 6;

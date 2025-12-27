@@ -28,7 +28,7 @@ import {
   globalRequiredSingleton,
   isNotNull,
   SingletonProvider,
-} from '@/lib/typescript';
+} from '@repo/lib-typescript';
 import {
   isAutoRefreshFeatureFlag,
 } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';

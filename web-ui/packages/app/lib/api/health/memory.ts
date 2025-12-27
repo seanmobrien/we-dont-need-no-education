@@ -1,6 +1,6 @@
 import InMemoryCache from './base-cache';
 import type { HealthDetails, HealthStatus, MemoryHealthCheckResponse } from '@/lib/ai/mem0/types/health-check';
-import { globalRequiredSingletonAsync } from '@/lib/typescript/singleton-provider';
+import { globalRequiredSingletonAsync } from '@repo/lib-typescript/singleton-provider';
 import {
   wellKnownFlag,
 } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';

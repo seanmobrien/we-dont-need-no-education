@@ -13,7 +13,7 @@ import { fetch } from '@/lib/nextjs-util/server';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { decodeToken } from '../utilities';
 import { log } from '@repo/lib-logger';
-import { serviceInstanceOverloadsFactory, SingletonProvider } from '@/lib/typescript';
+import { serviceInstanceOverloadsFactory, SingletonProvider } from '@repo/lib-typescript';
 import type { ResourceEntitlement, CheckAccessResult, CheckAccessOptions } from './types';
 import { NextRequest } from 'next/server';
 import { normalizedAccessToken } from '../access-token';

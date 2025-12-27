@@ -18,7 +18,7 @@ import {
 } from '@opentelemetry/api';
 import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
-import { isPromise } from '@/lib/typescript/_guards';
+import { isPromise } from '@repo/lib-typescript/_guards';
 
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');
 

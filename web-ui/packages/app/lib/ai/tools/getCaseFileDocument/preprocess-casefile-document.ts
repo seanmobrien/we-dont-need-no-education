@@ -1,5 +1,5 @@
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { zodToStructure } from '@/lib/typescript';
+import { zodToStructure } from '@repo/lib-typescript';
 import { GenerateTextResult, ToolSet } from 'ai';
 import { log } from '@repo/lib-logger';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';

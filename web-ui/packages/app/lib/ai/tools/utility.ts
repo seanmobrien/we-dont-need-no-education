@@ -5,7 +5,7 @@ import {
   ValidCaseFileRequestProps,
 } from './types';
 import { isError } from '@/lib/react-util/utility-methods';
-import { BrandedUuid, isValidUuid as isValidUuidImpl } from '@/lib/typescript/_guards';
+import { BrandedUuid, isValidUuid as isValidUuidImpl } from '@repo/lib-typescript/_guards';
 import { resolveCaseFileId as resolveCaseFileIdImpl, resolveCaseFileIdBatch as resolveCaseFileIdBatchImpl } from '@/lib/api/document-unit/resolve-case-file-id';
 import { deprecate } from '@/lib/nextjs-util';
 

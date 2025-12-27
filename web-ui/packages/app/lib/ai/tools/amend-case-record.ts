@@ -22,7 +22,7 @@ import {
 import { eq } from 'drizzle-orm';
 import { log } from '@repo/lib-logger';
 import { toolCallbackResultFactory } from './utility';
-import { newUuid } from '@/lib/typescript';
+import { newUuid } from '@repo/lib-typescript';
 import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';
 import {
   drizDb,

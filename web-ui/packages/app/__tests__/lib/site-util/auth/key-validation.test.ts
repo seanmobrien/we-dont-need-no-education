@@ -15,7 +15,7 @@ import {
   performKeyValidationWorkflow,
   KEY_VALIDATION_INTERVAL,
 } from '@/lib/site-util/auth/key-validation';
-import { SingletonProvider } from '@/lib/typescript';
+import { SingletonProvider } from '@repo/lib-typescript';
 
 // Mock localStorage
 const mockLocalStorage = {

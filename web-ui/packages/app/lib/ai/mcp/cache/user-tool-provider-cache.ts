@@ -16,7 +16,7 @@ import type {
 import { log } from '@repo/lib-logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
-import { globalRequiredSingleton } from '@/lib/typescript';
+import { globalRequiredSingleton } from '@repo/lib-typescript';
 
 /**
  * Cache for maintaining ToolProviderSet instances per user across HTTP requests.

@@ -1,5 +1,5 @@
 import { log } from '@repo/lib-logger';
-import { AbortablePromise, ICancellablePromiseExt } from '@/lib/typescript';
+import { AbortablePromise, ICancellablePromiseExt } from '@repo/lib-typescript';
 import type {
   AdditionalRequestParams,
   ApiRequestHelper,

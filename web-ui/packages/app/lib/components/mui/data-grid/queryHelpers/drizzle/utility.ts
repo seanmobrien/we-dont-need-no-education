@@ -1,5 +1,5 @@
 import { schema } from '@/lib/drizzle-db';
-import { isKeyOf } from '@/lib/typescript';
+import { isKeyOf } from '@repo/lib-typescript';
 import { toCamelCase } from 'drizzle-orm/casing';
 import { PgColumn, PgTable, TableConfig } from 'drizzle-orm/pg-core';
 

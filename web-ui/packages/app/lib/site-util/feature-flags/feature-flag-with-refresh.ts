@@ -6,7 +6,7 @@ import { isKnownFeatureType } from './known-feature';
 import { AllFeatureFlagsDefault } from './known-feature-defaults';
 import type { KnownFeatureValueType, KnownFeatureType, AutoRefreshFeatureFlag, AutoRefreshFeatureFlagOptions, WellKnownFlagOptions, MinimalNodeFlagsmith } from './types';
 import fastEqual from 'fast-deep-equal/es6';
-import { SingletonProvider } from '@/lib/typescript/singleton-provider';
+import { SingletonProvider } from '@repo/lib-typescript/singleton-provider';
 import EventEmitter from '@protobufjs/eventemitter';
 import { safeSerialize } from '@repo/lib-logger/safe-serialize';
 

@@ -22,7 +22,7 @@ import {
 import { LoggedError } from '@/lib/react-util';
 import { createInstrumentedSpan } from '../utils';
 import { log, safeSerialize } from '@repo/lib-logger';
-import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
+import { SingletonProvider } from '@repo/lib-typescript/singleton-provider/provider';
 import { CacheStrategies } from './cache-strategies';
 import { StreamingStrategy } from './streaming-strategy';
 import { BufferingStrategy } from './buffering-strategy';
