@@ -3,7 +3,7 @@ import {
   isError,
   isTemplateStringsArray,
 } from '@/lib/react-util/utility-methods';
-import { log } from '../logger';
+import { log } from '@compliance-theater/lib-logger';
 import type {
   TransformedFullQueryResults,
   DbQueryFunction,

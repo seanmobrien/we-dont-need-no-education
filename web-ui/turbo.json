@@ -3,7 +3,9 @@
   "globalDependencies": [
     "**/.env.*local",
     "packages/app/scripts/**",
-    "packages/app/public/**"
+    "packages/app/public/**",
+    "packages/lib-logger/tsconfig.json",
+    "packages/lib-typescript/tsconfig.json"
   ],
   "tasks": {
     "build": {

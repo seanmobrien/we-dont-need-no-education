@@ -1,4 +1,4 @@
-import { ICancellablePromiseExt } from '../typescript';
+import { ICancellablePromiseExt } from '@compliance-theater/lib-typescript';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
 import { UrlObject } from 'url';

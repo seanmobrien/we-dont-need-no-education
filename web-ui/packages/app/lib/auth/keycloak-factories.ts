@@ -1,4 +1,4 @@
-import { SingletonProvider } from '../typescript';
+import { SingletonProvider } from '@compliance-theater/lib-typescript';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 export interface RequestArgs {

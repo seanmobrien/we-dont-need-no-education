@@ -1,7 +1,7 @@
-import { log, safeSerialize } from "../logger";
+import { log, safeSerialize } from '@compliance-theater/lib-logger';
 import { initializeErrorReporterConfig, reporter } from "../react-util/errors/logged-error-reporter";
 import { initializeProviderConfig } from "../ai/aiModelFactory/util";
-import { globalRequiredSingleton } from "../typescript";
+import { globalRequiredSingleton } from '@compliance-theater/lib-typescript';
 import AfterManager from "./after";
 import { LoggedError } from "../react-util";
 

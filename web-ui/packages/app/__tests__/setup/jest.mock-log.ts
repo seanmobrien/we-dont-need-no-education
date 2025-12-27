@@ -19,7 +19,7 @@ const getLogger = () => {
   if (!globalWithLogger[logSymbol]) {
     const makeMockImplementation = (name: string) => {
       return (...args: unknown[]) =>
-        () => { };
+        () => {};
     };
     globalWithLogger[logSymbol] = {
       warn: jest.fn(makeMockImplementation('warn')),
@@ -35,7 +35,7 @@ const getLogger = () => {
   return globalWithLogger[logSymbol];
 };
 
-jest.mock('@/lib/logger/core', () => {
+jest.mock('@compliance-theater/lib-logger/core', () => {
   return {
     logger: jest.fn(() => Promise.resolve(getLogger())),
     log: jest.fn((cb: (l: LoggerInstance) => void) => cb(getLogger())),
@@ -43,8 +43,8 @@ jest.mock('@/lib/logger/core', () => {
   };
 });
 
-jest.mock('@/lib/logger', () => {
-  const originalModule = jest.requireActual('@/lib/logger');
+jest.mock('@compliance-theater/lib-logger', () => {
+  const originalModule = jest.requireActual('@compliance-theater/lib-logger');
   return {
     ...originalModule,
     logEvent: jest.fn(() => Promise.resolve()),
@@ -62,8 +62,10 @@ import { withJestTestExtensions } from '../jest.test-extensions';
 
 let emitWarningMock: jest.SpyInstance | undefined;
 
-
-const mockEmitWarningImpl = (message: string, options?: { emitDepth?: number }) => {
+const mockEmitWarningImpl = (
+  message: string,
+  options?: { emitDepth?: number },
+) => {
   // If the test suppress deprecation flag is set, then disable deprecation warnings
   if (withJestTestExtensions().suppressDeprecation) {
     return;
@@ -71,9 +73,11 @@ const mockEmitWarningImpl = (message: string, options?: { emitDepth?: number }) 
   console.warn(message, options);
 };
 
-
 beforeEach(() => {
-  if (typeof process !== 'undefined' && typeof process.emitWarning === 'function') {
+  if (
+    typeof process !== 'undefined' &&
+    typeof process.emitWarning === 'function'
+  ) {
     emitWarningMock = jest.spyOn(process, 'emitWarning');
     emitWarningMock.mockImplementation(mockEmitWarningImpl);
   }

@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { extractToken, KnownScopeValues, KnownScopeIndex } from './utilities';
 import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
 
-import { log } from '../logger';
+import { log } from '@compliance-theater/lib-logger';
 
 export const authorized = async ({
   auth,

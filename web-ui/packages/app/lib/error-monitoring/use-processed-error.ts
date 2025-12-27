@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { log } from '../logger';
+import { log } from '@compliance-theater/lib-logger';
 import { LoggedError } from '../react-util';
 import { errorReporter } from './error-reporter';
 import { ErrorReportResult, ErrorSeverity } from './types';

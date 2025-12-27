@@ -14,7 +14,7 @@ import type {
 import { schema } from './schema';
 import { log } from '@compliance-theater/lib-logger';
 import { LoggedError } from '../react-util';
-import { newUuid } from '../typescript';
+import { newUuid } from '@compliance-theater/lib-typescript';
 import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';
 
 /**
