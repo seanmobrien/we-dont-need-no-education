@@ -1,4 +1,4 @@
-import { env } from '@/lib/site-util/env';
+import { env } from '@repo/lib-site-util-env';
 import { type IEmbeddingService, EmbeddingService } from '../embedding';
 import type {
   HybridSearchOptions,

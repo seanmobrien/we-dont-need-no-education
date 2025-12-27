@@ -11,7 +11,7 @@ import { splitIds, generateChatId } from '@/lib/ai/core/chat-ids';
 import { getRetryErrorInfo } from '@/lib/ai/chat/error-helpers';
 import { getUserToolProviderCache } from '@/lib/ai/mcp/cache';
 import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
-import { env } from '@/lib/site-util/env';
+import { env } from '@repo/lib-site-util-env';
 import { auth } from '@/auth';
 import { type NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';

@@ -1,6 +1,6 @@
 import { EmailAttachment } from '@/data-models/api/attachment';
 import { EmailAttachmentType } from '@/lib/drizzle-db';
-import { env } from '@/lib/site-util/env';
+import { env } from '@repo/lib-site-util-env';
 import {
   AccountSASPermissions,
   AccountSASResourceTypes,

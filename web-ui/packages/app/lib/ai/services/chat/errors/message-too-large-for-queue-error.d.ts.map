@@ -1,0 +1,1 @@
+{"version":3,"file":"message-too-large-for-queue-error.d.ts","sourceRoot":"","sources":["message-too-large-for-queue-error.ts"],"names":[],"mappings":"AAAA,qBAAa,4BAA6B,SAAQ,KAAK;aAInC,UAAU,EAAE,MAAM;aAClB,SAAS,EAAE,MAAM;aACjB,SAAS,EAAE,MAAM;IALnC,SAAgB,IAAI,kCAAkC;gBAGpC,UAAU,EAAE,MAAM,EAClB,SAAS,EAAE,MAAM,EACjB,SAAS,EAAE,MAAM;CAOpC"}
