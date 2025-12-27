@@ -84,6 +84,7 @@ Each package extraction follows this pattern:
 **Critical Infrastructure** (extract first, few dependencies):
 
 - `web-ui/packages/lib-logger` ← `web-ui/packages/app/lib/logger`
+- `web-ui/packages/lib-env` ← `web-ui/packages/app/lib/site-util/env` 
 - `web-ui/packages/lib-typescript` ← `web-ui/packages/app/lib/typescript`
 - `web-ui/packages/lib-send-api-request` ← `web-ui/packages/app/lib/send-api-request`
 
@@ -97,7 +98,7 @@ Each package extraction follows this pattern:
 
 **Utilities** (depends on above):
 
-- `web-ui/packages/lib-site-util` ← `web-ui/packages/app/lib/site-util`
+- `web-ui/packages/lib-site-util` ← `web-ui/packages/app/lib/site-util` NOTE: Extend @compliance-theater/env to include all currently exported variables in env object schemas
 - `web-ui/packages/lib-react-util` ← `web-ui/packages/app/lib/react-util`
 - `web-ui/packages/lib-nextjs-util` ← `web-ui/packages/app/lib/nextjs-util`
 
