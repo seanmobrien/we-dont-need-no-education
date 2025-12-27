@@ -112,3 +112,21 @@ export interface LogEventOverloads {
     measurements?: Record<string, number | string>,
   ): Promise<void>;
 }
+export type ICustomAppInsightsEvent = {
+  event: string;
+  measurements?: Record<string, string | number>;
+  [Symbol.dispose]?: () => void;
+  increment: (name: string, value?: number) => void;
+  startTimer: (name: string) => void;
+  stopTimer: (name: string) => void;
+};
+
+export type SendCustomEventPayload = {
+  event: ICustomAppInsightsEvent;
+  severity: EventSeverity;
+  processed: boolean;
+};
+
+export type SendCustomEventListener = (
+  payload: SendCustomEventPayload,
+) => void | Promise<void>;

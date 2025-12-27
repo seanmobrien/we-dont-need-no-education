@@ -168,4 +168,27 @@ declare module '@/lib/logger/types' {
       measurements?: Record<string, number | string>,
     ): Promise<void>;
   }
+  /**
+   * Interface representing a custom Application Insights event.
+   */
+  export type ICustomAppInsightsEvent = {
+    event: string;
+    measurements?: Record<string, string | number>;
+    dispose?: () => void;
+  };
+  /**
+   * Payload emitted to custom event listeners.
+   */
+  export type SendCustomEventPayload = {
+    event: ICustomAppInsightsEvent;
+    severity: EventSeverity;
+    processed: boolean;
+  };
+
+  /**
+   * Listener invoked when a custom event is emitted.
+   */
+  export type SendCustomEventListener = (
+    payload: SendCustomEventPayload,
+  ) => void | Promise<void>;
 }

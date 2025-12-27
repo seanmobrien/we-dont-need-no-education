@@ -1,6 +1,10 @@
 import { config } from './common';
-import { log } from '@/lib/logger';
 import { env } from '@/lib/site-util/env';
+import {
+  addSendCustomEventListener,
+  type SendCustomEventListener,
+  type SendCustomEventPayload,
+} from '@/lib/logger';
 import {
   ApplicationInsights,
   DistributedTracingModes,
@@ -30,6 +34,29 @@ const getReactPlugin = (): ReactPlugin => {
 const getClickPlugin = () => {
   getAppInsights();
   return appInsightState.clickPlugin;
+};
+
+let unsubscribeSendCustomEvent: (() => void) | undefined;
+
+const ensureSendCustomEventListener = () => {
+  if (unsubscribeSendCustomEvent) return;
+
+  const handler: SendCustomEventListener = (
+    payload: SendCustomEventPayload,
+  ) => {
+    if (typeof window === 'undefined') return;
+
+    const appInsights = getAppInsights();
+    if (appInsights?.trackEvent) {
+      appInsights.trackEvent(
+        { name: payload.event.event },
+        payload.event.measurements,
+      );
+      payload.processed = true;
+    }
+  };
+
+  unsubscribeSendCustomEvent = addSendCustomEventListener(handler);
 };
 
 const getAppInsights = () => {
@@ -80,8 +107,8 @@ const getAppInsights = () => {
     if (!appInsightState.initializersAdded) {
       const ignoreRegex = [
         /.*AI \(Internal\).*/i,
-        /(?:messageId: \d+)|\d+ message:/i
-      ]
+        /(?:messageId: \d+)|\d+ message:/i,
+      ];
       const ignoreNames = [
         '/api/auth/session',
         '\\api\\auth\\session',
@@ -99,8 +126,8 @@ const getAppInsights = () => {
             if (
               ignoreNames.findIndex(
                 (name) => lookFor.lastIndexOf(name) !== -1,
-              ) !== -1
-              || ignoreRegex.some((regex) => regex.test(lookFor))
+              ) !== -1 ||
+              ignoreRegex.some((regex) => regex.test(lookFor))
             ) {
               return false;
             }
@@ -156,10 +183,8 @@ const getAppInsights = () => {
 export { getAppInsights, getReactPlugin, getClickPlugin };
 
 const instrument = () => {
-  // Logging is not availalbe until after instrumentation is complete
-  console.info(
-    'Instrumentation is not supported in the browser environment....nothing to do.',
-  );
+  ensureSendCustomEventListener();
+  console.info('Client-side event instrumentation initialized.');
   return Promise.resolve(void 0);
 };
 

@@ -3,7 +3,7 @@ import { env, isRunningOnServer } from '@/lib/site-util/env';
 import { WrappedLogger } from './wrapped-logger';
 import type { ILogger, EventSeverity, LogEventOverloads } from './types';
 import { CustomAppInsightsEvent } from './event';
-import { safeSerialize } from './safe-serialize';
+import { emitSendCustomEvent } from './log-emitter';
 
 let _logger: ILogger;
 
@@ -68,31 +68,7 @@ export const log = (cb: (l: ILogger) => void) => {
   return logger().then(cb);
 };
 
-const reportClientEvent = async ({
-  event,
-  severity,
-}: {
-  event: CustomAppInsightsEvent;
-  severity: EventSeverity;
-}) => {
-  try {
-    const insightsLibrary = await import('@/instrument/browser');
-    const appInsights = insightsLibrary.getAppInsights();
-    if (appInsights && typeof appInsights.trackEvent === 'function') {
-      appInsights.trackEvent({ name: event.event }, event.measurements);
-    }
-  } catch (error) {
-    // fallback to pino-based log hook if direct call fails
-    await log((l) => {
-      l[severity](event);
-      l.error(
-        `Unexpected error reporting client-side event: ${safeSerialize(error)}`,
-      );
-    });
-  }
-};
-
-export const logEvent: LogEventOverloads = (
+export const logEvent: LogEventOverloads = async (
   severityOrEvent: EventSeverity | string,
   eventOrMeasurements?: string | Record<string, number | string>,
   measurements?: Record<string, number | string>,
@@ -119,12 +95,18 @@ export const logEvent: LogEventOverloads = (
     event = new CustomAppInsightsEvent(severityOrEvent);
   }
 
-  if (typeof window !== 'undefined' && process.env.NEXT_RUNTIME !== 'edge') {
-    return reportClientEvent({
-      event,
-      severity,
-    });
+  const processed = await emitSendCustomEvent({
+    event,
+    severity,
+  });
+
+  if (processed) {
+    return;
   }
+
   // Pino will intercept this log and send to OTel
-  return log((l) => l[severity](event));
+  return log((l) => {
+    const log = l[severity] || l.info;
+    log(event);
+  });
 };

@@ -1,8 +1,4 @@
-export type ICustomAppInsightsEvent = {
-  event: string;
-  measurements?: Record<string, string | number>;
-  dispose?: () => void;
-};
+import { ICustomAppInsightsEvent } from './types';
 
 export class CustomAppInsightsEvent implements ICustomAppInsightsEvent {
   static isCustomAppInsightsEvent(
@@ -45,7 +41,7 @@ export class CustomAppInsightsEvent implements ICustomAppInsightsEvent {
     this.measurements[name] = now.getTime() - this.#timers.get(name)!.getTime();
     this.#timers.delete(name);
   }
-  dispose(): void {
+  [Symbol.dispose](): void {
     const now = new Date();
     this.#timers.forEach((start, name) => {
       this.measurements[name] = now.getTime() - start.getTime();

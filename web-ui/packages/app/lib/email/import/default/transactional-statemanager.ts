@@ -161,7 +161,7 @@ export class TransactionalStateManagerBase
     ctx: StageProcessorContext,
   ): Promise<StageProcessorContext> {
     if (this.importEvent) {
-      this.importEvent.dispose();
+      this.importEvent[Symbol.dispose]?.();
       log((l) => l.info(this.importEvent!)).then(
         () => (this.importEvent = undefined),
       );
@@ -236,7 +236,7 @@ export class TransactionalStateManagerBase
    */
   public async rollback(): Promise<void> {
     if (this.importEvent) {
-      this.importEvent.dispose();
+      this.importEvent[Symbol.dispose]?.();
       log((l) => l.info(this.importEvent!)).then(
         () => (this.importEvent = undefined),
       );

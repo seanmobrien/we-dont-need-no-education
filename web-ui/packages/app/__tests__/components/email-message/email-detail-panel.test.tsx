@@ -1,4 +1,3 @@
- 
 /**
  * Test to verify EmailDetailPanel component works correctly
  * This includes comprehensive tests for loading states, fully loaded email, and expandable property panels
@@ -25,6 +24,17 @@ import {
 } from '../../../lib/api/email/properties/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { KeyPointsDetails } from '@/data-models/api';
+
+jest.mock('@/lib/components/mui/data-grid/query-client', () => {
+  const { QueryClient } = jest.requireActual('@tanstack/react-query');
+  return {
+    dataGridQueryClient: new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, staleTime: 0, gcTime: 0, cacheTime: 0 },
+      },
+    }),
+  };
+});
 
 // Mock the API functions
 jest.mock('../../../lib/api/client');
@@ -121,56 +131,11 @@ const mockKeyPoints: KeyPointsDetails[] = [
 ];
 
 describe('EmailDetailPanel', () => {
-  // Helper functions for creating mock promises
-  const createSuccessfulPromise = (data: any) => {
-    const promise: any = {};
-    promise.then = jest.fn().mockImplementation((onSuccess) => {
-      setTimeout(() => onSuccess(data), 10);
-      return promise;
-    });
-    promise.catch = jest.fn().mockReturnValue(promise);
-    promise.finally = jest.fn().mockImplementation((onFinally) => {
-      setTimeout(() => onFinally(), 15);
-      return promise;
-    });
-    promise.cancel = jest.fn();
-    promise.cancelled = jest.fn();
-    promise.awaitable = Promise.resolve(data);
-    return promise;
-  };
-
-   
-  const createFailedPromise = (error: Error) => {
-    const promise: any = {};
-    promise.then = jest.fn().mockReturnValue({
-      catch: jest.fn().mockImplementation((onError) => {
-        setTimeout(() => onError(error), 10);
-        return {
-          finally: jest.fn().mockImplementation((onFinally) => {
-            setTimeout(() => onFinally(), 15);
-          }),
-        };
-      }),
-    });
-    promise.catch = jest.fn().mockImplementation((onError) => {
-      setTimeout(() => onError(error), 10);
-      return {
-        finally: jest.fn().mockImplementation((onFinally) => {
-          setTimeout(() => onFinally(), 15);
-        }),
-      };
-    });
-    promise.finally = jest.fn();
-    promise.cancel = jest.fn();
-    promise.cancelled = jest.fn();
-    promise.awaitable = Promise.reject(error);
-    return promise;
-  };
   beforeEach(() => {
     // jest.clearAllMocks();
 
     // Default successful email loading mock
-    mockGetEmail.mockReturnValue(createSuccessfulPromise(mockFullEmail) as any);
+    mockGetEmail.mockResolvedValue(mockFullEmail as any);
     mockGetKeyPoints.mockResolvedValue({
       pageStats: { total: 0, page: 1, num: 10 },
       results: [],
@@ -288,8 +253,7 @@ describe('EmailDetailPanel', () => {
       };
 
       // Mock email loading to not set the email state (return undefined/null)
-      const mockNoEmailPromise = createSuccessfulPromise(null);
-      mockGetEmail.mockReturnValue(mockNoEmailPromise as any);
+      mockGetEmail.mockResolvedValue(null as any);
 
       // Mock successful notes loading
       mockGetNotes.mockResolvedValue({
@@ -347,8 +311,7 @@ describe('EmailDetailPanel', () => {
       };
 
       // Mock email loading to not set the email state
-      const mockNoEmailPromise = createSuccessfulPromise(null);
-      mockGetEmail.mockReturnValue(mockNoEmailPromise as any);
+      mockGetEmail.mockResolvedValue(null as any);
 
       // Mock successful key points loading
       mockGetKeyPoints.mockResolvedValue({
@@ -402,8 +365,7 @@ describe('EmailDetailPanel', () => {
       };
 
       // Mock email loading to not set the email state
-      const mockNoEmailPromise = createSuccessfulPromise(null);
-      mockGetEmail.mockReturnValue(mockNoEmailPromise as any);
+      mockGetEmail.mockResolvedValue(null as any);
 
       // Mock slow-loading notes with manual control
       let resolveNotes: (value: any) => void;
@@ -436,7 +398,6 @@ describe('EmailDetailPanel', () => {
       // React Query may resolve too quickly in tests
       try {
         screen.getByRole('progressbar');
-         
       } catch (e) {
         // Loading state might have resolved too quickly
       }

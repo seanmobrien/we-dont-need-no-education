@@ -205,13 +205,16 @@ COPY --link=true --from=builder /app/packages/app/.next ./.next
 COPY --link=true --from=builder /app/packages/app/public ./public
 COPY --link=true --from=builder /app/packages/app/package.json ./package.json
 COPY --link=true --from=builder /app/packages/app/next.config.* ./
-COPY --link=true --from=builder /app/packages/app/scripts ./scripts
+COPY --link=true --from=pruner /repo/packages/app/scripts ./scripts
 
 # Set up cron for rate retry processing
 RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs \
   && crontab -u nextjs /etc/crontabs/nextjs
 
-RUN mkdir -p /var/log && chown nextjs:nodejs /var/log && chown -R nextjs:nodejs /app && chmod +x /app/scripts/*.sh
+RUN mkdir -p /var/log \
+  && chown nextjs:nodejs /var/log \
+  && chown -R nextjs:nodejs /app \
+  && find /app/scripts -type f -name '*.sh' -exec chmod +x {} + || true
 
 EXPOSE 3000
 EXPOSE 9229

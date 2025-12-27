@@ -93,6 +93,6 @@ declare module '@/lib/logger/event' {
     /**
      * Disposes of all active timers and records their elapsed times.
      */
-    dispose(): void;
+    [Symbol.dispose](): void;
   }
 }
