@@ -1,4 +1,4 @@
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import {
   toolCallbackResultFactory,
   toolCallbackResultSchemaFactory,
@@ -97,7 +97,7 @@ export const createTodoCallback = async ({
         status,
         priority,
         userId,
-      }),
+      })
     );
 
     const manager = await getTodoManager();
@@ -117,7 +117,7 @@ export const createTodoCallback = async ({
           priority: todo.priority,
         })),
       },
-      { session },
+      { session }
     );
 
     if (isError(list)) {
@@ -131,7 +131,9 @@ export const createTodoCallback = async ({
       source: 'createTodo',
       log: true,
     });
-    const message = `Failed to create todo list: ${isError(error) ? error.message : String(error)}`;
+    const message = `Failed to create todo list: ${
+      isError(error) ? error.message : String(error)
+    }`;
     return toolCallbackResultFactory(new Error(message), message);
   }
 };
@@ -164,14 +166,14 @@ Create or replace a Title IX / FERPA compliance task list. Provide the full set 
       .string()
       .optional()
       .describe(
-        'Optional identifier for the list. When provided, the existing list with this id is replaced.',
+        'Optional identifier for the list. When provided, the existing list with this id is replaced.'
       ),
     title: z.string().describe('Title for the todo list.'),
     description: z
       .string()
       .optional()
       .describe(
-        'Optional narrative explaining the list purpose or case context.',
+        'Optional narrative explaining the list purpose or case context.'
       ),
     status: z
       .enum(['pending', 'active', 'complete'])
@@ -188,7 +190,7 @@ Create or replace a Title IX / FERPA compliance task list. Provide the full set 
             .string()
             .optional()
             .describe(
-              'Optional stable identifier for the todo. Provide when replacing lists to preserve references.',
+              'Optional stable identifier for the todo. Provide when replacing lists to preserve references.'
             ),
           title: z.string().describe('Short, action-oriented task title.'),
           description: z
@@ -207,11 +209,11 @@ Create or replace a Title IX / FERPA compliance task list. Provide the full set 
             .enum(['high', 'medium', 'low'])
             .optional()
             .describe('Optional priority level for the todo.'),
-        }),
+        })
       )
       .optional()
       .describe(
-        'Complete set of todos for the list. Items not included here will be removed when replacing an existing list.',
+        'Complete set of todos for the list. Items not included here will be removed when replacing an existing list.'
       ),
   },
   outputSchema: toolCallbackResultSchemaFactory(TodoListSchema),
@@ -257,14 +259,16 @@ export const getTodosCallback = async ({
     const lists = await manager.getTodoLists({ completed, session });
 
     return toolCallbackResultFactory(
-      lists.map((list) => serializeTodoList(list)),
+      lists.map((list) => serializeTodoList(list))
     );
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       source: 'getTodos',
       log: true,
     });
-    const message = `Failed to get todos: ${isError(error) ? error.message : String(error)}`;
+    const message = `Failed to get todos: ${
+      isError(error) ? error.message : String(error)
+    }`;
     return toolCallbackResultFactory(new Error(message), message);
   }
 };
@@ -321,13 +325,13 @@ Each todo list contains metadata plus a \`todos\` collection, and every todo inc
       .boolean()
       .optional()
       .describe(
-        'Optional filter - true for completed todos, false for incomplete todos, omit for all todos',
+        'Optional filter - true for completed todos, false for incomplete todos, omit for all todos'
       ),
     listId: z
       .string()
       .optional()
       .describe(
-        'Optional list identifier. When provided, returns only the matching todo list.',
+        'Optional list identifier. When provided, returns only the matching todo list.'
       ),
   },
   outputSchema: {
@@ -388,7 +392,7 @@ export const updateTodoCallback = async ({
         status,
         priority,
         userId,
-      }),
+      })
     );
 
     const manager = await getTodoManager();
@@ -401,13 +405,13 @@ export const updateTodoCallback = async ({
         status,
         priority,
       },
-      { session },
+      { session }
     );
 
     if (!todo) {
       return toolCallbackResultFactory(
         new Error(`Todo with id ${id} not found`),
-        `Todo with id ${id} not found`,
+        `Todo with id ${id} not found`
       );
     }
 
@@ -417,7 +421,9 @@ export const updateTodoCallback = async ({
       source: 'updateTodo',
       log: true,
     });
-    const message = `Failed to update todo: ${isError(error) ? error.message : String(error)}`;
+    const message = `Failed to update todo: ${
+      isError(error) ? error.message : String(error)
+    }`;
     return toolCallbackResultFactory(new Error(message), message);
   }
 };
@@ -501,7 +507,7 @@ export const deleteTodoCallback = async ({ id }: { id: string }) => {
     if (!result) {
       return toolCallbackResultFactory(
         new Error(`Todo with id ${id} not found`),
-        `Todo with id ${id} not found`,
+        `Todo with id ${id} not found`
       );
     }
 
@@ -511,7 +517,9 @@ export const deleteTodoCallback = async ({ id }: { id: string }) => {
       source: 'deleteTodo',
       log: true,
     });
-    const message = `Failed to delete todo: ${isError(error) ? error.message : String(error)}`;
+    const message = `Failed to delete todo: ${
+      isError(error) ? error.message : String(error)
+    }`;
     return toolCallbackResultFactory(new Error(message), message);
   }
 };
@@ -525,7 +533,7 @@ export const deleteTodoConfig = {
     z.object({
       success: z.boolean(),
       id: z.string(),
-    }),
+    })
   ),
   annotations: {
     title: 'Delete Todo',
@@ -551,7 +559,7 @@ export const toggleTodoCallback = async ({ id }: { id: string }) => {
     if (!list) {
       return toolCallbackResultFactory(
         new Error(`Todo with id ${id} not found`),
-        `Todo with id ${id} not found`,
+        `Todo with id ${id} not found`
       );
     }
 
@@ -561,7 +569,9 @@ export const toggleTodoCallback = async ({ id }: { id: string }) => {
       source: 'toggleTodo',
       log: true,
     });
-    const message = `Failed to toggle todo: ${isError(error) ? error.message : String(error)}`;
+    const message = `Failed to toggle todo: ${
+      isError(error) ? error.message : String(error)
+    }`;
     return toolCallbackResultFactory(new Error(message), message);
   }
 };

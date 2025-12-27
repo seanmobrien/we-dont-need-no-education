@@ -1,7 +1,7 @@
 import { BaseObjectRepository } from '../../../_baseObjectRepository';
 import { ObjectRepository } from '../../../_types';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter, newUuid } from '@compliance-theater/lib-typescript';
+import { FirstParameter, newUuid } from '@compliance-theater/typescript';
 import { EmailProperty } from '@/data-models/api';
 import {
   EmailPropertyRepository,
@@ -33,7 +33,7 @@ export class NotesRepository extends BaseObjectRepository<
     method: TMethod,
     obj: FirstParameter<
       Pick<ObjectRepository<EmailProperty, 'propertyId'>, TMethod>[TMethod]
-    >,
+    >
   ): void {
     const asModel = obj as EmailProperty;
     switch (method) {
@@ -104,7 +104,7 @@ export class NotesRepository extends BaseObjectRepository<
   }
 
   protected getUpdateQueryProperties({}: EmailProperty): [
-    Record<string, unknown>,
+    Record<string, unknown>
   ] {
     return [{}];
   }

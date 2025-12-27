@@ -1,9 +1,12 @@
-import { log, safeSerialize } from '@compliance-theater/lib-logger';
-import { initializeErrorReporterConfig, reporter } from "../react-util/errors/logged-error-reporter";
-import { initializeProviderConfig } from "../ai/aiModelFactory/util";
-import { globalRequiredSingleton } from '@compliance-theater/lib-typescript';
-import AfterManager from "./after";
-import { LoggedError } from "../react-util";
+import { log, safeSerialize } from '@compliance-theater/logger';
+import {
+  initializeErrorReporterConfig,
+  reporter,
+} from '../react-util/errors/logged-error-reporter';
+import { initializeProviderConfig } from '../ai/aiModelFactory/util';
+import { globalRequiredSingleton } from '@compliance-theater/typescript';
+import AfterManager from './after';
+import { LoggedError } from '../react-util';
 
 /**
  * The state of the application startup process.
@@ -14,7 +17,12 @@ import { LoggedError } from "../react-util";
  * - 'teardown': The application startup process is in the process of being torn down.
  * - 'done': The application startup process has completed and is no longer active.
  */
-type AppStartupState = 'pending' | 'initializing' | 'ready' | 'teardown' | 'done';
+type AppStartupState =
+  | 'pending'
+  | 'initializing'
+  | 'ready'
+  | 'teardown'
+  | 'done';
 
 class AppStartup {
   #state: AppStartupState;
@@ -33,7 +41,7 @@ class AppStartup {
       : Promise.resolve(this.#state);
   }
   initialize(): Promise<void> {
-    // Guard against multiple initializations 
+    // Guard against multiple initializations
     if (this.#state !== 'pending') {
       return this.#pending ?? Promise.resolve();
     }
@@ -41,29 +49,30 @@ class AppStartup {
       this.#state = 'initializing';
       try {
         // Compute which initializers are needed in the current environment
-        const allEnvironments = [
-          initializeErrorReporterConfig,
-        ];
-        const nodeOnly = [
-          initializeProviderConfig,
-        ];
+        const allEnvironments = [initializeErrorReporterConfig];
+        const nodeOnly = [initializeProviderConfig];
         const allInitializers = [
           ...allEnvironments,
-          ...(
-            typeof window === 'undefined' && process.env.NODE_RUNTIME === 'nodejs'
-              ? nodeOnly
-              : []
-          ),
+          ...(typeof window === 'undefined' &&
+          process.env.NODE_RUNTIME === 'nodejs'
+            ? nodeOnly
+            : []),
         ];
         // Run them all in parallel
         const allPendingInitializers = await Promise.allSettled(
           allInitializers.map((init) => init())
         );
         const allFailed = allPendingInitializers
-          .map((result, idx) => result.status === 'rejected' ? allInitializers[idx] : undefined)
+          .map((result, idx) =>
+            result.status === 'rejected' ? allInitializers[idx] : undefined
+          )
           .filter(Boolean);
         if (allFailed && allFailed.length > 0) {
-          throw new Error(`Failed to initialize one or more initializers: ${allFailed.join(', ')}`);
+          throw new Error(
+            `Failed to initialize one or more initializers: ${allFailed.join(
+              ', '
+            )}`
+          );
         }
         this.#state = 'ready';
       } catch (e) {
@@ -96,7 +105,9 @@ class AppStartup {
               reportingInstance.unsubscribeFromErrorReports();
             }
           } catch (e) {
-            log((l) => l.error(`Failed to teardown app startup ${JSON.stringify(e)}`));
+            log((l) =>
+              l.error(`Failed to teardown app startup ${JSON.stringify(e)}`)
+            );
             this.#state = 'done';
             throw e;
           } finally {
@@ -117,35 +128,33 @@ class AppStartup {
   }
 
   static get Instance(): AppStartup {
-    return globalRequiredSingleton(
-      "@noeducation/site-util/appstartup",
-      () => {
-        const ret = new AppStartup();
-        // Initialize app startup
-        ret.initialize()
-          .then(() => {
-            log((l) => l.info('App startup successfully completed.'));
-          });
-        // Subscribe to process exit to handle app state teardown
-        AfterManager.processExit(() =>
-          ret.teardown()
-            .catch((e) => {
-              log((l) => l.error(`Failed to teardown app state: ${safeSerialize(e)}`));
-              return;
-            })
-        );
-        // Return singleton instance
-        return ret;
-      }
-    )
+    return globalRequiredSingleton('@noeducation/site-util/appstartup', () => {
+      const ret = new AppStartup();
+      // Initialize app startup
+      ret.initialize().then(() => {
+        log((l) => l.info('App startup successfully completed.'));
+      });
+      // Subscribe to process exit to handle app state teardown
+      AfterManager.processExit(() =>
+        ret.teardown().catch((e) => {
+          log((l) =>
+            l.error(`Failed to teardown app state: ${safeSerialize(e)}`)
+          );
+          return;
+        })
+      );
+      // Return singleton instance
+      return ret;
+    });
   }
 }
 
 /**
- * Performs any necessary 
+ * Performs any necessary
  * @returns The current state of the app - see {@link AppStartupState} for possible values.
  */
-export const startup = (): Promise<AppStartupState> => AppStartup.Instance.getStateAsync();
+export const startup = (): Promise<AppStartupState> =>
+  AppStartup.Instance.getStateAsync();
 
 /**
  * Retrieves the currently active application startup state.

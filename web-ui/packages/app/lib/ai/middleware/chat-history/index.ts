@@ -9,7 +9,7 @@ import type { ChatHistoryContext } from './types';
 import { enqueueStream, ProcessingQueue } from './processing-queue';
 import { JSONValue, simulateReadableStream, wrapLanguageModel } from 'ai';
 import { MiddlewareStateManager } from '../state-management';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { ToolMap } from '../../services/model-stats/tool-map';
 import { createToolOptimizingMiddleware } from '../tool-optimizing-middleware';
 export type { ChatHistoryContext } from './types';
@@ -27,7 +27,7 @@ export {
 export { chatIdFromParams } from './message-persistence';
 
 const createOriginalChatHistoryMiddleware = (
-  context: ChatHistoryContext,
+  context: ChatHistoryContext
 ): LanguageModelV2Middleware => {
   // Create processing queue to maintain FIFO order
   const processingQueue = new ProcessingQueue();
@@ -112,7 +112,9 @@ const createOriginalChatHistoryMiddleware = (
 
     transformParams: async ({ params }) => {
       // Pass tools to ToolMap for scanning/registration
-      log((l) => l.verbose('ChatHistoryMiddleware.transformParams', { params }));
+      log((l) =>
+        l.verbose('ChatHistoryMiddleware.transformParams', { params })
+      );
       const { tools = [] } = params;
       try {
         await ToolMap.getInstance().then((x) => x.scanForTools(tools));
@@ -150,7 +152,7 @@ interface ChatHistoryState {
 }
 
 export const createChatHistoryMiddleware = (
-  context: ChatHistoryContext,
+  context: ChatHistoryContext
 ): LanguageModelV2Middleware => {
   // State that can be serialized/restored
   let sharedState: ChatHistoryState = {
@@ -190,7 +192,7 @@ export const createChatHistoryMiddleware = (
             textLength: sharedState.generatedText.length,
             elapsedTime: Date.now() - sharedState.startTime,
             contextData: sharedState.contextData,
-          }),
+          })
         );
       }
       return Promise.resolve();

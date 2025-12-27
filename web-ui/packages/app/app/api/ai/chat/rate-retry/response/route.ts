@@ -3,7 +3,7 @@ import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { auth } from '@/auth';
 import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
 // import { authOptions } from '@/auth';
 
@@ -17,7 +17,7 @@ export const GET = wrapRouteRequest(
       if (!session) {
         return NextResponse.json(
           { error: 'Authentication required' },
-          { status: 401 },
+          { status: 401 }
         );
       }
 
@@ -28,19 +28,20 @@ export const GET = wrapRouteRequest(
       if (!requestId) {
         return NextResponse.json(
           { error: 'Request ID is required' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
       log((l) => l.info(`Checking retry response for request ${requestId}`));
 
       // Check if request exists in system
-      const requestExists =
-        await rateLimitQueueManager.checkIfRequestExists(requestId);
+      const requestExists = await rateLimitQueueManager.checkIfRequestExists(
+        requestId
+      );
       if (!requestExists) {
         return NextResponse.json(
           { error: 'Request not found' },
-          { status: 404 },
+          { status: 404 }
         );
       }
 
@@ -55,7 +56,7 @@ export const GET = wrapRouteRequest(
             message: 'Request is still being processed, try again later',
             requestId,
           },
-          { status: 202 },
+          { status: 202 }
         ); // 202 Accepted
       }
 
@@ -73,7 +74,7 @@ export const GET = wrapRouteRequest(
           },
           {
             status: response.error.type === 'will_not_retry' ? 410 : 400, // 410 Gone for will_not_retry
-          },
+          }
         );
       }
 
@@ -91,7 +92,7 @@ export const GET = wrapRouteRequest(
           error: 'Internal server error',
           message: error instanceof Error ? error.message : 'Unknown error',
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
   },
@@ -100,7 +101,7 @@ export const GET = wrapRouteRequest(
       status: 'pending',
       message: 'Request is still being processed, try again later',
     },
-  },
+  }
 );
 
 export const POST = wrapRouteRequest(
@@ -119,21 +120,22 @@ export const POST = wrapRouteRequest(
       if (!requestId) {
         return NextResponse.json(
           { error: 'Request ID is required' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
       log((l) =>
-        l.info(`Checking retry response for request ${requestId} (POST)`),
+        l.info(`Checking retry response for request ${requestId} (POST)`)
       );
 
       // Check if request exists in system
-      const requestExists =
-        await rateLimitQueueManager.checkIfRequestExists(requestId);
+      const requestExists = await rateLimitQueueManager.checkIfRequestExists(
+        requestId
+      );
       if (!requestExists) {
         return NextResponse.json(
           { error: 'Request not found' },
-          { status: 404 },
+          { status: 404 }
         );
       }
 
@@ -148,7 +150,7 @@ export const POST = wrapRouteRequest(
             message: 'Request is still being processed, try again later',
             requestId,
           },
-          { status: 202 },
+          { status: 202 }
         ); // 202 Accepted
       }
 
@@ -166,7 +168,7 @@ export const POST = wrapRouteRequest(
           },
           {
             status: response.error.type === 'will_not_retry' ? 410 : 400, // 410 Gone for will_not_retry
-          },
+          }
         );
       }
 
@@ -187,9 +189,9 @@ export const POST = wrapRouteRequest(
           error: 'Internal server error',
           message: error instanceof Error ? error.message : 'Unknown error',
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
   },
-  { buildFallback: { status: 'success' } },
+  { buildFallback: { status: 'success' } }
 );

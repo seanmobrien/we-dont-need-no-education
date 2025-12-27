@@ -44,7 +44,7 @@ import {
   ProcessingResult,
   ComplianceRating,
 } from '@/lib/ai/agents/timeline/types';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { ClientTimelineAgent } from '@/lib/ai/agents/timeline/agent';
 import { useNotifications } from '@toolpad/core/useNotifications';
 
@@ -270,7 +270,9 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `timeline-agent-${caseId}-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `timeline-agent-${caseId}-${new Date()
+        .toISOString()
+        .slice(0, 10)}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -321,7 +323,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
         loadSnapshot(file);
       }
     },
-    [loadSnapshot],
+    [loadSnapshot]
   );
 
   // Initialize on mount
@@ -750,7 +752,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
                                 secondary={rating}
                               />
                             </ListItem>
-                          ),
+                          )
                         )}
                       </List>
                     </AccordionDetails>
@@ -813,7 +815,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
                                                 >
                                                   &ldquo;{statement}&rdquo;
                                                 </Typography>
-                                              ),
+                                              )
                                             )}
                                           </Box>
                                         )}
@@ -826,7 +828,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
                                 <Divider />
                               )}
                             </React.Fragment>
-                          ),
+                          )
                         )}
                       </List>
                     </AccordionDetails>

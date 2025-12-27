@@ -5,7 +5,6 @@
 jest.unmock('@opentelemetry/api');
 jest.unmock('@opentelemetry/sdk-trace-base');
 
-
 jest.mock('@/lib/neondb');
 jest.mock('google-auth-library');
 jest.mock('googleapis');
@@ -26,7 +25,10 @@ import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { query, queryExt } from '@/lib/neondb';
 import { sendApiRequest } from '@/lib/send-api-request';
-import { ICancellablePromise, ICancellablePromiseExt } from '@compliance-theater/lib-typescript';
+import {
+  ICancellablePromise,
+  ICancellablePromiseExt,
+} from '@compliance-theater/typescript';
 import { managerMapFactory } from '@/lib/email/import/google/managermapfactory';
 import { ImportManagerMap } from '@/lib/email/import/types';
 import { TransactionalStateManagerBase } from '@/lib/email/import/default/transactional-statemanager';
@@ -57,7 +59,6 @@ const consoleSpy = hideConsoleOutput();
 describe('DefaultImportManager', () => {
   beforeEach(() => {
     const map = ImportStageValues.reduce((acc, stage) => {
-
       acc[stage] = jest.fn(() => mockStateManager) as any;
       return acc;
     }, {} as ImportManagerMap);
@@ -81,7 +82,7 @@ describe('DefaultImportManager', () => {
   beforeEach(() => {
     (query as jest.Mock).mockImplementation(() => Promise.resolve([]));
     (queryExt as jest.Mock).mockImplementation(() =>
-      Promise.resolve({ rowCount: 0, rows: [] }),
+      Promise.resolve({ rowCount: 0, rows: [] })
     );
     manager = new DefaultImportManager(provider);
   });

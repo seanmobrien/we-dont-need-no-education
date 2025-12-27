@@ -37,16 +37,16 @@
       "/(rsc)/./*": [
         "./*"
       ],
-      "@compliance-theater/lib-logger": [
+      "@compliance-theater/logger": [
         "../lib-logger/dist"
       ],
-      "@compliance-theater/lib-logger/*": [
+      "@compliance-theater/logger/*": [
         "../lib-logger/dist/*"
       ],
-      "@compliance-theater/lib-typescript": [
+      "@compliance-theater/typescript": [
         "../lib-typescript/dist"
       ],
-      "@compliance-theater/lib-typescript/*": [
+      "@compliance-theater/typescript/*": [
         "../lib-typescript/dist/*"
       ]
     },

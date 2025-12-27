@@ -11,9 +11,9 @@ import { handleCacheHit, handleCacheMiss } from './cacheEventHandlers';
 import { createStreamFromCachedText } from './streamUtils';
 import { handleResponseCaching } from './cacheStrategy';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { newUuid } from '@compliance-theater/lib-typescript/_record-decorators';
+import { newUuid } from '@compliance-theater/typescript/_record-decorators';
 import { MiddlewareStateManager } from '../state-management';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 // Enterprise configuration and metrics
 const config = getCacheConfig();
@@ -67,7 +67,7 @@ const originalCacheWithRedis: LanguageModelV2Middleware = {
     const cacheKey = createCacheKey(params, model?.modelId);
 
     try {
-      log(l => l.verbose('=== Cache with redis stream start ==='));
+      log((l) => l.verbose('=== Cache with redis stream start ==='));
       if (cacheKey.length === 0) {
         throw new Error('Cache key is empty, cannot proceed with caching.');
       }
@@ -132,7 +132,7 @@ const originalCacheWithRedis: LanguageModelV2Middleware = {
             redis,
             cacheKey,
             streamResponse,
-            'stream ',
+            'stream '
           );
         },
       });
@@ -153,7 +153,7 @@ const originalCacheWithRedis: LanguageModelV2Middleware = {
       }
       return await doStream();
     } finally {
-      log(l => l.verbose('=== Cache with redis stream end ==='));
+      log((l) => l.verbose('=== Cache with redis stream end ==='));
     }
   },
 };

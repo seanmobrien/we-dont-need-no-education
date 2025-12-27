@@ -5,7 +5,7 @@
  * Provides comprehensive OpenTelemetry metrics for AI tool usage, performance, and observability.
  */
 
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util';
 
 /**
@@ -168,16 +168,16 @@ export const mcpToolsMetricsRegistry = {
           allMetricNames.forEach((metricName) => {
             if (typeof metricName !== 'string') {
               validation.errors.push(
-                `Invalid metric name type in ${toolName}: ${metricName}`,
+                `Invalid metric name type in ${toolName}: ${metricName}`
               );
               validation.valid = false;
             } else if (!metricName.startsWith('ai_tool_')) {
               validation.warnings.push(
-                `Metric ${metricName} in ${toolName} doesn't follow naming convention`,
+                `Metric ${metricName} in ${toolName} doesn't follow naming convention`
               );
             }
           });
-        },
+        }
       );
     } catch (error) {
       validation.errors.push(`Validation failed: ${error}`);
@@ -199,7 +199,7 @@ export const mcpToolsMetricsRegistry = {
 export const createMcpToolAttributes = (
   toolName: string,
   operation: string,
-  additionalAttributes: Record<string, string | number | boolean> = {},
+  additionalAttributes: Record<string, string | number | boolean> = {}
 ) => {
   return {
     tool_name: toolName,

@@ -7,7 +7,7 @@ import {
 import { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { MCPError } from '../mcp-error';
 import { JSONRPCMessage, JSONRPCMessageSchema } from './json-rpc-message';
-import { log, safeSerialize } from '@compliance-theater/lib-logger';
+import { log, safeSerialize } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { isAbortError } from '@/lib/react-util/utility-methods';
 import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
@@ -87,7 +87,7 @@ export class SseMCPTransport implements MCPTransport {
     // If already connected, resolve immediately
     if (this.connected) {
       log((l) =>
-        l.info('SSE Transport already connected, resolving immediately'),
+        l.info('SSE Transport already connected, resolving immediately')
       );
       return Promise.resolve();
     }
@@ -95,7 +95,7 @@ export class SseMCPTransport implements MCPTransport {
     // If a connection is already in progress, wait for it
     if (this.connecting && this.connectionPromise) {
       log((l) =>
-        l.info('SSE Transport connection already in progress, waiting...'),
+        l.info('SSE Transport connection already in progress, waiting...')
       );
       return this.connectionPromise;
     }
@@ -105,7 +105,7 @@ export class SseMCPTransport implements MCPTransport {
 
     this.connectionPromise = new Promise<void>(async (resolve, reject) => {
       log((l) =>
-        l.info('SSE Transport starting connection', { url: this.url.href }),
+        l.info('SSE Transport starting connection', { url: this.url.href })
       );
       this.abortController = new AbortController();
       let reader: ReadableStream<EventSourceMessage> | undefined;
@@ -113,7 +113,7 @@ export class SseMCPTransport implements MCPTransport {
         log((l) =>
           l.info('SSE Transport: Fetching SSE endpoint', {
             url: this.url.href,
-          }),
+          })
         );
         const response = await fetch(this.url.href, {
           headers: await this.resolveHeaders(),
@@ -126,7 +126,7 @@ export class SseMCPTransport implements MCPTransport {
             status: response.status,
             ok: response.ok,
             hasBody: !!response.body,
-          }),
+          })
         );
 
         if (!response.ok || !response.body) {
@@ -193,12 +193,12 @@ export class SseMCPTransport implements MCPTransport {
                 if (typeof maybeStream.destroy === 'function') {
                   maybeStream.destroy();
                   log((l) =>
-                    l.verbose('Underlying SSE stream destroyed by destroy()'),
+                    l.verbose('Underlying SSE stream destroyed by destroy()')
                   );
                 } else if (maybeStream.cancel) {
                   await maybeStream.cancel('Connection destroyed');
                   log((l) =>
-                    l.verbose('Underlying SSE stream cancelled by destroy()'),
+                    l.verbose('Underlying SSE stream cancelled by destroy()')
                   );
                 }
               } catch (e) {
@@ -244,7 +244,9 @@ export class SseMCPTransport implements MCPTransport {
               const { done, value } = await reader.read();
               log((l) =>
                 l.info(
-                  `SSE Transport (Done: ${done}): Received [${safeSerialize(value?.event)}] event.\n\tData: ${safeSerialize(value?.data)}`,
+                  `SSE Transport (Done: ${done}): Received [${safeSerialize(
+                    value?.event
+                  )}] event.\n\tData: ${safeSerialize(value?.data)}`,
                   {
                     attribs: {
                       done,
@@ -252,8 +254,8 @@ export class SseMCPTransport implements MCPTransport {
                       event: safeSerialize(value?.event),
                       dataLength: value?.data?.length,
                     },
-                  },
-                ),
+                  }
+                )
               );
 
               if (done) {
@@ -270,12 +272,12 @@ export class SseMCPTransport implements MCPTransport {
                 l.info('SSE Transport: Processing event', {
                   event,
                   dataPreview: data?.substring(0, 100),
-                }),
+                })
               );
 
               if (event === 'endpoint') {
                 log((l) =>
-                  l.info('SSE Transport: Received endpoint event', { data }),
+                  l.info('SSE Transport: Received endpoint event', { data })
                 );
                 this.endpoint = new URL(data, this.url);
 
@@ -291,8 +293,8 @@ export class SseMCPTransport implements MCPTransport {
                 log((l) =>
                   l.info(
                     'SSE Transport: Connection established, endpoint set',
-                    { endpoint: this.endpoint?.href },
-                  ),
+                    { endpoint: this.endpoint?.href }
+                  )
                 );
                 resolve();
               } else if (event === 'message') {
@@ -324,7 +326,9 @@ export class SseMCPTransport implements MCPTransport {
               return;
             }
             LoggedError.isTurtlesAllTheWayDownBaby(error, {
-              message: `MCP SSE Transport: Connection error - ${LoggedError.buildMessage(error)}`,
+              message: `MCP SSE Transport: Connection error - ${LoggedError.buildMessage(
+                error
+              )}`,
               log: true,
               source: 'MCP SSE Transport::processEvents',
             });
@@ -344,14 +348,16 @@ export class SseMCPTransport implements MCPTransport {
           return;
         }
         LoggedError.isTurtlesAllTheWayDownBaby(error, {
-          message: `MCP SSE Transport: Connection error - ${LoggedError.buildMessage(error)}`,
+          message: `MCP SSE Transport: Connection error - ${LoggedError.buildMessage(
+            error
+          )}`,
           log: true,
           source: 'MCP SSE Transport::establishConnection',
         });
         this.sseConnection?.close();
         (reader?.cancel(error) ?? Promise.resolve()).catch((e) => {
           log((l) =>
-            l.verbose('Error cancelling reader after connection failure', e),
+            l.verbose('Error cancelling reader after connection failure', e)
           );
         });
         this.onerror?.(error);
@@ -426,7 +432,7 @@ export class SseMCPTransport implements MCPTransport {
   protected async withSpan<TResult>(
     spanName: string,
     callback: (span: Span) => Promise<TResult>,
-    attributes?: Record<string, string | number | boolean>,
+    attributes?: Record<string, string | number | boolean>
   ): Promise<TResult> {
     const instrumented = await createInstrumentedSpan({
       spanName,
@@ -484,7 +490,9 @@ export class SseMCPTransport implements MCPTransport {
         log((l) => l.info('MCP SSE Transport: Message sent successfully'));
       } catch (error) {
         const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-          message: `MCP SSE Transport: Send error - ${LoggedError.buildMessage(error)}`,
+          message: `MCP SSE Transport: Send error - ${LoggedError.buildMessage(
+            error
+          )}`,
           log: true,
           source: 'MCP SSE Transport::send',
         });

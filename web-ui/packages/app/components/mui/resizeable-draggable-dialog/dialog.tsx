@@ -23,7 +23,7 @@ import RestoreIcon from '@mui/icons-material/FilterNone';
 import CloseIcon from '@mui/icons-material/Close';
 import ResizeableDraggablePaper from './resizeable-draggable-paper';
 import { ResizeableDraggableDialogProps } from './types';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 /**
  * Enum for dialog window state
@@ -153,7 +153,7 @@ const ResizableDraggableDialog = ({
 
   // State for window functionality
   const [windowState, setWindowState] = useState<WindowState>(
-    WindowState.Normal,
+    WindowState.Normal
   );
 
   /**
@@ -175,7 +175,7 @@ const ResizableDraggableDialog = ({
      */
     (
       evt: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
-      reason: 'backdropClick' | 'escapeKeyDown',
+      reason: 'backdropClick' | 'escapeKeyDown'
     ): void;
   }
 
@@ -193,7 +193,7 @@ const ResizableDraggableDialog = ({
   const handleClose = useCallback<HandleCloseOverloads>(
     (
       evt: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
-      reason?: 'backdropClick' | 'escapeKeyDown',
+      reason?: 'backdropClick' | 'escapeKeyDown'
     ) => {
       if (!open) {
         return;
@@ -204,7 +204,7 @@ const ResizableDraggableDialog = ({
         onClose(evt, reason ?? '');
       }
     },
-    [open, onClose, modal],
+    [open, onClose, modal]
   );
 
   /**
@@ -233,7 +233,7 @@ const ResizableDraggableDialog = ({
     (evt: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
       handleClose(evt as React.MouseEvent<HTMLAnchorElement>);
     },
-    [handleClose],
+    [handleClose]
   );
 
   /**
@@ -285,7 +285,7 @@ const ResizableDraggableDialog = ({
       dialogDraggableHandleId,
       minConstraints,
       onResize,
-    ],
+    ]
   );
 
   /**
@@ -314,8 +314,8 @@ const ResizableDraggableDialog = ({
     if (!onResize) {
       log((l) =>
         l.warn(
-          'onResize callback is not provided, dynamic resizing will not work.',
-        ),
+          'onResize callback is not provided, dynamic resizing will not work.'
+        )
       );
     }
     onResize?.(newWidth, newHeight);
@@ -335,7 +335,7 @@ const ResizableDraggableDialog = ({
         },
       },
     }),
-    [modal],
+    [modal]
   );
 
   /**
@@ -355,7 +355,7 @@ const ResizableDraggableDialog = ({
         },
       }),
     }),
-    [modal],
+    [modal]
   );
 
   return (

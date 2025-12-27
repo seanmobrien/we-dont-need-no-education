@@ -60,7 +60,7 @@ import {
   ValidCaseFileRequestProps,
 } from '../types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { caseFileDocumentShape } from '../case-file-document-query';
 import {
   caseFileDocumentErrorCounter,
@@ -100,7 +100,7 @@ import { compactCaseFileDocument } from './compact-casefile-document';
  * ```
  */
 export const getCaseFileDocument = async (
-  props: CaseFileRequestProps,
+  props: CaseFileRequestProps
 ): Promise<ToolCallbackResult<CaseFileResponse>> => {
   const result = await getMultipleCaseFileDocuments({
     requests: [props],
@@ -115,7 +115,7 @@ export const getCaseFileDocument = async (
     return result as ToolCallbackResult<CaseFileResponse>;
   }
   return toolCallbackResultFactory<CaseFileResponse>(
-    result.structuredContent.result.items[0],
+    result.structuredContent.result.items[0]
   );
 };
 
@@ -201,7 +201,7 @@ export const getMultipleCaseFileDocuments = async ({
       ...x,
       verbatim_fidelity: x.verbatimFidelity ?? verbatim_fidelity ?? 75,
       goals: [...new Set<string>([...(x.goals ?? []), ...globalGoals])],
-    }),
+    })
   );
   const attributes = {
     initial_document_count: requests.length,
@@ -222,20 +222,22 @@ export const getMultipleCaseFileDocuments = async ({
       });
 
       throw new Error(
-        `No valid Case File IDs could be resolved from the provided identifiers: ${requests.map((r) => r.caseFileId).join(', ')}`,
+        `No valid Case File IDs could be resolved from the provided identifiers: ${requests
+          .map((r) => r.caseFileId)
+          .join(', ')}`
       );
     }
     const documents = await drizDbWithInit((db) =>
       db.query.documentUnits.findMany({
         where: (du, { inArray }) => inArray(du.unitId, validIds),
         ...caseFileDocumentShape,
-      }),
+      })
     );
 
     // Calculate total document size for metrics
     const totalDocumentSize = documents.reduce(
       (total, doc) => total + JSON.stringify(doc).length,
-      0,
+      0
     );
     caseFileDocumentSizeHistogram.record(totalDocumentSize, {
       ...attributes,
@@ -244,15 +246,15 @@ export const getMultipleCaseFileDocuments = async ({
 
     log((l) =>
       l.info(
-        `getMultipleCaseFileDocuments: Retrieved ${documents.length} documents`,
-      ),
+        `getMultipleCaseFileDocuments: Retrieved ${documents.length} documents`
+      )
     );
 
     // Join documents with resolvedRequests based on unitId = caseFileId
     // This creates a unified dataset where each document is paired with its analysis requirements
     const joinedData = documents.map((document) => {
       const matchingRequest = resolvedRequests.find(
-        (req) => req.caseFileId === document.unitId,
+        (req) => req.caseFileId === document.unitId
       );
       return {
         document: compactCaseFileDocument(document),
@@ -278,26 +280,20 @@ export const getMultipleCaseFileDocuments = async ({
      * Input: [['policy', 'compliance'], ['compliance', 'policy'], ['security']]
      * Groups: {'["compliance","policy"]': [...], '["security"]': [...]}
      */
-    const groupedByGoals = joinedData.reduce(
-      (acc, item) => {
-        // Sort the goals array to ensure consistent grouping regardless of order
-        const sortedGoals = [...(item.goals || [])].sort();
-        const goalsKey = JSON.stringify(sortedGoals);
+    const groupedByGoals = joinedData.reduce((acc, item) => {
+      // Sort the goals array to ensure consistent grouping regardless of order
+      const sortedGoals = [...(item.goals || [])].sort();
+      const goalsKey = JSON.stringify(sortedGoals);
 
-        if (!acc[goalsKey]) {
-          acc[goalsKey] = [];
-        }
-        acc[goalsKey].push({
-          document: item.document,
-          verbatim_fidelity: item.verbatim_fidelity,
-        });
-        return acc;
-      },
-      {} as Record<
-        string,
-        { document: DocumentResource; verbatim_fidelity: number }[]
-      >,
-    );
+      if (!acc[goalsKey]) {
+        acc[goalsKey] = [];
+      }
+      acc[goalsKey].push({
+        document: item.document,
+        verbatim_fidelity: item.verbatim_fidelity,
+      });
+      return acc;
+    }, {} as Record<string, { document: DocumentResource; verbatim_fidelity: number }[]>);
 
     /**
      * Process each group of documents with their shared goals using intelligent routing.
@@ -324,7 +320,7 @@ export const getMultipleCaseFileDocuments = async ({
                 (d) =>
                   ({
                     document: d.document as DocumentResource,
-                  }) as CaseFileResponse,
+                  } as CaseFileResponse)
               );
             }
 
@@ -358,8 +354,10 @@ export const getMultipleCaseFileDocuments = async ({
                 aggregatedResults.push(
                   ...(currentBatch.map((d) => ({
                     document: { unitId: d?.document?.unitId ?? '<<unknown>>' },
-                    text: `An unexpected error occurred processing case file id ${d?.document?.unitId ?? '<<unknown>>'}. Please try your request again later.  Error details: ${le.toString()}`,
-                  })) as Array<CaseFileResponse>),
+                    text: `An unexpected error occurred processing case file id ${
+                      d?.document?.unitId ?? '<<unknown>>'
+                    }. Please try your request again later.  Error details: ${le.toString()}`,
+                  })) as Array<CaseFileResponse>)
                 );
               } finally {
                 currentBatch = [];
@@ -405,8 +403,8 @@ export const getMultipleCaseFileDocuments = async ({
             await processCurrentBatch();
 
             return aggregatedResults;
-          },
-        ),
+          }
+        )
       );
     } finally {
       // Clean up any resources or contexts
@@ -457,7 +455,7 @@ export const getMultipleCaseFileDocuments = async ({
     return toolCallbackResultFactory<Array<DocumentResource>>(
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
-      }),
+      })
     );
   }
 };
@@ -476,7 +474,7 @@ export const getMultipleCaseFileDocumentsConfig = {
     goals: z
       .array(z.string())
       .describe(
-        'An array of goals identifying your task or describing what information should be extracted from the case files.  When set, each document will be pre-processed and relevant information returned, when left blank you will receive the full case files.  Case file documents are large and require a lot of context space, so pre-processing is recommended.',
+        'An array of goals identifying your task or describing what information should be extracted from the case files.  When set, each document will be pre-processed and relevant information returned, when left blank you will receive the full case files.  Case file documents are large and require a lot of context space, so pre-processing is recommended.'
       )
       .optional(),
     verbatim_fidelity: z
@@ -485,11 +483,11 @@ export const getMultipleCaseFileDocumentsConfig = {
       .max(100)
       .optional()
       .describe(
-        'Controls how closely output should match source text. 100 = exact quotes with full context;  75 = exact excerpts with minimal context; 50 = summarized excerpts with some context; 1 = full summary, exact quotes not needed.  Set here to provide a default for all requests.',
+        'Controls how closely output should match source text. 100 = exact quotes with full context;  75 = exact excerpts with minimal context; 50 = summarized excerpts with some context; 1 = full summary, exact quotes not needed.  Set here to provide a default for all requests.'
       ),
   },
   outputSchema: toolCallbackArrayResultSchemaFactory(
-    z.string().or(CaseFileResponseShape),
+    z.string().or(CaseFileResponseShape)
   ),
   annotations: {
     title: 'Get Multiple Case Files',

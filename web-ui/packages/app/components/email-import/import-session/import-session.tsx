@@ -16,7 +16,7 @@ import Grid from '@mui/material/Grid';
 import Mail from '@mui/icons-material/Mail';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { searchEmails } from '@/lib/api/email/import/google';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import EnhancedTableHead, {
   HeadCell,
 } from '@/components/general/enhanced-table-head';
@@ -75,7 +75,7 @@ const assignDownloadSlots = ({
       }
       return acc;
     },
-    { selected: 0, pending: 0, active: 0 },
+    { selected: 0, pending: 0, active: 0 }
   );
   let changedBit = false;
   if (!pendingDownload) {
@@ -86,7 +86,7 @@ const assignDownloadSlots = ({
       l.debug({
         message:
           'Maximum concurrent sessions reached. Import will begin when a slot is available.',
-      }),
+      })
     );
     return changedBit;
   }
@@ -137,23 +137,23 @@ const ImportSession: React.FC<{ concurrentSessions?: number }> = ({
         }
         return acc;
       },
-      { numSelected: 0, isImporting: false },
+      { numSelected: 0, isImporting: false }
     );
 
     const importing = isImporting
       ? 'cancel'
       : query
-        ? query === lastQuery
-          ? 'import'
-          : 'load'
-        : 'load';
+      ? query === lastQuery
+        ? 'import'
+        : 'load'
+      : 'load';
     log((l) =>
       l.info({
         message: 'Action button task',
         actionButtonTask: importing,
         query,
         lastQuery,
-      }),
+      })
     );
 
     let isDisabled = false;
@@ -197,7 +197,7 @@ const ImportSession: React.FC<{ concurrentSessions?: number }> = ({
       });
       setLastErrorMessage(le.message);
     },
-    [setLastErrorMessage],
+    [setLastErrorMessage]
   );
   const importActionClick = useCallback(() => {
     const loadEmails = async () => {
@@ -213,7 +213,7 @@ const ImportSession: React.FC<{ concurrentSessions?: number }> = ({
             }
             return acc;
           },
-          initialEmails,
+          initialEmails
         );
         return changedBit ? [...allItems] : initialEmails;
       });
@@ -253,7 +253,7 @@ const ImportSession: React.FC<{ concurrentSessions?: number }> = ({
           message: 'Updating input field',
           field: evt.target?.id,
           query,
-        }),
+        })
       );
       switch (evt.target?.id) {
         case 'import-from-email':
@@ -264,11 +264,11 @@ const ImportSession: React.FC<{ concurrentSessions?: number }> = ({
             l.warn({
               message: 'Unknown input field',
               field: evt.target?.id,
-            }),
+            })
           );
       }
     },
-    [query],
+    [query]
   );
   const recordNotifyCallback = useCallback(
     ({ providerId, ...props }: ImportRecordNotifyProps) => {
@@ -304,11 +304,11 @@ const ImportSession: React.FC<{ concurrentSessions?: number }> = ({
           const processed = references.reduce(
             (
               acc: KnownEmail[],
-              { providerId, status }: MessageImportStatus,
+              { providerId, status }: MessageImportStatus
             ) => {
               if (acc.findIndex((x) => x.providerId === providerId) === -1) {
                 log((l) =>
-                  l.info({ message: 'Adding known email', providerId }),
+                  l.info({ message: 'Adding known email', providerId })
                 );
                 changedBit = true;
                 acc.push({
@@ -319,7 +319,7 @@ const ImportSession: React.FC<{ concurrentSessions?: number }> = ({
               }
               return acc;
             },
-            allItems,
+            allItems
           );
           if (assignDownloadSlots({ emails: processed, concurrentSessions })) {
             changedBit = true;
@@ -383,12 +383,12 @@ const ImportSession: React.FC<{ concurrentSessions?: number }> = ({
         default:
           const actionProps = { ...(props as object), providerId };
           log((l) =>
-            l.warn({ message: 'Unknown action', action: actionProps }),
+            l.warn({ message: 'Unknown action', action: actionProps })
           );
           break;
       }
     },
-    [setKnownEmails, concurrentSessions, actionErrorHandler],
+    [setKnownEmails, concurrentSessions, actionErrorHandler]
   );
   const onSelectAllClick = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -410,7 +410,7 @@ const ImportSession: React.FC<{ concurrentSessions?: number }> = ({
         return emails;
       });
     },
-    [concurrentSessions],
+    [concurrentSessions]
   );
 
   return (
@@ -488,7 +488,7 @@ const ImportSession: React.FC<{ concurrentSessions?: number }> = ({
                         notify={recordNotifyCallback}
                         canImport={!!hasDownloadSlot}
                       />
-                    ),
+                    )
                   )}
                 </TableBody>
               </Table>

@@ -1,9 +1,9 @@
 process.env.MEM0_API_BASE_PATH = process.env.MEM0_API_BASE_PATH ?? 'api/v1';
 
 jest.mock('@/lib/nextjs-util/client-navigate', () => ({
-  clientReload: jest.fn().mockImplementation(() => { }),
-  clientNavigate: jest.fn().mockImplementation(() => { }),
-  clientNavigateSignIn: jest.fn().mockImplementation(() => { }),
+  clientReload: jest.fn().mockImplementation(() => {}),
+  clientNavigate: jest.fn().mockImplementation(() => {}),
+  clientNavigateSignIn: jest.fn().mockImplementation(() => {}),
 }));
 
 jest.mock('@/lib/hooks/use-todo', () => ({
@@ -114,13 +114,13 @@ import { FormatAlignCenterSharp } from '@mui/icons-material';
 import { createElement } from 'react';
 import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
 import instrument, { getAppInsights } from '@/instrument/browser';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import {
   FirstParameter,
   isKeyOf,
   isPromise,
   SingletonProvider,
-} from '@compliance-theater/lib-typescript';
+} from '@compliance-theater/typescript';
 import { result, xorBy } from 'lodash';
 
 import { ITraits } from 'flagsmith/react';
@@ -163,7 +163,7 @@ const Zodex = require('zodex').Zodex;
 let originalProcessEnv = (() => {
   try {
     const origConfig = dotenv.parse(
-      require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
+      require('fs').readFileSync('.env.local', { encoding: 'utf-8' })
     );
     return {
       REDIS_URL: origConfig.REDIS_URL,
@@ -183,7 +183,7 @@ export const withRedisConnection = () => {
   process.env.REDIS_PASSWORD =
     originalProcessEnv.REDIS_PASSWORD || 'test-redis-password';
   if (process.env.REDIS_PASSWORD.includes('test-redis-password')) {
-    // NOTE: noop, but this is clearly not an integration test        
+    // NOTE: noop, but this is clearly not an integration test
   }
 };
 
@@ -300,7 +300,7 @@ export const mockFlagsmithInstanceFactory = ({
           if (context?.identity) thisIdentifier = context.identity;
           if (context?.traits) thisTraits = context.traits;
           return Promise.resolve();
-        },
+        }
       );
     },
     get updateContext() {
@@ -343,7 +343,7 @@ export const mockFlagsmithInstanceFactory = ({
           if (state?.initialized !== undefined)
             thisInitialized = state.initialized;
           if (state?.loadingState) thisLoadingState = state.loadingState;
-        },
+        }
       );
     },
 
@@ -423,7 +423,7 @@ const onLoggedErrorEmitted = ({ error, context }: ErrorReportArgs) =>
 beforeAll(() => {
   try {
     const origConfig = dotenv.parse(
-      require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
+      require('fs').readFileSync('.env.local', { encoding: 'utf-8' })
     );
     originalProcessEnv = {
       REDIS_URL: origConfig.REDIS_URL,
@@ -451,11 +451,10 @@ jest.mock('@/lib/react-util/errors/logged-error-reporter', () => {
         setupGlobalHandlers: jest.fn(),
         getStoredErrors: jest.fn(() => []),
         clearStoredErrors: jest.fn(),
-      }),
+      })
     ),
   };
 });
-
 
 beforeEach(() => {
   // Wire up a super-simple rudimentary error logger

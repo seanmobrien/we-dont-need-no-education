@@ -1,8 +1,11 @@
 import { checkDatabaseHealth } from '@/lib/api/health/database';
-import { getMemoryHealthCache, determineHealthStatus } from '@/lib/api/health/memory';
+import {
+  getMemoryHealthCache,
+  determineHealthStatus,
+} from '@/lib/api/health/memory';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
 import { NextRequest, NextResponse } from 'next/server';
 import type { Span } from '@opentelemetry/api';
 import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
@@ -22,7 +25,7 @@ const resolveThreshold = async (): Promise<number> => {
 
   try {
     const flagValue = (await getFeatureFlag(
-      'health_startup_failure_threshold',
+      'health_startup_failure_threshold'
     )) as unknown as number;
     if (typeof flagValue === 'number' && flagValue >= 0) {
       return flagValue;
@@ -39,7 +42,7 @@ type StartupFailureCounter = { count: number };
 const getStartupCounter = (): StartupFailureCounter =>
   SingletonProvider.Instance.getRequired<StartupFailureCounter>(
     STARTUP_FAILURE_COUNTER_KEY,
-    () => ({ count: 0 }),
+    () => ({ count: 0 })
   );
 
 const incrementCounter = (): number => {
@@ -66,7 +69,7 @@ type ProbeParams = { probe_type: string };
 export const GET = wrapRouteRequest(
   async (
     _req: NextRequest,
-    { params, span }: { params: Promise<ProbeParams>; span?: Span },
+    { params, span }: { params: Promise<ProbeParams>; span?: Span }
   ): Promise<NextResponse> => {
     if (!span) {
       throw new TypeError('No span provided to health probe route.');
@@ -90,7 +93,7 @@ export const GET = wrapRouteRequest(
         const status = dbHealth?.status === 'healthy' ? 200 : 503;
         return NextResponse.json(
           { status: dbHealth?.status ?? 'error' },
-          { status },
+          { status }
         );
       }
 
@@ -132,5 +135,5 @@ export const GET = wrapRouteRequest(
         return NextResponse.json({ status: 'unknown-probe' }, { status: 400 });
       }
     }
-  },
+  }
 );

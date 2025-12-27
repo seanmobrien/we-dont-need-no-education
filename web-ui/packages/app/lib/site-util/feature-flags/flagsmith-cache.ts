@@ -9,7 +9,7 @@ import { LRUCache } from 'lru-cache';
 import { getRedisClient } from '@/lib/redis-client';
 import { LoggedError } from '@/lib/react-util';
 import type { LruCacheConfig, RedisCacheConfig } from '@/lib/react-util/types';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 type Flag = Flags['flags'][string];
 
@@ -64,8 +64,8 @@ export class FlagsmithRedisCache implements FlagsmithCache {
       if (typeof data !== 'object') {
         log((l) =>
           l.warn(
-            `FlagsmithRedisCache::get - Unexpected data type from cache: ${typeof data}`,
-          ),
+            `FlagsmithRedisCache::get - Unexpected data type from cache: ${typeof data}`
+          )
         );
         return undefined;
       }
@@ -88,7 +88,7 @@ export class FlagsmithRedisCache implements FlagsmithCache {
           typeof normalData.analyticsProcessor.flush !== 'function'
         ) {
           normalData.analyticsProcessor = new AnalyticsProcessor(
-            normalData.analyticsProcessor as unknown as AnalyticsProcessorOptions,
+            normalData.analyticsProcessor as unknown as AnalyticsProcessorOptions
           );
         }
       }

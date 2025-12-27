@@ -1,7 +1,7 @@
 import type { JWT } from '@auth/core/jwt';
 import type { Account } from '@auth/core/types';
 import type { AdapterUser } from '@auth/core/adapters';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { decodeToken } from './utilities';
 import type { NextAuthUserWithAccountId } from './types';
 
@@ -53,7 +53,7 @@ export const jwt = async ({
     // We do NOT store access_token or refresh_token in the JWT Cookie anymore.
     // They are stored in the DB (via Drizzle Adapter) and retrieved server-side in the session callback.
     // token.access_token = account.access_token;
-    // token.refresh_token = account.refresh_token; 
+    // token.refresh_token = account.refresh_token;
 
     // Set a long-lived session expiry for the Cookie (e.g. 2 hours) to decouple it from Access Token expiry (5 mins).
     // This allows the Middleware to pass authenticated (but potentially expired-access-token) users to the Server,
@@ -61,7 +61,7 @@ export const jwt = async ({
     const sessionDuration = 2 * 60 * 60; // 2 hours in seconds
     token.expires_at = Math.floor(Date.now() / 1000) + sessionDuration;
 
-    // token.idToken = account.id_token; 
+    // token.idToken = account.id_token;
   }
 
   // When a user is present (typically during sign-in), copy canonical ids
@@ -107,7 +107,7 @@ export const jwt = async ({
       } catch (decodeError) {
         // Log but don't throw - gracefully handle invalid JWT format
         log((l) =>
-          l.warn('Failed to decode access_token JWT payload:', decodeError),
+          l.warn('Failed to decode access_token JWT payload:', decodeError)
         );
       }
     }

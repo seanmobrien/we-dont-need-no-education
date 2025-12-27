@@ -7,13 +7,10 @@
  * @author NoEducation Team
  */
 
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import EventEmitter from '@protobufjs/eventemitter';
-import type {
-  Tool,
-  ToolSet,
-} from 'ai';
+import type { Tool, ToolSet } from 'ai';
 import {
   getResolvedPromises,
   isAbortError,
@@ -21,7 +18,7 @@ import {
 } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { withEmittingDispose } from '@/lib/nextjs-util/utils';
-import { SingletonProvider } from '@compliance-theater/lib-typescript';
+import { SingletonProvider } from '@compliance-theater/typescript';
 
 import type {
   ConnectableToolProvider,
@@ -55,10 +52,16 @@ const createTransport = async ({
 
   // If http streaming is disabled or sse is explicitly requested
   if (!flagsHttpStreamEnabled || options.sse === true) {
-    const sseTransportConfig: Omit<Transport, 'headers' | 'start' | 'send' | 'close'> & { type: string; url: string; headers?: Record<string, string>; } = {
+    const sseTransportConfig: Omit<
+      Transport,
+      'headers' | 'start' | 'send' | 'close'
+    > & { type: string; url: string; headers?: Record<string, string> } = {
       type: 'sse',
       url: options.url,
-      headers: typeof options.headers === 'function' ? await options.headers() : options.headers ?? {},
+      headers:
+        typeof options.headers === 'function'
+          ? await options.headers()
+          : options.headers ?? {},
       /**
        * Handles SSE connection errors and returns user-friendly error messages.
        * @param {unknown} error - The error that occurred during SSE connection
@@ -83,13 +86,16 @@ const createTransport = async ({
     };
     // Create instrumented SSE transport with comprehensive error handling
 
-
     const deezHeaders = options.headers;
-    const headerCb: (() => Promise<Record<string, string>>) | Record<string, string> = () => {
+    const headerCb:
+      | (() => Promise<Record<string, string>>)
+      | Record<string, string> = () => {
       if (!deezHeaders) {
         return Promise.resolve({} as Record<string, string>);
       }
-      return typeof deezHeaders === 'function' ? deezHeaders() : Promise.resolve(deezHeaders);
+      return typeof deezHeaders === 'function'
+        ? deezHeaders()
+        : Promise.resolve(deezHeaders);
     };
     return new InstrumentedSseTransport({
       onerror,
@@ -102,7 +108,10 @@ const createTransport = async ({
   const streamableHttpClientTransport = await import(
     '@modelcontextprotocol/sdk/client/streamableHttp.js'
   ).then((mod) => mod.StreamableHTTPClientTransport);
-  const headers = typeof options.headers === 'function' ? await options.headers() : options.headers ?? {};
+  const headers =
+    typeof options.headers === 'function'
+      ? await options.headers()
+      : options.headers ?? {};
   return new streamableHttpClientTransport(new URL(options.url), {
     sessionId: userId ? `user-${userId}` : undefined,
     requestInit: {
@@ -122,14 +131,16 @@ const createClient = async ({
     ...options,
   });
   const createMCPClient = await SingletonProvider.Instance.getOrCreateAsync(
-    "ai-sdk:createMCPClient",
+    'ai-sdk:createMCPClient',
     async () => {
-      const { experimental_createMCPClient } = (await import('@ai-sdk/mcp'));
+      const { experimental_createMCPClient } = await import('@ai-sdk/mcp');
       return experimental_createMCPClient;
     }
   );
   if (!createMCPClient) {
-    throw new Error('Failed to create MCP client - verify ai-sdk/mcp is installed');
+    throw new Error(
+      'Failed to create MCP client - verify ai-sdk/mcp is installed'
+    );
   }
   // Create MCP client with transport and error handling
   const mcpClient = await createMCPClient({
@@ -152,7 +163,9 @@ const createClient = async ({
           content: [
             {
               type: 'text',
-              text: `An error occurred while processing your request: ${isError(error) ? error.message : String(error)}. Please try again later.`,
+              text: `An error occurred while processing your request: ${
+                isError(error) ? error.message : String(error)
+              }. Please try again later.`,
             },
           ],
         };
@@ -184,17 +197,14 @@ const wrapToolsetWithProxies = <TTools extends ToolSet>({
   tools: TTools;
 }): TTools => {
   // Cache hit: wrap cached tools with proxies to restore function context
-  return Object.entries(tools).reduce(
-    (acc, [toolName, cachedTool]) => {
-      acc[toolName] = toolProxyFactory<unknown, unknown>({
-        mcpClient,
-        name: toolName,
-        tool: cachedTool as Tool<unknown, unknown>,
-      });
-      return acc;
-    },
-    {} as Record<string, unknown>,
-  ) as TTools;
+  return Object.entries(tools).reduce((acc, [toolName, cachedTool]) => {
+    acc[toolName] = toolProxyFactory<unknown, unknown>({
+      mcpClient,
+      name: toolName,
+      tool: cachedTool as Tool<unknown, unknown>,
+    });
+    return acc;
+  }, {} as Record<string, unknown>) as TTools;
 };
 
 export const toolProviderFactory = async ({
@@ -232,12 +242,12 @@ export const toolProviderFactory = async ({
       const filteredTools = options.allowWrite
         ? allTools
         : Object.entries(allTools).reduce((acc, [toolName, tool]) => {
-          // Filter out tools that require write access when in read-only mode
-          if ((tool.description?.indexOf('Write access') ?? -1) === -1) {
-            acc[toolName] = tool;
-          }
-          return acc;
-        }, {} as ToolSet);
+            // Filter out tools that require write access when in read-only mode
+            if ((tool.description?.indexOf('Write access') ?? -1) === -1) {
+              acc[toolName] = tool;
+            }
+            return acc;
+          }, {} as ToolSet);
 
       // Cache the filtered tools for future requests
       await toolCache.setCachedTools(options, filteredTools);
@@ -278,26 +288,25 @@ export const toolProviderFactory = async ({
        * @returns {Promise<void>} Promise that resolves when disposal is complete
        */
       [Symbol.dispose]: (): void => {
-        mcpClient.close()
-          .catch((e) => {
-            // Downgrade AbortError noise on shutdown
-            if (isAbortError(e)) {
-              log((l) =>
-                l.verbose('toolProviderFactory.dispose: Ignoring AbortError'),
-              );
-            } else {
-              LoggedError.isTurtlesAllTheWayDownBaby(e, {
-                log: true,
-                source: 'toolProviderFactory dispose',
-                severity: 'error',
-                data: {
-                  message: 'Error disposing MCP client',
-                  options,
-                },
-              });
-            }
-            return Promise.resolve();
-          });
+        mcpClient.close().catch((e) => {
+          // Downgrade AbortError noise on shutdown
+          if (isAbortError(e)) {
+            log((l) =>
+              l.verbose('toolProviderFactory.dispose: Ignoring AbortError')
+            );
+          } else {
+            LoggedError.isTurtlesAllTheWayDownBaby(e, {
+              log: true,
+              source: 'toolProviderFactory dispose',
+              severity: 'error',
+              data: {
+                message: 'Error disposing MCP client',
+                options,
+              },
+            });
+          }
+          return Promise.resolve();
+        });
       },
       /**
        * Reconnects the provider with new access permissions.
@@ -385,7 +394,7 @@ export const toolProviderFactory = async ({
 
 const getResolvedProvidersWithCleanup = async (
   promises: Promise<ConnectableToolProvider>[],
-  timeoutMs: number = 60 * 1000,
+  timeoutMs: number = 60 * 1000
 ): Promise<ConnectableToolProvider[]> => {
   const categorized = await getResolvedPromises(promises, timeoutMs);
 
@@ -423,7 +432,7 @@ const getResolvedProvidersWithCleanup = async (
     LoggedError.isTurtlesAllTheWayDownBaby(
       new AggregateError(
         categorized.rejected,
-        'Some MCP clients failed to connect or returned errors',
+        'Some MCP clients failed to connect or returned errors'
       ),
       {
         log: true,
@@ -433,15 +442,15 @@ const getResolvedProvidersWithCleanup = async (
           numberOfFailures: categorized.rejected.length,
           timeoutMs,
         },
-      },
+      }
     );
   }
 
   // Log successful connection statistics for monitoring
   log((l) =>
     l.debug(
-      `MCP toolProviderFactory resolved; ${categorized.fulfilled.length} connections established.`,
-    ),
+      `MCP toolProviderFactory resolved; ${categorized.fulfilled.length} connections established.`
+    )
   );
   return categorized.fulfilled;
 };
@@ -473,7 +482,7 @@ const getResolvedProvidersWithCleanup = async (
  * @since 1.0.0
  */
 export const isToolProvider = (
-  check: unknown,
+  check: unknown
 ): check is ConnectableToolProvider => {
   return (
     typeof check === 'object' &&
@@ -486,7 +495,8 @@ export const isToolProvider = (
     typeof (check as ConnectableToolProvider).get_isConnected === 'function' &&
     typeof (check as ConnectableToolProvider).tools === 'function' &&
     typeof (check as ConnectableToolProvider).tools === 'object' &&
-    Symbol.dispose in check && typeof (check as ConnectableToolProvider)[Symbol.dispose] === 'function' &&
+    Symbol.dispose in check &&
+    typeof (check as ConnectableToolProvider)[Symbol.dispose] === 'function' &&
     typeof (check as ConnectableToolProvider).connect === 'function'
   );
 };
@@ -562,24 +572,29 @@ export const isToolProvider = (
  */
 export const toolProviderSetFactory = async (
   providers: Array<ToolProviderFactoryOptions | ConnectableToolProvider>,
-  timeoutMs: number = 180 * 1000,
+  timeoutMs: number = 180 * 1000
 ): Promise<ToolProviderSet> => {
   // Create provider promises and wait for resolution with cleanup
   const resolvedProviders = await getResolvedProvidersWithCleanup(
     providers.map((options) =>
       isToolProvider(options)
         ? Promise.resolve(options)
-        : toolProviderFactory(options),
+        : toolProviderFactory(options)
     ),
-    timeoutMs,
+    timeoutMs
   );
   const allProviders = [clientToolProviderFactory(), ...resolvedProviders];
   allProviders.forEach((provider) => {
     if (!provider.addDisposeListener) {
-      log(l => l.warn('weird non-dispose-emitting provider detected', { provider, data: { provider } }));
+      log((l) =>
+        l.warn('weird non-dispose-emitting provider detected', {
+          provider,
+          data: { provider },
+        })
+      );
     }
     provider.addDisposeListener(() => {
-      const index = allProviders.indexOf(provider)
+      const index = allProviders.indexOf(provider);
       if (index > -1) {
         allProviders.splice(index, 1);
         if (allProviders.length === 0) {
@@ -605,7 +620,7 @@ export const toolProviderSetFactory = async (
       return (
         isHealthy &&
         allProviders.every(
-          (p) => p.get_isConnected() && Object.keys(p.tools).length > 0,
+          (p) => p.get_isConnected() && Object.keys(p.tools).length > 0
         )
       );
     },

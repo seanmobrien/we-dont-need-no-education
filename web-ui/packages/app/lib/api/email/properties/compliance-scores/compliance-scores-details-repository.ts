@@ -1,7 +1,7 @@
 import { BaseObjectRepository } from '../../../_baseObjectRepository';
 import { ObjectRepository } from '../../../_types';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter, newUuid } from '@compliance-theater/lib-typescript';
+import { FirstParameter, newUuid } from '@compliance-theater/typescript';
 import { ComplianceScoresDetails } from '@/data-models/api';
 import {
   EmailPropertyRepository,
@@ -10,7 +10,7 @@ import {
 import { TransformedFullQueryResults } from '@/lib/neondb';
 
 const mapRecordToObject = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ): ComplianceScoresDetails => {
   return {
     ...mapEmailPropertyRecordToObject(record),
@@ -48,7 +48,7 @@ export class ComplianceScoresDetailsRepository extends BaseObjectRepository<
     TMethod extends keyof ObjectRepository<
       ComplianceScoresDetails,
       'propertyId'
-    >,
+    >
   >(
     method: TMethod,
     obj: FirstParameter<
@@ -56,7 +56,7 @@ export class ComplianceScoresDetailsRepository extends BaseObjectRepository<
         ObjectRepository<ComplianceScoresDetails, 'propertyId'>,
         TMethod
       >[TMethod]
-    >,
+    >
   ): void {
     const asModel = obj as ComplianceScoresDetails;
     switch (method) {

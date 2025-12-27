@@ -13,7 +13,7 @@ import {
 import { NextRequest, NextResponse } from 'next/server';
 import { isError } from '@/lib/react-util/utility-methods';
 import { amendCaseRecord } from '@/lib/ai/tools/amend-case-record';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 import {
   checkCaseFileAuthorization,
@@ -24,7 +24,7 @@ export const dynamic = 'force-dynamic';
 export const GET = wrapRouteRequest(
   async (
     req: NextRequest,
-    args: { params: Promise<{ unitId: number | string }> },
+    args: { params: Promise<{ unitId: number | string }> }
   ) => {
     try {
       const { unitId } = await extractParams(args);
@@ -45,7 +45,7 @@ export const GET = wrapRouteRequest(
       });
 
       const valid = toolCallbackResultSchemaFactory(
-        CaseFileResponseShape,
+        CaseFileResponseShape
       ).result.safeParse(document.structuredContent.result);
       if (!valid.success) {
         log((l) =>
@@ -53,7 +53,7 @@ export const GET = wrapRouteRequest(
             message: 'Tool returned a failure message',
             error: valid.error,
             data: document.structuredContent.result,
-          }),
+          })
         );
         throw valid.error;
       }
@@ -61,16 +61,16 @@ export const GET = wrapRouteRequest(
     } catch (error) {
       return NextResponse.json(
         { error: isError(error) ? error.message : error, data: error },
-        { status: 500 },
+        { status: 500 }
       );
     }
-  },
+  }
 );
 
 export const PUT = wrapRouteRequest(
   async (
     req: NextRequest,
-    args: { params: Promise<{ unitId: number | string }> },
+    args: { params: Promise<{ unitId: number | string }> }
   ) => {
     const { unitId } = await extractParams(args);
 
@@ -89,7 +89,7 @@ export const PUT = wrapRouteRequest(
     if (data.targetCaseFileId !== Number(unitId)) {
       return NextResponse.json(
         { error: 'Target case file ID does not match the unit ID.' },
-        { status: 400 },
+        { status: 400 }
       );
     }
     const response = await amendCaseRecord({ update: data });
@@ -106,13 +106,13 @@ export const PUT = wrapRouteRequest(
     return NextResponse.json(response, {
       status,
     });
-  },
+  }
 );
 
 export const DELETE = wrapRouteRequest(
   async (
     req: NextRequest,
-    args: { params: Promise<{ unitId: number | string }> },
+    args: { params: Promise<{ unitId: number | string }> }
   ) => {
     const { unitId } = await extractParams(args);
 
@@ -128,16 +128,16 @@ export const DELETE = wrapRouteRequest(
     }
 
     const controller = new RepositoryCrudController(
-      new DocumentUnitRepository(),
+      new DocumentUnitRepository()
     );
     return controller.delete(req, { params: { unitId: Number(unitId) } });
-  },
+  }
 );
 
 export const POST = wrapRouteRequest(
   async (
     req: NextRequest,
-    data: { params: Promise<{ unitId: number | string }> },
+    data: { params: Promise<{ unitId: number | string }> }
   ) => {
     const { unitId } = await extractParams(data);
 
@@ -153,8 +153,8 @@ export const POST = wrapRouteRequest(
     }
 
     const controller = new RepositoryCrudController(
-      new DocumentUnitRepository(),
+      new DocumentUnitRepository()
     );
     return controller.create(req, { params: { unitId: Number(unitId) } });
-  },
+  }
 );

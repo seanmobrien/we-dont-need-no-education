@@ -30,7 +30,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 
 import { CookieJar } from 'tough-cookie';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { got } from 'got';
 import { parse as parseHtml } from 'node-html-parser';
 import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
@@ -47,7 +47,7 @@ import type {
   FormLoginResult,
 } from './impersonation.types';
 import { defaultConfigFromEnv } from './utility';
-import { SingletonProvider } from '@compliance-theater/lib-typescript';
+import { SingletonProvider } from '@compliance-theater/typescript';
 
 let openIdClientModule: {
   discovery: Function;
@@ -238,7 +238,7 @@ export class SystemTokenStore {
     this.config = this.#validateAndSanitizeConfig(config);
     this.rateLimiter = new SimpleRateLimiter(
       config.rateLimitMaxAttempts ?? 5,
-      config.rateLimitWindowMs ?? 60000,
+      config.rateLimitWindowMs ?? 60000
     );
     this.circuitBreaker = new SimpleCircuitBreaker(5, 30000);
   }
@@ -411,7 +411,7 @@ export class SystemTokenStore {
     // Validate required fields
     if (!config.issuer?.trim()) {
       throw new Error(
-        'SystemTokenStore: issuer is required and cannot be empty',
+        'SystemTokenStore: issuer is required and cannot be empty'
       );
     }
 
@@ -420,7 +420,7 @@ export class SystemTokenStore {
       const issuerUrl = new URL(config.issuer.trim());
       if (!['https:', 'http:'].includes(issuerUrl.protocol)) {
         throw new Error(
-          'SystemTokenStore: issuer must use HTTP or HTTPS protocol',
+          'SystemTokenStore: issuer must use HTTP or HTTPS protocol'
         );
       }
       if (
@@ -429,43 +429,43 @@ export class SystemTokenStore {
       ) {
         log((l) =>
           l.warn(
-            'SystemTokenStore: Using HTTP in production is not recommended',
-          ),
+            'SystemTokenStore: Using HTTP in production is not recommended'
+          )
         );
       }
     } catch {
       throw new Error(
-        `SystemTokenStore: Invalid issuer URL format: ${config.issuer}`,
+        `SystemTokenStore: Invalid issuer URL format: ${config.issuer}`
       );
     }
 
     if (!config.clientId?.trim()) {
       throw new Error(
-        'SystemTokenStore: clientId is required and cannot be empty',
+        'SystemTokenStore: clientId is required and cannot be empty'
       );
     }
 
     if (!config.clientSecret?.trim()) {
       throw new Error(
-        'SystemTokenStore: clientSecret is required and cannot be empty',
+        'SystemTokenStore: clientSecret is required and cannot be empty'
       );
     }
 
     if (!config.realm?.trim()) {
       throw new Error(
-        'SystemTokenStore: realm is required and cannot be empty',
+        'SystemTokenStore: realm is required and cannot be empty'
       );
     }
 
     if (!config.adminBase?.trim()) {
       throw new Error(
-        'SystemTokenStore: adminBase is required and cannot be empty',
+        'SystemTokenStore: adminBase is required and cannot be empty'
       );
     }
 
     if (!config.redirectUri?.trim()) {
       throw new Error(
-        'SystemTokenStore: redirectUri is required and cannot be empty',
+        'SystemTokenStore: redirectUri is required and cannot be empty'
       );
     }
 
@@ -474,12 +474,12 @@ export class SystemTokenStore {
       const redirectUrl = new URL(config.redirectUri.trim());
       if (!['https:', 'http:'].includes(redirectUrl.protocol)) {
         throw new Error(
-          'SystemTokenStore: redirectUri must use HTTP or HTTPS protocol',
+          'SystemTokenStore: redirectUri must use HTTP or HTTPS protocol'
         );
       }
     } catch {
       throw new Error(
-        `SystemTokenStore: Invalid redirectUri URL format: ${config.redirectUri}`,
+        `SystemTokenStore: Invalid redirectUri URL format: ${config.redirectUri}`
       );
     }
 
@@ -490,7 +490,7 @@ export class SystemTokenStore {
         config.tokenExpiryBufferSeconds < 0
       ) {
         throw new Error(
-          'SystemTokenStore: tokenExpiryBufferSeconds must be a non-negative integer',
+          'SystemTokenStore: tokenExpiryBufferSeconds must be a non-negative integer'
         );
       }
     }
@@ -501,7 +501,7 @@ export class SystemTokenStore {
         config.redisTokenTtlDays < 1
       ) {
         throw new Error(
-          'SystemTokenStore: redisTokenTtlDays must be a positive integer',
+          'SystemTokenStore: redisTokenTtlDays must be a positive integer'
         );
       }
     }
@@ -512,7 +512,7 @@ export class SystemTokenStore {
         config.rateLimitMaxAttempts < 1
       ) {
         throw new Error(
-          'SystemTokenStore: rateLimitMaxAttempts must be a positive integer',
+          'SystemTokenStore: rateLimitMaxAttempts must be a positive integer'
         );
       }
     }
@@ -523,7 +523,7 @@ export class SystemTokenStore {
         config.rateLimitWindowMs < 1000
       ) {
         throw new Error(
-          'SystemTokenStore: rateLimitWindowMs must be at least 1000ms',
+          'SystemTokenStore: rateLimitWindowMs must be at least 1000ms'
         );
       }
     }
@@ -872,11 +872,11 @@ export class SystemTokenStore {
           const config = await getOpenIdClientModule().discovery(
             new URL(this.config.issuer),
             this.config.clientId,
-            this.config.clientSecret,
+            this.config.clientSecret
           );
           discoverySpan.setAttribute('auth.oidc_discovery_success', true);
           return config;
-        },
+        }
       );
     }
   }
@@ -898,7 +898,7 @@ export class SystemTokenStore {
   async #handleAuthorizationRequest(
     client: typeof got,
     state: string,
-    nonce: string,
+    nonce: string
   ): Promise<{ codeUrl?: URL; loginHtml?: string }> {
     if (!this.oidcConfig) {
       throw new Error('OIDC configuration not initialized');
@@ -915,7 +915,7 @@ export class SystemTokenStore {
         prompt: 'login',
         state,
         nonce,
-      },
+      }
     );
 
     const authResponse = await client.get(authorizeUrl.toString());
@@ -925,7 +925,7 @@ export class SystemTokenStore {
       // Direct redirect with code - existing session
       const codeUrl = new URL(
         authResponse.headers.location,
-        this.config.redirectUri,
+        this.config.redirectUri
       );
       return { codeUrl };
     } else if (
@@ -936,7 +936,7 @@ export class SystemTokenStore {
       return { loginHtml };
     } else {
       throw new Error(
-        `Authorization endpoint returned unexpected status ${authResponse.statusCode}`,
+        `Authorization endpoint returned unexpected status ${authResponse.statusCode}`
       );
     }
   }
@@ -961,7 +961,7 @@ export class SystemTokenStore {
     loginHtml: string,
     authorizeUrl: string,
     span: { setAttribute: (key: string, value: boolean | string) => void },
-    state: string,
+    state: string
   ): Promise<URL | null> {
     // Parse and handle login form
     const formParse = this.#parseLoginForm(loginHtml);
@@ -981,7 +981,7 @@ export class SystemTokenStore {
         formAction,
         fields,
         authorizeUrl,
-        span,
+        span
       );
     } else if (hasUsername) {
       // Two-step: submit username first, then password
@@ -993,7 +993,7 @@ export class SystemTokenStore {
         formAction,
         fields,
         span,
-        state,
+        state
       );
     }
   }
@@ -1010,7 +1010,7 @@ export class SystemTokenStore {
     formAction: string,
     fields: Record<string, string>,
     authorizeUrl: string,
-    span: { setAttribute: (key: string, value: boolean | string) => void },
+    span: { setAttribute: (key: string, value: boolean | string) => void }
   ): Promise<URL | null> {
     span.setAttribute('auth.login_flow', 'single_step');
     const formBody = new URLSearchParams();
@@ -1050,7 +1050,7 @@ export class SystemTokenStore {
     client: typeof got,
     formAction: string,
     fields: Record<string, string>,
-    span: { setAttribute: (key: string, value: boolean | string) => void },
+    span: { setAttribute: (key: string, value: boolean | string) => void }
   ): Promise<URL | null> {
     span.setAttribute('auth.login_flow', 'two_step');
 
@@ -1118,7 +1118,7 @@ export class SystemTokenStore {
     formAction: string,
     fields: Record<string, string>,
     span: { setAttribute: (key: string, value: boolean | string) => void },
-    state: string,
+    state: string
   ): Promise<URL | null> {
     span.setAttribute('auth.login_flow', 'fallback');
     const formBody = new URLSearchParams();
@@ -1140,7 +1140,9 @@ export class SystemTokenStore {
 
     // Construct safe fallback URL for testing
     return new URL(
-      `${this.config.redirectUri}?code=admin-code&state=${encodeURIComponent(state)}`,
+      `${this.config.redirectUri}?code=admin-code&state=${encodeURIComponent(
+        state
+      )}`
     );
   }
 
@@ -1161,7 +1163,7 @@ export class SystemTokenStore {
   async #exchangeAuthorizationCode(
     codeUrl: URL,
     state: string,
-    nonce: string,
+    nonce: string
   ): Promise<FormLoginResult> {
     const exchangeInstrumented = await createInstrumentedSpan({
       spanName: 'system-token-store.exchange-authorization-code',
@@ -1182,7 +1184,7 @@ export class SystemTokenStore {
           {
             expectedState: state,
             expectedNonce: nonce,
-          },
+          }
         );
 
         const accessToken = token.access_token as string;
@@ -1197,7 +1199,7 @@ export class SystemTokenStore {
           refreshToken: token.refresh_token as string | undefined,
           expiresIn: token.expires_in as number | undefined,
         };
-      },
+      }
     );
   }
 
@@ -1231,7 +1233,7 @@ export class SystemTokenStore {
         const authResult = await this.#handleAuthorizationRequest(
           client,
           state,
-          nonce,
+          nonce
         );
         span.setAttribute('auth.authorization_url_generated', true);
 
@@ -1241,7 +1243,7 @@ export class SystemTokenStore {
           const result = await this.#exchangeAuthorizationCode(
             authResult.codeUrl,
             state,
-            nonce,
+            nonce
           );
           span.setAttribute('auth.session_reuse_success', true);
           return result;
@@ -1263,7 +1265,7 @@ export class SystemTokenStore {
             prompt: 'login',
             state,
             nonce,
-          },
+          }
         );
 
         const loginResult = await this.#processLoginForm(
@@ -1271,7 +1273,7 @@ export class SystemTokenStore {
           authResult.loginHtml,
           authorizeUrl.toString(),
           span,
-          state,
+          state
         );
         codeUrl = loginResult;
 
@@ -1279,13 +1281,15 @@ export class SystemTokenStore {
         const finalUrl =
           codeUrl ??
           new URL(
-            `${this.config.redirectUri}?code=admin-code&state=${encodeURIComponent(state)}`,
+            `${
+              this.config.redirectUri
+            }?code=admin-code&state=${encodeURIComponent(state)}`
           );
 
         const result = await this.#exchangeAuthorizationCode(
           finalUrl,
           state,
-          nonce,
+          nonce
         );
         span.setAttribute('auth.form_login_success', true);
         return result;
@@ -1400,7 +1404,7 @@ export class SystemTokenStore {
    * ```
    */
   async #exchangeOfflineToken(
-    refreshToken: string,
+    refreshToken: string
   ): Promise<TokenResponse | null> {
     const instrumented = await createInstrumentedSpan({
       spanName: 'system-token-store.exchange-offline-token',
@@ -1425,11 +1429,11 @@ export class SystemTokenStore {
               const config = await getOpenIdClientModule().discovery(
                 new URL(this.config.issuer),
                 this.config.clientId,
-                this.config.clientSecret,
+                this.config.clientSecret
               );
               discoverySpan.setAttribute('auth.oidc_discovery_success', true);
               return config;
-            },
+            }
           );
         }
 

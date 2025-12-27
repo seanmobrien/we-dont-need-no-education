@@ -7,7 +7,7 @@ import type {
 import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
 import { isGridSortModel, isString, isURL } from './postgres/guards';
 import { isGridFilterModel } from '../guards';
-import type { ArrayElement } from '@compliance-theater/lib-typescript/_types';
+import type { ArrayElement } from '@compliance-theater/typescript/_types';
 import type { PaginatedGridListRequest } from '../types';
 import { normalizeNullableNumeric } from '@/data-models/_utilities';
 type GridSortItem = ArrayElement<GridSortModel>;
@@ -26,10 +26,10 @@ type GridSortItem = ArrayElement<GridSortModel>;
  */
 export const parseFilterOptions = (
   req: URL | URLSearchParams | (GridFilterModel | undefined),
-  additional?: Record<string, Omit<GridFilterItem, 'field'>>,
+  additional?: Record<string, Omit<GridFilterItem, 'field'>>
 ): GridFilterModel | undefined => {
   const appendAdditional = (
-    x: GridFilterModel,
+    x: GridFilterModel
   ): GridFilterModel | undefined => {
     const addKeys = Object.keys(additional ?? {});
     return x.items.length === 0
@@ -40,14 +40,14 @@ export const parseFilterOptions = (
           }
         : undefined
       : addKeys.length > 0
-        ? {
-            ...x,
-            items: [
-              ...(x.items || []),
-              ...addKeys.map((key) => ({ field: key, ...additional![key] })),
-            ],
-          }
-        : x;
+      ? {
+          ...x,
+          items: [
+            ...(x.items || []),
+            ...addKeys.map((key) => ({ field: key, ...additional![key] })),
+          ],
+        }
+      : x;
   };
 
   if (isGridFilterModel(req)) {
@@ -74,7 +74,7 @@ export const parseFilterOptions = (
  * Factory function to create a column mapping function.
  */
 export const columnMapFactory = (
-  columnMap: ((sourceColumnName: string) => string) | Record<string, string>,
+  columnMap: ((sourceColumnName: string) => string) | Record<string, string>
 ): ((sourceColumnName: string) => string) => {
   if (typeof columnMap === 'function') {
     return columnMap;
@@ -95,7 +95,7 @@ type ParseSortOptionsParam =
  * Parse sort options from various sources.
  */
 export const parseSortOptions = (
-  source?: ParseSortOptionsParam,
+  source?: ParseSortOptionsParam
 ): typeof source extends infer TSource
   ? TSource extends ParseSortOptionsParam
     ? GridSortModel
@@ -181,7 +181,7 @@ export const parseSortOptions = (
 export const parsePaginationOptions = (
   source: LikeNextRequest | URL | URLSearchParams | string | undefined,
   defaultPageSize: number = 25,
-  maxPageSize: number = 100,
+  maxPageSize: number = 100
 ): { offset: number; limit: number } | { num: number; page: string } => {
   let page = 0;
   let pageSize = defaultPageSize;
@@ -269,7 +269,7 @@ export const parsePaginationStats = (
     | URL
     | URLSearchParams
     | (PaginatedGridListRequest | undefined)
-    | LikeNextRequest,
+    | LikeNextRequest
 ): PaginatedGridListRequest & { offset: number } => {
   let page: number | string | undefined | null;
   let num: number | string | undefined | null;

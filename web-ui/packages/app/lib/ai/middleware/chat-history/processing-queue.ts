@@ -2,7 +2,7 @@ import type {
   LanguageModelV2CallOptions,
   LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { Semaphore } from '@/lib/nextjs-util/semaphore-manager';
 import { ensureCreateResult } from './stream-handler-result';
 import { processStreamChunk } from './stream-handlers';
@@ -27,7 +27,7 @@ export class ProcessingQueue {
 
   async enqueue(
     chunk: LanguageModelV2StreamPart,
-    context: StreamHandlerContext,
+    context: StreamHandlerContext
   ): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const task: QueuedTask = {
@@ -69,7 +69,7 @@ export class ProcessingQueue {
           chunkType: task.chunk.type,
           chatId: task.context.chatId,
           turnId: task.context.turnId,
-        }),
+        })
       );
       throw error;
     }
@@ -105,7 +105,7 @@ export class ProcessingQueue {
         } catch (error) {
           recordQueueOperation('complete', false, this.queue.length - 1);
           task.reject(
-            error instanceof Error ? error : new Error(String(error)),
+            error instanceof Error ? error : new Error(String(error))
           );
         }
 
@@ -179,7 +179,7 @@ export const enqueueStream = async ({
   // Initialize message persistence
   const messagePersistence = await safeInitializeMessagePersistence(
     context,
-    params,
+    params
   );
   if (!messagePersistence) {
     throw new Error('Failed to initialize message persistence');
@@ -226,7 +226,7 @@ export const enqueueStream = async ({
               chatId: streamContext.chatId,
               chunkType: chunk.type,
               queueLength: processingQueue.getQueueLength(),
-            }),
+            })
           );
           streamContext.errors.push(error);
         })
@@ -258,10 +258,10 @@ export const enqueueStream = async ({
             error,
             turnId: streamContext.turnId,
             chatId: streamContext.chatId,
-          }),
+          })
         );
         streamContext.errors.push(
-          isError(error) ? error : new Error(String(error)),
+          isError(error) ? error : new Error(String(error))
         );
       }
       log((l) => l.verbose('=== ChatHistoryMiddleware.flush ==='));

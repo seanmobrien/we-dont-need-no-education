@@ -10,9 +10,9 @@ import {
   setRecordDirty,
   isRecordDirty,
   RecordWithDirtyState,
-} from '@compliance-theater/lib-typescript';
+} from '@compliance-theater/typescript';
 import ContactDropdown from '@/components/contact/contact-dropdown';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import React from 'react';
 import ContactRecipients from '@/components/contact/contact-recipients';
 import EmailSelect from '../select';
@@ -133,7 +133,7 @@ type BulkUpdateOperation = {
 
 const BulkEmailForm: React.FC = () => {
   const [emails, setEmails] = useState<RecordWithDirtyState<EmailMessage>[]>(
-    [],
+    []
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -165,7 +165,7 @@ const BulkEmailForm: React.FC = () => {
           setLoading(false);
         });
     },
-    [pageStats.num, setEmails, setPageStats, setLoading, setError],
+    [pageStats.num, setEmails, setPageStats, setLoading, setError]
   );
 
   useEffect(() => {
@@ -238,14 +238,14 @@ const BulkEmailForm: React.FC = () => {
               (res) =>
                 res &&
                 (res.emailId === email.emailId ||
-                  (!email.emailId && isSameEmail(email, res))),
+                  (!email.emailId && isSameEmail(email, res)))
             );
             if (result) {
               setRecordDirty(result, false);
               return result;
             }
             return email;
-          }),
+          })
         );
       })
       .catch((err) => {
@@ -262,8 +262,8 @@ const BulkEmailForm: React.FC = () => {
     setValue: (
       target: TElement,
       field: keyof EmailMessage,
-      msg: EmailMessage,
-    ) => void,
+      msg: EmailMessage
+    ) => void
   ) => {
     const target = event.target as TElement;
     const field = target.dataset.field as keyof EmailMessage;
@@ -377,18 +377,18 @@ const BulkEmailForm: React.FC = () => {
                                   throw new Error('Error deleting email');
                                 }
                                 setEmails((prevEmails) =>
-                                  prevEmails.filter((_, i) => i !== index),
+                                  prevEmails.filter((_, i) => i !== index)
                                 );
                               })
                               .catch((error) => {
                                 log((l) =>
-                                  l.error('Error deleting email:', error),
+                                  l.error('Error deleting email:', error)
                                 );
                                 setError('Error deleting email.');
                               });
                           } else {
                             setEmails((prevEmails) =>
-                              prevEmails.filter((_, i) => i !== index),
+                              prevEmails.filter((_, i) => i !== index)
                             );
                           }
                         }}

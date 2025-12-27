@@ -2,14 +2,14 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/neondb';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { globalContactCache } from '@/data-models/api';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
 const mapRecordToSummary = (
   record: Record<string, unknown>,
-  cache: boolean = true,
+  cache: boolean = true
 ) => {
   const ret = {
     contactId: record.contact_id as number,
@@ -23,7 +23,7 @@ const mapRecordToSummary = (
 };
 const mapRecordToObject = (
   record: Record<string, unknown>,
-  cache: boolean = true,
+  cache: boolean = true
 ) => {
   const ret = {
     ...mapRecordToSummary(record, false),
@@ -45,7 +45,7 @@ export const POST = wrapRouteRequest(async (req: NextRequest) => {
     if (!name || !email) {
       return NextResponse.json(
         { error: 'Missing required fields' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -53,7 +53,7 @@ export const POST = wrapRouteRequest(async (req: NextRequest) => {
       (sql) =>
         sql`INSERT INTO contacts (name, email, phone, role_dscr, is_district_staff) VALUES (${name}, ${email}, ${phoneNumber}, ${jobDescription}, ${isDistrictStaff})\
       RETURNING *`,
-      { transform: mapRecordToObject },
+      { transform: mapRecordToObject }
     );
     log((l) => l.verbose('[ [AUDIT]] -  Contact created:', result[0]));
     return NextResponse.json(
@@ -61,7 +61,7 @@ export const POST = wrapRouteRequest(async (req: NextRequest) => {
         message: 'Contact created successfully',
         contact: result[0],
       },
-      { status: 201 },
+      { status: 201 }
     );
   } catch (error) {
     const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -70,7 +70,7 @@ export const POST = wrapRouteRequest(async (req: NextRequest) => {
     });
     return NextResponse.json(
       { error: `Internal Server Error - ${le.message}` },
-      { status: 500 },
+      { status: 500 }
     );
   }
 });
@@ -80,7 +80,7 @@ export const GET = wrapRouteRequest(async () => {
     const result = await query(
       (sql) =>
         sql`SELECT contact_id, name, email FROM contacts ORDER BY name ASC`,
-      { transform: mapRecordToSummary },
+      { transform: mapRecordToSummary }
     );
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
@@ -90,7 +90,7 @@ export const GET = wrapRouteRequest(async () => {
     });
     return NextResponse.json(
       { error: `Internal Server Error - ${le.message}` },
-      { status: 500 },
+      { status: 500 }
     );
   }
 });

@@ -1,11 +1,14 @@
 import type { ReadableSpan, SpanExporter } from '@opentelemetry/sdk-trace-base';
 import type { ExportResult } from '@opentelemetry/core';
 import type { AttributeValue } from '@opentelemetry/api';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { UrlFilterEngine } from './url-filter-engine';
 import { UrlFilterOptions } from './url-filter-rules';
 import { LRUCache } from 'lru-cache';
-import { globalRequiredSingleton, globalSingleton } from '@compliance-theater/lib-typescript/singleton-provider';
+import {
+  globalRequiredSingleton,
+  globalSingleton,
+} from '@compliance-theater/typescript/singleton-provider';
 import { env } from '@/lib/site-util/env';
 
 /*
@@ -20,13 +23,14 @@ const getFilteredSpansCache = () => {
       new LRUCache<string, boolean>({
         max: 10000, // Track up to 10k filtered spans
         ttl: 1000 * 60 * 60, // 1 hour TTL
-      }),
+      })
   );
 };
 
 export class UrlFilteredSpanExporter
   extends UrlFilterEngine
-  implements SpanExporter {
+  implements SpanExporter
+{
   readonly #inner: SpanExporter;
   readonly #cache: LRUCache<string, boolean>;
 
@@ -34,7 +38,7 @@ export class UrlFilteredSpanExporter
     inner: SpanExporter,
     opts: UrlFilterOptions & { cache?: LRUCache<string, boolean> } = {
       rules: [],
-    },
+    }
   ) {
     super(opts);
     this.#inner = inner;
@@ -48,7 +52,7 @@ export class UrlFilteredSpanExporter
    */
   #isSpanOrAncestorFiltered(
     span: ReadableSpan,
-    spanMap: Map<string, ReadableSpan>,
+    spanMap: Map<string, ReadableSpan>
   ): boolean {
     const cache = this.#cache;
     const spanContext = span.spanContext();
@@ -104,7 +108,7 @@ export class UrlFilteredSpanExporter
 
   export(
     spans: ReadableSpan[],
-    resultCallback: (result: ExportResult) => void,
+    resultCallback: (result: ExportResult) => void
   ): void {
     // Bypass filtering in silly log level for full traceability
     if (env('LOG_LEVEL_SERVER') === 'silly') {
@@ -154,7 +158,7 @@ export class UrlFilteredSpanExporter
             l.warn('Filter evaluation failed for span', {
               error: err,
               spanId: span.spanContext().spanId, // Add this
-            }),
+            })
           );
           retained.push(span);
         }
@@ -167,7 +171,7 @@ export class UrlFilteredSpanExporter
             dropped,
             retained: retained.length,
             total: spans.length,
-          }),
+          })
         );
       }
 
@@ -178,7 +182,7 @@ export class UrlFilteredSpanExporter
         l.error('Span filtering failed, exporting all spans', {
           error: err,
           spanCount: spans.length,
-        }),
+        })
       );
       this.#inner.export(spans, resultCallback);
     }

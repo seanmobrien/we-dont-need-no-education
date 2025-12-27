@@ -1,4 +1,4 @@
-# @compliance-theater/lib-logger
+# @compliance-theater/logger
 
 Logging utilities for the Title IX Victim Advocacy Platform.
 
@@ -19,33 +19,33 @@ This package provides a comprehensive logging system built on top of Pino, with 
 ### Basic Logging
 
 ```typescript
-import { log } from '@compliance-theater/lib-logger';
+import { log } from "@compliance-theater/logger";
 
 // Use the logger
 log((logger) => {
-  logger.info('Application started');
-  logger.error('An error occurred', { error: err });
+  logger.info("Application started");
+  logger.error("An error occurred", { error: err });
 });
 ```
 
 ### Scoped Logger
 
 ```typescript
-import { simpleScopedLogger } from '@compliance-theater/lib-logger';
+import { simpleScopedLogger } from "@compliance-theater/logger";
 
-const logger = simpleScopedLogger('MyComponent');
-logger.info('Component initialized');
-logger.debug('Debug information', { data: someData });
+const logger = simpleScopedLogger("MyComponent");
+logger.info("Component initialized");
+logger.debug("Debug information", { data: someData });
 ```
 
 ### Custom Events
 
 ```typescript
-import { logEvent } from '@compliance-theater/lib-logger';
+import { logEvent } from "@compliance-theater/logger";
 
-logEvent('UserAction', {
-  action: 'button_click',
-  component: 'LoginForm',
+logEvent("UserAction", {
+  action: "button_click",
+  component: "LoginForm",
 });
 ```
 

@@ -20,7 +20,7 @@ import {
   makeStreamResponse,
   nodeStreamToReadableStream,
 } from './../response';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type { BufferingStrategyDeps, CachedValue } from './fetch-types';
 import type { EventEmitter } from 'events';
 import type { Readable } from 'stream';
@@ -78,7 +78,7 @@ export class BufferingStrategy {
     statusCode: number,
     url: string,
     span: { setAttribute(key: string, value: unknown): void },
-    shouldReleaseSemaphore = true,
+    shouldReleaseSemaphore = true
   ): Promise<BufferedResult> {
     const chunks: Buffer[] = [];
     let bufferedBytes = 0;
@@ -95,8 +95,8 @@ export class BufferingStrategy {
           sizeExceeded = true;
           log((l) =>
             l.warn(
-              `[buffering-strategy] Response size exceeded limit (${this.deps.config.maxResponseSize} bytes), switching to streaming: ${url}`,
-            ),
+              `[buffering-strategy] Response size exceeded limit (${this.deps.config.maxResponseSize} bytes), switching to streaming: ${url}`
+            )
           );
         }
         // Stop buffering, will switch to streaming
@@ -198,7 +198,7 @@ export class BufferingStrategy {
           stream as unknown as AsyncIterable<Buffer>,
           headers,
           statusCode,
-          chunks,
+          chunks
         );
       }
 
@@ -297,7 +297,7 @@ export class BufferingStrategy {
    */
   private async cacheBufferedToRedis(
     cacheKey: string,
-    value: CachedValue,
+    value: CachedValue
   ): Promise<void> {
     try {
       const redis = await this.deps.getRedisClient();

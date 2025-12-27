@@ -1,4 +1,4 @@
-import { isKeyOf } from '@compliance-theater/lib-typescript';
+import { isKeyOf } from '@compliance-theater/typescript';
 
 export const BooleanFeatureFlagValues = [
   'mem0_mcp_tools_enabled',
@@ -56,16 +56,16 @@ export type KnownFeatureType = (typeof KnownFeatureValues)[number];
 export const KnownFeatureKeyMap: Readonly<
   Record<KnownFeatureType, KnownFeatureType>
 > = KnownFeatureValues.reduce(
-  (acc, value) => ({ ...acc, [value]: value }) as const,
-  {} as Readonly<Record<KnownFeatureType, KnownFeatureType>>,
+  (acc, value) => ({ ...acc, [value]: value } as const),
+  {} as Readonly<Record<KnownFeatureType, KnownFeatureType>>
 );
 
 export const isKnownFeatureBooleanType = (
-  check: unknown,
+  check: unknown
 ): check is BooleanFeatureFlagType => isKeyOf(check, BooleanFeatureFlagValues);
 
 export const isKnownFeatureObjectType = (
-  check: unknown,
+  check: unknown
 ): check is ObjectFeatureFlagType => isKeyOf(check, ObjectFeatureFlagValues);
 
 export const isKnownFeatureType = (check: unknown): check is KnownFeatureType =>

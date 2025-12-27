@@ -1,7 +1,10 @@
 import { PaginationStats, PaginatedResultset } from '@/data-models/_types';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { query, queryExt, TransformedFullQueryResults } from '@/lib/neondb';
-import { FirstParameter, PartialExceptFor } from '@compliance-theater/lib-typescript';
+import {
+  FirstParameter,
+  PartialExceptFor,
+} from '@compliance-theater/typescript';
 import {
   IObjectRepositoryExt,
   ObjectRepository,
@@ -23,7 +26,8 @@ import { AbstractObjectRepository } from './abstractObjectRepository';
  */
 export class BaseObjectRepository<T extends object, KId extends keyof T>
   extends AbstractObjectRepository<T>
-  implements ObjectRepository<T, KId> {
+  implements ObjectRepository<T, KId>
+{
   /**
    * The name of the table in the database.
    * @type {string}
@@ -83,13 +87,15 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    *
    * @returns {[string, Array<any>, string]} The list query properties.
    */
-  protected getListQueryProperties(): [
-    string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Array<any>,
-    string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ] | Promise<[string, Array<any>, string]> {
+  protected getListQueryProperties():
+    | [
+        string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Array<any>,
+        string
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ]
+    | Promise<[string, Array<any>, string]> {
     throw new Error('Method not implemented.');
   }
 
@@ -99,13 +105,13 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    * @returns {[string, Array<any>]} A tuple containing a `TemplateStringsArray` and an array of any type.
    * @throws {Error} An error indicating that the method is not implemented.
    */
-  protected getCreateQueryProperties({ }: FirstParameter<
+  protected getCreateQueryProperties({}: FirstParameter<
     ObjectRepository<T, KId>['create']
   >): [
-      string,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      Array<any>,
-    ] {
+    string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Array<any>
+  ] {
     throw new Error('Method not implemented.');
   }
 
@@ -115,17 +121,21 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    * @returns {[string, Array<any>]} A tuple containing a TemplateStringsArray and an array of any type.
    * @throws {Error} If the method is not implemented.
    */
-  protected getQueryProperties({ }: FirstParameter<
+  protected getQueryProperties({}: FirstParameter<
     ObjectRepository<T, KId>['get']
-  >): [
-    string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Array<any>,
-  ] | Promise<[
-    string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Array<any>,
-  ]> {
+  >):
+    | [
+        string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Array<any>
+      ]
+    | Promise<
+        [
+          string,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          Array<any>
+        ]
+      > {
     throw new Error('Method not implemented.');
   }
 
@@ -135,12 +145,12 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    * @returns {[Record<string, any>]} An object containing the properties for the update query.
    * @throws {Error} Throws an error if the method is not implemented.
    */
-  protected getUpdateQueryProperties({ }: FirstParameter<
+  protected getUpdateQueryProperties({}: FirstParameter<
     ObjectRepository<T, KId>['update']
   >): [
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      Record<string, any>,
-    ] {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Record<string, any>
+  ] {
     throw new Error('Method not implemented.');
   }
 
@@ -150,14 +160,16 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    * @param {PaginationStats} [pagination] - Optional pagination parameters.
    * @returns {Promise<PaginatedResultset<Partial<T>>>} A promise that resolves to a paginated result set of partial items.
    */
-  async list(pagination?: PaginationStats): Promise<PaginatedResultset<Partial<T>>> {
+  async list(
+    pagination?: PaginationStats
+  ): Promise<PaginatedResultset<Partial<T>>> {
     const queryProps = this.getListQueryProperties();
     const [sqlQuery, values, sqlCountQuery] = Array.isArray(queryProps)
       ? queryProps
       : await queryProps;
     return await this.defaultListImpl(
       { sqlQuery, values, sqlCountQuery },
-      pagination,
+      pagination
     );
   }
 
@@ -182,7 +194,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
       values: Array<any>;
       sqlCountQuery: string;
     },
-    pagination?: PaginationStats,
+    pagination?: PaginationStats
   ): Promise<PaginatedResultset<Partial<T>>> {
     return this.innerList(
       () =>
@@ -190,13 +202,13 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
           (sql) => this.forwardCallToDb<false, false>(sql, sqlQuery, values),
           {
             transform: this.mapRecordToSummary,
-          },
+          }
         ),
       () =>
         query((sql) =>
-          this.forwardCallToDb<false, false>(sql, sqlCountQuery, values),
+          this.forwardCallToDb<false, false>(sql, sqlCountQuery, values)
         ),
-      pagination,
+      pagination
     );
   }
 
@@ -216,9 +228,9 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
           (sql) => this.forwardCallToDb<false, false>(sql, sqlImp, sqlArgs),
           {
             transform: this.mapRecordToObject,
-          },
+          }
         );
-      },
+      }
     );
   }
 
@@ -237,9 +249,9 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
           (sql) => this.forwardCallToDb<false, false>(sql, sqlImp, sqlArgs),
           {
             transform: this.mapRecordToObject,
-          },
+          }
         );
-      },
+      }
     );
   }
 
@@ -268,16 +280,16 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
           (sql) =>
             sql<false, true>(
               `UPDATE ${this.tableName} SET ${updateFields.join(
-                ', ',
+                ', '
               )} WHERE "${String(
-                this.tableIdField,
+                this.tableIdField
               )}" = $${paramIndex} RETURNING *`.toString(),
-              values,
+              values
             ),
-          { transform: this.mapRecordToObject },
+          { transform: this.mapRecordToObject }
         );
         return this.postProcessUpdate({ updateQuery: ret, props });
-      },
+      }
     );
   }
 
@@ -308,7 +320,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
         const sqlImpl = `DELETE FROM ${this.tableName} 
           WHERE ${String(this.tableIdField)}=$1`.toString();
         return queryExt<T>((sql) => sql<false, true>(sqlImpl, [recordId]));
-      },
+      }
     );
   }
 
@@ -322,11 +334,11 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    */
   validate<TMethod extends keyof ObjectRepository<T, KId>>(
     method: TMethod,
-    obj: FirstParameter<Pick<ObjectRepository<T, KId>, TMethod>[TMethod]>,
+    obj: FirstParameter<Pick<ObjectRepository<T, KId>, TMethod>[TMethod]>
   ): void {
     // NO-OP, but can be overridden
     log((l) =>
-      l.silly(`Using ${method} so the squigglies leave me alone...`, obj),
+      l.silly(`Using ${method} so the squigglies leave me alone...`, obj)
     );
   }
 

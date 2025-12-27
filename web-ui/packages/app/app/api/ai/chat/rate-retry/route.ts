@@ -11,7 +11,7 @@ import type {
   ProcessedResponse,
   ModelClassification,
 } from '@/lib/ai/middleware/key-rate-limiter/types';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { createAgentHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
@@ -59,7 +59,7 @@ export const GET = wrapRouteRequest(async () => {
 
       if (!azureAvailable && !googleAvailable) {
         log((l) =>
-          l.warn(`No available models for ${classification}, skipping`),
+          l.warn(`No available models for ${classification}, skipping`)
         );
         continue;
       }
@@ -67,7 +67,7 @@ export const GET = wrapRouteRequest(async () => {
       // Get queue size for metrics
       const queueSize = await rateLimitQueueManager.getQueueSize(
         1,
-        classification,
+        classification
       );
       rateLimitMetrics.updateQueueSize(queueSize, classification, 1);
 
@@ -80,12 +80,12 @@ export const GET = wrapRouteRequest(async () => {
       const requests = await rateLimitQueueManager.dequeueRequests(
         1,
         classification,
-        10,
+        10
       );
       log((l) =>
         l.verbose(
-          `Processing ${requests.length} gen-1 requests for ${classification}`,
-        ),
+          `Processing ${requests.length} gen-1 requests for ${classification}`
+        )
       );
 
       for (const request of requests) {
@@ -95,17 +95,15 @@ export const GET = wrapRouteRequest(async () => {
           // Choose available model (Azure first, then Google)
           const modelKey = azureAvailable ? azureModelKey : googleModelKey;
           log((l) =>
-            l.verbose(
-              `Processing request ${request.id} with model ${modelKey}`,
-            ),
+            l.verbose(`Processing request ${request.id} with model ${modelKey}`)
           );
           // Create model instance (ensure we don't use embedding models for text generation)
           const modelInstance = (
             classification === 'embedding'
               ? await aiModelFactory(classification)
               : classification === 'hifi' || classification === 'lofi'
-                ? await aiModelFactory(classification)
-                : await aiModelFactory('lofi')
+              ? await aiModelFactory(classification)
+              : await aiModelFactory('lofi')
           ) as LanguageModelV2;
           const model = wrapChatHistoryMiddleware({
             chatHistoryContext,
@@ -116,14 +114,14 @@ export const GET = wrapRouteRequest(async () => {
           const timeoutPromise = new Promise((_, reject) => {
             setTimeout(
               () => reject(new Error('Request timeout')),
-              REQUEST_TIMEOUT_MS,
+              REQUEST_TIMEOUT_MS
             );
           });
 
           const generatePromise = generateText({
             model,
             messages: convertToModelMessages(
-              (request.request.messages ?? []) as UIMessage[],
+              (request.request.messages ?? []) as UIMessage[]
             ),
             // maxTokens: 1000, // reasonable limit
           });
@@ -186,8 +184,8 @@ export const GET = wrapRouteRequest(async () => {
         if (totalElapsed >= MAX_PROCESSING_TIME_MS) {
           log((l) =>
             l.error(
-              new Error('Max processing time reached during gen-1 processing'),
-            ),
+              new Error('Max processing time reached during gen-1 processing')
+            )
           );
           break;
         }
@@ -206,7 +204,7 @@ export const GET = wrapRouteRequest(async () => {
         // Only process gen-2 if no gen-1 was processed for this classification
         const gen2QueueSize = await rateLimitQueueManager.getQueueSize(
           2,
-          classification,
+          classification
         );
         rateLimitMetrics.updateQueueSize(gen2QueueSize, classification, 2);
 
@@ -229,7 +227,7 @@ export const GET = wrapRouteRequest(async () => {
         const requests = await rateLimitQueueManager.dequeueRequests(
           2,
           classification,
-          1,
+          1
         );
         if (requests.length === 0) {
           continue;
@@ -238,8 +236,8 @@ export const GET = wrapRouteRequest(async () => {
         const request = requests[0];
         log((l) =>
           l.verbose(
-            `Processing gen-2 request ${request.id} for ${classification}`,
-          ),
+            `Processing gen-2 request ${request.id} for ${classification}`
+          )
         );
 
         try {
@@ -253,7 +251,7 @@ export const GET = wrapRouteRequest(async () => {
           const timeoutPromise = new Promise((_, reject) => {
             setTimeout(
               () => reject(new Error('Request timeout')),
-              REQUEST_TIMEOUT_MS,
+              REQUEST_TIMEOUT_MS
             );
           });
 
@@ -283,7 +281,9 @@ export const GET = wrapRouteRequest(async () => {
             id: request.id,
             error: {
               type: 'will_not_retry',
-              message: `Gen-2 processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              message: `Gen-2 processing failed: ${
+                error instanceof Error ? error.message : 'Unknown error'
+              }`,
             },
             processedAt: new Date().toISOString(),
           };
@@ -297,8 +297,8 @@ export const GET = wrapRouteRequest(async () => {
     const totalDuration = Date.now() - startTime;
     log((l) =>
       l.verbose(
-        `Rate retry processing completed. Processed: ${processedCount}, Duration: ${totalDuration}ms`,
-      ),
+        `Rate retry processing completed. Processed: ${processedCount}, Duration: ${totalDuration}ms`
+      )
     );
 
     return NextResponse.json({
@@ -323,7 +323,7 @@ export const GET = wrapRouteRequest(async () => {
         processed: processedCount,
         duration: Date.now() - startTime,
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 });

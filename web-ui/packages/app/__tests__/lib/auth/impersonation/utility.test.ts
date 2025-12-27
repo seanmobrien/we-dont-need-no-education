@@ -10,7 +10,7 @@ import {
   defaultConfigFromEnv,
 } from '@/lib/auth/impersonation/utility';
 import type { AdminTokenConfig } from '@/lib/auth/impersonation/impersonation.types';
-import { type ILogger, log } from '@compliance-theater/lib-logger';
+import { type ILogger, log } from '@compliance-theater/logger';
 // Mock the dependencies
 
 describe('impersonation/utility', () => {
@@ -103,7 +103,7 @@ describe('impersonation/utility', () => {
 
       test('returns undefined when no realms path is present', () => {
         const result = adminBaseFromIssuer(
-          'https://auth.example.com/some/other/path',
+          'https://auth.example.com/some/other/path'
         );
         expect(result).toBeUndefined();
       });
@@ -230,7 +230,7 @@ describe('impersonation/utility', () => {
 
         expect(result.realm).toBe('production-realm');
         expect(result.adminBase).toBe(
-          'https://auth.mycompany.com/admin/realms/production-realm',
+          'https://auth.mycompany.com/admin/realms/production-realm'
         );
       });
     });
@@ -241,11 +241,11 @@ describe('impersonation/utility', () => {
 
         expect(() => defaultConfigFromEnv()).toThrow(TypeError);
         expect(() => defaultConfigFromEnv()).toThrow(
-          'Required environment variables are missing',
+          'Required environment variables are missing'
         );
 
         expect(mockLog.warn).toHaveBeenCalledWith(
-          'SystemTokenStore: incomplete environment configuration',
+          'SystemTokenStore: incomplete environment configuration'
         );
       });
 
@@ -254,7 +254,7 @@ describe('impersonation/utility', () => {
 
         expect(() => defaultConfigFromEnv()).toThrow(TypeError);
         expect(() => defaultConfigFromEnv()).toThrow(
-          'Required environment variables are missing',
+          'Required environment variables are missing'
         );
       });
 
@@ -263,7 +263,7 @@ describe('impersonation/utility', () => {
 
         expect(() => defaultConfigFromEnv()).toThrow(TypeError);
         expect(() => defaultConfigFromEnv()).toThrow(
-          'Required environment variables are missing',
+          'Required environment variables are missing'
         );
       });
 
@@ -272,7 +272,7 @@ describe('impersonation/utility', () => {
 
         expect(() => defaultConfigFromEnv()).toThrow(TypeError);
         expect(() => defaultConfigFromEnv()).toThrow(
-          'Required environment variables are missing',
+          'Required environment variables are missing'
         );
       });
 
@@ -282,7 +282,7 @@ describe('impersonation/utility', () => {
 
         expect(() => defaultConfigFromEnv()).toThrow(TypeError);
         expect(() => defaultConfigFromEnv()).toThrow(
-          'Required environment variables are missing',
+          'Required environment variables are missing'
         );
       });
     });
@@ -293,7 +293,7 @@ describe('impersonation/utility', () => {
 
         expect(() => defaultConfigFromEnv()).toThrow(TypeError);
         expect(() => defaultConfigFromEnv()).toThrow(
-          'Invalid issuer URL format',
+          'Invalid issuer URL format'
         );
         expect(mockLog.warn).toHaveBeenCalled();
       });
@@ -364,7 +364,7 @@ describe('impersonation/utility', () => {
       // Verify that adminBaseFromIssuer was called and its results used
       expect(result.realm).toBe('custom-realm');
       expect(result.adminBase).toBe(
-        'https://custom.auth.com/admin/realms/custom-realm',
+        'https://custom.auth.com/admin/realms/custom-realm'
       );
       expect(result.issuer).toBe(customIssuer);
     });

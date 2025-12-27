@@ -1,13 +1,8 @@
-import {
-  isAiProviderType,
-} from '@/lib/ai/core';
-import { log } from '@compliance-theater/lib-logger';
-import {
-  globalRequiredSingleton,
-} from '@compliance-theater/lib-typescript';
+import { isAiProviderType } from '@/lib/ai/core';
+import { log } from '@compliance-theater/logger';
+import { globalRequiredSingleton } from '@compliance-theater/typescript';
 import { LoggedError } from '@/lib/react-util';
 import { getModelFlag } from './util';
-
 
 /**
  * Model availability manager for programmatic control of model enabling/disabling
@@ -23,7 +18,7 @@ export class ModelAvailabilityManager {
   static get Instance(): ModelAvailabilityManager {
     return globalRequiredSingleton(
       Symbol.for('@noeducation/aiModelFactory:availability'),
-      () => new ModelAvailabilityManager(),
+      () => new ModelAvailabilityManager()
     );
   }
 
@@ -35,15 +30,12 @@ export class ModelAvailabilityManager {
   async initializeFlags(): Promise<void> {
     return Promise.all(
       ['azure', 'google', 'openai'].map((provider) =>
-        getModelFlag(provider as 'azure' | 'google' | 'openai').then(
-          (flag) =>
-            flag.isInitialized
-              ? Promise.resolve(flag.value)
-              : flag.forceRefresh(),
-        ),
-      ),
+        getModelFlag(provider as 'azure' | 'google' | 'openai').then((flag) =>
+          flag.isInitialized ? Promise.resolve(flag.value) : flag.forceRefresh()
+        )
+      )
     )
-      .then(() => { })
+      .then(() => {})
       .catch((error) => {
         LoggedError.isTurtlesAllTheWayDownBaby(error, {
           log: true,
@@ -62,13 +54,15 @@ export class ModelAvailabilityManager {
   /**
    * Check if a provider is available (checks if any model for that provider is available)
    */
-  async isProviderAvailable(provider: 'azure' | 'google' | 'openai'): Promise<boolean> {
+  async isProviderAvailable(
+    provider: 'azure' | 'google' | 'openai'
+  ): Promise<boolean> {
     if (await this.isProviderDisabled(provider)) {
       return false;
     }
 
     const providerModels = Array.from(this.availabilityMap.keys()).filter(
-      (key) => key.startsWith(`${provider}:`),
+      (key) => key.startsWith(`${provider}:`)
     );
 
     if (providerModels.length === 0) return true; // No explicit settings, assume available
@@ -105,7 +99,7 @@ export class ModelAvailabilityManager {
       const flag = await getModelFlag(normalProvider);
       if (flag.isEnabled !== true) {
         log((l) =>
-          l.warn(`Cannot enable model for disabled provider: ${provider}`),
+          l.warn(`Cannot enable model for disabled provider: ${provider}`)
         );
         return true;
       }
@@ -130,7 +124,7 @@ export class ModelAvailabilityManager {
       modelTypes.forEach((model) => this.disableModel(`azure:${model}`));
     } else if (provider === 'google') {
       [...modelTypes, ...googleSpecificModels].forEach((model) =>
-        this.disableModel(`google:${model}`),
+        this.disableModel(`google:${model}`)
       );
     } else if (provider === 'openai') {
       modelTypes.forEach((model) => this.disableModel(`openai:${model}`));
@@ -154,7 +148,7 @@ export class ModelAvailabilityManager {
       modelTypes.forEach((model) => this.enableModel(`azure:${model}`));
     } else if (provider === 'google') {
       [...modelTypes, ...googleSpecificModels].forEach((model) =>
-        this.enableModel(`google:${model}`),
+        this.enableModel(`google:${model}`)
       );
     } else if (provider === 'openai') {
       modelTypes.forEach((model) => this.enableModel(`openai:${model}`));
@@ -216,14 +210,15 @@ export const enableModel = (modelKey: string): Promise<void> =>
  * @param provider - Either 'azure', 'google', or 'openai'
  */
 export const disableProvider = (
-  provider: 'azure' | 'google' | 'openai',
+  provider: 'azure' | 'google' | 'openai'
 ): void => getAvailability().disableProvider(provider);
 /**
  * Enable all models for a provider
  * @param provider - Either 'azure', 'google', or 'openai'
  */
-export const enableProvider = (provider: 'azure' | 'google' | 'openai'): Promise<void> =>
-  getAvailability().enableProvider(provider);
+export const enableProvider = (
+  provider: 'azure' | 'google' | 'openai'
+): Promise<void> => getAvailability().enableProvider(provider);
 
 /**
  * Temporarily disable a model for a specified duration
@@ -232,7 +227,7 @@ export const enableProvider = (provider: 'azure' | 'google' | 'openai'): Promise
  */
 export const temporarilyDisableModel = (
   modelKey: string,
-  durationMs: number,
+  durationMs: number
 ): void => getAvailability().temporarilyDisableModel(modelKey, durationMs);
 /**
  * Check if a model is currently available
@@ -248,7 +243,7 @@ export const isModelAvailable = (modelKey: string): boolean =>
  * @returns True if the provider has any available models, false otherwise
  */
 export const isProviderAvailable = (
-  provider: 'azure' | 'google' | 'openai',
+  provider: 'azure' | 'google' | 'openai'
 ): Promise<boolean> => getAvailability().isProviderAvailable(provider);
 /**
  * Get the current availability status of all models (for debugging)
@@ -273,7 +268,7 @@ export const resetModelAvailability = (): void =>
  */
 export const handleAzureRateLimit = (durationMs: number = 300000): void => {
   log((l) =>
-    l.warn('Azure rate limit detected, temporarily disabling Azure models'),
+    l.warn('Azure rate limit detected, temporarily disabling Azure models')
   );
   getAvailability().temporarilyDisableModel('azure:hifi', durationMs);
   getAvailability().temporarilyDisableModel('azure:lofi', durationMs);
@@ -287,7 +282,7 @@ export const handleAzureRateLimit = (durationMs: number = 300000): void => {
  */
 export const handleGoogleRateLimit = (durationMs: number = 300000): void => {
   log((l) =>
-    l.warn('Google rate limit detected, temporarily disabling Google models'),
+    l.warn('Google rate limit detected, temporarily disabling Google models')
   );
   getAvailability().temporarilyDisableModel('google:hifi', durationMs);
   getAvailability().temporarilyDisableModel('google:lofi', durationMs);
@@ -296,7 +291,7 @@ export const handleGoogleRateLimit = (durationMs: number = 300000): void => {
   getAvailability().temporarilyDisableModel('google:gemini-flash', durationMs);
   getAvailability().temporarilyDisableModel(
     'google:google-embedding',
-    durationMs,
+    durationMs
   );
 };
 
@@ -306,7 +301,7 @@ export const handleGoogleRateLimit = (durationMs: number = 300000): void => {
  */
 export const handleOpenAIRateLimit = (durationMs: number = 300000): void => {
   log((l) =>
-    l.warn('OpenAI rate limit detected, temporarily disabling OpenAI models'),
+    l.warn('OpenAI rate limit detected, temporarily disabling OpenAI models')
   );
   getAvailability().temporarilyDisableModel('openai:hifi', durationMs);
   getAvailability().temporarilyDisableModel('openai:lofi', durationMs);

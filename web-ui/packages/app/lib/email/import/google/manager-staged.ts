@@ -6,7 +6,7 @@ import {
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
 import { ImportStage } from '@/data-models/api/import/email-message';
 import { createStagingRecord } from '@/lib/api/email/import/google';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 class StagedManager extends TransactionalStateManagerBase {
   constructor(stage: ImportStage, options: AdditionalStageOptions) {
@@ -20,14 +20,12 @@ class StagedManager extends TransactionalStateManagerBase {
     if (typeof providerEmailId !== 'string' || !providerEmailId) {
       if (!target?.raw.id) {
         throw new Error(
-          `Invalid state for staging - provider email id not found.`,
+          `Invalid state for staging - provider email id not found.`
         );
       }
       providerEmailId = target.raw.id;
       log((l) =>
-        l.warn(
-          'ProviderEmailId value pulled from raw output; is this a retry?',
-        ),
+        l.warn('ProviderEmailId value pulled from raw output; is this a retry?')
       );
     }
     const req = this.requireRequest;
@@ -36,7 +34,7 @@ class StagedManager extends TransactionalStateManagerBase {
     }).awaitable;
     if (!responseMessage) {
       throw new Error(
-        `An unexpected failure occurred queuing email ${providerEmailId}.`,
+        `An unexpected failure occurred queuing email ${providerEmailId}.`
       );
     }
     this.setTransaction(responseMessage);
@@ -45,7 +43,7 @@ class StagedManager extends TransactionalStateManagerBase {
         message: '[AUDIT]: Email import queued successfully.',
         providerEmailId,
         stage: currentStage,
-      }),
+      })
     );
     return {
       ...context,
@@ -63,7 +61,7 @@ class StagedManager extends TransactionalStateManagerBase {
  */
 const managerFactory: ImportStageManagerFactory = (
   stage: ImportStage,
-  options: AdditionalStageOptions,
+  options: AdditionalStageOptions
 ) => new StagedManager(stage, options);
 
 export default managerFactory;

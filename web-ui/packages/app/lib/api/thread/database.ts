@@ -1,8 +1,8 @@
 import { query, queryExt } from '@/lib/neondb';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
-import { PartialExceptFor } from '@compliance-theater/lib-typescript';
-import { log } from '@compliance-theater/lib-logger';
+import { PartialExceptFor } from '@compliance-theater/typescript';
+import { log } from '@compliance-theater/logger';
 import type { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import type { Thread, ThreadSummary } from '@/data-models/api/thread';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
@@ -25,18 +25,18 @@ export class ThreadRepository
   static MapRecordToSummary = mapRecordToSummary;
 
   async list(
-    pagination?: PaginationStats,
+    pagination?: PaginationStats
   ): Promise<PaginatedResultset<ThreadSummary>> {
     const { num, page, offset } = parsePaginationStats(pagination);
     try {
       const results = await query(
         (sql) =>
           sql`SELECT * FROM threads ORDER BY created_date DESC LIMIT ${num} OFFSET ${offset}`,
-        { transform: ThreadRepository.MapRecordToSummary },
+        { transform: ThreadRepository.MapRecordToSummary }
       );
       if (results.length === page) {
         const total = await query(
-          (sql) => sql`SELECT COUNT(*) as records FROM threads`,
+          (sql) => sql`SELECT COUNT(*) as records FROM threads`
         );
         return {
           results,
@@ -79,12 +79,12 @@ export class ThreadRepository
       if (typeof threadId === 'string') {
         result = await query(
           (sql) => sql`SELECT * FROM threads WHERE external_id = ${threadId}`,
-          { transform: ThreadRepository.MapRecordToSummary },
+          { transform: ThreadRepository.MapRecordToSummary }
         );
       } else {
         result = await query(
           (sql) => sql`SELECT * FROM threads WHERE thread_id = ${threadId}`,
-          { transform: ThreadRepository.MapRecordToSummary },
+          { transform: ThreadRepository.MapRecordToSummary }
         );
       }
       return result.length === 1 ? result[0] : null;
@@ -122,7 +122,7 @@ export class ThreadRepository
             })
             .returning()
             .execute()
-            .then((x) => x.at(0)),
+            .then((x) => x.at(0))
       );
       /*
       const result = await query(
@@ -190,11 +190,11 @@ export class ThreadRepository
         (sql) =>
           sql<false, true>(
             `UPDATE threads SET ${updateFields.join(
-              ', ',
+              ', '
             )} WHERE thread_id = $${paramIndex} RETURNING *`.toString(),
-            values,
+            values
           ),
-        { transform: ThreadRepository.MapRecordToSummary },
+        { transform: ThreadRepository.MapRecordToSummary }
       );
 
       if (result.rowCount === 0) {
@@ -219,7 +219,7 @@ export class ThreadRepository
         (sql) => sql`
             DELETE FROM threads
             WHERE thread_id = ${threadId}
-            RETURNING thread_id`,
+            RETURNING thread_id`
       );
       if (results.length === 0) {
         throw new DataIntegrityError('Failed to delete Thread');

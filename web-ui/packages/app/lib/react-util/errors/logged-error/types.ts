@@ -1,17 +1,19 @@
-import type { ErrorContext } from "@/lib/error-monitoring/types";
-import type { KnownSeverityLevel } from "@compliance-theater/lib-logger";
+import type { ErrorContext } from '@/lib/error-monitoring/types';
+import type { KnownSeverityLevel } from '@compliance-theater/logger';
 
 export type LoggedErrorOptions = ErrorOptions & {
   error: Error;
   critical?: boolean;
 };
 
-export type ErrorLogFactory = (options: {
-  error: unknown;
-  source: string;
-  include?: object;
-  severity?: string;
-} & Record<string, unknown>) => Record<string, unknown>;
+export type ErrorLogFactory = (
+  options: {
+    error: unknown;
+    source: string;
+    include?: object;
+    severity?: string;
+  } & Record<string, unknown>
+) => Record<string, unknown>;
 
 export type TurtleRecursionParams = Record<string, unknown> & {
   log: boolean;
@@ -27,4 +29,4 @@ export type ErrorReportArgs = {
   error: Error | unknown;
   severity?: KnownSeverityLevel;
   context?: Partial<ErrorContext>;
-}
+};

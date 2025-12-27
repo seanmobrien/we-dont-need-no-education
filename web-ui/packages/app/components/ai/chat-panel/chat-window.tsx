@@ -5,7 +5,7 @@ import { UIMessage } from 'ai';
 import { Loading } from '@/components/general/loading';
 import { ChatMessageV2 } from './chat-message';
 import { createElementMeasurer } from '@/lib/components/ai/height-estimators';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
 
 const elementMeasurer = createElementMeasurer();
@@ -70,8 +70,8 @@ export const ChatWindow = ({
         // Handle case where parentRef is not yet available
         log((l) =>
           l.verbose(
-            'Measurement attempted before parentRef is available to provide width',
-          ),
+            'Measurement attempted before parentRef is available to provide width'
+          )
         );
         if (typeof window !== 'undefined') {
           width = window.innerWidth * 0.7; // Fallback to 70% of viewport width
@@ -108,14 +108,14 @@ export const ChatWindow = ({
 
       return estimatedHeight + toolHeight + paperPadding + marginBetween;
     },
-    [parentRef],
+    [parentRef]
   );
 
   const getScrollElement = useCallback(() => parentRef.current, []);
 
   const getItemKey = useCallback(
     (index: number) => messagesRef.current[index].id,
-    [],
+    []
   );
 
   const rowVirtualizer = useVirtualizer({

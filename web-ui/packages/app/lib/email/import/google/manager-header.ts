@@ -17,8 +17,8 @@ import { TransactionalStateManagerBase } from '../default/transactional-stateman
 import { AggregateError } from '@/lib/react-util/errors/aggregate-error';
 import { isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { CustomAppInsightsEvent, log } from '@compliance-theater/lib-logger';
-import { newUuid } from '@compliance-theater/lib-typescript';
+import { CustomAppInsightsEvent, log } from '@compliance-theater/logger';
+import { newUuid } from '@compliance-theater/typescript';
 const EmailPropertyTypeMap: Map<string, number> = new Map();
 const parseEmailId = (x: string) => {
   const match = x.match(/<([^>]+)>/);
@@ -42,10 +42,10 @@ const HeadersWithArrayValueKeys: ReadonlyArray<
 > = Object.keys(HeadersWithArrayValueMap);
 const indexOfHeaderWithArrayKey = (headerName: string): number =>
   HeadersWithArrayValueKeys.findIndex(
-    (x: string) => x.toLowerCase() === headerName.toLowerCase(),
+    (x: string) => x.toLowerCase() === headerName.toLowerCase()
   );
 const getHeaderWithArraySplitBy = (
-  headerName: string,
+  headerName: string
 ): ParseHeaderArrayProps | undefined => {
   const indexOf = indexOfHeaderWithArrayKey(headerName);
   return indexOf === -1
@@ -72,8 +72,9 @@ class HeaderStateManager extends TransactionalStateManagerBase {
     if (EmailPropertyTypeMap.size === 0) {
       const emailPropertyRepository: EmailPropertyTypeRepository =
         new EmailPropertyTypeRepository();
-      const data =
-        await emailPropertyRepository.listForCategory('Email Header');
+      const data = await emailPropertyRepository.listForCategory(
+        'Email Header'
+      );
       data.results.forEach((property) => {
         EmailPropertyTypeMap.set(property.name, property.typeId as number);
       });
@@ -119,7 +120,7 @@ class HeaderStateManager extends TransactionalStateManagerBase {
             });
             if (!newPropertyType || !newPropertyType.typeId) {
               throw new Error(
-                'An unexpected failure occurred while creating a new email property type.',
+                'An unexpected failure occurred while creating a new email property type.'
               );
             }
             // then add it to our local cache for re-use and move on
@@ -148,7 +149,7 @@ class HeaderStateManager extends TransactionalStateManagerBase {
                       return {
                         status: 'failure',
                         error: new Error(
-                          'An unexpected failure occurred while creating a new email property.',
+                          'An unexpected failure occurred while creating a new email property.'
                         ),
                       } as HeaderSaveResult;
                     }
@@ -158,17 +159,17 @@ class HeaderStateManager extends TransactionalStateManagerBase {
                   (error) => ({
                     status: 'failure',
                     error: isError(error) ? error : new Error(error),
-                  }),
+                  })
                 );
-              }),
+              })
             );
             const allErrors = operations.filter(
-              (x) => x.status === 'failure',
+              (x) => x.status === 'failure'
             ) as HeaderFailedResult[];
             if (allErrors.length > 0) {
               throw new AggregateError(
                 'An unexpected failure occurred while importing message headers.',
-                ...allErrors.map((x) => x.error),
+                ...allErrors.map((x) => x.error)
               );
             }
             const successfulOps = operations as HeaderSuccessResult[];
@@ -181,7 +182,7 @@ class HeaderStateManager extends TransactionalStateManagerBase {
                 propertyId,
                 typeId,
                 count: operations.length,
-              }),
+              })
             );
           } else {
             const newProperty: EmailProperty = {
@@ -194,7 +195,7 @@ class HeaderStateManager extends TransactionalStateManagerBase {
             const result = await emailPropertyRepository.create(newProperty);
             if (!result || !result.propertyId) {
               throw new Error(
-                'An unexpected failure occurred while creating a new email property.',
+                'An unexpected failure occurred while creating a new email property.'
               );
             }
             log((l) =>
@@ -204,7 +205,7 @@ class HeaderStateManager extends TransactionalStateManagerBase {
                 documentId: result.documentId,
                 propertyId: result.propertyId,
                 typeId: result.typeId,
-              }),
+              })
             );
             this.#importEvent!.increment('processed');
           }
@@ -225,15 +226,15 @@ class HeaderStateManager extends TransactionalStateManagerBase {
         }
         reject(
           new Error(
-            'An unexpected error occurred while processing email headers.',
-          ),
+            'An unexpected error occurred while processing email headers.'
+          )
         );
       });
     }) as Promise<HeaderUploadStatus>[];
     const allHeaders = await Promise.all(operations);
     if (allHeaders.some((header) => header.status === 'failure')) {
       throw new Error(
-        'An unexpected error occurred while processing email headers.',
+        'An unexpected error occurred while processing email headers.'
       );
     }
     return context;
@@ -248,7 +249,7 @@ class HeaderStateManager extends TransactionalStateManagerBase {
  */
 const managerFactory: ImportStageManagerFactory = (
   stage: ImportStage,
-  addOps: AdditionalStageOptions,
+  addOps: AdditionalStageOptions
 ) => new HeaderStateManager(stage, addOps);
 
 export default managerFactory;

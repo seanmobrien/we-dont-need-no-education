@@ -9,12 +9,12 @@ import {
   lookupEmailPropertyType,
 } from '@/data-models/_utilities';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter } from '@compliance-theater/lib-typescript';
+import { FirstParameter } from '@compliance-theater/typescript';
 import { BaseObjectRepository } from '../../_baseObjectRepository';
 import { ObjectRepository } from '../../_types';
 
 export const mapPropertyTypeRecordToObject = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ): EmailPropertyType => ({
   categoryId: Number(record.email_property_category_id),
   typeId: Number(record.document_property_type_id),
@@ -40,7 +40,7 @@ export class EmailPropertyTypeRepository extends BaseObjectRepository<
 
   async listForCategory(
     categoryId: EmailPropertyCategoryTypeId | EmailPropertyCategoryType,
-    pagination: PaginationStats = { page: 1, num: 1000, total: 1000 },
+    pagination: PaginationStats = { page: 1, num: 1000, total: 1000 }
   ): Promise<PaginatedResultset<EmailPropertyType>> {
     const [, , sqlCountQuery] = this.getListQueryProperties();
     const values = [lookupEmailPropertyCategory(categoryId)];
@@ -52,7 +52,7 @@ export class EmailPropertyTypeRepository extends BaseObjectRepository<
         values,
         sqlCountQuery,
       },
-      pagination,
+      pagination
     );
     return results as PaginatedResultset<EmailPropertyType>;
   }
@@ -68,7 +68,7 @@ export class EmailPropertyTypeRepository extends BaseObjectRepository<
     method: TMethod,
     obj: FirstParameter<
       Pick<ObjectRepository<EmailPropertyType, 'typeId'>, TMethod>[TMethod]
-    >,
+    >
   ): void {
     const asModel = obj as EmailPropertyType;
     if (
@@ -146,8 +146,8 @@ export class EmailPropertyTypeRepository extends BaseObjectRepository<
     [
       string,
       number | EmailPropertyCategoryType | EmailPropertyCategoryTypeId,
-      Date,
-    ],
+      Date
+    ]
   ] {
     return [
       `INSERT INTO email_property_type (property_name, email_property_category_id, created_at) VALUES ($1, $2, $3) RETURNING *`,
@@ -163,7 +163,7 @@ export class EmailPropertyTypeRepository extends BaseObjectRepository<
       email_property_category_id: number;
       property_name: string;
       created_at: Date | undefined;
-    },
+    }
   ] {
     return [
       {

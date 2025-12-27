@@ -9,7 +9,7 @@
 import { got } from 'got';
 import { CookieJar } from 'tough-cookie';
 import { env } from '@/lib/site-util/env';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import CryptoService from '@/lib/site-util/auth/crypto-service';
 import type {
@@ -50,7 +50,7 @@ const extractRealmFromIssuer = (issuer: string): string | undefined => {
 };
 
 const adminBaseFromIssuer = (
-  issuer: string,
+  issuer: string
 ): { origin: string; realm: string; adminBase: string } | undefined => {
   try {
     const u = new URL(issuer);
@@ -104,7 +104,7 @@ const getOpenIdClientModule = () => {
 };
 
 const ADMIN_USER_CONTEXT: unique symbol = Symbol(
-  '@no-education/ImpersonationThirdParty.ADMIN_USER_CONTEXT',
+  '@no-education/ImpersonationThirdParty.ADMIN_USER_CONTEXT'
 );
 const ADMIN_USER_CONTEXT_ID = '__admin';
 
@@ -237,14 +237,14 @@ export class ImpersonationThirdParty implements ImpersonationService {
     this.oidcConfig = await getOpenIdClientModule().discovery(
       new URL(this.config.issuer),
       this.config.clientId,
-      this.config.clientSecret,
+      this.config.clientSecret
     );
 
     // Keycloak Admin client
     const parsed = adminBaseFromIssuer(this.config.issuer);
     if (!parsed)
       throw new Error(
-        'ImpersonationThirdParty: unable to parse realm from issuer',
+        'ImpersonationThirdParty: unable to parse realm from issuer'
       );
     const { origin, realm } = parsed;
     this.kcAdmin = await keycloakAdminClientFactory({
@@ -318,7 +318,7 @@ export class ImpersonationThirdParty implements ImpersonationService {
               this.tokenExpiry = new Date(access.expires_at * 1000 - 60_000);
             } else if (access.expires_in) {
               this.tokenExpiry = new Date(
-                Date.now() + Math.max(60, access.expires_in) * 1000 - 60_000,
+                Date.now() + Math.max(60, access.expires_in) * 1000 - 60_000
               );
             } else {
               this.tokenExpiry = new Date(Date.now() + 10 * 60_000);
@@ -364,7 +364,7 @@ export class ImpersonationThirdParty implements ImpersonationService {
         } finally {
           span.end();
         }
-      },
+      }
     );
   }
 
@@ -388,7 +388,7 @@ export class ImpersonationThirdParty implements ImpersonationService {
   // --- internals ---
 
   private async findUserIdViaAdmin(
-    identifier: string,
+    identifier: string
   ): Promise<string | undefined> {
     if (!this.kcAdmin) throw new Error('kcAdmin not initialized');
 
@@ -415,14 +415,16 @@ export class ImpersonationThirdParty implements ImpersonationService {
 
   private async performImpersonation(
     adminToken: string,
-    userId: string,
+    userId: string
   ): Promise<void> {
     if (!this.cookieJar) throw new Error('cookieJar not initialized');
 
     const parsed = adminBaseFromIssuer(this.config.issuer);
     if (!parsed)
       throw new Error('ImpersonationThirdParty: cannot derive admin base');
-    const url = `${parsed.adminBase}/users/${encodeURIComponent(userId)}/impersonation`;
+    const url = `${parsed.adminBase}/users/${encodeURIComponent(
+      userId
+    )}/impersonation`;
 
     const resp = await got.post(url, {
       headers: {
@@ -436,7 +438,9 @@ export class ImpersonationThirdParty implements ImpersonationService {
 
     if (resp.statusCode !== 200 && resp.statusCode !== 302) {
       throw new Error(
-        `ImpersonationThirdParty: impersonation failed ${resp.statusCode} ${resp.body?.toString?.() ?? ''}`,
+        `ImpersonationThirdParty: impersonation failed ${resp.statusCode} ${
+          resp.body?.toString?.() ?? ''
+        }`
       );
     }
   }
@@ -468,14 +472,14 @@ export class ImpersonationThirdParty implements ImpersonationService {
 
     if (resp.statusCode !== 302) {
       throw new Error(
-        `ImpersonationThirdParty: expected 302 from authorize, got ${resp.statusCode}`,
+        `ImpersonationThirdParty: expected 302 from authorize, got ${resp.statusCode}`
       );
     }
 
     const location = resp.headers.location;
     if (!location)
       throw new Error(
-        'ImpersonationThirdParty: missing Location header from authorize response',
+        'ImpersonationThirdParty: missing Location header from authorize response'
       );
 
     const currentUrl = new URL(location, this.config.redirectUri);
@@ -485,7 +489,7 @@ export class ImpersonationThirdParty implements ImpersonationService {
       {
         expectedState: state,
         expectedNonce: nonce,
-      },
+      }
     );
 
     return {

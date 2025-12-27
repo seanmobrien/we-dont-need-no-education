@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '../react-util';
 import { errorReporter } from './error-reporter';
 import { ErrorReportResult, ErrorSeverity } from './types';
@@ -30,7 +30,7 @@ export const useProcessedError = ({
       processedError &&
       processedError.report.fingerprint ===
         errorReporter((r) =>
-          r.generateFingerprint(error, processedError.report.context),
+          r.generateFingerprint(error, processedError.report.context)
         )
     ) {
       reset();
@@ -46,7 +46,7 @@ export const useProcessedError = ({
           {
             errorBoundary,
           },
-          ErrorSeverity.HIGH,
+          ErrorSeverity.HIGH
         )
         .then((result) => {
           // If the component was unmounted, do nothing
@@ -82,7 +82,7 @@ export const useProcessedError = ({
             suppress: false,
             rule: LoggedError.buildMessage(reportError),
             report: await errorReporter((r) =>
-              r.createErrorReport(reportError),
+              r.createErrorReport(reportError)
             ),
             logged: false,
             console: false,
@@ -104,7 +104,7 @@ export const useProcessedError = ({
             return current;
           });
           return simulated;
-        }),
+        })
     );
     return () => {
       cancelled = true;

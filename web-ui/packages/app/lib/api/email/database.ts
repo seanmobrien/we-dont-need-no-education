@@ -1,5 +1,5 @@
 import { ValidationError } from '@/lib/react-util/errors';
-import { FirstParameter, newUuid } from '@compliance-theater/lib-typescript';
+import { FirstParameter, newUuid } from '@compliance-theater/typescript';
 import { ObjectRepository } from '../_types';
 import {
   EmailMessageAttachment,
@@ -22,7 +22,7 @@ type RepositoryEmail = RepositoryEmailSummary & {
 };
 
 const mapRecordToSummary = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ): RepositoryEmailSummary => ({
   emailId: record.email_id as string,
   subject: record.subject as string,
@@ -56,17 +56,19 @@ export class EmailRepository extends BaseObjectRepository<
   }
 
   public async create(
-    props: Omit<RepositoryEmail, 'emailId'>,
+    props: Omit<RepositoryEmail, 'emailId'>
   ): Promise<RepositoryEmail> {
     const ret = await super.create(props);
     if (ret && ret.emailId) {
       const importDate = props.sentOn ? new Date(props.sentOn) : new Date();
       const res = await db(
         (
-          sql,
+          sql
         ) => sql`INSERT INTO document_units (email_id, content, created_on, document_type)
-        VALUES (${ret.emailId}, ${props.emailContents}, ${importDate.toISOString()}, 'email')
-        returning unit_id`,
+        VALUES (${ret.emailId}, ${
+          props.emailContents
+        }, ${importDate.toISOString()}, 'email')
+        returning unit_id`
       );
       if (res.length < 1) {
         throw new Error('Failed to create document unit');
@@ -86,7 +88,7 @@ export class EmailRepository extends BaseObjectRepository<
     method: TMethod,
     obj: FirstParameter<
       Pick<ObjectRepository<RepositoryEmail, 'emailId'>, TMethod>[TMethod]
-    >,
+    >
   ): void {
     const asModel = obj as RepositoryEmail;
     switch (method) {
@@ -131,7 +133,7 @@ export class EmailRepository extends BaseObjectRepository<
     return ['SELECT * FROM emails WHERE email_id = $1', [emailId]];
   }
   protected getCreateQueryProperties(
-    obj: RepositoryEmail,
+    obj: RepositoryEmail
   ): [
     string,
     [
@@ -143,8 +145,8 @@ export class EmailRepository extends BaseObjectRepository<
       string,
       string | null,
       string | null,
-      string | Date | null,
-    ],
+      string | Date | null
+    ]
   ] {
     if (!obj.emailId) {
       obj.emailId = newUuid();
@@ -163,13 +165,13 @@ export class EmailRepository extends BaseObjectRepository<
         !obj.sentOn
           ? null
           : typeof obj.sentOn === 'string'
-            ? obj.sentOn
-            : obj.sentOn.toISOString(),
+          ? obj.sentOn
+          : obj.sentOn.toISOString(),
       ],
     ];
   }
   protected getUpdateQueryProperties(
-    obj: RepositoryEmail,
+    obj: RepositoryEmail
   ): [Record<string, unknown>] {
     return [
       {
@@ -185,13 +187,13 @@ export class EmailRepository extends BaseObjectRepository<
     ];
   }
   async getIdForUniqueMessageId(
-    uniqueId: string | null,
+    uniqueId: string | null
   ): Promise<string | null> {
     if (!uniqueId) return null;
     try {
       const result = await query(
         (sql) =>
-          sql`select email_id from emails where global_message_id = ${uniqueId}`,
+          sql`select email_id from emails where global_message_id = ${uniqueId}`
       );
       return result.length === 1 ? (result[0].email_id as string) : null;
     } catch (error) {
@@ -202,7 +204,7 @@ export class EmailRepository extends BaseObjectRepository<
 }
 
 const mapAttachmentRecordToSummary = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ): EmailMessageAttachmentSummary => ({
   attachmentId: record.attachment_id as number,
   emailId: record.email_id as string,
@@ -213,7 +215,7 @@ const mapAttachmentRecordToSummary = (
 });
 
 const mapAttachmentRecordToObject = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ): EmailMessageAttachment => ({
   ...mapAttachmentRecordToSummary(record),
   extractedText: record.extracted_text as string | null,
@@ -246,7 +248,7 @@ export class EmailAttachmentRepository extends BaseObjectRepository<
     TMethod extends keyof ObjectRepository<
       EmailMessageAttachment,
       'attachmentId'
-    >,
+    >
   >(
     method: TMethod,
     obj: FirstParameter<
@@ -254,7 +256,7 @@ export class EmailAttachmentRepository extends BaseObjectRepository<
         ObjectRepository<EmailMessageAttachment, 'attachmentId'>,
         TMethod
       >[TMethod]
-    >,
+    >
   ): void {
     const asModel = obj as EmailMessageAttachment;
     switch (method) {
@@ -296,7 +298,7 @@ export class EmailAttachmentRepository extends BaseObjectRepository<
     ];
   }
   protected getCreateQueryProperties(
-    obj: EmailMessageAttachment,
+    obj: EmailMessageAttachment
   ): [
     string,
     [
@@ -308,8 +310,8 @@ export class EmailAttachmentRepository extends BaseObjectRepository<
       string | null,
       string,
       number,
-      string,
-    ],
+      string
+    ]
   ] {
     return [
       'INSERT INTO email_attachments (file_name, file_path, extracted_text, extracted_text_tsv, policy_id, summary, email_id, size, mime_type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING email_id',
@@ -327,7 +329,7 @@ export class EmailAttachmentRepository extends BaseObjectRepository<
     ];
   }
   protected getUpdateQueryProperties(
-    obj: EmailMessageAttachment,
+    obj: EmailMessageAttachment
   ): [Record<string, string | number | null>] {
     return [
       {

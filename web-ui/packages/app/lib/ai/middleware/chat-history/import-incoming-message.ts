@@ -2,7 +2,7 @@ import { schema } from '@/lib/drizzle-db/schema';
 import type { ChatMessagesType, DbTransactionType } from '@/lib/drizzle-db';
 import { ChatHistoryContext, ToolStatus } from './types';
 import { eq, desc, and } from 'drizzle-orm';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { getNextSequence, getNewMessages, getItemOutput } from './utility';
 import { generateChatId } from '@/lib/ai/core';
 import type {
@@ -17,13 +17,13 @@ import type {
 
 const getChatId = (context: ChatHistoryContext): string =>
   typeof context.chatId === 'string'
-    ? (context.chatId ?? generateChatId().id)
+    ? context.chatId ?? generateChatId().id
     : generateChatId(context.chatId ?? 1).id;
 
 export const upsertChat = async (
   tx: DbTransactionType,
   chatId: string,
-  context: ChatHistoryContext,
+  context: ChatHistoryContext
 ) => {
   const existingChat =
     (
@@ -36,7 +36,7 @@ export const upsertChat = async (
     ).length > 0;
   if (existingChat) {
     log((l) =>
-      l.debug(`Record ${chatId} already exists; no insert necessary.`),
+      l.debug(`Record ${chatId} already exists; no insert necessary.`)
     );
   } else {
     await tx.insert(schema.chats).values({
@@ -57,7 +57,7 @@ export const upsertChat = async (
 
 export const reserveTurnId = async (
   tx: DbTransactionType,
-  chatId: string,
+  chatId: string
 ): Promise<number> => {
   const thisTurnId = await getNextSequence({
     tableName: 'chat_turns',
@@ -66,7 +66,7 @@ export const reserveTurnId = async (
   }).then((ids) => ids[0]);
   if (!thisTurnId) {
     throw new Error(
-      'Unexpected failure retrieving next turn sequence for chat id ' + chatId,
+      'Unexpected failure retrieving next turn sequence for chat id ' + chatId
     );
   }
   return thisTurnId;
@@ -76,7 +76,7 @@ export const insertChatTurn = async (
   tx: DbTransactionType,
   chatId: string,
   turnId: number | undefined,
-  context: ChatHistoryContext,
+  context: ChatHistoryContext
 ) => {
   const thisTurnId = turnId ? turnId : await reserveTurnId(tx, chatId);
   const providerId = ((rId: undefined | string) => {
@@ -122,7 +122,7 @@ export const reserveMessageIds = async (
   tx: DbTransactionType,
   chatId: string,
   turnId: number,
-  count: number,
+  count: number
 ): Promise<number[]> => {
   const messageIds = await getNextSequence({
     tableName: 'chat_messages',
@@ -133,7 +133,9 @@ export const reserveMessageIds = async (
   });
   if (!messageIds || messageIds.length < count) {
     throw new Error(
-      `Failed to reserve enough message ids for chat ${chatId} turn ${turnId}. Expected ${count}, got ${messageIds?.length ?? 0}`,
+      `Failed to reserve enough message ids for chat ${chatId} turn ${turnId}. Expected ${count}, got ${
+        messageIds?.length ?? 0
+      }`
     );
   }
   return messageIds;
@@ -145,7 +147,7 @@ export const insertPendingAssistantMessage = async (
   turnId: number,
   messageId: number,
   messageOrder: number,
-  content: string,
+  content: string
 ) => {
   await tx
     .insert(schema.chatMessages)
@@ -164,7 +166,7 @@ export const insertPendingAssistantMessage = async (
 };
 
 const isToolCallPart = (
-  item: unknown,
+  item: unknown
 ): item is {
   type: 'tool-call';
   toolCallId?: string;
@@ -179,7 +181,7 @@ const isToolCallPart = (
 };
 
 const isToolResultPart = (
-  item: unknown,
+  item: unknown
 ): item is {
   type: 'tool-result' | 'dynamic-tool';
   toolCallId?: string;
@@ -238,7 +240,7 @@ export const upsertToolMessage = async (
   tx: DbTransactionType,
   chatId: string,
   turnId: number,
-  toolRow: ChatMessageRowDraft,
+  toolRow: ChatMessageRowDraft
 ): Promise<number | null> => {
   if (!toolRow.providerId) {
     // No providerId means we can't deduplicate, just insert normally
@@ -263,8 +265,8 @@ export const upsertToolMessage = async (
       and(
         eq(schema.chatMessages.chatId, chatId),
         eq(schema.chatMessages.providerId, toolRow.providerId),
-        eq(schema.chatMessages.role, 'tool'),
-      ),
+        eq(schema.chatMessages.role, 'tool')
+      )
     )
     .limit(1);
 
@@ -357,8 +359,8 @@ export const upsertToolMessage = async (
 
   log((l) =>
     l.debug(
-      `Updated tool message for providerId ${toolRow.providerId} from turn ${existing.turnId} to ${turnId}`,
-    ),
+      `Updated tool message for providerId ${toolRow.providerId} from turn ${existing.turnId} to ${turnId}`
+    )
   );
 
   return existing.messageId;
@@ -370,7 +372,7 @@ export const upsertToolMessage = async (
 
 const getLastMessageOrder = async (
   tx: DbTransactionType,
-  chatId: string,
+  chatId: string
 ): Promise<number> => {
   const result = await tx
     .select({ maxOrder: schema.chatMessages.messageOrder })
@@ -405,7 +407,7 @@ export const importIncomingMessage = async ({
   // Reserve unique turn ID for this conversation cycle
   const thisTurnId = await reserveTurnId(tx, chatId);
   log((l) =>
-    l.debug(`Reserved chat turn id: ${thisTurnId} for chat: ${chatId}`),
+    l.debug(`Reserved chat turn id: ${thisTurnId} for chat: ${chatId}`)
   );
 
   // Filter out messages that have already been saved in previous turns
@@ -413,8 +415,10 @@ export const importIncomingMessage = async ({
 
   log((l) =>
     l.debug(
-      `Filtered messages for chat ${chatId}: ${prompt.length} total, ${newMessages?.length || 0} new`,
-    ),
+      `Filtered messages for chat ${chatId}: ${prompt.length} total, ${
+        newMessages?.length || 0
+      } new`
+    )
   );
 
   // Initialize turn record with comprehensive tracking information
@@ -436,14 +440,14 @@ export const importIncomingMessage = async ({
   if (newMessages?.length) {
     // Transform prompt into rows: tool-call/result -> single 'tool' row; other content grouped by role switches
     const rows = flattenPromptToRows(
-      newMessages as LanguageModelV2CallOptions['prompt'],
+      newMessages as LanguageModelV2CallOptions['prompt']
     );
     if (rows.length > 0) {
       const messageIds = await reserveMessageIds(
         tx,
         chatId,
         thisTurnId,
-        rows.length,
+        rows.length
       );
       await insertPromptMessages(
         tx,
@@ -451,7 +455,7 @@ export const importIncomingMessage = async ({
         thisTurnId,
         messageIds,
         rows,
-        currentMessageOrder,
+        currentMessageOrder
       );
       currentMessageOrder += rows.length;
     }
@@ -481,7 +485,7 @@ type ChatMessageRowDraft = {
 
 // Convert prompt into rows honoring requirements 1-3
 const flattenPromptToRows = (
-  prompt: LanguageModelV2CallOptions['prompt'],
+  prompt: LanguageModelV2CallOptions['prompt']
 ): ChatMessageRowDraft[] => {
   const messages = Array.isArray(prompt) ? prompt : [prompt];
   const rows: ChatMessageRowDraft[] = [];
@@ -540,7 +544,7 @@ const flattenPromptToRows = (
 
   const pushContentItem = (
     role: ChatMessageRowDraft['role'],
-    value: unknown,
+    value: unknown
   ) => {
     // early-exit on null/undefined/empty-string
     if (!value) {
@@ -581,7 +585,7 @@ const flattenPromptToRows = (
 
   const processContentPart = (
     part: unknown,
-    role: ChatMessageRowDraft['role'],
+    role: ChatMessageRowDraft['role']
   ) => {
     if (!part) return;
     // Handle tool-calls special...
@@ -649,7 +653,7 @@ const flattenPromptToRows = (
     }
     pushContentItem(
       role,
-      'value' in message && !!message.value ? message.value : message,
+      'value' in message && !!message.value ? message.value : message
     );
   }
 
@@ -663,7 +667,7 @@ const insertPromptMessages = async (
   turnId: number,
   messageIds: number[],
   rows: ChatMessageRowDraft[],
-  startOrder: number,
+  startOrder: number
 ) => {
   let messageOrder = startOrder;
   const rowsToInsert: Array<typeof schema.chatMessages.$inferInsert> = [];
@@ -677,15 +681,15 @@ const insertPromptMessages = async (
         tx,
         chatId,
         turnId,
-        row,
+        row
       );
 
       if (upsertedMessageId !== null) {
         // Message was updated, skip inserting a new row
         log((l) =>
           l.debug(
-            `Tool message upserted for providerId ${row.providerId}, messageId: ${upsertedMessageId}`,
-          ),
+            `Tool message upserted for providerId ${row.providerId}, messageId: ${upsertedMessageId}`
+          )
         );
         continue;
       }
@@ -705,8 +709,8 @@ const insertPromptMessages = async (
         typeof row.content === 'string'
           ? row.content
           : row.content != null
-            ? JSON.stringify(row.content)
-            : null,
+          ? JSON.stringify(row.content)
+          : null,
       toolName: row.toolName ?? null,
       functionCall: row.functionCall ?? null,
       toolResult: row.toolResult ?? null,
@@ -714,7 +718,7 @@ const insertPromptMessages = async (
       metadata:
         row.role === 'tool' && row.providerId
           ? { modifiedTurnId: turnId, ...((row.metadata as object) || {}) }
-          : (row.metadata ?? null),
+          : row.metadata ?? null,
       messageOrder: messageOrder++,
       statusId: 2,
     };

@@ -2,12 +2,12 @@ import { drizDbWithInit, type DbDatabaseType, schema } from '@/lib/drizzle-db';
 import type { ChatToolType } from '@/lib/drizzle-db/drizzle-types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type {
   LanguageModelV2ProviderDefinedTool,
   LanguageModelV2FunctionTool,
 } from '@ai-sdk/provider';
-import { SingletonProvider } from '@compliance-theater/lib-typescript';
+import { SingletonProvider } from '@compliance-theater/typescript';
 
 type ToolMapEntry = ChatToolType;
 type ToolIdType = ChatToolType['chatToolId'];
@@ -37,7 +37,7 @@ export class ToolMap {
   #initialized: boolean = false;
 
   constructor(
-    entriesOrDb?: (readonly [ToolIdType, ToolMapEntry])[] | DbDatabaseType,
+    entriesOrDb?: (readonly [ToolIdType, ToolMapEntry])[] | DbDatabaseType
   ) {
     this.#idToRecord = new Map();
     this.#nameToId = new Map();
@@ -57,7 +57,7 @@ export class ToolMap {
   static get Instance(): ToolMap {
     return SingletonProvider.Instance.getRequired<ToolMap>(
       REGISTRY_KEY,
-      () => new ToolMap(),
+      () => new ToolMap()
     );
   }
 
@@ -71,7 +71,7 @@ export class ToolMap {
   }
 
   static setupMockInstance(
-    records: (readonly [ToolIdType, ToolMapEntry])[],
+    records: (readonly [ToolIdType, ToolMapEntry])[]
   ): ToolMap {
     const ret = new ToolMap(records);
     this.#instance = ret;
@@ -164,7 +164,7 @@ export class ToolMap {
   async scanForTools(
     tools:
       | Array<LanguageModelV2FunctionTool | LanguageModelV2ProviderDefinedTool>
-      | (LanguageModelV2FunctionTool | LanguageModelV2ProviderDefinedTool),
+      | (LanguageModelV2FunctionTool | LanguageModelV2ProviderDefinedTool)
   ): Promise<number> {
     if (!Array.isArray(tools)) {
       tools = [tools];
@@ -190,7 +190,7 @@ export class ToolMap {
               chatToolId: crypto.randomUUID(),
               toolName: tool.name,
               inputSchema: JSON.stringify(
-                tool.inputSchema || { type: 'object' },
+                tool.inputSchema || { type: 'object' }
               ),
               outputSchema: null,
               providerOptions: tool.providerOptions
@@ -212,8 +212,10 @@ export class ToolMap {
           default:
             log((l) =>
               l.warn(
-                `Unknown tool type in scanForTools: ${(tool as { type: string })?.type}`,
-              ),
+                `Unknown tool type in scanForTools: ${
+                  (tool as { type: string })?.type
+                }`
+              )
             );
         }
         return chatTool;

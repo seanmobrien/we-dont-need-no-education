@@ -1,5 +1,5 @@
 import { rateLimitMetrics } from './metrics';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type { ModelClassification } from './types';
 
 export function recordRequestMetrics(
@@ -12,8 +12,8 @@ export function recordRequestMetrics(
 
   log((l) =>
     l.info(
-      `${operationType} finished successfully in ${duration}ms for model ${modelClassification}`,
-    ),
+      `${operationType} finished successfully in ${duration}ms for model ${modelClassification}`
+    )
   );
 }
 
@@ -24,6 +24,9 @@ export function getCurrentProvider(modelKey?: string): 'azure' | 'google' {
   return 'azure'; // Default assumption
 }
 
-export function constructModelKey(provider: string, classification: ModelClassification): string {
+export function constructModelKey(
+  provider: string,
+  classification: ModelClassification
+): string {
   return `${provider}:${classification}`;
 }

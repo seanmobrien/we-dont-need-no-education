@@ -12,7 +12,7 @@ import {
 import { errorResponseFactory } from '@/lib/nextjs-util/server/error-response';
 import { trace, context as otelContext, propagation } from '@opentelemetry/api';
 import { SpanStatusCode } from '@opentelemetry/api';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { NextRequest } from 'next/dist/server/web/spec-extension/request';
 
@@ -20,12 +20,15 @@ import { NextRequest } from 'next/dist/server/web/spec-extension/request';
 jest.mock('@opentelemetry/api', () => ({
   trace: {
     getTracer: jest.fn(() => ({
-      startActiveSpan: jest.fn(async (name, fn2, ctx, fn) => await ((fn ?? fn2)({
-        setAttribute: jest.fn(),
-        setStatus: jest.fn(),
-        recordException: jest.fn(),
-        end: jest.fn(),
-      }))),
+      startActiveSpan: jest.fn(
+        async (name, fn2, ctx, fn) =>
+          await (fn ?? fn2)({
+            setAttribute: jest.fn(),
+            setStatus: jest.fn(),
+            recordException: jest.fn(),
+            end: jest.fn(),
+          })
+      ),
     })),
     setSpan: jest.fn(),
   },
@@ -65,7 +68,7 @@ jest.mock('@/lib/react-util/errors/logged-error', () => ({
 jest.mock('@/lib/nextjs-util/server/error-response', () => ({
   errorResponseFactory: (
     message: string,
-    options: { cause?: unknown } = {},
+    options: { cause?: unknown } = {}
   ) => {
     return Response.json(
       {
@@ -76,7 +79,7 @@ jest.mock('@/lib/nextjs-util/server/error-response', () => ({
         status: 500,
         statusText: 'Internal Server Error',
         headers: { 'Content-Type': 'application/json' },
-      },
+      }
     );
   },
 }));
@@ -122,7 +125,7 @@ describe('Server Utils', () => {
       (trace.setSpan as jest.Mock).mockReturnValue(mockContext);
       mockTracer.startSpan.mockReturnValue(mockSpan);
       (otelContext.with as jest.Mock).mockImplementation(async (ctx, fn) =>
-        fn(mockSpan),
+        fn(mockSpan)
       );
     });
 
@@ -160,7 +163,7 @@ describe('Server Utils', () => {
         {
           attributes,
         },
-        mockContext,
+        mockContext
       );
     });
 
@@ -177,7 +180,7 @@ describe('Server Utils', () => {
         {
           kind: SpanKind.CLIENT,
         },
-        mockContext,
+        mockContext
       );
     });
     test('sets both kind and attributes', async () => {
@@ -196,7 +199,7 @@ describe('Server Utils', () => {
           kind: SpanKind.SERVER,
           attributes,
         },
-        mockContext,
+        mockContext
       );
     });
 
@@ -232,7 +235,7 @@ describe('Server Utils', () => {
       });
 
       await expect(result.executeWithContext(testFunction)).rejects.toThrow(
-        'Test error',
+        'Test error'
       );
 
       expect(mockSpan.recordException).toHaveBeenCalled();
@@ -261,7 +264,7 @@ describe('Server Utils', () => {
       expect(typeof result.executeWithContext).toBe('function');
 
       const executionResult = await result.executeWithContext(
-        async () => 'success',
+        async () => 'success'
       );
       expect(executionResult).toBe('success');
     });
@@ -276,7 +279,7 @@ describe('Server Utils', () => {
       });
 
       const executionResult = await result.executeWithContext(
-        async () => 'success',
+        async () => 'success'
       );
 
       expect(executionResult).toBe('success');
@@ -290,7 +293,7 @@ describe('Server Utils', () => {
         reportEvent({
           eventName: 'test-event',
           additionalData: { success: true, keys: ['test'] },
-        }),
+        })
       ).resolves.not.toThrow();
 
       // Note: The function is designed to not throw errors even if internal operations fail
@@ -302,7 +305,7 @@ describe('Server Utils', () => {
         reportEvent({
           eventName: 'error-event',
           additionalData: { success: false, error: 'Test error' },
-        }),
+        })
       ).resolves.not.toThrow();
     });
 
@@ -312,7 +315,7 @@ describe('Server Utils', () => {
         reportEvent({
           eventName: 'test-event',
           additionalData: { success: true },
-        }),
+        })
       ).resolves.not.toThrow();
     });
 
@@ -322,7 +325,7 @@ describe('Server Utils', () => {
         reportEvent({
           eventName: 'test-event',
           additionalData: { success: true },
-        }),
+        })
       ).resolves.not.toThrow();
     });
   });
@@ -343,8 +346,8 @@ describe('Server Utils', () => {
       (trace.getTracer as jest.Mock).mockReturnValue(mockTracer);
       mockTracer.startActiveSpan.mockImplementation(
         async (name, options, parentCtx, fn) => {
-          return await ((fn ?? options)(mockSpan));
-        },
+          return await (fn ?? options)(mockSpan);
+        }
       );
       (otelContext.active as jest.Mock).mockReturnValue({});
       (propagation.extract as jest.Mock).mockReturnValue({});
@@ -387,7 +390,7 @@ describe('Server Utils', () => {
             } catch (error) {
               throw error;
             }
-          },
+          }
         );
 
         const handler = wrapRouteRequest(async (req: Request) => {
@@ -403,7 +406,7 @@ describe('Server Utils', () => {
         expect(response.statusText).toBe('OK-BUILD-FALLBACK');
         expect(mockSpan.setAttribute).toHaveBeenCalledWith(
           'http.status_code',
-          200,
+          200
         );
       });
 
@@ -423,7 +426,7 @@ describe('Server Utils', () => {
         expect(response.statusText).toBe('OK-BUILD-FALLBACK');
         expect(mockSpan.setAttribute).toHaveBeenCalledWith(
           'http.status_code',
-          200,
+          200
         );
       });
     });
@@ -435,7 +438,7 @@ describe('Server Utils', () => {
         async (_req: Request) => {
           return new Response('executed during build');
         },
-        { buildFallback: EnableOnBuild },
+        { buildFallback: EnableOnBuild }
       );
 
       const mockRequest = {} as NextRequest;
@@ -516,7 +519,7 @@ describe('Server Utils', () => {
         async (_req: Request) => {
           throw testError;
         },
-        { errorCallback },
+        { errorCallback }
       );
 
       const mockRequest = {} as NextRequest;
@@ -527,7 +530,7 @@ describe('Server Utils', () => {
         expect.objectContaining({
           message: 'Handler failed', // The mocked LoggedError message
           name: 'Error',
-        }),
+        })
       );
       expect(LoggedError.isLoggedError).toBeDefined(); // Just check the function exists
     });
@@ -541,7 +544,7 @@ describe('Server Utils', () => {
         async (_req: Request) => {
           throw new Error('Handler failed');
         },
-        { errorCallback },
+        { errorCallback }
       );
 
       const mockRequest = {} as NextRequest;
@@ -574,12 +577,12 @@ describe('Server Utils', () => {
         expect.objectContaining({
           attributes: expect.objectContaining({
             'route.params': expect.stringContaining(
-              '{"id":"123","slug":"test"}',
+              '{"id":"123","slug":"test"}'
             ),
           }),
         }),
         expect.any(Object),
-        expect.any(Function),
+        expect.any(Function)
       );
     });
 
@@ -598,11 +601,11 @@ describe('Server Utils', () => {
         'route.request',
         expect.objectContaining({
           attributes: expect.objectContaining({
-            'route.params': expect.stringContaining('{\"id\":\"123\"}'),
+            'route.params': expect.stringContaining('{"id":"123"}'),
           }),
         }),
         expect.any(Object),
-        expect.any(Function),
+        expect.any(Function)
       );
     });
   });

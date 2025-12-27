@@ -1,12 +1,12 @@
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { gmail_v1 } from 'googleapis';
-import { ArrayElement } from '@compliance-theater/lib-typescript';
+import { ArrayElement } from '@compliance-theater/typescript';
 import { isParsedHeaderMap, ParsedHeaderMap } from '../../parsedHeaderMap';
 import { ParsedContact, RecipientType } from '../types';
 
 export const mapContacts = (
   headers: gmail_v1.Schema$MessagePart['headers'] | ParsedHeaderMap | undefined,
-  recipientHeaderNames?: string[],
+  recipientHeaderNames?: string[]
 ) => {
   const headersToMatch = recipientHeaderNames ?? ['To', 'Cc', 'Bcc', 'From'];
   // Process a pre-parsed header map
@@ -19,9 +19,9 @@ export const mapContacts = (
             {
               value: typeof v === 'string' ? v : `${v.name ?? ''} <${v.email}>`,
             },
-            headerName.toLocaleLowerCase() as RecipientType,
-          ),
-        ),
+            headerName.toLocaleLowerCase() as RecipientType
+          )
+        )
       )
       .filter((x) => !!x);
   }
@@ -34,7 +34,7 @@ export const mapContacts = (
         }
         return mapContact(
           header,
-          header.name?.toLocaleLowerCase() as RecipientType,
+          header.name?.toLocaleLowerCase() as RecipientType
         );
       })
       ?.filter((x) => !!x) ?? []
@@ -42,17 +42,16 @@ export const mapContacts = (
 };
 
 type TContactRet<
-  TSource extends ArrayElement<gmail_v1.Schema$MessagePart['headers']> | string,
-> =
-  TSource extends ArrayElement<gmail_v1.Schema$MessagePart['headers']>
-    ? Array<ParsedContact>
-    : ParsedContact | null;
+  TSource extends ArrayElement<gmail_v1.Schema$MessagePart['headers']> | string
+> = TSource extends ArrayElement<gmail_v1.Schema$MessagePart['headers']>
+  ? Array<ParsedContact>
+  : ParsedContact | null;
 
 export const mapContact = <
-  TSource extends ArrayElement<gmail_v1.Schema$MessagePart['headers']> | string,
+  TSource extends ArrayElement<gmail_v1.Schema$MessagePart['headers']> | string
 >(
   source: TSource,
-  recipientType?: RecipientType,
+  recipientType?: RecipientType
 ): TContactRet<TSource> => {
   if (typeof source === 'object') {
     return (source?.value ?? '')
@@ -69,7 +68,7 @@ export const mapContact = <
       l.warn({
         message: `No valid contacts found in header.`,
         header: { value: source },
-      }),
+      })
     );
     return null as TContactRet<TSource>;
   }

@@ -8,7 +8,7 @@ import React, {
 import { debounce } from '@/lib/react-util/debounce';
 import { ChatPanelConfig, ChatPanelContextValue, DockPosition } from './types';
 import { ChatPanelContext } from './chat-panel-context';
-import { isKeyOf } from '@compliance-theater/lib-typescript/_guards';
+import { isKeyOf } from '@compliance-theater/typescript/_guards';
 import { errorReporter } from '@/lib/error-monitoring/error-reporter';
 
 const STORAGE_KEYS = {
@@ -81,7 +81,7 @@ export const ChatPanelProvider: React.FC<
   const [dockPanel, setDockPanel] = useState<HTMLDivElement | null>(null);
   const [caseFileId, setCaseFileId] = useState<string | null>(null);
   const [lastCompletionTime, setLastCompletionTime] = useState<Date | null>(
-    null,
+    null
   );
 
   useEffect(() => {
@@ -108,7 +108,7 @@ export const ChatPanelProvider: React.FC<
     const smartSetConfig = (
       arg:
         | Partial<ChatPanelConfig>
-        | ((prev: ChatPanelConfig) => Partial<ChatPanelConfig>),
+        | ((prev: ChatPanelConfig) => Partial<ChatPanelConfig>)
     ) => {
       const newConfig: Partial<ChatPanelConfig> =
         typeof arg === 'function' ? arg(config) : arg;
@@ -136,7 +136,7 @@ export const ChatPanelProvider: React.FC<
           return fieldsEqual<typeof left>(
             left,
             right as typeof left,
-            parts.join('.'),
+            parts.join('.')
           );
         }
         if (!isKeyOf(key, x)) {
@@ -147,7 +147,7 @@ export const ChatPanelProvider: React.FC<
           : x[key] == y[key];
       };
       const areEqual = checkKeys.every((key) =>
-        fieldsEqual(newConfig, config, key),
+        fieldsEqual(newConfig, config, key)
       );
       if (!areEqual) {
         // Enforce minimum height before merging
@@ -166,16 +166,16 @@ export const ChatPanelProvider: React.FC<
 
     const wrapConfigProp = <K extends keyof ChatPanelConfig>(
       key: K,
-      value: SetStateAction<Pick<ChatPanelConfig, K>[K]>,
+      value: SetStateAction<Pick<ChatPanelConfig, K>[K]>
     ):
       | Partial<ChatPanelConfig>
       | ((prev: ChatPanelConfig) => Partial<ChatPanelConfig>) => {
       if (typeof value === 'function') {
         const fn = value as (
-          prev: Pick<ChatPanelConfig, K>[K],
+          prev: Pick<ChatPanelConfig, K>[K]
         ) => Pick<ChatPanelConfig, K>[K];
         return (prev: ChatPanelConfig) =>
-          ({ [key]: fn(prev[key]) }) as Partial<ChatPanelConfig>;
+          ({ [key]: fn(prev[key]) } as Partial<ChatPanelConfig>);
       }
       return { [key]: value } as Partial<ChatPanelConfig>;
     };
@@ -204,7 +204,7 @@ export const ChatPanelProvider: React.FC<
       debounced: {
         setSize: debounce<void, (height: number, width: number) => void>(
           setSizeCallback,
-          500,
+          500
         ),
       },
       isDocked: config.position !== 'inline' && config.position !== 'floating',

@@ -4,7 +4,7 @@ import type {
   ErrorReporterInterface,
   ErrorReportResult,
 } from '@/lib/error-monitoring/types';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 /**
  * Provides access to the shared ErrorReporter instance used by LoggedError.
@@ -14,7 +14,7 @@ import { log } from '@compliance-theater/lib-logger';
 class LoggedErrorReporter {
   static #instance: ErrorReporterInterface | undefined;
   static makeFakeResult = async (
-    error: unknown,
+    error: unknown
   ): Promise<ErrorReportResult> => {
     const report = await errorReporter((r) => r.createErrorReport(error));
     return {
@@ -36,7 +36,7 @@ class LoggedErrorReporter {
             message: 'An error occurred',
             error,
             source: 'Edge Error Reporter instance',
-          }),
+          })
         );
         return LoggedErrorReporter.makeFakeResult(error);
       };
@@ -45,11 +45,11 @@ class LoggedErrorReporter {
         reportError: mockReport,
         reportBoundaryError: mockReport,
         reportUnhandledRejection: mockReport,
-        setupGlobalHandlers: () => { },
-        subscribeToErrorReports: () => { },
-        unsubscribeFromErrorReports: () => { },
+        setupGlobalHandlers: () => {},
+        subscribeToErrorReports: () => {},
+        unsubscribeFromErrorReports: () => {},
         getStoredErrors: () => [],
-        clearStoredErrors: () => { },
+        clearStoredErrors: () => {},
         generateFingerprint: (error: Error, context: ErrorContext) =>
           errorReporter((x) => x.generateFingerprint(error, context)),
         createErrorReport: (error: unknown) =>
@@ -61,7 +61,7 @@ class LoggedErrorReporter {
     }
     if (!LoggedErrorReporter.#instance) {
       throw new TypeError(
-        'Failed to initialize LoggedErrorReporter - telemetry error tracking will not work',
+        'Failed to initialize LoggedErrorReporter - telemetry error tracking will not work'
       );
     }
     return LoggedErrorReporter.#instance;

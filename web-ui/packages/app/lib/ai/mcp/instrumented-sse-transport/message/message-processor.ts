@@ -9,7 +9,7 @@ import type { JSONRPCMessage } from '../../ai.sdk';
 import { SessionManager } from '../session/session-manager';
 import { MetricsRecorder, DEBUG_MODE } from '../metrics/otel-metrics';
 import { CounterManager } from '../metrics/counter-manager';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util';
 
 /**
@@ -23,7 +23,7 @@ export class MessageProcessor {
   constructor(
     url: string,
     sessionManager: SessionManager,
-    counterManager: CounterManager,
+    counterManager: CounterManager
   ) {
     this.#url = url;
     this.#sessionManager = sessionManager;
@@ -65,7 +65,7 @@ export class MessageProcessor {
     MetricsRecorder.recordMessage(
       this.#url,
       'outbound',
-      messageMethod || 'unknown',
+      messageMethod || 'unknown'
     );
 
     // Record message size
@@ -74,7 +74,7 @@ export class MessageProcessor {
     MetricsRecorder.recordMessageSize(
       messageSize,
       'outbound',
-      messageMethod || 'unknown',
+      messageMethod || 'unknown'
     );
 
     if (DEBUG_MODE) {
@@ -87,7 +87,7 @@ export class MessageProcessor {
             url: this.#url,
             isToolCall,
           },
-        }),
+        })
       );
     }
   }
@@ -105,7 +105,7 @@ export class MessageProcessor {
       MetricsRecorder.recordMessage(
         this.#url,
         'inbound',
-        messageMethod || 'response',
+        messageMethod || 'response'
       );
 
       // Record message size
@@ -114,7 +114,7 @@ export class MessageProcessor {
       MetricsRecorder.recordMessageSize(
         messageSize,
         'inbound',
-        messageMethod || 'response',
+        messageMethod || 'response'
       );
 
       // Check if this is a response to a tool call and handle completion
@@ -139,7 +139,7 @@ export class MessageProcessor {
                   success: reason === 'success',
                   method: sessionState.toolCallMethod,
                 },
-              }),
+              })
             );
           }
         }
@@ -154,7 +154,7 @@ export class MessageProcessor {
               size: messageSize,
               isResponse: 'result' in message || 'error' in message,
             },
-          }),
+          })
         );
       }
     } catch (error) {

@@ -1,7 +1,7 @@
 import { BaseObjectRepository } from '../../../_baseObjectRepository';
 import { ObjectRepository } from '../../../_types';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter, newUuid } from '@compliance-theater/lib-typescript';
+import { FirstParameter, newUuid } from '@compliance-theater/typescript';
 import { CallToActionDetails } from '@/data-models/api';
 import {
   EmailPropertyRepository,
@@ -10,7 +10,7 @@ import {
 import { TransformedFullQueryResults } from '@/lib/neondb';
 
 const mapRecordToObject = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ): CallToActionDetails => {
   return {
     ...mapEmailPropertyRecordToObject(record),
@@ -38,13 +38,13 @@ const mapRecordToObject = (
     sentiment_reasons: Array.isArray(record.sentiment_reasons)
       ? (record.sentiment_reasons as string[])
       : record.sentiment_reasons
-        ? String(record.sentiment_reasons).split(',')
-        : null,
+      ? String(record.sentiment_reasons).split(',')
+      : null,
     compliance_rating_reasons: Array.isArray(record.compliance_rating_reasons)
       ? (record.compliance_rating_reasons as string[])
       : record.compliance_rating_reasons
-        ? String(record.compliance_rating_reasons).split(',')
-        : null,
+      ? String(record.compliance_rating_reasons).split(',')
+      : null,
     severity:
       record.severity !== undefined && record.severity !== null
         ? Number(record.severity)
@@ -52,25 +52,25 @@ const mapRecordToObject = (
     severity_reason: Array.isArray(record.severity_reason)
       ? (record.severity_reason as string[])
       : record.severity_reason
-        ? String(record.severity_reason).split(',')
-        : null,
+      ? String(record.severity_reason).split(',')
+      : null,
     title_ix_applicable:
       record.title_ix_applicable !== undefined &&
       record.title_ix_applicable !== null
         ? Number(record.title_ix_applicable)
         : null,
     title_ix_applicable_reasons: Array.isArray(
-      record.title_ix_applicable_reasons,
+      record.title_ix_applicable_reasons
     )
       ? (record.title_ix_applicable_reasons as string[])
       : record.title_ix_applicable_reasons
-        ? String(record.title_ix_applicable_reasons).split(',')
-        : null,
+      ? String(record.title_ix_applicable_reasons).split(',')
+      : null,
     closure_actions: Array.isArray(record.closure_actions)
       ? (record.closure_actions as string[])
       : record.closure_actions
-        ? String(record.closure_actions).split(',')
-        : null,
+      ? String(record.closure_actions).split(',')
+      : null,
 
     compliance_average_chapter_13:
       record.compliance_average_chapter_13 !== undefined &&
@@ -78,12 +78,12 @@ const mapRecordToObject = (
         ? Number(record.compliance_average_chapter_13)
         : null,
     compliance_chapter_13_reasons: Array.isArray(
-      record.compliance_chapter_13_reasons,
+      record.compliance_chapter_13_reasons
     )
       ? (record.compliance_chapter_13_reasons as string[])
       : record.compliance_chapter_13_reasons
-        ? String(record.compliance_chapter_13_reasons).split(',')
-        : null,
+      ? String(record.compliance_chapter_13_reasons).split(',')
+      : null,
   };
 };
 
@@ -101,7 +101,7 @@ export class CallToActionDetailsRepository extends BaseObjectRepository<
   }
 
   validate<
-    TMethod extends keyof ObjectRepository<CallToActionDetails, 'propertyId'>,
+    TMethod extends keyof ObjectRepository<CallToActionDetails, 'propertyId'>
   >(
     method: TMethod,
     obj: FirstParameter<
@@ -109,7 +109,7 @@ export class CallToActionDetailsRepository extends BaseObjectRepository<
         ObjectRepository<CallToActionDetails, 'propertyId'>,
         TMethod
       >[TMethod]
-    >,
+    >
   ): void {
     const asModel = obj as CallToActionDetails;
     switch (method) {

@@ -5,20 +5,20 @@ import {
   SequentialThinkingServer,
 } from './sequential-thinking-server';
 import { isError } from '@/lib/react-util/utility-methods';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import z from 'zod';
 
 let sequentialThinkingTool: SequentialThinkingServer | undefined = undefined;
 
 export const sequentialThinkingCallback = (
-  arg: object,
+  arg: object
 ): ToolCallbackResult<never> => {
   try {
     if (!sequentialThinkingTool) {
       sequentialThinkingTool = new SequentialThinkingServer();
     }
     let ret = sequentialThinkingTool.processThought(
-      arg,
+      arg
     ) as ToolCallbackResult<never>;
     if ('isError' in ret && ret.isError === true) {
       if (!('structuredContent' in ret)) {
@@ -38,7 +38,7 @@ export const sequentialThinkingCallback = (
         l.warn('Sequential thinking tool invocation error', {
           input: arg,
           result: ret,
-        }),
+        })
       );
     }
     return ret;
@@ -47,7 +47,9 @@ export const sequentialThinkingCallback = (
       source: 'sequentialThinking',
       log: true,
     });
-    const message = `An error occurred while processing your request: ${isError(error) ? error.message : String(error)}. Please try again later.`;
+    const message = `An error occurred while processing your request: ${
+      isError(error) ? error.message : String(error)
+    }. Please try again later.`;
     return {
       role: 'tool',
       content: [{ type: 'text', text: message }],

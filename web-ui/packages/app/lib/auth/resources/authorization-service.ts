@@ -12,25 +12,31 @@ import { env } from '@/lib/site-util/env';
 import { fetch } from '@/lib/nextjs-util/server';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { decodeToken } from '../utilities';
-import { log } from '@compliance-theater/lib-logger';
-import { serviceInstanceOverloadsFactory, SingletonProvider } from '@compliance-theater/lib-typescript';
-import type { ResourceEntitlement, CheckAccessResult, CheckAccessOptions } from './types';
+import { log } from '@compliance-theater/logger';
+import {
+  serviceInstanceOverloadsFactory,
+  SingletonProvider,
+} from '@compliance-theater/typescript';
+import type {
+  ResourceEntitlement,
+  CheckAccessResult,
+  CheckAccessOptions,
+} from './types';
 import { NextRequest } from 'next/server';
 import { normalizedAccessToken } from '../access-token';
-
 
 /**
  * Service for handling authorization checks
  */
 export class AuthorizationService {
-  private constructor() { }
+  private constructor() {}
 
   /**
    * Gets the singleton instance of AuthorizationService
    */
   public static get Instance(): AuthorizationService {
     const ret = SingletonProvider.Instance.getOrCreate(
-      "@no-education/lib/auth/resources/authorization-service",
+      '@no-education/lib/auth/resources/authorization-service',
       () => new AuthorizationService()
     );
     if (!ret) {
@@ -38,7 +44,7 @@ export class AuthorizationService {
         new Error('Unable to get singleton instance of AuthorizationService'),
         {
           log: true,
-          source: "AuthorizationService",
+          source: 'AuthorizationService',
         }
       );
     }
@@ -61,11 +67,15 @@ export class AuthorizationService {
    * @param options - The options for the check
    * @returns The result of the authorization check
    */
-  public async checkResourceFileAccess(options: CheckAccessOptions): Promise<CheckAccessResult> {
+  public async checkResourceFileAccess(
+    options: CheckAccessOptions
+  ): Promise<CheckAccessResult> {
     const { resourceId, scope, audience, permissions } = options;
     const normalToken = await normalizedAccessToken(options?.bearerToken);
     if (!normalToken) {
-      log((l) => l.warn('No authentication context availbale for authorization check'));
+      log((l) =>
+        l.warn('No authentication context availbale for authorization check')
+      );
       return { success: false, code: 401 };
     }
     const { accessToken: bearerToken } = normalToken;
@@ -99,7 +109,8 @@ export class AuthorizationService {
         }
 
         // Map permissions: Array<{ rsid, rsname, scopes }> -> Record<rsid, scopes[]>
-        const tokenPermissionsList = decodedToken.authorization?.permissions || [];
+        const tokenPermissionsList =
+          decodedToken.authorization?.permissions || [];
         const mappedPermissions: Record<string, string[]> = {};
 
         for (const perm of tokenPermissionsList) {
@@ -119,7 +130,9 @@ export class AuthorizationService {
           }
 
           // Check if all requested permissions (scopes) are present
-          const hasAllPermissions = permissions.every(p => resourcePerms.includes(p));
+          const hasAllPermissions = permissions.every((p) =>
+            resourcePerms.includes(p)
+          );
           if (!hasAllPermissions) {
             return { success: false, code: 403 };
           }
@@ -128,9 +141,8 @@ export class AuthorizationService {
         return {
           success: true,
           accessToken: accessToken,
-          permissions: mappedPermissions
+          permissions: mappedPermissions,
         };
-
       } else if (response.status === 403 || response.status === 401) {
         return { success: false, code: response.status };
       }
@@ -144,10 +156,9 @@ export class AuthorizationService {
           response: text,
           resourceId,
           scope,
-        }),
+        })
       );
       return { success: false, code: response.status };
-
     } catch (error) {
       log((l) =>
         l.error({
@@ -155,7 +166,7 @@ export class AuthorizationService {
           resourceId,
           scope,
           error,
-        }),
+        })
       );
       return { success: false, code: 500 };
     }
@@ -178,9 +189,11 @@ export class AuthorizationService {
   ): Promise<Array<ResourceEntitlement>>;
   public async getUserEntitlements(
     reqOrBearerToken: NextRequest | string | undefined,
-    audience?: string,
+    audience?: string
   ): Promise<Array<ResourceEntitlement>> {
-    const normalizedInput = await normalizedAccessToken(reqOrBearerToken, { skipUserId: true });
+    const normalizedInput = await normalizedAccessToken(reqOrBearerToken, {
+      skipUserId: true,
+    });
     if (!normalizedInput) {
       log((l) => l.warn('No credentials available for entitlement check.'));
       return [];
@@ -213,7 +226,7 @@ export class AuthorizationService {
             msg: 'Failed to retrieve entitlements',
             status: response.status,
             response: text,
-          }),
+          })
         );
         return [];
       }
@@ -228,19 +241,21 @@ export class AuthorizationService {
       const decodedToken = await decodeToken(accessToken);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const permissions = (decodedToken as any).authorization?.permissions || [];
+      const permissions =
+        (decodedToken as any).authorization?.permissions || [];
       return permissions;
-
     } catch (error) {
       log((l) =>
         l.error({
           msg: 'Error retrieving user entitlements',
           error,
-        }),
+        })
       );
       return [];
     }
   }
 }
 
-export const authorizationService = serviceInstanceOverloadsFactory(() => AuthorizationService.Instance);
+export const authorizationService = serviceInstanceOverloadsFactory(
+  () => AuthorizationService.Instance
+);

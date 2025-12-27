@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
@@ -39,7 +39,7 @@ const getColumnFromName = (
     columnTurns: ColumnType;
     columnMessages: ColumnType;
     columnTokens: ColumnType;
-  },
+  }
 ): ColumnType | undefined => {
   switch (columnName) {
     case 'id':
@@ -109,7 +109,9 @@ export const GET = wrapRouteRequest(
       const viewType = url.searchParams.get('viewType') || 'user';
       const isSystemView = viewType === 'system';
 
-      const accessibleUsers = await getAccessibleUserIds(req) ?? [NEVER_USE_USER_ID];
+      const accessibleUsers = (await getAccessibleUserIds(req)) ?? [
+        NEVER_USE_USER_ID,
+      ];
 
       // Define the base query for chats
       const result = await drizDbWithInit((db) => {
@@ -124,9 +126,7 @@ export const GET = wrapRouteRequest(
             totalMessages: schema.chats.allTheMessages,
             totalTurns: schema.chats.allTheTurns,
           })
-          .from(schema.chats)
-          ;
-
+          .from(schema.chats);
         // Apply the user/system filter
         const filteredQuery = isSystemView
           ? query.where(lte(schema.chats.userId, 0))
@@ -151,7 +151,7 @@ export const GET = wrapRouteRequest(
           msg: `[[AUDIT]] - Chat history list (${viewType} view) ${result.results.length} matches:`,
           resultset: result.results.map((x) => x.id),
           viewType,
-        }),
+        })
       );
       return NextResponse.json(result);
     } catch (error) {
@@ -161,11 +161,11 @@ export const GET = wrapRouteRequest(
       });
       return NextResponse.json(
         { error: 'Internal Server Error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
   },
-  { buildFallback: { rows: [], rowCount: 0 } },
+  { buildFallback: { rows: [], rowCount: 0 } }
 );
 
 export const dynamic = 'force-dynamic';

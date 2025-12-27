@@ -1,6 +1,6 @@
 import { getRedisClient } from '@/lib/redis-client';
 import type { RateLimitedRequest, ProcessedResponse } from './types';
-import { SingletonProvider } from '@compliance-theater/lib-typescript';
+import { SingletonProvider } from '@compliance-theater/typescript';
 
 const REDIS_PREFIX = 'rate-limit';
 const EXPIRATION_HOURS = 6;
@@ -27,7 +27,7 @@ export class RateLimitQueueManager {
     const redis = await getRedisClient();
     const queueKey = this.getQueueKey(
       request.metadata.generation,
-      request.modelClassification,
+      request.modelClassification
     );
 
     await redis
@@ -40,7 +40,7 @@ export class RateLimitQueueManager {
   async dequeueRequests(
     generation: 1 | 2,
     modelClassification: string,
-    maxCount: number = 10,
+    maxCount: number = 10
   ): Promise<RateLimitedRequest[]> {
     const redis = await getRedisClient();
     const queueKey = this.getQueueKey(generation, modelClassification);
@@ -55,7 +55,7 @@ export class RateLimitQueueManager {
 
   async getQueueSize(
     generation: 1 | 2,
-    modelClassification: string,
+    modelClassification: string
   ): Promise<number> {
     const redis = await getRedisClient();
     const queueKey = this.getQueueKey(generation, modelClassification);

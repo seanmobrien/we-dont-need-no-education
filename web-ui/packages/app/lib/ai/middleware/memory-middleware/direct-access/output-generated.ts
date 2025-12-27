@@ -3,39 +3,41 @@ import type { MemoryMiddlewareAugmentationStrategy } from '../types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { fromRequest } from '@/lib/auth/impersonation';
 import { Messages } from '@/lib/ai/mem0/lib/client/types';
-import { log, safeSerialize } from '@compliance-theater/lib-logger';
+import { log, safeSerialize } from '@compliance-theater/logger';
 
-export const onOutputGenerated: MemoryMiddlewareAugmentationStrategy['onOutputGenerated'] = async ({
-  output,
-  params: { prompt: promptFromProps },
-  context: {
-    memClient,
-  }
-}) => {
-  try {
-    // Extract most recent exchange from input; this is defined as anything up until the last LLM response.
-    const mostRecentExchangeIndex = promptFromProps.findIndex(x => x.role === 'assistant') + 1;
-    const mostRecentExchange: Messages = {
-      role: 'user',
-      content: `-- 🔎 Latest Interaction (🧱 Extraction Source) --
-${JSON.stringify([
-        ...promptFromProps.slice(mostRecentExchangeIndex),
-        {
-          role: 'assistant',
-          content: output,
-        },
-      ])}`,
-    };
-    const conversationContext: Messages | undefined =
-      mostRecentExchangeIndex > 0 ? {
+export const onOutputGenerated: MemoryMiddlewareAugmentationStrategy['onOutputGenerated'] =
+  async ({
+    output,
+    params: { prompt: promptFromProps },
+    context: { memClient },
+  }) => {
+    try {
+      // Extract most recent exchange from input; this is defined as anything up until the last LLM response.
+      const mostRecentExchangeIndex =
+        promptFromProps.findIndex((x) => x.role === 'assistant') + 1;
+      const mostRecentExchange: Messages = {
         role: 'user',
-        content: `-- 🧠 Prior Interactions (🧱 Context Only) --
+        content: `-- 🔎 Latest Interaction (🧱 Extraction Source) --
+${JSON.stringify([
+  ...promptFromProps.slice(mostRecentExchangeIndex),
+  {
+    role: 'assistant',
+    content: output,
+  },
+])}`,
+      };
+      const conversationContext: Messages | undefined =
+        mostRecentExchangeIndex > 0
+          ? {
+              role: 'user',
+              content: `-- 🧠 Prior Interactions (🧱 Context Only) --
 ${JSON.stringify(promptFromProps.slice(0, mostRecentExchangeIndex))}`,
-      } : undefined;
+            }
+          : undefined;
 
-    const prompt: Messages = {
-      role: 'system',
-      content: `You are the **Memory Optimization Module** for a compliance and legal analysis engine.
+      const prompt: Messages = {
+        role: 'system',
+        content: `You are the **Memory Optimization Module** for a compliance and legal analysis engine.
 Your purpose is to analyze user and engine communications and identify information from 
 the most recent exchange that could be useful in future conversation or analysis and 
 should be stored in the engine's Memory Submodule.  You will be provided with conversation
@@ -62,24 +64,36 @@ Any content within the most recent exchange, including user input, tool results 
 should be considered for memory storage.
 
 🗂️ Inputs
-`
-    };
-    const allInput = [prompt, ...(conversationContext ? [conversationContext] : []), mostRecentExchange];
-    const client = memClient ?? await memoryClientFactory({
-      impersonation: await fromRequest()
-    });
-    const results = await client.add(allInput);
-    console.group('Memory Middleware: onOutputGenerated');
-    console.table(results);
-    console.groupEnd();
-    log((l) => l.info(`memoryMiddleware:onOutputGenerated - Memory client returned [${results.length}] results: ${safeSerialize(results, { maxObjectDepth: 5 })}`));
-    return true;
-  } catch (error) {
-    throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      source: 'memoryMiddleware:onOutputGenerated',
-      log: true,
-    })
-  }
-};
+`,
+      };
+      const allInput = [
+        prompt,
+        ...(conversationContext ? [conversationContext] : []),
+        mostRecentExchange,
+      ];
+      const client =
+        memClient ??
+        (await memoryClientFactory({
+          impersonation: await fromRequest(),
+        }));
+      const results = await client.add(allInput);
+      console.group('Memory Middleware: onOutputGenerated');
+      console.table(results);
+      console.groupEnd();
+      log((l) =>
+        l.info(
+          `memoryMiddleware:onOutputGenerated - Memory client returned [${
+            results.length
+          }] results: ${safeSerialize(results, { maxObjectDepth: 5 })}`
+        )
+      );
+      return true;
+    } catch (error) {
+      throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        source: 'memoryMiddleware:onOutputGenerated',
+        log: true,
+      });
+    }
+  };
 
 export default onOutputGenerated;

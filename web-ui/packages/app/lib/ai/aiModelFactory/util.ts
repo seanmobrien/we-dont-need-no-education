@@ -3,13 +3,16 @@ import type {
   LanguageModelV2,
   ProviderV2,
 } from '@ai-sdk/provider';
-import { isAiProviderType, type AiModelType, type AiProviderType } from '@/lib/ai/core';
+import {
+  isAiProviderType,
+  type AiModelType,
+  type AiProviderType,
+} from '@/lib/ai/core';
 import type { AutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/types';
 import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 import { KnownFeatureType } from '@/lib/site-util/feature-flags';
 import { LoggedError } from '@/lib/react-util/errors/logged-error/logged-error-class';
-import { log } from '@compliance-theater/lib-logger';
-
+import { log } from '@compliance-theater/logger';
 
 export const AutoRefreshProviderFlagKeyMap = {
   azure: 'models_config_azure',
@@ -21,11 +24,11 @@ export type AutoRefreshFlagKey<P extends AiProviderType> =
   (typeof AutoRefreshProviderFlagKeyMap)[P];
 
 export const asAutoRefreshFlagKey = <P extends AiProviderType>(
-  provider: P,
+  provider: P
 ): AutoRefreshFlagKey<P> => AutoRefreshProviderFlagKeyMap[provider];
 
 export const getModelFlag = async <P extends AiProviderType>(
-  provider: P,
+  provider: P
 ): Promise<AutoRefreshFeatureFlag<AutoRefreshFlagKey<P>>> => {
   if (isAiProviderType(provider)) {
     const flagType = asAutoRefreshFlagKey(provider);
@@ -44,12 +47,12 @@ export const getModelFlag = async <P extends AiProviderType>(
  */
 export type ModelFromDeploymentId<T extends string | undefined> =
   T extends undefined
-  ? ProviderV2 & {
-    chat: (model: string) => LanguageModelV2;
-  }
-  : T extends 'embedding'
-  ? EmbeddingModelV2<string>
-  : LanguageModelV2;
+    ? ProviderV2 & {
+        chat: (model: string) => LanguageModelV2;
+      }
+    : T extends 'embedding'
+    ? EmbeddingModelV2<string>
+    : LanguageModelV2;
 
 /**
  * Overloaded function signature for normalizing model keys based on the provider and model type.
@@ -75,21 +78,22 @@ interface NormalizeModelKeyForProviderOverloads {
  * @param modelType - The model type string, which may or may not be prefixed with a provider.
  * @returns The normalized model key in the format "provider:model".
  */
-export const normalizeModelKeyForProvider: NormalizeModelKeyForProviderOverloads = (
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  provider: any,
-  modelType: AiModelType,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): any => {
-  if (modelType.startsWith(provider + ':')) {
-    return modelType;
-  }
-  const idx = modelType.indexOf(':');
-  if (idx > -1) {
-    return `${provider}:${modelType.substring(idx + 1)}`;
-  }
-  return `${provider}:${modelType}`;
-};
+export const normalizeModelKeyForProvider: NormalizeModelKeyForProviderOverloads =
+  (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    provider: any,
+    modelType: AiModelType
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): any => {
+    if (modelType.startsWith(provider + ':')) {
+      return modelType;
+    }
+    const idx = modelType.indexOf(':');
+    if (idx > -1) {
+      return `${provider}:${modelType.substring(idx + 1)}`;
+    }
+    return `${provider}:${modelType}`;
+  };
 
 /**
  * Checks if the model type starts with the given prefix.  This is used to short-circuit
@@ -100,7 +104,7 @@ export const normalizeModelKeyForProvider: NormalizeModelKeyForProviderOverloads
  */
 export const caseProviderMatch = (
   prefix: string,
-  modelType: AiModelType,
+  modelType: AiModelType
 ): AiModelType => {
   if (modelType.startsWith(prefix)) {
     return modelType as AiModelType;
@@ -122,21 +126,24 @@ export const SupportedProviders: Array<AiProviderType> = [
 ] as const;
 
 /**
- * Initializes the provider configuration for use by the AI model 
- * factory.  This function is called by {@link @/lib/site-util/app-start.ts} 
+ * Initializes the provider configuration for use by the AI model
+ * factory.  This function is called by {@link @/lib/site-util/app-start.ts}
  * when it is performing application initialization.  It provides an
  * opportunity to load real configuration settings before creating any of the
- * global model-related singleton factories. 
+ * global model-related singleton factories.
  */
 export const initializeProviderConfig = async (): Promise<void> => {
   const rawMcpFlags: Array<KnownFeatureType> = [
     'mcp_cache_client',
     'mcp_cache_tools',
     'mcp_protocol_http_stream',
-    'mem0_mcp_tools_enabled'
+    'mem0_mcp_tools_enabled',
   ];
 
-  const refreshFlag = async <FeatureType extends KnownFeatureType>(key: FeatureType | AiProviderType, flag: Promise<AutoRefreshFeatureFlag<FeatureType> | undefined>) => {
+  const refreshFlag = async <FeatureType extends KnownFeatureType>(
+    key: FeatureType | AiProviderType,
+    flag: Promise<AutoRefreshFeatureFlag<FeatureType> | undefined>
+  ) => {
     try {
       const f = await flag;
       if (!f || f.isInitialized) {
@@ -147,9 +154,13 @@ export const initializeProviderConfig = async (): Promise<void> => {
     } catch (e) {
       const le = LoggedError.isTurtlesAllTheWayDownBaby(e, {
         log: true,
-        source: `initializeAiModelConfig:[${key}]`
+        source: `initializeAiModelConfig:[${key}]`,
       });
-      log((l) => l.warn(`=== ${le.source}: Failed to load critical feature flag: model resolution may be impacted ===\n\tDetails: ${le.message}`));
+      log((l) =>
+        l.warn(
+          `=== ${le.source}: Failed to load critical feature flag: model resolution may be impacted ===\n\tDetails: ${le.message}`
+        )
+      );
       return flag;
     }
   };
@@ -160,9 +171,13 @@ export const initializeProviderConfig = async (): Promise<void> => {
     // and provider configuration.
     // ...SupportedProviders.map(p => refreshFlag(p, getModelFlag(p))),
     // In addition to the model configuration flags, there
-    // are a handful of MCP-related flags that need to be 
+    // are a handful of MCP-related flags that need to be
     // resolved and available for optimal functionality.
-    ...rawMcpFlags.map(f => refreshFlag(f, wellKnownFlag(f))),
+    ...rawMcpFlags.map((f) => refreshFlag(f, wellKnownFlag(f))),
   ]);
-  log(l => l.verbose(`---=== AI Model Subsystem successfully initialized; ${flags.length} settings were loaded.`));
-}; 
+  log((l) =>
+    l.verbose(
+      `---=== AI Model Subsystem successfully initialized; ${flags.length} settings were loaded.`
+    )
+  );
+};

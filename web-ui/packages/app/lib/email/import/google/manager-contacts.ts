@@ -5,7 +5,7 @@ import {
 } from '../types';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
 import { ImportStage } from '@/data-models/api/import/email-message';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { mapContacts } from './utilities';
 import { ContactRepository } from '@/lib/api/contacts/database';
 
@@ -23,7 +23,7 @@ class ContactStageManager extends TransactionalStateManagerBase {
     const contacts = mapContacts(target.raw?.payload?.headers);
     if (!contacts || contacts.length === 0) {
       throw new Error(
-        `No valid contacts found in the message: ${currentStage}`,
+        `No valid contacts found in the message: ${currentStage}`
       );
     }
 
@@ -35,7 +35,7 @@ class ContactStageManager extends TransactionalStateManagerBase {
       contacts.map((c) => c.email)
     );*/
     const newContacts = contacts.filter(
-      (c) => !retrievedContacts.some((rc) => rc.email === c.email),
+      (c) => !retrievedContacts.some((rc) => rc.email === c.email)
     );
     if (newContacts.length === 0) {
       log((l) => l.info(`No new contacts found in message: ${currentStage}`));
@@ -48,7 +48,7 @@ class ContactStageManager extends TransactionalStateManagerBase {
         });
       });
       log((l) =>
-        l.info(`Found and created ${newContacts.length} new contacts`),
+        l.info(`Found and created ${newContacts.length} new contacts`)
       );
     }
     return Promise.resolve(options);
@@ -57,7 +57,7 @@ class ContactStageManager extends TransactionalStateManagerBase {
 
 const managerFactory: ImportStageManagerFactory = (
   stage: ImportStage,
-  addOps: AdditionalStageOptions,
+  addOps: AdditionalStageOptions
 ) => new ContactStageManager(stage, addOps);
 
 export default managerFactory;

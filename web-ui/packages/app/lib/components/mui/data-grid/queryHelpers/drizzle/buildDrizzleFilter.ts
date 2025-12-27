@@ -35,7 +35,7 @@ import { isGridFilterModel } from '../../guards';
 import { columnMapFactory, parseFilterOptions } from '../utility';
 import { isTruthy } from '@/lib/react-util/utility-methods';
 import { schema } from '@/lib/drizzle-db';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type {
   BuildDrizzleAttachmentOrEmailFilterProps,
   BuildDrizzleItemFilterProps,
@@ -224,8 +224,8 @@ export const buildDrizzleItemFilter = ({
   if (!column) {
     log((l) =>
       l.warn(
-        `buildDrizzleItemFilter: Unknown column '${mappedField}' (mapped from '${item.field}')`,
-      ),
+        `buildDrizzleItemFilter: Unknown column '${mappedField}' (mapped from '${item.field}')`
+      )
     );
     return undefined;
   }
@@ -250,12 +250,12 @@ export const buildDrizzleItemFilter = ({
     case 'isEmpty':
       return or(
         isNull(column),
-        'table' in column ? eq(column, '') : eq(sql`${column}`, ''),
+        'table' in column ? eq(column, '') : eq(sql`${column}`, '')
       );
     case 'isNotEmpty':
       return and(
         isNotNull(column),
-        'table' in column ? ne(column, '') : ne(sql`${column}`, ''),
+        'table' in column ? ne(column, '') : ne(sql`${column}`, '')
       );
     case 'isAnyOf':
       return 'table' in column
@@ -357,7 +357,7 @@ export const buildDrizzleQueryFilter = ({
    * Parses the filter model from the source.
    */
   const parseFilterFromSource = (
-    src: typeof source,
+    src: typeof source
   ): GridFilterModel | undefined => {
     if (isGridFilterModel(src)) {
       return src;

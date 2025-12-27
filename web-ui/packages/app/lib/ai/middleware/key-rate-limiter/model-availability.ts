@@ -1,4 +1,4 @@
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { isModelAvailable } from '@/lib/ai/aiModelFactory';
 import { rateLimitQueueManager } from './queue-manager';
 import { rateLimitMetrics } from './metrics';
@@ -12,7 +12,7 @@ import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 
 export function getAvailableModel(
   provider: 'azure' | 'google',
-  classification: ModelClassification,
+  classification: ModelClassification
 ): string | null {
   const modelKey = `${provider}:${classification}`;
   return isModelAvailable(modelKey) ? modelKey : null;
@@ -28,17 +28,17 @@ export async function checkModelAvailabilityAndFallback(
     prompt?: unknown[];
     chatId: string;
     turnId: string;
-  },
+  }
 ): Promise<string | void> {
   if (!isModelAvailable(currentModelKey)) {
     log((l) =>
-      l.warn(`Model ${currentModelKey} is disabled, attempting fallback`),
+      l.warn(`Model ${currentModelKey} is disabled, attempting fallback`)
     );
 
     if (failoverConfig) {
       const fallbackModelKey = getAvailableModel(
         failoverConfig.fallbackProvider,
-        modelClassification,
+        modelClassification
       );
 
       if (fallbackModelKey) {
@@ -51,7 +51,7 @@ export async function checkModelAvailabilityAndFallback(
         const requestId = await enqueueRequestForRetry(
           modelClassification,
           params,
-          'no_models_available',
+          'no_models_available'
         );
 
         throw new RateRetryError({
@@ -66,7 +66,7 @@ export async function checkModelAvailabilityAndFallback(
       const retryId = await enqueueRequestForRetry(
         modelClassification,
         params,
-        'no_models_available',
+        'no_models_available'
       );
 
       throw new RateRetryError({
@@ -89,11 +89,11 @@ export const enqueueRequestForRetry = async (
     chatId: string;
     turnId: string;
   },
-  errorType: string,
+  errorType: string
 ): Promise<string> => {
   if (!prompt || prompt.length === 0) {
     throw new TypeError(
-      'Unable to locate prompt; this request does not support delayed run enqueuing.',
+      'Unable to locate prompt; this request does not support delayed run enqueuing.'
     );
   }
   const requestId = uuidv4();

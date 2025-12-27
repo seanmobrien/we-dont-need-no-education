@@ -1,12 +1,10 @@
 import { env } from '@/lib/site-util/env';
 import type { AdminTokenConfig } from './impersonation.types';
-import { log } from '@compliance-theater/lib-logger';
-
+import { log } from '@compliance-theater/logger';
 
 export const adminBaseFromIssuer = (
-  issuer: string,
+  issuer: string
 ): { origin: string; realm: string; adminBase: string } | undefined => {
-
   const extractRealmFromIssuer = (issuer: string): string | undefined => {
     try {
       const u = new URL(issuer);
@@ -54,10 +52,10 @@ export const defaultConfigFromEnv = (): AdminTokenConfig => {
     !config.redirectUri
   ) {
     log((l) =>
-      l.warn('SystemTokenStore: incomplete environment configuration'),
+      l.warn('SystemTokenStore: incomplete environment configuration')
     );
     throw new TypeError(
-      'SystemTokenStore: Required environment variables are missing',
+      'SystemTokenStore: Required environment variables are missing'
     );
   }
 
@@ -65,8 +63,8 @@ export const defaultConfigFromEnv = (): AdminTokenConfig => {
   if (!realm || !adminBase) {
     log((l) =>
       l.warn(
-        'SystemTokenStore: Unable to extract realm or admin base from issuer',
-      ),
+        'SystemTokenStore: Unable to extract realm or admin base from issuer'
+      )
     );
     throw new TypeError('SystemTokenStore: Invalid issuer URL format');
   }

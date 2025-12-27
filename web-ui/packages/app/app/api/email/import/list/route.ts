@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { query } from '@/lib/neondb';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
@@ -66,7 +66,7 @@ export const GET = wrapRouteRequest(
                 l.warn({
                   msg: '[[WARNING]] - Unexpected recipient type detected:',
                   recipients,
-                }),
+                })
               );
               recipients = null;
             }
@@ -81,11 +81,11 @@ export const GET = wrapRouteRequest(
             };
             return ret;
           },
-        },
+        }
       );
 
       const total = await query(
-        (q) => q`SELECT COUNT(*) AS records FROM staging_message;`,
+        (q) => q`SELECT COUNT(*) AS records FROM staging_message;`
       );
       log((l) =>
         l.verbose({
@@ -94,12 +94,12 @@ export const GET = wrapRouteRequest(
           num,
           offset,
           cbTotal: total,
-        }),
+        })
       );
 
       return NextResponse.json(
         { pageStats: { page, num, total: total[0].records }, results: result },
-        { status: 200 },
+        { status: 200 }
       );
     } catch (error) {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -108,10 +108,10 @@ export const GET = wrapRouteRequest(
       });
       return NextResponse.json(
         { error: 'Internal Server Error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
-  },
+  }
 );
 
 export const dynamic = 'force-dynamic';

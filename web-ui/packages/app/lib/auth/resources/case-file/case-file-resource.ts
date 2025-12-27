@@ -1,5 +1,5 @@
 import { env } from '@/lib/site-util/env';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { NextRequest } from 'next/server';
 import { getRequestTokens } from '../../access-token';
@@ -29,7 +29,7 @@ export enum CaseFileScope {
 
 export const ensureCaseFileResource = async (
   userId: number,
-  keycloakUserId: string,
+  keycloakUserId: string
 ): Promise<CaseFileResource> => {
   try {
     const resourceName = `case-file:${userId}`;
@@ -42,7 +42,7 @@ export const ensureCaseFileResource = async (
           msg: 'Found existing case file resource',
           userId,
           resourceId: existingResource._id,
-        }),
+        })
       );
       return existingResource;
     }
@@ -52,11 +52,7 @@ export const ensureCaseFileResource = async (
       name: resourceName,
       type: 'case-file',
       owner: keycloakUserId,
-      scopes: [
-        CaseFileScope.READ,
-        CaseFileScope.WRITE,
-        CaseFileScope.ADMIN,
-      ],
+      scopes: [CaseFileScope.READ, CaseFileScope.WRITE, CaseFileScope.ADMIN],
       attributes: {
         caseFileId: [userId.toString()],
         readers: [keycloakUserId],
@@ -71,7 +67,7 @@ export const ensureCaseFileResource = async (
         msg: 'Created new case file resource',
         userId,
         resourceId: createdResource._id,
-      }),
+      })
     );
 
     return createdResource;
@@ -85,25 +81,28 @@ export const ensureCaseFileResource = async (
   }
 };
 
-const findCaseFileResource =
-  createSafeAsyncWrapper(
-    'findCaseFileResource',
-    async (
-      userId: number,
-    ): Promise<CaseFileResource | null> => {
-      const resourceName = `case-file:${userId}`;
-      const resource = await resourceService().findAuthorizedResource<CaseFileResource>(resourceName);
-      if (!resource) {
-        return null;
-      }
-      return {
-        scopes: ['openid'],
-        ...resource,
-      };
-    },
-    () => null);
+const findCaseFileResource = createSafeAsyncWrapper(
+  'findCaseFileResource',
+  async (userId: number): Promise<CaseFileResource | null> => {
+    const resourceName = `case-file:${userId}`;
+    const resource =
+      await resourceService().findAuthorizedResource<CaseFileResource>(
+        resourceName
+      );
+    if (!resource) {
+      return null;
+    }
+    return {
+      scopes: ['openid'],
+      ...resource,
+    };
+  },
+  () => null
+);
 
-const createCaseFileResource = (resource: Omit<CaseFileResource, '_id'>): Promise<CaseFileResource> =>
+const createCaseFileResource = (
+  resource: Omit<CaseFileResource, '_id'>
+): Promise<CaseFileResource> =>
   resourceService().createAuthorizedResource(resource);
 
 export const checkCaseFileAccess = createSafeAsyncWrapper(
@@ -124,8 +123,12 @@ export const checkCaseFileAccess = createSafeAsyncWrapper(
     const {
       access_token: accessToken,
       userId: sessionUserId,
-      providerAccountId
-    } = await getRequestTokens(req) ?? { access_token: undefined, userId: undefined, providerAccountId: undefined };
+      providerAccountId,
+    } = (await getRequestTokens(req)) ?? {
+      access_token: undefined,
+      userId: undefined,
+      providerAccountId: undefined,
+    };
 
     if (!accessToken) {
       // If no user access token is found, always return false
@@ -150,7 +153,7 @@ export const checkCaseFileAccess = createSafeAsyncWrapper(
               msg: 'Case file resource not found for authorization check',
               userId,
               scope,
-            }),
+            })
           );
           return false;
         }
@@ -161,7 +164,8 @@ export const checkCaseFileAccess = createSafeAsyncWrapper(
               msg: 'Unexpected error creating user case file resource',
               userId,
               scope,
-            }));
+            })
+          );
           return false;
         }
       } else {
@@ -170,27 +174,30 @@ export const checkCaseFileAccess = createSafeAsyncWrapper(
             msg: 'Case file resource not found for authorization check',
             userId,
             scope,
-          }),
+          })
         );
         return false;
       }
     }
 
     // Use AuthorizationService to check access
-    const result = await authorizationService(auth => auth.checkResourceFileAccess({
-      resourceId: resource._id!,
-      scope: scope,
-      audience: env('AUTH_KEYCLOAK_CLIENT_ID'),
-      bearerToken: accessToken,
-    }));
+    const result = await authorizationService((auth) =>
+      auth.checkResourceFileAccess({
+        resourceId: resource._id!,
+        scope: scope,
+        audience: env('AUTH_KEYCLOAK_CLIENT_ID'),
+        bearerToken: accessToken,
+      })
+    );
 
     return result.success;
   },
-  () => false,
+  () => false
 );
 
 export const getCaseFileResourceId = createSafeAsyncWrapper(
   'getCaseFileResourceId',
-  (async (userId: number): Promise<string | null> => (await findCaseFileResource(userId))?._id ?? null),
+  async (userId: number): Promise<string | null> =>
+    (await findCaseFileResource(userId))?._id ?? null,
   () => null
 );

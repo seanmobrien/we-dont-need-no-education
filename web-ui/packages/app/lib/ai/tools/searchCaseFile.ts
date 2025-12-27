@@ -1,4 +1,4 @@
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import {
   AiSearchResultEnvelope,
   hybridDocumentSearchFactory,
@@ -27,7 +27,7 @@ const searchCaseFileCounter = appMeters.createCounter(
   {
     description: 'Total number of case file search operations',
     unit: '1',
-  },
+  }
 );
 
 const searchCaseFileDurationHistogram = appMeters.createHistogram(
@@ -35,7 +35,7 @@ const searchCaseFileDurationHistogram = appMeters.createHistogram(
   {
     description: 'Duration of case file search operations',
     unit: 'ms',
-  },
+  }
 );
 
 const searchCaseFileResultsHistogram = appMeters.createHistogram(
@@ -43,7 +43,7 @@ const searchCaseFileResultsHistogram = appMeters.createHistogram(
   {
     description: 'Number of results returned by case file search',
     unit: '1',
-  },
+  }
 );
 
 const searchCaseFileErrorCounter = appMeters.createCounter(
@@ -51,7 +51,7 @@ const searchCaseFileErrorCounter = appMeters.createCounter(
   {
     description: 'Total number of case file search errors',
     unit: '1',
-  },
+  }
 );
 
 export const localSearchCaseFile = (props: {
@@ -63,7 +63,7 @@ export const localSearchCaseFile = (props: {
     undefined as unknown as RequestHandlerExtra<
       ServerRequest,
       ServerNotification
-    >,
+    >
   );
 
 export const searchCaseFile = async (
@@ -75,7 +75,7 @@ export const searchCaseFile = async (
     options?: CaseFileSearchOptions;
   },
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+  extra: RequestHandlerExtra<ServerRequest, ServerNotification>
 ): Promise<AiSearchToolResult> => {
   const startTime = Date.now();
 
@@ -113,7 +113,7 @@ export const searchCaseFile = async (
         options,
         resultCount,
         durationMs: duration,
-      }),
+      })
     );
 
     return toolCallbackResultFactory(ret);
@@ -136,7 +136,7 @@ export const searchCaseFile = async (
         log: true,
         message: 'Error searching case file',
         data: { query, options },
-      }),
+      })
     );
   }
 };
@@ -148,7 +148,7 @@ export const searchCaseFileConfig = {
       .string()
       .describe('The search query term used to find case files.'),
     options: CaseFileSearchOptionsSchema.optional().describe(
-      'Options used to influence the search results, such as scope and pagination.',
+      'Options used to influence the search results, such as scope and pagination.'
     ),
   },
   outputSchema: toolCallbackResultSchemaFactory(AiSearchResultEnvelopeSchema),

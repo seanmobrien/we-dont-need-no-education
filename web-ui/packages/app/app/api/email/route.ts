@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 // (normalizeNullableNumeric no longer needed directly; handled in validation module)
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { NEVER_USE_USER_ID } from '@/lib/constants';
@@ -43,9 +43,10 @@ export const dynamic = 'force-dynamic';
 export const GET = wrapRouteRequest(
   async (req: NextRequest) => {
     const normalAccessToken = await getAccessToken(req);
-    const eligibleUserIds = await getAccessibleUserIds(normalAccessToken) ?? [NEVER_USE_USER_ID];
+    const eligibleUserIds = (await getAccessibleUserIds(normalAccessToken)) ?? [
+      NEVER_USE_USER_ID,
+    ];
     const results = await drizDbWithInit(async (db) => {
-
       const getColumn = (columnName: string) => {
         switch (columnName) {
           case 'sentOn':
@@ -87,18 +88,21 @@ export const GET = wrapRouteRequest(
         })
         .from(schema.emails)
         // Inner join to document units with user id allow-list provides access filter
-        .innerJoin(schema.documentUnits, and(
+        .innerJoin(
+          schema.documentUnits,
           and(
-            eq(schema.emails.emailId, schema.documentUnits.emailId),
-            eq(schema.documentUnits.documentType, 'email')
-          ),
-          inArray(schema.documentUnits.userId, eligibleUserIds)
-        ))
+            and(
+              eq(schema.emails.emailId, schema.documentUnits.emailId),
+              eq(schema.documentUnits.documentType, 'email')
+            ),
+            inArray(schema.documentUnits.userId, eligibleUserIds)
+          )
+        )
         // Inner join to contacts to get sender name and email
         .innerJoin(
           schema.contacts,
-          eq(schema.emails.senderId, schema.contacts.contactId),
-        )
+          eq(schema.emails.senderId, schema.contacts.contactId)
+        );
       return await selectForGrid<EmailMessageSummary>({
         req,
         query: bq as unknown as DrizzleSelectQuery,
@@ -115,7 +119,7 @@ export const GET = wrapRouteRequest(
           sentOn: new Date(
             emailDomain.sentOn
               ? Date.parse(String(emailDomain.sentOn))
-              : Date.now(),
+              : Date.now()
           ),
           threadId: emailDomain.threadId
             ? Number(emailDomain.threadId)
@@ -142,7 +146,7 @@ export const GET = wrapRouteRequest(
 
     return Response.json(results);
   },
-  { buildFallback: buildFallbackGrid },
+  { buildFallback: buildFallbackGrid }
 );
 
 /**
@@ -163,7 +167,7 @@ export const POST = wrapRouteRequest(
       if (!validated.success) {
         return NextResponse.json(
           { error: 'Validation failed', details: validated.error.flatten() },
-          { status: 400 },
+          { status: 400 }
         );
       }
       const emailService = new EmailService();
@@ -174,7 +178,7 @@ export const POST = wrapRouteRequest(
           message: 'Email created successfully',
           email: createdEmail,
         },
-        { status: 201 },
+        { status: 201 }
       );
     } catch (error) {
       if (ValidationError.isValidationError(error)) {
@@ -184,14 +188,14 @@ export const POST = wrapRouteRequest(
         l.error({
           source: 'POST email',
           error,
-        }),
+        })
       );
       return NextResponse.json(
         { error: 'Internal Server Error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
-  },
+  }
 );
 
 /**
@@ -212,7 +216,7 @@ export const PUT = wrapRouteRequest(
       if (!validated.success) {
         return NextResponse.json(
           { error: 'Validation failed', details: validated.error.flatten() },
-          { status: 400 },
+          { status: 400 }
         );
       }
       const emailService = new EmailService();
@@ -220,7 +224,7 @@ export const PUT = wrapRouteRequest(
 
       return NextResponse.json(
         { message: 'Email updated successfully', email: updatedEmail },
-        { status: 200 },
+        { status: 200 }
       );
     } catch (error) {
       if (ValidationError.isValidationError(error)) {
@@ -229,10 +233,10 @@ export const PUT = wrapRouteRequest(
       log((l) => l.error({ source: 'PUT email', error }));
       return NextResponse.json(
         { error: 'Internal Server Error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
-  },
+  }
 );
 
 /**
@@ -251,7 +255,7 @@ export const DELETE = wrapRouteRequest(
       if (!emailId) {
         return NextResponse.json(
           { error: 'Email ID is required' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -264,14 +268,14 @@ export const DELETE = wrapRouteRequest(
 
       return NextResponse.json(
         { message: 'Email deleted successfully' },
-        { status: 200 },
+        { status: 200 }
       );
     } catch (error) {
       log((l) => l.error({ source: 'DELETE email', error }));
       return NextResponse.json(
         { error: 'Internal Server Error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
-  },
+  }
 );

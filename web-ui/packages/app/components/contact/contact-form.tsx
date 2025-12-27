@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import type { Contact } from '@/data-models/api';
 import { createContact, isContact, isContactSummary } from '@/data-models/api';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { fetch } from '@/lib/nextjs-util/fetch';
 
@@ -59,7 +59,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
       const { name, value } = event.target;
       setFormData((prevData) => ({ ...prevData, [name]: value }));
     },
-    [setFormData],
+    [setFormData]
   );
 
   const onSaveClicked = useCallback(
@@ -103,7 +103,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
         log((l) => l.error('Error saving contact:', error));
       }
     },
-    [formData, onSave],
+    [formData, onSave]
   );
 
   if (loading) {

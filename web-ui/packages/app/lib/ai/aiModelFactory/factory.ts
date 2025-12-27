@@ -16,7 +16,7 @@ import {
   AiModelTypeValue_Embedding,
   AiModelTypeValue_GoogleEmbedding,
 } from '@/lib/ai/core/unions';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
 import { cacheWithRedis } from '../middleware/cacheWithRedis';
@@ -28,10 +28,8 @@ import {
   globalRequiredSingleton,
   isNotNull,
   SingletonProvider,
-} from '@compliance-theater/lib-typescript';
-import {
-  isAutoRefreshFeatureFlag,
-} from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+} from '@compliance-theater/typescript';
+import { isAutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 import type {
   AutoRefreshFeatureFlag,
   KnownFeatureType,
@@ -46,18 +44,15 @@ import {
   getModelFlag,
   caseProviderMatch,
 } from './util';
-import {
-  getAvailability,
-} from './model-availability-manager';
+import { getAvailability } from './model-availability-manager';
 import { LoggedError } from '@/lib/react-util';
-
 
 /**
  * Setup middleware for language models with caching and retry logic
  */
 const setupMiddleware = async (
   provider: string,
-  model: LanguageModelV2,
+  model: LanguageModelV2
 ): Promise<LanguageModelV2> => {
   return wrapLanguageModel({
     model: wrapLanguageModel({
@@ -80,39 +75,53 @@ const setupMiddleware = async (
 
 const getGuardedProvider = async <
   P extends AiProviderType,
-  R extends ReturnType<typeof customProvider>,
+  R extends ReturnType<typeof customProvider>
 >(
   provider: P,
-  cb: (config: ModelProviderFactoryConfig) => Promise<R>,
+  cb: (config: ModelProviderFactoryConfig) => Promise<R>
 ): Promise<R | undefined> => {
   const flag = await getModelFlag(provider);
   if (!flag?.isEnabled) {
     return undefined;
   }
   if (!flag.isInitialized) {
-    log(l => l.warn(`AiModelFactory: Loading provider configuration settings for new ${provider}.`))
+    log((l) =>
+      l.warn(
+        `AiModelFactory: Loading provider configuration settings for new ${provider}.`
+      )
+    );
     // Wait until we get real data
     await flag.forceRefresh();
   }
   const cleanup = () => {
-    log(l => l.verbose(`AiModelFactory: Configuration settings for provider ${provider} have been updated - obsolete provider removed from registry.`))
+    log((l) =>
+      l.verbose(
+        `AiModelFactory: Configuration settings for provider ${provider} have been updated - obsolete provider removed from registry.`
+      )
+    );
     flag.removeOnChangedListener(cleanup);
   };
   flag.addOnChangedListener(cleanup);
   try {
     const ret = await cb(flag.value as ModelProviderFactoryConfig);
     if (isNotNull(ret)) {
-      log(l => l.verbose(`AiModelFactory: Provider ${provider} has been initialized.`))
+      log((l) =>
+        l.verbose(`AiModelFactory: Provider ${provider} has been initialized.`)
+      );
       return ret;
     }
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
-      source: 'AiModelFactory'
+      source: 'AiModelFactory',
     });
   }
 
-  log(l => l.warn(`AiModelFactory: Unexpected null provider returned from factory for provider ${provider}; models will not be available.`));
+  log((l) =>
+    l.warn(
+      `AiModelFactory: Unexpected null provider returned from factory for provider ${provider}; models will not be available.`
+    )
+  );
   return undefined;
 };
 
@@ -135,7 +144,10 @@ type OptionsFactoryProps = Omit<ModelServerConfig, 'model'> & {
 const customProviderFactory = async <
   P extends AiProviderType,
   TOptions extends object,
-  TProvider extends ProviderV2 & { chat: (model: string) => LanguageModelV2; completions?: (model: string) => LanguageModelV2 },
+  TProvider extends ProviderV2 & {
+    chat: (model: string) => LanguageModelV2;
+    completions?: (model: string) => LanguageModelV2;
+  }
 >({
   provider,
   providerFactory,
@@ -159,30 +171,39 @@ const customProviderFactory = async <
 
   const modelFactory = <T extends string | undefined>(
     config: ModelProviderFactoryConfig,
-    model: T,
+    model: T
   ): ModelFromDeploymentId<T> => {
     const merged = {
       ...(apiKey ? { apiKey } : {}),
       ...(baselineFactory(model) ?? {}),
       ...(config['default'] ?? {}),
-      ...(model === undefined ? (config.fallback ?? {}) : {}),
-      ...(model && model !== 'embedding' ? (config.named?.[model] ?? {}) : {}),
-      ...(model === 'embedding' ? (config.embedding ?? {}) : {}),
+      ...(model === undefined ? config.fallback ?? {} : {}),
+      ...(model && model !== 'embedding' ? config.named?.[model] ?? {} : {}),
+      ...(model === 'embedding' ? config.embedding ?? {} : {}),
     };
     const builder = providerFactory(optionsFactory(merged) as TOptions);
     if (model === undefined) {
       return builder as ProviderV2 as ModelFromDeploymentId<T>;
     }
     if (model === 'embedding') {
-      return builder.textEmbeddingModel(merged.model!) as ModelFromDeploymentId<T>;
+      return builder.textEmbeddingModel(
+        merged.model!
+      ) as ModelFromDeploymentId<T>;
     }
-    const ret = (model === 'completions' && builder.completions)
-      ? builder.completions(merged.model!)
-      : builder.chat(merged.model!);
+    const ret =
+      model === 'completions' && builder.completions
+        ? builder.completions(merged.model!)
+        : builder.chat(merged.model!);
     return ret as ModelFromDeploymentId<T>;
   };
   return getGuardedProvider(provider, async (cfg) => {
-    const wrappedModels = ['hifi', 'lofi', 'completions', 'gemini-2.0-flash', 'gemini-pro'];
+    const wrappedModels = [
+      'hifi',
+      'lofi',
+      'completions',
+      'gemini-2.0-flash',
+      'gemini-pro',
+    ];
     const languageModelEntries = await Promise.all(
       Object.keys(cfg.named ?? {}).map(async (key) => {
         const model = modelFactory(cfg, key);
@@ -192,7 +213,8 @@ const customProviderFactory = async <
         return [key, value] as [string, LanguageModelV2];
       })
     );
-    const languageModels: Record<string, LanguageModelV2> = Object.fromEntries(languageModelEntries);
+    const languageModels: Record<string, LanguageModelV2> =
+      Object.fromEntries(languageModelEntries);
     return customProvider({
       languageModels,
       textEmbeddingModels: {
@@ -209,7 +231,6 @@ const customProviderFactory = async <
  * the ones used by OpenAI and Google (hifi, lofi, embedding, etc).
  */
 const getAzureProvider = async () => {
-
   return customProviderFactory({
     provider: 'azure',
     providerFactory: createAzure,
@@ -217,24 +238,26 @@ const getAzureProvider = async () => {
     baselineFactory: (model: string | undefined) =>
       model === 'embedding'
         ? {
-          model,
-          // base: env('AZURE_OPENAI_ENDPOINT_EMBEDDING'),
-          apiKey: env('AZURE_OPENAI_KEY_EMBEDDING'),
-        }
+            model,
+            // base: env('AZURE_OPENAI_ENDPOINT_EMBEDDING'),
+            apiKey: env('AZURE_OPENAI_KEY_EMBEDDING'),
+          }
         : {
-          model,
-          apiKey: env('AZURE_API_KEY'),
-          // base: env('AZURE_OPENAI_ENDPOINT'),
-        },
+            model,
+            apiKey: env('AZURE_API_KEY'),
+            // base: env('AZURE_OPENAI_ENDPOINT'),
+          },
     optionsFactory: (merged: OptionsFactoryProps) => ({
       baseURL: merged.base,
       apiKey: merged.apiKey,
-      ...(merged.deployBased ? {
-        ...(merged.version ? { apiVersion: merged.version } : {}),
-        useDeploymentBasedUrls: true,
-      } : {
-        useDeploymentBasedUrls: false,
-      }),
+      ...(merged.deployBased
+        ? {
+            ...(merged.version ? { apiVersion: merged.version } : {}),
+            useDeploymentBasedUrls: true,
+          }
+        : {
+            useDeploymentBasedUrls: false,
+          }),
     }),
   });
 };
@@ -266,87 +289,100 @@ const getOpenAIProvider = async () => {
 };
 
 /**
- * Global singleton containg the primary Provider Registry used by the application.  Current 
+ * Global singleton containg the primary Provider Registry used by the application.  Current
  * configuration is with Azure as default, Google and OpenAI as fallbacks.  This registry is
  * used by the {@link aiModelFactory} to create models by alias with Azure as primary, falling
  * back to Google and OpenAI.
  */
 export const getProviderRegistry = async () => {
-  const GLOBAL_PROVIDER_REGISTRY = Symbol.for('@noeducation/aiModelFactory:providerRegistry');
+  const GLOBAL_PROVIDER_REGISTRY = Symbol.for(
+    '@noeducation/aiModelFactory:providerRegistry'
+  );
   return globalRequiredSingleton(GLOBAL_PROVIDER_REGISTRY, async () => {
-    const eventHandlers = new Map<AiProviderType, [AutoRefreshFeatureFlag<KnownFeatureType>, () => void]>();
+    const eventHandlers = new Map<
+      AiProviderType,
+      [AutoRefreshFeatureFlag<KnownFeatureType>, () => void]
+    >();
     // Setup handlers for provider config events so we properly refresh the registry
     await Promise.all(
-      SupportedProviders.map(
-        async (provider) => {
-          const flag = await getModelFlag(provider);
-          const setupChangeEvent = (f: unknown) => {
-            const cleanup = () => {
-              log(l => l.info(`Provider ${provider} changed, refreshing global registry`));
-              // First, unsubscribe from all flag events - this will prevent memory leaks
-              // and ensure we don't continue to emit events to this provider when the new
-              // one is available.
-              Promise.allSettled(
-                Array.from(eventHandlers.values()).map(async ([relatedFlag, relatedHandler]) => {
+      SupportedProviders.map(async (provider) => {
+        const flag = await getModelFlag(provider);
+        const setupChangeEvent = (f: unknown) => {
+          const cleanup = () => {
+            log((l) =>
+              l.info(`Provider ${provider} changed, refreshing global registry`)
+            );
+            // First, unsubscribe from all flag events - this will prevent memory leaks
+            // and ensure we don't continue to emit events to this provider when the new
+            // one is available.
+            Promise.allSettled(
+              Array.from(eventHandlers.values()).map(
+                async ([relatedFlag, relatedHandler]) => {
                   relatedFlag.removeOnChangedListener(relatedHandler);
                   relatedFlag.removeOnDisposedListener(relatedHandler);
                   eventHandlers.delete(provider);
                   // As long as we have the flag do a quick pull on it's value - this will
-                  // ensure all config settings have been updated when the registry is 
+                  // ensure all config settings have been updated when the registry is
                   // re-created (we hope...otherwise we're converting this whole thing to async)
                   if (!Object.is(f, flag) && relatedFlag.isStale) {
                     // I know it looks wierd just pulling the value, but this will trigger
-                    // a reload if it's needed and ensure the flag is up to date when we 
+                    // a reload if it's needed and ensure the flag is up to date when we
                     // pull the value again in a few seconds.
-                    return relatedFlag.forceRefresh().then(() => !relatedFlag.isStale);
+                    return relatedFlag
+                      .forceRefresh()
+                      .then(() => !relatedFlag.isStale);
                   }
                   return Promise.resolve(!relatedFlag.isStale);
-                })
-              ).then(promises => {
+                }
+              )
+            )
+              .then((promises) => {
                 return promises.reduce((acc, v) => {
                   if (v.status === 'rejected') {
-                    log(l => l.warn(`Failed to refresh provider: ${v.reason}`));
+                    log((l) =>
+                      l.warn(`Failed to refresh provider: ${v.reason}`)
+                    );
                   }
                   return acc && v.status === 'fulfilled';
                 }, true);
               })
-                .catch(err => {
-                  LoggedError.isTurtlesAllTheWayDownBaby(err, {
-                    source: 'GetProviderRegistry::Provider OnRefresh',
-                    log: true,
-                    throw: true
-                  });
-                  return Promise.resolve(false);
-                })
-                .finally(() => {
-                  // Deleting the singleton instance will force a re-creation of the registry
-                  // the next time it is requested.
-                  SingletonProvider.Instance.delete(GLOBAL_PROVIDER_REGISTRY);
-                })
-            };
-            if (isAutoRefreshFeatureFlag(f)) {
-              // Add the event handler and flag to a map so we can remove all of them
-              // when refreshing the registry.
-              eventHandlers.set(provider, [f, cleanup]);
-              // And subscribe to changed and disposed events so we can clean up
-              // the registry when the flag is disposed or changed.
-              f.addOnDisposedListener(cleanup);
-              f.addOnChangedListener(cleanup);
-            } else {
-              log(l => l.warn(`Cleanup called on non-provider ${String(f)}`))
-            }
-          }
-          // Note we really should never be getting a promise here, but somehow we do
-          // on occasion.  At some point we'll need to track down that bug, bug for now
-          // a little defensive programming will get us running and give us flexibility
-          // to handle interface changes in the future.
-          if (isPromise(flag)) {
-            await flag.then(setupChangeEvent);
+              .catch((err) => {
+                LoggedError.isTurtlesAllTheWayDownBaby(err, {
+                  source: 'GetProviderRegistry::Provider OnRefresh',
+                  log: true,
+                  throw: true,
+                });
+                return Promise.resolve(false);
+              })
+              .finally(() => {
+                // Deleting the singleton instance will force a re-creation of the registry
+                // the next time it is requested.
+                SingletonProvider.Instance.delete(GLOBAL_PROVIDER_REGISTRY);
+              });
+          };
+          if (isAutoRefreshFeatureFlag(f)) {
+            // Add the event handler and flag to a map so we can remove all of them
+            // when refreshing the registry.
+            eventHandlers.set(provider, [f, cleanup]);
+            // And subscribe to changed and disposed events so we can clean up
+            // the registry when the flag is disposed or changed.
+            f.addOnDisposedListener(cleanup);
+            f.addOnChangedListener(cleanup);
           } else {
-            setupChangeEvent(flag);
+            log((l) => l.warn(`Cleanup called on non-provider ${String(f)}`));
           }
-        },
-      ));
+        };
+        // Note we really should never be getting a promise here, but somehow we do
+        // on occasion.  At some point we'll need to track down that bug, bug for now
+        // a little defensive programming will get us running and give us flexibility
+        // to handle interface changes in the future.
+        if (isPromise(flag)) {
+          await flag.then(setupChangeEvent);
+        } else {
+          setupChangeEvent(flag);
+        }
+      })
+    );
     const providers: Record<string, ProviderV2> = {};
     const azure = await getAzureProvider();
     if (azure) {
@@ -360,14 +396,11 @@ export const getProviderRegistry = async () => {
     if (openai) {
       providers.openai = openai;
     }
-    const providerRegistry = createProviderRegistry(
-      providers,
-      {
-        languageModelMiddleware:
-          MiddlewareStateManager.Instance.getMiddlewareInstance(),
-      },
-    );
-    log(l => l.info(`=== A new provider registry has been created ===`));
+    const providerRegistry = createProviderRegistry(providers, {
+      languageModelMiddleware:
+        MiddlewareStateManager.Instance.getMiddlewareInstance(),
+    });
+    log((l) => l.info(`=== A new provider registry has been created ===`));
     return providerRegistry;
   });
 };
@@ -395,11 +428,15 @@ export const getProviderRegistry = async () => {
  */
 interface GetAiModelProviderOverloads {
   (): Promise<ReturnType<typeof getAzureProvider>>;
-  (deploymentId: 'embedding' | 'google-embedding'): Promise<EmbeddingModelV2<string>>;
+  (deploymentId: 'embedding' | 'google-embedding'): Promise<
+    EmbeddingModelV2<string>
+  >;
   (
-    deploymentId: Exclude<AiModelType, 'embedding' | 'google-embedding'>,
+    deploymentId: Exclude<AiModelType, 'embedding' | 'google-embedding'>
   ): Promise<LanguageModelV2>;
-  (deploymentId: AiModelType): Promise<LanguageModelV2 | EmbeddingModelV2<string>>;
+  (deploymentId: AiModelType): Promise<
+    LanguageModelV2 | EmbeddingModelV2<string>
+  >;
 }
 
 /**
@@ -408,7 +445,7 @@ interface GetAiModelProviderOverloads {
  * {@link GetAiModelProviderOverloads} for the different overloads available.
  */
 export const aiModelFactory: GetAiModelProviderOverloads = async (
-  modelType?: AiModelType,
+  modelType?: AiModelType
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
   if (typeof modelType === 'undefined') {
@@ -436,8 +473,8 @@ export const aiModelFactory: GetAiModelProviderOverloads = async (
             log((l) =>
               l.warn(
                 `Azure model ${modelType} failed, temporarily disabled:`,
-                error,
-              ),
+                error
+              )
             );
           }
         }
@@ -480,22 +517,26 @@ export const aiModelFactory: GetAiModelProviderOverloads = async (
   switch (modelType) {
     case 'embedding':
     case caseProviderMatch('azure:', modelType): // Matches any string starting with 'azure
-      const embed = (await getProviderRegistry()).textEmbeddingModel(azureModelKey);
+      const embed = (await getProviderRegistry()).textEmbeddingModel(
+        azureModelKey
+      );
       if (embed != null) {
         return embed;
       }
       break;
     case 'google-embedding':
     case caseProviderMatch('google:', modelType): // Matches any string starting with 'google:'
-      const googleEmbed =
-        (await getProviderRegistry()).textEmbeddingModel(googleModelKey);
+      const googleEmbed = (await getProviderRegistry()).textEmbeddingModel(
+        googleModelKey
+      );
       if (googleEmbed != null) {
         return googleEmbed;
       }
       break; // Continue to handle embedding models below
     case caseProviderMatch('openai:', modelType): // Matches any string starting with 'openai:'
-      const openaiEmbed =
-        (await getProviderRegistry()).textEmbeddingModel(openaiModelKey);
+      const openaiEmbed = (await getProviderRegistry()).textEmbeddingModel(
+        openaiModelKey
+      );
       if (openaiEmbed != null) {
         return openaiEmbed;
       }
@@ -509,20 +550,20 @@ export const aiModelFactory: GetAiModelProviderOverloads = async (
       'completions']} or a provider-prefixed model name like 'azure:chatgtp-4o-minni', 'google:gemini-flash-2.0', or 'openai:gpt-4'.`,
     {
       cause: modelType,
-    },
+    }
   );
 };
 
 /**
  * Convenience function to create Azure embedding model
  */
-export const createEmbeddingModel = async (): Promise<EmbeddingModelV2<string>> =>
-  aiModelFactory(AiModelTypeValue_Embedding);
+export const createEmbeddingModel = async (): Promise<
+  EmbeddingModelV2<string>
+> => aiModelFactory(AiModelTypeValue_Embedding);
 
 /**
  * Convenience function to create Google embedding model
  */
-export const createGoogleEmbeddingModel = async (): Promise<EmbeddingModelV2<string>> =>
-  aiModelFactory(AiModelTypeValue_GoogleEmbedding);
-
-
+export const createGoogleEmbeddingModel = async (): Promise<
+  EmbeddingModelV2<string>
+> => aiModelFactory(AiModelTypeValue_GoogleEmbedding);

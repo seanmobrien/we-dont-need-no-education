@@ -1,19 +1,27 @@
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { getFeatureFlag } from './server';
-import { log } from '@compliance-theater/lib-logger/core';
+import { log } from '@compliance-theater/logger/core';
 import { auth } from '@/auth';
 import { isKnownFeatureType } from './known-feature';
 import { AllFeatureFlagsDefault } from './known-feature-defaults';
-import type { KnownFeatureValueType, KnownFeatureType, AutoRefreshFeatureFlag, AutoRefreshFeatureFlagOptions, WellKnownFlagOptions, MinimalNodeFlagsmith } from './types';
+import type {
+  KnownFeatureValueType,
+  KnownFeatureType,
+  AutoRefreshFeatureFlag,
+  AutoRefreshFeatureFlagOptions,
+  WellKnownFlagOptions,
+  MinimalNodeFlagsmith,
+} from './types';
 import fastEqual from 'fast-deep-equal/es6';
-import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import EventEmitter from '@protobufjs/eventemitter';
-import { safeSerialize } from '@compliance-theater/lib-logger/safe-serialize';
+import { safeSerialize } from '@compliance-theater/logger/safe-serialize';
 
 const DEFAULT_TTL_MS = 3 * 60 * 1000; // 3 minutes
 
 class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
-  implements AutoRefreshFeatureFlag<T> {
+  implements AutoRefreshFeatureFlag<T>
+{
   private _value: KnownFeatureValueType<T>;
   private _refreshAt: number;
   private _lastRefreshedAt: number = 0;
@@ -29,7 +37,7 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
     readonly userId: string,
     readonly ttl: number,
     initialValue: KnownFeatureValueType<T>,
-    flagsmith?: (() => MinimalNodeFlagsmith) | undefined,
+    flagsmith?: (() => MinimalNodeFlagsmith) | undefined
   ) {
     this._value = initialValue;
     this._refreshAt = Date.now() + ttl;
@@ -61,7 +69,7 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
       resolvedUserId,
       ttl,
       initialValue as KnownFeatureValueType<T>,
-      flagsmith,
+      flagsmith
     );
     if (load) {
       instance.forceRefresh();
@@ -75,7 +83,7 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
     initialValue = undefined,
     load = true,
     ttl = DEFAULT_TTL_MS,
-    flagsmith
+    flagsmith,
   }: {
     key: T;
     userId?: string | 'server';
@@ -219,8 +227,10 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
           valueUpdated = true;
           log((l) =>
             l.verbose(
-              `Feature flag "${this.key}" ${firstRefresh ? 'initial value loaded' : 'refreshed'} for user ${this.userId}. New value: ${safeSerialize(newValue)}`
-            ),
+              `Feature flag "${this.key}" ${
+                firstRefresh ? 'initial value loaded' : 'refreshed'
+              } for user ${this.userId}. New value: ${safeSerialize(newValue)}`
+            )
           );
         }
 
@@ -255,9 +265,16 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
     if (didValueChange) {
       Promise.resolve().then(() => {
         try {
-          this.#eventEmitter.emit('change', { sender: this, oldValue: originalValue, newValue: this._value });
+          this.#eventEmitter.emit('change', {
+            sender: this,
+            oldValue: originalValue,
+            newValue: this._value,
+          });
         } catch (error) {
-          LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: `FeatureFlag:${this.key}/event-emitter:change` });
+          LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            log: true,
+            source: `FeatureFlag:${this.key}/event-emitter:change`,
+          });
         }
       });
     }
@@ -290,31 +307,27 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
     this._pendingRefresh = null;
 
     log((l) =>
-      l.debug(`Feature flag "${this.key}" disposed for user ${this.userId}`),
+      l.debug(`Feature flag "${this.key}" disposed for user ${this.userId}`)
     );
   }
 }
 
-
-
 export const createAutoRefreshFeatureFlag = <T extends KnownFeatureType>(
-  options: AutoRefreshFeatureFlagOptions<T>,
+  options: AutoRefreshFeatureFlagOptions<T>
 ): Promise<AutoRefreshFeatureFlag<T>> =>
   AutoRefreshFeatureFlagImpl.create<T>(options);
 
 export const createAutoRefreshFeatureFlagSync = <T extends KnownFeatureType>(
-  options: AutoRefreshFeatureFlagOptions<T>,
+  options: AutoRefreshFeatureFlagOptions<T>
 ): AutoRefreshFeatureFlag<T> =>
   AutoRefreshFeatureFlagImpl.createSync<T>(options);
 
-
-
 const setupSingleton = <
   T extends KnownFeatureType,
-  R extends AutoRefreshFeatureFlag<T>,
+  R extends AutoRefreshFeatureFlag<T>
 >(
   sym: symbol,
-  target: R,
+  target: R
 ): R => {
   if (!target) {
     return target;
@@ -331,15 +344,22 @@ const setupSingleton = <
   }
   return target;
 };
-const makeKey = <T extends KnownFeatureType>(key: T, salt: string | undefined, userId: string | undefined): symbol => {
-  const fullSalt = `${salt ? salt + ':' : ''}${userId ?? (salt ? '' : '--none--')}`;
+const makeKey = <T extends KnownFeatureType>(
+  key: T,
+  salt: string | undefined,
+  userId: string | undefined
+): symbol => {
+  const fullSalt = `${salt ? salt + ':' : ''}${
+    userId ?? (salt ? '' : '--none--')
+  }`;
   return Symbol.for(
-    `@no-education/features-flags/auto-refresh/${key}::${fullSalt}`,
+    `@no-education/features-flags/auto-refresh/${key}::${fullSalt}`
   );
 };
 
-
-const normalizeWellKnownOptions = (input: string | WellKnownFlagOptions | undefined): WellKnownFlagOptions => {
+const normalizeWellKnownOptions = (
+  input: string | WellKnownFlagOptions | undefined
+): WellKnownFlagOptions => {
   if (typeof input === 'string') {
     return { userId: input };
   }
@@ -348,17 +368,20 @@ const normalizeWellKnownOptions = (input: string | WellKnownFlagOptions | undefi
 
 export const wellKnownFlag = <T extends KnownFeatureType>(
   key: T,
-  options?: string | WellKnownFlagOptions,
+  options?: string | WellKnownFlagOptions
 ): Promise<AutoRefreshFeatureFlag<T>> => {
   const { userId, salt, ...restOfOptions } = normalizeWellKnownOptions(options);
   if (!isKnownFeatureType(key)) {
     throw new TypeError(`Invalid KnownFeatureType key: ${String(key)}`);
   }
   if (restOfOptions.flagsmith && !salt) {
-    throw new TypeError(`When providing a custom Flagsmith instance, a unique salt must be provided to avoid collisions.`);
+    throw new TypeError(
+      `When providing a custom Flagsmith instance, a unique salt must be provided to avoid collisions.`
+    );
   }
   const sym = makeKey(key, salt, userId);
-  return SingletonProvider.Instance.getRequiredAsync(sym,
+  return SingletonProvider.Instance.getRequiredAsync(
+    sym,
     async () => {
       const flag = await createAutoRefreshFeatureFlag<T>({
         key: key,
@@ -366,19 +389,23 @@ export const wellKnownFlag = <T extends KnownFeatureType>(
         ...restOfOptions,
       });
       return setupSingleton(sym, flag);
-    }, { weakRef: false, })!;
+    },
+    { weakRef: false }
+  )!;
 };
 
 export const wellKnownFlagSync = <T extends KnownFeatureType>(
   key: T,
-  options?: string | WellKnownFlagOptions,
+  options?: string | WellKnownFlagOptions
 ): AutoRefreshFeatureFlag<T> => {
   const { salt, userId, ...restOfOptions } = normalizeWellKnownOptions(options);
   if (!isKnownFeatureType(key)) {
     throw new TypeError(`Invalid KnownFeatureType key: ${String(key)}`);
   }
   if (restOfOptions.flagsmith && !salt) {
-    throw new TypeError(`When providing a custom Flagsmith instance, a unique salt must be provided to avoid collisions.`);
+    throw new TypeError(
+      `When providing a custom Flagsmith instance, a unique salt must be provided to avoid collisions.`
+    );
   }
   const sym = makeKey(key, salt, userId);
   return SingletonProvider.Instance.getRequired(
@@ -392,11 +419,11 @@ export const wellKnownFlagSync = <T extends KnownFeatureType>(
           initialValue: AllFeatureFlagsDefault[key],
           load: true,
           ...restOfOptions,
-        }),
+        })
       ),
     {
       weakRef: false,
-    },
+    }
   );
 };
 
@@ -406,17 +433,19 @@ export const wellKnownFlagSync = <T extends KnownFeatureType>(
  * @returns True if the value is an AutoRefreshFeatureFlag, false otherwise
  */
 export const isAutoRefreshFeatureFlag = <
-  T extends KnownFeatureType = KnownFeatureType,
+  T extends KnownFeatureType = KnownFeatureType
 >(
-  value: unknown,
+  value: unknown
 ): value is AutoRefreshFeatureFlag<T> =>
   typeof value === 'object' &&
   value !== null &&
   'key' in value &&
   'addOnChangedListener' in value &&
-  typeof (value as Record<string, unknown>).addOnChangedListener === 'function' &&
+  typeof (value as Record<string, unknown>).addOnChangedListener ===
+    'function' &&
   'removeOnChangedListener' in value &&
-  typeof (value as Record<string, unknown>).removeOnChangedListener === 'function' &&
+  typeof (value as Record<string, unknown>).removeOnChangedListener ===
+    'function' &&
   'forceRefresh' in value &&
   typeof (value as Record<string, unknown>).forceRefresh === 'function' &&
   'value' in value &&

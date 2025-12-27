@@ -3,7 +3,7 @@ import {
   HealthCheckStatusEntry,
   HealthCheckStatusCode,
 } from '@/lib/hooks/types';
-import { globalRequiredSingleton } from '@compliance-theater/lib-typescript/singleton-provider';
+import { globalRequiredSingleton } from '@compliance-theater/typescript/singleton-provider';
 import { getRedisClient } from '@/lib/redis-client';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getMem0EnabledFlag } from '@/lib/ai/mcp/tool-flags';
@@ -28,10 +28,12 @@ export class ChatHealthCache extends InMemoryCache<ChatHealthStatus> {
 }
 
 export const getChatHealthCache = (): ChatHealthCache =>
-  globalRequiredSingleton('chat-health-cache', () => new ChatHealthCache(), { weakRef: false });
+  globalRequiredSingleton('chat-health-cache', () => new ChatHealthCache(), {
+    weakRef: false,
+  });
 
 export const checkChatHealth = async (
-  req?: NextRequest,
+  req?: NextRequest
 ): Promise<ChatHealthStatus> => {
   const cache = getChatHealthCache();
   const cached = cache.get();
@@ -107,14 +109,9 @@ export const checkChatHealth = async (
 
   // Aggregate status
   let status: HealthCheckStatusCode = 'healthy';
-  if (
-    cacheStatus === 'error' ||
-    toolsStatus === 'error'
-  ) {
+  if (cacheStatus === 'error' || toolsStatus === 'error') {
     status = 'error';
-  } else if (
-    toolsStatus === 'warning'
-  ) {
+  } else if (toolsStatus === 'warning') {
     status = 'warning';
   }
 

@@ -1,5 +1,5 @@
 import { TimelineAgent } from './agent';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { TimelineEntry, ComplianceRating, TimelineSummary } from './types';
 import TimelineAgentFactory from './agent';
 
@@ -49,11 +49,15 @@ export class ComplianceTimelineProcessor {
     output += 'Overview (Global Metadata):\n\n';
     output += `Requested Record: ${this.extractRequestedRecord()}\n`;
     output += `Progress Status: ${this.calculateProgressStatus(summary)}\n`;
-    output += `Overall Compliance: ${this.calculateOverallCompliance(summary)}\n`;
+    output += `Overall Compliance: ${this.calculateOverallCompliance(
+      summary
+    )}\n`;
     output += `Executive Summary: ${this.generateExecutiveSummary(summary)}\n`;
     output += `Records Processed: ${this.getProcessedRecordsList(summary)}\n`;
     output += `Records Remaining: ${this.getRemainingRecordsList(summary)}\n`;
-    output += `Next record to process: ${this.getNextRecordToProcess(summary)}\n\n`;
+    output += `Next record to process: ${this.getNextRecordToProcess(
+      summary
+    )}\n\n`;
 
     // Sequential Actions (Numbered Steps)
     output += 'Sequential Actions (Numbered Steps):\n\n';
@@ -63,11 +67,15 @@ export class ComplianceTimelineProcessor {
       output += `${stepNumber}. Case File ID: ${action.documentId}\n`;
       output += `Date of Communication: ${action.date}\n`;
       output += `Relevant Actor: ${this.extractRelevantActor(action)}\n`;
-      output += `Identified Action/Inaction: ${this.extractIdentifiedAction(action)}\n`;
+      output += `Identified Action/Inaction: ${this.extractIdentifiedAction(
+        action
+      )}\n`;
       output += `Relevant Action: ${this.extractRelevantAction(action)}\n`;
       output += `Embedded Metadata:\n`;
       output += `  Key Findings: ${this.extractKeyFindings(action)}\n`;
-      output += `  Violations & Challenges: ${this.extractViolations(action)}\n`;
+      output += `  Violations & Challenges: ${this.extractViolations(
+        action
+      )}\n`;
       output += `  Current Context: ${this.extractCurrentContext(action)}\n\n`;
     });
 
@@ -178,8 +186,8 @@ export class ComplianceTimelineProcessor {
       ? "Sean O'Brien (citizen/parent)"
       : action.summary.includes('school') ||
         action.summary.includes('authority')
-        ? 'School Authority'
-        : 'Unknown Actor';
+      ? 'School Authority'
+      : 'Unknown Actor';
   }
 
   private extractIdentifiedAction(action: TimelineEntry): string {
@@ -308,7 +316,7 @@ export class ComplianceTimelineProcessor {
  * Factory function to create a compliance processor
  */
 export function createComplianceProcessor(
-  propertyId: string,
+  propertyId: string
 ): ComplianceTimelineProcessor {
   const agent = TimelineAgentFactory({ propertyId });
   return new ComplianceTimelineProcessor(agent);

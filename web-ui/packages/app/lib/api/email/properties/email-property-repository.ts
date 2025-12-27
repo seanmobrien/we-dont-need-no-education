@@ -3,12 +3,12 @@ import {
   EmailPropertyTypeTypeValues,
 } from '@/data-models/api/email-properties/property-type';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter, newUuid } from '@compliance-theater/lib-typescript';
+import { FirstParameter, newUuid } from '@compliance-theater/typescript';
 import { BaseObjectRepository } from '../../_baseObjectRepository';
 import { ObjectRepository } from '../../_types';
 
 export const mapEmailPropertyRecordToObject = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ) => ({
   value: String(record.property_value),
   typeId: Number(record.document_property_type_id),
@@ -53,7 +53,7 @@ export class EmailPropertyRepository extends BaseObjectRepository<
     method: TMethod,
     obj: FirstParameter<
       Pick<ObjectRepository<EmailProperty, 'propertyId'>, TMethod>[TMethod]
-    >,
+    >
   ): void {
     const asModel = obj as EmailProperty;
     if (asModel.typeId && typeof asModel.typeId !== 'number') {
@@ -140,7 +140,7 @@ export class EmailPropertyRepository extends BaseObjectRepository<
     ];
   }
   protected getUpdateQueryProperties(
-    obj: EmailProperty,
+    obj: EmailProperty
   ): [Record<string, unknown>] {
     return [
       {

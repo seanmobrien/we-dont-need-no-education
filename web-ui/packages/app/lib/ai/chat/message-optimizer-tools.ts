@@ -5,7 +5,7 @@ import {
 } from '@ai-sdk/provider';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { createHash } from 'crypto';
 // import { v4 as uuidv4 } from 'uuid';
 import { appMeters, hashUserId } from '@/lib/site-util/metrics';
@@ -17,7 +17,7 @@ import { DbTransactionType, drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { ThisDbQueryProvider } from '@/lib/drizzle-db/schema';
 import { and, eq, not } from 'drizzle-orm';
 import { AttributeValue } from '@opentelemetry/api';
-import { isKeyOf } from '@compliance-theater/lib-typescript';
+import { isKeyOf } from '@compliance-theater/typescript';
 import { countTokens } from '../core/count-tokens';
 import {
   ChatToolCallsType,
@@ -58,7 +58,7 @@ type OptimizerMessage = LegacyMessageShape | LanguageModelV2Message | UIMessage;
 
 // Lightweight helpers (avoid pervasive any usage by local casting only)
 const hasLegacyParts = (
-  m: OptimizerMessage,
+  m: OptimizerMessage
 ): m is LegacyMessageShape & { parts: GenericPart[] } =>
   'parts' in m && Array.isArray((m as LegacyMessageShape).parts);
 const readParts = (m: OptimizerMessage): GenericPart[] => {
@@ -68,7 +68,7 @@ const readParts = (m: OptimizerMessage): GenericPart[] => {
 };
 const writeParts = <T extends OptimizerMessage>(
   m: T,
-  parts: GenericPart[],
+  parts: GenericPart[]
 ): T => {
   if (hasLegacyParts(m)) return { ...(m as object), parts } as T;
   return { ...(m as object), content: parts } as T;
@@ -80,34 +80,34 @@ const createChatToolCallRecord = async (
   chatMessageId: string,
   providerId: string,
   toolRequest: Array<GenericPart>,
-  toolResult: Array<GenericPart>,
+  toolResult: Array<GenericPart>
 ): Promise<string> => {
   // Serialize input and output for storage
   const input =
     toolRequest.length > 0
       ? JSON.stringify(
-        toolRequest.map((req) => ({
-          type: req.type,
-          state: 'state' in req ? req.state : undefined,
-          toolName: 'toolName' in req ? req.toolName : undefined,
-          args: 'args' in req ? req.args : undefined,
-          input: 'input' in req ? req.input : undefined,
-        })),
-      )
+          toolRequest.map((req) => ({
+            type: req.type,
+            state: 'state' in req ? req.state : undefined,
+            toolName: 'toolName' in req ? req.toolName : undefined,
+            args: 'args' in req ? req.args : undefined,
+            input: 'input' in req ? req.input : undefined,
+          }))
+        )
       : null;
 
   const output =
     toolResult.length > 0
       ? JSON.stringify(
-        toolResult.map((res) => ({
-          type: res.type,
-          state: 'state' in res ? res.state : undefined,
-          toolName: 'toolName' in res ? res.toolName : undefined,
-          result: 'result' in res ? res.result : undefined,
-          output: 'output' in res ? res.output : undefined,
-          errorText: 'errorText' in res ? res.errorText : undefined,
-        })),
-      )
+          toolResult.map((res) => ({
+            type: res.type,
+            state: 'state' in res ? res.state : undefined,
+            toolName: 'toolName' in res ? res.toolName : undefined,
+            result: 'result' in res ? res.result : undefined,
+            output: 'output' in res ? res.output : undefined,
+            errorText: 'errorText' in res ? res.errorText : undefined,
+          }))
+        )
       : null;
 
   const result = await tx
@@ -137,7 +137,7 @@ const optimizationCounter = appMeters.createCounter(
   {
     description: 'Total number of tool message optimization operations',
     unit: '1',
-  },
+  }
 );
 
 const messageReductionHistogram = appMeters.createHistogram(
@@ -145,7 +145,7 @@ const messageReductionHistogram = appMeters.createHistogram(
   {
     description: 'Distribution of tool message reduction ratios (0-1)',
     unit: '1',
-  },
+  }
 );
 
 const characterReductionHistogram = appMeters.createHistogram(
@@ -153,7 +153,7 @@ const characterReductionHistogram = appMeters.createHistogram(
   {
     description: 'Distribution of tool character reduction ratios (0-1)',
     unit: '1',
-  },
+  }
 );
 
 const optimizationDurationHistogram = appMeters.createHistogram(
@@ -161,7 +161,7 @@ const optimizationDurationHistogram = appMeters.createHistogram(
   {
     description: 'Duration of tool message optimization operations',
     unit: 'ms',
-  },
+  }
 );
 
 const toolCallSummariesCounter = appMeters.createCounter(
@@ -169,7 +169,7 @@ const toolCallSummariesCounter = appMeters.createCounter(
   {
     description: 'Total number of tool call summaries generated',
     unit: '1',
-  },
+  }
 );
 
 const cacheHitsCounter = appMeters.createCounter(
@@ -177,7 +177,7 @@ const cacheHitsCounter = appMeters.createCounter(
   {
     description: 'Total number of tool summary cache hits',
     unit: '1',
-  },
+  }
 );
 
 const cacheMissesCounter = appMeters.createCounter(
@@ -185,7 +185,7 @@ const cacheMissesCounter = appMeters.createCounter(
   {
     description: 'Total number of tool summary cache misses',
     unit: '1',
-  },
+  }
 );
 
 const summaryGenerationDurationHistogram = appMeters.createHistogram(
@@ -193,7 +193,7 @@ const summaryGenerationDurationHistogram = appMeters.createHistogram(
   {
     description: 'Duration of individual tool summary generation operations',
     unit: 'ms',
-  },
+  }
 );
 
 const originalMessageCountHistogram = appMeters.createHistogram(
@@ -201,7 +201,7 @@ const originalMessageCountHistogram = appMeters.createHistogram(
   {
     description: 'Distribution of original message counts in optimization',
     unit: '1',
-  },
+  }
 );
 
 const optimizedMessageCountHistogram = appMeters.createHistogram(
@@ -209,7 +209,7 @@ const optimizedMessageCountHistogram = appMeters.createHistogram(
   {
     description: 'Distribution of optimized message counts after optimization',
     unit: '1',
-  },
+  }
 );
 
 const cacheHitRateHistogram = appMeters.createHistogram(
@@ -217,7 +217,7 @@ const cacheHitRateHistogram = appMeters.createHistogram(
   {
     description: 'Distribution of cache hit rates for tool summary cache',
     unit: '1',
-  },
+  }
 );
 
 /**
@@ -294,7 +294,7 @@ export const cacheManager = {
       toolSummaryCache.set(key, value);
     });
     log((l) =>
-      l.info('Tool summary cache imported', { size: toolSummaryCache.size }),
+      l.info('Tool summary cache imported', { size: toolSummaryCache.size })
     );
   },
 };
@@ -304,7 +304,7 @@ export const cacheManager = {
  */
 const createToolRecordsForToolCall = async (
   record: ToolCallRecord,
-  toolCallId: string,
+  toolCallId: string
 ): Promise<void> => {
   if (record.chatToolCallId) {
     // Already processed
@@ -315,7 +315,7 @@ const createToolRecordsForToolCall = async (
   const toolData = record.toolResult[0] || record.toolRequest[0];
   if (!toolData || !('type' in toolData)) {
     throw new Error(
-      `Unable to determine tool type for tool call ${toolCallId}`,
+      `Unable to determine tool type for tool call ${toolCallId}`
     );
   }
 
@@ -328,7 +328,7 @@ const createToolRecordsForToolCall = async (
       try {
         // Create or get chat_tool record
         const chatToolId = await ToolMap.getInstance().then((x) =>
-          x.idOrThrow(toolName),
+          x.idOrThrow(toolName)
         );
         record.chatToolId = chatToolId;
 
@@ -343,7 +343,7 @@ const createToolRecordsForToolCall = async (
           chatMessageId,
           toolCallId, // Use tool call ID as provider ID
           record.toolRequest,
-          record.toolResult,
+          record.toolResult
         );
 
         record.chatToolCallId = chatToolCallId;
@@ -355,7 +355,7 @@ const createToolRecordsForToolCall = async (
             chatToolCallId,
             toolName,
             messageId: record.messageId,
-          }),
+          })
         );
       } catch (error) {
         log((l) =>
@@ -363,11 +363,11 @@ const createToolRecordsForToolCall = async (
             error,
             toolCallId,
             messageId: record.messageId,
-          }),
+          })
         );
         throw error;
       }
-    }),
+    })
   );
 };
 
@@ -409,7 +409,7 @@ const hashToolCallSequence = (toolMessages: GenericPart[]): string => {
   const contentToHash = toolMessages.map(toHashFriendly).sort((a, b) => {
     if (a.type !== b.type) return (a.type || '').localeCompare(b.type || '');
     return String(a.text ?? a.input ?? '').localeCompare(
-      String(b.text ?? b.input ?? ''),
+      String(b.text ?? b.input ?? '')
     );
   });
 
@@ -515,19 +515,19 @@ export async function optimizeMessagesWithToolSummarization(
   messages: UIMessage[],
   model: string,
   userId?: string,
-  chatHistoryId?: string,
+  chatHistoryId?: string
 ): Promise<UIMessage[]>;
 export async function optimizeMessagesWithToolSummarization(
   messages: LanguageModelV2Message[],
   model: string,
   userId?: string,
-  chatHistoryId?: string,
+  chatHistoryId?: string
 ): Promise<LanguageModelV2Message[]>;
 export async function optimizeMessagesWithToolSummarization(
   messages: UIMessage[] | LanguageModelV2Message[],
   model: string,
   userId?: string,
-  chatHistoryId?: string,
+  chatHistoryId?: string
 ): Promise<UIMessage[] | LanguageModelV2Message[]> {
   const msgs = messages as OptimizerMessage[];
   const startTime = Date.now();
@@ -547,7 +547,7 @@ export async function optimizeMessagesWithToolSummarization(
       originalCharacterCount,
       model,
       userId,
-    }),
+    })
   );
 
   // Step 1: Find cutoff point - preserve last two user interactions
@@ -589,7 +589,7 @@ export async function optimizeMessagesWithToolSummarization(
       await processOlderMessagesForSummarization(
         msgs,
         cutoffIndex,
-        preservedToolIds,
+        preservedToolIds
       );
 
     // Step 3: Generate AI summaries for all collected tool calls
@@ -602,11 +602,11 @@ export async function optimizeMessagesWithToolSummarization(
     const characterReduction = Math.round(
       ((originalCharacterCount - optimizedCharacterCount) /
         originalCharacterCount) *
-      100,
+        100
     );
 
     const messageReduction = Math.round(
-      ((messages.length - optimizedMessages.length) / messages.length) * 100,
+      ((messages.length - optimizedMessages.length) / messages.length) * 100
     );
 
     // Record comprehensive OpenTelemetry metrics
@@ -624,13 +624,13 @@ export async function optimizeMessagesWithToolSummarization(
 
     messageReductionHistogram.record(
       (msgs.length - optimizedMessages.length) / msgs.length,
-      attributes,
+      attributes
     );
 
     characterReductionHistogram.record(
       (originalCharacterCount - optimizedCharacterCount) /
-      originalCharacterCount,
-      attributes,
+        originalCharacterCount,
+      attributes
     );
 
     toolCallSummariesCounter.add(toolCallDict.size, attributes);
@@ -647,7 +647,7 @@ export async function optimizeMessagesWithToolSummarization(
         processingTimeMs: processingTime,
         model,
         userId,
-      }),
+      })
     );
     return optimizedMessages as unknown as
       | UIMessage[]
@@ -668,7 +668,7 @@ export async function optimizeMessagesWithToolSummarization(
  * Returns the index where optimization should begin and IDs of tools to preserve
  */
 const findUserInteractionCutoff = (
-  messages: OptimizerMessage[],
+  messages: OptimizerMessage[]
 ): {
   cutoffIndex: number;
   preservedToolIds: Set<string>;
@@ -769,7 +769,7 @@ export const summarizeMessageRecord = async ({
     const isThisMessage = and(
       eq(schema.chatMessages.chatId, chatId),
       eq(schema.chatMessages.turnId, turnId),
-      eq(schema.chatMessages.messageId, messageId),
+      eq(schema.chatMessages.messageId, messageId)
     )!;
     // First assemble previous message state
     const prevMessages = await qp.query.chatMessages
@@ -788,12 +788,12 @@ export const summarizeMessageRecord = async ({
             deep
               ? (m: object) => (m as { content: string }).content
               : (m: object) =>
-                (m as { optimizedContent: string }).optimizedContent,
+                  (m as { optimizedContent: string }).optimizedContent
           )
           .filter(
             (content): content is string =>
-              typeof content === 'string' && content.trim().length > 0,
-          ),
+              typeof content === 'string' && content.trim().length > 0
+          )
       );
     // Then retrieve the target message
     const thisMessage = await qp.query.chatMessages.findFirst({
@@ -826,7 +826,11 @@ export const summarizeMessageRecord = async ({
   ${prevMessages.join('\n----\n')}
 
   CURRENT MESSAGE:
-  ${typeof thisMessage.content === 'string' ? thisMessage.content : JSON.stringify(thisMessage.content, null, 2)}
+  ${
+    typeof thisMessage.content === 'string'
+      ? thisMessage.content
+      : JSON.stringify(thisMessage.content, null, 2)
+  }
 
   CURRENT CHAT TITLE:
   ${thisMessage.chat.title || 'Untitled Chat'}
@@ -930,7 +934,7 @@ export const summarizeMessageRecord = async ({
 const processOlderMessagesForSummarization = async (
   messages: OptimizerMessage[],
   cutoffIndex: number,
-  preservedToolIds: Set<string>,
+  preservedToolIds: Set<string>
 ): Promise<{
   optimizedMessages: OptimizerMessage[];
   toolCallDict: Map<string, ToolCallRecord>;
@@ -988,8 +992,8 @@ const processOlderMessagesForSummarization = async (
           log((l) =>
             l.warn(
               'Encountered existing tool invocation with unrecognized or missing state - preserving as-is',
-              { invocation },
-            ),
+              { invocation }
+            )
           );
           processedParts.unshift(invocation);
         }
@@ -1026,8 +1030,8 @@ const processOlderMessagesForSummarization = async (
           log((l) =>
             l.warn(
               'Encountered new tool invocation with unrecognized or missing state - preserving as-is',
-              { invocation },
-            ),
+              { invocation }
+            )
           );
           processedParts.unshift(invocation);
         }
@@ -1049,7 +1053,7 @@ const processOlderMessagesForSummarization = async (
 const generateToolCallSummaries = async (
   toolCallDict: Map<string, ToolCallRecord>,
   chatHistoryContext: ChatHistoryContext,
-  allMessages?: OptimizerMessage[],
+  allMessages?: OptimizerMessage[]
 ): Promise<void> => {
   if (toolCallDict.size === 0) {
     return;
@@ -1057,8 +1061,8 @@ const generateToolCallSummaries = async (
 
   log((l) =>
     l.debug(
-      `Generating AI summaries for ${toolCallDict.size} tool call sequences`,
-    ),
+      `Generating AI summaries for ${toolCallDict.size} tool call sequences`
+    )
   );
 
   // Process all tool call summaries in parallel for efficiency
@@ -1071,7 +1075,7 @@ const generateToolCallSummaries = async (
         const summary = await generateSingleToolCallSummary(
           record,
           chatHistoryContext,
-          allMessages,
+          allMessages
         );
 
         // Update the summary message to include chat_tool_call_id
@@ -1084,16 +1088,16 @@ const generateToolCallSummaries = async (
           l.debug(`Generated summary for tool call ${toolCallId} `, {
             originalLength: record.toolResult.reduce(
               (acc, msg) => acc + JSON.stringify(msg).length,
-              0,
+              0
             ),
             summaryLength: summary.length,
-          }),
+          })
         );
       } catch (error) {
         log((l) =>
           l.error(`Failed to generate summary for tool call ${toolCallId} `, {
             error,
-          }),
+          })
         ); // Fallback to basic summary on error
         const fallbackText = `[TOOL CALL COMPLETED]ID: ${toolCallId} - Summary generation failed, see logs for details.`;
         const fallbackWithId = record.chatToolCallId
@@ -1101,14 +1105,14 @@ const generateToolCallSummaries = async (
           : fallbackText;
         record.toolSummary.text = fallbackWithId;
       }
-    },
+    }
   );
 
   await Promise.all(summaryPromises);
   log((l) =>
     l.info(
-      `Completed AI summary generation for ${toolCallDict.size} tool sequences`,
-    ),
+      `Completed AI summary generation for ${toolCallDict.size} tool sequences`
+    )
   );
 };
 
@@ -1118,7 +1122,7 @@ const generateToolCallSummaries = async (
 const generateSingleToolCallSummary = async (
   record: ToolCallRecord,
   chatHistoryContext: ChatHistoryContext,
-  allMessages?: OptimizerMessage[],
+  allMessages?: OptimizerMessage[]
 ): Promise<string> => {
   // Generate cache key from the tool call sequence
   const allToolMessages = [...record.toolRequest, ...record.toolResult];
@@ -1138,7 +1142,7 @@ const generateSingleToolCallSummary = async (
     log((l) =>
       l.debug('Using cached tool summary', {
         cacheKey: cacheKey.substring(0, 8),
-      }),
+      })
     );
     return cachedSummary;
   }
@@ -1156,25 +1160,25 @@ const generateSingleToolCallSummary = async (
   const toolRequests = record.toolRequest.flatMap((msg) =>
     'toolInvocations' in msg && Array.isArray(msg.toolInvocations)
       ? msg.toolInvocations.map((inv) => ({
-        tool: 'toolName' in inv ? inv.toolName : 'unknown',
-        args: 'args' in inv ? inv.args : {},
-      }))
-      : [],
+          tool: 'toolName' in inv ? inv.toolName : 'unknown',
+          args: 'args' in inv ? inv.args : {},
+        }))
+      : []
   );
 
   const toolResults = record.toolResult.flatMap((msg) =>
     'toolInvocations' in msg && Array.isArray(msg.toolInvocations)
       ? msg.toolInvocations.map((inv) => ({
-        result: 'result' in inv ? inv.result : 'No result',
-        tool: 'toolName' in inv ? inv.toolName : 'unknown',
-      }))
-      : [],
+          result: 'result' in inv ? inv.result : 'No result',
+          tool: 'toolName' in inv ? inv.toolName : 'unknown',
+        }))
+      : []
   );
 
   // Extract conversational context that explains WHY tools were called
   const conversationalContext = extractConversationalContext(
     record,
-    allMessages,
+    allMessages
   );
 
   // Create summarization prompt with context
@@ -1188,18 +1192,17 @@ ${JSON.stringify(toolRequests, null, 2)}
 
 TOOL RESULTS:
 ${JSON.stringify(
-    toolResults.map((r) => ({
-      tool: r.tool,
-      result:
-        typeof r.result === 'string' &&
+  toolResults.map((r) => ({
+    tool: r.tool,
+    result:
+      typeof r.result === 'string' &&
       /*r.result.length > 500
          ? r.result.substring(0, 500) + '...[truncated]'
         : */ r.result,
-    })),
-    null,
-    2,
-  )
-    }
+  })),
+  null,
+  2
+)}
 
 Create a concise summary that:
     1. Identifies what tools were executed and why(based on the conversational context)
@@ -1251,7 +1254,7 @@ Respond with just the summary text, no additional formatting.`;
           summaryLength: summary.length,
           cacheSize: toolSummaryCache.size,
           durationMs: summaryDuration,
-        }),
+        })
       );
     }
     return summary;
@@ -1280,7 +1283,7 @@ Respond with just the summary text, no additional formatting.`;
  */
 const extractConversationalContext = (
   record: ToolCallRecord,
-  allMessages?: OptimizerMessage[],
+  allMessages?: OptimizerMessage[]
 ): string => {
   if (!allMessages || allMessages.length === 0) {
     return 'No conversational context available.';
@@ -1327,8 +1330,8 @@ const extractConversationalContext = (
           const prevParts = hasLegacyParts(prevMessage)
             ? prevMessage.parts
             : Array.isArray(prevContent)
-              ? (prevContent as GenericPart[])
-              : [];
+            ? (prevContent as GenericPart[])
+            : [];
           const userContent = prevParts
             .filter((part: GenericPart) => part.type === 'text')
             .map((part: GenericPart) => (part as { text?: string }).text ?? '')
@@ -1367,10 +1370,10 @@ export function extractToolCallIds(message: unknown): string[] {
         .map((inv: unknown) =>
           inv && typeof inv === 'object' && 'toolCallId' in inv
             ? (inv as { toolCallId?: unknown }).toolCallId
-            : null,
+            : null
         )
-        .filter((id): id is string => typeof id === 'string' && id.length > 0),
-    ),
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+    )
   );
 }
 
@@ -1390,7 +1393,7 @@ export function hasToolCalls(message: unknown): boolean {
         typeof p === 'object' &&
         'toolCallId' in p &&
         (p as { toolCallId?: unknown }).toolCallId
-      ),
+      )
   );
 }
 
@@ -1399,7 +1402,7 @@ export function hasToolCalls(message: unknown): boolean {
  * This gives a much better indication of actual context consumption than message count
  */
 const calculateMessageCharacterCount = (
-  messages: OptimizerMessage[],
+  messages: OptimizerMessage[]
 ): number => {
   const promptMessages: LanguageModelV2Prompt = messages.map((msg) => {
     if (msg.role === 'system') {
@@ -1473,7 +1476,7 @@ export const startPeriodicMetricsUpdate = (intervalMs: number = 30000) => {
   return () => {
     clearInterval(updateInterval);
     log((l) =>
-      l.debug('Stopped periodic metrics updates for message optimizer'),
+      l.debug('Stopped periodic metrics updates for message optimizer')
     );
   };
 };

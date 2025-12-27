@@ -8,7 +8,7 @@ import type {
   ModelProviderFactoryConfig,
   EnhancedFetchConfig,
 } from './types';
-import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 
 const DEFAULT_IN_MEMORY_STORAGE_CONFIG =
   {} as const satisfies StorageStrategyConfig;
@@ -28,22 +28,22 @@ const DEFAULT_ENHANCED_FETCH_CONFIG = {
     send: 10 * 1000,
     response: 30 * 1000,
     request: 60 * 1000,
-  } as const
+  } as const,
 } as const satisfies EnhancedFetchConfig;
 
 type ModelConfigDefaultType = {
   [key in AiProvider | 'client']: key extends infer K
-  ? K extends AiProvider
-  ? ModelProviderFactoryConfig
-  : ModelConfig
-  : never;
+    ? K extends AiProvider
+      ? ModelProviderFactoryConfig
+      : ModelConfig
+    : never;
 };
 
 const ModelConfigDefaults: ModelConfigDefaultType = {
   client: {
     provider: 'azure',
     chat_model: 'lofi',
-    tool_model: 'lofi'
+    tool_model: 'lofi',
   },
   azure: {
     default: {
@@ -53,17 +53,17 @@ const ModelConfigDefaults: ModelConfigDefaultType = {
     },
     named: {
       hifi: {
-        model: env('AZURE_OPENAI_DEPLOYMENT_HIFI')
+        model: env('AZURE_OPENAI_DEPLOYMENT_HIFI'),
       },
       lofi: {
-        model: env('AZURE_OPENAI_DEPLOYMENT_LOFI')
+        model: env('AZURE_OPENAI_DEPLOYMENT_LOFI'),
       },
       completions: {
-        model: env('AZURE_OPENAI_DEPLOYMENT_COMPLETIONS')
+        model: env('AZURE_OPENAI_DEPLOYMENT_COMPLETIONS'),
       },
     },
     embedding: {
-      model: env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING')
+      model: env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING'),
     },
   },
   google: {
@@ -72,18 +72,18 @@ const ModelConfigDefaults: ModelConfigDefaultType = {
       hifi: { model: 'gemini-2.5-pro' },
       lofi: { model: 'gemini-2.5-flash' },
       completions: { model: 'gemini-2.5-flash' },
-      'gemini-2.0-flash': { model: 'gemini-2.0-flash' }
+      'gemini-2.0-flash': { model: 'gemini-2.0-flash' },
     },
-    embedding: { model: 'text-embedding-004' }
+    embedding: { model: 'text-embedding-004' },
   },
   openai: {
     default: {},
     named: {
       hifi: { model: 'gpt-5' },
       lofi: { model: 'gpt-5-mini' },
-      completions: { model: 'gpt-5-mini' }
+      completions: { model: 'gpt-5-mini' },
     },
-    embedding: { model: 'text-embedding-3-large' }
+    embedding: { model: 'text-embedding-3-large' },
   },
 } as const;
 
@@ -98,7 +98,7 @@ export const AllFeatureFlagsDefault: AllFeatureFlagType = {
     retry: {
       exp: 1 * 1000,
       cap: 3 * 60 * 1000,
-    }
+    },
   },
   mem0_mcp_tools_enabled: true,
   models_fetch_cache_ttl: 300,
@@ -134,7 +134,8 @@ export const AllFeatureFlagsDefault: AllFeatureFlagType = {
   todo_storage_redis_config: DEFAULT_REDIS_STORAGE_CONFIG,
 } as const;
 
-export const FLAGSMITH_SERVER_SINGLETON_KEY = '@noeducation/flagsmith-server' as const;
+export const FLAGSMITH_SERVER_SINGLETON_KEY =
+  '@noeducation/flagsmith-server' as const;
 
 export const isFlagsmithServerReady = () =>
   SingletonProvider.Instance.has(FLAGSMITH_SERVER_SINGLETON_KEY);

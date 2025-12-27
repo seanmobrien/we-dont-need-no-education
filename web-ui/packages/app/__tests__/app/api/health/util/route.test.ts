@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import { POST } from '@/app/api/health/util/route';
-import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
 import { NextRequest } from 'next/server';
 
 // Mock SingletonProvider
@@ -20,7 +20,7 @@ jest.mock('@/lib/typescript/singleton-provider/provider', () => {
 });
 
 describe('Health Utility Route', () => {
-  const mockClear = (SingletonProvider.Instance.clear as jest.Mock);
+  const mockClear = SingletonProvider.Instance.clear as jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -36,7 +36,10 @@ describe('Health Utility Route', () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body).toEqual({ status: 'ok', message: 'Global singletons cleared.' });
+    expect(body).toEqual({
+      status: 'ok',
+      message: 'Global singletons cleared.',
+    });
     expect(mockClear).toHaveBeenCalledTimes(1);
   });
 

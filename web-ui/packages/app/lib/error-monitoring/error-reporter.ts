@@ -1,5 +1,5 @@
 import { isError } from '@/lib/react-util/utility-methods';
-import { log, safeSerialize } from '@compliance-theater/lib-logger';
+import { log, safeSerialize } from '@compliance-theater/logger';
 import {
   ErrorSeverity,
   KnownEnvironmentType,
@@ -8,15 +8,17 @@ import {
   ErrorReporterConfig,
   ErrorReporterInterface,
   IContextEnricher,
-
   ErrorReportResult,
 } from './types';
 import { isRunningOnEdge } from '../site-util/env';
 import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
 import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
-import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
 import { shouldSuppressError } from './utility';
-import { type ErrorReportArgs, LoggedError } from '@/lib/react-util/errors/logged-error';
+import {
+  type ErrorReportArgs,
+  LoggedError,
+} from '@/lib/react-util/errors/logged-error';
 import { LRUCache } from 'lru-cache';
 import { StrategyCollectionFactory } from './strategies/strategy-collection-factory';
 import { CircuitBreaker } from './circuit-breaker';
@@ -29,8 +31,6 @@ export type {
   ErrorReporterConfig,
   ErrorReporterInterface,
 };
-
-
 
 const asEnvironment = (input: string): KnownEnvironmentType => {
   return ['development', 'staging', 'production'].includes(input)
@@ -78,7 +78,7 @@ const ERROR_REPORTER_SINGLETON_KEY =
   '@noeducation/error-monitoring:ErrorReporter';
 
 export class ErrorReporter implements ErrorReporterInterface {
-  readonly #errorReportHandler: ((args: ErrorReportArgs) => void);
+  readonly #errorReportHandler: (args: ErrorReportArgs) => void;
   private config: ErrorReporterConfig;
   private debounceCache: LRUCache<string, number>;
   private circuitBreaker: CircuitBreaker | null = null;
@@ -112,19 +112,19 @@ export class ErrorReporter implements ErrorReporterInterface {
       let severity: ErrorSeverity | undefined;
       try {
         switch (args.severity) {
-          case "Verbose":
+          case 'Verbose':
             severity = ErrorSeverity.LOW;
             break;
-          case "Information":
+          case 'Information':
             severity = ErrorSeverity.MEDIUM;
             break;
-          case "Warning":
+          case 'Warning':
             severity = ErrorSeverity.MEDIUM;
             break;
-          case "Error":
+          case 'Error':
             severity = ErrorSeverity.HIGH;
             break;
-          case "Critical":
+          case 'Critical':
             severity = ErrorSeverity.CRITICAL;
             break;
           case undefined:
@@ -148,7 +148,7 @@ export class ErrorReporter implements ErrorReporterInterface {
    * @returns ErrorReporter instance
    */
   public static createInstance = (
-    config: Partial<ErrorReporterConfig>,
+    config: Partial<ErrorReporterConfig>
   ): ErrorReporterInterface =>
     new ErrorReporter({
       ...defaultConfig,
@@ -159,10 +159,10 @@ export class ErrorReporter implements ErrorReporterInterface {
    * Get singleton instance of ErrorReporter
    */
   public static getInstance = (
-    config?: Partial<ErrorReporterConfig>,
+    config?: Partial<ErrorReporterConfig>
   ): ErrorReporterInterface =>
     SingletonProvider.Instance.getRequired(ERROR_REPORTER_SINGLETON_KEY, () =>
-      ErrorReporter.createInstance(config ?? {}),
+      ErrorReporter.createInstance(config ?? {})
     );
 
   private shouldDebounce(report: ErrorReport): boolean {
@@ -183,7 +183,7 @@ export class ErrorReporter implements ErrorReporterInterface {
   async createErrorReport(
     error: Error | unknown,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-    context: Partial<ErrorContext> = {},
+    context: Partial<ErrorContext> = {}
   ): Promise<ErrorReport> {
     let baseReport: ErrorReport | undefined;
     let enrichedContext: ErrorContext | undefined;
@@ -215,7 +215,7 @@ export class ErrorReporter implements ErrorReporterInterface {
         ...baseReport,
         fingerprint: this.generateFingerprint(
           baseReport.error!,
-          enrichedContext,
+          enrichedContext
         ),
         context: enrichedContext,
         tags: {
@@ -247,7 +247,7 @@ export class ErrorReporter implements ErrorReporterInterface {
         ...baseReport,
         fingerprint: this.generateFingerprint(
           baseReport.error!,
-          enrichedContext ?? context ?? {},
+          enrichedContext ?? context ?? {}
         ),
       };
     }
@@ -259,7 +259,7 @@ export class ErrorReporter implements ErrorReporterInterface {
   public async reportError(
     error: Error | unknown,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-    context: Partial<ErrorContext> = {},
+    context: Partial<ErrorContext> = {}
   ): Promise<ErrorReportResult> {
     let result: ErrorReportResult | undefined;
     let report: ErrorReport | undefined;
@@ -304,7 +304,7 @@ export class ErrorReporter implements ErrorReporterInterface {
         Object.assign(result, {
           suppress: true,
           completely: true, // Circuit breaker stops everything usually? Or just downstream?
-          // User requirement: "All errors are suppressed for trigger timeout period" 
+          // User requirement: "All errors are suppressed for trigger timeout period"
           // So completely = true is correct per user req "all errors are suppressed"
           rule: 'circuit-breaker',
         });
@@ -317,7 +317,10 @@ export class ErrorReporter implements ErrorReporterInterface {
 
       // Execute enabled strategies
       // Pass the current result (which contains suppression info) to the factory
-      const strategies = StrategyCollectionFactory.createStrategies(this.config, result);
+      const strategies = StrategyCollectionFactory.createStrategies(
+        this.config,
+        result
+      );
 
       for (const strategy of strategies) {
         try {
@@ -328,11 +331,10 @@ export class ErrorReporter implements ErrorReporterInterface {
             l.error('Error executing reporting strategy', {
               cause: safeSerialize(error),
               strategyError: safeSerialize(strategyError),
-            }),
+            })
           );
         }
       }
-
     } catch (reportingError) {
       // Avoid infinite loops - just log to console
       console.error('Error in error reporting system', {
@@ -365,7 +367,7 @@ export class ErrorReporter implements ErrorReporterInterface {
   public reportBoundaryError(
     error: Error,
     errorInfo: { componentStack?: string; errorBoundary?: string },
-    severity: ErrorSeverity = ErrorSeverity.HIGH,
+    severity: ErrorSeverity = ErrorSeverity.HIGH
   ): Promise<ErrorReportResult> {
     return this.reportError(error, severity, {
       componentStack: errorInfo.componentStack,
@@ -379,7 +381,7 @@ export class ErrorReporter implements ErrorReporterInterface {
    */
   public reportUnhandledRejection(
     reason: unknown,
-    promise: Promise<unknown>,
+    promise: Promise<unknown>
   ): Promise<ErrorReportResult> {
     const error = reason instanceof Error ? reason : new Error(String(reason));
     return this.reportError(error, ErrorSeverity.HIGH, {
@@ -387,8 +389,6 @@ export class ErrorReporter implements ErrorReporterInterface {
       additionalData: { promiseString: promise.toString() },
     });
   }
-
-
 
   /**
    * Set up global error handlers
@@ -401,7 +401,7 @@ export class ErrorReporter implements ErrorReporterInterface {
     const eventHandlers = {
       error: (event: ErrorEvent) => {
         event.stopPropagation();
-        event.preventDefault()
+        event.preventDefault();
         this.reportError(
           event.error || new Error(event.message),
           ErrorSeverity.HIGH,
@@ -413,12 +413,12 @@ export class ErrorReporter implements ErrorReporterInterface {
               lineno: event.lineno,
               colno: event.colno,
             },
-          },
+          }
         );
       },
       rejection: (event: PromiseRejectionEvent) => {
         event.stopPropagation();
-        event.preventDefault()
+        event.preventDefault();
         this.reportUnhandledRejection(event.reason, event.promise);
       },
     };
@@ -440,7 +440,10 @@ export class ErrorReporter implements ErrorReporterInterface {
       window.removeEventListener('error', this.#globalEventHandlers.error);
     }
     if (this.#globalEventHandlers.rejection) {
-      window.removeEventListener('unhandledrejection', this.#globalEventHandlers.rejection);
+      window.removeEventListener(
+        'unhandledrejection',
+        this.#globalEventHandlers.rejection
+      );
     }
     this.#globalEventHandlers = {};
   }
@@ -462,7 +465,9 @@ export class ErrorReporter implements ErrorReporterInterface {
       }
     }
     if (!normalError.message) {
-      normalError.message = `Unknown error - No details provided [${LoggedError.buildMessage(normalError)}]`;
+      normalError.message = `Unknown error - No details provided [${LoggedError.buildMessage(
+        normalError
+      )}]`;
     }
     return normalError;
   }
@@ -471,7 +476,7 @@ export class ErrorReporter implements ErrorReporterInterface {
    * Enrich error context with browser and application data
    */
   private async enrichContext(
-    context: Partial<ErrorContext>,
+    context: Partial<ErrorContext>
   ): Promise<ErrorContext> {
     const enriched: ErrorContext = {
       timestamp: new Date(),
@@ -546,7 +551,7 @@ export class ErrorReporter implements ErrorReporterInterface {
     } catch (err) {
       // extraction should never crash the reporter; if it does, log and continue
       log((l) =>
-        l.warn('Failed to extract DB failure info for error reporter', err),
+        l.warn('Failed to extract DB failure info for error reporter', err)
       );
     }
 
@@ -559,7 +564,7 @@ export class ErrorReporter implements ErrorReporterInterface {
         }
       } catch (err) {
         log((l) =>
-          l.warn('Error in custom context enricher for error reporting', err),
+          l.warn('Error in custom context enricher for error reporting', err)
         );
       }
     }
@@ -604,13 +609,12 @@ export class ErrorReporter implements ErrorReporterInterface {
     }
   }
 
-
   /**
    * Generate tags for error categorization
    */
   private generateTags(
     error: Error,
-    context: ErrorContext,
+    context: ErrorContext
   ): Record<string, string> {
     return {
       environment: this.config.environment,
@@ -647,17 +651,17 @@ interface ErrorReporterInstanceOverloads {
   (): ErrorReporterInterface;
   <
     TCallback extends (
-      reporter: ErrorReporterInterface,
+      reporter: ErrorReporterInterface
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ) => any extends infer TResult ? TResult : never,
+    ) => any extends infer TResult ? TResult : never
   >(
-    cb: TCallback,
+    cb: TCallback
   ): ReturnType<TCallback>;
 }
 
 // Export singleton instance
 export const errorReporter: ErrorReporterInstanceOverloads = (
-  cb?: (reporter: ErrorReporterInterface) => unknown,
+  cb?: (reporter: ErrorReporterInterface) => unknown
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any => {
   const reporter = ErrorReporter.getInstance();

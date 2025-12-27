@@ -1,13 +1,11 @@
-import { wrapRouteRequest } from "@/lib/nextjs-util/server";
-import { isKeyOf } from "@compliance-theater/lib-typescript";
-import { SingletonProvider } from "@compliance-theater/lib-typescript/singleton-provider/provider";
-import { NextRequest, NextResponse } from "next/server";
+import { wrapRouteRequest } from '@/lib/nextjs-util/server';
+import { isKeyOf } from '@compliance-theater/typescript';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
+import { NextRequest, NextResponse } from 'next/server';
 
-const HealthActionValues = [
-  'reset-globals'
-] as const;
+const HealthActionValues = ['reset-globals'] as const;
 
-type HealthActionType = typeof HealthActionValues[number];
+type HealthActionType = (typeof HealthActionValues)[number];
 
 type HealthActionEnvelope = {
   action: HealthActionType;
@@ -26,7 +24,10 @@ interface HealthActionStrategy {
 class ResetGlobalsStrategy implements HealthActionStrategy {
   async execute(): Promise<NextResponse> {
     SingletonProvider.Instance.clear();
-    return NextResponse.json({ status: 'ok', message: 'Global singletons cleared.' });
+    return NextResponse.json({
+      status: 'ok',
+      message: 'Global singletons cleared.',
+    });
   }
 }
 
@@ -37,10 +38,8 @@ const strategyRegistry: Record<HealthActionType, HealthActionStrategy> = {
   'reset-globals': new ResetGlobalsStrategy(),
 };
 
-export const POST = wrapRouteRequest(async (
-  req: NextRequest
-) => {
-  const body = await req.json() as HealthActionEnvelope;
+export const POST = wrapRouteRequest(async (req: NextRequest) => {
+  const body = (await req.json()) as HealthActionEnvelope;
 
   if (!body || !body.action) {
     return NextResponse.json({ error: 'Missing action' }, { status: 400 });
@@ -52,7 +51,10 @@ export const POST = wrapRouteRequest(async (
   }
 
   if (!strategy) {
-    return NextResponse.json({ error: `Invalid action: ${body.action}` }, { status: 400 });
+    return NextResponse.json(
+      { error: `Invalid action: ${body.action}` },
+      { status: 400 }
+    );
   }
 
   return strategy.execute();

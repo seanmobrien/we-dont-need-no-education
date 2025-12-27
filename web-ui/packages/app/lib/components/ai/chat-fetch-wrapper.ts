@@ -4,7 +4,7 @@ import {
   useQueryClient,
   experimental_streamedQuery as streamedQuery,
 } from '@tanstack/react-query';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { useCallback } from 'react';
 import { env } from '@/lib/site-util/env';
 import { fetch } from '@/lib/nextjs-util/fetch';
@@ -20,13 +20,13 @@ export const useChatFetchWrapper = (): {
   const queryClient = useQueryClient();
   if (!queryClient) {
     throw new Error(
-      'QueryClient is not available. Ensure you are using this in a QueryClientProvider context.',
+      'QueryClient is not available. Ensure you are using this in a QueryClientProvider context.'
     );
   }
 
   const computeKey = async (
     input: RequestInfo | URL,
-    init?: RequestInit,
+    init?: RequestInit
   ): Promise<[URL, string]> => {
     const hashBody = async <TBody>(body: TBody): Promise<[string, TBody]> => {
       if (typeof body === 'string') {
@@ -72,7 +72,7 @@ export const useChatFetchWrapper = (): {
     // TODO: Would be nice to pull the last message - or part of it - for display purposes
     const url = new URL(
       input instanceof Request ? input.url : input.toString(),
-      new URL(env('NEXT_PUBLIC_HOSTNAME')),
+      new URL(env('NEXT_PUBLIC_HOSTNAME'))
     );
     return [url, requestHash];
   };
@@ -162,7 +162,7 @@ export const useChatFetchWrapper = (): {
         },
       });
     },
-    [queryClient],
+    [queryClient]
   );
   return {
     chatFetch,

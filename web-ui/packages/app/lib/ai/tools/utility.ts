@@ -5,8 +5,14 @@ import {
   ValidCaseFileRequestProps,
 } from './types';
 import { isError } from '@/lib/react-util/utility-methods';
-import { BrandedUuid, isValidUuid as isValidUuidImpl } from '@compliance-theater/lib-typescript/_guards';
-import { resolveCaseFileId as resolveCaseFileIdImpl, resolveCaseFileIdBatch as resolveCaseFileIdBatchImpl } from '@/lib/api/document-unit/resolve-case-file-id';
+import {
+  BrandedUuid,
+  isValidUuid as isValidUuidImpl,
+} from '@compliance-theater/typescript/_guards';
+import {
+  resolveCaseFileId as resolveCaseFileIdImpl,
+  resolveCaseFileIdBatch as resolveCaseFileIdBatchImpl,
+} from '@/lib/api/document-unit/resolve-case-file-id';
 import { deprecate } from '@/lib/nextjs-util';
 
 interface ToolCallbackResultOverloads {
@@ -16,7 +22,7 @@ interface ToolCallbackResultOverloads {
 
 export const toolCallbackResultFactory: ToolCallbackResultOverloads = <T>(
   result: T | Error,
-  message?: string,
+  message?: string
 ): ToolCallbackResult<T> => {
   if (isError(result)) {
     return {
@@ -33,31 +39,31 @@ export const toolCallbackResultFactory: ToolCallbackResultOverloads = <T>(
   }
   return Array.isArray(result)
     ? {
-      content: [{ type: 'text', text: 'tool success' }],
-      structuredContent: {
-        result: {
-          isError: false,
-          items: result as T extends Array<infer U> ? Array<U> : never,
+        content: [{ type: 'text', text: 'tool success' }],
+        structuredContent: {
+          result: {
+            isError: false,
+            items: result as T extends Array<infer U> ? Array<U> : never,
+          },
         },
-      },
-    }
+      }
     : {
-      content: [{ type: 'text', text: 'tool success' }],
-      structuredContent: {
-        result: {
-          isError: false,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          value: result as T extends Array<any> ? never : T,
+        content: [{ type: 'text', text: 'tool success' }],
+        structuredContent: {
+          result: {
+            isError: false,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            value: result as T extends Array<any> ? never : T,
+          },
         },
-      },
-    };
+      };
 };
 
 export const toolCallbackResultSchemaFactory = <T extends ZodRawShape>(
   resultSchema:
     | z.ZodObject<T>
     | z.ZodString
-    | z.ZodUnion<[z.ZodString, z.ZodObject<T>]>,
+    | z.ZodUnion<[z.ZodString, z.ZodObject<T>]>
 ) => {
   const error = z.object({
     isError: z.literal(true),
@@ -81,7 +87,7 @@ export const toolCallbackArrayResultSchemaFactory = <T extends ZodRawShape>(
   resultSchema:
     | z.ZodObject<T>
     | z.ZodString
-    | z.ZodUnion<[z.ZodString, z.ZodObject<T>]>,
+    | z.ZodUnion<[z.ZodString, z.ZodObject<T>]>
 ) => {
   const error = z.object({
     isError: z.literal(true),
@@ -110,7 +116,8 @@ export const toolCallbackArrayResultSchemaFactory = <T extends ZodRawShape>(
  * @param id - The string to validate as a UUID v4.
  * @returns `true` if the string is a valid UUID v4, otherwise `false`.
  */
-export const isValidUuid = deprecate(isValidUuidImpl,
+export const isValidUuid = deprecate(
+  isValidUuidImpl,
   'isValidUuid is deprecated, import from @/lib/typescript/_guards',
   'DEP0002'
 );
@@ -148,9 +155,12 @@ export const resolveCaseFileId = deprecate(
  * @returns A promise that resolves to an array of objects with a numeric `caseFileId`.
  */
 export const resolveCaseFileIdBatch = async (
-  requests: Array<CaseFileRequestProps>,
+  requests: Array<CaseFileRequestProps>
 ): Promise<Array<ValidCaseFileRequestProps>> =>
   resolveCaseFileIdBatchImpl(requests, {
     getValue: (input: CaseFileRequestProps) => input.caseFileId,
-    setValue: (input: CaseFileRequestProps, value: number | BrandedUuid) => ({ ...input, caseFileId: value }),
+    setValue: (input: CaseFileRequestProps, value: number | BrandedUuid) => ({
+      ...input,
+      caseFileId: value,
+    }),
   }) as Promise<Array<ValidCaseFileRequestProps>>;

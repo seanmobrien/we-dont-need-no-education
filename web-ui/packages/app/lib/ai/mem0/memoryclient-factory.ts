@@ -6,7 +6,7 @@ import type {
 } from './types/health-check';
 import { fromRequest, ImpersonationService } from '@/lib/auth/impersonation';
 import { env } from '@/lib/site-util/env';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 /**
  * Options for configuring the MemoryClient instance.
@@ -25,7 +25,7 @@ type ClientOptions = {
 
 export type ExtendedMemoryClient = MemoryClient & {
   healthCheck: (
-    params?: HealthCheckParams,
+    params?: HealthCheckParams
   ) => Promise<MemoryHealthCheckResponse>;
 };
 
@@ -39,7 +39,8 @@ export type ExtendedMemoryClient = MemoryClient & {
  */
 class SchoolLawyerMemoryClient
   extends MemoryClient
-  implements ExtendedMemoryClient {
+  implements ExtendedMemoryClient
+{
   readonly defaultOptions: MemoryOptions;
 
   /**
@@ -73,7 +74,7 @@ class SchoolLawyerMemoryClient
    */
   override _preparePayload(
     messages: Array<Message>,
-    options: MemoryOptions,
+    options: MemoryOptions
   ): object {
     return super._preparePayload(messages, {
       ...this.defaultOptions,
@@ -101,7 +102,7 @@ class SchoolLawyerMemoryClient
    * @returns Promise resolving to the health check response.
    */
   async healthCheck(
-    params: HealthCheckParams = {},
+    params: HealthCheckParams = {}
   ): Promise<MemoryHealthCheckResponse> {
     const { strict = false, verbose = 1 } = params;
     const searchParams = new URLSearchParams({
@@ -142,9 +143,9 @@ class SchoolLawyerMemoryClient
  * ```
  */
 export const memoryClientFactory = async <
-  TClient extends MemoryClient = MemoryClient,
+  TClient extends MemoryClient = MemoryClient
 >(
-  options: ClientOptions,
+  options: ClientOptions
 ): Promise<TClient> => {
   const clientOps = {
     ...options,

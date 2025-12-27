@@ -1,6 +1,6 @@
 import { resolveCaseFileId } from '@/lib/api/document-unit/resolve-case-file-id';
 import { drizDbWithInit } from '@/lib/drizzle-db';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { deprecate } from '@/lib/nextjs-util/utils';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { authorizationService } from '../authorization-service';
@@ -8,25 +8,25 @@ import { normalizedAccessToken } from '../../access-token';
 import type { NextRequest } from 'next/server';
 import { AccessTokenOrRequestOverloads } from '../../types';
 
-export const getUserIdFromEmailId = deprecate(async function getUserIdFromEmailId(
-  emailId: string,
-): Promise<number | null> {
-  try {
-    return getUserIdFromUnitId(emailId);
-  } catch (error) {
-    throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      source: 'getUserIdFromEmailId',
-      msg: 'Failed to get user_id from email_id',
-      include: { emailId },
-    });
-  }
-}, 'getUserIdFromEmailId is deprecated. Use getUserIdFromUnitId instead.',
+export const getUserIdFromEmailId = deprecate(
+  async function getUserIdFromEmailId(emailId: string): Promise<number | null> {
+    try {
+      return getUserIdFromUnitId(emailId);
+    } catch (error) {
+      throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'getUserIdFromEmailId',
+        msg: 'Failed to get user_id from email_id',
+        include: { emailId },
+      });
+    }
+  },
+  'getUserIdFromEmailId is deprecated. Use getUserIdFromUnitId instead.',
   'DEP003'
 );
 
 export const getUserIdFromUnitId = async (
-  documentUnitId: number | string | undefined,
+  documentUnitId: number | string | undefined
 ): Promise<number | null> => {
   try {
     const unitId = await resolveCaseFileId(documentUnitId);
@@ -35,7 +35,7 @@ export const getUserIdFromUnitId = async (
         l.debug({
           msg: 'null/undefined unitId provided',
           unitId,
-        }),
+        })
       );
       return null;
     }
@@ -53,7 +53,7 @@ export const getUserIdFromUnitId = async (
         l.debug({
           msg: 'No document unit found',
           unitId,
-        }),
+        })
       );
       return null;
     }
@@ -67,10 +67,10 @@ export const getUserIdFromUnitId = async (
       include: { unitId: documentUnitId },
     });
   }
-}
+};
 
 export const getKeycloakUserIdFromUserId = async (
-  userId: number,
+  userId: number
 ): Promise<string | null> => {
   try {
     const db = await drizDbWithInit();
@@ -89,7 +89,7 @@ export const getKeycloakUserIdFromUserId = async (
         l.debug({
           msg: 'No Keycloak account found for user',
           userId,
-        }),
+        })
       );
       return null;
     }
@@ -105,8 +105,10 @@ export const getKeycloakUserIdFromUserId = async (
   }
 };
 
-export const getAccessibleUserIds: AccessTokenOrRequestOverloads<number[]> = async (
-  userAccessToken?: string | NextRequest | undefined,
+export const getAccessibleUserIds: AccessTokenOrRequestOverloads<
+  number[]
+> = async (
+  userAccessToken?: string | NextRequest | undefined
 ): Promise<number[]> => {
   try {
     const normalizedInput = await normalizedAccessToken(userAccessToken);
@@ -115,7 +117,9 @@ export const getAccessibleUserIds: AccessTokenOrRequestOverloads<number[]> = asy
       return [];
     }
     const { accessToken: bearerToken, userId } = normalizedInput;
-    const entitlements = await authorizationService(s => s.getUserEntitlements(bearerToken));
+    const entitlements = await authorizationService((s) =>
+      s.getUserEntitlements(bearerToken)
+    );
 
     const accessibleUserIds = new Set<number>();
     let foundThisId = false;
@@ -142,4 +146,3 @@ export const getAccessibleUserIds: AccessTokenOrRequestOverloads<number[]> = asy
     });
   }
 };
-

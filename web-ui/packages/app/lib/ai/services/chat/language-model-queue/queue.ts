@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getRedisClient } from '@/lib/redis-client';
 import { countTokens } from '../../../core/count-tokens';
 import { auth } from '@/auth';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type {
   LanguageModelQueueOptions,
   QueuedRequest,
@@ -41,7 +41,7 @@ export class LanguageModelQueue {
         modelType: this.modelType,
         maxConcurrentRequests: this.maxConcurrentRequests,
         queueInstanceId: this._queueInstanceId,
-      }),
+      })
     );
 
     // Start processing loop
@@ -108,7 +108,7 @@ export class LanguageModelQueue {
       throw new MessageTooLargeForQueueError(
         tokenCount,
         maxAllowedTokens,
-        this.modelType,
+        this.modelType
       );
     }
   }
@@ -116,7 +116,7 @@ export class LanguageModelQueue {
   private async createQueuedRequest(
     method: LanguageModelMethod,
     params: unknown,
-    tokenCount: number,
+    tokenCount: number
   ): Promise<QueuedRequest> {
     const userId = await this.getCurrentUserId();
 
@@ -148,7 +148,7 @@ export class LanguageModelQueue {
         method: request.method,
         tokenCount: request.tokenCount,
         queueInstanceId: this._queueInstanceId,
-      }),
+      })
     );
   }
 
@@ -185,14 +185,14 @@ export class LanguageModelQueue {
   }
 
   private extractRateLimitInfo(
-    headers: Record<string, string | string[]>,
+    headers: Record<string, string | string[]>
   ): RateLimitInfo {
     const info: RateLimitInfo = {};
 
     const remainingTokens = headers['x-ratelimit-remaining-tokens'];
     if (remainingTokens) {
       info.remainingTokens = parseInt(
-        Array.isArray(remainingTokens) ? remainingTokens[0] : remainingTokens,
+        Array.isArray(remainingTokens) ? remainingTokens[0] : remainingTokens
       );
     }
 
@@ -201,7 +201,7 @@ export class LanguageModelQueue {
       info.remainingRequests = parseInt(
         Array.isArray(remainingRequests)
           ? remainingRequests[0]
-          : remainingRequests,
+          : remainingRequests
       );
     }
 
@@ -240,7 +240,7 @@ export class LanguageModelQueue {
 
   async generateObject(
     params: unknown,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<unknown> {
     return this.processRequest('generateObject', params, signal);
   }
@@ -256,7 +256,7 @@ export class LanguageModelQueue {
   private async processRequest(
     method: LanguageModelMethod,
     params: unknown,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<unknown> {
     // Count tokens in the request
     const tokenCount = this.estimateTokenCount(params);
@@ -268,7 +268,7 @@ export class LanguageModelQueue {
     const queuedRequest = await this.createQueuedRequest(
       method,
       params,
-      tokenCount,
+      tokenCount
     );
 
     // Set up abort handling
@@ -343,15 +343,15 @@ export class LanguageModelQueue {
   private async waitForRequestCompletion(
     requestId: string,
     resolve: (value: unknown) => void,
-    reject: (reason: unknown) => void,
+    reject: (reason: unknown) => void
   ): Promise<void> {
     // This would be implemented to poll for completion or use pub/sub
     // For now, this is a placeholder
     setTimeout(() => {
       reject(
         new Error(
-          `Request processing not yet implemented for request ${requestId}`,
-        ),
+          `Request processing not yet implemented for request ${requestId}`
+        )
       );
     }, 1000);
   }
@@ -388,7 +388,7 @@ export class LanguageModelQueue {
 
       // Filter to pending requests only
       const pendingRequests = parsedRequests.filter(
-        (req) => req.status === 'pending',
+        (req) => req.status === 'pending'
       );
 
       if (pendingRequests.length === 0) {
@@ -397,7 +397,7 @@ export class LanguageModelQueue {
 
       // Check how many are currently processing
       const processingCount = parsedRequests.filter(
-        (req) => req.status === 'processing',
+        (req) => req.status === 'processing'
       ).length;
       const availableSlots = this.maxConcurrentRequests - processingCount;
 
@@ -414,7 +414,7 @@ export class LanguageModelQueue {
 
   private async selectAndProcessRequests(
     pendingRequests: QueuedRequest[],
-    availableSlots: number,
+    availableSlots: number
   ): Promise<void> {
     const requestsToProcess: QueuedRequest[] = [];
     const now = new Date();
@@ -476,7 +476,7 @@ export class LanguageModelQueue {
 
   private async updateRequestInQueue(
     requestId: string,
-    updatedRequest: QueuedRequest,
+    updatedRequest: QueuedRequest
   ): Promise<void> {
     const redis = await getRedisClient();
     const queueKey = this.getQueueKey();
@@ -514,7 +514,7 @@ export class LanguageModelQueue {
 
   private async handleRequestSuccess(
     request: QueuedRequest,
-    result: unknown,
+    result: unknown
   ): Promise<void> {
     // Remove from queue
     await this.removeRequestFromQueue(request.id);
@@ -535,13 +535,13 @@ export class LanguageModelQueue {
     await this.reportMetrics();
 
     log((l) =>
-      l.info('Request completed successfully', { requestId: request.id }),
+      l.info('Request completed successfully', { requestId: request.id })
     );
   }
 
   private async handleRequestError(
     request: QueuedRequest,
-    error: unknown,
+    error: unknown
   ): Promise<void> {
     const isRateLimitError = this.isRateLimitError(error);
 
@@ -566,7 +566,7 @@ export class LanguageModelQueue {
         requestId: request.id,
         error,
         isRateLimitError,
-      }),
+      })
     );
   }
 
@@ -642,7 +642,7 @@ export class LanguageModelQueue {
   }
 
   private async updateCapacityFromHeaders(
-    headers: Record<string, string | string[]>,
+    headers: Record<string, string | string[]>
   ): Promise<void> {
     const rateLimitInfo = this.extractRateLimitInfo(headers);
 
@@ -675,7 +675,7 @@ export class LanguageModelQueue {
         .filter((req) => req !== null) as QueuedRequest[];
 
       const activeRequests = parsedRequests.filter(
-        (req) => req.status === 'processing',
+        (req) => req.status === 'processing'
       ).length;
       const queueSize = parsedRequests.length;
 
@@ -711,7 +711,7 @@ export class LanguageModelQueue {
     log((l) =>
       l.info('LanguageModelQueue disposed', {
         queueInstanceId: this._queueInstanceId,
-      }),
+      })
     );
   }
 }

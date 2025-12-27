@@ -21,8 +21,8 @@ import {
 } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
-import { isKeyOf } from '@compliance-theater/lib-typescript';
-import { log } from '@compliance-theater/lib-logger';
+import { isKeyOf } from '@compliance-theater/typescript';
+import { log } from '@compliance-theater/logger';
 
 /**
  * Primary provider canonical names.
@@ -119,11 +119,11 @@ type ProviderNameOrIdType = ProviderIdType | ProviderNameType;
 export class ProviderMap {
   // Global symbol key to expose init resolvers across module copies/HMR boundaries
   static readonly #INIT_KEY = Symbol.for(
-    '@noeducation/model-stats:ProviderMap:init',
+    '@noeducation/model-stats:ProviderMap:init'
   );
   // Symbol-based global registry key to ensure singleton across module reloads/bundles
   static readonly #REGISTRY_KEY = Symbol.for(
-    '@noeducation/model-stats:ProviderMap',
+    '@noeducation/model-stats:ProviderMap'
   );
   static get #instance(): ProviderMap | undefined {
     type GlobalReg = { [k: symbol]: ProviderMap | undefined };
@@ -182,7 +182,7 @@ export class ProviderMap {
    * @returns The initialized ProviderMap singleton.
    */
   static setupMockInstance(
-    records: (readonly [ProviderIdType, ProviderMapEntry])[],
+    records: (readonly [ProviderIdType, ProviderMapEntry])[]
   ): ProviderMap {
     type GlobalReg = { [k: symbol]: ProviderMap | undefined };
     const g = globalThis as unknown as GlobalReg;
@@ -199,7 +199,7 @@ export class ProviderMap {
   constructor(
     entriesOrDb?:
       | (readonly [ProviderIdType, ProviderMapEntry])[]
-      | DbDatabaseType,
+      | DbDatabaseType
   ) {
     this.#nameToId = new Map();
     this.#initialized = false;
@@ -386,7 +386,7 @@ export class ProviderMap {
               isActive,
               aliases,
             });
-          },
+          }
         );
         return Promise.resolve();
       })
@@ -421,8 +421,8 @@ export class ProviderMap {
         } else {
           log((l) =>
             l.warn(
-              `Invalid provider alias for provider ${thisName} (${id}): ${alias}`,
-            ),
+              `Invalid provider alias for provider ${thisName} (${id}): ${alias}`
+            )
           );
           // Force it, but keep in mind it probably won't work very well until we
           // the the code updated...

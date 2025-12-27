@@ -1,7 +1,7 @@
 // import { chats, chatTurns, chatMessages } from '@/drizzle/schema';
 import { and, eq, isNull } from 'drizzle-orm';
 import { drizDb, schema } from '@/lib/drizzle-db';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type { FlushContext, FlushResult, FlushConfig } from './types';
 import { instrumentFlushOperation } from './instrumentation';
 import {
@@ -24,7 +24,7 @@ const DEFAULT_FLUSH_CONFIG: FlushConfig = {
 };
 
 export async function finalizeAssistantMessage(
-  context: FlushContext,
+  context: FlushContext
 ): Promise<void> {
   try {
     if (!context.messageId) {
@@ -33,7 +33,7 @@ export async function finalizeAssistantMessage(
           l.warn('No pending message to finalize', {
             chatId: context.chatId,
             turnId: context.turnId,
-          }),
+          })
         );
         return;
       }
@@ -49,7 +49,7 @@ export async function finalizeAssistantMessage(
           thisTurnId,
           0,
           0,
-          context.generatedText,
+          context.generatedText
         );
       });
       return;
@@ -67,14 +67,14 @@ export async function finalizeAssistantMessage(
             }
           : {
               statusId: 2, // complete status
-            },
+            }
       )
       .where(
         and(
           eq(schema.chatMessages.chatId, context.chatId),
           eq(schema.chatMessages.turnId, context.turnId!),
-          eq(schema.chatMessages.messageId, context.messageId),
-        ),
+          eq(schema.chatMessages.messageId, context.messageId)
+        )
       );
 
     log((l) =>
@@ -83,7 +83,7 @@ export async function finalizeAssistantMessage(
         turnId: context.turnId,
         messageId: context.messageId,
         textLength: context.generatedText.length,
-      }),
+      })
     );
   } catch (error) {
     throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -100,13 +100,13 @@ export async function finalizeAssistantMessage(
 
 export async function completeChatTurn(
   context: FlushContext,
-  latencyMs: number,
+  latencyMs: number
 ): Promise<void> {
   if (!context.turnId) {
     log((l) =>
       l.warn('No turn ID provided for completion', {
         chatId: context.chatId,
-      }),
+      })
     );
     return;
   }
@@ -122,8 +122,8 @@ export async function completeChatTurn(
       .where(
         and(
           eq(schema.chatTurns.chatId, context.chatId),
-          eq(schema.chatTurns.turnId, context.turnId),
-        ),
+          eq(schema.chatTurns.turnId, context.turnId)
+        )
       );
 
     drizDb()
@@ -134,8 +134,8 @@ export async function completeChatTurn(
           eq(schema.chatMessages.chatId, context.chatId),
           eq(schema.chatMessages.turnId, context.turnId!),
           eq(schema.chatMessages.statusId, 2), // only complete messages
-          isNull(schema.chatMessages.optimizedContent),
-        ),
+          isNull(schema.chatMessages.optimizedContent)
+        )
       )
       .execute()
       .then((x) =>
@@ -158,15 +158,15 @@ export async function completeChatTurn(
               },
             });
             return Promise.resolve(m);
-          }),
-        ),
+          })
+        )
       );
     log((l) =>
       l.debug('Chat turn completed', {
         chatId: context.chatId,
         turnId: context.turnId,
         latencyMs,
-      }),
+      })
     );
   } catch (error) {
     throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -182,7 +182,7 @@ export async function completeChatTurn(
 
 export async function generateChatTitle(
   context: FlushContext,
-  config: FlushConfig = DEFAULT_FLUSH_CONFIG,
+  config: FlushConfig = DEFAULT_FLUSH_CONFIG
 ): Promise<void> {
   if (!config.autoGenerateTitle || !context.generatedText) {
     return;
@@ -200,7 +200,7 @@ export async function generateChatTitle(
         l.debug('Chat already has title, skipping generation', {
           chatId: context.chatId,
           existingTitle: existingTitle.title,
-        }),
+        })
       );
       return;
     }
@@ -222,7 +222,7 @@ export async function generateChatTitle(
           chatId: context.chatId,
           title,
           wordCount: words.length,
-        }),
+        })
       );
     }
   } catch (error) {
@@ -239,14 +239,14 @@ export async function generateChatTitle(
 
 export async function markTurnAsError(
   context: FlushContext,
-  error: Error,
+  error: Error
 ): Promise<void> {
   if (!context.turnId) {
     log((l) =>
       l.warn('No turn ID provided for error marking', {
         chatId: context.chatId,
         error: error.message,
-      }),
+      })
     );
     return;
   }
@@ -261,8 +261,8 @@ export async function markTurnAsError(
       .where(
         and(
           eq(schema.chatTurns.chatId, context.chatId),
-          eq(schema.chatTurns.turnId, context.turnId),
-        ),
+          eq(schema.chatTurns.turnId, context.turnId)
+        )
       );
 
     log((l) =>
@@ -270,7 +270,7 @@ export async function markTurnAsError(
         chatId: context.chatId,
         turnId: context.turnId,
         error: error.message,
-      }),
+      })
     );
   } catch (updateError) {
     LoggedError.isTurtlesAllTheWayDownBaby(updateError, {
@@ -288,7 +288,7 @@ export async function markTurnAsError(
 
 export async function handleFlush(
   context: FlushContext,
-  config: FlushConfig = DEFAULT_FLUSH_CONFIG,
+  config: FlushConfig = DEFAULT_FLUSH_CONFIG
 ): Promise<FlushResult> {
   return await instrumentFlushOperation(context, async () => {
     const startFlush = Date.now();
@@ -312,7 +312,7 @@ export async function handleFlush(
           processingTimeMs,
           generatedTextLength: context.generatedText.length,
           flushDurationMs: Date.now() - startFlush,
-        }),
+        })
       );
 
       return {

@@ -1,7 +1,7 @@
 import type { CacheableResponse } from './types';
 import { getCacheConfig } from './config';
 import { metricsCollector } from './metrics';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { generateChatId } from '@/lib/ai/core';
 
 const config = getCacheConfig();
@@ -9,12 +9,12 @@ const config = getCacheConfig();
 export const handleCacheHit = (
   cacheKey: string,
   parsed: CacheableResponse,
-  context: string = '',
+  context: string = ''
 ): void => {
   const responseSize =
     parsed.content?.reduce(
       (acc, part) => acc + (part.type === 'text' ? part.text.length : 0),
-      0,
+      0
     ) || 0;
 
   // Fix-up timestamps
@@ -33,7 +33,7 @@ export const handleCacheHit = (
           l.warn('Failed to parse timestamp in cached response', {
             cacheKey,
             error: String(error),
-          }),
+          })
         );
         // If parsing fails, we just leave it as is
       }
@@ -47,7 +47,7 @@ export const handleCacheHit = (
         l.warn('Failed to parse ID in cached response', {
           cacheKey,
           error: String(error),
-        }),
+        })
       );
       // If parsing fails, we just leave it as is
     }
@@ -61,15 +61,18 @@ export const handleCacheHit = (
   if (config.enableLogging) {
     log((l) =>
       l.verbose(
-        `🎯 ${context}Cache HIT for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`,
-      ),
+        `🎯 ${context}Cache HIT for key: ${cacheKey.substring(
+          0,
+          config.maxKeyLogLength
+        )}...`
+      )
     );
   }
 };
 
 export const handleCacheMiss = (
   cacheKey: string,
-  context: string = '',
+  context: string = ''
 ): void => {
   // Record cache miss
   if (config.enableMetrics) {
@@ -79,8 +82,11 @@ export const handleCacheMiss = (
   if (config.enableLogging) {
     log((l) =>
       l.verbose(
-        `🔍 ${context}Cache MISS for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`,
-      ),
+        `🔍 ${context}Cache MISS for key: ${cacheKey.substring(
+          0,
+          config.maxKeyLogLength
+        )}...`
+      )
     );
   }
 };

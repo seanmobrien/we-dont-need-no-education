@@ -1,7 +1,7 @@
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { zodToStructure } from '@compliance-theater/lib-typescript';
+import { zodToStructure } from '@compliance-theater/typescript';
 import { GenerateTextResult, ToolSet } from 'ai';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import { DocumentResource } from '../documentResource';
 import { DocumentSchema } from '../schemas';
@@ -95,8 +95,8 @@ export const preprocessCaseFileDocument = async ({
   requestContext: { requestId },
 }: {
   documents:
-  | Array<{ verbatim_fidelity: number; document: DocumentResource }>
-  | { verbatim_fidelity: number; document: DocumentResource };
+    | Array<{ verbatim_fidelity: number; document: DocumentResource }>
+    | { verbatim_fidelity: number; document: DocumentResource };
   goals: Array<string>;
   requestContext: { requestId: string };
 }): Promise<Array<CaseFileResponse>> => {
@@ -115,7 +115,7 @@ export const preprocessCaseFileDocument = async ({
       document_ids: [] as Array<number>,
       document_types: [] as Array<string>,
       fidelity: [] as Array<number>,
-    },
+    }
   );
 
   const preprocessingAttributes = {
@@ -128,8 +128,10 @@ export const preprocessCaseFileDocument = async ({
 
   log((l) =>
     l.info(
-      `getCaseFileDocument::preprocessCaseFileDocument: Starting preprocessing for documents with ID ${document_ids.join(', ')} - original length: ${originalLength}`,
-    ),
+      `getCaseFileDocument::preprocessCaseFileDocument: Starting preprocessing for documents with ID ${document_ids.join(
+        ', '
+      )} - original length: ${originalLength}`
+    )
   );
 
   /**
@@ -294,7 +296,7 @@ ___END CASE FILE___`,
       {
         ...preprocessingAttributes,
         status: 'success',
-      },
+      }
     );
 
     // Record processed size metrics
@@ -305,8 +307,12 @@ ___END CASE FILE___`,
 
     log((l) =>
       l.info(
-        `getCaseFileDocument::preprocessCaseFileDocument: Processed documents with ID ${document_ids.join(', ')} - original length: ${originalLength}, response length: ${response.text.length}`,
-      ),
+        `getCaseFileDocument::preprocessCaseFileDocument: Processed documents with ID ${document_ids.join(
+          ', '
+        )} - original length: ${originalLength}, response length: ${
+          response.text.length
+        }`
+      )
     );
 
     /**
@@ -325,14 +331,14 @@ ___END CASE FILE___`,
       // Handle structured outputs from AI provider
       return Array.isArray(response.providerMetadata.structuredOutputs)
         ? response.providerMetadata.structuredOutputs.map((x) => ({
-          summary: x as SummarizedDocumentResource,
-        }))
+            summary: x as SummarizedDocumentResource,
+          }))
         : [
-          {
-            summary: response.providerMetadata
-              .structuredOutputs as SummarizedDocumentResource,
-          },
-        ]; // Ensure we always return an array for consistent handling
+            {
+              summary: response.providerMetadata
+                .structuredOutputs as SummarizedDocumentResource,
+            },
+          ]; // Ensure we always return an array for consistent handling
     }
 
     // Fallback to text-based response when structured parsing isn't available
@@ -351,7 +357,7 @@ ___END CASE FILE___`,
       {
         ...preprocessingAttributes,
         status: 'error',
-      },
+      }
     );
 
     throw LoggedError.isTurtlesAllTheWayDownBaby(error, {

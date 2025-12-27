@@ -18,7 +18,7 @@ import {
   hybridDocumentSearchFactory,
 } from '@/lib/ai/services/search';
 
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 describe('searchCaseFile', () => {
@@ -31,7 +31,7 @@ describe('searchCaseFile', () => {
       hybridSearch: mockHybridSearch,
     }));
     (log as jest.Mock).mockImplementation((cb) =>
-      cb({ trace: mockLog, error: mockError }),
+      cb({ trace: mockLog, error: mockError })
     );
     (hybridDocumentSearchFactory as jest.Mock).mockImplementation(() => ({
       hybridSearch: mockHybridSearch,
@@ -51,7 +51,7 @@ describe('searchCaseFile', () => {
     expect(
       result.structuredContent.result.isError
         ? null
-        : result.structuredContent.result.items,
+        : result.structuredContent.result.items
     ).toEqual(expectedResult);
   });
 
@@ -64,7 +64,7 @@ describe('searchCaseFile', () => {
       throw error;
     });
     (LoggedError.isTurtlesAllTheWayDownBaby as jest.Mock).mockReturnValue(
-      loggedError,
+      loggedError
     );
 
     const result = await localSearchCaseFile({ query, options });
@@ -72,7 +72,7 @@ describe('searchCaseFile', () => {
     expect(
       result.structuredContent.result.isError
         ? result.structuredContent.result.message
-        : '',
+        : ''
     ).toBe('logged');
 
     expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(error, {

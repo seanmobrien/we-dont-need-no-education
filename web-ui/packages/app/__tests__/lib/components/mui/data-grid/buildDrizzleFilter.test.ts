@@ -2,7 +2,6 @@
  * @jest-environment node
  */
 
-
 /**
  * @fileoverview Unit tests for buildDrizzleFilter functions
  *
@@ -50,7 +49,7 @@ import {
 import { NextRequest } from 'next/server';
 import { LikeNextRequest } from '@/lib/nextjs-util/types';
 
-import { ILogger, log } from '@compliance-theater/lib-logger';
+import { ILogger, log } from '@compliance-theater/logger';
 
 // Mock logger
 // Mock Drizzle imports
@@ -160,7 +159,7 @@ jest.mock('drizzle-orm', () => ({
 // Create mock column objects that resemble Drizzle PgColumn
 const createMockColumn = (
   name: string,
-  dataType: 'string' | 'number' | 'boolean' = 'string',
+  dataType: 'string' | 'number' | 'boolean' = 'string'
 ): PgColumn => {
   // Mock column with proper type configuration
   const mockColumn = {
@@ -171,8 +170,8 @@ const createMockColumn = (
       dataType === 'string'
         ? 'text'
         : dataType === 'number'
-          ? 'integer'
-          : 'boolean',
+        ? 'integer'
+        : 'boolean',
     table: 'test_table', // Add table property to match real Drizzle columns
     // Add the proper config structure expected by Drizzle
     _: {
@@ -181,14 +180,14 @@ const createMockColumn = (
         dataType === 'string'
           ? 'string'
           : dataType === 'number'
-            ? 'number'
-            : 'boolean',
+          ? 'number'
+          : 'boolean',
       columnType:
         dataType === 'string'
           ? 'PgUUID'
           : dataType === 'number'
-            ? 'PgInteger'
-            : 'PgBoolean',
+          ? 'PgInteger'
+          : 'PgBoolean',
       notNull: false,
       hasDefault: false,
       primary: false,
@@ -203,7 +202,7 @@ const createMockSQL = (expression: string): SQL =>
   ({
     type: 'sql',
     expression,
-  }) as unknown as SQL;
+  } as unknown as SQL);
 
 // Mock query builder that tracks where calls
 type MockQuery = {
@@ -278,12 +277,10 @@ const mockSQLExpressions = {
 describe('buildDrizzleAttachmentOrEmailFilter', () => {
   let mockLogger: ILogger = undefined as unknown as ILogger;
   beforeEach(() => {
-    log(l => mockLogger = l);
+    log((l) => (mockLogger = l));
     // jest.clearAllMocks();
     //jest.clearAllMocks();
   });
-
-
 
   describe('Basic functionality', () => {
     it('should return undefined when email_id is not provided', () => {
@@ -326,7 +323,7 @@ describe('buildDrizzleAttachmentOrEmailFilter', () => {
 
       expect(eq).toHaveBeenCalledWith(
         mockColumns.documentId,
-        expect.any(Object),
+        expect.any(Object)
       );
       expect(result).toEqual({
         type: 'eq',
@@ -353,7 +350,7 @@ describe('buildDrizzleAttachmentOrEmailFilter', () => {
       expect(mockEmailToDocumentId).toHaveBeenCalledWith(emailId);
       expect(eq).toHaveBeenCalledWith(
         mockColumns.documentId,
-        expect.any(Object),
+        expect.any(Object)
       );
     });
   });
@@ -386,7 +383,7 @@ describe('buildDrizzleAttachmentOrEmailFilter', () => {
 
       expect(eq).toHaveBeenCalledWith(
         mockColumns.documentId,
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
@@ -438,7 +435,7 @@ describe('buildDrizzleAttachmentOrEmailFilter', () => {
 
         expect(eq).toHaveBeenCalledWith(
           mockColumns.documentId,
-          expect.any(Object),
+          expect.any(Object)
         );
       });
 
@@ -480,11 +477,10 @@ describe('buildDrizzleItemFilter', () => {
     mockColumns[name as keyof typeof mockColumns];
   let mockLogger: ILogger = undefined as unknown as ILogger;
   beforeEach(() => {
-    log(l => mockLogger = l);
+    log((l) => (mockLogger = l));
     // jest.clearAllMocks();
     //jest.clearAllMocks();
   });
-
 
   describe('Equality operators', () => {
     it('should handle equals operator', () => {
@@ -869,7 +865,7 @@ describe('buildDrizzleItemFilter', () => {
 
       expect(result).toBeUndefined();
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')",
+        "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')"
       );
     });
 
@@ -896,8 +892,6 @@ describe('buildDrizzleQueryFilter', () => {
     jest.clearAllMocks();
     mockQuery = createMockQuery();
   });
-
-
 
   describe('Basic functionality', () => {
     it('should return original query when no source provided', () => {
@@ -976,7 +970,7 @@ describe('buildDrizzleQueryFilter', () => {
           column: mockColumns.email,
           value: '%example.com%',
           queryChunks: ['ilike condition'],
-        },
+        }
       );
     });
 
@@ -1007,7 +1001,7 @@ describe('buildDrizzleQueryFilter', () => {
           column: mockColumns.email,
           value: '%example.com%',
           queryChunks: ['ilike condition'],
-        },
+        }
       );
     });
   });
@@ -1019,7 +1013,7 @@ describe('buildDrizzleQueryFilter', () => {
         encodeURIComponent(
           JSON.stringify({
             items: [{ field: 'name', operator: 'equals', value: 'John' }],
-          }),
+          })
         );
 
       buildDrizzleQueryFilter({
@@ -1037,7 +1031,7 @@ describe('buildDrizzleQueryFilter', () => {
       };
       const url = new URL(
         'https://example.com/api/data?filter=' +
-        encodeURIComponent(JSON.stringify(filterModel)),
+          encodeURIComponent(JSON.stringify(filterModel))
       );
 
       buildDrizzleQueryFilter({
@@ -1081,7 +1075,7 @@ describe('buildDrizzleQueryFilter', () => {
       };
       const request = new NextRequest(
         'https://example.com/api/data?filter=' +
-        encodeURIComponent(JSON.stringify(filterModel)),
+          encodeURIComponent(JSON.stringify(filterModel))
       );
 
       buildDrizzleQueryFilter({
@@ -1145,7 +1139,7 @@ describe('buildDrizzleQueryFilter', () => {
           conditions: expect.arrayContaining([
             expect.objectContaining({ column: mockColumns.name }),
           ]),
-        }),
+        })
       );
     });
   });
@@ -1199,7 +1193,7 @@ describe('buildDrizzleQueryFilter', () => {
   describe('Edge cases', () => {
     let mockLogger: ILogger = undefined as unknown as ILogger;
     beforeEach(() => {
-      log(l => mockLogger = l);
+      log((l) => (mockLogger = l));
     });
     it('should handle filters with unknown columns', () => {
       const filterModel: GridFilterModel = {
@@ -1228,7 +1222,7 @@ describe('buildDrizzleQueryFilter', () => {
         queryChunks: ['and condition'],
       });
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')",
+        "buildDrizzleItemFilter: Unknown column 'unknown_field' (mapped from 'unknown_field')"
       );
     });
 
@@ -1269,7 +1263,7 @@ describe('Integration tests', () => {
   let mockLogger: ILogger = undefined as unknown as ILogger;
 
   beforeEach(() => {
-    log(l => mockLogger = l);
+    log((l) => (mockLogger = l));
     mockQuery = createMockQuery();
   });
 
@@ -1330,7 +1324,7 @@ describe('Integration tests', () => {
         column: userTable.createdAt,
         value: '2023-01-01',
         queryChunks: ['gt condition'],
-      },
+      }
     );
   });
 
@@ -1380,7 +1374,7 @@ describe('Integration tests', () => {
         type: 'isNotNull',
         column: mockColumns.createdAt,
         queryChunks: ['isNotNull condition'],
-      },
+      }
     );
   });
 

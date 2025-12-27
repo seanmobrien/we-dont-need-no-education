@@ -5,11 +5,9 @@ import { AllFeatureFlagsDefault } from './known-feature-defaults';
 
 import { env } from '../env';
 import { LoggedError } from '@/lib/react-util';
-import type {
-  FeatureFlagValueType,
-} from './types';
+import type { FeatureFlagValueType } from './types';
 import { extractFlagValue } from './util';
-import { globalSingletonAsync } from '@compliance-theater/lib-typescript';
+import { globalSingletonAsync } from '@compliance-theater/typescript';
 
 // Client-bound Flagsmith instance used for client-side flag evaluation.
 export const flagsmithClient = async () => {
@@ -60,7 +58,7 @@ const identify = async ({
 export const getFeatureFlag = async <T extends KnownFeatureType>(
   flagKey: T,
   userId?: string,
-  defaultValue?: FeatureFlagValueType<typeof flagKey>,
+  defaultValue?: FeatureFlagValueType<typeof flagKey>
 ): Promise<FeatureFlagValueType<typeof flagKey> | null> => {
   try {
     const server = await identify({ userId });
@@ -76,7 +74,7 @@ export const getFeatureFlag = async <T extends KnownFeatureType>(
       await server.getFlags();
     }
     const hasFeature = server.hasFeature(flagKey, false);
-    console.log('context looks like', server.getContext())
+    console.log('context looks like', server.getContext());
     const featureValue = hasFeature ? server.getValue(flagKey) : null;
     return (
       extractFlagValue(flagKey, {
@@ -108,21 +106,18 @@ export const getAllFeatureFlags = async (userId?: string) => {
     if (!server.initialised) {
       await server.getFlags();
     }
-    return Object.entries(server.getAllFlags()).reduce(
-      (acc, [key, value]) => {
-        if (isKnownFeatureType(key)) {
-          // Call getValue to trigger analytics reporting
-          if (server.hasFeature(key)) {
-            const flagValue = extractFlagValue(key, value);
-            if (flagValue !== null) {
-              acc[key] = flagValue;
-            }
+    return Object.entries(server.getAllFlags()).reduce((acc, [key, value]) => {
+      if (isKnownFeatureType(key)) {
+        // Call getValue to trigger analytics reporting
+        if (server.hasFeature(key)) {
+          const flagValue = extractFlagValue(key, value);
+          if (flagValue !== null) {
+            acc[key] = flagValue;
           }
         }
-        return acc;
-      },
-      {} as Record<KnownFeatureType, FeatureFlagValueType<KnownFeatureType>>,
-    );
+      }
+      return acc;
+    }, {} as Record<KnownFeatureType, FeatureFlagValueType<KnownFeatureType>>);
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       source: 'Flagsmith',

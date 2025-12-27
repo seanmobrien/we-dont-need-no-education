@@ -20,7 +20,7 @@ import { getMem0ApiUrl } from '../pollyfills';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { ImpersonationService } from '@/lib/auth/impersonation';
 import { env } from '@/lib/site-util/env';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import {
   createInstrumentedSpan,
   reportEvent,
@@ -57,7 +57,6 @@ type PingResponse = {
   status?: 'ok' | 'error';
   message?: string;
 };
-
 
 export default class MemoryClient {
   apiKey?: string;
@@ -101,8 +100,8 @@ export default class MemoryClient {
     ) {
       log((l) =>
         l.silly(
-          'Warning: Both organizationName and projectName must be provided together when using either. This will be removed from version 1.0.40. Note that organizationName/projectName are being deprecated in favor of organizationId/projectId.',
-        ),
+          'Warning: Both organizationName and projectName must be provided together when using either. This will be removed from version 1.0.40. Note that organizationName/projectName are being deprecated in favor of organizationId/projectId.'
+        )
       );
     }
   }
@@ -134,7 +133,7 @@ export default class MemoryClient {
 
       if (!this.telemetryId) {
         this.telemetryId = generateHash(
-          this.apiKey || this.bearerToken || 'anonymous',
+          this.apiKey || this.bearerToken || 'anonymous'
         );
       }
 
@@ -198,14 +197,16 @@ export default class MemoryClient {
           this.bearerToken = impersonatedToken;
           log((l) =>
             l.verbose(
-              `mem0 client is impersonating ${thisImpersonate.getUserContext().userId}.`,
-            ),
+              `mem0 client is impersonating ${
+                thisImpersonate.getUserContext().userId
+              }.`
+            )
           );
         } else {
           log((l) =>
             l.warn(
-              `mem0 client unable to impersonate user, request will be made anonymously or via API key`,
-            ),
+              `mem0 client unable to impersonate user, request will be made anonymously or via API key`
+            )
           );
         }
       } catch (error) {
@@ -227,7 +228,6 @@ export default class MemoryClient {
   }
 
   #resolveForwardedApiUrl(url: string): [boolean, URL] {
-
     const joinPathSegments = (base: string, target: string): string => {
       const trimmedTarget = target.replace(/^\/+/, '');
       if (!base) {
@@ -271,10 +271,7 @@ export default class MemoryClient {
       : joinPathSegments(sanitizedBase, relativePath);
 
     const requestUrl = isSwaggerDocs
-      ? new URL(
-        relativePath.replace(/^\/+/, ''),
-        env('MEM0_API_HOST'),
-      )
+      ? new URL(relativePath.replace(/^\/+/, ''), env('MEM0_API_HOST'))
       : new URL(effectivePath, this.host);
 
     return [isSwaggerDocs, requestUrl];
@@ -282,7 +279,7 @@ export default class MemoryClient {
 
   async _fetchWithErrorHandling<TResult = any>(
     url: string,
-    options: any,
+    options: any
   ): Promise<TResult> {
     // Initialize client if not already done
     if (!this.#clientInitialized && !url.includes('ping')) {
@@ -323,7 +320,7 @@ export default class MemoryClient {
       text: JSON.stringify(messages),
       metadata: options.metadata,
       infer: options.infer ?? true,
-      app: 'OpenMemory'
+      app: 'OpenMemory',
     };
   }
 
@@ -335,13 +332,13 @@ export default class MemoryClient {
         .map(([k, v]) => [
           k,
           typeof v === 'object' ? JSON.stringify(v) : String(v),
-        ]),
+        ])
     );
   }
 
   async _instrument<TResult>(
     name: string,
-    fn: (span: Span) => Promise<TResult>,
+    fn: (span: Span) => Promise<TResult>
   ): Promise<TResult> {
     const spanName = `mem0Client::${name}`;
     const attributes = {
@@ -382,7 +379,7 @@ export default class MemoryClient {
           'ping/',
           {
             method: 'GET',
-          },
+          }
         );
 
         if (!response || typeof response !== 'object') {
@@ -424,7 +421,7 @@ export default class MemoryClient {
             source: 'mem0Client::ping',
           });
           throw new APIError(
-            `Failed to ping server: ${error.message || 'Unknown error'}`,
+            `Failed to ping server: ${error.message || 'Unknown error'}`
           );
         }
       }
@@ -433,7 +430,7 @@ export default class MemoryClient {
 
   async add(
     messages: Array<Message>,
-    options: MemoryOptions = {},
+    options: MemoryOptions = {}
   ): Promise<Array<ProcessedMemoryAdd>> {
     return this._instrument('add', async (span) => {
       this._validateOrgProject();
@@ -485,7 +482,7 @@ export default class MemoryClient {
           method: 'PUT',
           headers: this.headers,
           body: JSON.stringify(payload),
-        },
+        }
       );
       return response;
     });
@@ -611,7 +608,7 @@ export default class MemoryClient {
         {
           method: 'DELETE',
           headers: this.headers,
-        },
+        }
       );
       return response;
     });
@@ -624,7 +621,7 @@ export default class MemoryClient {
         `memories/${memoryId}/history/`,
         {
           headers: this.headers,
-        },
+        }
       );
       return response;
     });
@@ -653,7 +650,7 @@ export default class MemoryClient {
         `entities/?${params}`,
         {
           headers: this.headers,
-        },
+        }
       );
       return response;
     });
@@ -675,7 +672,7 @@ export default class MemoryClient {
       {
         method: 'DELETE',
         headers: this.headers,
-      },
+      }
     );
     return response;
   }
@@ -686,7 +683,7 @@ export default class MemoryClient {
       agent_id?: string;
       app_id?: string;
       run_id?: string;
-    } = {},
+    } = {}
   ): Promise<{ message: string }> {
     return this._instrument('deleteUsers', async (span) => {
       this._validateOrgProject();
@@ -728,14 +725,16 @@ export default class MemoryClient {
       for (const entity of to_delete) {
         try {
           await this._fetchWithErrorHandling(
-            `v2/entities/${entity.type}/${entity.name}/${qp.size > 0 ? `?${qp.toString()}` : ''}`,
+            `v2/entities/${entity.type}/${entity.name}/${
+              qp.size > 0 ? `?${qp.toString()}` : ''
+            }`,
             {
               method: 'DELETE',
-            },
+            }
           );
         } catch (error: any) {
           throw new APIError(
-            `Failed to delete ${entity.type} ${entity.name}: ${error.message}`,
+            `Failed to delete ${entity.type} ${entity.name}: ${error.message}`
           );
         }
       }
@@ -799,7 +798,7 @@ export default class MemoryClient {
 
       if (!(this.organizationId && this.projectId)) {
         throw new Error(
-          'organizationId and projectId must be set to access instructions or categories',
+          'organizationId and projectId must be set to access instructions or categories'
         );
       }
 
@@ -807,24 +806,26 @@ export default class MemoryClient {
       fields?.forEach((field) => params.append('fields', field));
 
       const response = await this._fetchWithErrorHandling(
-        `orgs/organizations/${this.organizationId}/projects/${this.projectId}/?${params.toString()}`,
+        `orgs/organizations/${this.organizationId}/projects/${
+          this.projectId
+        }/?${params.toString()}`,
         {
           headers: this.headers,
-        },
+        }
       );
       return response;
     });
   }
 
   async updateProject(
-    prompts: PromptUpdatePayload,
+    prompts: PromptUpdatePayload
   ): Promise<Record<string, any>> {
     return this._instrument('updateProject', async (span) => {
       this._validateOrgProject();
       this._captureEvent('update_project', []);
       if (!(this.organizationId && this.projectId)) {
         throw new Error(
-          'organizationId and projectId must be set to update instructions or categories',
+          'organizationId and projectId must be set to update instructions or categories'
         );
       }
 
@@ -834,7 +835,7 @@ export default class MemoryClient {
           method: 'PATCH',
           headers: this.headers,
           body: JSON.stringify(prompts),
-        },
+        }
       );
       return response;
     });
@@ -849,7 +850,7 @@ export default class MemoryClient {
         `webhooks/projects/${project_id}/`,
         {
           headers: this.headers,
-        },
+        }
       );
       return response;
     });
@@ -864,7 +865,7 @@ export default class MemoryClient {
           method: 'POST',
           headers: this.headers,
           body: JSON.stringify(webhook),
-        },
+        }
       );
       return response;
     });
@@ -883,7 +884,7 @@ export default class MemoryClient {
             ...webhook,
             projectId: project_id,
           }),
-        },
+        }
       );
       return response;
     });
@@ -900,7 +901,7 @@ export default class MemoryClient {
         {
           method: 'DELETE',
           headers: this.headers,
-        },
+        }
       );
       return response;
     });

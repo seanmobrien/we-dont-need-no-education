@@ -16,7 +16,7 @@
  */
 
 import { Account, Awaitable, Profile, User } from '@auth/core/types';
-import { log, logEvent } from '@compliance-theater/lib-logger';
+import { log, logEvent } from '@compliance-theater/logger';
 import { CredentialInput } from '@auth/core/providers';
 import { AdapterUser } from '@auth/core/adapters';
 import { LoggedError } from '../react-util';
@@ -54,13 +54,14 @@ const updateAccount = ({
     exp?: number;
     id_token?: string;
   };
-}) => updateAccountTokens(userId!, {
-  accessToken: account.access_token,
-  refreshToken: account.refresh_token,
-  idToken: account.id_token,
-  expiresAt: account.expires_at,
-  exp: account.exp,
-});
+}) =>
+  updateAccountTokens(userId!, {
+    accessToken: account.access_token,
+    refreshToken: account.refresh_token,
+    idToken: account.id_token,
+    expiresAt: account.expires_at,
+    exp: account.exp,
+  });
 
 export const signIn: (params: {
   user: User | AdapterUser;
@@ -89,50 +90,47 @@ export const signIn: (params: {
     account,
   }:
     | {
-      user: User | AdapterUser;
-      account?: Account | Record<string, unknown> | null;
-    }
-    | undefined = {
-      user: undefined as unknown as User | AdapterUser,
-      account: undefined,
-    },
-): Promise<boolean | string> => {
-    if (account && account.providerAccountId) {
-      switch (account.provider) {
-        case 'keycloak':
-          // Persist tokens for Keycloak. We intentionally do not
-          // await here to avoid delaying the sign-in flow; failures will
-          // propagate if required but we don't want telemetry to block UX.
-          updateAccount({ user, account }).catch((err) => {
-            LoggedError.isTurtlesAllTheWayDownBaby(err, {
-              source: 'auth.signIn.updateAccount',
-              log: true,
-              data: {
-                user,
-                account,
-              },
-            });
-            return Promise.resolve(false);
-          });
-          break;
-        default:
-          log((l) =>
-            l.warn(`Unhandled provider ${account?.provider} in signIn`),
-          );
-          break;
+        user: User | AdapterUser;
+        account?: Account | Record<string, unknown> | null;
       }
+    | undefined = {
+    user: undefined as unknown as User | AdapterUser,
+    account: undefined,
+  }
+): Promise<boolean | string> => {
+  if (account && account.providerAccountId) {
+    switch (account.provider) {
+      case 'keycloak':
+        // Persist tokens for Keycloak. We intentionally do not
+        // await here to avoid delaying the sign-in flow; failures will
+        // propagate if required but we don't want telemetry to block UX.
+        updateAccount({ user, account }).catch((err) => {
+          LoggedError.isTurtlesAllTheWayDownBaby(err, {
+            source: 'auth.signIn.updateAccount',
+            log: true,
+            data: {
+              user,
+              account,
+            },
+          });
+          return Promise.resolve(false);
+        });
+        break;
+      default:
+        log((l) => l.warn(`Unhandled provider ${account?.provider} in signIn`));
+        break;
     }
+  }
 
-    // Log local telemetry and report a lightweight event to AppInsights when available
-    logEvent('signIn', {
-      provider: account?.provider?.toString() ?? 'unknown',
-      ...(
-        account && account.providerAccountId ? {
-          providerAccountId: String(account.providerAccountId)
-            .slice(0, 8),
+  // Log local telemetry and report a lightweight event to AppInsights when available
+  logEvent('signIn', {
+    provider: account?.provider?.toString() ?? 'unknown',
+    ...(account && account.providerAccountId
+      ? {
+          providerAccountId: String(account.providerAccountId).slice(0, 8),
           userId: user.id,
-        } : {}
-      ),
-    });
-    return true;
-  };
+        }
+      : {}),
+  });
+  return true;
+};

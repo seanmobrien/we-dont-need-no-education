@@ -1,6 +1,6 @@
 import EventEmitter from '@protobufjs/eventemitter';
 import type { IncomingMessage, OutgoingMessage, ServerResponse } from 'http';
-import { log } from '@compliance-theater/lib-logger/core';
+import { log } from '@compliance-theater/logger/core';
 import {
   isNextApiRequest,
   isNextRequest,
@@ -16,17 +16,17 @@ type HeadersLikeNextRequestOrResponse = {
 
 export const getHeaderValue = (
   req: LikeNextRequest | LikeNextResponse | OutgoingMessage,
-  headerName: string,
+  headerName: string
 ): typeof req extends infer TActual
   ? TActual extends HeadersLikeNextRequestOrResponse
     ? string | string[] | undefined
     : TActual extends OutgoingMessage
-      ? string | string[] | undefined | number
-      : TActual extends IncomingMessage
-        ? string | null
-        : TActual extends ServerResponse
-          ? string | string[] | undefined
-          : never
+    ? string | string[] | undefined | number
+    : TActual extends IncomingMessage
+    ? string | null
+    : TActual extends ServerResponse
+    ? string | string[] | undefined
+    : never
   : never => {
   if (isNextApiRequest(req)) {
     return req.headers[headerName.toLowerCase()];
@@ -64,25 +64,27 @@ export const getHeaderValue = (
 // When we're running on node we can process.emitWarning
 const warnDeprecatedOnNode = (
   message: string,
-  options: { code: string; type: string },
+  options: { code: string; type: string }
 ) => process.emitWarning(message, options);
 
 // When we're running on edge or browser we can log to console
 const warnDeprecatedOffNode = (
   message: string,
-  options: { code: string; type: string },
+  options: { code: string; type: string }
 ) =>
   log((l) =>
     l.warn(
-      `${options.type ?? 'DeprecationWarning'} ${options.code ?? 'DEP000'}: ${message}`,
-    ),
+      `${options.type ?? 'DeprecationWarning'} ${
+        options.code ?? 'DEP000'
+      }: ${message}`
+    )
   );
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const deprecate = <T extends (...args: any[]) => any>(
   fn: T,
   message = `The ${fn.name} function is deprecated.`,
-  code = 'DEP000',
+  code = 'DEP000'
 ) => {
   const stack = getStackTrace({ skip: 2, myCodeOnly: true });
   const formattedMessage = `${message}\n${stack}`;

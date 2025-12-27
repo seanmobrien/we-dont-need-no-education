@@ -1,5 +1,5 @@
 import { getRetryErrorInfo } from '@/lib/ai/chat';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { temporarilyDisableModel } from '@/lib/ai/aiModelFactory';
 import { rateLimitMetrics } from './metrics';
 import type { ModelClassification, ModelFailoverConfig } from './types';
@@ -12,13 +12,13 @@ import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 
 export function disableModelFromRateLimit(
   modelKey: string,
-  retryAfter: number,
+  retryAfter: number
 ): void {
   const disableDurationMs = Math.max(retryAfter * 1000, 60000); // At least 1 minute
   log((l) =>
     l.warn(
-      `Rate limit detected for ${modelKey}, disabling for ${disableDurationMs}ms`,
-    ),
+      `Rate limit detected for ${modelKey}, disabling for ${disableDurationMs}ms`
+    )
   );
   temporarilyDisableModel(modelKey, disableDurationMs);
   rateLimitMetrics.recordError('rate_limit_disable', modelKey);
@@ -30,13 +30,13 @@ export async function handleRateLimitError(
   modelClassification: ModelClassification,
   failoverConfig: ModelFailoverConfig | undefined,
   params: Record<string, unknown>,
-  errorContext: 'generate' | 'stream' | 'stream_setup' = 'generate',
+  errorContext: 'generate' | 'stream' | 'stream_setup' = 'generate'
 ): Promise<never> {
   const rateLimitErrorInfo = getRetryErrorInfo(error);
 
   if (rateLimitErrorInfo?.isRetry && rateLimitErrorInfo.retryAfter) {
     log((l) =>
-      l.warn(`Rate limit detected: ${rateLimitErrorInfo.retryAfter}s`),
+      l.warn(`Rate limit detected: ${rateLimitErrorInfo.retryAfter}s`)
     );
 
     // Disable the current model
@@ -46,7 +46,7 @@ export async function handleRateLimitError(
     if (failoverConfig) {
       const fallbackModelKey = getAvailableModel(
         failoverConfig.fallbackProvider,
-        modelClassification,
+        modelClassification
       );
       if (fallbackModelKey && fallbackModelKey !== currentModelKey) {
         log((l) => l.info(`Attempting fallback to: ${fallbackModelKey}`));
@@ -60,8 +60,8 @@ export async function handleRateLimitError(
       errorContext === 'generate'
         ? 'rate_limit_enqueue'
         : errorContext === 'stream'
-          ? 'stream_rate_limit'
-          : 'stream_rate_limit_enqueue';
+        ? 'stream_rate_limit'
+        : 'stream_rate_limit_enqueue';
 
     const requestId = await enqueueRequestForRetry(
       modelClassification,
@@ -74,7 +74,7 @@ export async function handleRateLimitError(
             ?.backoffice ?? {}),
         },
       },
-      errorType,
+      errorType
     );
 
     // Create context-specific error message
@@ -91,8 +91,8 @@ export async function handleRateLimitError(
     errorContext === 'generate'
       ? 'other_error'
       : errorContext === 'stream'
-        ? 'stream_rate_limit'
-        : 'stream_other_error';
+      ? 'stream_rate_limit'
+      : 'stream_other_error';
 
   rateLimitMetrics.recordError(errorType, modelClassification);
   throw error;

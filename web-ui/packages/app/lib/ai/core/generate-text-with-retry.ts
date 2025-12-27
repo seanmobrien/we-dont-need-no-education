@@ -1,10 +1,14 @@
 import { isRateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 import { generateText, type ToolSet } from 'ai';
 import { rateLimitQueueManager } from '../middleware/key-rate-limiter/queue-manager';
-import { FirstParameter } from '@compliance-theater/lib-typescript/_types';
+import { FirstParameter } from '@compliance-theater/typescript/_types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
-export const generateTextWithRetry = async <TOOLS extends ToolSet = ToolSet, OUTPUT = never, OUTPUT_PARTIAL = never>({
+export const generateTextWithRetry = async <
+  TOOLS extends ToolSet = ToolSet,
+  OUTPUT = never,
+  OUTPUT_PARTIAL = never
+>({
   maxRetries = 5,
   retryTimeout,
   ...props
@@ -19,7 +23,9 @@ export const generateTextWithRetry = async <TOOLS extends ToolSet = ToolSet, OUT
       if (retryId) {
         const response = await rateLimitQueueManager.getResponse(retryId);
         if (response?.response) {
-          return response.response as ReturnType<typeof generateText<TOOLS, OUTPUT, OUTPUT_PARTIAL>>;
+          return response.response as ReturnType<
+            typeof generateText<TOOLS, OUTPUT, OUTPUT_PARTIAL>
+          >;
         } else {
           tries++;
           if (tries >= maxRetries) {
@@ -43,8 +49,8 @@ export const generateTextWithRetry = async <TOOLS extends ToolSet = ToolSet, OUT
       await new Promise((resolve) =>
         setTimeout(
           resolve,
-          Math.max(20 * 1000, normalError.retryAfter.valueOf() - Date.now()),
-        ),
+          Math.max(20 * 1000, normalError.retryAfter.valueOf() - Date.now())
+        )
       );
     }
   }

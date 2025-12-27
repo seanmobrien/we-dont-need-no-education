@@ -1,10 +1,13 @@
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type { Todo, TodoList } from '../types';
 import type { TodoStorageStrategy, StorageStrategyConfig } from './types';
-import { globalRequiredSingleton, SingletonProvider } from '@compliance-theater/lib-typescript';
+import {
+  globalRequiredSingleton,
+  SingletonProvider,
+} from '@compliance-theater/typescript';
 
 const GLOBAL_INSTANCE: symbol = Symbol.for(
-  '@noeducation/ai/InMemoryStorageStrategy',
+  '@noeducation/ai/InMemoryStorageStrategy'
 );
 
 /**
@@ -21,16 +24,16 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
   static get Instance(): InMemoryStorageStrategy {
     return globalRequiredSingleton(
       GLOBAL_INSTANCE,
-      () => new InMemoryStorageStrategy(),
+      () => new InMemoryStorageStrategy()
     );
   }
   static resetInstance(): void {
     SingletonProvider.Instance.delete(GLOBAL_INSTANCE);
   }
 
-  constructor({ }: StorageStrategyConfig = {}) {
+  constructor({}: StorageStrategyConfig = {}) {
     log((l) =>
-      l.warn('InMemoryStorageStrategy initialized with empty storage.'),
+      l.warn('InMemoryStorageStrategy initialized with empty storage.')
     );
   }
 
@@ -66,7 +69,7 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
 
   async getTodoList(
     listId: string,
-    options?: { completed?: boolean },
+    options?: { completed?: boolean }
   ): Promise<TodoList | undefined> {
     const list = this.todoLists.get(listId);
     if (!list) {
@@ -75,7 +78,7 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
     // Filter todos by completion status if requested
     if (options?.completed !== undefined) {
       const filteredTodos = list.todos.filter(
-        (todo) => todo.completed === options.completed,
+        (todo) => todo.completed === options.completed
       );
       return { ...list, todos: filteredTodos };
     }
@@ -88,7 +91,7 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
   }): Promise<TodoList[]> {
     const lists = Array.from(this.todoLists.values())
       .filter((list) =>
-        options?.prefix ? list.id.startsWith(options.prefix) : true,
+        options?.prefix ? list.id.startsWith(options.prefix) : true
       )
       .map((list) => ({ ...list }));
 
@@ -96,7 +99,7 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
       return lists.map((list) => ({
         ...list,
         todos: list.todos.filter(
-          (todo) => todo.completed === options.completed,
+          (todo) => todo.completed === options.completed
         ),
       }));
     }
@@ -121,7 +124,7 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
 
   async upsertTodo(
     todo: Todo,
-    { list: listFromProps }: { list: TodoList | string },
+    { list: listFromProps }: { list: TodoList | string }
   ): Promise<Todo> {
     let list: TodoList | undefined;
     if (typeof listFromProps === 'string') {
@@ -133,8 +136,12 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
     if (!list) {
       log((l) =>
         l.warn(
-          `Adding todo ${todo.id} to non-existent list ${(typeof listFromProps === 'string' ? listFromProps : listFromProps.id) ?? '[none]'}.`,
-        ),
+          `Adding todo ${todo.id} to non-existent list ${
+            (typeof listFromProps === 'string'
+              ? listFromProps
+              : listFromProps.id) ?? '[none]'
+          }.`
+        )
       );
       return todo;
     }
@@ -165,7 +172,7 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
       throw new Error('Prefix is required to get todos.');
     }
     let todos = Array.from(this.todos.values()).filter((todo) =>
-      todo.id.startsWith(prefix),
+      todo.id.startsWith(prefix)
     );
     if (completed !== undefined) {
       todos = todos.filter((todo) => todo.completed === completed);
@@ -196,7 +203,7 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
 
   async getCount({ prefix }: { prefix: string }): Promise<number> {
     return Array.from(this.todos.keys()).filter((todoId) =>
-      todoId.startsWith(prefix),
+      todoId.startsWith(prefix)
     ).length;
   }
 

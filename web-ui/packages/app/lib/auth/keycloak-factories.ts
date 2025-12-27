@@ -1,4 +1,4 @@
-import { SingletonProvider } from '@compliance-theater/lib-typescript';
+import { SingletonProvider } from '@compliance-theater/typescript';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 export interface RequestArgs {
@@ -66,17 +66,17 @@ export type KeycloakAdminClient = {
 };
 
 export const keycloakAdminClientFactory = async (
-  config: ConnectionConfig,
+  config: ConnectionConfig
 ): Promise<KeycloakAdminClient> => {
   const keycloakAdminClientModule =
     await SingletonProvider.Instance.getRequired(
       Symbol.for(
-        '@no-education/dynamic-modules/@keycloak/keycloak-admin-client',
+        '@no-education/dynamic-modules/@keycloak/keycloak-admin-client'
       ),
       async () => {
         const mod = await import('@keycloak/keycloak-admin-client');
         return mod;
-      },
+      }
     );
   return new keycloakAdminClientModule.default(config);
 };
