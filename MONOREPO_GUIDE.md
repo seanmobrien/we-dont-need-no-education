@@ -84,7 +84,7 @@ Each package extraction follows this pattern:
 **Critical Infrastructure** (extract first, few dependencies):
 
 - `web-ui/packages/lib-logger` ← `web-ui/packages/app/lib/logger`
-- `web-ui/packages/lib-env` ← `web-ui/packages/app/lib/site-util/env` 
+- `web-ui/packages/lib-env` ← `web-ui/packages/app/lib/site-util/env` NOTE: This functionality will need to be reworked slightly to become more generic
 - `web-ui/packages/lib-typescript` ← `web-ui/packages/app/lib/typescript`
 - `web-ui/packages/lib-send-api-request` ← `web-ui/packages/app/lib/send-api-request`
 
@@ -290,6 +290,7 @@ yarn test:e2e
 - [x] Phase 1: Infrastructure Setup
 - [ ] Phase 2: Extract Core Libraries
   - [ ] lib-logger
+  - [ ] lib-env
   - [ ] lib-typescript
   - [ ] lib-send-api-request
   - [ ] lib-database (merge drizzle + drizzle-db + neondb)
