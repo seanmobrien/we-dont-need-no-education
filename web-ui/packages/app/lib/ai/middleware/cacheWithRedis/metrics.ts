@@ -1,4 +1,4 @@
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util';
 import { appMeters } from '@/lib/site-util/metrics';
 
@@ -24,7 +24,7 @@ const jailPromotionsCounter = appMeters.createCounter(
     description:
       'Total number of jail promotions (problematic responses cached)',
     unit: '1',
-  },
+  }
 );
 
 const cacheErrorsCounter = appMeters.createCounter('ai_cache_errors_total', {
@@ -42,7 +42,7 @@ const avgResponseSizeGauge = appMeters.createUpDownCounter(
   {
     description: 'Average response size in characters',
     unit: 'By',
-  },
+  }
 );
 
 const responseSizeHistogram = appMeters.createHistogram(
@@ -50,7 +50,7 @@ const responseSizeHistogram = appMeters.createHistogram(
   {
     description: 'Distribution of AI response sizes',
     unit: 'By',
-  },
+  }
 );
 
 const cacheOperationDuration = appMeters.createHistogram(
@@ -58,7 +58,7 @@ const cacheOperationDuration = appMeters.createHistogram(
   {
     description: 'Duration of cache operations in milliseconds',
     unit: 'ms',
-  },
+  }
 );
 
 export interface CacheMetrics {
@@ -417,10 +417,12 @@ export function setupConsoleMetrics(): () => void {
     if (metrics.totalResponses % 10 === 0 && metrics.totalResponses > 0) {
       log((l) =>
         l.info(
-          `📊 Cache Metrics - Hit Rate: ${(metrics.hitRate * 100).toFixed(1)}%, ` +
-          `Hits: ${metrics.cacheHits}, Misses: ${metrics.cacheMisses}, ` +
-          `Jail Promotions: ${metrics.jailPromotions}, Errors: ${metrics.cacheErrors}`,
-        ),
+          `📊 Cache Metrics - Hit Rate: ${(metrics.hitRate * 100).toFixed(
+            1
+          )}%, ` +
+            `Hits: ${metrics.cacheHits}, Misses: ${metrics.cacheMisses}, ` +
+            `Jail Promotions: ${metrics.jailPromotions}, Errors: ${metrics.cacheErrors}`
+        )
       );
     }
   });

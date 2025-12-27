@@ -1,86 +1,86 @@
-import { WeakReferenceStorage } from '@compliance-theater/lib-typescript/singleton-provider/storage-weak-refs';
-import { SingletonStorageKey } from '@compliance-theater/lib-typescript/singleton-provider/types';
+import { WeakReferenceStorage } from "@compliance-theater/typescript/singleton-provider/storage-weak-refs";
+import { SingletonStorageKey } from "@compliance-theater/typescript/singleton-provider/types";
 
-describe('WeakReferenceStorage', () => {
+describe("WeakReferenceStorage", () => {
   let storage: WeakReferenceStorage;
   let testKey: SingletonStorageKey;
 
   beforeEach(() => {
     storage = new WeakReferenceStorage();
-    testKey = Symbol.for('test-key');
+    testKey = Symbol.for("test-key");
   });
 
   afterEach(() => {
     storage.clear();
   });
 
-  describe('set and get operations', () => {
-    it('should store and retrieve object values', () => {
-      const testValue = { foo: 'bar' };
+  describe("set and get operations", () => {
+    it("should store and retrieve object values", () => {
+      const testValue = { foo: "bar" };
       storage.set(testKey, testValue);
 
       const retrieved = storage.get(testKey);
       expect(retrieved).toBe(testValue);
     });
 
-    it('should store and retrieve complex objects', () => {
+    it("should store and retrieve complex objects", () => {
       const complexObject = {
-        nested: { deeply: { value: 'test' } },
+        nested: { deeply: { value: "test" } },
         array: [1, 2, 3],
-        fn: () => 'function',
+        fn: () => "function",
       };
 
       storage.set(testKey, complexObject);
       const retrieved = storage.get(testKey);
 
       expect(retrieved).toBe(complexObject);
-      expect((retrieved as any).nested.deeply.value).toBe('test');
+      expect((retrieved as any).nested.deeply.value).toBe("test");
       expect((retrieved as any).array).toEqual([1, 2, 3]);
     });
 
-    it('should return undefined for non-existent keys', () => {
-      const nonExistentKey = Symbol.for('non-existent');
+    it("should return undefined for non-existent keys", () => {
+      const nonExistentKey = Symbol.for("non-existent");
       expect(storage.get(nonExistentKey)).toBeUndefined();
     });
 
-    it('should throw TypeError for primitive string values', () => {
+    it("should throw TypeError for primitive string values", () => {
       expect(() => {
-        storage.set(testKey, 'string-value' as any);
+        storage.set(testKey, "string-value" as any);
       }).toThrow(TypeError);
       expect(() => {
-        storage.set(testKey, 'string-value' as any);
-      }).toThrow('Weak reference singletons require a non-null object value.');
+        storage.set(testKey, "string-value" as any);
+      }).toThrow("Weak reference singletons require a non-null object value.");
     });
 
-    it('should throw TypeError for primitive number values', () => {
+    it("should throw TypeError for primitive number values", () => {
       expect(() => {
         storage.set(testKey, 42 as any);
       }).toThrow(TypeError);
     });
 
-    it('should throw TypeError for primitive boolean values', () => {
+    it("should throw TypeError for primitive boolean values", () => {
       expect(() => {
         storage.set(testKey, true as any);
       }).toThrow(TypeError);
     });
 
-    it('should throw TypeError for null values', () => {
+    it("should throw TypeError for null values", () => {
       expect(() => {
         storage.set(testKey, null as any);
       }).toThrow(TypeError);
       expect(() => {
         storage.set(testKey, null as any);
-      }).toThrow('Weak reference singletons require a non-null object value.');
+      }).toThrow("Weak reference singletons require a non-null object value.");
     });
 
-    it('should throw TypeError for undefined values', () => {
+    it("should throw TypeError for undefined values", () => {
       expect(() => {
         storage.set(testKey, undefined as any);
       }).toThrow(TypeError);
     });
 
-    it('should accept array values', () => {
-      const arrayValue = [1, 2, 3, { nested: 'object' }];
+    it("should accept array values", () => {
+      const arrayValue = [1, 2, 3, { nested: "object" }];
       storage.set(testKey, arrayValue);
 
       const retrieved = storage.get(testKey);
@@ -88,19 +88,19 @@ describe('WeakReferenceStorage', () => {
       expect(Array.isArray(retrieved)).toBe(true);
     });
 
-    it('should reject function values', () => {
-      const functionValue = () => 'test';
+    it("should reject function values", () => {
+      const functionValue = () => "test";
       expect(() => {
         storage.set(testKey, functionValue as any);
       }).toThrow(TypeError);
       expect(() => {
         storage.set(testKey, functionValue as any);
-      }).toThrow('Weak reference singletons require a non-null object value.');
+      }).toThrow("Weak reference singletons require a non-null object value.");
     });
 
-    it('should accept class instances', () => {
+    it("should accept class instances", () => {
       class TestClass {
-        value = 'test';
+        value = "test";
         method() {
           return this.value;
         }
@@ -111,30 +111,30 @@ describe('WeakReferenceStorage', () => {
 
       const retrieved = storage.get(testKey) as TestClass;
       expect(retrieved).toBe(instance);
-      expect(retrieved.value).toBe('test');
-      expect(retrieved.method()).toBe('test');
+      expect(retrieved.value).toBe("test");
+      expect(retrieved.method()).toBe("test");
     });
   });
 
-  describe('has operation', () => {
-    it('should return true for existing keys with valid references', () => {
-      const testValue = { foo: 'bar' };
+  describe("has operation", () => {
+    it("should return true for existing keys with valid references", () => {
+      const testValue = { foo: "bar" };
       storage.set(testKey, testValue);
 
       expect(storage.has(testKey)).toBe(true);
     });
 
-    it('should return false for non-existent keys', () => {
-      const nonExistentKey = Symbol.for('non-existent');
+    it("should return false for non-existent keys", () => {
+      const nonExistentKey = Symbol.for("non-existent");
       expect(storage.has(nonExistentKey)).toBe(false);
     });
 
-    it('should clean up and return false if reference was garbage collected', () => {
+    it("should clean up and return false if reference was garbage collected", () => {
       // This test simulates what would happen if a WeakRef is dereferenced
       // In practice, we can't force GC in tests, so we'll test the cleanup logic
 
       // Set a value
-      const testValue = { data: 'test' };
+      const testValue = { data: "test" };
       storage.set(testKey, testValue);
       expect(storage.has(testKey)).toBe(true);
 
@@ -142,8 +142,8 @@ describe('WeakReferenceStorage', () => {
       // when checked via has()
     });
 
-    it('should remove the key from internal map if reference is gone', () => {
-      const testValue = { data: 'test' };
+    it("should remove the key from internal map if reference is gone", () => {
+      const testValue = { data: "test" };
       storage.set(testKey, testValue);
 
       // We can't force GC, but we can verify the cleanup behavior
@@ -152,9 +152,9 @@ describe('WeakReferenceStorage', () => {
     });
   });
 
-  describe('delete operation', () => {
-    it('should delete an existing key', () => {
-      const testValue = { foo: 'bar' };
+  describe("delete operation", () => {
+    it("should delete an existing key", () => {
+      const testValue = { foo: "bar" };
       storage.set(testKey, testValue);
       expect(storage.has(testKey)).toBe(true);
 
@@ -163,15 +163,15 @@ describe('WeakReferenceStorage', () => {
       expect(storage.get(testKey)).toBeUndefined();
     });
 
-    it('should handle deleting non-existent keys gracefully', () => {
-      const nonExistentKey = Symbol.for('non-existent');
+    it("should handle deleting non-existent keys gracefully", () => {
+      const nonExistentKey = Symbol.for("non-existent");
       expect(() => storage.delete(nonExistentKey)).not.toThrow();
       expect(storage.has(nonExistentKey)).toBe(false);
     });
 
-    it('should allow re-setting a deleted key', () => {
-      const firstValue = { value: 'first' };
-      const secondValue = { value: 'second' };
+    it("should allow re-setting a deleted key", () => {
+      const firstValue = { value: "first" };
+      const secondValue = { value: "second" };
 
       storage.set(testKey, firstValue);
       storage.delete(testKey);
@@ -181,15 +181,15 @@ describe('WeakReferenceStorage', () => {
     });
   });
 
-  describe('clear operation', () => {
-    it('should clear all stored values', () => {
-      const key1 = Symbol.for('key1');
-      const key2 = Symbol.for('key2');
-      const key3 = Symbol.for('key3');
+  describe("clear operation", () => {
+    it("should clear all stored values", () => {
+      const key1 = Symbol.for("key1");
+      const key2 = Symbol.for("key2");
+      const key3 = Symbol.for("key3");
 
-      storage.set(key1, { value: 'value1' });
-      storage.set(key2, { value: 'value2' });
-      storage.set(key3, { value: 'value3' });
+      storage.set(key1, { value: "value1" });
+      storage.set(key2, { value: "value2" });
+      storage.set(key3, { value: "value3" });
 
       storage.clear();
 
@@ -198,13 +198,13 @@ describe('WeakReferenceStorage', () => {
       expect(storage.has(key3)).toBe(false);
     });
 
-    it('should handle clearing empty storage', () => {
+    it("should handle clearing empty storage", () => {
       expect(() => storage.clear()).not.toThrow();
     });
 
-    it('should allow setting values after clear', () => {
-      const beforeClear = { value: 'before' };
-      const afterClear = { value: 'after' };
+    it("should allow setting values after clear", () => {
+      const beforeClear = { value: "before" };
+      const afterClear = { value: "after" };
 
       storage.set(testKey, beforeClear);
       storage.clear();
@@ -214,19 +214,19 @@ describe('WeakReferenceStorage', () => {
     });
   });
 
-  describe('weak reference behavior', () => {
-    it('should use WeakRef internally to allow garbage collection', () => {
+  describe("weak reference behavior", () => {
+    it("should use WeakRef internally to allow garbage collection", () => {
       // We can't force GC in tests, but we can verify the storage accepts objects
       // and that the weak reference mechanism is in place
-      const obj = { test: 'value' };
+      const obj = { test: "value" };
       storage.set(testKey, obj);
 
       // The value should be retrievable while we hold a reference
       expect(storage.get(testKey)).toBe(obj);
     });
 
-    it('should automatically clean up undefined references on get', () => {
-      const testValue = { data: 'test' };
+    it("should automatically clean up undefined references on get", () => {
+      const testValue = { data: "test" };
       storage.set(testKey, testValue);
 
       // get() should clean up if reference is undefined
@@ -234,8 +234,8 @@ describe('WeakReferenceStorage', () => {
       expect(retrieved).toBe(testValue);
     });
 
-    it('should automatically clean up undefined references on has', () => {
-      const testValue = { data: 'test' };
+    it("should automatically clean up undefined references on has", () => {
+      const testValue = { data: "test" };
       storage.set(testKey, testValue);
 
       // has() should clean up if reference is undefined
@@ -243,9 +243,9 @@ describe('WeakReferenceStorage', () => {
       expect(exists).toBe(true);
     });
 
-    it('should maintain separate weak references for different keys', () => {
-      const key1 = Symbol.for('weak-key-1');
-      const key2 = Symbol.for('weak-key-2');
+    it("should maintain separate weak references for different keys", () => {
+      const key1 = Symbol.for("weak-key-1");
+      const key2 = Symbol.for("weak-key-2");
       const value1 = { id: 1 };
       const value2 = { id: 2 };
 
@@ -257,11 +257,11 @@ describe('WeakReferenceStorage', () => {
     });
   });
 
-  describe('multiple instances isolation', () => {
-    it('should maintain separate storage per instance', () => {
+  describe("multiple instances isolation", () => {
+    it("should maintain separate storage per instance", () => {
       const storage1 = new WeakReferenceStorage();
       const storage2 = new WeakReferenceStorage();
-      const key = Symbol.for('shared-key');
+      const key = Symbol.for("shared-key");
       const value1 = { instance: 1 };
       const value2 = { instance: 2 };
 
@@ -273,26 +273,26 @@ describe('WeakReferenceStorage', () => {
       expect(storage2.get(key)).toBe(value2);
     });
 
-    it('should not affect other instances when clearing', () => {
+    it("should not affect other instances when clearing", () => {
       const storage1 = new WeakReferenceStorage();
       const storage2 = new WeakReferenceStorage();
-      const key1 = Symbol.for('instance1-key');
-      const key2 = Symbol.for('instance2-key');
+      const key1 = Symbol.for("instance1-key");
+      const key2 = Symbol.for("instance2-key");
 
-      storage1.set(key1, { data: 'storage1' });
-      storage2.set(key2, { data: 'storage2' });
+      storage1.set(key1, { data: "storage1" });
+      storage2.set(key2, { data: "storage2" });
 
       storage1.clear();
 
       expect(storage1.has(key1)).toBe(false);
       expect(storage2.has(key2)).toBe(true);
-      expect(storage2.get(key2)).toEqual({ data: 'storage2' });
+      expect(storage2.get(key2)).toEqual({ data: "storage2" });
     });
   });
 
-  describe('edge cases and error handling', () => {
-    it('should handle rapid set/get/delete cycles', () => {
-      const key = Symbol.for('rapid-cycle-key');
+  describe("edge cases and error handling", () => {
+    it("should handle rapid set/get/delete cycles", () => {
+      const key = Symbol.for("rapid-cycle-key");
 
       for (let i = 0; i < 100; i++) {
         const value = { iteration: i };
@@ -305,7 +305,7 @@ describe('WeakReferenceStorage', () => {
       }
     });
 
-    it('should handle many keys efficiently', () => {
+    it("should handle many keys efficiently", () => {
       const keys: SingletonStorageKey[] = [];
       const values: object[] = [];
       const count = 1000;
@@ -329,107 +329,107 @@ describe('WeakReferenceStorage', () => {
       }
     });
 
-    it('should handle Symbol.for with special characters', () => {
-      const specialKey = Symbol.for('key-with-special-chars-!@#$%^&*()');
+    it("should handle Symbol.for with special characters", () => {
+      const specialKey = Symbol.for("key-with-special-chars-!@#$%^&*()");
       const value = { special: true };
       storage.set(specialKey, value);
       expect(storage.get(specialKey)).toBe(value);
     });
 
-    it('should handle empty string symbol keys', () => {
-      const emptyKey = Symbol.for('');
+    it("should handle empty string symbol keys", () => {
+      const emptyKey = Symbol.for("");
       const value = { empty: true };
       storage.set(emptyKey, value);
       expect(storage.get(emptyKey)).toBe(value);
     });
 
-    it('should handle local symbols', () => {
-      const localKey = Symbol('local-symbol');
+    it("should handle local symbols", () => {
+      const localKey = Symbol("local-symbol");
       const value = { local: true };
       storage.set(localKey, value);
       expect(storage.get(localKey)).toBe(value);
     });
   });
 
-  describe('object type validation', () => {
-    it('should accept plain objects', () => {
+  describe("object type validation", () => {
+    it("should accept plain objects", () => {
       expect(() => {
-        storage.set(testKey, { plain: 'object' });
+        storage.set(testKey, { plain: "object" });
       }).not.toThrow();
     });
 
-    it('should accept arrays', () => {
+    it("should accept arrays", () => {
       expect(() => {
         storage.set(testKey, [1, 2, 3]);
       }).not.toThrow();
     });
 
-    it('should reject functions', () => {
+    it("should reject functions", () => {
       expect(() => {
         storage.set(testKey, (() => {}) as any);
       }).toThrow(TypeError);
     });
 
-    it('should accept Date objects', () => {
+    it("should accept Date objects", () => {
       expect(() => {
         storage.set(testKey, new Date());
       }).not.toThrow();
     });
 
-    it('should accept RegExp objects', () => {
+    it("should accept RegExp objects", () => {
       expect(() => {
         storage.set(testKey, /test/);
       }).not.toThrow();
     });
 
-    it('should accept Map objects', () => {
+    it("should accept Map objects", () => {
       expect(() => {
         storage.set(testKey, new Map());
       }).not.toThrow();
     });
 
-    it('should accept Set objects', () => {
+    it("should accept Set objects", () => {
       expect(() => {
         storage.set(testKey, new Set());
       }).not.toThrow();
     });
 
-    it('should reject Symbol primitives', () => {
+    it("should reject Symbol primitives", () => {
       expect(() => {
-        storage.set(testKey, Symbol('test') as any);
+        storage.set(testKey, Symbol("test") as any);
       }).toThrow(TypeError);
     });
 
-    it('should reject BigInt primitives', () => {
+    it("should reject BigInt primitives", () => {
       expect(() => {
         storage.set(testKey, BigInt(42) as any);
       }).toThrow(TypeError);
     });
   });
 
-  describe('type safety and interface compliance', () => {
-    it('should implement SingletonStorageStrategy interface', () => {
+  describe("type safety and interface compliance", () => {
+    it("should implement SingletonStorageStrategy interface", () => {
       // Verify all required methods exist
-      expect(typeof storage.get).toBe('function');
-      expect(typeof storage.set).toBe('function');
-      expect(typeof storage.has).toBe('function');
-      expect(typeof storage.delete).toBe('function');
-      expect(typeof storage.clear).toBe('function');
+      expect(typeof storage.get).toBe("function");
+      expect(typeof storage.set).toBe("function");
+      expect(typeof storage.has).toBe("function");
+      expect(typeof storage.delete).toBe("function");
+      expect(typeof storage.clear).toBe("function");
     });
 
-    it('should handle unknown type returns correctly', () => {
-      const value = { type: 'test' };
+    it("should handle unknown type returns correctly", () => {
+      const value = { type: "test" };
       storage.set(testKey, value);
 
       const retrieved = storage.get(testKey);
       // Value should be unknown type, requiring type assertion or checking
       expect(retrieved).toBeDefined();
-      expect((retrieved as any).type).toBe('test');
+      expect((retrieved as any).type).toBe("test");
     });
   });
 
-  describe('memory management characteristics', () => {
-    it('should store references that can be retrieved while held', () => {
+  describe("memory management characteristics", () => {
+    it("should store references that can be retrieved while held", () => {
       const objects = Array.from({ length: 10 }, (_, i) => ({ id: i }));
       const keys = objects.map((_, i) => Symbol.for(`mem-key-${i}`));
 
@@ -442,7 +442,7 @@ describe('WeakReferenceStorage', () => {
       });
     });
 
-    it('should handle overwriting weak references', () => {
+    it("should handle overwriting weak references", () => {
       const firstValue = { first: true };
       const secondValue = { second: true };
 

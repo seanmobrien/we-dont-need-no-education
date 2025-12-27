@@ -1,4 +1,4 @@
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { ErrorReport, ErrorReporterConfig, ErrorReportResult } from '../types';
 import { ReportActionStrategy } from './report-action-strategy';
 
@@ -17,8 +17,10 @@ export class StandardLoggingStrategy implements ReportActionStrategy {
           fingerprint: report.fingerprint,
           tags: report.tags,
           context: report.context,
-          [Symbol.toStringTag]: `${source}: (${report.fingerprint ?? 'no fingerprint'}) ${report.error.message}`,
-        }),
+          [Symbol.toStringTag]: `${source}: (${
+            report.fingerprint ?? 'no fingerprint'
+          }) ${report.error.message}`,
+        })
       );
       return { logged: true };
     }

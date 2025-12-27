@@ -1,4 +1,3 @@
- 
 /**
  * @fileoverview Unit tests for chat history stream handlers
  *
@@ -17,7 +16,7 @@ import {
 import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
 import { chatMessages, tokenUsage } from '@/drizzle/schema';
 import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
 import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
@@ -516,7 +515,7 @@ describe('Stream Handlers', () => {
       expect(result.turnId).toBe(1);
       expect(result.messageId).toBe(42);
       expect(result.generatedText).toBe(
-        'Initial text{"type":"unknown-chunk-type","data":"some data"}',
+        'Initial text{"type":"unknown-chunk-type","data":"some data"}'
       );
       expect(result.success).toBe(true);
     });
@@ -548,11 +547,11 @@ describe('Stream Handlers', () => {
       // First chunk: text-delta
       let result = await processStreamChunk(
         { type: 'text-start', id: 'test-id' },
-        context,
+        context
       );
       result = await processStreamChunk(
         { type: 'text-delta', id: 'test-id', delta: 'Hello' },
-        context,
+        context
       );
       await processStreamChunk({ type: 'text-end', id: 'test-id' }, context);
       context.generatedText = result.generatedText;
@@ -575,7 +574,7 @@ describe('Stream Handlers', () => {
       await processStreamChunk({ type: 'text-start', id: 'test-id' }, context);
       result = await processStreamChunk(
         { type: 'text-delta', id: 'test-id', delta: ' world' },
-        context,
+        context
       );
       await processStreamChunk({ type: 'text-end', id: 'test-id' }, context);
       context.generatedText = result.generatedText;
@@ -617,14 +616,14 @@ describe('Stream Handlers', () => {
       for (const chunk of chunks) {
         const result = (await processStreamChunk(
           chunk,
-          currentContext,
+          currentContext
         )) as unknown as StreamHandlerContext;
         currentContext = ensureCreateResult(result);
       }
 
       // Assert
       expect(currentContext.generatedText).toBe(
-        'Initial textFirst Second Third',
+        'Initial textFirst Second Third'
       );
     });
   });

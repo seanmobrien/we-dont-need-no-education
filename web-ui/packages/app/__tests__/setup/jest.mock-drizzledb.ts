@@ -15,7 +15,7 @@ import {
   isKeyOf,
   isPromise,
   SingletonProvider,
-} from '@compliance-theater/lib-typescript';
+} from '@compliance-theater/typescript';
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
 const actualSchema = jest.requireActual('/lib/drizzle-db/schema');
@@ -59,7 +59,7 @@ export class MockQueryBuilder implements IMockQueryBuilder {
   __setRecords<T extends Record<string, unknown> = Record<string, unknown>>(
     v: T[] | MockDbQueryCallback,
     rows?: T[] | null,
-    state?: unknown,
+    state?: unknown
   ) {
     // If we are "not" or an array then we are updating the default return value
     if (!v || Array.isArray(v)) {
@@ -125,11 +125,11 @@ const mockDbFactory = (): DatabaseMockType => {
     __setRecords: <T extends Record<string, unknown> = Record<string, unknown>>(
       v: T[] | MockDbQueryCallback,
       rows?: T[] | null,
-      state?: unknown,
+      state?: unknown
     ) => {
       rowMap.set((qb as unknown as { [CurrentTable]: unknown })[CurrentTable], [
         ...(rowMap.get(
-          (qb as unknown as { [CurrentTable]: unknown })[CurrentTable],
+          (qb as unknown as { [CurrentTable]: unknown })[CurrentTable]
         ) ?? []),
         ...(rows ?? []),
       ]);
@@ -222,21 +222,21 @@ const mockDbFactory = (): DatabaseMockType => {
                   } catch {
                     resolve({ hit: cb, result: undefined });
                   }
-                }),
-            ),
+                })
+            )
           );
           const match = entries.find((check) => !!check.result);
           if (match) {
             if (!match.record) {
               throw new Error(
-                'Matcher hit but no record found - something is fishy with our fancy db mock',
+                'Matcher hit but no record found - something is fishy with our fancy db mock'
               );
             }
             // Can be either a boolean, a rowset, or a queryresult object
             if (typeof match.result === 'boolean') {
               if (!match.result) {
                 throw new Error(
-                  'Matcher hit but result is not true - something is fishy with our fancy db mock',
+                  'Matcher hit but result is not true - something is fishy with our fancy db mock'
                 );
               }
               // Boolean means we return the value provided when the record was set
@@ -256,7 +256,7 @@ const mockDbFactory = (): DatabaseMockType => {
               return match.result?.rows ?? match.record.rows;
             }
             throw new Error(
-              'Matcher hit but result is not a boolean or an object - investigate fancy db mock.',
+              'Matcher hit but result is not a boolean or an object - investigate fancy db mock.'
             );
           }
           // If we made it this far then we use the default result
@@ -266,18 +266,18 @@ const mockDbFactory = (): DatabaseMockType => {
         qb[key] = jest.fn(
           ['insert', 'values'].includes(String(key))
             ? () => insertBuilder as any
-            : () => db as any,
+            : () => db as any
         ) as jest.Mock;
       } else {
         (qb[key] as jest.Mock).mockImplementation(
           ['insert', 'values'].includes(String(key))
             ? () => insertBuilder as any
-            : () => db as any,
+            : () => db as any
         );
       }
     });
     Array.from(
-      Object.keys(actualSchema.schema) as (keyof typeof actualSchema.schema)[],
+      Object.keys(actualSchema.schema) as (keyof typeof actualSchema.schema)[]
     ).forEach((sc) => {
       if (!actualSchema.schema[sc]?.modelName) {
         return;
@@ -299,7 +299,7 @@ const mockDbFactory = (): DatabaseMockType => {
       }
       (tbl.findMany as jest.Mock).mockImplementation(() => Promise.resolve([]));
       (tbl.findFirst as jest.Mock).mockImplementation(() =>
-        Promise.resolve(null),
+        Promise.resolve(null)
       );
     });
   };
@@ -307,7 +307,7 @@ const mockDbFactory = (): DatabaseMockType => {
   qb.__setRecords = <T extends Record<string, unknown>>(
     v: T[] | MockDbQueryCallback,
     rows?: T[] | null,
-    state?: unknown,
+    state?: unknown
   ) => {
     // If we are "not" or an array then we are updating the default return value
     if (!v || Array.isArray(v)) {
@@ -412,9 +412,7 @@ export const makeMockDb = (): DatabaseType => {
   return mockDb;
 };
 
-
 type TransactionFn<TRet = any> = (tx: DatabaseType) => Promise<TRet> | TRet;
-
 
 const makeRecursiveMock = jest
   .fn()
@@ -454,7 +452,7 @@ jest.mock('@/lib/drizzle-db/connection', () => {
         const db = makeMockDb();
         const normalCallback = cb ?? ((x) => x);
         return Promise.resolve(normalCallback(db));
-      },
+      }
     ),
     schema: actualSchema.schema ? actualSchema.schema : actualSchema,
   };
@@ -474,7 +472,7 @@ jest.mock('@/lib/drizzle-db', () => {
         const db = makeMockDb();
         const normalCallback = cb ?? ((x) => x);
         return Promise.resolve(normalCallback(db));
-      },
+      }
     ),
     schema: actualSchema.schema ? actualSchema.schema : actualSchema,
     sql: jest.fn(() => makeRecursiveMock()),
@@ -487,7 +485,6 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import { drizDb } from '@/lib/drizzle-db';
 import { sql } from 'drizzle-orm';
 import { withJestTestExtensions } from '../jest.test-extensions';
-
 
 beforeAll(() => {
   withJestTestExtensions().makeMockDb = makeMockDb as () => DatabaseMockType;

@@ -7,7 +7,7 @@
 import type { JWT } from '@auth/core/jwt';
 import type { Session } from '@auth/core/types';
 import { setupSession } from './shared';
-import { log } from '@compliance-theater/lib-logger/core';
+import { log } from '@compliance-theater/logger/core';
 import { decodeToken } from '../utilities';
 import { getAccountTokens } from '../server/get-account-tokens';
 import { createHash } from 'crypto';
@@ -40,7 +40,7 @@ export const session = async ({
       if (expiresAt && Date.now() > expiresAt * 1000 && dbTokens.refreshToken) {
         // Token expired, refresh it!
         log((l) =>
-          l.info('Session callback: Token expired in DB, refreshing...'),
+          l.info('Session callback: Token expired in DB, refreshing...')
         );
         const { refreshAccessToken } = await import('../refresh-token');
         const { updateAccountTokens } = await import(

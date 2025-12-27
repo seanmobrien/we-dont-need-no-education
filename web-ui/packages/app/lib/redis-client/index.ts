@@ -1,15 +1,15 @@
-import { SingletonProvider } from '@compliance-theater/lib-typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
 import { createClient, RedisClientType } from 'redis';
 import { env } from '@/lib/site-util/env';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import AfterManager from '../site-util/after';
 
 export type { RedisClientType } from 'redis';
 
 const REGISTRY_KEY = Symbol.for('@noeducation/redis:RedisClient');
 const SUBSCRIBABLE_REGISTRY_KEY = Symbol.for(
-  '@noeducation/redis:RedisClient/subscribable',
+  '@noeducation/redis:RedisClient/subscribable'
 );
 
 export type RedisClientOptions = {
@@ -17,7 +17,7 @@ export type RedisClientOptions = {
 };
 
 const normalizeOptions = (
-  options: RedisClientOptions | undefined,
+  options: RedisClientOptions | undefined
 ): Required<RedisClientOptions> => ({
   subscribeMode: false,
   ...(options ?? {}),
@@ -25,12 +25,12 @@ const normalizeOptions = (
 
 const subsribeModelDisabled = () => {
   throw new TypeError(
-    'Redis client must be created with { subscribeMode: true } to use subscribe features.',
+    'Redis client must be created with { subscribeMode: true } to use subscribe features.'
   );
 };
 
 export const getRedisClient = async (
-  options?: RedisClientOptions,
+  options?: RedisClientOptions
 ): Promise<RedisClientType> => {
   const { subscribeMode } = normalizeOptions(options);
   const registryKey = subscribeMode ? SUBSCRIBABLE_REGISTRY_KEY : REGISTRY_KEY;
@@ -47,8 +47,8 @@ export const getRedisClient = async (
         if (!promiseQuit) {
           log((l) =>
             l.error(
-              'Null client but no quit promise found - no wait context available.',
-            ),
+              'Null client but no quit promise found - no wait context available.'
+            )
           );
           return 'No client to quit.';
         }
@@ -88,7 +88,7 @@ export const getRedisClient = async (
         return;
       }
       await (client.quit as (fromInternal?: symbol) => Promise<string>)(
-        REGISTRY_KEY,
+        REGISTRY_KEY
       );
     };
     AfterManager.processExit(onQuit);

@@ -1,4 +1,4 @@
-import { SingletonProvider } from '@compliance-theater/lib-typescript';
+import { SingletonProvider } from '@compliance-theater/typescript';
 import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
 
 const NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID = 'test-environment-id';
@@ -120,7 +120,7 @@ export const mockFlagsmithInstanceFactory = ({
           if (context?.identity) thisIdentifier = context.identity;
           if (context?.traits) thisTraits = context.traits;
           return Promise.resolve();
-        },
+        }
       );
     },
     get updateContext() {
@@ -163,7 +163,7 @@ export const mockFlagsmithInstanceFactory = ({
           if (state?.initialized !== undefined)
             thisInitialized = state.initialized;
           if (state?.loadingState) thisLoadingState = state.loadingState;
-        },
+        }
       );
     },
 
@@ -313,18 +313,18 @@ jest.mock('@/lib/site-util/feature-flags', () => {
     createAutoRefreshFeatureFlag: jest.fn(
       (options: AutoRefreshFeatureFlagOptions) => {
         return Promise.resolve(createAutoRefreshFlagImpl(options));
-      },
+      }
     ),
     createAutoRefreshFeatureFlagSync: jest.fn(
       (options: AutoRefreshFeatureFlagOptions) => {
         return createAutoRefreshFlagImpl(options);
-      },
+      }
     ),
   };
 });
 jest.mock('@/lib/site-util/feature-flags/feature-flag-with-refresh', () => {
   const originalModule = jest.requireActual(
-    '@/lib/site-util/feature-flags/feature-flag-with-refresh',
+    '@/lib/site-util/feature-flags/feature-flag-with-refresh'
   );
   return {
     __esModule: true,
@@ -332,12 +332,12 @@ jest.mock('@/lib/site-util/feature-flags/feature-flag-with-refresh', () => {
     createAutoRefreshFeatureFlag: jest.fn(
       (options: AutoRefreshFeatureFlagOptions) => {
         return Promise.resolve(createAutoRefreshFlagImpl(options));
-      },
+      }
     ),
     createAutoRefreshFeatureFlagSync: jest.fn(
       (options: AutoRefreshFeatureFlagOptions) => {
         return createAutoRefreshFlagImpl(options);
-      },
+      }
     ),
     wellKnownFlag: jest.fn(originalModule.wellKnownFlag),
     wellKnownFlagSync: jest.fn(originalModule.wellKnownFlagSync),
@@ -360,7 +360,7 @@ import { en } from 'zod/v4/locales';
 
 afterEach(() => {
   const CACHE_ENABLED_FLAG_KEY = Symbol.for(
-    '@noeducation/mcp/cache/tool-cache-enabled-flag',
+    '@noeducation/mcp/cache/tool-cache-enabled-flag'
   );
   SingletonProvider.Instance.delete(CACHE_ENABLED_FLAG_KEY);
 });

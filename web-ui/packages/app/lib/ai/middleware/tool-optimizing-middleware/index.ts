@@ -9,7 +9,7 @@ import type {
 import { LoggedError } from '@/lib/react-util';
 import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
 import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { appMeters, hashUserId } from '@/lib/site-util/metrics';
 
 const toolOptimizationCounter = appMeters.createCounter(
@@ -17,7 +17,7 @@ const toolOptimizationCounter = appMeters.createCounter(
   {
     description: 'Total number of tool optimization middleware operations',
     unit: '1',
-  },
+  }
 );
 
 const toolScanningCounter = appMeters.createCounter('ai_tool_scanning_total', {
@@ -30,7 +30,7 @@ const toolOptimizationDurationHistogram = appMeters.createHistogram(
   {
     description: 'Duration of tool optimization middleware operations',
     unit: 'ms',
-  },
+  }
 );
 
 const newToolsFoundHistogram = appMeters.createHistogram(
@@ -38,7 +38,7 @@ const newToolsFoundHistogram = appMeters.createHistogram(
   {
     description: 'Distribution of new tools found during scanning',
     unit: '1',
-  },
+  }
 );
 
 const messageOptimizationHistogram = appMeters.createHistogram(
@@ -46,7 +46,7 @@ const messageOptimizationHistogram = appMeters.createHistogram(
   {
     description: 'Total number of times message optimization was enabled',
     unit: '1',
-  },
+  }
 );
 
 export interface ToolOptimizingMiddlewareConfig {
@@ -83,7 +83,7 @@ interface OptimizationResult {
 }
 
 export function createToolOptimizingMiddleware(
-  config: ToolOptimizingMiddlewareConfig = {},
+  config: ToolOptimizingMiddlewareConfig = {}
 ): ExtendedToolOptimizingMiddleware {
   const {
     userId,
@@ -95,12 +95,12 @@ export function createToolOptimizingMiddleware(
   // Track whether enableToolScanning was explicitly provided (vs relying on default)
   const enableToolScanningExplicit = Object.hasOwn(
     config,
-    'enableToolScanning',
+    'enableToolScanning'
   );
 
   async function performToolScanning(
     params: ExtendedCallOptions,
-    attributes: Record<string, string>,
+    attributes: Record<string, string>
   ): Promise<number> {
     if (!enableToolScanning || !params.tools) return 0;
     let newToolsCount = 0;
@@ -110,10 +110,7 @@ export function createToolOptimizingMiddleware(
         params.tools as unknown as
           | LanguageModelV2FunctionTool
           | LanguageModelV2ProviderDefinedTool
-          | (
-              | LanguageModelV2FunctionTool
-              | LanguageModelV2ProviderDefinedTool
-            )[],
+          | (LanguageModelV2FunctionTool | LanguageModelV2ProviderDefinedTool)[]
       );
       toolScanningCounter.add(1, {
         ...attributes,
@@ -126,7 +123,7 @@ export function createToolOptimizingMiddleware(
           totalToolsProvided: Array.isArray(params.tools)
             ? params.tools.length
             : 1,
-        }),
+        })
       );
     } catch (error) {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -152,7 +149,7 @@ export function createToolOptimizingMiddleware(
   } {
     const hasLegacyMessagesKey = Object.prototype.hasOwnProperty.call(
       params as unknown as Record<string, unknown>,
-      'messages',
+      'messages'
     );
     const legacyMessagesValue = (params as { messages?: unknown }).messages;
     const legacyArray = Array.isArray(legacyMessagesValue)
@@ -174,7 +171,7 @@ export function createToolOptimizingMiddleware(
   function buildOptimizerInput(
     legacyArray: unknown[] | undefined,
     promptArray: unknown[] | undefined,
-    params: ExtendedCallOptions,
+    params: ExtendedCallOptions
   ): unknown[] | undefined {
     if (!legacyArray && Array.isArray(promptArray) && promptArray.length > 0) {
       const first = promptArray[0] as Record<string, unknown> | undefined;
@@ -195,7 +192,7 @@ export function createToolOptimizingMiddleware(
     params: ExtendedCallOptions,
     model: LanguageModelV2 | string | undefined,
     opType: 'generate' | 'stream',
-    attributes: Record<string, string>,
+    attributes: Record<string, string>
   ): Promise<OptimizationResult> {
     const {
       hasLegacyMessagesKey,
@@ -227,7 +224,7 @@ export function createToolOptimizingMiddleware(
     const optimizerInput = buildOptimizerInput(
       legacyArray,
       promptArray,
-      params,
+      params
     ) as unknown[];
 
     const shouldOptimize =
@@ -267,7 +264,7 @@ export function createToolOptimizingMiddleware(
         optimizerInput as unknown as never,
         modelId,
         userId,
-        chatHistoryId,
+        chatHistoryId
       );
       optimizedMessages = optimizedCandidate as unknown[];
       messageOptimizationHistogram.record(1, {
@@ -283,7 +280,7 @@ export function createToolOptimizingMiddleware(
           modelId,
           userId,
           chatHistoryId,
-        }),
+        })
       );
     } catch (error) {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -337,13 +334,13 @@ export function createToolOptimizingMiddleware(
             enableMessageOptimization,
             userId,
             chatHistoryId,
-          }),
+          })
         );
 
         // Step 1
         const newToolsCount = await performToolScanning(
           params as ExtendedCallOptions,
-          attributes,
+          attributes
         );
 
         // Step 2
@@ -351,7 +348,7 @@ export function createToolOptimizingMiddleware(
           params as ExtendedCallOptions,
           model,
           opType,
-          attributes,
+          attributes
         );
 
         if (!optimization.earlyReturn) {
@@ -368,7 +365,7 @@ export function createToolOptimizingMiddleware(
               optimizationApplied: optimization.applied,
               originalMessageCount: optimization.sourceCount,
               optimizedMessageCount: optimization.optimizedCount,
-            }),
+            })
           );
         }
 

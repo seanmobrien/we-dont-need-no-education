@@ -1,5 +1,5 @@
 {
-  "name": "@compliance-theater/lib-typescript",
+  "name": "@compliance-theater/typescript",
   "version": "0.1.0",
   "private": true,
   "description": "TypeScript utility types and helpers",
@@ -24,7 +24,7 @@
     "lint": "echo 'Linting lib-typescript...'"
   },
   "dependencies": {
-    "@compliance-theater/lib-logger": "0.1.0"
+    "@compliance-theater/logger": "0.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

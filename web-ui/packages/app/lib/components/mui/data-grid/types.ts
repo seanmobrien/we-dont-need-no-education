@@ -1,7 +1,7 @@
 import { PaginationStats } from '@/data-models/_types';
 import type { LikeNextRequest } from '@/lib/nextjs-util/types';
 export type { LikeNextRequest };
-import type { FirstParameter } from '@compliance-theater/lib-typescript';
+import type { FirstParameter } from '@compliance-theater/typescript';
 import type {
   GridDataSource,
   GridSortModel,
@@ -151,7 +151,7 @@ export type GetRequestCacheRecordProps = RequestCacheRecordProps & {
    * A function to fetch record data given a URL, returning a Promise of a Response.
    */
   getRecordData?: (
-    props: Omit<GetRequestCacheRecordProps, 'getRecordData' | 'setIsLoading'>,
+    props: Omit<GetRequestCacheRecordProps, 'getRecordData' | 'setIsLoading'>
   ) => Promise<Response>;
   /**
    * A state setter to indicate loading status.

@@ -17,7 +17,7 @@
  * - compactDocProp, compactCta, compactCtaResponse: Normalize and compact document property/CTA trees.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { KeyOf } from '@compliance-theater/lib-typescript/_types';
+import { KeyOf } from '@compliance-theater/typescript/_types';
 import {
   DocumentSchemaType,
   RelatedDocumentSchemaType,
@@ -57,7 +57,7 @@ interface MergeToMapOverloads {
  */
 const compactNulls = <TModel extends object>(
   target: TModel,
-  recurse: boolean = false,
+  recurse: boolean = false
 ): TModel => {
   Object.keys(target).forEach((key: unknown) => {
     const k = key as KeyOf<TModel>;
@@ -111,7 +111,7 @@ const getRelatedDocumentId = (doc: RelatedDocumentSchemaType): number => {
   // If we made it here there was no id to pull
   throw new TypeError(
     'Failed to parse - unable to locate related document id',
-    { cause: { doc } },
+    { cause: { doc } }
   );
 };
 
@@ -135,7 +135,9 @@ const mergeToMap: MergeToMapOverloads = ({
   const currentDoc = map.get(idValue);
 
   // --- FIX: Always store description as an array if merging ---
-  const newDescription = `${doc.description ? doc.description : 'describes'} linked to ${referencedItem}`;
+  const newDescription = `${
+    doc.description ? doc.description : 'describes'
+  } linked to ${referencedItem}`;
   if (currentDoc) {
     if (Array.isArray(currentDoc.description)) {
       currentDoc.description.push(newDescription);
@@ -212,7 +214,7 @@ const mergeToMaps = ({
  * @returns The compacted document property object.
  */
 const compactDocPropBase = <
-  TRet extends BaseDocumentPropertySchemaType['doc'],
+  TRet extends BaseDocumentPropertySchemaType['doc']
 >({
   props,
   targetMap,
@@ -357,8 +359,8 @@ const compactDocProp = ({
     'documentType' in docProps && docProps.documentType
       ? String(docProps.documentType)
       : 'attachmentId' in docProps
-        ? 'attachmentId'
-        : 'email';
+      ? 'attachmentId'
+      : 'email';
   if ('doc' in docProps && docProps.doc) {
     if (typeof docProps.doc === 'object') {
       const unitId =
@@ -407,7 +409,7 @@ const compactDocProp = ({
  * @returns The compacted, deduplicated, and normalized document.
  */
 export const compactCaseFileDocument = (
-  document: DocumentSchemaType,
+  document: DocumentSchemaType
 ): DocumentSchemaType => {
   // Create a deep copy of the document to ensure original is not modified
   const target = JSON.parse(JSON.stringify(document)) as DocumentSchemaType;
@@ -465,7 +467,7 @@ export const compactCaseFileDocument = (
           targetMap: targetDocMap,
           sourceMap: sourceDocMap,
           unitId: target.unitId!,
-        })!,
+        })!
     )
     .filter(Boolean);
   // Stop duplicating attachment content

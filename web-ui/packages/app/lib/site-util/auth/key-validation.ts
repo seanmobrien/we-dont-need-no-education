@@ -1,5 +1,5 @@
-import { log } from '@compliance-theater/lib-logger';
-import { SingletonProvider } from '@compliance-theater/lib-typescript';
+import { log } from '@compliance-theater/logger';
+import { SingletonProvider } from '@compliance-theater/typescript';
 
 const KEY_VALIDATION_STORAGE_KEY = 'lastKeyValidation';
 
@@ -22,7 +22,7 @@ export interface KeySyncResult {
 export function isKeyValidationDue(): boolean {
   try {
     const lastValidationTime = SingletonProvider.Instance.get<number>(
-      KEY_VALIDATION_STORAGE_KEY,
+      KEY_VALIDATION_STORAGE_KEY
     );
     if (!lastValidationTime || isNaN(lastValidationTime)) {
       return true; // Never validated before
@@ -53,7 +53,7 @@ async function exportPublicKeyToBase64(publicKey: CryptoKey): Promise<string> {
 
 export async function validateUserKeys(
   serverPublicKeys: string[],
-  getUserPublicKey: () => Promise<CryptoKey | null>,
+  getUserPublicKey: () => Promise<CryptoKey | null>
 ): Promise<KeyValidationResult> {
   try {
     // Check if user has a local public key
@@ -73,7 +73,7 @@ export async function validateUserKeys(
 
     // Check if local key matches any server key
     const matchesServerKey = serverPublicKeys.some(
-      (serverKey) => serverKey === localPublicKeyBase64,
+      (serverKey) => serverKey === localPublicKeyBase64
     );
 
     if (matchesServerKey) {
@@ -97,7 +97,7 @@ export async function validateUserKeys(
       l.error('Key validation failed', {
         error,
         serverPublicKeys: serverPublicKeys.length,
-      }),
+      })
     );
     return {
       isValid: false,
@@ -120,7 +120,7 @@ export async function synchronizeKeys(
     publicKey,
   }: {
     publicKey: string;
-  }) => Promise<void>,
+  }) => Promise<void>
 ): Promise<KeySyncResult> {
   try {
     log((l) => l.info('Starting key synchronization'));
@@ -169,13 +169,13 @@ export async function performKeyValidationWorkflow(
     }: {
       publicKey: string;
     }) => Promise<void>;
-  },
+  }
 ): Promise<{ validated: boolean; synchronized: boolean; error?: string }> {
   try {
     // Validate current keys
     const validationResult = await validateUserKeys(
       serverPublicKeys,
-      keyManagerMethods.getPublicKey,
+      keyManagerMethods.getPublicKey
     );
 
     if (validationResult.isValid) {
@@ -201,7 +201,7 @@ export async function performKeyValidationWorkflow(
       const syncResult = await synchronizeKeys(
         keyManagerMethods.generateKeyPair,
         keyManagerMethods.exportPublicKeyForServer,
-        keyManagerMethods.uploadPublicKeyToServer,
+        keyManagerMethods.uploadPublicKeyToServer
       );
 
       if (syncResult.success) {

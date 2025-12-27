@@ -1,7 +1,7 @@
 import { BaseObjectRepository } from '../../../_baseObjectRepository';
 import { ObjectRepository } from '../../../_types';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter, newUuid } from '@compliance-theater/lib-typescript';
+import { FirstParameter, newUuid } from '@compliance-theater/typescript';
 import { ViolationDetails } from '@/data-models/api';
 import {
   EmailPropertyRepository,
@@ -10,7 +10,7 @@ import {
 import { TransformedFullQueryResults } from '@/lib/neondb';
 
 const mapRecordToObject = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ): ViolationDetails => {
   return {
     ...mapEmailPropertyRecordToObject(record),
@@ -42,12 +42,12 @@ export class ViolationDetailsRepository extends BaseObjectRepository<
   }
 
   validate<
-    TMethod extends keyof ObjectRepository<ViolationDetails, 'propertyId'>,
+    TMethod extends keyof ObjectRepository<ViolationDetails, 'propertyId'>
   >(
     method: TMethod,
     obj: FirstParameter<
       Pick<ObjectRepository<ViolationDetails, 'propertyId'>, TMethod>[TMethod]
-    >,
+    >
   ): void {
     const asModel = obj as ViolationDetails;
     switch (method) {

@@ -1,5 +1,5 @@
 import { schema } from '@/lib/drizzle-db';
-import { isKeyOf } from '@compliance-theater/lib-typescript';
+import { isKeyOf } from '@compliance-theater/typescript';
 import { toCamelCase } from 'drizzle-orm/casing';
 import { PgColumn, PgTable, TableConfig } from 'drizzle-orm/pg-core';
 
@@ -13,12 +13,12 @@ export type DrizzleColumnCallback<
   TTableConfig extends TableConfig = TableConfig,
   TOptions extends {
     columnName: keyof TSchema | Omit<string, keyof TSchema>;
-  } = { columnName: keyof TSchema | Omit<string, keyof TSchema> },
+  } = { columnName: keyof TSchema | Omit<string, keyof TSchema> }
 > = (options: TOptions) => PgColumn | undefined;
 
 export const getEmailColumn = <
   TSchema extends PgTable<TTableConfig>,
-  TTableConfig extends TableConfig = TableConfig,
+  TTableConfig extends TableConfig = TableConfig
 >({
   columnName,
   table,
@@ -55,20 +55,18 @@ export const getEmailColumn = <
       return isKeyOf('complianceChapter13Reasons', table)
         ? (table['complianceChapter13Reasons' as keyof TSchema] as PgColumn)
         : isKeyOf('compliance_chapter_13_reasons', table)
-          ? (table[
-              'compliance_chapter_13_reasons' as keyof TSchema
-            ] as PgColumn)
-          : isKeyOf('complianceChapter13Reasons', table)
-            ? (table['complianceChapter13Reasons' as keyof TSchema] as PgColumn)
-            : undefined;
+        ? (table['compliance_chapter_13_reasons' as keyof TSchema] as PgColumn)
+        : isKeyOf('complianceChapter13Reasons', table)
+        ? (table['complianceChapter13Reasons' as keyof TSchema] as PgColumn)
+        : undefined;
     case 'compliance_average_chapter_13':
       return isKeyOf('compliance_average_chapter_13', table)
         ? (table['compliance_average_chapter_13' as keyof TSchema] as PgColumn)
         : isKeyOf('compliance_chapter_13', table)
-          ? (table['compliance_chapter_13' as keyof TSchema] as PgColumn)
-          : isKeyOf('complianceAverageChapter13', table)
-            ? (table['complianceAverageChapter13' as keyof TSchema] as PgColumn)
-            : undefined;
+        ? (table['compliance_chapter_13' as keyof TSchema] as PgColumn)
+        : isKeyOf('complianceAverageChapter13', table)
+        ? (table['complianceAverageChapter13' as keyof TSchema] as PgColumn)
+        : undefined;
     default:
       // First try no normalization
       if (isKeyOf(columnName, table)) {

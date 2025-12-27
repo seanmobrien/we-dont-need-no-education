@@ -14,7 +14,7 @@ import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
 import { env } from '@/lib/site-util/env';
 import { auth } from '@/auth';
 import { type NextRequest, NextResponse } from 'next/server';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { isTruthy } from '@/lib/react-util/utility-methods';
 import {
@@ -37,7 +37,7 @@ import { streamingMessageResponse } from '@/lib/ai/chat/streamed-result';
  * @param toolProviders - The tool provider set to dispose
  */
 const safeDisposeToolProviders = async (
-  toolProviders: ToolProviderSet | undefined,
+  toolProviders: ToolProviderSet | undefined
 ): Promise<void> => {
   if (!toolProviders) return;
   toolProviders[Symbol.dispose]();
@@ -82,7 +82,7 @@ const toolProviderFactory = async ({
           req,
           chatHistoryId,
           memoryEnabled: !memoryDisabled,
-        }),
+        })
     );
   }
   return setupDefaultTools({
@@ -145,7 +145,7 @@ export const POST = (req: NextRequest) => {
       if (!Array.isArray(messages) || messages.length === 0) {
         return NextResponse.json(
           { error: 'Invalid messages format' },
-          { status: 400 },
+          { status: 400 }
         );
       }
       const chatHistoryId = id ?? `${threadId}:${generateChatId().id}`;
@@ -245,7 +245,7 @@ export const POST = (req: NextRequest) => {
                     retryAt,
                     chatHistoryId,
                     userId: session?.user?.id ?? -1,
-                  }),
+                  })
                 );
                 return;
               }
@@ -278,7 +278,7 @@ export const POST = (req: NextRequest) => {
                     retryAfter,
                     // event: evt,
                   },
-                }),
+                })
               );
             } catch (error) {
               LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -345,6 +345,6 @@ export const POST = (req: NextRequest) => {
         content: "I'm currently disabled for solution rebuild.",
       },
       errorCallback: () => safeDisposeToolProviders(toolProviders),
-    },
+    }
   )(req);
 };

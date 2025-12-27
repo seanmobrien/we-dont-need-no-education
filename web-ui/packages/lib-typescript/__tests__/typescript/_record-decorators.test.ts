@@ -18,21 +18,21 @@ import {
   setUuid,
   type RecordWithDirtyState,
   type RecordWithUuid,
-} from '@compliance-theater/lib-typescript/_record-decorators';
+} from "@compliance-theater/typescript/_record-decorators";
 
-describe('_record-decorators', () => {
-  describe('getDecoratorSymbols', () => {
-    it('should return dirty and uuid symbols', () => {
+describe("_record-decorators", () => {
+  describe("getDecoratorSymbols", () => {
+    it("should return dirty and uuid symbols", () => {
       const symbols = getDecoratorSymbols();
 
       expect(symbols).toBeDefined();
       expect(symbols.dirty).toBeDefined();
       expect(symbols.uuid).toBeDefined();
-      expect(typeof symbols.dirty).toBe('symbol');
-      expect(typeof symbols.uuid).toBe('symbol');
+      expect(typeof symbols.dirty).toBe("symbol");
+      expect(typeof symbols.uuid).toBe("symbol");
     });
 
-    it('should return the same symbols on multiple calls', () => {
+    it("should return the same symbols on multiple calls", () => {
       const symbols1 = getDecoratorSymbols();
       const symbols2 = getDecoratorSymbols();
 
@@ -41,16 +41,16 @@ describe('_record-decorators', () => {
     });
   });
 
-  describe('Dirty State Management', () => {
-    describe('isRecordWithDirtyState', () => {
-      it('should return true for records with dirty state symbol', () => {
+  describe("Dirty State Management", () => {
+    describe("isRecordWithDirtyState", () => {
+      it("should return true for records with dirty state symbol", () => {
         const symbols = getDecoratorSymbols();
         const record = { [symbols.dirty]: false };
 
         expect(isRecordWithDirtyState(record)).toBe(true);
       });
 
-      it('should return false when dirty is undefined (symbol not present means no dirty state)', () => {
+      it("should return false when dirty is undefined (symbol not present means no dirty state)", () => {
         const symbols = getDecoratorSymbols();
         const record = { [symbols.dirty]: undefined };
 
@@ -58,51 +58,51 @@ describe('_record-decorators', () => {
         expect(isRecordWithDirtyState(record)).toBe(false);
       });
 
-      it('should return false for records without dirty state symbol', () => {
-        const record = { name: 'test' };
+      it("should return false for records without dirty state symbol", () => {
+        const record = { name: "test" };
 
         expect(isRecordWithDirtyState(record)).toBe(false);
       });
 
-      it('should throw when checking null', () => {
+      it("should throw when checking null", () => {
         // The function tries to access a symbol property on null which throws
         expect(() => isRecordWithDirtyState(null)).toThrow();
       });
 
-      it('should throw when checking undefined', () => {
+      it("should throw when checking undefined", () => {
         // The function tries to access a symbol property on undefined which throws
         expect(() => isRecordWithDirtyState(undefined)).toThrow();
       });
 
-      it('should return false for primitives', () => {
+      it("should return false for primitives", () => {
         expect(isRecordWithDirtyState(42)).toBe(false);
-        expect(isRecordWithDirtyState('string')).toBe(false);
+        expect(isRecordWithDirtyState("string")).toBe(false);
         expect(isRecordWithDirtyState(true)).toBe(false);
       });
     });
 
-    describe('isRecordDirty', () => {
-      it('should return true when record has dirty state set to true', () => {
+    describe("isRecordDirty", () => {
+      it("should return true when record has dirty state set to true", () => {
         const symbols = getDecoratorSymbols();
         const record = { [symbols.dirty]: true };
 
         expect(isRecordDirty(record)).toBe(true);
       });
 
-      it('should return false when record has dirty state set to false', () => {
+      it("should return false when record has dirty state set to false", () => {
         const symbols = getDecoratorSymbols();
         const record = { [symbols.dirty]: false };
 
         expect(isRecordDirty(record)).toBe(false);
       });
 
-      it('should return false for records without dirty state', () => {
-        const record = { name: 'test' };
+      it("should return false for records without dirty state", () => {
+        const record = { name: "test" };
 
         expect(isRecordDirty(record)).toBe(false);
       });
 
-      it('should return false when dirty state is undefined', () => {
+      it("should return false when dirty state is undefined", () => {
         const symbols = getDecoratorSymbols();
         const record = { [symbols.dirty]: undefined };
 
@@ -110,32 +110,32 @@ describe('_record-decorators', () => {
       });
     });
 
-    describe('setRecordDirty', () => {
-      it('should set record as dirty by default', () => {
-        const record = { name: 'test' };
+    describe("setRecordDirty", () => {
+      it("should set record as dirty by default", () => {
+        const record = { name: "test" };
         const result = setRecordDirty(record);
 
         expect(result).toBe(true);
         expect(isRecordDirty(record)).toBe(true);
       });
 
-      it('should set record as dirty when explicitly passed true', () => {
-        const record = { name: 'test' };
+      it("should set record as dirty when explicitly passed true", () => {
+        const record = { name: "test" };
         setRecordDirty(record, true);
 
         expect(isRecordDirty(record)).toBe(true);
       });
 
-      it('should set record as not dirty when passed false', () => {
-        const record = { name: 'test' };
+      it("should set record as not dirty when passed false", () => {
+        const record = { name: "test" };
         setRecordDirty(record, false);
 
         expect(isRecordDirty(record)).toBe(false);
         expect(isRecordWithDirtyState(record)).toBe(true);
       });
 
-      it('should change dirty state from true to false', () => {
-        const record = { name: 'test' };
+      it("should change dirty state from true to false", () => {
+        const record = { name: "test" };
         setRecordDirty(record, true);
         expect(isRecordDirty(record)).toBe(true);
 
@@ -143,8 +143,8 @@ describe('_record-decorators', () => {
         expect(isRecordDirty(record)).toBe(false);
       });
 
-      it('should change dirty state from false to true', () => {
-        const record = { name: 'test' };
+      it("should change dirty state from false to true", () => {
+        const record = { name: "test" };
         setRecordDirty(record, false);
         expect(isRecordDirty(record)).toBe(false);
 
@@ -152,39 +152,39 @@ describe('_record-decorators', () => {
         expect(isRecordDirty(record)).toBe(true);
       });
 
-      it('should preserve other record properties', () => {
-        const record = { name: 'test', age: 30 };
+      it("should preserve other record properties", () => {
+        const record = { name: "test", age: 30 };
         setRecordDirty(record);
 
-        expect(record.name).toBe('test');
+        expect(record.name).toBe("test");
         expect(record.age).toBe(30);
       });
 
-      it('should return true always', () => {
-        const record = { name: 'test' };
+      it("should return true always", () => {
+        const record = { name: "test" };
         expect(setRecordDirty(record, true)).toBe(true);
         expect(setRecordDirty(record, false)).toBe(true);
       });
     });
   });
 
-  describe('UUID Management', () => {
-    describe('isRecordWithUuid', () => {
-      it('should return true for records with uuid symbol', () => {
+  describe("UUID Management", () => {
+    describe("isRecordWithUuid", () => {
+      it("should return true for records with uuid symbol", () => {
         const symbols = getDecoratorSymbols();
-        const record = { [symbols.uuid]: '123-456' };
+        const record = { [symbols.uuid]: "123-456" };
 
         expect(isRecordWithUuid(record)).toBe(true);
       });
 
-      it('should return true even when uuid is null', () => {
+      it("should return true even when uuid is null", () => {
         const symbols = getDecoratorSymbols();
         const record = { [symbols.uuid]: null };
 
         expect(isRecordWithUuid(record)).toBe(true);
       });
 
-      it('should return false when uuid is undefined (symbol not present)', () => {
+      it("should return false when uuid is undefined (symbol not present)", () => {
         const symbols = getDecoratorSymbols();
         const record = { [symbols.uuid]: undefined };
 
@@ -192,88 +192,88 @@ describe('_record-decorators', () => {
         expect(isRecordWithUuid(record)).toBe(false);
       });
 
-      it('should return false for records without uuid symbol', () => {
-        const record = { name: 'test' };
+      it("should return false for records without uuid symbol", () => {
+        const record = { name: "test" };
 
         expect(isRecordWithUuid(record)).toBe(false);
       });
 
-      it('should return false for null', () => {
+      it("should return false for null", () => {
         expect(isRecordWithUuid(null)).toBe(false);
       });
 
-      it('should return false for undefined', () => {
+      it("should return false for undefined", () => {
         expect(isRecordWithUuid(undefined)).toBe(false);
       });
 
-      it('should return false for primitives', () => {
+      it("should return false for primitives", () => {
         expect(isRecordWithUuid(42)).toBe(false);
-        expect(isRecordWithUuid('string')).toBe(false);
+        expect(isRecordWithUuid("string")).toBe(false);
         expect(isRecordWithUuid(true)).toBe(false);
       });
 
-      it('should return false for non-object types', () => {
+      it("should return false for non-object types", () => {
         expect(isRecordWithUuid([])).toBe(false);
         expect(isRecordWithUuid(() => {})).toBe(false);
       });
     });
 
-    describe('getUuid', () => {
-      it('should return uuid from record with uuid symbol', () => {
+    describe("getUuid", () => {
+      it("should return uuid from record with uuid symbol", () => {
         const symbols = getDecoratorSymbols();
-        const uuid = '123e4567-e89b-12d3-a456-426614174000';
+        const uuid = "123e4567-e89b-12d3-a456-426614174000";
         const record = { [symbols.uuid]: uuid };
 
         expect(getUuid(record)).toBe(uuid);
       });
 
-      it('should return null when uuid is null', () => {
+      it("should return null when uuid is null", () => {
         const symbols = getDecoratorSymbols();
         const record = { [symbols.uuid]: null };
 
         expect(getUuid(record)).toBe(null);
       });
 
-      it('should return undefined when uuid is undefined', () => {
+      it("should return undefined when uuid is undefined", () => {
         const symbols = getDecoratorSymbols();
         const record = { [symbols.uuid]: undefined };
 
         expect(getUuid(record)).toBe(undefined);
       });
 
-      it('should return undefined for records without uuid symbol', () => {
-        const record = { name: 'test' };
+      it("should return undefined for records without uuid symbol", () => {
+        const record = { name: "test" };
 
         expect(getUuid(record)).toBe(undefined);
       });
 
-      it('should return undefined for null', () => {
+      it("should return undefined for null", () => {
         expect(getUuid(null)).toBe(undefined);
       });
 
-      it('should return undefined for undefined', () => {
+      it("should return undefined for undefined", () => {
         expect(getUuid(undefined)).toBe(undefined);
       });
 
-      it('should return undefined for primitives', () => {
+      it("should return undefined for primitives", () => {
         expect(getUuid(42)).toBe(undefined);
-        expect(getUuid('string')).toBe(undefined);
+        expect(getUuid("string")).toBe(undefined);
         expect(getUuid(true)).toBe(undefined);
       });
     });
 
-    describe('newUuid', () => {
-      it('should generate a valid UUID', () => {
+    describe("newUuid", () => {
+      it("should generate a valid UUID", () => {
         const uuid = newUuid();
 
         expect(uuid).toBeDefined();
-        expect(typeof uuid).toBe('string');
+        expect(typeof uuid).toBe("string");
         expect(uuid).toMatch(
-          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
         );
       });
 
-      it('should generate unique UUIDs', () => {
+      it("should generate unique UUIDs", () => {
         const uuid1 = newUuid();
         const uuid2 = newUuid();
         const uuid3 = newUuid();
@@ -283,7 +283,7 @@ describe('_record-decorators', () => {
         expect(uuid1).not.toBe(uuid3);
       });
 
-      it('should generate multiple different UUIDs', () => {
+      it("should generate multiple different UUIDs", () => {
         const uuids = new Set();
         for (let i = 0; i < 100; i++) {
           uuids.add(newUuid());
@@ -293,10 +293,10 @@ describe('_record-decorators', () => {
       });
     });
 
-    describe('setUuid', () => {
-      it('should set uuid on record when provided', () => {
-        const record = { name: 'test' };
-        const uuid = '123e4567-e89b-12d3-a456-426614174000';
+    describe("setUuid", () => {
+      it("should set uuid on record when provided", () => {
+        const record = { name: "test" };
+        const uuid = "123e4567-e89b-12d3-a456-426614174000";
 
         const result = setUuid(record, uuid);
 
@@ -305,22 +305,22 @@ describe('_record-decorators', () => {
         expect(isRecordWithUuid(record)).toBe(true);
       });
 
-      it('should generate new uuid when not provided', () => {
-        const record = { name: 'test' };
+      it("should generate new uuid when not provided", () => {
+        const record = { name: "test" };
 
         const result = setUuid(record);
 
         expect(result).toBe(record);
         const uuid = getUuid(record);
         expect(uuid).toBeDefined();
-        expect(typeof uuid).toBe('string');
+        expect(typeof uuid).toBe("string");
         expect(uuid).toMatch(
-          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
         );
       });
 
-      it('should accept null as uuid value', () => {
-        const record = { name: 'test' };
+      it("should accept null as uuid value", () => {
+        const record = { name: "test" };
 
         setUuid(record, null);
 
@@ -328,10 +328,10 @@ describe('_record-decorators', () => {
         expect(isRecordWithUuid(record)).toBe(true);
       });
 
-      it('should overwrite existing uuid', () => {
-        const record = { name: 'test' };
-        const uuid1 = '123e4567-e89b-12d3-a456-426614174000';
-        const uuid2 = '987e6543-e21b-98d7-a654-624146171000';
+      it("should overwrite existing uuid", () => {
+        const record = { name: "test" };
+        const uuid1 = "123e4567-e89b-12d3-a456-426614174000";
+        const uuid2 = "987e6543-e21b-98d7-a654-624146171000";
 
         setUuid(record, uuid1);
         expect(getUuid(record)).toBe(uuid1);
@@ -340,46 +340,46 @@ describe('_record-decorators', () => {
         expect(getUuid(record)).toBe(uuid2);
       });
 
-      it('should preserve other record properties', () => {
-        const record = { name: 'test', age: 30 };
-        const uuid = '123e4567-e89b-12d3-a456-426614174000';
+      it("should preserve other record properties", () => {
+        const record = { name: "test", age: 30 };
+        const uuid = "123e4567-e89b-12d3-a456-426614174000";
 
         setUuid(record, uuid);
 
-        expect(record.name).toBe('test');
+        expect(record.name).toBe("test");
         expect(record.age).toBe(30);
       });
 
-      it('should return the same record instance', () => {
-        const record = { name: 'test' };
+      it("should return the same record instance", () => {
+        const record = { name: "test" };
         const result = setUuid(record);
 
         expect(result).toBe(record);
       });
 
-      it('should work with typed records', () => {
+      it("should work with typed records", () => {
         interface User {
           name: string;
           email: string;
         }
 
         const user: User = {
-          name: 'John Doe',
-          email: 'john@example.com',
+          name: "John Doe",
+          email: "john@example.com",
         };
 
         const result = setUuid(user);
 
-        expect(result.name).toBe('John Doe');
-        expect(result.email).toBe('john@example.com');
+        expect(result.name).toBe("John Doe");
+        expect(result.email).toBe("john@example.com");
         expect(getUuid(result)).toBeDefined();
       });
     });
   });
 
-  describe('Integration Tests', () => {
-    it('should work with both dirty and uuid on same record', () => {
-      const record = { name: 'test' };
+  describe("Integration Tests", () => {
+    it("should work with both dirty and uuid on same record", () => {
+      const record = { name: "test" };
 
       setUuid(record);
       setRecordDirty(record);
@@ -390,9 +390,9 @@ describe('_record-decorators', () => {
       expect(getUuid(record)).toBeDefined();
     });
 
-    it('should maintain both properties independently', () => {
-      const record = { name: 'test' };
-      const uuid = '123e4567-e89b-12d3-a456-426614174000';
+    it("should maintain both properties independently", () => {
+      const record = { name: "test" };
+      const uuid = "123e4567-e89b-12d3-a456-426614174000";
 
       setUuid(record, uuid);
       setRecordDirty(record, true);
@@ -409,12 +409,12 @@ describe('_record-decorators', () => {
       expect(isRecordDirty(record)).toBe(false); // Dirty state should remain unchanged
     });
 
-    it('should preserve symbols across different operations', () => {
-      const record1 = { name: 'record1' };
-      const record2 = { name: 'record2' };
+    it("should preserve symbols across different operations", () => {
+      const record1 = { name: "record1" };
+      const record2 = { name: "record2" };
 
-      const uuid1 = '111-111';
-      const uuid2 = '222-222';
+      const uuid1 = "111-111";
+      const uuid2 = "222-222";
 
       setUuid(record1, uuid1);
       setUuid(record2, uuid2);
@@ -428,9 +428,9 @@ describe('_record-decorators', () => {
     });
   });
 
-  describe('Type Guards', () => {
-    it('should narrow types correctly with isRecordWithDirtyState', () => {
-      const record: unknown = { name: 'test' };
+  describe("Type Guards", () => {
+    it("should narrow types correctly with isRecordWithDirtyState", () => {
+      const record: unknown = { name: "test" };
       setRecordDirty(record as object);
 
       if (isRecordWithDirtyState(record)) {
@@ -439,8 +439,8 @@ describe('_record-decorators', () => {
       }
     });
 
-    it('should narrow types correctly with isRecordWithUuid', () => {
-      const record: unknown = { name: 'test' };
+    it("should narrow types correctly with isRecordWithUuid", () => {
+      const record: unknown = { name: "test" };
       setUuid(record as object);
 
       if (isRecordWithUuid(record)) {

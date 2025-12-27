@@ -1,8 +1,11 @@
 import { ImportStage } from '@/data-models/api/import/email-message';
 import { AdditionalStageOptions, StageProcessorContext } from '../types';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
-import { Semaphore, SemaphoreManager } from '@/lib/nextjs-util/semaphore-manager';
+import {
+  Semaphore,
+  SemaphoreManager,
+} from '@/lib/nextjs-util/semaphore-manager';
 
 import { getQueuedAttachment } from './attachment-download';
 import {
@@ -42,7 +45,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
         message: 'AttachmentStateManager initialized with concurrency control',
         source: 'AttachmentStateManager',
         maxConcurrentDownloads: 5,
-      }),
+      })
     );
   }
   /**
@@ -51,7 +54,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
    */
   private async processAttachmentWithLimit(
     context: StageProcessorContext,
-    record: StagedAttachment,
+    record: StagedAttachment
   ): Promise<AttachmentImportResult> {
     const sem = this.semaphoreManager.sem;
     await sem.acquire();
@@ -65,7 +68,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
 
   async processAttachment(
     context: StageProcessorContext,
-    record: StagedAttachment,
+    record: StagedAttachment
   ): Promise<AttachmentImportResult> {
     return new Promise<AttachmentImportResult>((resolve) => {
       getQueuedAttachment(`${record.stagedMessageId}:${record.partId}`)
@@ -86,7 +89,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
                 download: job.result.storageId,
                 textLength: job.result.extractedText?.length ?? 0,
                 job,
-              }),
+              })
             );
             this.#attachmentRepository
               .create({
@@ -145,13 +148,13 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
     if (typeof target !== 'object') {
       LoggedError.isTurtlesAllTheWayDownBaby(
         new Error('Invalid target stage'),
-        { log: true },
+        { log: true }
       );
       return context;
     }
 
     const attachments = await this.#stagedAttachmentRepository.getForMessage(
-      target.id!,
+      target.id!
     );
 
     // Log processing start with semaphore state
@@ -162,7 +165,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
         source: 'AttachmentStateManager',
         attachmentCount: attachments.length,
         maxConcurrent: state.maxConcurrency,
-      }),
+      })
     );
 
     // Process with concurrency limit via semaphore
@@ -170,7 +173,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
       this.processAttachmentWithLimit(context, {
         ...attachment,
         stagedMessageId: attachment.stagedMessageId ?? target.id!,
-      }),
+      })
     );
 
     const result = await Promise.all(allPromises);
@@ -185,7 +188,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
         successCount: result.filter((r) => r.status === 'success').length,
         errorCount: result.filter((r) => r.status === 'error').length,
         finalSemaphoreState: finalState,
-      }),
+      })
     );
 
     if (result.some((r) => r.status === 'error')) {
@@ -194,7 +197,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
           message: 'Attachment processing failed',
           source: 'AttachmentStateManager',
           result,
-        }),
+        })
       );
       throw new Error('Attachment processing failed');
     }
@@ -219,7 +222,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
 
 const attachmentStateManagerFactory = (
   stage: ImportStage,
-  options: AdditionalStageOptions,
+  options: AdditionalStageOptions
 ): TransactionalStateManagerBase => new AttachmentStateManager(stage, options);
 
 export default attachmentStateManagerFactory;

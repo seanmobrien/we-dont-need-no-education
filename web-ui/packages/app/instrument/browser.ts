@@ -4,7 +4,7 @@ import {
   addSendCustomEventListener,
   type SendCustomEventListener,
   type SendCustomEventPayload,
-} from '@compliance-theater/lib-logger';
+} from '@compliance-theater/logger';
 import {
   ApplicationInsights,
   DistributedTracingModes,
@@ -42,7 +42,7 @@ const ensureSendCustomEventListener = () => {
   if (unsubscribeSendCustomEvent) return;
 
   const handler: SendCustomEventListener = (
-    payload: SendCustomEventPayload,
+    payload: SendCustomEventPayload
   ) => {
     if (typeof window === 'undefined') return;
 
@@ -50,7 +50,7 @@ const ensureSendCustomEventListener = () => {
     if (appInsights?.trackEvent) {
       appInsights.trackEvent(
         { name: payload.event.event },
-        payload.event.measurements,
+        payload.event.measurements
       );
       payload.processed = true;
     }
@@ -125,7 +125,7 @@ const getAppInsights = () => {
             const lookFor = envelope.baseData.name.toLowerCase();
             if (
               ignoreNames.findIndex(
-                (name) => lookFor.lastIndexOf(name) !== -1,
+                (name) => lookFor.lastIndexOf(name) !== -1
               ) !== -1 ||
               ignoreRegex.some((regex) => regex.test(lookFor))
             ) {
@@ -152,17 +152,18 @@ const getAppInsights = () => {
             return false;
           }
           return true;
-        },
+        }
       );
 
       appInsightState.appInsightInstance.addTelemetryInitializer((envelope) => {
         envelope.tags ??= {};
         envelope.tags['ai.cloud.role'] = config.serviceName;
-        envelope.tags['ai.cloud.roleInstance'] =
-          `${config.attributes!['service.instance'] ?? 'service-instance'}-browser`.replace(
-            'WebUi--undefined',
-            'ObApps.ComplianceTheatre-WebUi',
-          );
+        envelope.tags['ai.cloud.roleInstance'] = `${
+          config.attributes!['service.instance'] ?? 'service-instance'
+        }-browser`.replace(
+          'WebUi--undefined',
+          'ObApps.ComplianceTheatre-WebUi'
+        );
         envelope.data ??= {};
         envelope.data.baseData ??= {};
         envelope.data.baseData.properties ??= {};

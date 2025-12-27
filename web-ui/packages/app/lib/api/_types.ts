@@ -1,5 +1,5 @@
 import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
-import { PartialExceptFor } from '@compliance-theater/lib-typescript';
+import { PartialExceptFor } from '@compliance-theater/typescript';
 import { TransformedFullQueryResults } from '../neondb';
 import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
 
@@ -8,7 +8,7 @@ import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
  */
 export interface DrizzleRepositoryConfig<
   T extends object,
-  KId extends keyof T,
+  KId extends keyof T
 > {
   /** The Drizzle table schema */
   table: PgTable;
@@ -49,7 +49,7 @@ export type ObjectRepository<T extends object, K extends keyof T> = {
    * @returns A promise that resolves to a paginated result set of partial objects of type `T`.
    */
   list: (
-    pagination?: PaginationStats,
+    pagination?: PaginationStats
   ) => Promise<PaginatedResultset<Partial<T>>>;
 
   /**
@@ -107,10 +107,10 @@ export type IObjectRepositoryExt<T extends object> = {
     getData: (
       num: number,
       page: number,
-      offset: number,
+      offset: number
     ) => Promise<Array<Partial<T>>>,
     getDataCount: () => Promise<Record<string, unknown>[]>,
-    pagination?: PaginationStats,
+    pagination?: PaginationStats
   ) => Promise<PaginatedResultset<Partial<T>>>;
 
   /**
@@ -121,7 +121,7 @@ export type IObjectRepositoryExt<T extends object> = {
    */
   get: (
     validateData: () => void,
-    doQuery: () => Promise<T[]>,
+    doQuery: () => Promise<T[]>
   ) => Promise<T | null>;
 
   /**
@@ -140,7 +140,7 @@ export type IObjectRepositoryExt<T extends object> = {
    */
   update: (
     validateData: () => void,
-    doQuery: () => Promise<TransformedFullQueryResults<T>>,
+    doQuery: () => Promise<TransformedFullQueryResults<T>>
   ) => Promise<T>;
 
   /**
@@ -151,7 +151,7 @@ export type IObjectRepositoryExt<T extends object> = {
    */
   delete: (
     validate: () => void,
-    doQuery: () => Promise<TransformedFullQueryResults<T>>,
+    doQuery: () => Promise<TransformedFullQueryResults<T>>
   ) => Promise<boolean>;
 };
 
@@ -163,7 +163,7 @@ export type IObjectRepositoryExt<T extends object> = {
  * @returns A partial object of type `T`.
  */
 export type RecordToSummaryImpl<T extends object> = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ) => Partial<T>;
 
 /**
@@ -175,5 +175,5 @@ export type RecordToSummaryImpl<T extends object> = (
  * @returns An object of type T.
  */
 export type RecordToObjectImpl<T extends object> = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ) => T;

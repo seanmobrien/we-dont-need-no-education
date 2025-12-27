@@ -18,7 +18,7 @@ import { importIncomingMessage } from '@/lib/ai/middleware/chat-history/import-i
 import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
 import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
 import { generateChatId } from '@/lib/ai/core';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type { DbTransactionType } from '@/lib/drizzle-db';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
@@ -109,7 +109,7 @@ describe('Message Deduplication Integration', () => {
         warn: jest.fn(),
         error: jest.fn(),
         debug: jest.fn(),
-      }),
+      })
     );
 
     // Reset mocks between tests
@@ -166,7 +166,7 @@ describe('Message Deduplication Integration', () => {
         mockTx,
         'existing-chat-456',
         firstTurnMessages,
-        1, // currentTurnId
+        1 // currentTurnId
       );
       expect(mockGetNextSequence).toHaveBeenNthCalledWith(2, {
         tableName: 'chat_messages',
@@ -242,7 +242,7 @@ describe('Message Deduplication Integration', () => {
         mockTx,
         'existing-chat-456',
         secondTurnMessages,
-        2, // currentTurnId
+        2 // currentTurnId
       );
       expect(mockGetNextSequence).toHaveBeenNthCalledWith(2, {
         tableName: 'chat_messages',
@@ -309,7 +309,7 @@ describe('Message Deduplication Integration', () => {
         mockTx,
         'existing-chat-456',
         thirdTurnMessages,
-        3, // currentTurnId
+        3 // currentTurnId
       );
       expect(mockGetNextSequence).toHaveBeenNthCalledWith(1, {
         tableName: 'chat_turns',
@@ -354,7 +354,7 @@ describe('Message Deduplication Integration', () => {
         mockTx,
         'existing-chat-456',
         [],
-        4, // currentTurnId
+        4 // currentTurnId
       );
       expect(result.chatId).toBe('existing-chat-456');
     });

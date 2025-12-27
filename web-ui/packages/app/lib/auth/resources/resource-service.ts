@@ -12,8 +12,8 @@ import { env } from '@/lib/site-util/env';
 import { fetch } from '@/lib/nextjs-util/server';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { LRUCache } from 'lru-cache';
-import { SingletonProvider } from '@compliance-theater/lib-typescript';
-import { serviceInstanceOverloadsFactory } from '@compliance-theater/lib-typescript/_generics';
+import { SingletonProvider } from '@compliance-theater/typescript';
+import { serviceInstanceOverloadsFactory } from '@compliance-theater/typescript/_generics';
 
 /**
  * Configuration for the ResourceService cache
@@ -23,9 +23,14 @@ const CACHE_OPTIONS = {
   ttl: 1000 * 60 * 5, // 5 minutes TTL (Keycloak tokens usually last longer, but this is safe)
 };
 
-type BaseAttributes = Record<string, string | string[] | Record<string, unknown>>;
+type BaseAttributes = Record<
+  string,
+  string | string[] | Record<string, unknown>
+>;
 
-export type BasicResourceRecord<TAttributes extends BaseAttributes = BaseAttributes> = {
+export type BasicResourceRecord<
+  TAttributes extends BaseAttributes = BaseAttributes
+> = {
   /** Unique resource ID in Keycloak */
   _id: string;
   /** Resource name: case-file:{userId} */
@@ -39,7 +44,6 @@ export type BasicResourceRecord<TAttributes extends BaseAttributes = BaseAttribu
   /** Resource attributes */
   attributes: TAttributes;
 };
-
 
 /**
  * Service for managing Keycloak resources
@@ -56,7 +60,7 @@ export class ResourceService {
    */
   public static get Instance(): ResourceService {
     const ret = SingletonProvider.Instance.getOrCreate(
-      "@no-education/lib/auth/resources/resource-service",
+      '@no-education/lib/auth/resources/resource-service',
       () => new ResourceService()
     );
     if (!ret) {
@@ -64,7 +68,7 @@ export class ResourceService {
         new Error('Unable to get singleton instance of ResourceService'),
         {
           log: true,
-          source: "ResourceService",
+          source: 'ResourceService',
         }
       );
     }
@@ -122,7 +126,9 @@ export class ResourceService {
 
       // Cache the token
       // Use expires_in from response if available, otherwise default TTL
-      const ttl = json.expires_in ? json.expires_in * 1000 - 30000 : CACHE_OPTIONS.ttl; // Buffer of 30s
+      const ttl = json.expires_in
+        ? json.expires_in * 1000 - 30000
+        : CACHE_OPTIONS.ttl; // Buffer of 30s
       this.cache.set(cacheKey, token, { ttl: Math.max(ttl, 0) });
 
       return token;
@@ -144,19 +150,21 @@ export class ResourceService {
   public async findAuthorizedResource<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     TResource extends BasicResourceRecord<any>,
-    TAttributes extends
-    TResource extends BasicResourceRecord<infer TInferAttributes>
-    ? TInferAttributes
-    : never
-    = TResource extends BasicResourceRecord<infer TInferAttributes>
-    ? TInferAttributes
-    : never
+    TAttributes extends TResource extends BasicResourceRecord<
+      infer TInferAttributes
+    >
+      ? TInferAttributes
+      : never = TResource extends BasicResourceRecord<infer TInferAttributes>
+      ? TInferAttributes
+      : never
   >(name: string): Promise<BasicResourceRecord<TAttributes> | null> {
     try {
       const pat = await this.getProtectionApiToken();
 
       // First find the resource ID by name
-      const queryUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/authz/protection/resource_set?name=${encodeURIComponent(name)}`;
+      const queryUrl = `${env(
+        'AUTH_KEYCLOAK_ISSUER'
+      )}/authz/protection/resource_set?name=${encodeURIComponent(name)}`;
       const queryRes = await fetch(queryUrl, {
         headers: {
           Authorization: `Bearer ${pat}`,
@@ -176,7 +184,9 @@ export class ResourceService {
       }
 
       // Then get the full resource details using the first ID found
-      return await this.getAuthorizedResource<TResource, TAttributes>(resourceIds[0]);
+      return await this.getAuthorizedResource<TResource, TAttributes>(
+        resourceIds[0]
+      );
     } catch (error) {
       throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
@@ -196,14 +206,17 @@ export class ResourceService {
   public async getAuthorizedResource<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     TResource extends BasicResourceRecord<any>,
-    TAttributes extends
-    TResource extends BasicResourceRecord<infer TInferAttributes>
-    ? TInferAttributes
-    : never
+    TAttributes extends TResource extends BasicResourceRecord<
+      infer TInferAttributes
+    >
+      ? TInferAttributes
+      : never
   >(id: string): Promise<BasicResourceRecord<TAttributes> | null> {
     try {
       const pat = await this.getProtectionApiToken();
-      const resourceUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/authz/protection/resource_set/${id}`;
+      const resourceUrl = `${env(
+        'AUTH_KEYCLOAK_ISSUER'
+      )}/authz/protection/resource_set/${id}`;
 
       const resourceResponse = await fetch(resourceUrl, {
         headers: {
@@ -215,9 +228,12 @@ export class ResourceService {
         if (resourceResponse.status === 404) {
           return null;
         }
-        throw new Error(`Failed to get resource details: ${resourceResponse.statusText}`);
+        throw new Error(
+          `Failed to get resource details: ${resourceResponse.statusText}`
+        );
       }
-      const resource = await resourceResponse.json() as BasicResourceRecord<TAttributes>;
+      const resource =
+        (await resourceResponse.json()) as BasicResourceRecord<TAttributes>;
       return resource;
     } catch (error) {
       throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -227,7 +243,7 @@ export class ResourceService {
         include: { resourceId: id },
       });
     }
-  };
+  }
 
   /**
    * Creates a new authorized resource
@@ -236,11 +252,13 @@ export class ResourceService {
    * @returns The created resource
    */
   public async createAuthorizedResource<
-    TResource extends { _id?: string; name: string },
+    TResource extends { _id?: string; name: string }
   >(resource: TResource): Promise<TResource & { _id: string }> {
     try {
       const pat = await this.getProtectionApiToken();
-      const resourcesUrl = `${env('AUTH_KEYCLOAK_ISSUER')}/authz/protection/resource_set`;
+      const resourcesUrl = `${env(
+        'AUTH_KEYCLOAK_ISSUER'
+      )}/authz/protection/resource_set`;
 
       const createResponse = await fetch(resourcesUrl, {
         method: 'POST',
@@ -253,10 +271,12 @@ export class ResourceService {
 
       if (!createResponse.ok) {
         const errorText = await createResponse.text();
-        throw new Error(`Failed to create resource: ${createResponse.statusText} - ${errorText}`);
+        throw new Error(
+          `Failed to create resource: ${createResponse.statusText} - ${errorText}`
+        );
       }
 
-      const createdResource = await createResponse.json() as TResource;
+      const createdResource = (await createResponse.json()) as TResource;
       return { ...createdResource, _id: createdResource._id! };
     } catch (error) {
       throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -269,4 +289,6 @@ export class ResourceService {
   }
 }
 
-export const resourceService = serviceInstanceOverloadsFactory(() => ResourceService.Instance);
+export const resourceService = serviceInstanceOverloadsFactory(
+  () => ResourceService.Instance
+);

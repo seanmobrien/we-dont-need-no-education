@@ -1,7 +1,7 @@
 import { BaseObjectRepository } from '../../../_baseObjectRepository';
 import { ObjectRepository } from '../../../_types';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter, newUuid } from '@compliance-theater/lib-typescript';
+import { FirstParameter, newUuid } from '@compliance-theater/typescript';
 import { EmailSentimentAnalysisDetails } from '@/data-models/api';
 import {
   EmailPropertyRepository,
@@ -10,7 +10,7 @@ import {
 import { TransformedFullQueryResults } from '@/lib/neondb';
 
 const mapRecordToObject = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ): EmailSentimentAnalysisDetails => {
   return {
     ...mapEmailPropertyRecordToObject(record),
@@ -40,7 +40,7 @@ export class SentimentAnalysisDetailsRepository extends BaseObjectRepository<
     TMethod extends keyof ObjectRepository<
       EmailSentimentAnalysisDetails,
       'propertyId'
-    >,
+    >
   >(
     method: TMethod,
     obj: FirstParameter<
@@ -48,7 +48,7 @@ export class SentimentAnalysisDetailsRepository extends BaseObjectRepository<
         ObjectRepository<EmailSentimentAnalysisDetails, 'propertyId'>,
         TMethod
       >[TMethod]
-    >,
+    >
   ): void {
     const asModel = obj as EmailSentimentAnalysisDetails;
     switch (method) {

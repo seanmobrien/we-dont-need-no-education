@@ -15,7 +15,7 @@ import type { AnyValue, AnyValueMap } from '@opentelemetry/api-logs';
 import type { ExportResult } from '@opentelemetry/core';
 import { UrlFilterEngine } from './url-filter-engine';
 import { UrlFilterOptions } from './url-filter-rules';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 export class UrlFilteredLogExporter
   extends UrlFilterEngine
@@ -25,7 +25,7 @@ export class UrlFilteredLogExporter
 
   constructor(
     inner: LogRecordExporter,
-    opts: UrlFilterOptions = { rules: [] },
+    opts: UrlFilterOptions = { rules: [] }
   ) {
     super(opts);
     this.#inner = inner;
@@ -33,7 +33,7 @@ export class UrlFilteredLogExporter
 
   export(
     records: ReadableLogRecord[],
-    resultCallback: (result: ExportResult) => void,
+    resultCallback: (result: ExportResult) => void
   ): void {
     try {
       const retained: ReadableLogRecord[] = records.filter((rec) => {
@@ -46,7 +46,7 @@ export class UrlFilteredLogExporter
         } catch (err) {
           // Keep record if individual filter fails
           log((l) =>
-            l.warn('Filter evaluation failed for record', { error: err }),
+            l.warn('Filter evaluation failed for record', { error: err })
           );
           return true;
         }
@@ -58,7 +58,7 @@ export class UrlFilteredLogExporter
           l.info('Filtered log records', {
             dropped,
             retained: retained.length,
-          }),
+          })
         );
       }
 
@@ -69,7 +69,7 @@ export class UrlFilteredLogExporter
         l.error('Log filtering failed, exporting all records', {
           error: err,
           recordCount: records.length,
-        }),
+        })
       );
       this.#inner.export(records, resultCallback);
     }

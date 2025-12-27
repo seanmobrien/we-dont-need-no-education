@@ -4,8 +4,8 @@ import { pgDb, pgDbWithInit } from './connection';
 import { isDbError } from './_guards';
 import { CommandMeta, IResultset } from './types';
 import { isTypeBranded, TypeBrandSymbol } from '../react-util';
-import { ExcludeExactMatch } from '@compliance-theater/lib-typescript';
-import { log } from '@compliance-theater/lib-logger';
+import { ExcludeExactMatch } from '@compliance-theater/typescript';
+import { log } from '@compliance-theater/logger';
 import {
   PostgresSql,
   PostgresRowList as RowList,
@@ -21,13 +21,13 @@ type Sql<T extends Record<string, unknown>> = PostgresSql<T>;
 
 export type QueryProps<ResultType extends object = Record<string, unknown>> = {
   transform?: <RecordType extends Record<string, unknown>>(
-    result: RecordType,
+    result: RecordType
   ) => ResultType;
   enhanced?: boolean;
 };
 
 export type TransformedFullQueryResults<
-  ResultType extends object = Record<string, unknown>,
+  ResultType extends object = Record<string, unknown>
 > = {
   statement: string | PostgresStatement;
   fields: string[];
@@ -38,9 +38,9 @@ export type TransformedFullQueryResults<
 
 const asRecord = <
   TRecord extends Record<string, unknown>,
-  TResult extends object = TRecord,
+  TResult extends object = TRecord
 >(
-  result: TRecord | any[],
+  result: TRecord | any[]
 ): TResult =>
   Array.isArray(result)
     ? result.reduce((acc, cur, idx) => {
@@ -51,7 +51,7 @@ const asRecord = <
 
 const applyTransform = <ResultType extends object>(
   promise: Promise<RowList<any>>,
-  props: QueryProps<ResultType> = {},
+  props: QueryProps<ResultType> = {}
 ): Promise<Array<ResultType>> => {
   if (typeof props.transform != 'function') {
     return promise.then((result) => result as Array<ResultType>);
@@ -62,14 +62,14 @@ const applyTransform = <ResultType extends object>(
       throw result;
     }
     return result.map((r: any[] | Record<string, unknown>) =>
-      transform(asRecord(r)),
+      transform(asRecord(r))
     );
   });
 };
 
 const applyResultsetTransform = <ResultType extends object>(
   promise: Promise<RowList<any>>,
-  props: QueryProps<ResultType> = {},
+  props: QueryProps<ResultType> = {}
 ): Promise<TransformedFullQueryResults<ResultType>> =>
   promise.then((result) => {
     return {
@@ -80,13 +80,13 @@ const applyResultsetTransform = <ResultType extends object>(
       rows: result.map((r: any[] | Record<string, unknown>) =>
         typeof props.transform === 'function'
           ? props.transform(asRecord(r))
-          : asRecord<Record<string, unknown>, ResultType>(r),
+          : asRecord<Record<string, unknown>, ResultType>(r)
       ),
     };
   });
 
 const recordsetInitBrand: unique symbol = Symbol(
-  'TypeBrand::RecordsetInitProps',
+  'TypeBrand::RecordsetInitProps'
 );
 
 type RecordsetBaseInitProps<T extends readonly any[]> = {
@@ -105,7 +105,7 @@ type RecordsetInitProps<T extends readonly any[]> = RecordsetBaseInitProps<T> &
 
 type RecordsetInitWithTransformProps<
   T extends readonly any[],
-  TOtherRecord extends ExcludeExactMatch<Record<string, unknown>, T>,
+  TOtherRecord extends ExcludeExactMatch<Record<string, unknown>, T>
 > = RecordsetBaseInitProps<T> & {
   records: ArrayLike<TOtherRecord & Array<any>>;
   transform: (source: TOtherRecord) => T;
@@ -122,7 +122,7 @@ class RecordsetInitPropsBaseImpl<T extends readonly any[]>
   protected constructor(
     statement: string | Statement,
     command: CommandMeta,
-    fields: ColumnList<keyof T>,
+    fields: ColumnList<keyof T>
   ) {
     this.statement = String(statement);
     this.command = command;
@@ -141,20 +141,20 @@ class RecordsetInitPropsImpl<T extends readonly any[]>
     statement: string | Statement,
     command: CommandMeta,
     fields: ColumnList<keyof T>,
-    count: number,
+    count: number
   );
   constructor(
     statement: string | Statement,
     command: CommandMeta,
     fields: ColumnList<keyof T>,
-    records: ArrayLike<T | Array<any>>,
+    records: ArrayLike<T | Array<any>>
   );
 
   constructor(
     statement: string | Statement,
     command: CommandMeta,
     fields: ColumnList<keyof T>,
-    countOrRecords?: number | ArrayLike<T | Array<any>>,
+    countOrRecords?: number | ArrayLike<T | Array<any>>
   ) {
     super(statement, command, fields);
     this.count =
@@ -170,7 +170,7 @@ class RecordsetInitWithTransformPropsImpl<
     TOtherRecord extends ExcludeExactMatch<
       Record<string, unknown>,
       T
-    > = ExcludeExactMatch<Record<string, unknown>, T>,
+    > = ExcludeExactMatch<Record<string, unknown>, T>
   >
   extends RecordsetInitPropsBaseImpl<T>
   implements RecordsetInitWithTransformProps<T, TOtherRecord>
@@ -183,7 +183,7 @@ class RecordsetInitWithTransformPropsImpl<
     command: CommandMeta,
     fields: ColumnList<keyof T>,
     records: ArrayLike<TOtherRecord & any[]>,
-    transform: (x: TOtherRecord) => T,
+    transform: (x: TOtherRecord) => T
   ) {
     super(statement, command, fields);
 
@@ -193,7 +193,7 @@ class RecordsetInitWithTransformPropsImpl<
 }
 
 const isRecordsetInitProps = <T extends readonly any[]>(
-  check: unknown,
+  check: unknown
 ): check is RecordsetInitProps<T> =>
   isTypeBranded<RecordsetInitProps<T>>(check, recordsetInitBrand);
 
@@ -202,9 +202,9 @@ const isRecordsetInitWithTransformProps = <
   TOtherRecord extends ExcludeExactMatch<
     Record<string, unknown>,
     T
-  > = ExcludeExactMatch<Record<string, unknown>, T>,
+  > = ExcludeExactMatch<Record<string, unknown>, T>
 >(
-  check: unknown,
+  check: unknown
 ): check is RecordsetInitWithTransformProps<T, TOtherRecord> =>
   isRecordsetInitProps<T>(check) &&
   'records' in check &&
@@ -216,7 +216,7 @@ export class Resultset<T extends readonly any[] = readonly any[]>
   implements IResultset<T>
 {
   static isResultset<TRow extends readonly any[] = readonly any[]>(
-    check: unknown,
+    check: unknown
   ): check is IResultset<TRow> {
     if (!Array.isArray(check)) {
       return false;
@@ -240,7 +240,7 @@ export class Resultset<T extends readonly any[] = readonly any[]>
     return false;
   }
   static isRowList<TRow extends readonly any[]>(
-    check: unknown,
+    check: unknown
   ): check is RowList<TRow> {
     if (!Array.isArray(check)) {
       return false;
@@ -261,7 +261,7 @@ export class Resultset<T extends readonly any[] = readonly any[]>
   }
   static #makeRecordFromArray<TRecord extends readonly any[]>(
     result: TRecord | any[],
-    fields?: ColumnList<keyof TRecord>,
+    fields?: ColumnList<keyof TRecord>
   ): TRecord {
     if (!Array.isArray(result)) {
       return result;
@@ -278,11 +278,11 @@ export class Resultset<T extends readonly any[] = readonly any[]>
   }
   static #mapRecord = <
     TRecord extends readonly any[],
-    TSource extends readonly any[] = TRecord,
+    TSource extends readonly any[] = TRecord
   >(
     result: TSource | any[],
     fields?: ColumnList<keyof TRecord>,
-    transform?: (source: TSource) => TRecord,
+    transform?: (source: TSource) => TRecord
   ): TRecord => {
     if (Array.isArray(result)) {
       log((l) => l.warn('Make sure transformed arrays actually work'));
@@ -302,11 +302,11 @@ export class Resultset<T extends readonly any[] = readonly any[]>
   constructor(resultset: RowList<T>);
   constructor(resultset: IResultset<T>);
   constructor(
-    resultset: RowList<T> | IResultset<T> | RecordsetBaseInitProps<T>,
+    resultset: RowList<T> | IResultset<T> | RecordsetBaseInitProps<T>
   ) {
     if (isRecordsetInitWithTransformProps<T>(resultset)) {
       const mappedRecords = Array.from(resultset.records).map((x) =>
-        Resultset.#mapRecord(x, resultset.fields, resultset.transform),
+        Resultset.#mapRecord(x, resultset.fields, resultset.transform)
       );
       super(...mappedRecords);
       this.#fields = resultset.fields;
@@ -324,12 +324,12 @@ export class Resultset<T extends readonly any[] = readonly any[]>
       ) {
         super(
           ...Array.from(resultset.records).map((x) =>
-            Resultset.#makeRecordFromArray<T>(x, resultset.fields),
-          ),
+            Resultset.#makeRecordFromArray<T>(x, resultset.fields)
+          )
         );
       } else {
         throw new TypeError(
-          'How can we be an init props without count or records?',
+          'How can we be an init props without count or records?'
         );
       }
       this.#fields = resultset.fields;
@@ -349,8 +349,8 @@ export class Resultset<T extends readonly any[] = readonly any[]>
     if (Resultset.isRowList<T>(resultset)) {
       super(
         ...resultset.map((x) =>
-          Resultset.#makeRecordFromArray<T>(x, resultset.columns),
-        ),
+          Resultset.#makeRecordFromArray<T>(x, resultset.columns)
+        )
       );
       this.#fields = resultset.columns;
       this.#command = resultset.command;
@@ -389,10 +389,10 @@ export interface ISqlNeonAdapter {
   <
     ArrayModeOverride extends boolean = true,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    FullResultsOverride extends boolean = ArrayModeOverride,
+    FullResultsOverride extends boolean = ArrayModeOverride
   >(
     string: string,
-    params?: any[],
+    params?: any[]
   ): PendingQuery<any>;
   [wrappedAdapter]: Sql<any>;
 }
@@ -419,35 +419,35 @@ export const isSqlNeonAdapter = (check: unknown): check is ISqlNeonAdapter =>
   typeof (check as ISqlNeonAdapter)[wrappedAdapter] === 'object';
 
 export const unwrapAdapter = <
-  TModel extends Record<string, unknown> = Record<string, unknown>,
+  TModel extends Record<string, unknown> = Record<string, unknown>
 >(
-  adapter: ISqlNeonAdapter,
+  adapter: ISqlNeonAdapter
 ) => adapter[wrappedAdapter] as SqlDb<TModel>;
 
 export const asSql = <
-  TModel extends Record<string, unknown> = Record<string, unknown>,
+  TModel extends Record<string, unknown> = Record<string, unknown>
 >(
-  adapter: ISqlNeonAdapter | SqlDb<TModel>,
+  adapter: ISqlNeonAdapter | SqlDb<TModel>
 ) =>
   isSqlNeonAdapter(adapter)
     ? (adapter[wrappedAdapter] as SqlDb<TModel>)
     : adapter;
 
 export const query = async <
-  ResultType extends object = Record<string, unknown>,
+  ResultType extends object = Record<string, unknown>
 >(
   cb: (sql: ISqlNeonAdapter) => Promise<RowList<any>>,
-  props: QueryProps<ResultType> = {},
+  props: QueryProps<ResultType> = {}
 ): Promise<Array<ResultType>> => {
   const sql_1 = await pgDbWithInit();
   return await applyTransform<ResultType>(cb(sqlNeonAdapter(sql_1)), props);
 };
 
 export const queryExt = async <
-  ResultType extends object = Record<string, unknown>,
+  ResultType extends object = Record<string, unknown>
 >(
   cb: (sql: ISqlNeonAdapter) => Promise<RowList<any>>,
-  props: QueryProps<ResultType> = {},
+  props: QueryProps<ResultType> = {}
 ): Promise<TransformedFullQueryResults<ResultType>> => {
   const sql_1 = await pgDbWithInit();
   return applyResultsetTransform(cb(sqlNeonAdapter(sql_1)), props);
@@ -456,21 +456,21 @@ export const queryExt = async <
 export type SqlDb<TRecord = any> = PostgresSql<TRecord>;
 
 export const queryRaw = <RecordType = any>(
-  cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>,
+  cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>
 ): PendingQuery<RecordType> => cb(pgDb<RecordType>());
 
 export const safeQueryRaw = async <
-  RecordType extends Record<string, unknown> = any,
+  RecordType extends Record<string, unknown> = any
 >(
-  cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>,
+  cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>
 ): Promise<PendingQuery<RecordType>> => cb(await pgDbWithInit<RecordType>());
 
 export const db = async <
   ResultType extends readonly any[] & Record<string, unknown> = any,
-  RecordType extends Record<string, unknown> = ResultType, // ExcludeExactMatch<Record<string, unknown>, ResultType> = any,
+  RecordType extends Record<string, unknown> = ResultType // ExcludeExactMatch<Record<string, unknown>, ResultType> = any,
 >(
   cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>,
-  { transform }: QueryProps<ResultType> = {},
+  { transform }: QueryProps<ResultType> = {}
 ): Promise<IResultset<ResultType>> => {
   const query = queryRaw(cb).then((result) => {
     if (isDbError(result)) {
@@ -488,8 +488,8 @@ export const db = async <
           result as unknown as ArrayLike<
             ExcludeExactMatch<Record<string, unknown>, ResultType> & any[]
           >,
-          transform,
-        ),
+          transform
+        )
       );
     });
   }
@@ -500,16 +500,16 @@ export const db = async <
           result.statement as string | Statement,
           result.command,
           result.columns as ColumnList<keyof ResultType>,
-          result as unknown as ArrayLike<ResultType | Array<any>>,
-        ),
-      ),
+          result as unknown as ArrayLike<ResultType | Array<any>>
+        )
+      )
   );
 };
 export type DbQueryFunction<
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   X extends boolean,
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  Y extends boolean,
+  Y extends boolean
 > = ISqlNeonAdapter;
 // Update module exports to use module.exports format and provide a getter for sql
 

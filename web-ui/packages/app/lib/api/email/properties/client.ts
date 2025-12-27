@@ -13,13 +13,13 @@ import {
   apiRequestHelperFactory,
   ApiRequestHelper,
 } from '@/lib/send-api-request';
-import { ICancellablePromiseExt } from '@compliance-theater/lib-typescript';
+import { ICancellablePromiseExt } from '@compliance-theater/typescript';
 
 const apiRequest = <TResult>(
   cb: (
     api: ApiRequestHelper,
-    builder: typeof siteMap.api.email.properties,
-  ) => TResult,
+    builder: typeof siteMap.api.email.properties
+  ) => TResult
 ): TResult => {
   const apiHelper = apiRequestHelperFactory({ area: 'email/properties' });
   const builder = siteMap.api.email.properties;
@@ -32,7 +32,7 @@ type ListRequestProps = Partial<Omit<PaginationStats, 'total'>> & {
 };
 
 const listPropertyRequest = <
-  TModel extends Omit<EmailPropertySummary, 'typeId'>,
+  TModel extends Omit<EmailPropertySummary, 'typeId'>
 >({
   api,
   page,

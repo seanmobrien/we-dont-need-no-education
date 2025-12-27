@@ -1,4 +1,3 @@
-
 import type {
   LanguageModelV2ToolResultPart,
   LanguageModelV2StreamPart,
@@ -12,7 +11,7 @@ import {
   drizDb,
   schema,
 } from '@/lib/drizzle-db';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { getNextSequence } from './utility';
 import type { StreamHandlerContext, StreamHandlerResult } from './types';
 import { ensureCreateResult } from './stream-handler-result';
@@ -42,7 +41,7 @@ const flushMessageParts = async ({
           tx,
           chatId,
           Number(turnId),
-          1,
+          1
         );
         thisMessageId = tempMessageId;
         context.messageId = thisMessageId;
@@ -105,8 +104,8 @@ const completePendingMessage = async ({
       and(
         eq(chatMessages.chatId, chatId),
         eq(chatMessages.turnId, turnId),
-        eq(chatMessages.messageId, messageId),
-      ),
+        eq(chatMessages.messageId, messageId)
+      )
     );
   return true;
 };
@@ -130,8 +129,8 @@ const findPendingToolCall = async ({
       .where(
         and(
           eq(chatMessages.chatId, chatId),
-          eq(chatMessages.providerId, toolCallId),
-        ),
+          eq(chatMessages.providerId, toolCallId)
+        )
       )
       .limit(1)
       .execute()
@@ -172,7 +171,7 @@ const setTurnError = async ({
       .then((x) => x.at(0));
     if (!turn) {
       log((l) =>
-        l.warn('Turn not found when saving tool result', { chatId, turnId }),
+        l.warn('Turn not found when saving tool result', { chatId, turnId })
       );
       return;
     }
@@ -243,14 +242,14 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
             tx,
             chatId,
             Number(turnId),
-            toolRow,
+            toolRow
           );
         } catch (error) {
           // In test environments, upsert might fail - fall back to normal creation
           log((l) =>
             l.debug(
-              `Tool message upsert failed, falling back to creation: ${error}`,
-            ),
+              `Tool message upsert failed, falling back to creation: ${error}`
+            )
           );
           upsertedMessageId = null;
         }
@@ -269,8 +268,8 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
               .where(
                 and(
                   eq(chatMessages.chatId, chatId),
-                  eq(chatMessages.messageId, actualMessageId),
-                ),
+                  eq(chatMessages.messageId, actualMessageId)
+                )
               )
               .limit(1)
               .execute();
@@ -279,8 +278,8 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
             // In test environments, selects might fail - create a mock tool call
             log((l) =>
               l.debug(
-                `Failed to fetch updated tool message, creating mock: ${error}`,
-              ),
+                `Failed to fetch updated tool message, creating mock: ${error}`
+              )
             );
             toolCall = {
               chatMessageId: 1,
@@ -328,16 +327,18 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
             log((l) =>
               l.warn(
                 'Tool call was not assigned a provider id, result resolution may fail.',
-                toolCall,
-              ),
+                toolCall
+              )
             );
           }
           toolCalls.set(toolCall.providerId ?? '[missing]', toolCall);
 
           log((l) =>
             l.debug(
-              `Tool message handled for providerId ${chunk.toolCallId}: ${upsertedMessageId !== null ? 'updated' : 'created'} messageId ${actualMessageId}`,
-            ),
+              `Tool message handled for providerId ${chunk.toolCallId}: ${
+                upsertedMessageId !== null ? 'updated' : 'created'
+              } messageId ${actualMessageId}`
+            )
           );
         } else {
           log((l) =>
@@ -351,7 +352,7 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
                 generatedText,
                 wasUpsert: upsertedMessageId !== null,
               },
-            }),
+            })
           );
         }
       });
@@ -369,7 +370,7 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
           chatId: context.chatId,
           toolName: chunk.toolName,
           args: chunk.input,
-        }),
+        })
       );
       return context.createResult(false);
     }
@@ -417,7 +418,7 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
             tx,
             chatId,
             Number(turnId),
-            toolRow,
+            toolRow
           );
 
           if (upsertedMessageId !== null) {
@@ -429,8 +430,8 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
                 .where(
                   and(
                     eq(chatMessages.chatId, chatId),
-                    eq(chatMessages.messageId, upsertedMessageId),
-                  ),
+                    eq(chatMessages.messageId, upsertedMessageId)
+                  )
                 )
                 .limit(1)
                 .execute();
@@ -438,13 +439,13 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
 
               log((l) =>
                 l.debug(
-                  `Tool result upserted for providerId ${chunk.toolCallId}, messageId: ${upsertedMessageId}`,
-                ),
+                  `Tool result upserted for providerId ${chunk.toolCallId}, messageId: ${upsertedMessageId}`
+                )
               );
             } catch (error) {
               // In test environments, selects might fail
               log((l) =>
-                l.debug(`Failed to fetch upserted tool message: ${error}`),
+                l.debug(`Failed to fetch upserted tool message: ${error}`)
               );
             }
           }
@@ -475,7 +476,9 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
             .set({
               statusId,
               toolResult:
-                chunk.output !== undefined ? JSON.stringify(chunk.output) : null,
+                chunk.output !== undefined
+                  ? JSON.stringify(chunk.output)
+                  : null,
               metadata: metadata,
               content: `${pendingCall.content ?? ''}\n${generatedText}`,
             })
@@ -483,8 +486,8 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
               and(
                 eq(chatMessages.chatId, chatId),
                 eq(chatMessages.turnId, Number(turnId)),
-                eq(chatMessages.messageId, pendingCall.messageId),
-              ),
+                eq(chatMessages.messageId, pendingCall.messageId)
+              )
             );
         } else {
           log((l) =>
@@ -493,7 +496,7 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
               turnId,
               toolName: chunk.toolName,
               providerId: chunk.toolCallId,
-            }),
+            })
           );
         }
       });
@@ -542,8 +545,8 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
                 and(
                   eq(chatMessages.chatId, context.chatId),
                   eq(chatMessages.turnId, Number(context.turnId)),
-                  eq(chatMessages.messageId, context.messageId),
-                ),
+                  eq(chatMessages.messageId, context.messageId)
+                )
               );
           }
           await tx.insert(tokenUsage).values({
@@ -573,7 +576,7 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
           turnId: context.turnId,
           chatId: context.chatId,
           usage: chunk.usage,
-        }),
+        })
       );
       return context.createResult(false);
     }
@@ -637,14 +640,14 @@ export class ChatHistoryStreamProcessor extends StreamProcessor<StreamHandlerCon
 
 export const processStreamChunk = async (
   chunk: LanguageModelV2StreamPart | LanguageModelV2ToolResultPart,
-  context: StreamHandlerContext,
+  context: StreamHandlerContext
 ): Promise<StreamHandlerResult> => {
   const processor = new ChatHistoryStreamProcessor();
   return processor.process(chunk, context);
 };
 
 // Export handle functions for backward compatibility if needed, using the processor instance
-// or just keep them for reference if tests import them directly. 
+// or just keep them for reference if tests import them directly.
 // However, the prompt asked to update stream-handlers.ts so it remains functionally equivalent but uses the implementation.
 // So I should replace the exports with wrappers around the processor methods or just use the processor.
 // But some tests might import `handleToolCall`, `handleToolResult`, `handleFinish` directly.
@@ -661,7 +664,7 @@ export const processStreamChunk = async (
 
 export const handleToolCall = async (
   chunk: Extract<LanguageModelV2ToolCall, { type: 'tool-call' }>,
-  context: StreamHandlerContext,
+  context: StreamHandlerContext
 ): Promise<StreamHandlerResult> => {
   // This is a bit hacky because `processToolCall` is protected.
   // I'll make a public helper or cast.
@@ -670,14 +673,14 @@ export const handleToolCall = async (
 
 export const handleToolResult = async (
   chunk: LanguageModelV2ToolResultPart,
-  context: StreamHandlerContext,
+  context: StreamHandlerContext
 ): Promise<StreamHandlerResult> => {
   return new ChatHistoryStreamProcessor()['processToolResult'](chunk, context);
 };
 
 export const handleFinish = async (
   chunk: Extract<LanguageModelV2StreamPart, { type: 'finish' }>,
-  context: StreamHandlerContext,
+  context: StreamHandlerContext
 ): Promise<StreamHandlerResult> => {
   return new ChatHistoryStreamProcessor()['processFinish'](chunk, context);
 };

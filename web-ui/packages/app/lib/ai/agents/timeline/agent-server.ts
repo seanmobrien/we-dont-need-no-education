@@ -21,7 +21,7 @@ import {
 } from '@/lib/ai/middleware/chat-history';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { auth } from '@/auth';
 import { generateTextWithRetry } from '@/lib/ai/core/generate-text-with-retry';
 
@@ -103,7 +103,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
    * Initialize the agent by loading the initial document and extracting case metadata
    */
   async initialize(
-    { req }: InitializeProps | undefined = {} as InitializeProps,
+    { req }: InitializeProps | undefined = {} as InitializeProps
   ): Promise<void> {
     if (this.#isInitialized) return;
     const session = await auth();
@@ -116,7 +116,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     try {
       // Load initial document and extract case metadata
       const initialDocument = await this.#loadDocument(
-        this.propertyId ?? initialDocId,
+        this.propertyId ?? initialDocId
       );
       const caseMetadata = await this.#extractCaseMetadata(initialDocument);
       if (
@@ -152,7 +152,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
    * Process the next document in chronological order
    */
   async processNextDocument(
-    nextDocId?: string,
+    nextDocId?: string
   ): Promise<ProcessingResult | null> {
     if (!this.#isInitialized) {
       throw new Error('Agent must be initialized before processing documents');
@@ -242,12 +242,12 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     const result = docRequest?.structuredContent?.result;
     if (!result) {
       throw new Error(
-        `Failed to load document ${documentId}: No content found`,
+        `Failed to load document ${documentId}: No content found`
       );
     }
     if (result.isError === true) {
       throw new Error(
-        `Failed to load document ${documentId}: ${result.message}`,
+        `Failed to load document ${documentId}: ${result.message}`
       );
     }
     const content =
@@ -259,7 +259,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
   }
 
   async #extractCaseMetadata(
-    document: string,
+    document: string
   ): Promise<Partial<GlobalMetadata>> {
     const prompt = `
     Analyze the following document and extract case metadata. Return a JSON object with the following fields:
@@ -293,7 +293,9 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     });
     if (!callToActionRecord) {
       throw new Error(
-        `Failed to find call to action record for document ${this.propertyId ?? 'null'}`,
+        `Failed to find call to action record for document ${
+          this.propertyId ?? 'null'
+        }`
       );
     }
     const ctaText = callToActionRecord.propertyValue || '';
@@ -335,7 +337,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
 
   async #processDocument(
     documentId: string,
-    document: string,
+    document: string
   ): Promise<ProcessingResult> {
     // First, extract document metadata
     const metadata = await this.#extractDocumentMetadata(documentId, document);
@@ -366,7 +368,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     const response = await this.generateResponse<ProcessingResult>(prompt);
     if (!response || typeof response !== 'object') {
       throw new Error(
-        `Failed to process document ${documentId}: Invalid response format`,
+        `Failed to process document ${documentId}: Invalid response format`
       );
     }
     try {
@@ -399,7 +401,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
 
   async #extractDocumentMetadata(
     documentId: string,
-    document: string,
+    document: string
   ): Promise<DocumentMetadata> {
     const prompt = `
     Extract metadata from the following document. Return a JSON object with:
@@ -525,7 +527,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
       req?: NextRequest;
       operation?: string;
       opProps?: Record<string, unknown>;
-    } = {},
+    } = {}
   ): Promise<TResultType> {
     let tools: ToolProviderSet | undefined = undefined;
     try {
@@ -596,7 +598,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
 }
 
 const TimelineAgentFactory = (
-  props: TimelineAgentProps,
+  props: TimelineAgentProps
 ): ServerTimelineAgent => {
   return new ServerTimelineAgent(props);
 };

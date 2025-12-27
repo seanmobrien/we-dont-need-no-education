@@ -12,7 +12,7 @@ import NextAuth from 'next-auth'; // Added NextAuthConfig
 import type { Adapter, AdapterSession, AdapterUser } from '@auth/core/adapters';
 import type { CredentialInput, Provider } from '@auth/core/providers';
 import { isRunningOnEdge } from '@/lib/site-util/env';
-import { logEvent } from '@compliance-theater/lib-logger';
+import { logEvent } from '@compliance-theater/logger';
 
 import { setupKeyCloakProvider } from './lib/auth/keycloak-provider';
 import { authorized } from './lib/auth/authorized';
@@ -45,7 +45,7 @@ type DynamicImports = {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           newSession: any;
           trigger?: 'update';
-        },
+        }
       ) => Awaitable<Session | DefaultSession>;
     };
     signIn: {

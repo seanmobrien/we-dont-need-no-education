@@ -8,14 +8,26 @@
     "declarationMap": true,
     "baseUrl": ".",
     "paths": {
-      "@compliance-theater/lib-logger": ["../lib-logger/dist"],
-      "@compliance-theater/lib-logger/*": ["../lib-logger/dist/*"]
+      "@compliance-theater/logger": [
+        "../lib-logger/dist"
+      ],
+      "@compliance-theater/logger/*": [
+        "../lib-logger/dist/*"
+      ]
     },
     "noEmit": false
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "__tests__"],
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "__tests__"
+  ],
   "references": [
-    { "path": "../lib-logger" }
+    {
+      "path": "../lib-logger"
+    }
   ]
 }

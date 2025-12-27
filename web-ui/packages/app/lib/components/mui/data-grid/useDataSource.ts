@@ -19,7 +19,7 @@ import {
   QueryClient,
   // QueryClient,
 } from '@tanstack/react-query';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 // import { has } from 'lodash';
 
 /**
@@ -30,7 +30,7 @@ const createQueryKey = (
   page?: number,
   pageSize?: number,
   sortModel?: GridSortModel,
-  filterModel?: GridFilterModel,
+  filterModel?: GridFilterModel
 ) => {
   return ['dataGrid', url, page, pageSize, sortModel, filterModel] as const;
 };
@@ -43,7 +43,7 @@ const fetchGridData = async (
   page?: number,
   pageSize?: number,
   sortModel?: GridSortModel,
-  filterModel?: GridFilterModel,
+  filterModel?: GridFilterModel
 ): Promise<GridGetRowsResponse> => {
   const urlWithParams = new URL(url);
   if (pageSize) {
@@ -139,7 +139,7 @@ export const useDataSource = ({
     if (isDrizzle) {
       const baseUrl = new URL(urlFromProps, window.location.origin);
       url = new URL(
-        new URL(baseUrl.pathname + '/drizzle', window.location.origin),
+        new URL(baseUrl.pathname + '/drizzle', window.location.origin)
       );
     } else {
       url = urlFromProps;
@@ -170,7 +170,7 @@ export const useDataSource = ({
           currentQueryParams?.page,
           currentQueryParams?.pageSize,
           currentQueryParams?.sortModel,
-          currentQueryParams?.filterModel,
+          currentQueryParams?.filterModel
         )
       : ['dataGrid', String(url)],
     queryFn: async () => {
@@ -179,7 +179,7 @@ export const useDataSource = ({
         currentQueryParams?.page,
         currentQueryParams?.pageSize,
         currentQueryParams?.sortModel,
-        currentQueryParams?.filterModel,
+        currentQueryParams?.filterModel
       );
     },
     refetchOnWindowFocus: false, // Don't refetch when window gains focus
@@ -199,10 +199,14 @@ export const useDataSource = ({
       if (willRetry) {
         log((l) =>
           l.warn({
-            message: `An unexpected error occurred while loading data; there are ${3 - failureCount} retries remaining.  Details: ${isError(error) ? error.message : String(error)}`,
+            message: `An unexpected error occurred while loading data; there are ${
+              3 - failureCount
+            } retries remaining.  Details: ${
+              isError(error) ? error.message : String(error)
+            }`,
             source: 'grid::dataSource',
             data: error,
-          }),
+          })
         );
       } else {
         LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -228,8 +232,8 @@ export const useDataSource = ({
           'url',
           url,
           'currentQueryParams',
-          currentQueryParams,
-        ),
+          currentQueryParams
+        )
       );
       pendingQueries.current.forEach(([, reject]) => {
         try {
@@ -250,8 +254,8 @@ export const useDataSource = ({
           'url',
           url,
           'currentQueryParams',
-          currentQueryParams,
-        ),
+          currentQueryParams
+        )
       );
       pendingQueries.current.forEach(([resolve]) => resolve(data));
       pendingQueries.current = [];
@@ -299,8 +303,8 @@ export const useDataSource = ({
           'useDataSource::updateRowMutation::error',
           le.message,
           'url',
-          url,
-        ),
+          url
+        )
       );
     },
     retry: (failureCount, error) => {
@@ -329,7 +333,7 @@ export const useDataSource = ({
         throw err;
       }
     },
-    [updateRowMutation],
+    [updateRowMutation]
   );
 
   /**
@@ -339,11 +343,11 @@ export const useDataSource = ({
     (error: unknown) => {
       if (!Object.is(error, queryError)) {
         log((l) =>
-          l.warn('onDataSourceError::error is not query error...', { error }),
+          l.warn('onDataSourceError::error is not query error...', { error })
         );
       }
     },
-    [queryError],
+    [queryError]
   );
 
   /**
@@ -385,7 +389,7 @@ export const useDataSource = ({
           page,
           pageSize,
           sortModel,
-          filterModel,
+          filterModel
         );
 
         return new Promise<GridGetRowsResponse>((resolve, reject) => {
@@ -398,8 +402,8 @@ export const useDataSource = ({
                     'queryKey',
                     queryKey,
                     'url',
-                    url,
-                  ),
+                    url
+                  )
                 );
                 resolve(data);
               }
@@ -410,21 +414,21 @@ export const useDataSource = ({
                   'queryKey',
                   queryKey,
                   'url',
-                  url,
-                ),
+                  url
+                )
               );
               // Reject the promise if it takes too long
               reject(
                 new Error(
-                  `Query for ${queryKey.join(', ')} timed out after 30 seconds`,
-                ),
+                  `Query for ${queryKey.join(', ')} timed out after 30 seconds`
+                )
               );
             } catch (err) {
               log((l) =>
                 l.warn(
                   'Unexpected error caught in getRows proxy resolution.',
-                  err,
-                ),
+                  err
+                )
               );
             }
           }, 60 * 1000); // 60 seconds timeout
@@ -443,13 +447,13 @@ export const useDataSource = ({
         log((l) =>
           l.verbose(
             'getRows::error occurred - rethrowing to react query for disposition',
-            err,
-          ),
+            err
+          )
         );
         throw err;
       }
     },
-    [url, isSuccess, data, setCurrentQueryParams],
+    [url, isSuccess, data, setCurrentQueryParams]
   );
 
   // Memoize the data source object to prevent unnecessary re-renders

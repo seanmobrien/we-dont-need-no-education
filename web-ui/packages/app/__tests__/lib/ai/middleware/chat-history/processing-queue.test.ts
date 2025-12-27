@@ -18,7 +18,7 @@ setupImpersonationMock();
 
 import { ProcessingQueue } from '@/lib/ai/middleware/chat-history/processing-queue';
 import { processStreamChunk } from '@/lib/ai/middleware/chat-history/stream-handlers';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
 import { ensureCreateResult } from '@/lib/ai/middleware/chat-history/stream-handler-result';
@@ -184,7 +184,7 @@ describe('ProcessingQueue', () => {
       mockProcessStreamChunk.mockRejectedValue(error);
 
       await expect(queue.enqueue(mockChunk, mockContext)).rejects.toThrow(
-        'Processing failed',
+        'Processing failed'
       );
 
       expect(mockLog).toHaveBeenCalledWith(expect.any(Function));
@@ -258,7 +258,7 @@ describe('ProcessingQueue', () => {
       // Use a slow mock to test queue length tracking
       mockProcessStreamChunk.mockImplementation(
         () =>
-          new Promise((resolve) => setTimeout(() => resolve(mockResult), 50)),
+          new Promise((resolve) => setTimeout(() => resolve(mockResult), 50))
       );
 
       expect(queue.getQueueLength()).toBe(0);
@@ -287,7 +287,7 @@ describe('ProcessingQueue', () => {
       // Use a slow mock to test processing state
       mockProcessStreamChunk.mockImplementation(
         () =>
-          new Promise((resolve) => setTimeout(() => resolve(mockResult), 50)),
+          new Promise((resolve) => setTimeout(() => resolve(mockResult), 50))
       );
 
       expect(queue.isProcessing()).toBe(false);
@@ -308,7 +308,7 @@ describe('ProcessingQueue', () => {
 
       mockProcessStreamChunk.mockImplementation(
         () =>
-          new Promise((resolve) => setTimeout(() => resolve(mockResult), 50)),
+          new Promise((resolve) => setTimeout(() => resolve(mockResult), 50))
       );
 
       const promise1 = queue.enqueue(mockChunk, mockContext);
@@ -425,8 +425,8 @@ describe('ProcessingQueue', () => {
             delta: `chunk-${i}`,
             id: `chunk-${i}`,
           },
-          { ...mockContext, currentMessageOrder: i },
-        ),
+          { ...mockContext, currentMessageOrder: i }
+        )
       );
 
       expect(queue.getQueueLength()).toBe(10);
@@ -448,7 +448,7 @@ describe('ProcessingQueue', () => {
 
       mockProcessStreamChunk.mockImplementation(
         () =>
-          new Promise((resolve) => setTimeout(() => resolve(mockResult), 100)),
+          new Promise((resolve) => setTimeout(() => resolve(mockResult), 100))
       );
 
       const promise = queue.enqueue(mockChunk, mockContext);

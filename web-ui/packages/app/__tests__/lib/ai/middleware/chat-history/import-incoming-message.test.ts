@@ -21,7 +21,7 @@ import {
   getNewMessages,
 } from '@/lib/ai/middleware/chat-history/utility';
 import { generateChatId } from '@/lib/ai/core';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type { DbTransactionType } from '@/lib/drizzle-db';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
@@ -130,7 +130,7 @@ describe('Import Incoming Message', () => {
     // Mock getNewMessages to return all messages as new by default (backwards compatible)
     // This will be overridden by specific tests as needed
     mockGetNewMessages.mockImplementation((_tx, _chatId, incomingMessages) =>
-      Promise.resolve(incomingMessages),
+      Promise.resolve(incomingMessages)
     );
 
     mockGenerateChatId.mockReturnValue({ seed: 1, id: 'generated-chat-id' });
@@ -233,7 +233,7 @@ describe('Import Incoming Message', () => {
 
       // Assert
       const insertCall = mockTx.insert.mock.calls.find(
-        (call) => call[0] === schema.chats,
+        (call) => call[0] === schema.chats
       );
       expect(insertCall).toBeDefined();
     });
@@ -263,7 +263,7 @@ describe('Import Incoming Message', () => {
       // Arrange
       mockGetNextSequence.mockReset();
       mockGetNextSequence.mockRejectedValueOnce(
-        new Error('Failed to get turn sequence'),
+        new Error('Failed to get turn sequence')
       );
 
       // Act & Assert
@@ -272,7 +272,7 @@ describe('Import Incoming Message', () => {
           tx: mockTx,
           context: mockContext,
           params: mockParams,
-        }),
+        })
       ).rejects.toThrow('Failed to get turn sequence');
     });
 
@@ -287,7 +287,7 @@ describe('Import Incoming Message', () => {
           tx: mockTx,
           context: mockContext,
           params: mockParams,
-        }),
+        })
       ).rejects.toThrow('Unexpected failure retrieving next turn sequence');
     });
 
@@ -301,7 +301,7 @@ describe('Import Incoming Message', () => {
 
       // Assert
       const turnInsertCall = mockTx.insert.mock.calls.find(
-        (call) => call[0] === schema.chatTurns,
+        (call) => call[0] === schema.chatTurns
       );
       expect(turnInsertCall).toBeDefined();
     });
@@ -347,7 +347,7 @@ describe('Import Incoming Message', () => {
           tx: mockTx,
           context: mockContext,
           params: mockParams,
-        }),
+        })
       ).rejects.toThrow('Failed to reserve enough message ids');
     });
 
@@ -553,7 +553,7 @@ describe('Import Incoming Message', () => {
           tx: mockTx,
           context: mockContext,
           params: mockParams,
-        }),
+        })
       ).rejects.toThrow('Transaction failed');
     });
 
@@ -576,7 +576,7 @@ describe('Import Incoming Message', () => {
           tx: mockTx,
           context: mockContext,
           params: mockParams,
-        }),
+        })
       ).rejects.toThrow('Chat check failed');
     });
 
@@ -619,7 +619,7 @@ describe('Import Incoming Message', () => {
           tx: mockTx,
           context: mockContext,
           params: mockParams,
-        }),
+        })
       ).rejects.toThrow('Message insert failed');
     });
   });

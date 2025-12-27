@@ -8,7 +8,7 @@ import { Span, SpanStatusCode } from '@opentelemetry/api';
 import { tracer, MetricsRecorder, DEBUG_MODE } from '../metrics/otel-metrics';
 import { CounterManager } from '../metrics/counter-manager';
 import type { JSONRPCMessage } from '@/lib/ai/mcp/ai.sdk';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { isError } from '@/lib/react-util/utility-methods';
 
 export interface SpanState {
@@ -65,7 +65,7 @@ export class SessionManager {
         log((l) =>
           l.debug('Creating new MCP session', {
             data: { sessionId, method: this.getMessageMethod(message) },
-          }),
+          })
         );
       }
 
@@ -120,7 +120,7 @@ export class SessionManager {
           MetricsRecorder.recordSessionDuration(
             sessionDuration,
             this.#url,
-            'idle_timeout',
+            'idle_timeout'
           );
 
           sessionState.span.addEvent('session.idle_timeout', {
@@ -139,7 +139,7 @@ export class SessionManager {
             MetricsRecorder.recordToolCallCompletion(
               this.#url,
               sessionState.toolCallMethod || 'unknown',
-              'idle_timeout',
+              'idle_timeout'
             );
           }
 
@@ -153,7 +153,7 @@ export class SessionManager {
                   duration: sessionDuration,
                   messageCount: sessionState.messageCount,
                 },
-              }),
+              })
             );
           }
         }
@@ -164,7 +164,7 @@ export class SessionManager {
               sessionId,
               error: isError(error) ? error.message : String(error),
             },
-          }),
+          })
         );
       }
     }, IDLE_TIMEOUT_MS);
@@ -189,7 +189,7 @@ export class SessionManager {
       MetricsRecorder.recordSessionDuration(
         sessionDuration,
         this.#url,
-        'normal_close',
+        'normal_close'
       );
 
       sessionState.span.addEvent('session.closing', {
@@ -209,7 +209,7 @@ export class SessionManager {
         MetricsRecorder.recordToolCallCompletion(
           this.#url,
           sessionState.toolCallMethod || 'unknown',
-          'transport_close',
+          'transport_close'
         );
       }
     }
@@ -230,7 +230,7 @@ export class SessionManager {
       this.#url,
       reason === 'tool_call_response'
         ? 'tool_call_response'
-        : 'normal_completion',
+        : 'normal_completion'
     );
 
     if (sessionState.isToolCall) {
@@ -254,7 +254,7 @@ export class SessionManager {
       MetricsRecorder.recordToolCallCompletion(
         this.#url,
         sessionState.toolCallMethod || 'unknown',
-        reason,
+        reason
       );
     }
 
@@ -289,7 +289,7 @@ export class SessionManager {
    */
   forceCompleteToolCall(
     sessionId: string,
-    reason: string = 'manual_completion',
+    reason: string = 'manual_completion'
   ): boolean {
     const sessionState = this.#sessions.get(sessionId);
     if (!sessionState || !sessionState.isToolCall) {
@@ -316,7 +316,7 @@ export class SessionManager {
     MetricsRecorder.recordToolCallCompletion(
       this.#url,
       sessionState.toolCallMethod || 'unknown',
-      reason,
+      reason
     );
 
     this.#sessions.delete(sessionId);
@@ -329,7 +329,7 @@ export class SessionManager {
           reason,
           method: sessionState.toolCallMethod,
         },
-      }),
+      })
     );
 
     return true;
@@ -349,13 +349,13 @@ export class SessionManager {
   }
 
   private hasId(
-    message: JSONRPCMessage,
+    message: JSONRPCMessage
   ): message is JSONRPCMessage & { id: string | number } {
     return 'id' in message && message.id !== undefined;
   }
 
   private hasMethod(
-    message: JSONRPCMessage,
+    message: JSONRPCMessage
   ): message is JSONRPCMessage & { method: string } {
     return 'method' in message && typeof message.method === 'string';
   }

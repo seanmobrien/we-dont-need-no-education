@@ -2,7 +2,7 @@
  * Type definitions for API request utilities
  * @module @/lib/send-api-request/types
  */
-import { ICancellablePromiseExt } from '@compliance-theater/lib-typescript';
+import { ICancellablePromiseExt } from '@compliance-theater/typescript';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
 declare module '@/lib/send-api-request/types' {
@@ -35,7 +35,7 @@ declare module '@/lib/send-api-request/types' {
    * @returns A cancellable promise that resolves to the response data of type T
    */
   export type ApiRequestFunction = <T>(
-    apiRequest: ApiRequestParams,
+    apiRequest: ApiRequestParams
   ) => ICancellablePromiseExt<T>;
 
   /**
@@ -98,7 +98,7 @@ declare module '@/lib/send-api-request/types' {
      */
     get: <T>(
       params: Omit<ReadApiRequestParams, 'area'>,
-      additional?: AdditionalRequestParams,
+      additional?: AdditionalRequestParams
     ) => ICancellablePromiseExt<T>;
 
     /**
@@ -110,7 +110,7 @@ declare module '@/lib/send-api-request/types' {
      */
     post: <T>(
       params: Omit<WriteApiRequestParams, 'area'>,
-      additional?: AdditionalRequestParams,
+      additional?: AdditionalRequestParams
     ) => ICancellablePromiseExt<T>;
 
     /**
@@ -122,7 +122,7 @@ declare module '@/lib/send-api-request/types' {
      */
     put: <T>(
       params: Omit<WriteApiRequestParams, 'area'>,
-      additional?: AdditionalRequestParams,
+      additional?: AdditionalRequestParams
     ) => ICancellablePromiseExt<T>;
 
     /**
@@ -134,7 +134,7 @@ declare module '@/lib/send-api-request/types' {
      */
     delete: <T>(
       params: Omit<DeleteApiRequestParams, 'area'>,
-      additional?: AdditionalRequestParams,
+      additional?: AdditionalRequestParams
     ) => ICancellablePromiseExt<T>;
   };
 }

@@ -6,7 +6,7 @@
  */
 
 import { trace } from '@opentelemetry/api';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { DEBUG_MODE } from '../metrics/otel-metrics';
 
 /**
@@ -18,14 +18,15 @@ export class TraceContextManager {
    * This can be called before the instance is created
    */
   static injectTraceContext(
-    headers: Record<string, string> = {},
+    headers: Record<string, string> = {}
   ): Record<string, string> {
     const activeSpan = trace.getActiveSpan();
     if (activeSpan) {
       const spanContext = activeSpan.spanContext();
       if (spanContext.traceId && spanContext.spanId) {
-        headers['traceparent'] =
-          `00-${spanContext.traceId}-${spanContext.spanId}-${spanContext.traceFlags?.toString(16).padStart(2, '0') || '01'}`;
+        headers['traceparent'] = `00-${spanContext.traceId}-${
+          spanContext.spanId
+        }-${spanContext.traceFlags?.toString(16).padStart(2, '0') || '01'}`;
 
         if (DEBUG_MODE) {
           log((l) =>
@@ -35,7 +36,7 @@ export class TraceContextManager {
                 spanId: spanContext.spanId,
                 traceFlags: spanContext.traceFlags,
               },
-            }),
+            })
           );
         }
       }
@@ -48,7 +49,7 @@ export class TraceContextManager {
    * This method can be used by callers to get headers with trace context included
    */
   static getEnhancedHeaders(
-    baseHeaders: Record<string, string> = {},
+    baseHeaders: Record<string, string> = {}
   ): Record<string, string> {
     return TraceContextManager.injectTraceContext(baseHeaders);
   }
@@ -58,7 +59,7 @@ export class TraceContextManager {
    * Returns true if trace context was injected, false otherwise
    */
   static updateHeadersWithTraceContext(
-    headers: Record<string, string>,
+    headers: Record<string, string>
   ): boolean {
     const originalKeyCount = Object.keys(headers).length;
     const enhancedHeaders = TraceContextManager.injectTraceContext(headers);
@@ -75,7 +76,7 @@ export class TraceContextManager {
             originalKeys: originalKeyCount,
             newKeys: Object.keys(headers).length,
           },
-        }),
+        })
       );
     }
 

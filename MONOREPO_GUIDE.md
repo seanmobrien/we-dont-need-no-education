@@ -151,13 +151,13 @@ Each package extraction follows this pattern:
 After extracting each package, update all imports:
 
 - From: `@/lib/logger`
-- To: `@compliance-theater/lib-logger`
+- To: `@compliance-theater/logger`
 
 Use this script pattern:
 
 ```bash
 find packages/app -type f \( -name "*.ts" -o -name "*.tsx" \) \
-  -exec sed -i 's|@/lib/logger|@compliance-theater/lib-logger|g' {} \;
+  -exec sed -i 's|@/lib/logger|@compliance-theater/logger|g' {} \;
 ```
 
 ### Phase 6: Package.json Templates
@@ -203,7 +203,7 @@ Each package needs:
 
 - Each package has `__tests__/` or `src/__tests__/`
 - Each package has `jest.config.mjs` extending root config
-- Tests can be run independently: `yarn workspace @compliance-theater/lib-logger test`
+- Tests can be run independently: `yarn workspace @compliance-theater/logger test`
 
 **Integration Tests**:
 
@@ -224,7 +224,7 @@ Each package needs:
 yarn test
 
 # Specific package
-yarn workspace @compliance-theater/lib-logger test
+yarn workspace @compliance-theater/logger test
 
 # All unit tests
 yarn test:unit

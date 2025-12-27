@@ -1,4 +1,4 @@
-import { globalRequiredSingleton } from '@compliance-theater/lib-typescript';
+import { globalRequiredSingleton } from '@compliance-theater/typescript';
 import { metrics } from '@opentelemetry/api';
 
 const meter = metrics.getMeter('key-rate-limiter', '1.0.0');
@@ -8,7 +8,7 @@ const messagesProcessedCounter = meter.createCounter(
   'rate_limit_messages_processed_total',
   {
     description: 'Total number of rate-limited messages processed',
-  },
+  }
 );
 
 const errorsCounter = meter.createCounter('rate_limit_errors_total', {
@@ -21,7 +21,7 @@ const processingDurationHistogram = meter.createHistogram(
   {
     description: 'Time taken to process rate-limited messages',
     unit: 'ms',
-  },
+  }
 );
 
 // Up-down counters (gauges)
@@ -33,7 +33,7 @@ export class RateLimitMetricsCollector {
   static getInstance(): RateLimitMetricsCollector {
     return globalRequiredSingleton(
       Symbol.for('@noeducation/key-rate-limiter:RateLimitMetricsCollector'),
-      () => new RateLimitMetricsCollector(),
+      () => new RateLimitMetricsCollector()
     );
   }
 
@@ -53,7 +53,7 @@ export class RateLimitMetricsCollector {
 
   recordProcessingDuration(
     durationMs: number,
-    modelClassification: string,
+    modelClassification: string
   ): void {
     processingDurationHistogram.record(durationMs, {
       model_classification: modelClassification,
@@ -63,7 +63,7 @@ export class RateLimitMetricsCollector {
   updateQueueSize(
     size: number,
     modelClassification: string,
-    generation: 1 | 2,
+    generation: 1 | 2
   ): void {
     queueSizeGauge.add(size, {
       model_classification: modelClassification,

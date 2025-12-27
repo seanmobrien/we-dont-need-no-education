@@ -5,7 +5,7 @@ import {
 import { EmailMessage } from '@/data-models/api/email-message';
 import { ContactSummary } from '@/data-models/api/contact';
 import { query } from '@/lib/neondb';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { auth } from '@/auth';
 /**
  * Request model for creating emails via the service
@@ -97,21 +97,21 @@ export class EmailService {
       // Fetch sender information
       const senderResult = await query(
         (sql) =>
-          sql`SELECT contact_id, name, email FROM contacts WHERE contact_id = ${emailDomain.senderId}`,
+          sql`SELECT contact_id, name, email FROM contacts WHERE contact_id = ${emailDomain.senderId}`
       );
 
       const sender: ContactSummary =
         senderResult.length > 0
           ? {
-            contactId: senderResult[0].contact_id as number,
-            name: senderResult[0].name as string,
-            email: senderResult[0].email as string,
-          }
+              contactId: senderResult[0].contact_id as number,
+              name: senderResult[0].name as string,
+              email: senderResult[0].email as string,
+            }
           : {
-            contactId: emailDomain.senderId,
-            name: 'Unknown',
-            email: 'unknown@example.com',
-          };
+              contactId: emailDomain.senderId,
+              name: 'Unknown',
+              email: 'unknown@example.com',
+            };
 
       // Fetch recipients information
       const recipientsResult = await query(
@@ -124,7 +124,7 @@ export class EmailService {
           LEFT JOIN contacts c ON er.recipient_id = c.contact_id
           WHERE er.email_id = ${emailId}
             AND c.contact_id IS NOT NULL
-        `,
+        `
       );
 
       const recipients: ContactSummary[] = recipientsResult.map((rec) => ({
@@ -175,7 +175,6 @@ export class EmailService {
         }
       }
 
-
       // Create the email using the repository
       const emailDomain: Omit<EmailDomain, 'emailId'> = {
         senderId,
@@ -202,7 +201,7 @@ export class EmailService {
         (sql) => sql`
           INSERT INTO document_units (email_id, user_id, content, created_on, document_type)
           VALUES (${createdEmail.emailId}, ${userId}, ${createdEmail.emailContents}, ${importDate}, 'email')
-        `,
+        `
       );
 
       // Return the full email details
@@ -215,7 +214,7 @@ export class EmailService {
         l.verbose({
           message: '[[AUDIT]] - Email created via service:',
           resultset: fullEmail,
-        }),
+        })
       );
 
       return fullEmail;
@@ -269,7 +268,7 @@ export class EmailService {
         l.verbose({
           message: '[[AUDIT]] - Email updated via service:',
           resultset: fullEmail,
-        }),
+        })
       );
 
       return fullEmail;
@@ -294,7 +293,7 @@ export class EmailService {
           message: '[[AUDIT]] - Email deleted via service:',
           emailId,
           success: result,
-        }),
+        })
       );
 
       return result;
@@ -311,18 +310,19 @@ export class EmailService {
    * @returns Promise resolving to email ID or null if not found
    */
   async findEmailIdByGlobalMessageId(
-    globalMessageId: string,
+    globalMessageId: string
   ): Promise<string | null> {
     try {
-      const email =
-        await this.repository.findByGlobalMessageId(globalMessageId);
+      const email = await this.repository.findByGlobalMessageId(
+        globalMessageId
+      );
       return email?.emailId || null;
     } catch (error) {
       log((l) =>
         l.error({
           source: 'EmailService::findEmailIdByGlobalMessageId',
           error,
-        }),
+        })
       );
       throw error;
     }
@@ -342,14 +342,13 @@ export class EmailService {
       recipientName?: string;
       recipientEmail?: string;
     }>,
-    replaceExisting = false,
+    replaceExisting = false
   ): Promise<void> {
     try {
       if (replaceExisting) {
         // Delete existing recipients
         await query(
-          (sql) =>
-            sql`DELETE FROM email_recipients WHERE email_id = ${emailId}`,
+          (sql) => sql`DELETE FROM email_recipients WHERE email_id = ${emailId}`
         );
       }
 
@@ -360,7 +359,7 @@ export class EmailService {
             INSERT INTO email_recipients (email_id, recipient_id)
             VALUES (${emailId}, ${recipient.recipientId})
             ON CONFLICT (email_id, recipient_id) DO NOTHING
-          `,
+          `
         );
       }
     } catch (error) {

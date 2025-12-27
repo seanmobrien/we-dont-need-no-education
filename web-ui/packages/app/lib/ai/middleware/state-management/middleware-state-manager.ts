@@ -3,7 +3,7 @@ import type {
   LanguageModelV2,
   LanguageModelV2TextPart,
 } from '@ai-sdk/provider';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import {
   SerializableLanguageModelMiddleware,
   SerializableMiddleware,
@@ -16,16 +16,16 @@ import {
   isStateRestorationRequest,
 } from './create-stateful-middleware';
 import { generateText, wrapLanguageModel } from 'ai';
-import { SingletonProvider } from '@compliance-theater/lib-typescript';
+import { SingletonProvider } from '@compliance-theater/typescript';
 
 export class MiddlewareStateManager {
   static readonly #REGISTRY_KEY = Symbol.for(
-    '@noeducation/middleware:MiddlewareStateManager',
+    '@noeducation/middleware:MiddlewareStateManager'
   );
 
   static get #globalInstance(): MiddlewareStateManager | undefined {
     return SingletonProvider.Instance.get<MiddlewareStateManager, symbol>(
-      MiddlewareStateManager.#REGISTRY_KEY,
+      MiddlewareStateManager.#REGISTRY_KEY
     );
   }
   static set #globalInstance(value: MiddlewareStateManager | undefined) {
@@ -131,7 +131,7 @@ export class MiddlewareStateManager {
   }
 
   statefulMiddlewareWrapper<
-    TState extends SerializableState = SerializableState,
+    TState extends SerializableState = SerializableState
   >({
     middlewareId,
     middleware,
@@ -169,7 +169,7 @@ export class MiddlewareStateManager {
   }
 
   initializeModel(
-    props: LanguageModelV2 | { model: LanguageModelV2 },
+    props: LanguageModelV2 | { model: LanguageModelV2 }
   ): LanguageModelV2 {
     const model = 'model' in props ? props.model : props;
     const ret = wrapLanguageModel({
@@ -192,7 +192,7 @@ export class MiddlewareStateManager {
             prompt
               .flatMap((msg) => (Array.isArray(msg.content) ? msg.content : []))
               .filter(
-                (p) => p.type === 'text' && p.text?.length,
+                (p) => p.type === 'text' && p.text?.length
               ) as LanguageModelV2TextPart[]
           )
             .map((p) => p.text)

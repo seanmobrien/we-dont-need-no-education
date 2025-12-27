@@ -6,7 +6,7 @@
  */
 
 import { activeSessionsGauge, activeToolCallsGauge } from './otel-metrics';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { DEBUG_MODE } from './otel-metrics';
 
 export interface ActiveCounters {
@@ -39,7 +39,7 @@ export class CounterManager {
             previousSessions: this.#activeCounters.sessions,
             previousToolCalls: this.#activeCounters.toolCalls,
           },
-        }),
+        })
       );
     }
 
@@ -58,7 +58,7 @@ export class CounterManager {
   incrementCounter(type: 'sessions' | 'toolCalls', amount: number = 1): void {
     this.#activeCounters[type] = Math.max(
       0,
-      this.#activeCounters[type] + amount,
+      this.#activeCounters[type] + amount
     );
 
     if (type === 'sessions') {
@@ -71,7 +71,7 @@ export class CounterManager {
       log((l) =>
         l.debug(`Incremented ${type} counter`, {
           data: { amount, newValue: this.#activeCounters[type] },
-        }),
+        })
       );
     }
   }
@@ -83,7 +83,7 @@ export class CounterManager {
     const oldValue = this.#activeCounters[type];
     this.#activeCounters[type] = Math.max(
       0,
-      this.#activeCounters[type] - amount,
+      this.#activeCounters[type] - amount
     );
     const actualDecrement = oldValue - this.#activeCounters[type];
 
@@ -101,7 +101,7 @@ export class CounterManager {
             actualAmount: actualDecrement,
             newValue: this.#activeCounters[type],
           },
-        }),
+        })
       );
     }
   }

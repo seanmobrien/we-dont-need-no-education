@@ -42,7 +42,7 @@
  * ```
  */
 
-import type { FirstParameter } from '@compliance-theater/lib-typescript';
+import type { FirstParameter } from '@compliance-theater/typescript';
 import type { DbFullSchemaType, DbDatabaseType } from './schema';
 
 /**

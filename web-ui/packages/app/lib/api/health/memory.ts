@@ -1,9 +1,11 @@
 import InMemoryCache from './base-cache';
-import type { HealthDetails, HealthStatus, MemoryHealthCheckResponse } from '@/lib/ai/mem0/types/health-check';
-import { globalRequiredSingletonAsync } from '@compliance-theater/lib-typescript/singleton-provider';
-import {
-  wellKnownFlag,
-} from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import type {
+  HealthDetails,
+  HealthStatus,
+  MemoryHealthCheckResponse,
+} from '@/lib/ai/mem0/types/health-check';
+import { globalRequiredSingletonAsync } from '@compliance-theater/typescript/singleton-provider';
+import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 import type { AutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/types';
 import type { KnownFeatureType } from '@/lib/site-util/feature-flags/known-feature';
 
@@ -23,16 +25,16 @@ export class MemoryHealthCache extends InMemoryCache<MemoryHealthCheckResponse> 
   constructor(config?: {
     ttlMs?: number | AutoRefreshFeatureFlag<'health_memory_cache_ttl'>;
     errorTtlMs?:
-    | number
-    | AutoRefreshFeatureFlag<'health_memory_cache_error_ttl'>;
+      | number
+      | AutoRefreshFeatureFlag<'health_memory_cache_error_ttl'>;
     warningTtlMs?:
-    | number
-    | AutoRefreshFeatureFlag<'health_memory_cache_warning_ttl'>;
+      | number
+      | AutoRefreshFeatureFlag<'health_memory_cache_warning_ttl'>;
   }) {
     // Handle both number and AutoRefreshFeatureFlag for each TTL
     const getTtlValue = (
       value: number | AutoRefreshFeatureFlag<KnownFeatureType> | undefined,
-      defaultMs: number,
+      defaultMs: number
     ): number => {
       if (value === undefined) return defaultMs;
       if (typeof value === 'number') return value;
@@ -100,32 +102,32 @@ export const getMemoryHealthCache = (): Promise<MemoryHealthCache> =>
         // Fallback to defaults if feature flags are unavailable
         return new MemoryHealthCache();
       }
-    },
+    }
     //{ weakRef: true },
   );
-
 
 /**
  * A mapping of subsystem names to their health status or status object.
  */
-type SubsystemHealthMap = Record<string, { status: HealthStatus } | HealthStatus>
+type SubsystemHealthMap = Record<
+  string,
+  { status: HealthStatus } | HealthStatus
+>;
 
-export const getSubsystemHealth = (subsystem: SubsystemHealthMap) => (
-  Object.values(subsystem)
-    .reduce((acc, x) => {
-      const check = typeof x === 'string' ? x : x.status;
-      switch (check) {
-        case 'healthy':
-          return acc;
-        case 'warning':
-          return acc === 'error' ? acc : check;
-        case 'error':
-          return check;
-        default:
-          return acc === 'healthy' ? 'warning' : acc;
-      }
-    }, 'healthy')
-);
+export const getSubsystemHealth = (subsystem: SubsystemHealthMap) =>
+  Object.values(subsystem).reduce((acc, x) => {
+    const check = typeof x === 'string' ? x : x.status;
+    switch (check) {
+      case 'healthy':
+        return acc;
+      case 'warning':
+        return acc === 'error' ? acc : check;
+      case 'error':
+        return check;
+      default:
+        return acc === 'healthy' ? 'warning' : acc;
+    }
+  }, 'healthy');
 
 /**
  * Determines the overall health status based on the health check details

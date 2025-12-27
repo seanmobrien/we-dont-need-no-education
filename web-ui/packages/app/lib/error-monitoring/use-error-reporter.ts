@@ -4,7 +4,7 @@ import {
   ErrorSeverity,
   type ErrorContext,
 } from './error-reporter';
-import { log } from '@compliance-theater/lib-logger/core';
+import { log } from '@compliance-theater/logger/core';
 
 export const useErrorReporter = () => {
   const reporter = errorReporter();
@@ -12,7 +12,7 @@ export const useErrorReporter = () => {
     const reportError = (
       error: Error | unknown,
       severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-      additionalContext: Partial<ErrorContext> = {},
+      additionalContext: Partial<ErrorContext> = {}
     ) => {
       try {
         return reporter.reportError(error, severity, {
@@ -30,7 +30,7 @@ export const useErrorReporter = () => {
     const reportAsyncError = async (
       error: Error | unknown,
       severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-      additionalContext: Partial<ErrorContext> = {},
+      additionalContext: Partial<ErrorContext> = {}
     ) => {
       try {
         await reporter.reportError(error, severity, {
@@ -49,7 +49,7 @@ export const useErrorReporter = () => {
     const reportUserAction = (
       error: Error | unknown,
       action: string,
-      severity: ErrorSeverity = ErrorSeverity.LOW,
+      severity: ErrorSeverity = ErrorSeverity.LOW
     ) => {
       try {
         reporter.reportError(error, severity, {
@@ -65,7 +65,7 @@ export const useErrorReporter = () => {
       error: Error | unknown,
       endpoint: string,
       method: string = 'GET',
-      severity: ErrorSeverity = ErrorSeverity.MEDIUM,
+      severity: ErrorSeverity = ErrorSeverity.MEDIUM
     ) => {
       try {
         reporter.reportError(error, severity, {

@@ -1,7 +1,7 @@
 import { BaseObjectRepository } from '../_baseObjectRepository';
 import { ObjectRepository } from '../_types';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter } from '@compliance-theater/lib-typescript';
+import { FirstParameter } from '@compliance-theater/typescript';
 import {
   DocumentUnit,
   DocumentUnitSummary,
@@ -46,7 +46,7 @@ export class DocumentUnitRepository extends BaseObjectRepository<
       idField: ['unitId', 'unit_id'],
       objectMap: 'mapToDocumentUnit',
       summaryMap:
-        (alwaysReturnContent ?? false)
+        alwaysReturnContent ?? false
           ? 'mapToDocumentUnit'
           : 'mapToDocumentUnitSummary',
     });
@@ -71,8 +71,8 @@ export class DocumentUnitRepository extends BaseObjectRepository<
         sasOptions,
         new StorageSharedKeyCredential(
           env('AZURE_STORAGE_ACCOUNT_NAME'),
-          env('AZURE_STORAGE_ACCOUNT_KEY'),
-        ),
+          env('AZURE_STORAGE_ACCOUNT_KEY')
+        )
       ).toString();
       this.#sasKey = sasToken[0] === '?' ? sasToken : `?${sasToken}`;
     }
@@ -86,13 +86,14 @@ export class DocumentUnitRepository extends BaseObjectRepository<
    * @param obj - The object to validate.
    * @throws {ValidationError} If validation fails.
    */
-  async validate<TMethod extends keyof ObjectRepository<DocumentUnit, 'unitId'>>(
+  async validate<
+    TMethod extends keyof ObjectRepository<DocumentUnit, 'unitId'>
+  >(
     method: TMethod,
     obj: FirstParameter<
       Pick<ObjectRepository<DocumentUnit, 'unitId'>, TMethod>[TMethod]
-    >,
+    >
   ): Promise<void> {
-
     switch (method) {
       case 'create':
         break;
@@ -148,14 +149,17 @@ export class DocumentUnitRepository extends BaseObjectRepository<
    *
    * @returns A tuple containing the SQL query, parameters, and count query.
    */
-  protected async getListQueryProperties(): Promise<[string, Array<unknown>, string]> {
+  protected async getListQueryProperties(): Promise<
+    [string, Array<unknown>, string]
+  > {
     const wherePendingEmbed = this.#pendingEmbed
       ? ' AND du.embedded_on IS NULL'
       : '';
-    const availableCaseFiles = await getAccessibleUserIds(undefined) ?? [];
-    const whereAvailableCaseFiles = availableCaseFiles.length > 0
-      ? ` AND du.user_id IN (${availableCaseFiles.join(',')})`
-      : ' AND 1=-1';
+    const availableCaseFiles = (await getAccessibleUserIds(undefined)) ?? [];
+    const whereAvailableCaseFiles =
+      availableCaseFiles.length > 0
+        ? ` AND du.user_id IN (${availableCaseFiles.join(',')})`
+        : ' AND 1=-1';
     return [
       `SELECT du.*, ea.file_path, e.thread_id,
   ARRAY(
@@ -190,13 +194,16 @@ export class DocumentUnitRepository extends BaseObjectRepository<
    * @param recordId - The ID of the record to fetch.
    * @returns A tuple containing the SQL query and parameters.
    */
-  protected async getQueryProperties(recordId: number): Promise<[string, Array<unknown>]> {
+  protected async getQueryProperties(
+    recordId: number
+  ): Promise<[string, Array<unknown>]> {
     const sql = await pgDbWithInit();
 
-    const availableCaseFiles = await getAccessibleUserIds(undefined) ?? [];
-    const whereAvailableCaseFiles = availableCaseFiles.length > 0
-      ? sql` du.user_id IN ${sql('(' + availableCaseFiles.join(',') + ')')}`
-      : sql` 1=-1`;
+    const availableCaseFiles = (await getAccessibleUserIds(undefined)) ?? [];
+    const whereAvailableCaseFiles =
+      availableCaseFiles.length > 0
+        ? sql` du.user_id IN ${sql('(' + availableCaseFiles.join(',') + ')')}`
+        : sql` 1=-1`;
     return [
       `SELECT du.*, ea.file_path, e.thread_id,
   ARRAY(
@@ -288,7 +295,7 @@ export class DocumentUnitRepository extends BaseObjectRepository<
    * - `createdOn`: The creation date, converted to a `Date` object.
    */
   mapToDocumentUnitSummary = (
-    record: Record<string, unknown>,
+    record: Record<string, unknown>
   ): DocumentUnitSummary => {
     const ret: DocumentUnitSummary = {
       unitId: Number(record.unit_id),
@@ -303,7 +310,7 @@ export class DocumentUnitRepository extends BaseObjectRepository<
         ? (record.related_email_ids as string[])
         : [],
       documentType: String(
-        record.document_type,
+        record.document_type
       ) as DocumentUnit['documentType'],
       createdOn: new Date(String(record.created_on)),
       parentEmailId: record.parent_email_id
@@ -316,34 +323,58 @@ export class DocumentUnitRepository extends BaseObjectRepository<
     };
     switch (ret.documentType) {
       case 'email':
-        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}`;
+        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${
+          ret.emailId
+        }`;
         ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}`;
         break;
       case 'attachment':
         ret.hrefDocument = record.file_path
           ? `${record.file_path}${this.SasKey}`
           : undefined;
-        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/attachment/${ret.attachmentId}`;
+        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/attachment/${
+          ret.attachmentId
+        }`;
         break;
       case 'note':
-        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/${ret.emailPropertyId}`;
-        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/${ret.emailPropertyId}`;
+        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${
+          ret.emailId
+        }/properties/${ret.emailPropertyId}`;
+        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${
+          ret.emailId
+        }/properties/${ret.emailPropertyId}`;
         break;
       case 'key_point':
-        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/key-points/${ret.emailPropertyId}`;
-        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/key-points/${ret.emailPropertyId}`;
+        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${
+          ret.emailId
+        }/properties/key-points/${ret.emailPropertyId}`;
+        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${
+          ret.emailId
+        }/properties/key-points/${ret.emailPropertyId}`;
         break;
       case 'cta':
-        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/call-to-action/${ret.emailPropertyId}`;
-        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/call-to-action/${ret.emailPropertyId}`;
+        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${
+          ret.emailId
+        }/properties/call-to-action/${ret.emailPropertyId}`;
+        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${
+          ret.emailId
+        }/properties/call-to-action/${ret.emailPropertyId}`;
         break;
       case 'sentiment':
-        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/sentiment-analysis/${ret.emailPropertyId}`;
-        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/sentiment-analysis/${ret.emailPropertyId}`;
+        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${
+          ret.emailId
+        }/properties/sentiment-analysis/${ret.emailPropertyId}`;
+        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${
+          ret.emailId
+        }/properties/sentiment-analysis/${ret.emailPropertyId}`;
         break;
       case 'compliance':
-        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/compliance-scores/${ret.emailPropertyId}`;
-        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/compliance-scores/${ret.emailPropertyId}`;
+        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${
+          ret.emailId
+        }/properties/compliance-scores/${ret.emailPropertyId}`;
+        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${
+          ret.emailId
+        }/properties/compliance-scores/${ret.emailPropertyId}`;
         break;
       default:
         break;

@@ -2,19 +2,25 @@ import { EmbeddingModelV2 } from '@ai-sdk/provider';
 import { createEmbeddingModel } from '../../aiModelFactory';
 import { embed } from 'ai';
 import { IEmbeddingService } from './types';
-import { globalRequiredSingleton, SingletonProvider } from '@compliance-theater/lib-typescript';
+import {
+  globalRequiredSingleton,
+  SingletonProvider,
+} from '@compliance-theater/typescript';
 
 export class EmbeddingService implements IEmbeddingService {
   private static get globalEmbeddingModel(): Promise<EmbeddingModelV2<string>> {
-    return globalRequiredSingleton(Symbol.for('@noeducation/embedding:Model'), async () =>
-      createEmbeddingModel(),
+    return globalRequiredSingleton(
+      Symbol.for('@noeducation/embedding:Model'),
+      async () => createEmbeddingModel()
     );
   }
-  private static set globalEmbeddingModel(model: Promise<EmbeddingModelV2<string>>) {
+  private static set globalEmbeddingModel(
+    model: Promise<EmbeddingModelV2<string>>
+  ) {
     const GLOBAL_KEY = Symbol.for('@noeducation/embedding:Model');
     SingletonProvider.Instance.set<Promise<EmbeddingModelV2<string>>, symbol>(
       GLOBAL_KEY,
-      model,
+      model
     );
   }
 
@@ -22,10 +28,15 @@ export class EmbeddingService implements IEmbeddingService {
   private cacheEmbeddings = true;
   private embeddingCache: Map<string, number[]> = new Map();
 
-  constructor(embeddingClient?: EmbeddingModelV2<string> | Promise<EmbeddingModelV2<string>>) {
+  constructor(
+    embeddingClient?:
+      | EmbeddingModelV2<string>
+      | Promise<EmbeddingModelV2<string>>
+  ) {
     this.embeddingClient =
-      embeddingClient instanceof Promise || typeof embeddingClient === 'undefined'
-        ? (embeddingClient ?? EmbeddingService.globalEmbeddingModel)
+      embeddingClient instanceof Promise ||
+      typeof embeddingClient === 'undefined'
+        ? embeddingClient ?? EmbeddingService.globalEmbeddingModel
         : Promise.resolve(embeddingClient);
   }
 

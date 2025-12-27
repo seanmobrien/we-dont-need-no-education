@@ -1,5 +1,5 @@
 import type { StorageStrategyConfig, StorageStrategyType } from './storage';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 
@@ -16,7 +16,7 @@ const normalizeStrategyType = (value: unknown): StorageStrategyType => {
     log((l) =>
       l.warn('Invalid storage strategy flag value, falling back to in-memory', {
         value,
-      }),
+      })
     );
   }
 
@@ -57,7 +57,7 @@ const coerceNumber = (value: unknown): number | undefined => {
 };
 
 const normalizeConfigObject = (
-  value: Record<string, unknown>,
+  value: Record<string, unknown>
 ): StorageStrategyConfig => {
   const config: StorageStrategyConfig = {};
 
@@ -95,7 +95,7 @@ const unwrapFlagValue = (value: unknown): unknown => {
 
 const parseStorageConfig = (
   key: StorageConfigFlagKey,
-  rawValue: unknown,
+  rawValue: unknown
 ): StorageStrategyConfig => {
   const unwrapped = unwrapFlagValue(rawValue);
 
@@ -115,7 +115,7 @@ const parseStorageConfig = (
         l.warn('Failed to parse storage config JSON from feature flag', {
           key,
           error: error instanceof Error ? error.message : String(error),
-        }),
+        })
       );
       return {};
     }
@@ -168,8 +168,10 @@ export const createStorageStrategyFromFlags =
       if (LastStrategy !== strategyValue) {
         log((l) =>
           l.info(
-            `TodoManager: Storage strategy changed from ${LastStrategy ?? 'starting'} to ${strategyValue}.`,
-          ),
+            `TodoManager: Storage strategy changed from ${
+              LastStrategy ?? 'starting'
+            } to ${strategyValue}.`
+          )
         );
         result.stale = true;
         LastStrategy = strategyValue;
@@ -181,7 +183,7 @@ export const createStorageStrategyFromFlags =
       result.strategy = strategyValue;
       result.config = parseStorageConfig(
         'todo_storage_redis_config',
-        (await wellKnownFlag('todo_storage_redis_config')).value,
+        (await wellKnownFlag('todo_storage_redis_config')).value
       );
     } catch (error) {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {

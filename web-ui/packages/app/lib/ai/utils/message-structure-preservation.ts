@@ -20,7 +20,7 @@ import {
   createMessageStructureOptions,
   isPreservationEnabled,
 } from '@/lib/ai/types/message-structure-preservation';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 /**
  * Cache for preservation decisions to improve performance
@@ -37,7 +37,7 @@ const cacheStats = {
  */
 const generateCacheKey = (
   message: UIMessage,
-  options: MessageStructureOptions,
+  options: MessageStructureOptions
 ): string => {
   const messageHash = JSON.stringify({
     id: message.id,
@@ -77,7 +77,7 @@ export function getPreservationCacheStats() {
  */
 function shouldPreservePart(
   part: UIMessagePart<UIDataTypes, UITools>,
-  rules: MessagePartPreservationRules,
+  rules: MessagePartPreservationRules
 ): boolean {
   switch (part.type) {
     case 'text':
@@ -99,7 +99,7 @@ function shouldPreservePart(
  */
 function transformMessageContent(
   part: UIMessagePart<UIDataTypes, UITools>,
-  options: MessageStructureOptions,
+  options: MessageStructureOptions
 ): UIMessagePart<UIDataTypes, UITools> {
   const transformation = options.contentTransformation;
 
@@ -145,7 +145,7 @@ function evaluateContextualPreservation(
   message: UIMessage,
   index: number,
   messages: UIMessage[],
-  options: MessageStructureOptions,
+  options: MessageStructureOptions
 ): { preserve: boolean; reason: string } {
   const contextual = options.contextual;
 
@@ -158,7 +158,7 @@ function evaluateContextualPreservation(
     const shouldPreserve = contextual.contextEvaluator(
       message,
       index,
-      messages,
+      messages
     );
     return {
       preserve: shouldPreserve,
@@ -182,7 +182,7 @@ function evaluateContextualPreservation(
       if (part.type === 'text') {
         const textPart = part as { type: 'text'; text: string };
         return contextual.preserveKeywords!.some((keyword) =>
-          textPart.text.toLowerCase().includes(keyword.toLowerCase()),
+          textPart.text.toLowerCase().includes(keyword.toLowerCase())
         );
       }
       return false;
@@ -199,7 +199,7 @@ function evaluateContextualPreservation(
       if (part.type === 'text') {
         const textPart = part as { type: 'text'; text: string };
         return contextual.preservePatterns!.some((pattern) =>
-          pattern.test(textPart.text),
+          pattern.test(textPart.text)
         );
       }
       return false;
@@ -223,7 +223,7 @@ function evaluateMessagePreservation(
   message: UIMessage,
   index: number,
   messages: UIMessage[],
-  options: MessageStructureOptions,
+  options: MessageStructureOptions
 ): { preserve: boolean; reason: string; strategy: PreservationStrategy } {
   const strategy = options.strategy || 'semantic';
 
@@ -255,7 +255,7 @@ function evaluateMessagePreservation(
     case 'minimal':
       // Only preserve if it has essential content
       preserve = message.parts.some(
-        (part) => part.type === 'text' || part.type === 'tool-call',
+        (part) => part.type === 'text' || part.type === 'tool-call'
       );
       reason = preserve ? 'Has essential content' : 'No essential content';
       break;
@@ -272,7 +272,7 @@ function evaluateMessagePreservation(
         message,
         index,
         messages,
-        options,
+        options
       );
       preserve = contextResult.preserve;
       reason = contextResult.reason;
@@ -308,7 +308,7 @@ function evaluateMessagePreservation(
  */
 export function preserveMessageStructure(
   messages: UIMessage[],
-  options: MessageStructureOptions = {},
+  options: MessageStructureOptions = {}
 ): MessagePreservationResult {
   const startTime = Date.now();
   const fullOptions = createMessageStructureOptions(options);
@@ -347,7 +347,7 @@ export function preserveMessageStructure(
         message,
         i,
         messages,
-        fullOptions,
+        fullOptions
       );
 
       if (fullOptions.debug) {
@@ -363,7 +363,7 @@ export function preserveMessageStructure(
         // Transform message content if needed
         const transformedParts = message.parts
           .filter((part) =>
-            shouldPreservePart(part, fullOptions.partRules || {}),
+            shouldPreservePart(part, fullOptions.partRules || {})
           )
           .map((part) => transformMessageContent(part, fullOptions));
 
@@ -375,7 +375,7 @@ export function preserveMessageStructure(
         } else {
           filtered.push(message);
           warnings.push(
-            `Message ${message.id} preserved but has no valid parts after filtering`,
+            `Message ${message.id} preserved but has no valid parts after filtering`
           );
         }
       } else {
@@ -390,7 +390,7 @@ export function preserveMessageStructure(
           l.warn('Message preservation error', {
             messageId: message.id,
             error: error instanceof Error ? error.message : String(error),
-          }),
+          })
         );
       }
     }
@@ -424,7 +424,7 @@ export function preserveMessageStructure(
         filteredCount: filtered.length,
         processingTimeMs: result.stats.processingTimeMs,
         strategy: fullOptions.strategy,
-      }),
+      })
     );
   }
 
@@ -435,7 +435,7 @@ export function preserveMessageStructure(
  * Validate message structure options
  */
 export function validateMessageStructureOptions(
-  options: MessageStructureOptions,
+  options: MessageStructureOptions
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
@@ -449,7 +449,9 @@ export function validateMessageStructureOptions(
   ];
   if (options.strategy && !validStrategies.includes(options.strategy)) {
     errors.push(
-      `Invalid strategy: ${options.strategy}. Must be one of: ${validStrategies.join(', ')}`,
+      `Invalid strategy: ${
+        options.strategy
+      }. Must be one of: ${validStrategies.join(', ')}`
     );
   }
 
@@ -496,7 +498,7 @@ export function validateMessageStructureOptions(
  * Create a preset configuration for common use cases
  */
 export function createPresetConfiguration(
-  preset: 'minimal' | 'balanced' | 'comprehensive' | 'performance',
+  preset: 'minimal' | 'balanced' | 'comprehensive' | 'performance'
 ): MessageStructureOptions {
   switch (preset) {
     case 'minimal':

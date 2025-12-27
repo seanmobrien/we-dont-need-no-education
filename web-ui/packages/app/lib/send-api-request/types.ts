@@ -1,4 +1,4 @@
-import { ICancellablePromiseExt } from '@compliance-theater/lib-typescript';
+import { ICancellablePromiseExt } from '@compliance-theater/typescript';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
 import { UrlObject } from 'url';
@@ -33,7 +33,7 @@ export type ApiRequestParams = {
  * @returns {ICancellablePromiseExt<T>} A cancellable promise that resolves to the response data of type T.
  */
 export type ApiRequestFunction = <T>(
-  apiRequest: ApiRequestParams,
+  apiRequest: ApiRequestParams
 ) => ICancellablePromiseExt<T>;
 
 /**
@@ -93,7 +93,7 @@ export type ApiRequestHelper = {
    */
   get: <T>(
     params: Omit<ReadApiRequestParams, 'area'>,
-    additional?: AdditionalRequestParams,
+    additional?: AdditionalRequestParams
   ) => ICancellablePromiseExt<T>;
 
   /**
@@ -105,7 +105,7 @@ export type ApiRequestHelper = {
    */
   post: <T>(
     params: Omit<WriteApiRequestParams, 'area'>,
-    additional?: AdditionalRequestParams,
+    additional?: AdditionalRequestParams
   ) => ICancellablePromiseExt<T>;
 
   /**
@@ -117,7 +117,7 @@ export type ApiRequestHelper = {
    */
   put: <T>(
     params: Omit<WriteApiRequestParams, 'area'>,
-    additional?: AdditionalRequestParams,
+    additional?: AdditionalRequestParams
   ) => ICancellablePromiseExt<T>;
 
   /**
@@ -129,6 +129,6 @@ export type ApiRequestHelper = {
    */
   delete: <T>(
     params: Omit<DeleteApiRequestParams, 'area'>,
-    additional?: AdditionalRequestParams,
+    additional?: AdditionalRequestParams
   ) => ICancellablePromiseExt<T>;
 };

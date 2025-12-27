@@ -1,7 +1,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 // Fixed chalk import for ESM
 import chalk from 'chalk';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 interface ThoughtData {
   thought: string;
@@ -123,7 +123,7 @@ export class SequentialThinkingServer {
               branches: Object.keys(this.branches),
               thoughtHistoryLength: this.thoughtHistory.length,
             },
-          }),
+          })
         );
       }
 
@@ -140,7 +140,7 @@ export class SequentialThinkingServer {
                 thoughtHistoryLength: this.thoughtHistory.length,
               },
               null,
-              2,
+              2
             ),
           },
         ],
@@ -156,7 +156,7 @@ export class SequentialThinkingServer {
                 status: 'failed',
               },
               null,
-              2,
+              2
             ),
           },
         ],

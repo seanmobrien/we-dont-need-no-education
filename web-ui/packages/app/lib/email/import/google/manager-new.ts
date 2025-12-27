@@ -8,7 +8,7 @@ import {
   ImportSourceMessage,
   ImportStage,
 } from '@/data-models/api/import/email-message';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import {
   getImportMessageSource,
   isKnownGmailError,
@@ -51,7 +51,7 @@ class NewStateManager extends TransactionalStateManagerBase {
         message: '[AUDIT]: Email import queued successfully.',
         emailId,
         stage: currentStage,
-      }),
+      })
     );
     return {
       ...context,

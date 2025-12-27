@@ -19,9 +19,9 @@ import {
   queryImportStatus,
   importEmailRecord,
 } from '@/lib/api/email/import/google';
-import { isAbortablePromise } from '@compliance-theater/lib-typescript';
+import { isAbortablePromise } from '@compliance-theater/typescript';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import {
   TableRow,
   TableCell,
@@ -129,7 +129,7 @@ const ImportRecord: React.FC<ImportRecordProps> = ({
               'ImportRecord unmounted before error handling could complete; waiting for remount to process',
             source: errorSource,
             error,
-          }),
+          })
         );
       }
     };
@@ -174,7 +174,7 @@ const ImportRecord: React.FC<ImportRecordProps> = ({
             l.warn({
               message: 'No import request available for processing',
               providerId,
-            }),
+            })
           );
         }
         return;
@@ -199,7 +199,7 @@ const ImportRecord: React.FC<ImportRecordProps> = ({
                 throw response.error;
               }
               throw new Error(
-                response.message ?? 'Unknown error downloading message.',
+                response.message ?? 'Unknown error downloading message.'
               );
             }
           }
@@ -273,7 +273,7 @@ const ImportRecord: React.FC<ImportRecordProps> = ({
   const onCheckChanged = useCallback(
     (evt: ChangeEvent<HTMLInputElement>, checked: boolean) =>
       notifyParent({ providerId, action: 'check-changed', checked }),
-    [notifyParent, providerId],
+    [notifyParent, providerId]
   );
 
   const loadedImportStatus = importStatus as MessageImportStatusWithChildren;
@@ -281,8 +281,8 @@ const ImportRecord: React.FC<ImportRecordProps> = ({
     jobState === 'error'
       ? theme.palette.error.light
       : jobState === 'done'
-        ? theme.palette.success.light
-        : undefined;
+      ? theme.palette.success.light
+      : undefined;
   const inLoadingView =
     jobState === 'loading-message' || jobState === 'waiting-for-import';
   return (
@@ -302,16 +302,16 @@ const ImportRecord: React.FC<ImportRecordProps> = ({
       <TableCell>
         {jobState === 'waiting-for-import'
           ? ''
-          : (loadedImportStatus.sender?.name ??
+          : loadedImportStatus.sender?.name ??
             loadedImportStatus.sender?.email ??
-            '')}
+            ''}
       </TableCell>
       <TableCell sx={{ maxWidth: '180px' }}>
         {jobState === 'waiting-for-import'
           ? ''
-          : (loadedImportStatus.recipients
+          : loadedImportStatus.recipients
               ?.map((x) => x.name ?? x.email)
-              ?.join(', ') ?? '')}
+              ?.join(', ') ?? ''}
       </TableCell>
       <TableCell
         colSpan={inLoadingView ? 2 : undefined}

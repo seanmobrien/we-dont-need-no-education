@@ -1,4 +1,4 @@
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import {
   AiSearchResultEnvelope,
   hybridPolicySearchFactory,
@@ -22,7 +22,7 @@ const searchPolicyStoreCounter = appMeters.createCounter(
   {
     description: 'Total number of policy store search operations',
     unit: '1',
-  },
+  }
 );
 
 const searchPolicyStoreDurationHistogram = appMeters.createHistogram(
@@ -30,7 +30,7 @@ const searchPolicyStoreDurationHistogram = appMeters.createHistogram(
   {
     description: 'Duration of policy store search operations',
     unit: 'ms',
-  },
+  }
 );
 
 const searchPolicyStoreResultsHistogram = appMeters.createHistogram(
@@ -38,7 +38,7 @@ const searchPolicyStoreResultsHistogram = appMeters.createHistogram(
   {
     description: 'Number of results returned by policy store search',
     unit: '1',
-  },
+  }
 );
 
 const searchPolicyStoreErrorCounter = appMeters.createCounter(
@@ -46,7 +46,7 @@ const searchPolicyStoreErrorCounter = appMeters.createCounter(
   {
     description: 'Total number of policy store search errors',
     unit: '1',
-  },
+  }
 );
 
 export const searchPolicyStore = async ({
@@ -92,7 +92,7 @@ export const searchPolicyStore = async ({
         options,
         resultCount,
         durationMs: duration,
-      }),
+      })
     );
 
     return toolCallbackResultFactory(ret);
@@ -115,7 +115,7 @@ export const searchPolicyStore = async ({
         log: true,
         message: 'Error searching policy',
         data: { query, options },
-      }),
+      })
     );
   }
 };
@@ -125,7 +125,7 @@ export const searchPolicyStoreConfig = {
   inputSchema: {
     query: z.string().describe('The search query term used to find policies.'),
     options: PolicySearchOptionsSchema.optional().describe(
-      'Options used to influence the search results, such as scope and pagination.',
+      'Options used to influence the search results, such as scope and pagination.'
     ),
   },
   outputSchema: toolCallbackResultSchemaFactory(AiSearchResultEnvelopeSchema),

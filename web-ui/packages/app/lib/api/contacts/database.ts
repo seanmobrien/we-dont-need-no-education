@@ -3,18 +3,18 @@ import type { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import type { ObjectRepository } from '@/data-models/api/object-repository';
 import { isContact } from '@/data-models/api/guards';
 import { globalContactCache } from '@/data-models/api/contact-cache';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { query, queryExt } from '@/lib/neondb';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
-import { PartialExceptFor } from '@compliance-theater/lib-typescript';
+import { PartialExceptFor } from '@compliance-theater/typescript';
 import { RecipientType } from '@/lib/email/import/types';
 import { AbstractObjectRepository } from '../abstractObjectRepository';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
 const mapRecordToSummary = (
   record: Record<string, unknown>,
-  updateContact: boolean = true,
+  updateContact: boolean = true
 ) => {
   const ret = {
     contactId: Number(record.contact_id),
@@ -46,18 +46,18 @@ export class ContactRepository
   static MapRecordToObject = mapRecordToObject;
 
   async list(
-    pagination?: PaginationStats,
+    pagination?: PaginationStats
   ): Promise<PaginatedResultset<ContactSummary>> {
     const { num, page, offset } = parsePaginationStats(pagination);
     try {
       const results = await query(
         (sql) =>
           sql`SELECT * FROM contacts ORDER BY contact_id LIMIT ${num} OFFSET ${offset}`,
-        { transform: ContactRepository.MapRecordToSummary },
+        { transform: ContactRepository.MapRecordToSummary }
       );
       if (results.length === page) {
         const total = await query(
-          (sql) => sql`SELECT COUNT(*) as records FROM contacts`,
+          (sql) => sql`SELECT COUNT(*) as records FROM contacts`
         );
         return {
           results,
@@ -87,7 +87,7 @@ export class ContactRepository
 
   async get(
     contactId: number,
-    reload: boolean = false,
+    reload: boolean = false
   ): Promise<Contact | null> {
     if (!reload) {
       const cachedContact = globalContactCache((cache) => cache.get(contactId));
@@ -98,7 +98,7 @@ export class ContactRepository
     try {
       const result = await query(
         (sql) => sql`SELECT * FROM contacts WHERE contact_id = ${contactId}`,
-        { transform: ContactRepository.MapRecordToObject },
+        { transform: ContactRepository.MapRecordToObject }
       );
       return result.length === 1 ? result[0] : null;
     } catch (error) {
@@ -125,9 +125,11 @@ export class ContactRepository
       }
       const result = await query(
         (sql) =>
-          sql`INSERT INTO contacts (name, email, phone, role_dscr, is_district_staff) VALUES (${name}, ${email}, ${phoneNumber ?? null}, ${jobDescription ?? null}, ${isDistrictStaff ?? true})\
+          sql`INSERT INTO contacts (name, email, phone, role_dscr, is_district_staff) VALUES (${name}, ${email}, ${
+            phoneNumber ?? null
+          }, ${jobDescription ?? null}, ${isDistrictStaff ?? true})\
             RETURNING *`,
-        { transform: ContactRepository.MapRecordToObject },
+        { transform: ContactRepository.MapRecordToObject }
       );
       log((l) => l.verbose('[ [AUDIT]] -  Contact created:', result[0]));
       if (result.length !== 1) {
@@ -193,11 +195,11 @@ export class ContactRepository
         (sql) =>
           sql<false, true>(
             `UPDATE contacts SET ${updateFields.join(
-              ', ',
+              ', '
             )} WHERE contact_id = $${paramIndex} RETURNING *`,
-            values,
+            values
           ),
-        { transform: ContactRepository.MapRecordToObject },
+        { transform: ContactRepository.MapRecordToObject }
       );
 
       if (result.rowCount === 0) {
@@ -222,7 +224,7 @@ export class ContactRepository
         (sql) => sql`
             DELETE FROM contacts
             WHERE contact_id = ${contactId}
-            RETURNING contact_id`,
+            RETURNING contact_id`
       );
       if (results.length === 0) {
         throw new DataIntegrityError('Failed to delete contact');
@@ -241,7 +243,7 @@ export class ContactRepository
   async addEmailRecipient(
     contactId: number,
     emailId: string,
-    type?: RecipientType,
+    type?: RecipientType
   ): Promise<void> {
     if (!contactId || !emailId) {
       throw new ValidationError({
@@ -253,13 +255,13 @@ export class ContactRepository
       await query(
         (sql) => sql`
           INSERT INTO email_recipients (recipient_id, email_id, recipient_type)
-          VALUES (${contactId}, ${emailId}, ${type})`,
+          VALUES (${contactId}, ${emailId}, ${type})`
       );
       log((l) =>
         l.verbose('[ [AUDIT]] - Email recipient added:', {
           contactId,
           emailId,
-        }),
+        })
       );
     } catch (error) {
       AbstractObjectRepository.logDatabaseError({
@@ -271,7 +273,7 @@ export class ContactRepository
 
   async getContactsByEmails(
     emails: string[] | string,
-    refresh: boolean = false,
+    refresh: boolean = false
   ): Promise<Array<ContactSummary>> {
     let emailList = Array.isArray(emails) ? emails : [emails];
     const returned = Array<ContactSummary>();
@@ -284,7 +286,7 @@ export class ContactRepository
         return returned;
       }
       emailList = emailList.filter(
-        (x) => !returned.find((y) => y.email.toLowerCase() === x.toLowerCase()),
+        (x) => !returned.find((y) => y.email.toLowerCase() === x.toLowerCase())
       );
     }
     try {
@@ -293,7 +295,7 @@ export class ContactRepository
           SELECT * FROM contacts
           WHERE email = ANY(${emailList})
         `,
-        { transform: ContactRepository.MapRecordToObject },
+        { transform: ContactRepository.MapRecordToObject }
       );
       return results;
     } catch (error) {

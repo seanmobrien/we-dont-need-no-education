@@ -1,7 +1,10 @@
-import { drizDbWithInit } from "@/lib/drizzle-db";
-import { LoggedError } from "@/lib/react-util/errors/logged-error";
-import { ArrayElement } from "@compliance-theater/lib-typescript";
-import { isValidUuid, BrandedUuid } from "@compliance-theater/lib-typescript/_guards";
+import { drizDbWithInit } from '@/lib/drizzle-db';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { ArrayElement } from '@compliance-theater/typescript';
+import {
+  isValidUuid,
+  BrandedUuid,
+} from '@compliance-theater/typescript/_guards';
 
 /**
  * Resolves a case file's unit ID from a given document identifier.
@@ -15,7 +18,7 @@ import { isValidUuid, BrandedUuid } from "@compliance-theater/lib-typescript/_gu
  * @returns A promise that resolves to the unit ID as a number, or `undefined` if not found.
  */
 export const resolveCaseFileId = async (
-  documentId: number | string | undefined,
+  documentId: number | string | undefined
 ): Promise<number | undefined> => {
   if (!documentId) {
     return undefined;
@@ -25,16 +28,17 @@ export const resolveCaseFileId = async (
     const isUuid = isValidUuid(documentId);
     if (isUuid) {
       parsedId = await drizDbWithInit((db) =>
-        db.query.documentUnits.findFirst({
-          where: (du, { eq, and, or }) =>
-            or(
-              and(eq(du.emailId, documentId), eq(du.documentType, 'email')),
-              eq(du.documentPropertyId, documentId),
-            ),
-          columns: {
-            unitId: true,
-          },
-        })
+        db.query.documentUnits
+          .findFirst({
+            where: (du, { eq, and, or }) =>
+              or(
+                and(eq(du.emailId, documentId), eq(du.documentType, 'email')),
+                eq(du.documentPropertyId, documentId)
+              ),
+            columns: {
+              unitId: true,
+            },
+          })
           .then((result) => result?.unitId)
           .catch((err) => {
             LoggedError.isTurtlesAllTheWayDownBaby(err, {
@@ -79,18 +83,24 @@ export const resolveCaseFileId = async (
 export const resolveCaseFileIdBatch = async <T extends Array<unknown>>(
   requests: T,
   options?: {
-    getValue: (input: ArrayElement<T>) => (string | number);
-    setValue: (input: ArrayElement<T>, value: number | BrandedUuid) => ArrayElement<T>;
+    getValue: (input: ArrayElement<T>) => string | number;
+    setValue: (
+      input: ArrayElement<T>,
+      value: number | BrandedUuid
+    ) => ArrayElement<T>;
   }
 ): Promise<Array<ArrayElement<T>>> => {
   const { getValue, setValue } = options ?? {
-    getValue: (input: ArrayElement<T>) => input as unknown as (string | number),
-    setValue: (_input: ArrayElement<T>, value: number | BrandedUuid) => value as ArrayElement<T>,
+    getValue: (input: ArrayElement<T>) => input as unknown as string | number,
+    setValue: (_input: ArrayElement<T>, value: number | BrandedUuid) =>
+      value as ArrayElement<T>,
   };
 
-
   // First, split up into valid and pending sets, dropping anything so invalid we wont even try
-  const { valid, pending } = requests.reduce<{ valid: Array<ArrayElement<T>>; pending: Array<ArrayElement<T>> }>(
+  const { valid, pending } = requests.reduce<{
+    valid: Array<ArrayElement<T>>;
+    pending: Array<ArrayElement<T>>;
+  }>(
     (acc, req) => {
       const request = req as ArrayElement<T>;
       const value = getValue(request);
@@ -136,7 +146,7 @@ export const resolveCaseFileIdBatch = async <T extends Array<unknown>>(
       where: (du, { and, or, eq, inArray }) =>
         or(
           and(inArray(du.emailId, guids), eq(du.documentType, 'email')),
-          inArray(du.documentPropertyId, guids),
+          inArray(du.documentPropertyId, guids)
         ),
       columns: {
         unitId: true,
@@ -150,16 +160,14 @@ export const resolveCaseFileIdBatch = async <T extends Array<unknown>>(
     (acc, request) => {
       const matchValue = getValue(request);
       const record = records.find(
-        (r) =>
-          r.documentPropertyId === matchValue ||
-          r.emailId === matchValue,
+        (r) => r.documentPropertyId === matchValue || r.emailId === matchValue
       );
       if (record) {
         acc.resolved.push(setValue(request, record.unitId));
       }
       return acc;
     },
-    { resolved: valid },
+    { resolved: valid }
   );
   return resolved;
 };

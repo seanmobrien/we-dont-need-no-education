@@ -2,7 +2,7 @@ import type { RedisClientType } from '@/lib/redis-client';
 import { getRedisClient } from '@/lib/redis-client';
 import type { Todo, TodoList } from '../types';
 import type { TodoStorageStrategy, StorageStrategyConfig } from './types';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 const DEFAULT_TTL = 86400; // 24 hours
@@ -141,7 +141,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
   private async getTodoIdsForList(
     redis: RedisClientType,
-    listId: string,
+    listId: string
   ): Promise<string[]> {
     const listTodosKey = this.getListTodosKey(listId);
     return redis.zRange(listTodosKey, 0, -1);
@@ -150,7 +150,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
   private async hydrateTodos(
     redis: RedisClientType,
     listId: string,
-    options?: { completed?: boolean },
+    options?: { completed?: boolean }
   ): Promise<Todo[]> {
     const todoIds = await this.getTodoIdsForList(redis, listId);
     if (todoIds.length === 0) {
@@ -181,11 +181,11 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
       if (existingTodoIds.length > 0) {
         const incomingIds = new Set(list.todos.map((todo) => todo.id));
         const removedIds = existingTodoIds.filter(
-          (todoId) => !incomingIds.has(todoId),
+          (todoId) => !incomingIds.has(todoId)
         );
         if (removedIds.length > 0) {
           await Promise.all(
-            removedIds.map((todoId) => this.deleteTodo(todoId)),
+            removedIds.map((todoId) => this.deleteTodo(todoId))
           );
         }
       }
@@ -197,7 +197,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
       // Store individual todos and mappings in parallel
       await Promise.all(
-        list.todos.map((todo) => this.upsertTodo(todo, { list: list.id })),
+        list.todos.map((todo) => this.upsertTodo(todo, { list: list.id }))
       );
 
       // Refresh TTL on membership set to align with metadata
@@ -207,7 +207,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         l.debug('Todo list upserted to Redis', {
           listId: list.id,
           todoCount: list.todos.length,
-        }),
+        })
       );
 
       return list;
@@ -222,7 +222,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
   async getTodoList(
     listId: string,
-    options?: { completed?: boolean },
+    options?: { completed?: boolean }
   ): Promise<TodoList | undefined> {
     try {
       const redis = await this.ensureConnected();
@@ -276,7 +276,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         .map((key, index) => ({ key, value: values[index] }))
         .filter(
           (entry): entry is { key: string; value: string } =>
-            entry.value !== null,
+            entry.value !== null
         );
 
       const hydratedLists = await Promise.all(
@@ -291,7 +291,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
             id: listId,
             todos,
           } satisfies TodoList;
-        }),
+        })
       );
 
       return hydratedLists;
@@ -327,7 +327,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         l.debug('Todo list deleted from Redis', {
           listId,
           deleted: deletedKeys > 0,
-        }),
+        })
       );
 
       return true;
@@ -342,7 +342,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
   async upsertTodo(
     todo: Todo,
-    options: { list: TodoList | string },
+    options: { list: TodoList | string }
   ): Promise<Todo> {
     try {
       const redis = await this.ensureConnected();
@@ -373,7 +373,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         l.debug('Todo upserted to Redis', {
           todoId: todo.id,
           listId,
-        }),
+        })
       );
 
       return todo;
@@ -471,7 +471,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         l.debug('Todo deleted from Redis', {
           todoId,
           deleted: results[0] > 0,
-        }),
+        })
       );
 
       return results[0] > 0;
@@ -600,7 +600,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
           todosCleared: todoKeys.length,
           matchesCleared: mappingKeys.length,
           membershipsCleared: membershipKeys.length,
-        }),
+        })
       );
 
       return {

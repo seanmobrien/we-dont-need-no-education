@@ -3,7 +3,7 @@ import {
   buildFallbackGrid,
   wrapRouteRequest,
 } from '@/lib/nextjs-util/server/utils';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { extractParams } from '@/lib/nextjs-util/server/utils';
 import { eq } from 'drizzle-orm';
@@ -64,13 +64,13 @@ export const dynamic = 'force-dynamic';
 export const GET = wrapRouteRequest(
   async (
     req: NextRequest,
-    withParams: { params: Promise<{ emailId: string }> },
+    withParams: { params: Promise<{ emailId: string }> }
   ) => {
     const { emailId, documentId } = await extractEmailId(withParams);
     if (!emailId) {
       return NextResponse.json(
         { error: 'Email ID is required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -152,11 +152,11 @@ export const GET = wrapRouteRequest(
       });
       return NextResponse.json(
         { error: 'Internal Server Error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
   },
-  { buildFallback: buildFallbackGrid },
+  { buildFallback: buildFallbackGrid }
 );
 
 /**
@@ -180,13 +180,13 @@ export const DELETE = wrapRouteRequest(
     req: NextRequest,
     withParams: {
       params: Promise<{ emailId: string }>;
-    },
+    }
   ): Promise<NextResponse> => {
     const { emailId } = await extractEmailId(withParams);
     if (!emailId) {
       return NextResponse.json(
         { error: 'Email ID is required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -214,11 +214,11 @@ export const DELETE = wrapRouteRequest(
         l.verbose({
           msg: '[[AUDIT]] -  Email deleted:',
           resultset: deletedEmailId,
-        }),
+        })
       );
       return NextResponse.json(
         { message: 'Email deleted successfully', email: deletedEmailId },
-        { status: 200 },
+        { status: 200 }
       );
     } catch (error) {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -229,8 +229,8 @@ export const DELETE = wrapRouteRequest(
       });
       return NextResponse.json(
         { error: 'Internal Server Error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
-  },
+  }
 );

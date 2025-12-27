@@ -1,4 +1,4 @@
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 /**
  * Creates a seeded pseudo-random number generator function using a linear congruential generator algorithm.
@@ -40,7 +40,7 @@ export const notCryptoSafeKeyHash = (str: string): string => {
  * @returns An object containing the seed used and the generated chat ID string.
  */
 export const generateChatId = (
-  seed?: number | string,
+  seed?: number | string
 ): { seed: number; id: string } => {
   // Does not need to be cryptographically secure, so we can use a simple seeded random function
   let actualSeed: number;

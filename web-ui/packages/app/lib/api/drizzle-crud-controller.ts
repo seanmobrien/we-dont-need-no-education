@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BaseDrizzleRepository } from './_baseDrizzleRepository';
-import { PickField } from '@compliance-theater/lib-typescript';
+import { PickField } from '@compliance-theater/typescript';
 import { LikeNextRequest } from '@/lib/nextjs-util/types';
 import { isRequestOrApiRequest } from '@/lib/nextjs-util/guards';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
@@ -12,7 +12,7 @@ import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelper
 
 type KeysFromModel<
   TRepositoryModel,
-  TRepositoryKey extends keyof TRepositoryModel,
+  TRepositoryKey extends keyof TRepositoryModel
 > = {
   [key in TRepositoryKey]: PickField<TRepositoryModel, key>;
 };
@@ -50,7 +50,7 @@ export class DrizzleCrudRepositoryController<
       any = TRepository extends BaseDrizzleRepository<any, infer TInferKey>
     ? TInferKey
     : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      any,
+      any
 > {
   constructor(private repository: TRepository) {}
 
@@ -65,14 +65,14 @@ export class DrizzleCrudRepositoryController<
   async list(
     ops: PaginationStats,
     sort?: GridSortModel,
-    filter?: GridFilterModel,
+    filter?: GridFilterModel
   ): Promise<
     NextResponse<
       PaginatedResultset<Partial<TRepositoryModel>> | { error: string }
     >
   >;
   async list(
-    req: LikeNextRequest,
+    req: LikeNextRequest
   ): Promise<
     NextResponse<
       PaginatedResultset<Partial<TRepositoryModel>> | { error: string }
@@ -80,7 +80,7 @@ export class DrizzleCrudRepositoryController<
   >;
 
   async list(
-    ops?: LikeNextRequest | PaginatedGridListRequest,
+    ops?: LikeNextRequest | PaginatedGridListRequest
   ): Promise<
     NextResponse<
       PaginatedResultset<Partial<TRepositoryModel>> | { error: string }
@@ -114,7 +114,7 @@ export class DrizzleCrudRepositoryController<
       });
       return NextResponse.json(
         { error: 'Internal Server Error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
   }
@@ -126,7 +126,7 @@ export class DrizzleCrudRepositoryController<
     req: NextRequest,
     args: {
       params: Promise<KeysFromModel<TRepositoryModel, TRepositoryKey>>;
-    },
+    }
   ): Promise<
     NextResponse<TRepositoryModel | { success: false; error: string }>
   > {
@@ -136,7 +136,7 @@ export class DrizzleCrudRepositoryController<
       if (keys.length !== 1) {
         return NextResponse.json(
           { success: false, error: 'Invalid parameters' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -146,7 +146,7 @@ export class DrizzleCrudRepositoryController<
       if (!record) {
         return NextResponse.json(
           { success: false, error: 'Record not found' },
-          { status: 404 },
+          { status: 404 }
         );
       }
 
@@ -158,7 +158,7 @@ export class DrizzleCrudRepositoryController<
       });
       return NextResponse.json(
         { success: false, error: 'Internal Server Error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
   }
@@ -167,7 +167,7 @@ export class DrizzleCrudRepositoryController<
    * Handles POST requests for creating new resources
    */
   async create(
-    req: NextRequest,
+    req: NextRequest
   ): Promise<
     NextResponse<TRepositoryModel | { success: false; error: string }>
   > {
@@ -182,7 +182,7 @@ export class DrizzleCrudRepositoryController<
       });
       return NextResponse.json(
         { success: false, error: 'Internal Server Error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
   }
@@ -194,7 +194,7 @@ export class DrizzleCrudRepositoryController<
     req: NextRequest,
     args: {
       params: Promise<KeysFromModel<TRepositoryModel, TRepositoryKey>>;
-    },
+    }
   ): Promise<
     NextResponse<TRepositoryModel | { success: false; error: string }>
   > {
@@ -206,7 +206,7 @@ export class DrizzleCrudRepositoryController<
       if (keys.length !== 1) {
         return NextResponse.json(
           { success: false, error: 'Invalid parameters' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -225,7 +225,7 @@ export class DrizzleCrudRepositoryController<
       });
       return NextResponse.json(
         { success: false, error: 'Internal Server Error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
   }
@@ -237,7 +237,7 @@ export class DrizzleCrudRepositoryController<
     req: NextRequest,
     args: {
       params: Promise<KeysFromModel<TRepositoryModel, TRepositoryKey>>;
-    },
+    }
   ): Promise<NextResponse<{ success: boolean; error?: string }>> {
     try {
       const params = await args.params;
@@ -245,7 +245,7 @@ export class DrizzleCrudRepositoryController<
       if (keys.length !== 1) {
         return NextResponse.json(
           { success: false, error: 'Invalid parameters' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -255,7 +255,7 @@ export class DrizzleCrudRepositoryController<
       if (!deleted) {
         return NextResponse.json(
           { success: false, error: 'Record not found' },
-          { status: 404 },
+          { status: 404 }
         );
       }
 
@@ -267,7 +267,7 @@ export class DrizzleCrudRepositoryController<
       });
       return NextResponse.json(
         { success: false, error: 'Internal Server Error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
   }
@@ -276,7 +276,7 @@ export class DrizzleCrudRepositoryController<
    * Executes a custom operation using the repository
    */
   async updateFromRepository(
-    callback: (repository: TRepository) => Promise<TRepositoryModel>,
+    callback: (repository: TRepository) => Promise<TRepositoryModel>
   ): Promise<
     NextResponse<TRepositoryModel | { success: false; error: string }>
   > {
@@ -290,7 +290,7 @@ export class DrizzleCrudRepositoryController<
       });
       return NextResponse.json(
         { success: false, error: 'Internal Server Error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
   }

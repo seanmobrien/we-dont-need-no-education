@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
-import { wrapRouteRequest, extractParams } from '@/lib/nextjs-util/server/utils';
+import {
+  wrapRouteRequest,
+  extractParams,
+} from '@/lib/nextjs-util/server/utils';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { env } from '@/lib/site-util/env';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { EmailAttachmentDrizzleRepository } from '@/lib/api/attachment';
 
 const attachmentRepository = new EmailAttachmentDrizzleRepository();
@@ -10,14 +13,14 @@ const attachmentRepository = new EmailAttachmentDrizzleRepository();
 export const POST = wrapRouteRequest(
   async (
     req: Request,
-    args: { params: Promise<{ attachmentId: number | string }> },
+    args: { params: Promise<{ attachmentId: number | string }> }
   ) => {
     const { attachmentId } = await extractParams(args);
 
     if (!attachmentId) {
       return NextResponse.json(
         { error: 'Attachment ID is required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -28,7 +31,7 @@ export const POST = wrapRouteRequest(
       if (!attachment) {
         return NextResponse.json(
           { error: 'Attachment not found' },
-          { status: 404 },
+          { status: 404 }
         );
       }
 
@@ -37,15 +40,15 @@ export const POST = wrapRouteRequest(
       // Parse the fully qualified URL to get the blob client
       // Download the PDF file from Azure Blob Storage
       const AZURE_STORAGE_CONNECTION_STRING = env(
-        'AZURE_STORAGE_CONNECTION_STRING',
+        'AZURE_STORAGE_CONNECTION_STRING'
       );
       const blobServiceClient = BlobServiceClient.fromConnectionString(
-        AZURE_STORAGE_CONNECTION_STRING,
+        AZURE_STORAGE_CONNECTION_STRING
       );
       const fileUrlParts = fileUrl.split('/');
       const containerName = fileUrlParts[fileUrlParts.length - 2];
       const blobName = decodeURIComponent(
-        fileUrlParts[fileUrlParts.length - 1],
+        fileUrlParts[fileUrlParts.length - 1]
       );
       const containerClient =
         blobServiceClient.getContainerClient(containerName);
@@ -61,13 +64,13 @@ export const POST = wrapRouteRequest(
 
       // Extract text from the PDF using dynamic import to prevent build issues
       const pdfData = await import('pdf-parse').then((pdfParse) =>
-        pdfParse.default(pdfBuffer),
+        pdfParse.default(pdfBuffer)
       );
       const extractedText = pdfData.text?.trim();
       if (!extractedText) {
         return NextResponse.json(
           { error: 'No text found in the PDF' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -81,7 +84,7 @@ export const POST = wrapRouteRequest(
       });
 
       log((l) =>
-        l.info({ message: `Extracted text for attachment ${attachmentId}` }),
+        l.info({ message: `Extracted text for attachment ${attachmentId}` })
       );
 
       return NextResponse.json({
@@ -92,8 +95,8 @@ export const POST = wrapRouteRequest(
       log((l) => l.error({ message: 'Error extracting text from PDF', error }));
       return NextResponse.json(
         { error: 'Internal server error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
-  },
+  }
 );

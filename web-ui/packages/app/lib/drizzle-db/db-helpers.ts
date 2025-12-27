@@ -12,9 +12,9 @@ import type {
   DocumentRelationshipType,
 } from './drizzle-types';
 import { schema } from './schema';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '../react-util';
-import { newUuid } from '@compliance-theater/lib-typescript';
+import { newUuid } from '@compliance-theater/typescript';
 import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';
 
 /**
@@ -145,17 +145,17 @@ export const addDocumentRelations = async ({
                       and(
                         eq(
                           schema.documentRelationship.sourceDocumentId,
-                          sourceDocumentId,
+                          sourceDocumentId
                         ),
                         eq(
                           schema.documentRelationship.targetDocumentId,
-                          targetDocumentId,
+                          targetDocumentId
                         ),
                         eq(
                           schema.documentRelationship.relationshipReasonId,
-                          relationshipReasonId,
-                        ),
-                      ),
+                          relationshipReasonId
+                        )
+                      )
                     )
                     .limit(1)
                     .execute();
@@ -167,8 +167,8 @@ export const addDocumentRelations = async ({
                           sourceDocumentId,
                           targetDocumentId,
                           relationshipReasonId,
-                        },
-                      ),
+                        }
+                      )
                     );
                     resolve(undefined as unknown as DocumentRelationshipType);
                   } else {
@@ -181,9 +181,9 @@ export const addDocumentRelations = async ({
                 } catch (error) {
                   reject(error);
                 }
-              },
-            ),
-        ),
+              }
+            )
+        )
       )
     ).filter(Boolean);
     if (!values.length) {
@@ -199,16 +199,15 @@ export const addDocumentRelations = async ({
   }
 };
 
-type AddNoteRetVal<TNotes> =
-  TNotes extends Array<string>
+type AddNoteRetVal<TNotes> = TNotes extends Array<string>
   ? Promise<Array<DocumentPropertyType>>
   : TNotes extends string
   ? Promise<DocumentPropertyType>
   : TNotes extends Array<{
-    policyBasis: string[];
-    tags: string[];
-    note: string;
-  }>
+      policyBasis: string[];
+      tags: string[];
+      note: string;
+    }>
   ? Promise<Array<DocumentPropertyType>>
   : TNotes extends { policyBasis: string[]; tags: string[]; note: string }
   ? Promise<DocumentPropertyType>
@@ -218,10 +217,10 @@ type AddNoteRetVal<TNotes> =
 
 export const addNotesToDocument = async <
   TNotes extends
-  | string
-  | Array<string>
-  | { policyBasis: string[]; tags: string[]; note: string }
-  | Array<{ policyBasis: string[]; tags: string[]; note: string }>,
+    | string
+    | Array<string>
+    | { policyBasis: string[]; tags: string[]; note: string }
+    | Array<{ policyBasis: string[]; tags: string[]; note: string }>
 >({
   db,
   notes: notesFromProps,
@@ -233,7 +232,7 @@ export const addNotesToDocument = async <
 }): Promise<AddNoteRetVal<TNotes>> => {
   if (!('documentUnits' in db.query)) {
     throw new Error(
-      'Invalid database instance - must be a transaction or query builder',
+      'Invalid database instance - must be a transaction or query builder'
     );
   }
   // If db is a query builder, we need to get the actual db instance
@@ -260,22 +259,22 @@ export const addNotesToDocument = async <
   const documentId =
     documentType === 'email' || documentType === 'attachment'
       ? documentIdFromProps
-      : (docProp?.documentId ?? documentIdFromProps);
+      : docProp?.documentId ?? documentIdFromProps;
 
   let notes: Array<{ policyBasis: string[]; tags: string[]; note: string }>;
   if (Array.isArray(notesFromProps)) {
     notes = notesFromProps.map((note) =>
       typeof note === 'string'
         ? {
-          policyBasis: [],
-          tags: [],
-          note,
-        }
+            policyBasis: [],
+            tags: [],
+            note,
+          }
         : {
-          policyBasis: note.policyBasis || [],
-          tags: note.tags || [],
-          note: note.note,
-        },
+            policyBasis: note.policyBasis || [],
+            tags: note.tags || [],
+            note: note.note,
+          }
     );
   } else if (typeof notesFromProps === 'string') {
     notes = [

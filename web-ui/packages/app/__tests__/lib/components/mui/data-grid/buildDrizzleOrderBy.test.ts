@@ -2,7 +2,6 @@
  * @jest-environment node
  */
 
-
 /**
  * @fileoverview Unit tests for buildDrizzleOrderBy function
  *
@@ -27,7 +26,7 @@ import {
 } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
 import type { DrizzleSelectQuery } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/types';
 import { NextRequest } from 'next/server';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 // Mock logger
 const mockLogger = {
@@ -53,14 +52,14 @@ const createMockColumn = (name: string): PgColumn =>
     type: 'column',
     tableName: 'test_table',
     dataType: 'text',
-  }) as unknown as PgColumn;
+  } as unknown as PgColumn);
 
 // Create mock SQL expression
 const createMockSQL = (expression: string): SQL =>
   ({
     type: 'sql',
     expression,
-  }) as unknown as SQL;
+  } as unknown as SQL);
 
 // Mock query builder that tracks orderBy calls
 type MockQuery = {
@@ -128,8 +127,6 @@ describe('buildDrizzleOrderBy', () => {
     (log as jest.Mock).mockImplementation((cb) => cb(mockLogger));
     mockQuery = createMockQuery();
   });
-
-
 
   describe('Basic functionality', () => {
     it('should return original query when no source provided', () => {
@@ -235,7 +232,7 @@ describe('buildDrizzleOrderBy', () => {
       expect(mockQuery.orderBy).toHaveBeenCalledWith(
         { type: 'asc', column: mockColumns.name },
         { type: 'desc', column: mockColumns.email },
-        { type: 'asc', column: mockColumns.createdAt },
+        { type: 'asc', column: mockColumns.createdAt }
       );
     });
 
@@ -260,10 +257,10 @@ describe('buildDrizzleOrderBy', () => {
         column: mockColumns.name,
       });
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        "buildDrizzleOrderBy: Unknown column 'unknown_column' (mapped from 'unknown_column')",
+        "buildDrizzleOrderBy: Unknown column 'unknown_column' (mapped from 'unknown_column')"
       );
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        "buildDrizzleOrderBy: Unknown column 'another_unknown' (mapped from 'another_unknown')",
+        "buildDrizzleOrderBy: Unknown column 'another_unknown' (mapped from 'another_unknown')"
       );
     });
 
@@ -300,7 +297,7 @@ describe('buildDrizzleOrderBy', () => {
 
       expect(mockQuery.orderBy).toHaveBeenCalledWith(
         { type: 'asc', column: mockColumns.name },
-        { type: 'desc', column: mockColumns.email },
+        { type: 'desc', column: mockColumns.email }
       );
     });
 
@@ -365,7 +362,7 @@ describe('buildDrizzleOrderBy', () => {
       const getColumn = (name: string) =>
         mockColumns[name as keyof typeof mockColumns];
       const request = new NextRequest(
-        'https://example.com/api/data?sort=email:desc',
+        'https://example.com/api/data?sort=email:desc'
       );
 
       buildDrizzleOrderBy({
@@ -423,7 +420,7 @@ describe('buildDrizzleOrderBy', () => {
 
       expect(mockQuery.orderBy).toHaveBeenCalledWith(
         { type: 'asc', column: mockColumns.name },
-        { type: 'desc', column: mockColumns.email },
+        { type: 'desc', column: mockColumns.email }
       );
     });
 
@@ -471,7 +468,7 @@ describe('buildDrizzleOrderBy', () => {
       });
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        "buildDrizzleOrderBy: Unknown column 'backend_field' (mapped from 'frontend_field')",
+        "buildDrizzleOrderBy: Unknown column 'backend_field' (mapped from 'frontend_field')"
       );
     });
   });
@@ -511,7 +508,7 @@ describe('buildDrizzleOrderBy', () => {
 
       expect(mockQuery.orderBy).toHaveBeenCalledWith(
         { type: 'desc', column: mockColumns.name },
-        { type: 'asc', column: mockColumns.email },
+        { type: 'asc', column: mockColumns.email }
       );
     });
 
@@ -581,7 +578,7 @@ describe('buildDrizzleOrderBy', () => {
       expect(result).toBe(mockQuery);
       expect(mockQuery.orderBy).not.toHaveBeenCalled();
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        "buildDrizzleOrderBy: Unknown default sort column 'unknown_column' (mapped from 'unknown_column')",
+        "buildDrizzleOrderBy: Unknown default sort column 'unknown_column' (mapped from 'unknown_column')"
       );
     });
   });
@@ -658,7 +655,7 @@ describe('buildDrizzleOrderBy', () => {
         column: mockColumns.name,
       });
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        "buildDrizzleOrderBy: Unknown column 'invalid' (mapped from 'invalid')",
+        "buildDrizzleOrderBy: Unknown column 'invalid' (mapped from 'invalid')"
       );
     });
   });
@@ -839,7 +836,7 @@ describe('Integration tests', () => {
     expect(mockQuery.orderBy).toHaveBeenCalledWith(
       { type: 'asc', column: userTable.firstName },
       { type: 'desc', column: userTable.email },
-      { type: 'asc', column: userTable.createdAt },
+      { type: 'asc', column: userTable.createdAt }
     );
   });
 
@@ -876,7 +873,7 @@ describe('Integration tests', () => {
     expect(mockQuery.orderBy).toHaveBeenCalledWith(
       { type: 'asc', column: mockSQLExpressions.fullName },
       { type: 'desc', column: mockColumns.email },
-      { type: 'asc', column: mockColumns.createdAt },
+      { type: 'asc', column: mockColumns.createdAt }
     );
   });
 

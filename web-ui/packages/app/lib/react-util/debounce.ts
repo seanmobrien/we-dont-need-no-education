@@ -1,11 +1,11 @@
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { isError } from './utility-methods';
 import { LoggedError } from './errors/logged-error';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const debounce = <R, T extends (...args: any[]) => R>(
   func: T,
-  delay: number | { wait: number; timeout?: number },
+  delay: number | { wait: number; timeout?: number }
 ): ((...args: Parameters<T>) => Promise<R>) & { cancel: () => void } => {
   const wait = typeof delay === 'number' ? delay : delay.wait;
   const timeout =
@@ -37,7 +37,7 @@ export const debounce = <R, T extends (...args: any[]) => R>(
       rejectPending = reject;
       maxDebounceTimeoutId = setTimeout(
         () => cancelTimeout('Timeout'),
-        wait + timeout,
+        wait + timeout
       );
       timeoutId = setTimeout(async () => {
         // Cancelling timeout w/out an error code will clean up the timeout timeout, etc
@@ -64,7 +64,7 @@ export const debounce = <R, T extends (...args: any[]) => R>(
         });
       } else {
         log((l) =>
-          l.silly('Debounced function timed out or was deferred:', reason),
+          l.silly('Debounced function timed out or was deferred:', reason)
         );
       }
     });

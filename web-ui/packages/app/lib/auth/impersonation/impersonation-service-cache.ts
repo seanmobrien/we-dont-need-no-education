@@ -8,7 +8,7 @@
  */
 
 import type { ImpersonationService } from './index';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 interface CachedImpersonationService {
@@ -78,11 +78,11 @@ export class ImpersonationServiceCache {
    * Get the singleton instance of the cache.
    */
   public static getInstance(
-    config?: Partial<ImpersonationServiceCacheConfig>,
+    config?: Partial<ImpersonationServiceCacheConfig>
   ): ImpersonationServiceCache {
     if (!ImpersonationServiceCache.instance) {
       ImpersonationServiceCache.instance = new ImpersonationServiceCache(
-        config,
+        config
       );
     }
     return ImpersonationServiceCache.instance;
@@ -93,7 +93,7 @@ export class ImpersonationServiceCache {
    */
   private generateCacheKey(
     userId: string,
-    audience: string | undefined,
+    audience: string | undefined
   ): string {
     // Normalize audience to handle variations
     const normalizedAudience = (audience ?? '__no-audience__')
@@ -108,7 +108,7 @@ export class ImpersonationServiceCache {
   public async getOrCreate(
     userId: string,
     audience: string | undefined,
-    factory: () => Promise<ImpersonationService>,
+    factory: () => Promise<ImpersonationService>
   ): Promise<ImpersonationService> {
     const cacheKey = this.generateCacheKey(userId, audience);
 
@@ -122,7 +122,7 @@ export class ImpersonationServiceCache {
           userId,
           audience,
           cacheKey,
-        }),
+        })
       );
       return cached.service;
     }
@@ -138,7 +138,7 @@ export class ImpersonationServiceCache {
         userId,
         audience,
         cacheKey,
-      }),
+      })
     );
 
     try {
@@ -161,7 +161,7 @@ export class ImpersonationServiceCache {
           audience,
           cacheKey,
           cacheSize: this.cache.size,
-        }),
+        })
       );
 
       return service;
@@ -188,7 +188,7 @@ export class ImpersonationServiceCache {
    */
   private removeEntry(
     cacheKey: string,
-    entry: CachedImpersonationService,
+    entry: CachedImpersonationService
   ): void {
     try {
       // Call clearCache if the service supports it
@@ -204,7 +204,7 @@ export class ImpersonationServiceCache {
           userId: entry.userId,
           audience: entry.audience,
           cacheKey,
-        }),
+        })
       );
     } catch (error) {
       log((l) =>
@@ -213,7 +213,7 @@ export class ImpersonationServiceCache {
           audience: entry.audience,
           cacheKey,
           error,
-        }),
+        })
       );
     }
     this.cache.delete(cacheKey);
@@ -225,13 +225,13 @@ export class ImpersonationServiceCache {
   private enforceEvictionLimits(currentUserId: string): void {
     // Check per-user limit
     const userEntries = Array.from(this.cache.entries()).filter(
-      ([, entry]) => entry.userId === currentUserId,
+      ([, entry]) => entry.userId === currentUserId
     );
 
     if (userEntries.length >= this.config.maxEntriesPerUser) {
       // Remove oldest entry for this user
       const oldestUserEntry = userEntries.sort(
-        ([, a], [, b]) => a.lastAccessed - b.lastAccessed,
+        ([, a], [, b]) => a.lastAccessed - b.lastAccessed
       )[0];
 
       if (oldestUserEntry) {
@@ -243,7 +243,7 @@ export class ImpersonationServiceCache {
     if (this.cache.size >= this.config.maxTotalEntries) {
       // Remove oldest entry globally
       const oldestEntry = Array.from(this.cache.entries()).sort(
-        ([, a], [, b]) => a.lastAccessed - b.lastAccessed,
+        ([, a], [, b]) => a.lastAccessed - b.lastAccessed
       )[0];
 
       if (oldestEntry) {
@@ -257,7 +257,7 @@ export class ImpersonationServiceCache {
    */
   public invalidateUser(userId: string): void {
     const userEntries = Array.from(this.cache.entries()).filter(
-      ([, entry]) => entry.userId === userId,
+      ([, entry]) => entry.userId === userId
     );
 
     for (const [cacheKey, entry] of userEntries) {
@@ -268,7 +268,7 @@ export class ImpersonationServiceCache {
       l.debug('Invalidated user impersonation services', {
         userId,
         removedCount: userEntries.length,
-      }),
+      })
     );
   }
 
@@ -277,7 +277,7 @@ export class ImpersonationServiceCache {
    */
   public invalidateAudience(
     userId: string,
-    audience: string | undefined,
+    audience: string | undefined
   ): void {
     const cacheKey = this.generateCacheKey(userId, audience);
     const entry = this.cache.get(cacheKey);
@@ -289,7 +289,7 @@ export class ImpersonationServiceCache {
           userId,
           audience,
           cacheKey,
-        }),
+        })
       );
     }
   }
@@ -333,7 +333,7 @@ export class ImpersonationServiceCache {
         l.debug('Cleaned up expired impersonation services', {
           removedCount: expiredEntries.length,
           remainingCount: this.cache.size,
-        }),
+        })
       );
     }
   }
@@ -370,7 +370,7 @@ export class ImpersonationServiceCache {
       if (entry.audience) {
         audienceCounts.set(
           entry.audience,
-          (audienceCounts.get(entry.audience) || 0) + 1,
+          (audienceCounts.get(entry.audience) || 0) + 1
         );
       }
     }
@@ -406,7 +406,7 @@ export class ImpersonationServiceCache {
       l.debug('Refreshed impersonation service', {
         userId,
         audience,
-      }),
+      })
     );
   }
 

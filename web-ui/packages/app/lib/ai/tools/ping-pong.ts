@@ -1,4 +1,4 @@
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import {
   toolCallbackResultFactory,
   toolCallbackResultSchemaFactory,
@@ -21,8 +21,8 @@ export const pingPongToolCallback = ({
         ', assistantPong:' +
         assistantPong +
         ', roundHistory:' +
-        JSON.stringify(roundHistory),
-    ),
+        JSON.stringify(roundHistory)
+    )
   );
   const rand = Math.random();
   let result: number;
@@ -45,17 +45,17 @@ export const pingPongToolConfig = {
     userPing: z
       .string()
       .describe(
-        'The exact verbiage the user used to initiate the round - could be ping or pong of course, but more casual terms like "nudge" "buzz", "tap", or even "echo drop" are good as well.',
+        'The exact verbiage the user used to initiate the round - could be ping or pong of course, but more casual terms like "nudge" "buzz", "tap", or even "echo drop" are good as well.'
       ),
     assistantPong: z
       .string()
       .describe(
-        'The exact verbiage you are using to respond to the ping.  It should be close to the vector of the ping (so you hit), but creative and surprising enough to put some spin on the ball so you can score.',
+        'The exact verbiage you are using to respond to the ping.  It should be close to the vector of the ping (so you hit), but creative and surprising enough to put some spin on the ball so you can score.'
       ),
     roundHistory: z
       .array(z.array(z.string()))
       .describe(
-        'An array of arrays containingt the pings and pongs that make up the current round.  This is used to keep track of the game state and assign outcome multipliers - for example, the same term used multiple times is more likely to result in a bonus multiplier when hit back, as the player is familiar with that shot.',
+        'An array of arrays containingt the pings and pongs that make up the current round.  This is used to keep track of the game state and assign outcome multipliers - for example, the same term used multiple times is more likely to result in a bonus multiplier when hit back, as the player is familiar with that shot.'
       ),
   },
   outputSchema: toolCallbackResultSchemaFactory(
@@ -63,9 +63,9 @@ export const pingPongToolConfig = {
       result: z
         .number()
         .describe(
-          'The outcome of the exchange; if below zero the user missed and you scored a point, if above zero you missed and the user scored a point, when zero both you and the user hit and youmove on to the next exchange',
+          'The outcome of the exchange; if below zero the user missed and you scored a point, if above zero you missed and the user scored a point, when zero both you and the user hit and youmove on to the next exchange'
         ),
-    }),
+    })
   ),
   annotations: {
     title: 'Ping and Pong',

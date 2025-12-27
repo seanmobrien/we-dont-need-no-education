@@ -20,10 +20,10 @@ import {
   ProviderPrimaryNameType,
   ProviderPrimaryNameTypeValues,
 } from './provider-map';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LanguageModel } from 'ai';
 import { ModelClassification } from '../../middleware/key-rate-limiter/types';
-import { isKeyOf, newUuid } from '@compliance-theater/lib-typescript';
+import { isKeyOf, newUuid } from '@compliance-theater/typescript';
 
 /**
  * Type representing a complete model record with provider information.
@@ -146,11 +146,11 @@ type ModelRowExt = {
 export class ModelMap {
   /** Global symbol key to access init resolvers across module copies/HMR. */
   static readonly #INIT_KEY = Symbol.for(
-    '@noeducation/model-stats:ModelMap:init',
+    '@noeducation/model-stats:ModelMap:init'
   );
   /** Symbol-based global registry key for ModelMap singleton. */
   static readonly #REGISTRY_KEY = Symbol.for(
-    '@noeducation/model-stats:ModelMap',
+    '@noeducation/model-stats:ModelMap'
   );
   /** Local cached reference to the global singleton via global symbol registry. */
   static get #instance(): ModelMap | undefined {
@@ -190,7 +190,7 @@ export class ModelMap {
    * @param {(readonly [string, ModelRecord])[] | DbDatabaseType} [modelsOrDb] - Initial models or database instance.
    */
   private constructor(
-    modelsOrDb?: (readonly [string, ModelRecord])[] | DbDatabaseType,
+    modelsOrDb?: (readonly [string, ModelRecord])[] | DbDatabaseType
   ) {
     this.#providerModelToRecord = new Map();
     this.#idToRecord = new Map();
@@ -270,7 +270,7 @@ export class ModelMap {
         PromiseWithResolvers<boolean> | undefined
       >
     )[ModelMap.#INIT_KEY];
-    await (init2?.promise ?? Promise.resolve(true)).catch(() => { });
+    await (init2?.promise ?? Promise.resolve(true)).catch(() => {});
     return inst;
   }
 
@@ -281,7 +281,7 @@ export class ModelMap {
    */
   static setupMockInstance(
     records: (readonly [string, ModelRecord])[],
-    quotas: (readonly [string, ModelQuotaRecord])[],
+    quotas: (readonly [string, ModelQuotaRecord])[]
   ): ModelMap {
     type GlobalReg = { [k: symbol]: ModelMap | undefined };
     const g = globalThis as unknown as GlobalReg;
@@ -323,7 +323,7 @@ export class ModelMap {
       // Read from database
       const database = db || (await drizDbWithInit());
       const [modelsWithProviders, quotas] = await Promise.all([
-        // Load models with provider information      
+        // Load models with provider information
         database
           .select({
             modelId: schema.models.id,
@@ -339,7 +339,7 @@ export class ModelMap {
           .from(schema.models)
           .innerJoin(
             schema.providers,
-            eq(schema.models.providerId, schema.providers.id),
+            eq(schema.models.providerId, schema.providers.id)
           )
           .where(eq(schema.models.isActive, true))
           .execute(),
@@ -348,7 +348,7 @@ export class ModelMap {
           .select()
           .from(schema.modelQuotas)
           .where(eq(schema.modelQuotas.isActive, true))
-          .execute()
+          .execute(),
       ]).catch((error) => {
         throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
           log: true,
@@ -357,60 +357,68 @@ export class ModelMap {
       });
       // Parse and populate temporary maps
       const now = new Date(Date.now());
-      const loaded = (await Promise.all([
-        // Populate model caches with null guard
-        (async () => {
-          Array.from(modelsWithProviders ?? []).forEach((row) => {
-            const record: ModelRecord = {
-              id: row.modelId,
-              providerId: row.providerId,
-              providerName: row.providerName,
-              modelName: row.modelName,
-              displayName: row.displayName || undefined,
-              description: row.description || undefined,
-              isActive: row.isActive,
-              createdAt: row.createdAt ?? now.toISOString(),
-              updatedAt: row.updatedAt ?? now.toISOString(),
-            };
-            tempProviderModelToRecord.set(
-              `${row.providerId}:${row.modelName}`,
-              record,
-            );
-            tempIdToRecord.set(row.modelId, record);
+      const loaded = (
+        await Promise.all([
+          // Populate model caches with null guard
+          (async () => {
+            Array.from(modelsWithProviders ?? []).forEach((row) => {
+              const record: ModelRecord = {
+                id: row.modelId,
+                providerId: row.providerId,
+                providerName: row.providerName,
+                modelName: row.modelName,
+                displayName: row.displayName || undefined,
+                description: row.description || undefined,
+                isActive: row.isActive,
+                createdAt: row.createdAt ?? now.toISOString(),
+                updatedAt: row.updatedAt ?? now.toISOString(),
+              };
+              tempProviderModelToRecord.set(
+                `${row.providerId}:${row.modelName}`,
+                record
+              );
+              tempIdToRecord.set(row.modelId, record);
+            });
+            return true;
+          })(),
+          (async () => {
+            // Populate quota cache with null guard
+            Array.from(quotas ?? []).forEach((quota) => {
+              const quotaRecord: ModelQuotaRecord = {
+                id: quota.id,
+                modelId: quota.modelId,
+                maxTokensPerMessage: quota.maxTokensPerMessage || undefined,
+                maxTokensPerMinute: quota.maxTokensPerMinute || undefined,
+                maxTokensPerDay: quota.maxTokensPerDay || undefined,
+                isActive: quota.isActive,
+                createdAt: quota.createdAt ?? now.toISOString(),
+                updatedAt: quota.updatedAt ?? now.toISOString(),
+              };
+              tempModelIdToQuota.set(quota.modelId, quotaRecord);
+            });
+            return true;
+          })(),
+        ]).catch((error) => {
+          throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            log: true,
+            source: 'ModelMap.refresh:populateCaches-load',
           });
-          return true;
-        })(),
-        (async () => {
-          // Populate quota cache with null guard
-          Array.from(quotas ?? []).forEach((quota) => {
-            const quotaRecord: ModelQuotaRecord = {
-              id: quota.id,
-              modelId: quota.modelId,
-              maxTokensPerMessage: quota.maxTokensPerMessage || undefined,
-              maxTokensPerMinute: quota.maxTokensPerMinute || undefined,
-              maxTokensPerDay: quota.maxTokensPerDay || undefined,
-              isActive: quota.isActive,
-              createdAt: quota.createdAt ?? now.toISOString(),
-              updatedAt: quota.updatedAt ?? now.toISOString(),
-            };
-            tempModelIdToQuota.set(quota.modelId, quotaRecord);
-          });
-          return true;
-        })()
-      ]).catch((error) => {
-        throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
-          log: true,
-          source: 'ModelMap.refresh:populateCaches-load',
-        });
-      })).every(Boolean);
+        })
+      ).every(Boolean);
       if (loaded) {
         // copy data from temp maps to instance maps
         this.#providerModelToRecord.clear();
-        tempProviderModelToRecord.forEach((value, key) => this.#providerModelToRecord.set(key, value));
+        tempProviderModelToRecord.forEach((value, key) =>
+          this.#providerModelToRecord.set(key, value)
+        );
         this.#idToRecord.clear();
-        tempIdToRecord.forEach((value, key) => this.#idToRecord.set(key, value));
+        tempIdToRecord.forEach((value, key) =>
+          this.#idToRecord.set(key, value)
+        );
         this.#modelIdToQuota.clear();
-        tempModelIdToQuota.forEach((value, key) => this.#modelIdToQuota.set(key, value));
+        tempModelIdToQuota.forEach((value, key) =>
+          this.#modelIdToQuota.set(key, value)
+        );
         this.#initialized = true;
         this.#lastCacheUpdate = Date.now();
       }
@@ -421,7 +429,7 @@ export class ModelMap {
         log: true,
         message: 'Failed to refresh ModelMap from database',
         source: 'ModelMap.refresh',
-      })
+      });
       this.#whenInitialized.resolve(false);
       throw le;
     }
@@ -483,12 +491,12 @@ export class ModelMap {
    */
   async normalizeProviderModel(
     providerOrModel: LanguageModel,
-    modelName?: string,
+    modelName?: string
   ): Promise<ProviderModelNormalization> {
     if (typeof providerOrModel === 'object' && providerOrModel) {
       return await this.normalizeProviderModel(
         providerOrModel.provider,
-        providerOrModel.modelId,
+        providerOrModel.modelId
       );
     }
     // Parse provider:model format if present
@@ -619,7 +627,7 @@ export class ModelMap {
   /** Helper that throws ResourceNotFoundError when provider/model can’t be normalized */
   async normalizeProviderModelOrThrow(
     providerOrModel: string,
-    modelName?: string,
+    modelName?: string
   ): Promise<
     Required<
       Pick<
@@ -652,7 +660,7 @@ export class ModelMap {
    */
   async getModelByProviderAndName(
     provider: LanguageModel,
-    modelName: string,
+    modelName: string
   ): Promise<ModelRecord | null> {
     await this.#ensureFreshCache();
 
@@ -727,7 +735,7 @@ export class ModelMap {
    */
   async addQuotaToModel(
     record: Omit<ModelQuotaRecord, UpdateOptionalQuotaFields> &
-      Partial<Pick<ModelQuotaRecord, UpdateOptionalQuotaFields>>,
+      Partial<Pick<ModelQuotaRecord, UpdateOptionalQuotaFields>>
   ): Promise<ModelQuotaRecord> {
     if (!record.modelId) {
       throw new TypeError('modelId is required when adding a quota record.');
@@ -773,7 +781,7 @@ export class ModelMap {
    */
   async getModelWithQuota(
     provider: string,
-    modelName: string,
+    modelName: string
   ): Promise<ModelWithQuota | null> {
     const model = await this.getModelByProviderAndName(provider, modelName);
     if (!model) return null;
@@ -800,7 +808,7 @@ export class ModelMap {
    * ```
    */
   async getModelFromLanguageModel(
-    languageModel: LanguageModel,
+    languageModel: LanguageModel
   ): Promise<ModelWithQuota | null> {
     try {
       // Extract provider and model information from the LanguageModelV1 instance
@@ -820,7 +828,7 @@ export class ModelMap {
               keys: Object.keys(languageModel),
             },
             source: 'ModelMap.getModelFromLanguageModelV1',
-          },
+          }
         );
         return null;
       }
@@ -872,7 +880,7 @@ export class ModelMap {
    */
   async loadQuotaFromDatabase(
     provider: string,
-    modelName: string,
+    modelName: string
   ): Promise<ModelQuotaRecord | null> {
     try {
       return await drizDbWithInit(async (db) => {
@@ -890,14 +898,14 @@ export class ModelMap {
           .from(schema.modelQuotas)
           .innerJoin(
             schema.models,
-            eq(schema.modelQuotas.modelId, schema.models.id),
+            eq(schema.modelQuotas.modelId, schema.models.id)
           )
           .where(
             and(
               eq(schema.models.providerId, provider),
               eq(schema.models.modelName, modelName),
-              eq(schema.modelQuotas.isActive, true),
-            ),
+              eq(schema.modelQuotas.isActive, true)
+            )
           )
           .limit(1)
           .execute()
@@ -927,7 +935,10 @@ export class ModelMap {
         source: 'ModelMap.loadQuotaFromDatabase',
       });
       try {
-        const { modelId } = await this.normalizeProviderModelOrThrow(provider, modelName);
+        const { modelId } = await this.normalizeProviderModelOrThrow(
+          provider,
+          modelName
+        );
         return modelId ? this.#modelIdToQuota.get(modelId) ?? null : null;
       } catch (error) {
         LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -948,9 +959,7 @@ export class ModelMap {
   async #ensureFreshCache(): Promise<void> {
     const isInitialized = this.#initialized;
     const isFresh = Date.now() - this.#lastCacheUpdate < this.#CACHE_TTL;
-    if (
-      !(isInitialized && isFresh)
-    ) {
+    if (!(isInitialized && isFresh)) {
       try {
         await this.refresh();
       } catch (error) {
@@ -1028,7 +1037,7 @@ export class ModelMap {
    */
   async record(
     provider: string,
-    modelName: string,
+    modelName: string
   ): Promise<ModelRecord | undefined> {
     const model = await this.getModelByProviderAndName(provider, modelName);
     return model || undefined;
@@ -1057,7 +1066,7 @@ export class ModelMap {
 
     const { providerId, rethrow } = await this.normalizeProviderModel(
       provider,
-      '',
+      ''
     );
 
     try {

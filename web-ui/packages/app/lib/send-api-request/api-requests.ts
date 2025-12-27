@@ -1,5 +1,8 @@
-import { log } from '@compliance-theater/lib-logger';
-import { AbortablePromise, ICancellablePromiseExt } from '@compliance-theater/lib-typescript';
+import { log } from '@compliance-theater/logger';
+import {
+  AbortablePromise,
+  ICancellablePromiseExt,
+} from '@compliance-theater/typescript';
 import type {
   AdditionalRequestParams,
   ApiRequestHelper,
@@ -94,7 +97,7 @@ export const sendApiRequest = <T>({
           url,
           method,
           data,
-        }),
+        })
       );
       resolveOuter(data);
       return data;
@@ -106,7 +109,7 @@ export const sendApiRequest = <T>({
           message: `API request failed for [${url}]`,
           url,
           method,
-        }),
+        })
       );
     }
   });
@@ -125,7 +128,7 @@ export const sendApiGetRequest = <T>(
   {
     sendApiRequest: sendApiRequestInProps,
     ...additional
-  }: AdditionalRequestParams = {},
+  }: AdditionalRequestParams = {}
 ): ICancellablePromiseExt<T> =>
   (sendApiRequestInProps ?? sendApiRequest)<T>({
     ...props,
@@ -147,7 +150,7 @@ export const sendApiPostRequest = <T>(
   {
     sendApiRequest: sendApiRequestInProps,
     ...additional
-  }: AdditionalRequestParams = {},
+  }: AdditionalRequestParams = {}
 ): ICancellablePromiseExt<T> =>
   (sendApiRequestInProps ?? sendApiRequest)<T>({
     ...props,
@@ -169,7 +172,7 @@ export const sendApiPutRequest = <T>(
   {
     sendApiRequest: sendApiRequestInProps,
     ...additional
-  }: AdditionalRequestParams = {},
+  }: AdditionalRequestParams = {}
 ): ICancellablePromiseExt<T> =>
   (sendApiRequestInProps ?? sendApiRequest)<T>({
     ...props,
@@ -191,7 +194,7 @@ export const sendApiDeleteRequest = <T>(
   {
     sendApiRequest: sendApiRequestInProps,
     ...additional
-  }: AdditionalRequestParams = {},
+  }: AdditionalRequestParams = {}
 ): ICancellablePromiseExt<T> =>
   (sendApiRequestInProps ?? sendApiRequest)<T>({
     ...props,
@@ -220,19 +223,19 @@ export const apiRequestHelperFactory = ({
   return {
     get: <T>(
       params: Omit<ReadApiRequestParams, 'area'>,
-      additional?: AdditionalRequestParams,
+      additional?: AdditionalRequestParams
     ) => sendApiGetRequest<T>(addArea(params), additional),
     post: <T>(
       params: Omit<WriteApiRequestParams, 'area'>,
-      additional?: AdditionalRequestParams,
+      additional?: AdditionalRequestParams
     ) => sendApiPostRequest<T>(addArea(params), additional),
     put: <T>(
       params: Omit<WriteApiRequestParams, 'area'>,
-      additional?: AdditionalRequestParams,
+      additional?: AdditionalRequestParams
     ) => sendApiPutRequest<T>(addArea(params), additional),
     delete: <T>(
       params: Omit<DeleteApiRequestParams, 'area'>,
-      additional?: AdditionalRequestParams,
+      additional?: AdditionalRequestParams
     ) => sendApiDeleteRequest<T>(addArea(params), additional),
   };
 };

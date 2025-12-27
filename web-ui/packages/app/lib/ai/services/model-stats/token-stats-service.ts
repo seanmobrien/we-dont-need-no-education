@@ -1,6 +1,6 @@
 import { getRedisClient } from '@/lib/redis-client';
 import { drizDbWithInit, schema, sql } from '@/lib/drizzle-db';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   ModelQuota,
@@ -10,7 +10,7 @@ import {
   TokenUsageData,
 } from '../../middleware/tokenStatsTracking/types';
 import { ModelMap } from './model-map';
-import { SingletonProvider } from '@compliance-theater/lib-typescript';
+import { SingletonProvider } from '@compliance-theater/typescript';
 
 const REGISTRY_KEY = '@noeducation/model-stats:TokenStatsService';
 
@@ -44,14 +44,14 @@ class TokenStatsService implements TokenStatsServiceType {
   private getRedisStatsKey(
     provider: string,
     modelName: string,
-    windowType: string,
+    windowType: string
   ): string {
     return `token_stats:${provider}:${modelName}:${windowType}`;
   }
 
   async getQuota(
     provider: string,
-    modelName: string,
+    modelName: string
   ): Promise<ModelQuota | null> {
     const {
       providerId: normalizedProvider,
@@ -59,12 +59,12 @@ class TokenStatsService implements TokenStatsServiceType {
       modelId: normalizedModelId,
       rethrow,
     } = await ModelMap.getInstance().then((x) =>
-      x.normalizeProviderModel(provider, modelName),
+      x.normalizeProviderModel(provider, modelName)
     );
     try {
       rethrow();
       let quotaFromMap = await ModelMap.getInstance().then((x) =>
-        x.getQuotaByModelId(normalizedModelId!),
+        x.getQuotaByModelId(normalizedModelId!)
       );
       if (!quotaFromMap) {
         quotaFromMap = await ModelMap.Instance.addQuotaToModel({
@@ -85,7 +85,7 @@ class TokenStatsService implements TokenStatsServiceType {
           provider: provider,
           modelName: normalizedModel,
           error,
-        }),
+        })
       );
       return null;
     }
@@ -93,14 +93,14 @@ class TokenStatsService implements TokenStatsServiceType {
 
   async getTokenStats(
     provider: string,
-    modelName: string,
+    modelName: string
   ): Promise<TokenStats> {
     const {
       providerId: normalizedProvider,
       modelName: normalizedModel,
       rethrow,
     } = await ModelMap.getInstance().then((x) =>
-      x.normalizeProviderModel(provider, modelName),
+      x.normalizeProviderModel(provider, modelName)
     );
     try {
       rethrow();
@@ -111,17 +111,17 @@ class TokenStatsService implements TokenStatsServiceType {
       const currentMinuteKey = this.getRedisStatsKey(
         normalizedProvider,
         normalizedModel,
-        'minute',
+        'minute'
       );
       const lastHourKey = this.getRedisStatsKey(
         normalizedProvider,
         normalizedModel,
-        'hour',
+        'hour'
       );
       const last24HoursKey = this.getRedisStatsKey(
         normalizedProvider,
         normalizedModel,
-        'day',
+        'day'
       );
 
       const [minuteData, hourData, dayData] = await Promise.all([
@@ -144,7 +144,7 @@ class TokenStatsService implements TokenStatsServiceType {
           provider: normalizedProvider,
           modelName: normalizedModel,
           error,
-        }),
+        })
       );
       return {
         currentMinuteTokens: 0,
@@ -158,14 +158,14 @@ class TokenStatsService implements TokenStatsServiceType {
   async checkQuota(
     provider: string,
     modelName: string,
-    requestedTokens: number,
+    requestedTokens: number
   ): Promise<QuotaCheckResult> {
     const {
       providerId: normalizedProvider,
       modelName: normalizedModel,
       rethrow,
     } = await ModelMap.getInstance().then((x) =>
-      x.normalizeProviderModel(provider, modelName),
+      x.normalizeProviderModel(provider, modelName)
     );
 
     try {
@@ -227,7 +227,7 @@ class TokenStatsService implements TokenStatsServiceType {
           provider: normalizedProvider,
           modelName: normalizedModel,
           error,
-        }),
+        })
       );
       // On error, allow the request to avoid blocking legitimate usage
       return { allowed: true };
@@ -237,14 +237,14 @@ class TokenStatsService implements TokenStatsServiceType {
   async safeRecordTokenUsage(
     provider: string,
     modelName: string,
-    usage: TokenUsageData,
+    usage: TokenUsageData
   ): Promise<void> {
     const {
       providerId: normalizedProvider,
       modelName: normalizedModel,
       rethrow,
     } = await ModelMap.getInstance().then((x) =>
-      x.normalizeProviderModel(provider, modelName),
+      x.normalizeProviderModel(provider, modelName)
     );
 
     try {
@@ -270,14 +270,14 @@ class TokenStatsService implements TokenStatsServiceType {
   private async updateRedisStats(
     provider: string,
     modelName: string,
-    usage: TokenUsageData,
+    usage: TokenUsageData
   ): Promise<void> {
     const {
       providerId: normalizedProvider,
       modelName: normalizedModel,
       rethrow,
     } = await ModelMap.getInstance().then((x) =>
-      x.normalizeProviderModel(provider, modelName),
+      x.normalizeProviderModel(provider, modelName)
     );
     try {
       rethrow();
@@ -332,7 +332,7 @@ class TokenStatsService implements TokenStatsServiceType {
         const key = this.getRedisStatsKey(
           normalizedProvider,
           normalizedModel,
-          window.type,
+          window.type
         );
 
         // Execute Lua script to atomically update the JSON blob and set TTL.
@@ -367,12 +367,12 @@ class TokenStatsService implements TokenStatsServiceType {
   private async updateDatabaseStats(
     provider: string,
     modelName: string,
-    usage: TokenUsageData,
+    usage: TokenUsageData
   ): Promise<void> {
     try {
       const model = await ModelMap.Instance.getModelByProviderAndName(
         provider,
-        modelName,
+        modelName
       );
       if (!model) {
         throw new Error(`Model not found: ${provider}:${modelName}`);
@@ -446,7 +446,7 @@ class TokenStatsService implements TokenStatsServiceType {
 
   async getUsageReport(
     provider: string,
-    modelName: string,
+    modelName: string
   ): Promise<{
     quota: ModelQuota | null;
     currentStats: TokenStats;
@@ -457,7 +457,7 @@ class TokenStatsService implements TokenStatsServiceType {
       modelName: normalizedModel,
       rethrow,
     } = await ModelMap.getInstance().then((x) =>
-      x.normalizeProviderModel(provider, modelName),
+      x.normalizeProviderModel(provider, modelName)
     );
     try {
       rethrow();
@@ -469,7 +469,7 @@ class TokenStatsService implements TokenStatsServiceType {
       const quotaCheckResult = await this.checkQuota(
         normalizedProvider,
         normalizedModel,
-        0,
+        0
       );
 
       return { quota, currentStats, quotaCheckResult };

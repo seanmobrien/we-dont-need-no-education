@@ -2,7 +2,7 @@ import type { ImpersonationService } from './impersonation.types';
 import { ImpersonationThirdParty } from './impersonation.thirdparty';
 import { ImpersonationServiceCache } from './impersonation-service-cache';
 import { auth } from '@/auth';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type { User } from '@auth/core/types';
 
 /**
@@ -23,7 +23,7 @@ export const fromRequest = async ({
   const session = await auth();
   if (!session?.user) {
     log((l) =>
-      l.warn('Impersonation requested without an active user session'),
+      l.warn('Impersonation requested without an active user session')
     );
     return undefined;
   }

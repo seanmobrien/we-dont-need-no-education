@@ -1,5 +1,5 @@
 import { getInstance } from '../../services/model-stats/token-stats-service';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import {
   QuotaCheckResult,
   QuotaEnforcementError,
@@ -31,7 +31,7 @@ export type TokenStatsTransformParamsType = LanguageModelV2CallOptions & {
 };
 
 const extractProviderAndModel = async (
-  modelId: string | LanguageModelV2,
+  modelId: string | LanguageModelV2
 ): Promise<{ provider: string; modelName: string }> => {
   const modelMap = await ModelMap.getInstance();
   const parts = await modelMap.normalizeProviderModel(modelId);
@@ -44,7 +44,7 @@ const extractProviderAndModel = async (
 };
 
 const isQuotaEnforcementError = (
-  error: unknown,
+  error: unknown
 ): error is QuotaEnforcementError =>
   typeof error === 'object' &&
   !!error &&
@@ -69,7 +69,7 @@ const quotaCheck = async ({
     const quotaCheck = await getInstance().checkQuota(
       provider,
       modelName,
-      estimatedTokens,
+      estimatedTokens
     );
     if (quotaCheck.allowed) {
       if (enableLogging) {
@@ -79,7 +79,7 @@ const quotaCheck = async ({
             modelName,
             estimatedTokens,
             currentUsage: quotaCheck.currentUsage,
-          }),
+          })
         );
       }
       return quotaCheck;
@@ -92,12 +92,12 @@ const quotaCheck = async ({
           reason: quotaCheck.reason,
           currentUsage: quotaCheck.currentUsage,
           quota: quotaCheck.quota,
-        }),
+        })
       );
     }
     if (enableQuotaEnforcement) {
       const error: QuotaEnforcementError = new Error(
-        `Quota exceeded: ${quotaCheck.reason}`,
+        `Quota exceeded: ${quotaCheck.reason}`
       );
       // Attach quota information to error for upstream handling
       error.quota = quotaCheck;
@@ -146,7 +146,7 @@ const wrapGenerate = async ({
 }): Promise<DoGenerateReturnType> => {
   try {
     const { provider, modelName, rethrow } = await ModelMap.getInstance().then(
-      (x) => x.normalizeProviderModel(model),
+      (x) => x.normalizeProviderModel(model)
     );
     try {
       rethrow();
@@ -155,7 +155,7 @@ const wrapGenerate = async ({
           l.verbose('Token stats middleware processing request', {
             provider,
             modelName,
-          }),
+          })
         );
       }
       await quotaCheck({
@@ -209,7 +209,7 @@ const wrapGenerate = async ({
                     tokenUsage,
                     error:
                       error instanceof Error ? error.message : String(error),
-                  }),
+                  })
                 );
               }
             });
@@ -220,7 +220,7 @@ const wrapGenerate = async ({
               provider,
               modelName,
               tokenUsage,
-            }),
+            })
           );
         }
       }
@@ -292,10 +292,10 @@ const wrapStream = async ({
       await (typeof model === 'string'
         ? extractProviderAndModel(model)
         : configProvider && configModelName
-          ? { provider: configProvider, modelName: configModelName }
-          : model.provider && model.modelId
-            ? { provider: model.provider, modelName: model.modelId }
-            : extractProviderAndModel(model));
+        ? { provider: configProvider, modelName: configModelName }
+        : model.provider && model.modelId
+        ? { provider: model.provider, modelName: model.modelId }
+        : extractProviderAndModel(model));
 
     provider = providerFromProps;
     modelName = modelNameFromProps;
@@ -308,7 +308,7 @@ const wrapStream = async ({
             modelName,
             estimatedTokens,
           },
-        }),
+        })
       );
     }
 
@@ -427,12 +427,15 @@ const wrapStream = async ({
 
               if (enableLogging) {
                 log((l) =>
-                  l.verbose('=== tokenStatsMiddleware: Stream token usage recorded ===', {
-                    provider,
-                    modelName,
-                    tokenUsage,
-                    generatedTextLength: generatedText.length,
-                  }),
+                  l.verbose(
+                    '=== tokenStatsMiddleware: Stream token usage recorded ===',
+                    {
+                      provider,
+                      modelName,
+                      tokenUsage,
+                      generatedTextLength: generatedText.length,
+                    }
+                  )
                 );
               }
             }
@@ -467,9 +470,7 @@ const wrapStream = async ({
     });
   } finally {
     if (enableLogging) {
-      log((l) =>
-        l.verbose('Token stats middleware completed'),
-      );
+      log((l) => l.verbose('Token stats middleware completed'));
     }
   }
 };
@@ -503,7 +504,7 @@ export const transformParams = async ({
 };
 
 const createOriginalTokenStatsMiddleware = (
-  config: TokenStatsMiddlewareConfig = {},
+  config: TokenStatsMiddlewareConfig = {}
 ): LanguageModelV2Middleware => {
   const { provider: p, modelName: m } = config ?? {};
   const setupModelProviderOverrides = () => ({
@@ -533,11 +534,11 @@ const createOriginalTokenStatsMiddleware = (
       const { config: configFromState } = state;
       if (!configFromState) {
         return Promise.reject(
-          new TypeError('Missing required property "config".'),
+          new TypeError('Missing required property "config".')
         );
       }
       config = JSON.parse(
-        configFromState.toString(),
+        configFromState.toString()
       ) as TokenStatsMiddlewareConfig;
       ({ overrideProvider, overrideModelId } = setupModelProviderOverrides());
       if (overrideProvider) {
@@ -555,7 +556,7 @@ const createOriginalTokenStatsMiddleware = (
 };
 
 export const tokenStatsMiddleware = (
-  config: TokenStatsMiddlewareConfig = {},
+  config: TokenStatsMiddlewareConfig = {}
 ): LanguageModelV2Middleware =>
   MiddlewareStateManager.Instance.statefulMiddlewareWrapper({
     middlewareId: 'token-stats-tracking',
@@ -563,7 +564,7 @@ export const tokenStatsMiddleware = (
   });
 
 export const tokenStatsWithQuotaMiddleware = (
-  config: Omit<TokenStatsMiddlewareConfig, 'enableQuotaEnforcement'> = {},
+  config: Omit<TokenStatsMiddlewareConfig, 'enableQuotaEnforcement'> = {}
 ) =>
   tokenStatsMiddleware({
     enableLogging: true,
@@ -572,7 +573,7 @@ export const tokenStatsWithQuotaMiddleware = (
   });
 
 export const tokenStatsLoggingOnlyMiddleware = (
-  config: Omit<TokenStatsMiddlewareConfig, 'enableQuotaEnforcement'> = {},
+  config: Omit<TokenStatsMiddlewareConfig, 'enableQuotaEnforcement'> = {}
 ) =>
   tokenStatsMiddleware({
     ...config,

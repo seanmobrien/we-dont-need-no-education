@@ -1,4 +1,4 @@
-import { isKeyOf } from '@compliance-theater/lib-typescript';
+import { isKeyOf } from '@compliance-theater/typescript';
 
 export interface EmailHeader {
   name?: string | null;
@@ -137,9 +137,8 @@ export class ParsedHeaderMap extends Map<
    * @param contact - The contact value, either a string or a `ContactInHeader` object.
    * @returns A `ContactInHeader` object.
    */
-  public static readonly valueAsContact = (
-    contact: string | ContactInHeader,
-  ) => (typeof contact === 'string' ? { email: contact } : contact);
+  public static readonly valueAsContact = (contact: string | ContactInHeader) =>
+    typeof contact === 'string' ? { email: contact } : contact;
 
   /**
    * Creates a ParsedHeaderMap instance from an array of Gmail message headers.
@@ -148,7 +147,7 @@ export class ParsedHeaderMap extends Map<
    */
   public static fromHeaders(
     headers: Array<EmailHeader> | undefined,
-    options?: Partial<ParseHeaderOptions>,
+    options?: Partial<ParseHeaderOptions>
   ): ParsedHeaderMap {
     const parseOptionMap = ParsedHeaderMap.makeParseMap(options);
     const map = new ParsedHeaderMap();

@@ -1,5 +1,5 @@
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { schema, drizDbWithInit } from '@/lib/drizzle-db';
 import { AdapterAccount } from '@auth/core/adapters';
 import { and, sql } from 'drizzle-orm';
@@ -36,7 +36,7 @@ export const setupDrizzleAdapter = () =>
           },
           setWhere: and(
             sql`${schema.accounts.providerAccountId} = ${data.providerAccountId}`,
-            sql`${schema.accounts.provider} = ${data.provider}`,
+            sql`${schema.accounts.provider} = ${data.provider}`
           ),
         });
     };

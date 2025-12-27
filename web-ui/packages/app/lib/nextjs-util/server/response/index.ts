@@ -1,10 +1,10 @@
-import { log, safeSerialize } from '@compliance-theater/lib-logger';
+import { log, safeSerialize } from '@compliance-theater/logger';
 import { isAbortError, LoggedError } from '@/lib/react-util';
 import { isRunningOnServer } from '@/lib/site-util/env';
 import type { Readable as ReadableType } from 'node:stream';
 
 const toUint8 = (
-  chunk: Uint8Array<ArrayBuffer> | string,
+  chunk: Uint8Array<ArrayBuffer> | string
 ): Uint8Array<ArrayBuffer> =>
   typeof chunk === 'string'
     ? new TextEncoder().encode(chunk)
@@ -23,7 +23,7 @@ export class FetchResponse extends Response {
 
   constructor(
     body: Buffer | ReadableStream<Uint8Array<ArrayBuffer>> | null,
-    init: { status?: number; headers?: Record<string, string> } = {},
+    init: { status?: number; headers?: Record<string, string> } = {}
   ) {
     // Initialize base Response with no body; we override accessors to use our
     // controlled buffer/stream.
@@ -126,7 +126,7 @@ export class FetchResponse extends Response {
     const buf = this._buffer;
     return buf.buffer.slice(
       buf.byteOffset,
-      buf.byteOffset + buf.byteLength,
+      buf.byteOffset + buf.byteLength
     ) as ArrayBuffer;
   }
 
@@ -191,7 +191,7 @@ export default FetchResponse;
  * ```
  */
 export const nodeStreamToReadableStream = (
-  nodeStream: NodeJS.ReadableStream,
+  nodeStream: NodeJS.ReadableStream
 ): ReadableStream<Uint8Array<ArrayBuffer>> => {
   if (!nodeStream) {
     throw new TypeError('nodeStream is required');
@@ -278,7 +278,7 @@ const convertWebStreamOnNode = async (webStream: ReadableStream) => {
   const { Readable } = streamModule;
   if (!Readable) {
     throw new SyntaxError(
-      'Readable stream not available in the imported stream module',
+      'Readable stream not available in the imported stream module'
     );
   }
   if (typeof Readable.fromWeb === 'function') {
@@ -319,7 +319,7 @@ const convertWebStreamOnNode = async (webStream: ReadableStream) => {
       closed = true;
       reader.cancel(err).then(
         () => callback(err),
-        (e) => callback(e),
+        (e) => callback(e)
       );
     },
   });
@@ -346,7 +346,7 @@ const convertWebStreamOnEdge = async (webStream: ReadableStream) => {
  * @returns A Node.js Readable stream
  */
 export const webStreamToReadable = (
-  webStream: ReadableStream,
+  webStream: ReadableStream
 ): Promise<ReadableType> => {
   if (typeof window === 'undefined' && process.env.NEXT_RUNTIME === 'nodejs') {
     return convertWebStreamOnNode(webStream);
@@ -389,7 +389,7 @@ export const makeResponse = (v: {
  */
 export const makeJsonResponse = (
   data: unknown,
-  init?: ResponseInit,
+  init?: ResponseInit
 ): Response => {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -410,7 +410,7 @@ export const makeJsonResponse = (
   } catch (_error) {
     // fallback to fetchresponse below
     log((l) =>
-      l.warn('cannot use NextResponse from the edge: ', safeSerialize(_error)),
+      l.warn('cannot use NextResponse from the edge: ', safeSerialize(_error))
     );
   }
   const jsonBody = JSON.stringify(data);
@@ -426,7 +426,7 @@ export const makeJsonResponse = (
  */
 export const makeStreamResponse = (
   stream: ReadableStream<Uint8Array<ArrayBuffer>>,
-  init: { status?: number; headers?: Record<string, string> } = {},
+  init: { status?: number; headers?: Record<string, string> } = {}
 ): Response => {
   return new FetchResponse(stream, init);
 };

@@ -5,7 +5,7 @@ import type {
 } from './types';
 import { InMemoryStorageStrategy } from './in-memory-storage';
 import { RedisStorageStrategy } from './redis-storage';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
@@ -19,7 +19,7 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 export const createStorageStrategy = async (
   strategyType: StorageStrategyType,
   config: StorageStrategyConfig = {},
-  fallbackStrategy?: TodoStorageStrategy,
+  fallbackStrategy?: TodoStorageStrategy
 ): Promise<TodoStorageStrategy> => {
   try {
     switch (strategyType) {
@@ -49,8 +49,8 @@ export const createStorageStrategy = async (
     if (fallbackStrategy) {
       log((l) =>
         l.warn(
-          `Failed to create ${strategyType} storage strategy, using fallback`,
-        ),
+          `Failed to create ${strategyType} storage strategy, using fallback`
+        )
       );
       return fallbackStrategy;
     }
@@ -68,7 +68,7 @@ export const createStorageStrategy = async (
  */
 export const createFallbackStrategy = (
   primary: TodoStorageStrategy,
-  fallback: TodoStorageStrategy,
+  fallback: TodoStorageStrategy
 ): TodoStorageStrategy => {
   return {
     async upsertTodoList(list) {

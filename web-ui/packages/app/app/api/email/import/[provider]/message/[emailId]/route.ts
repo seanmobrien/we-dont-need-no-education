@@ -4,7 +4,7 @@ import {
   getImportMessageSource,
 } from '../../_utilitites';
 import { query, queryExt } from '@/lib/neondb';
-import { newUuid } from '@compliance-theater/lib-typescript';
+import { newUuid } from '@compliance-theater/typescript';
 import {
   DefaultImportManager,
   queueStagedAttachments,
@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic';
  */
 export const GET = async (
   req: NextRequest,
-  { params }: { params: Promise<{ provider: string; emailId: string }> },
+  { params }: { params: Promise<{ provider: string; emailId: string }> }
 ) => {
   const { provider, emailId } = await params;
   const result = await getImportMessageSource({
@@ -48,7 +48,7 @@ export const GET = async (
  */
 export const POST = async (
   req: NextRequest,
-  { params }: { params: Promise<{ provider: string; emailId: string }> },
+  { params }: { params: Promise<{ provider: string; emailId: string }> }
 ) => {
   const { provider, emailId } = await params;
   const importInstance = new DefaultImportManager(provider);
@@ -74,7 +74,7 @@ export const POST = async (
  */
 export const PUT = async (
   req: NextRequest,
-  { params }: { params: Promise<{ provider: string; emailId: string }> },
+  { params }: { params: Promise<{ provider: string; emailId: string }> }
 ) => {
   const { provider, emailId } = await params;
   const result = await getImportMessageSource({
@@ -94,14 +94,13 @@ export const PUT = async (
   if (result.stage !== 'new') {
     if (req.nextUrl.searchParams.get('refresh')) {
       await query(
-        (sql) =>
-          sql`delete from staging_message where external_id = ${emailId}`,
+        (sql) => sql`delete from staging_message where external_id = ${emailId}`
       );
       result.stage = 'new';
     } else {
       return NextResponse.json(
         { error: 'message already imported' },
-        { status: 400 },
+        { status: 400 }
       );
     }
   }
@@ -118,21 +117,21 @@ export const PUT = async (
       "INSERT INTO staging_message SELECT * FROM  \
       jsonb_populate_record(null::staging_message, '" +
         payload.replaceAll("'", "''") +
-        "'::jsonb)",
-    ),
+        "'::jsonb)"
+    )
   );
   if (records.rowCount !== 1) {
     return NextResponse.json(
       { error: 'Unexpected failure updating staging table.' },
-      { status: 500 },
+      { status: 500 }
     );
   }
   // Stage attachments
   try {
     const attachments = await Promise.all(
       (result.raw.payload?.parts ?? []).flatMap((part) =>
-        queueStagedAttachments({ req, stagedMessageId: id, part }),
-      ),
+        queueStagedAttachments({ req, stagedMessageId: id, part })
+      )
     );
     if (!attachments.every((attachment) => attachment.status === 'success')) {
       throw new Error('Failed to stage attachments', { cause: attachments });
@@ -153,7 +152,7 @@ export const PUT = async (
     }
     return NextResponse.json(
       { error: 'Failed to process attachments' },
-      { status: 500 },
+      { status: 500 }
     );
   }
   return NextResponse.json(
@@ -162,6 +161,6 @@ export const PUT = async (
       id,
       stage: 'staged',
     },
-    { status: 201 },
+    { status: 201 }
   );
 };

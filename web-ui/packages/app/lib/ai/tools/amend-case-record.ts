@@ -20,9 +20,9 @@ import {
   violationDetails,
 } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { toolCallbackResultFactory } from './utility';
-import { newUuid } from '@compliance-theater/lib-typescript';
+import { newUuid } from '@compliance-theater/typescript';
 import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';
 import {
   drizDb,
@@ -41,7 +41,7 @@ const amendCaseRecordCounter = appMeters.createCounter(
   {
     description: 'Total number of case record amendment operations',
     unit: '1',
-  },
+  }
 );
 
 const amendCaseRecordDurationHistogram = appMeters.createHistogram(
@@ -49,7 +49,7 @@ const amendCaseRecordDurationHistogram = appMeters.createHistogram(
   {
     description: 'Duration of case record amendment operations',
     unit: 'ms',
-  },
+  }
 );
 
 const amendmentRecordsHistogram = appMeters.createHistogram(
@@ -57,7 +57,7 @@ const amendmentRecordsHistogram = appMeters.createHistogram(
   {
     description: 'Number of records updated/inserted per amendment operation',
     unit: '1',
-  },
+  }
 );
 
 const amendmentErrorCounter = appMeters.createCounter(
@@ -65,7 +65,7 @@ const amendmentErrorCounter = appMeters.createCounter(
   {
     description: 'Total number of case record amendment errors',
     unit: '1',
-  },
+  }
 );
 
 /**
@@ -103,7 +103,7 @@ const updateMainRecord = async (
   }: Partial<CaseFileAmendment> & {
     updated: Array<Amendment>;
     failed: Array<Amendment & { error: string }>;
-  },
+  }
 ): Promise<void> => {
   if (
     !(
@@ -159,7 +159,7 @@ const updateMainRecord = async (
           ...(sentimentReasons?.length ? { sentimentReasons } : {}),
         })
         .where(
-          eq(callToActionResponseDetails.propertyId, du.documentPropertyId!),
+          eq(callToActionResponseDetails.propertyId, du.documentPropertyId!)
         )
         .execute();
       break;
@@ -195,8 +195,8 @@ const updateMainRecord = async (
           'Attempted to update main record for unsupported document type',
           {
             documentType: du.documentType,
-          },
-        ),
+          }
+        )
       );
       failed.push({
         id: du.documentPropertyId!,
@@ -276,7 +276,7 @@ const addNotes = async ({
         ...notes.map((note) => ({
           id: note.propertyId,
           changes: { notes: [note.propertyValue!] },
-        })),
+        }))
       );
     } catch (error) {
       const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -289,7 +289,7 @@ const addNotes = async ({
           id: note,
           error: le.message ?? 'Failed to insert note',
           changes: { notes: [note] },
-        })),
+        }))
       );
       tx.rollback();
     }
@@ -346,21 +346,20 @@ export const addViolations = async ({
           ferpaRelevancy: ferpaRelevancy ?? 0,
           otherRelevancy: otherRelevancy ?? 0,
         };
-      },
+      }
     );
-
 
     try {
       // first extract user id associated with target document
-      const targetDocumentUserId = (await tx
-        .query
-        .documentUnits
+      const targetDocumentUserId = await tx.query.documentUnits
         .findFirst({
-          where: (documentUnits, { eq }) => eq(documentUnits.unitId, emailDocumentId),
+          where: (documentUnits, { eq }) =>
+            eq(documentUnits.unitId, emailDocumentId),
           columns: {
             userId: true,
-          }
-        }).then(x => x?.userId));
+          },
+        })
+        .then((x) => x?.userId);
       if (!targetDocumentUserId) {
         throw new Error('Target document user id not found');
       }
@@ -374,7 +373,7 @@ export const addViolations = async ({
             createdOn: new Date(Date.now()).toISOString(),
             content: violationType,
             documentPropertyId: propertyId,
-          })),
+          }))
         )
         .execute();
 
@@ -389,7 +388,7 @@ export const addViolations = async ({
             documentPropertyTypeId: EmailPropertyTypeTypeId.ViolationDetails,
             createdOn: new Date(Date.now()).toISOString(),
             propertyValue: v.violationType,
-          })),
+          }))
         )
         .execute();
       await tx.insert(violationDetails).values(violationRecords).execute();
@@ -397,7 +396,7 @@ export const addViolations = async ({
         ...violationRecords.map((record) => ({
           id: record.propertyId,
           changes: { violations: [record] },
-        })),
+        }))
       );
     } catch (error) {
       const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -410,7 +409,7 @@ export const addViolations = async ({
           id: record.propertyId,
           error: le.message ?? 'Failed to insert violation',
           changes: { violations: [record] },
-        })),
+        }))
       );
       tx.rollback();
     }
@@ -450,12 +449,12 @@ const associateResponsiveActions = async ({
   // Verify we are dealing with a valid responsive action
   if (documentType !== 'cta_response') {
     throw new Error(
-      'The source document id must be a CTA Response to associate with a CTA.',
+      'The source document id must be a CTA Response to associate with a CTA.'
     );
   }
   if (!documentPropertyId) {
     throw new Error(
-      'The source document id must have a document property ID to associate with a CTA.',
+      'The source document id must have a document property ID to associate with a CTA.'
     );
   }
 
@@ -465,9 +464,9 @@ const associateResponsiveActions = async ({
         and(
           inArray(
             documentUnits.unitId,
-            associateResponsiveAction.map((m) => m.relatedCtaDocumentId),
+            associateResponsiveAction.map((m) => m.relatedCtaDocumentId)
           ),
-          eq(documentUnits.documentType, 'cta'),
+          eq(documentUnits.documentType, 'cta')
         ),
       with: {
         docProp: {
@@ -496,18 +495,18 @@ const associateResponsiveActions = async ({
     (
       v.docProp?.cta?.responses?.map((r) => r.ctaResponse?.propertyId ?? 0) ??
       []
-    ).includes(documentPropertyId),
+    ).includes(documentPropertyId)
   );
   if (!targetActions || targetActions.length === 0) {
     throw new Error(
-      'All target documents must refer to a call to action record.',
+      'All target documents must refer to a call to action record.'
     );
   }
   // match up actual found records with incoming requests
   const records = associateResponsiveAction
     .map((ra) => {
       const cta = targetActions.find(
-        (ta) => ta.unitId === ra.relatedCtaDocumentId,
+        (ta) => ta.unitId === ra.relatedCtaDocumentId
       );
       if (!cta) {
         // I know, ick, but we filter it right away
@@ -570,7 +569,7 @@ const relateDocuments = async ({
         sourceDocumentId: unitId,
         targetDocumentId: relatedToDocumentId,
         relationshipReasonId: relationshipType,
-      }),
+      })
     ),
   });
   records.forEach(
@@ -586,7 +585,7 @@ const relateDocuments = async ({
           ],
         },
       });
-    },
+    }
   );
 };
 
@@ -644,7 +643,7 @@ export const amendCaseRecord = async ({
     });
 
     return toolCallbackResultFactory<AmendmentResult>(
-      new Error('Explanation is required'),
+      new Error('Explanation is required')
     );
   }
 
@@ -663,7 +662,7 @@ export const amendCaseRecord = async ({
       });
 
       return toolCallbackResultFactory<AmendmentResult>(
-        new Error('Target case file ID not found'),
+        new Error('Target case file ID not found')
       );
     }
 
@@ -715,7 +714,9 @@ export const amendCaseRecord = async ({
           db: tx,
           documentId: target.unitId,
           notes: [
-            `${explanation}\n\nUpdated values: ${JSON.stringify(updatedRecords)}\nInserted values: ${JSON.stringify(insertedRecords)}`,
+            `${explanation}\n\nUpdated values: ${JSON.stringify(
+              updatedRecords
+            )}\nInserted values: ${JSON.stringify(insertedRecords)}`,
           ],
         });
       });

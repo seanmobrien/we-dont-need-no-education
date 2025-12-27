@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { wrapRouteRequest, extractParams } from '@/lib/nextjs-util/server/utils';
+import {
+  wrapRouteRequest,
+  extractParams,
+} from '@/lib/nextjs-util/server/utils';
 import { query, queryExt } from '@/lib/neondb';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { globalContactCache } from '@/data-models/api';
 import { isTruthy } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
@@ -10,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 const mapRecordToSummary = (
   record: Record<string, unknown>,
-  cache: boolean = true,
+  cache: boolean = true
 ) => {
   const ret = {
     contactId: record.contact_id as number,
@@ -25,7 +28,7 @@ const mapRecordToSummary = (
 
 const mapRecordToObject = (
   record: Record<string, unknown>,
-  cache: boolean = true,
+  cache: boolean = true
 ) => {
   const ret = {
     ...mapRecordToSummary(record, false),
@@ -42,7 +45,7 @@ const mapRecordToObject = (
 export const PUT = wrapRouteRequest(
   async (
     req: NextRequest,
-    { params }: { params: Promise<{ contactId: number | string }> },
+    { params }: { params: Promise<{ contactId: number | string }> }
   ) => {
     try {
       const { contactId } = await params;
@@ -52,7 +55,7 @@ export const PUT = wrapRouteRequest(
       if (!contactId) {
         return NextResponse.json(
           { error: 'Contact ID is required' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -65,7 +68,7 @@ export const PUT = wrapRouteRequest(
       ) {
         return NextResponse.json(
           { error: 'At least one field is required for update' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -92,17 +95,17 @@ export const PUT = wrapRouteRequest(
         (sql) =>
           sql<false, true>(
             `UPDATE contacts SET ${updateFields.join(
-              ', ',
+              ', '
             )} WHERE contact_id = $${paramIndex} RETURNING *`,
-            values,
+            values
           ),
-        { transform: mapRecordToObject },
+        { transform: mapRecordToObject }
       );
 
       if (result.rowCount === 0) {
         return NextResponse.json(
           { error: 'Contact not found or not updated' },
-          { status: 404 },
+          { status: 404 }
         );
       }
       log((l) => l.verbose('[[AUDIT]] -  Contact updated:', result.rows[0]));
@@ -111,7 +114,7 @@ export const PUT = wrapRouteRequest(
           message: 'Contact updated successfully',
           contact: result.rows[0],
         },
-        { status: 200 },
+        { status: 200 }
       );
     } catch (error) {
       const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -120,16 +123,16 @@ export const PUT = wrapRouteRequest(
       });
       return NextResponse.json(
         { error: `Internal Server Error - ${le.message}` },
-        { status: 500 },
+        { status: 500 }
       );
     }
-  },
+  }
 );
 
 export const GET = wrapRouteRequest(
   async (
     req: NextRequest,
-    withParams: { params: Promise<{ contactId: number | string }> },
+    withParams: { params: Promise<{ contactId: number | string }> }
   ) => {
     try {
       const { contactId } = await extractParams(withParams);
@@ -138,12 +141,12 @@ export const GET = wrapRouteRequest(
       if (!contactId) {
         return NextResponse.json(
           { error: 'Contact ID is required' },
-          { status: 400 },
+          { status: 400 }
         );
       }
       if (!refresh) {
         const cachedContact = globalContactCache((cache) =>
-          cache.get(Number(contactId)),
+          cache.get(Number(contactId))
         );
         if (cachedContact) {
           return NextResponse.json(cachedContact, { status: 200 });
@@ -151,14 +154,16 @@ export const GET = wrapRouteRequest(
       }
       const result = await query(
         (sql) =>
-          sql`SELECT contact_id, name, email, phone, role_dscr, is_district_staff FROM contacts WHERE contact_id = ${Number(contactId)}`,
-        { transform: mapRecordToObject },
+          sql`SELECT contact_id, name, email, phone, role_dscr, is_district_staff FROM contacts WHERE contact_id = ${Number(
+            contactId
+          )}`,
+        { transform: mapRecordToObject }
       );
 
       if (result.length === 0) {
         return NextResponse.json(
           { error: 'Contact not found' },
-          { status: 404 },
+          { status: 404 }
         );
       }
       return NextResponse.json(result[0], { status: 200 });
@@ -169,16 +174,16 @@ export const GET = wrapRouteRequest(
       });
       return NextResponse.json(
         { error: `Internal Server Error - ${le.message}` },
-        { status: 500 },
+        { status: 500 }
       );
     }
-  },
+  }
 );
 
 export const DELETE = wrapRouteRequest(
   async (
     req: NextRequest,
-    { params }: { params: Promise<{ contactId: number | string }> },
+    { params }: { params: Promise<{ contactId: number | string }> }
   ) => {
     try {
       const { contactId } = await params;
@@ -186,20 +191,20 @@ export const DELETE = wrapRouteRequest(
       if (!contactId) {
         return NextResponse.json(
           { error: 'Contact ID is required' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
       const result = await query(
         (sql) =>
           sql`DELETE FROM contacts WHERE contact_id = ${contactId} RETURNING *`,
-        { transform: (x) => mapRecordToObject(x, false) },
+        { transform: (x) => mapRecordToObject(x, false) }
       );
 
       if (result.length === 0) {
         return NextResponse.json(
           { error: 'Contact not found' },
-          { status: 404 },
+          { status: 404 }
         );
       }
       log((l) => l.verbose('[[AUDIT]] -  Contact deleted:', result[0]));
@@ -209,7 +214,7 @@ export const DELETE = wrapRouteRequest(
           message: 'Contact deleted successfully',
           contact: result[0],
         },
-        { status: 200 },
+        { status: 200 }
       );
     } catch (error) {
       const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -218,8 +223,8 @@ export const DELETE = wrapRouteRequest(
       });
       return NextResponse.json(
         { error: `Internal Server Error - ${le.message}` },
-        { status: 500 },
+        { status: 500 }
       );
     }
-  },
+  }
 );

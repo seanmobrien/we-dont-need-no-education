@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { auth } from '@/auth';
 import { drizDb, schema } from '@/lib/drizzle-db';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { z } from 'zod';
 
@@ -70,7 +70,7 @@ export const POST = wrapRouteRequest(
       if (!session?.user?.id) {
         return NextResponse.json(
           { success: false, error: 'Authentication required' },
-          { status: 401 },
+          { status: 401 }
         );
       }
 
@@ -82,7 +82,7 @@ export const POST = wrapRouteRequest(
       if (isNaN(userId)) {
         return NextResponse.json(
           { success: false, error: 'Invalid user ID' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -95,7 +95,7 @@ export const POST = wrapRouteRequest(
         log((l) => l.warn('Invalid key upload request', { error, userId }));
         return NextResponse.json(
           { success: false, error: 'Invalid request format' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -103,7 +103,7 @@ export const POST = wrapRouteRequest(
       if (!validatePublicKeyFormat(requestBody.publicKey)) {
         return NextResponse.json(
           { success: false, error: 'Invalid public key format' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -116,8 +116,8 @@ export const POST = wrapRouteRequest(
             // Key is still active (not expired)
             or(
               isNull(keys.expirationDate),
-              gte(keys.expirationDate, new Date().toISOString()),
-            ),
+              gte(keys.expirationDate, new Date().toISOString())
+            )
           ),
       });
 
@@ -126,7 +126,7 @@ export const POST = wrapRouteRequest(
           l.info('Public key already exists for user', {
             userId,
             keyId: existingKey.id,
-          }),
+          })
         );
         return NextResponse.json({
           success: true,
@@ -161,7 +161,7 @@ export const POST = wrapRouteRequest(
           keyId: insertedKey.id,
           effectiveDate: insertedKey.effectiveDate,
           expirationDate: insertedKey.expirationDate,
-        }),
+        })
       );
 
       return NextResponse.json({
@@ -181,10 +181,10 @@ export const POST = wrapRouteRequest(
 
       return NextResponse.json(
         { success: false, error: 'Internal server error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
-  },
+  }
 );
 
 /**
@@ -199,7 +199,7 @@ export const GET = wrapRouteRequest(async (): Promise<NextResponse> => {
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -211,7 +211,7 @@ export const GET = wrapRouteRequest(async (): Promise<NextResponse> => {
     if (isNaN(userId)) {
       return NextResponse.json(
         { success: false, error: 'Invalid user ID' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -223,8 +223,8 @@ export const GET = wrapRouteRequest(async (): Promise<NextResponse> => {
           // Key is still active (not expired)
           or(
             isNull(keys.expirationDate),
-            gte(keys.expirationDate, new Date().toISOString()),
-          ),
+            gte(keys.expirationDate, new Date().toISOString())
+          )
         ),
       columns: {
         id: true,
@@ -251,7 +251,7 @@ export const GET = wrapRouteRequest(async (): Promise<NextResponse> => {
 
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 });

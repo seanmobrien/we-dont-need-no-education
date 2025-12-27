@@ -12,7 +12,7 @@ import type {
   RateLimitRetryContext,
   RateLimitFactoryOptions,
 } from './types';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { checkModelAvailabilityAndFallback } from './model-availability';
 import {
   handleRateLimitError,
@@ -57,7 +57,7 @@ const getFailoverConfig = (currentProvider: string): ModelFailoverConfig => {
 };
 
 export const retryRateLimitMiddlewareFactory = async (
-  factoryOptions: RateLimitFactoryOptions | RateLimitRetryContext,
+  factoryOptions: RateLimitFactoryOptions | RateLimitRetryContext
 ): Promise<RetryRateLimitMiddlewareType> => {
   let rateLimitContext = await (async () => {
     if ('modelClass' in factoryOptions) {
@@ -75,7 +75,7 @@ export const retryRateLimitMiddlewareFactory = async (
       model: normalModel.modelId,
     });
     const { primaryProvider, fallbackProvider } = getFailoverConfig(
-      normalModel.provider,
+      normalModel.provider
     );
     return {
       modelClass,
@@ -93,16 +93,14 @@ export const retryRateLimitMiddlewareFactory = async (
       const startTime = Date.now();
       const modelClassification = rateLimitContext.modelClass;
 
-      log((l) =>
-        l.info('Advanced rate limit middleware - doGenerate called'),
-      );
+      log((l) => l.info('Advanced rate limit middleware - doGenerate called'));
       log((l) => l.info(`Model classification: ${modelClassification}`));
 
       // Check if current model is available, attempt fallback if not
       const currentProvider = getCurrentProvider();
       const currentModelKey = constructModelKey(
         currentProvider,
-        modelClassification,
+        modelClassification
       );
 
       try {
@@ -117,7 +115,7 @@ export const retryRateLimitMiddlewareFactory = async (
               turnId: '1',
               ...(params?.providerOptions?.backoffice ?? {}),
             },
-          },
+          }
         );
       } catch (error) {
         // Model unavailable and no fallback - error already thrown with appropriate message
@@ -146,7 +144,7 @@ export const retryRateLimitMiddlewareFactory = async (
               ...(params?.providerOptions?.backoffice ?? {}),
             },
           },
-          'generate',
+          'generate'
         );
         // This line should never be reached as handleRateLimitError always throws
         throw error;
@@ -157,13 +155,17 @@ export const retryRateLimitMiddlewareFactory = async (
       const startTime = Date.now();
       try {
         const modelClassification = await getModelClassification({ model });
-        log((l) => l.verbose(`=== RetryRateLimitMiddleware - doStream called - Model classification: ${modelClassification} ===`));
+        log((l) =>
+          l.verbose(
+            `=== RetryRateLimitMiddleware - doStream called - Model classification: ${modelClassification} ===`
+          )
+        );
 
         // Similar model availability check as in wrapGenerate
         const currentProvider = getCurrentProvider();
         const currentModelKey = constructModelKey(
           currentProvider,
-          modelClassification,
+          modelClassification
         );
 
         try {
@@ -178,7 +180,7 @@ export const retryRateLimitMiddlewareFactory = async (
                 turnId: '1',
                 ...(params?.providerOptions?.backoffice ?? {}),
               },
-            },
+            }
           );
         } catch (error) {
           // Model unavailable and no fallback - error already thrown with appropriate message
@@ -209,16 +211,16 @@ export const retryRateLimitMiddlewareFactory = async (
                 ) {
                   log((l) =>
                     l.info(
-                      `Stream rate limit detected: ${rateLimitErrorInfo.retryAfter}s`,
-                    ),
+                      `Stream rate limit detected: ${rateLimitErrorInfo.retryAfter}s`
+                    )
                   );
                   disableModelFromRateLimit(
                     currentModelKey,
-                    rateLimitErrorInfo.retryAfter,
+                    rateLimitErrorInfo.retryAfter
                   );
                   rateLimitMetrics.recordError(
                     'stream_rate_limit',
-                    modelClassification,
+                    modelClassification
                   );
                 }
               }
@@ -232,7 +234,7 @@ export const retryRateLimitMiddlewareFactory = async (
               if (!hasError) {
                 log((l) => l.info('doStream finished successfully'));
                 log((l) =>
-                  l.info(`Generated text length: ${generatedText.length}`),
+                  l.info(`Generated text length: ${generatedText.length}`)
                 );
               }
             },
@@ -252,7 +254,7 @@ export const retryRateLimitMiddlewareFactory = async (
             modelClassification,
             getFailoverConfig(currentProvider),
             params,
-            'stream_setup',
+            'stream_setup'
           );
           // This line should never be reached as handleRateLimitError always throws
           throw error;
@@ -261,14 +263,15 @@ export const retryRateLimitMiddlewareFactory = async (
         throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
           source: 'rateLimitMiddleware',
           log: true,
-        })
+        });
       } finally {
-        log((l) => l.verbose('=== RetryRateLimitMiddleware - doStream finished ==='));
+        log((l) =>
+          l.verbose('=== RetryRateLimitMiddleware - doStream finished ===')
+        );
       }
     },
 
     transformParams: async ({ params }) => {
-
       const modelClassification = rateLimitContext.modelClass;
       const currentProvider =
         rateLimitContext.failover?.primaryProvider ?? 'azure';
@@ -282,7 +285,7 @@ export const retryRateLimitMiddlewareFactory = async (
       // to use a different model, but this would require careful handling
       if (!isModelAvailable(currentModelKey)) {
         log((l) =>
-          l.warn(`Requested model ${currentModelKey} is not available`),
+          l.warn(`Requested model ${currentModelKey} is not available`)
         );
       }
       // Forward to token tracking middleware to generate token counts
@@ -319,12 +322,12 @@ export const retryRateLimitMiddlewareFactory = async (
               l.debug('Rate limiter state restored', {
                 context: rateLimitContext,
                 age: Date.now() - (timestampFromState || 0),
-              }),
+              })
             );
             return Promise.resolve();
           },
         },
-      },
+      }
     ) as RetryRateLimitMiddlewareType;
 
   // Add the rateLimitContext method to the stateful middleware

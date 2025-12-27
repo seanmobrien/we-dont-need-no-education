@@ -11,7 +11,7 @@ import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import type { ThemeType, ThemeContextType } from './types';
 import { themes } from './definitions';
 import { Loading } from '@/components/general/loading';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
@@ -55,11 +55,11 @@ export const ThemeProvider = ({
       document.documentElement.setAttribute('data-theme', currentTheme);
       document.documentElement.setAttribute(
         'data-toolpad-color-scheme',
-        currentTheme,
+        currentTheme
       );
       document.documentElement.setAttribute(
         'data-mui-color-scheme',
-        currentTheme,
+        currentTheme
       );
     }
   }, [currentTheme]);
@@ -75,7 +75,7 @@ export const ThemeProvider = ({
         localStorage.setItem(THEME_STORAGE_KEY, theme);
       }
     },
-    [currentTheme],
+    [currentTheme]
   );
 
   const contextValue: ThemeContextType = {

@@ -11,7 +11,7 @@ import {
   type StageProcessorContext,
 } from './types';
 import { managerMapFactory } from './google/managermapfactory';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { isError } from '@/lib/react-util/utility-methods';
 import { NextRequest } from 'next/server';
@@ -73,7 +73,7 @@ export class DefaultImportManager {
    */
   async runImportStage(
     target: ImportSourceMessage,
-    { req }: { req: NextRequest },
+    { req }: { req: NextRequest }
   ): Promise<ImportSourceMessage> {
     const typedRunStage = async (stage: ImportStage) => {
       const providerEmailId = target?.providerId ?? 'No ID';
@@ -102,7 +102,7 @@ export class DefaultImportManager {
               })
               .catch((e2) => {
                 throw new AggregateError('Error during rollback', e, e2);
-              }),
+              })
           );
         // If we didn't throw and we're processing the 'new' stage then whatever we got back is what we want
         if (stage === 'new') {
@@ -110,7 +110,7 @@ export class DefaultImportManager {
         }
         if (!context.target) {
           throw new Error(
-            `No import target found in current context in stage ${stage}`,
+            `No import target found in current context in stage ${stage}`
           );
         }
         return context.target;
@@ -140,7 +140,7 @@ export class DefaultImportManager {
    */
   async importEmail(
     emailId: string,
-    { req }: { req: NextRequest },
+    { req }: { req: NextRequest }
   ): Promise<ImportResponse> {
     const activeContext = context.active();
 
@@ -190,11 +190,11 @@ export class DefaultImportManager {
                         tries++;
                         if (tries > 3) {
                           const stageError = new Error(
-                            `Import stage did not progress after 3 attempts: ${result.stage}`,
+                            `Import stage did not progress after 3 attempts: ${result.stage}`
                           );
                           stageSpan.recordException(
                             stageError,
-                            performance.now(),
+                            performance.now()
                           );
                           /*
                           appMeters
@@ -205,7 +205,7 @@ export class DefaultImportManager {
                             .addEvent(
                               'Import stage failed',
                               { stage: result.stage },
-                              performance.now(),
+                              performance.now()
                             )
                             .setStatus({
                               code: SpanStatusCode.ERROR,
@@ -216,7 +216,7 @@ export class DefaultImportManager {
                         stageSpan.addEvent(
                           'Import stage did not progress, retrying.',
                           { tries: tries, stage: result.stage },
-                          performance.now(),
+                          performance.now()
                         );
                       } else {
                         lastStage = result.stage;
@@ -230,7 +230,7 @@ export class DefaultImportManager {
                             message: 'User ID changed',
                             stage:
                               typeof result === 'string' ? 'new' : result.stage,
-                          }),
+                          })
                         );
                         stageSpan.setAttribute('userId', currentUserId);
                         emailImportSpan.setAttribute('userId', currentUserId);
@@ -241,15 +241,15 @@ export class DefaultImportManager {
                           message: 'Import stage completed',
                           stage:
                             typeof result === 'string' ? 'new' : result.stage,
-                        }),
+                        })
                       );
                     } finally {
                       stageSpan.end();
                     }
-                  },
+                  }
                 );
               }
-            },
+            }
           );
 
           // appMeters.createCounter('Email Import Operation Successful').add(1);
@@ -285,7 +285,7 @@ export class DefaultImportManager {
         } finally {
           emailImportSpan.end();
         }
-      },
+      }
     );
   }
 }

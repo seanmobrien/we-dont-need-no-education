@@ -22,7 +22,7 @@ import { isAnnotatedRetryMessage } from '@/lib/ai/core/guards';
 import type { AiModelType } from '@/lib/ai/core/unions';
 import type { AnnotatedRetryMessage } from '@/lib/ai/core/types';
 import { splitIds, generateChatId } from '@/lib/ai/core/chat-ids';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
 import { getReactPlugin } from '@/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';
@@ -33,7 +33,7 @@ import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
 import { onClientToolRequest } from '@/lib/ai/client';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { FirstParameter } from '@compliance-theater/lib-typescript';
+import { FirstParameter } from '@compliance-theater/typescript';
 import { panelStableStyles } from './styles';
 import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
 import type { KnownFeatureValueType } from '@/lib/site-util/feature-flags/types';
@@ -97,7 +97,7 @@ const stable_onFinish = ({ message }: { message: UIMessage }) => {
     }
     localStorage.setItem(
       getThreadStorageKey(threadId),
-      JSON.stringify(newMessages),
+      JSON.stringify(newMessages)
     );
   }
 };
@@ -117,7 +117,7 @@ const ChatPanel = ({ page }: { page: string }) => {
   const { getFlag } = useFeatureFlags();
   const modelFlag = getFlag(
     'models_defaults',
-    AllFeatureFlagsDefault['models_defaults'],
+    AllFeatureFlagsDefault['models_defaults']
   ) ?? { provider: 'azure', chat_model: 'lofi' };
   const { provider, chat_model } =
     modelFlag as KnownFeatureValueType<'models_defaults'>;
@@ -161,10 +161,10 @@ const ChatPanel = ({ page }: { page: string }) => {
         source: 'chat-panel',
       });
       setErrorMessage((current) =>
-        current === error.message ? current : error.message,
+        current === error.message ? current : error.message
       );
     },
-    [setErrorMessage],
+    [setErrorMessage]
   );
 
   const onModelTimeout = useCallback(
@@ -184,7 +184,7 @@ const ChatPanel = ({ page }: { page: string }) => {
         });
       }
     },
-    [setRateLimitTimeout],
+    [setRateLimitTimeout]
   );
 
   const {
@@ -263,7 +263,7 @@ const ChatPanel = ({ page }: { page: string }) => {
         if (messages && messages.length) {
           localStorage.setItem(
             `chatMessages-${threadPartOfId}`,
-            JSON.stringify(messages),
+            JSON.stringify(messages)
           );
         }
       }
@@ -285,7 +285,7 @@ const ChatPanel = ({ page }: { page: string }) => {
             ...(caseFileId ? { 'x-casefile-id': caseFileId } : {}),
             // still available: x-write-enabled, x-memory-disabled, x-memory-disabled
           },
-        },
+        }
       );
       inputElement.value = '';
     },
@@ -299,7 +299,7 @@ const ChatPanel = ({ page }: { page: string }) => {
       threadId,
       textFieldRef,
       caseFileId,
-    ],
+    ]
   );
 
   const addToolResult = useCallback(
@@ -307,12 +307,12 @@ const ChatPanel = ({ page }: { page: string }) => {
       const ret = await addToolResultFromHook(props);
       onSendClick(
         new MouseEvent(
-          'click',
-        ) as unknown as React.MouseEvent<HTMLButtonElement>,
+          'click'
+        ) as unknown as React.MouseEvent<HTMLButtonElement>
       );
       return ret;
     },
-    [addToolResultFromHook, onSendClick],
+    [addToolResultFromHook, onSendClick]
   );
 
   const handleInputKeyDown = useCallback(
@@ -345,7 +345,7 @@ const ChatPanel = ({ page }: { page: string }) => {
         }
       }
     },
-    [textFieldRef, messages, onSendClick],
+    [textFieldRef, messages, onSendClick]
   );
 
   const onFloat = useCallback(() => {
@@ -409,11 +409,11 @@ const ChatPanel = ({ page }: { page: string }) => {
     const lastMessage = messages[messages.length - 1];
     const timeoutIds: Array<NodeJS.Timeout | number> = [];
     const thisData = [...(lastMessage.parts ?? [])].filter(
-      isAnnotatedRetryMessage,
+      isAnnotatedRetryMessage
     ) as Array<AnnotatedRetryMessage>;
     const onRateLimitTimeout = (model: string) => {
       lastMessage.parts = lastMessage.parts?.filter(
-        (item) => !isAnnotatedRetryMessage(item) || item.data.model !== model,
+        (item) => !isAnnotatedRetryMessage(item) || item.data.model !== model
       );
       setMessages((prevMessages) => {
         return [
@@ -435,10 +435,10 @@ const ChatPanel = ({ page }: { page: string }) => {
             setTimeout(() => {
               onRateLimitTimeout(thisModel);
               log((l) =>
-                l.warn('Rate limit timeout expired, resending message.'),
+                l.warn('Rate limit timeout expired, resending message.')
               );
               regenerate();
-            }, rateLimitExpires),
+            }, rateLimitExpires)
           );
         }
       });
@@ -478,7 +478,7 @@ const ChatPanel = ({ page }: { page: string }) => {
       messages,
       status,
       errorMessage,
-    ],
+    ]
   );
 
   // Handle docked positions
@@ -500,7 +500,7 @@ const ChatPanel = ({ page }: { page: string }) => {
             >
               {chatContent}
             </DockedPanel>,
-            dockPanel ?? document.body,
+            dockPanel ?? document.body
           )}
       </>
     );

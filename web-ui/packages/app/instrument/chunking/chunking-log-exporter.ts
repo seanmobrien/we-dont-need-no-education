@@ -13,7 +13,7 @@ import type {
 import type { AnyValueMap } from '@opentelemetry/api-logs';
 import type { ExportResult } from '@opentelemetry/core';
 import { LoggedError } from '@/lib/react-util';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 export type LogChunkingOptions = {
   /** Maximum characters allowed in any single property or body before chunking */
@@ -25,7 +25,7 @@ export type LogChunkingOptions = {
 function makeChunkContextId(
   traceId: string | undefined,
   spanId: string | undefined,
-  key: string,
+  key: string
 ): string {
   const seed = `${traceId ?? 'no-trace'}:${spanId ?? 'no-span'}:${key}`;
   let hash = 2166136261;
@@ -50,7 +50,7 @@ export class ChunkingLogExporter implements LogRecordExporter {
 
   export(
     records: ReadableLogRecord[],
-    resultCallback: (result: ExportResult) => void,
+    resultCallback: (result: ExportResult) => void
   ): void {
     for (const rec of records) {
       const base = rec as unknown as {
@@ -75,7 +75,7 @@ export class ChunkingLogExporter implements LogRecordExporter {
         for (let i = 0; i < totalChunks; i++) {
           const chunk = s.slice(
             i * this.maxChunkChars,
-            (i + 1) * this.maxChunkChars,
+            (i + 1) * this.maxChunkChars
           );
           attrs[`body_chunk_${i + 1}`] = chunk;
         }
@@ -91,7 +91,11 @@ export class ChunkingLogExporter implements LogRecordExporter {
           // IMPORTANT: This direct use of console.warn is an intentional and necessary exception to the project logging standard,
           // because using the log() utility here would cause infinite recursion (log() would trigger this same code path).
           // See CodeQL rule: "Do not use console.warn directly; use log() unless it would cause recursion."
-          console.warn(`Unable to update log record body - ${LoggedError.buildMessage(innerError)}.  Full record: ${base.body ?? '<null>'}`)
+          console.warn(
+            `Unable to update log record body - ${LoggedError.buildMessage(
+              innerError
+            )}.  Full record: ${base.body ?? '<null>'}`
+          );
         }
       }
 
@@ -130,7 +134,7 @@ export class ChunkingLogExporter implements LogRecordExporter {
           for (let i = 0; i < totalChunks; i++) {
             const chunk = s.slice(
               i * this.maxChunkChars,
-              (i + 1) * this.maxChunkChars,
+              (i + 1) * this.maxChunkChars
             );
             attrs[`${key}_chunk_${i + 1}`] = chunk;
           }
@@ -139,7 +143,7 @@ export class ChunkingLogExporter implements LogRecordExporter {
           } else {
             (attrs as Record<string, unknown>)[key] = s.slice(
               0,
-              this.maxChunkChars,
+              this.maxChunkChars
             );
           }
         }

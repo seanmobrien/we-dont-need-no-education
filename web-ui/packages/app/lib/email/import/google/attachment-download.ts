@@ -1,5 +1,5 @@
 import { BlobServiceClient } from '@azure/storage-blob';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { googleProviderFactory } from '@/app/api/email/import/[provider]/_googleProviderFactory';
 import { query } from '@/lib/neondb';
 import type { StagedAttachment } from '@/lib/api/email/import/staged-attachment';
@@ -60,14 +60,14 @@ const uploadToAzureStorage = async ({
   mimeType: string;
 }): Promise<string> => {
   const AZURE_STORAGE_CONNECTION_STRING = env(
-    'AZURE_STORAGE_CONNECTION_STRING',
+    'AZURE_STORAGE_CONNECTION_STRING'
   );
 
   const blobServiceClient = BlobServiceClient.fromConnectionString(
-    AZURE_STORAGE_CONNECTION_STRING,
+    AZURE_STORAGE_CONNECTION_STRING
   );
   const containerClient = blobServiceClient.getContainerClient(
-    `email-attachments-${externalId}`,
+    `email-attachments-${externalId}`
   );
   await containerClient.createIfNotExists();
   const blockBlobClient = containerClient.getBlockBlobClient(fileName);
@@ -75,7 +75,9 @@ const uploadToAzureStorage = async ({
   await blockBlobClient.uploadData(buffer, {
     blobHTTPHeaders: {
       blobContentType: mimeType || 'application/octet-stream',
-      blobContentDisposition: `attachment; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+      blobContentDisposition: `attachment; filename="${encodeURIComponent(
+        fileName
+      )}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
       blobContentEncoding: 'base64',
     },
   });
@@ -99,7 +101,7 @@ export const extractAttachmentText = async ({
       l.verbose({
         message: `Attachment ${fileName} is not a PDF, skipping text extraction.`,
         data: { mimeType, fileName },
-      }),
+      })
     );
     return null;
   }
@@ -116,7 +118,7 @@ export const extractAttachmentText = async ({
         l.verbose({
           message: `Attachment ${fileName} is not a PDF, skipping text extraction.`,
           data: { mimeType, fileName },
-        }),
+        })
       );
       return null;
     }
@@ -127,7 +129,7 @@ export const extractAttachmentText = async ({
       l.info({
         message: `Extracted ${sanitizedText.length} characters from attachment ${fileName}`,
         data: { mimeType, fileName },
-      }),
+      })
     );
     return sanitizedText;
   } catch (e) {
@@ -144,24 +146,24 @@ export const extractAttachmentText = async ({
 export const saveAttachment = async (
   req: NextRequest | NextApiRequest,
   id: string,
-  job: AttachmentDownloadJob,
+  job: AttachmentDownloadJob
 ): Promise<AttachmentDownloadResult> => {
   try {
     log((l) =>
       l.verbose({
         message: `Processing attachment download job ${id}.`,
         data: job,
-      }),
+      })
     );
 
     const { model } = job;
     const records = await query(
       (sql) =>
-        sql`select external_id, "user_id" from staging_message where id=${model.stagedMessageId}`,
+        sql`select external_id, "user_id" from staging_message where id=${model.stagedMessageId}`
     );
     if (!records.length) {
       throw new Error(
-        `Staged message with ID ${model.stagedMessageId} not found`,
+        `Staged message with ID ${model.stagedMessageId} not found`
       );
     }
     const attachmentBuffer = await downloadAttachment({
@@ -184,7 +186,7 @@ export const saveAttachment = async (
 
     await query(
       (sql) =>
-        sql`UPDATE staging_attachment SET "storageId"=${fileUrl}, IMPORTED=true WHERE staging_message_id=${model.stagedMessageId} AND "partId"=${model.partId}`,
+        sql`UPDATE staging_attachment SET "storageId"=${fileUrl}, IMPORTED=true WHERE staging_message_id=${model.stagedMessageId} AND "partId"=${model.partId}`
     );
 
     const result: AttachmentDownloadResult = {

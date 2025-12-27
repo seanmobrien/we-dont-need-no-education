@@ -1,7 +1,10 @@
-import type { LanguageModelV2CallOptions, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type {
+  LanguageModelV2CallOptions,
+  SharedV2ProviderOptions,
+} from '@ai-sdk/provider';
 import { JSONValue } from 'ai';
 import { drizDb } from '@/lib/drizzle-db';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type {
   ChatHistoryContext,
@@ -19,7 +22,7 @@ import { generateChatId } from '../../core';
 
 export const initializeMessagePersistence = async (
   context: ChatHistoryContext,
-  params: LanguageModelV2CallOptions,
+  params: LanguageModelV2CallOptions
 ): Promise<MessagePersistenceInit> => {
   try {
     const ret = await drizDb().transaction(async (tx) =>
@@ -27,7 +30,7 @@ export const initializeMessagePersistence = async (
         tx,
         context,
         params,
-      }),
+      })
     );
     return {
       ...ret,
@@ -41,7 +44,7 @@ export const initializeMessagePersistence = async (
         turnId: undefined,
         messageId: undefined,
       },
-      error instanceof Error ? error : new Error(String(error)),
+      error instanceof Error ? error : new Error(String(error))
     );
 
     LoggedError.isTurtlesAllTheWayDownBaby(enhancedError, {
@@ -60,7 +63,7 @@ export const initializeMessagePersistence = async (
 };
 
 export const completeMessagePersistence = async (
-  completionContext: MessageCompletionContext,
+  completionContext: MessageCompletionContext
 ) => {
   try {
     // Create flush context for the completion
@@ -80,7 +83,7 @@ export const completeMessagePersistence = async (
           error: flushResult.error,
           turnId: completionContext.turnId,
           chatId: completionContext.chatId,
-        }),
+        })
       );
     } else {
       log((l) =>
@@ -91,7 +94,7 @@ export const completeMessagePersistence = async (
           textLength: completionContext.generatedText.length,
 
           processingTimeMs: flushResult.processingTimeMs,
-        }),
+        })
       );
     }
 
@@ -114,7 +117,7 @@ export const completeMessagePersistence = async (
 
 export const safeInitializeMessagePersistence = async (
   context: ChatHistoryContext,
-  params: LanguageModelV2CallOptions,
+  params: LanguageModelV2CallOptions
 ): Promise<MessagePersistenceInit | null> => {
   try {
     context.chatId ??= generateChatId().id;
@@ -138,7 +141,9 @@ export const safeInitializeMessagePersistence = async (
   }
 };
 
-export const chatIdFromParams = (params: { providerOptions?: SharedV2ProviderOptions | undefined }) => {
+export const chatIdFromParams = (params: {
+  providerOptions?: SharedV2ProviderOptions | undefined;
+}) => {
   if (!params.providerOptions?.backoffice) {
     return undefined;
   }
@@ -149,17 +154,17 @@ export const chatIdFromParams = (params: { providerOptions?: SharedV2ProviderOpt
   } = params.providerOptions.backoffice ?? {};
   return chatId
     ? {
-      ...{
-        chatId,
-        turnId,
-        messageId,
+        ...{
+          chatId,
+          turnId,
+          messageId,
+        },
       }
-    }
     : undefined;
-}
+};
 
 export const safeCompleteMessagePersistence = async (
-  completionContext: MessageCompletionContext,
+  completionContext: MessageCompletionContext
 ) => {
   try {
     return await completeMessagePersistence(completionContext);

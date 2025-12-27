@@ -4,10 +4,13 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { eq } from 'drizzle-orm';
 import { auth } from '@/auth';
-import { CaseFileScope, checkCaseFileAccess } from '@/lib/auth/resources/case-file';
+import {
+  CaseFileScope,
+  checkCaseFileAccess,
+} from '@/lib/auth/resources/case-file';
 import { checkCaseFileAuthorization } from '@/lib/auth/resources/case-file/case-file-middleware';
 import { AccessDeniedError } from '@/lib/react-util/errors/access-denied-error';
-import { unwrapPromise } from '@compliance-theater/lib-typescript';
+import { unwrapPromise } from '@compliance-theater/typescript';
 
 /**
  * Base repository interface supports object repository implementation
@@ -48,7 +51,7 @@ export type EmailDomain = {
  * @returns Mapped EmailDomain object
  */
 const mapRecordToEmailDomain = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ): EmailDomain => ({
   emailId: record.emailId as string,
   userId: record.userId as number,
@@ -69,7 +72,7 @@ const mapRecordToEmailDomain = (
  * @returns Mapped EmailDomainSummary object
  */
 const mapRecordToEmailDomainSummary = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ): Partial<EmailDomain> => ({
   emailId: record.emailId as string,
   userId: record.userId as number,
@@ -112,7 +115,8 @@ const mapRecordToEmailDomainSummary = (
  */
 export class EmailDrizzleRepository
   extends BaseDrizzleRepository<EmailDomain, 'emailId'>
-  implements BaseEmailDrizzleRepository {
+  implements BaseEmailDrizzleRepository
+{
   constructor() {
     super({
       table: emails,
@@ -132,7 +136,7 @@ export class EmailDrizzleRepository
    */
   protected async validate<TMethod extends keyof BaseEmailDrizzleRepository>(
     method: TMethod,
-    obj: Record<string, unknown>,
+    obj: Record<string, unknown>
   ): Promise<void> {
     await unwrapPromise(super.validate(method, obj));
 
@@ -154,13 +158,11 @@ export class EmailDrizzleRepository
             source: 'EmailDrizzleRepository::delete',
           });
         }
-        if (!await checkCaseFileAuthorization(
-          undefined,
-          email.emailId,
-          {
+        if (
+          !(await checkCaseFileAuthorization(undefined, email.emailId, {
             requiredScope: CaseFileScope.WRITE,
-          }
-        )) {
+          }))
+        ) {
           throw new AccessDeniedError('Access denied');
         }
         break;
@@ -171,13 +173,11 @@ export class EmailDrizzleRepository
             source: 'EmailDrizzleRepository::update',
           });
         }
-        if (!await checkCaseFileAuthorization(
-          undefined,
-          email.emailId,
-          {
+        if (
+          !(await checkCaseFileAuthorization(undefined, email.emailId, {
             requiredScope: CaseFileScope.WRITE,
-          }
-        )) {
+          }))
+        ) {
           throw new AccessDeniedError('Access denied');
         }
 
@@ -194,7 +194,7 @@ export class EmailDrizzleRepository
         ];
         if (
           !updateFields.some(
-            (field) => email[field as keyof EmailDomain] !== undefined,
+            (field) => email[field as keyof EmailDomain] !== undefined
           )
         ) {
           throw new ValidationError({
@@ -210,13 +210,11 @@ export class EmailDrizzleRepository
             source: 'EmailDrizzleRepository::get',
           });
         }
-        if (!await checkCaseFileAuthorization(
-          undefined,
-          email.emailId,
-          {
+        if (
+          !(await checkCaseFileAuthorization(undefined, email.emailId, {
             requiredScope: CaseFileScope.READ,
-          }
-        )) {
+          }))
+        ) {
           throw new AccessDeniedError('Access denied');
         }
         break;
@@ -232,7 +230,7 @@ export class EmailDrizzleRepository
    * @returns Database insert data
    */
   protected async prepareInsertData(
-    model: Omit<EmailDomain, 'emailId'>,
+    model: Omit<EmailDomain, 'emailId'>
   ): Promise<Record<string, unknown>> {
     if (!model.userId) {
       const session = await auth();
@@ -263,7 +261,7 @@ export class EmailDrizzleRepository
    * @returns Database update data
    */
   protected prepareUpdateData(
-    model: Partial<EmailDomain>,
+    model: Partial<EmailDomain>
   ): Record<string, unknown> {
     const updateData: Record<string, unknown> = {};
 
@@ -290,7 +288,7 @@ export class EmailDrizzleRepository
    * @returns Promise resolving to email domain object or null if not found
    */
   async findByGlobalMessageId(
-    globalMessageId: string,
+    globalMessageId: string
   ): Promise<EmailDomain | null> {
     try {
       const record = await drizDbWithInit((db) =>
@@ -300,7 +298,7 @@ export class EmailDrizzleRepository
           .where(eq(emails.globalMessageId, globalMessageId))
           .limit(1)
           .execute()
-          .then((x) => x.at(0)),
+          .then((x) => x.at(0))
       );
       if (record) {
         const hasAccess = await checkCaseFileAccess(

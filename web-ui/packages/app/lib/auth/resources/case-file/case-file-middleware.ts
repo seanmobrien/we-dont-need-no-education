@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkCaseFileAccess, CaseFileScope } from './case-file-resource';
-import {
-  getUserIdFromUnitId,
-} from './case-file-helpers';
-import { log } from '@compliance-theater/lib-logger';
+import { getUserIdFromUnitId } from './case-file-helpers';
+import { log } from '@compliance-theater/logger';
 import { getValidatedAccessToken } from '../../access-token';
 import { resolveCaseFileId } from '@/lib/api/document-unit/resolve-case-file-id';
 
@@ -16,20 +14,21 @@ export type AuthCheckResult = {
   authorized: boolean;
   userId?: number;
 } & (
-    {
+  | {
       authorized: false;
       response: NextResponse;
-    } | {
+    }
+  | {
       authorized: true;
       userId: number;
       response?: NextResponse;
     }
-  );
+);
 
 export const checkCaseFileAuthorization = async (
   req: NextRequest | undefined,
   caseFileDocumentId: string | number,
-  options: CaseFileAuthOptions,
+  options: CaseFileAuthOptions
 ): Promise<AuthCheckResult> => {
   try {
     // Get user_id from email
@@ -44,19 +43,22 @@ export const checkCaseFileAuthorization = async (
         l.warn({
           msg: 'No user_id found for case file document ID',
           caseFileDocumentId,
-        }),
+        })
       );
       return {
         authorized: false,
         response: NextResponse.json(
           { error: 'Case file not found for this document unit' },
-          { status: 404 },
+          { status: 404 }
         ),
       };
     }
 
     // Extract and validate access token
-    const tokenResult = await getValidatedAccessToken({ req, source: `auth-email:${caseFileDocumentId}` });
+    const tokenResult = await getValidatedAccessToken({
+      req,
+      source: `auth-email:${caseFileDocumentId}`,
+    });
     if ('error' in tokenResult) {
       return {
         authorized: false,
@@ -78,7 +80,7 @@ export const checkCaseFileAuthorization = async (
           caseFileDocumentId,
           userId,
           scope: options.requiredScope,
-        }),
+        })
       );
       return {
         authorized: false,
@@ -88,7 +90,7 @@ export const checkCaseFileAuthorization = async (
             error: 'Forbidden - Insufficient permissions for this case file',
             required: options.requiredScope,
           },
-          { status: 403 },
+          { status: 403 }
         ),
       };
     }
@@ -100,15 +102,14 @@ export const checkCaseFileAuthorization = async (
         msg: 'Error during authorization check',
         caseFileDocumentId,
         error,
-      }),
+      })
     );
     return {
       authorized: false,
       response: NextResponse.json(
         { error: 'Internal server error during authorization' },
-        { status: 500 },
+        { status: 500 }
       ),
     };
   }
 };
-

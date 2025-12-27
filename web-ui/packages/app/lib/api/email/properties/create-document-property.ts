@@ -2,8 +2,8 @@ import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/prop
 import { isDocumentUnitType } from '@/data-models/api/document-unit';
 import { documentProperty, documentUnits } from '@/drizzle/schema';
 import { drizDb } from '@/lib/drizzle-db';
-import { newUuid } from '@compliance-theater/lib-typescript';
-import { log } from '@compliance-theater/lib-logger';
+import { newUuid } from '@compliance-theater/typescript';
+import { log } from '@compliance-theater/logger';
 import { eq } from 'drizzle-orm';
 
 export const mapPropertyTypeToDocumentType = (typeId: number): string => {
@@ -48,11 +48,11 @@ export const createDocumentProperty = async ({
     throw new Error('Document property type ID is required');
   }
   const documentType = mapPropertyTypeToDocumentType(
-    data.documentPropertyTypeId,
+    data.documentPropertyTypeId
   );
   if (!isDocumentUnitType(documentType)) {
     throw new Error(
-      `Invalid document type for typeId: ${data.documentPropertyTypeId}`,
+      `Invalid document type for typeId: ${data.documentPropertyTypeId}`
     );
   }
   if (!data.propertyId) {
@@ -62,15 +62,14 @@ export const createDocumentProperty = async ({
   if (userIdFromProps) {
     userId = userIdFromProps;
   } else {
-    const targetDocumentUserId = (await drizDb()
-      .query
-      .documentUnits
-      .findFirst({
+    const targetDocumentUserId = await drizDb()
+      .query.documentUnits.findFirst({
         where: (documentUnits, { eq }) => eq(documentUnits.emailId, emailId),
         columns: {
           userId: true,
-        }
-      }).then(x => x?.userId));
+        },
+      })
+      .then((x) => x?.userId);
     if (!targetDocumentUserId) {
       throw new Error('Target document user id not found');
     }

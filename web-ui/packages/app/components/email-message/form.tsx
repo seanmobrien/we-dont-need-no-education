@@ -1,6 +1,6 @@
 'use client';
 
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { isError } from '@/lib/react-util/utility-methods';
 import {
   useState,
@@ -106,9 +106,9 @@ const stableStyles = {
 
 const useElementUpdateDispatchCallback = <
   TElementType extends HTMLElement = HTMLElement,
-  TDispatchType = string,
+  TDispatchType = string
 >(
-  dispatch: Dispatch<TDispatchType>,
+  dispatch: Dispatch<TDispatchType>
 ) =>
   useCallback(
     (e: ChangeEvent<TElementType>) => {
@@ -116,7 +116,7 @@ const useElementUpdateDispatchCallback = <
         dispatch(e.target.value as TDispatchType);
       }
     },
-    [dispatch],
+    [dispatch]
   );
 
 const EmailForm: ForwardRefRenderFunction<
@@ -124,7 +124,7 @@ const EmailForm: ForwardRefRenderFunction<
   EmailFormProps
 > = (
   { emailId = null, withButtons = true, onSaved, afterSaveBehavior = 'none' },
-  ref,
+  ref
 ) => {
   const [sender, setSender] = useState<ContactSummary>(createContactSummary());
   const [recipients, setRecipients] = useState<ContactSummary[]>([]);
@@ -189,7 +189,7 @@ const EmailForm: ForwardRefRenderFunction<
       setSentTimestamp(
         typeof emailData.sentOn === 'string'
           ? emailData.sentOn
-          : emailData.sentOn.toISOString(),
+          : emailData.sentOn.toISOString()
       );
       setThreadId(emailData.threadId ?? null);
       setParentEmailId(emailData.parentEmailId ?? null);
@@ -256,7 +256,7 @@ const EmailForm: ForwardRefRenderFunction<
       e.preventDefault();
       await saveEmailCallback();
     },
-    [saveEmailCallback],
+    [saveEmailCallback]
   );
 
   useImperativeHandle(
@@ -264,7 +264,7 @@ const EmailForm: ForwardRefRenderFunction<
     () => ({
       saveEmailCallback,
     }),
-    [saveEmailCallback],
+    [saveEmailCallback]
   );
 
   return (
@@ -397,10 +397,10 @@ const EmailForm: ForwardRefRenderFunction<
             {writeEmailMutation.isPending
               ? 'Submitting...'
               : isLoadingEmail
-                ? 'Loading...'
-                : emailId
-                  ? 'Update Email'
-                  : 'Create Email'}
+              ? 'Loading...'
+              : emailId
+              ? 'Update Email'
+              : 'Create Email'}
           </button>
         ) : isLoading ? (
           writeEmailMutation.isPending ? (

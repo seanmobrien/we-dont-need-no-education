@@ -5,10 +5,13 @@ import {
   IObjectRepositoryExt,
 } from './_types';
 import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
-import { PartialExceptFor, unwrapPromise } from '@compliance-theater/lib-typescript';
+import {
+  PartialExceptFor,
+  unwrapPromise,
+} from '@compliance-theater/typescript';
 import { eq, count, SQL } from 'drizzle-orm';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import { PgColumn } from 'drizzle-orm/pg-core';
 
@@ -16,7 +19,7 @@ import { PgColumn } from 'drizzle-orm/pg-core';
  * Helper function to detect primary key column and field name from a Drizzle table schema
  */
 function detectPrimaryKey<T extends object, KId extends keyof T>(
-  config: DrizzleRepositoryConfig<T, KId>,
+  config: DrizzleRepositoryConfig<T, KId>
 ): { idColumn: PgColumn; idField: KId } {
   try {
     const tableConfig = getTableConfig(config.table);
@@ -31,7 +34,7 @@ function detectPrimaryKey<T extends object, KId extends keyof T>(
 
     if (primaryKeyColumns.length > 1) {
       throw new Error(
-        `Multiple primary keys found in table ${tableName}. Please specify idColumn and idField manually.`,
+        `Multiple primary keys found in table ${tableName}. Please specify idColumn and idField manually.`
       );
     }
 
@@ -41,7 +44,7 @@ function detectPrimaryKey<T extends object, KId extends keyof T>(
     const databaseColumnName = primaryKeyColumn.name;
     const camelCaseFieldName = databaseColumnName.replace(
       /_([a-z])/g,
-      (_, letter) => letter.toUpperCase(),
+      (_, letter) => letter.toUpperCase()
     );
 
     return {
@@ -52,8 +55,8 @@ function detectPrimaryKey<T extends object, KId extends keyof T>(
     const tableName = config.tableName || getTableConfig(config.table).name;
     throw new Error(
       `Unable to auto-detect primary key for table ${tableName}. ` +
-      `Please provide idColumn and idField explicitly in the config. ` +
-      `Error: ${error instanceof Error ? error.message : String(error)}`,
+        `Please provide idColumn and idField explicitly in the config. ` +
+        `Error: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 }
@@ -70,8 +73,9 @@ function detectPrimaryKey<T extends object, KId extends keyof T>(
  */
 export abstract class BaseDrizzleRepository<
   T extends object,
-  KId extends keyof T,
-> implements ObjectRepository<T, KId> {
+  KId extends keyof T
+> implements ObjectRepository<T, KId>
+{
   protected readonly config: DrizzleRepositoryConfig<T, KId>;
   protected readonly idColumn: PgColumn;
   protected readonly idField: KId;
@@ -100,14 +104,14 @@ export abstract class BaseDrizzleRepository<
    */
   protected validate<TMethod extends keyof ObjectRepository<T, KId>>(
     method: TMethod,
-    obj: Record<string, unknown>,
-  ): (void | Promise<void>) {
+    obj: Record<string, unknown>
+  ): void | Promise<void> {
     // NO-OP by default, can be overridden
     log((l) =>
       l.silly(`Validating ${String(method)} operation`, {
         obj,
         tableName: this.tableName,
-      }),
+      })
     );
     return Promise.resolve();
   }
@@ -116,7 +120,7 @@ export abstract class BaseDrizzleRepository<
    * Retrieves a paginated list of objects.
    */
   async list(
-    pagination?: PaginationStats,
+    pagination?: PaginationStats
   ): Promise<PaginatedResultset<Partial<T>>> {
     try {
       const page = pagination?.page ?? 1;
@@ -161,7 +165,7 @@ export abstract class BaseDrizzleRepository<
             page,
             num,
           },
-        }),
+        })
       );
 
       return {
@@ -189,7 +193,7 @@ export abstract class BaseDrizzleRepository<
           .select()
           .from(this.config.table)
           .where(eq(this.idColumn, recordId as string | number))
-          .execute(),
+          .execute()
       );
 
       if (records.length === 0) {
@@ -198,7 +202,7 @@ export abstract class BaseDrizzleRepository<
 
       if (records.length > 1) {
         throw new Error(
-          `Multiple records found for ${String(this.idField)}: ${recordId}`,
+          `Multiple records found for ${String(this.idField)}: ${recordId}`
         );
       }
 
@@ -208,7 +212,7 @@ export abstract class BaseDrizzleRepository<
         l.verbose({
           message: `[[AUDIT]] - ${this.tableName} record retrieved:`,
           resultset: result,
-        }),
+        })
       );
 
       return result;
@@ -227,7 +231,7 @@ export abstract class BaseDrizzleRepository<
 
       const insertData = await unwrapPromise(this.prepareInsertData(model));
       const records = await drizDbWithInit((db) =>
-        db.insert(this.config.table).values(insertData).returning(),
+        db.insert(this.config.table).values(insertData).returning()
       );
 
       if (records.length !== 1) {
@@ -240,7 +244,7 @@ export abstract class BaseDrizzleRepository<
         l.verbose({
           message: `[[AUDIT]] - ${this.tableName} record created:`,
           resultset: result,
-        }),
+        })
       );
 
       return result;
@@ -253,7 +257,7 @@ export abstract class BaseDrizzleRepository<
    * Updates an existing object.
    */
   async update(
-    model: PartialExceptFor<T, KId> & Required<Pick<T, KId>>,
+    model: PartialExceptFor<T, KId> & Required<Pick<T, KId>>
   ): Promise<T> {
     try {
       await unwrapPromise(this.validate('update', model));
@@ -264,7 +268,7 @@ export abstract class BaseDrizzleRepository<
           .update(this.config.table)
           .set(updateData)
           .where(eq(this.idColumn, model[this.idField] as string | number))
-          .returning(),
+          .returning()
       );
 
       if (records.length === 0) {
@@ -281,7 +285,7 @@ export abstract class BaseDrizzleRepository<
         l.verbose({
           message: `[[AUDIT]] - ${this.tableName} record updated:`,
           resultset: result,
-        }),
+        })
       );
 
       return result;
@@ -295,14 +299,16 @@ export abstract class BaseDrizzleRepository<
    */
   async delete(recordId: T[KId]): Promise<boolean> {
     try {
-      await unwrapPromise(this.validate('delete', { [this.idField]: recordId }));
+      await unwrapPromise(
+        this.validate('delete', { [this.idField]: recordId })
+      );
 
       const record = await drizDbWithInit((db) =>
         db
           .delete(this.config.table)
           .where(eq(this.idColumn, recordId as string | number))
           .returning()
-          .then((records) => records.at(0)),
+          .then((records) => records.at(0))
       );
       if (!record) {
         return false;
@@ -314,7 +320,7 @@ export abstract class BaseDrizzleRepository<
         l.verbose({
           message: `[[AUDIT]] - ${this.tableName} record deleted:`,
           resultset: result,
-        }),
+        })
       );
 
       return true;
@@ -353,7 +359,9 @@ export abstract class BaseDrizzleRepository<
    *
    * @returns Query conditions that will be applied to both count and data queries
    */
-  protected buildQueryConditions(): (SQL | undefined) | Promise<SQL | undefined> {
+  protected buildQueryConditions():
+    | (SQL | undefined)
+    | Promise<SQL | undefined> {
     // By default, no additional conditions (return all records)
     return undefined;
   }
@@ -363,7 +371,7 @@ export abstract class BaseDrizzleRepository<
    * Override this method to customize how domain objects are mapped to database inserts.
    */
   protected abstract prepareInsertData(
-    model: Omit<T, KId>,
+    model: Omit<T, KId>
   ): Record<string, unknown> | Promise<Record<string, unknown>>;
 
   /**
@@ -371,7 +379,7 @@ export abstract class BaseDrizzleRepository<
    * Override this method to customize how domain objects are mapped to database updates.
    */
   protected abstract prepareUpdateData(
-    model: Partial<T>,
+    model: Partial<T>
   ): Record<string, unknown> | Promise<Record<string, unknown>>;
 
   /**

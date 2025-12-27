@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { LoggedError } from '../errors';
 import { isError } from '../utility-methods';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 type UseInEffectRecordResolver = {
   resolve: (value: unknown) => void;
@@ -33,7 +33,7 @@ export const useInEffect = () => {
       log((l) =>
         l.warn(`useInEffect: Multiple mounts detected, this is not expected.`, {
           mountedEffects: thisQueue.mountedEffects,
-        }),
+        })
       );
     }
     let processPendingItem: (() => void) | undefined = undefined;
@@ -106,7 +106,9 @@ export const useInEffect = () => {
             forwardResult(value);
           } catch (e) {
             LoggedError.isTurtlesAllTheWayDownBaby(e, {
-              message: `Error processing ${action} on pending operation in useInEffect: ${isError(e) ? e.message : String(e)}`,
+              message: `Error processing ${action} on pending operation in useInEffect: ${
+                isError(e) ? e.message : String(e)
+              }`,
               log: true,
               cause: e,
             });
@@ -117,7 +119,7 @@ export const useInEffect = () => {
       // chain the operation back so that subsequent mounts can resolve if necessary
       thisQueue.pending.operation = thisPendingOperation.then(
         resolveOrReject('resolve'),
-        resolveOrReject('reject'),
+        resolveOrReject('reject')
       );
     };
     // First check to see if something was queued up on a previous mount
@@ -154,11 +156,11 @@ export const useInEffect = () => {
         });
       } else {
         throw new Error(
-          'useInEffect: Queue is not initialized. This should never happen.',
+          'useInEffect: Queue is not initialized. This should never happen.'
         );
       }
     },
-    [],
+    []
   );
   return {
     enqueue,

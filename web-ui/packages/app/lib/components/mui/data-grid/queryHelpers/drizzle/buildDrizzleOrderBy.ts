@@ -10,7 +10,7 @@
  */
 
 import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type { GridSortModel } from '@mui/x-data-grid-pro';
 import { asc, desc, SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
@@ -113,8 +113,8 @@ export const buildDrizzleOrderBy = ({
         // Log warning about unknown column
         log((l) =>
           l.warn(
-            `buildDrizzleOrderBy: Unknown column '${mappedColumnName}' (mapped from '${sortItem.field}')`,
-          ),
+            `buildDrizzleOrderBy: Unknown column '${mappedColumnName}' (mapped from '${sortItem.field}')`
+          )
         );
       }
     }
@@ -136,7 +136,7 @@ export const buildDrizzleOrderBy = ({
    * @returns The query builder with orderBy applied
    */
   const applyDefaultSort = (
-    sort: GridSortModel | string | SQL | SQL.Aliased | PgColumn,
+    sort: GridSortModel | string | SQL | SQL.Aliased | PgColumn
   ): DrizzleSortedQuery => {
     if (typeof sort === 'string') {
       // String column name - map it and get the column
@@ -150,8 +150,8 @@ export const buildDrizzleOrderBy = ({
       } else {
         log((l) =>
           l.warn(
-            `buildDrizzleOrderBy: Unknown default sort column '${mappedColumnName}' (mapped from '${sort}')`,
-          ),
+            `buildDrizzleOrderBy: Unknown default sort column '${mappedColumnName}' (mapped from '${sort}')`
+          )
         );
         return query;
       }
@@ -171,19 +171,19 @@ export const buildDrizzleOrderBy = ({
   const sortBy = isGridSortModel(source)
     ? source
     : parseSortOptions(
-      typeof source === 'string'
-        ? (() => {
-          try {
-            return new URL(source);
-          } catch {
-            // If string is not a valid URL, return undefined to use default sort
-            return undefined;
-          }
-        })()
-        : isLikeNextRequest(source)
+        typeof source === 'string'
+          ? (() => {
+              try {
+                return new URL(source);
+              } catch {
+                // If string is not a valid URL, return undefined to use default sort
+                return undefined;
+              }
+            })()
+          : isLikeNextRequest(source)
           ? new URL(source.url!)
-          : source,
-    );
+          : source
+      );
 
   // Apply sorting logic
   if (!sortBy) {
@@ -224,7 +224,7 @@ export const buildDrizzleOrderBy = ({
  * ```
  */
 export const createColumnGetter = (
-  columns: Record<string, PgColumn | SQL>,
+  columns: Record<string, PgColumn | SQL>
 ): ((columnName: string) => PgColumn | SQL | undefined) => {
   return (columnName: string) => columns[columnName];
 };
@@ -258,7 +258,7 @@ export const createColumnGetter = (
  */
 export const createTableColumnGetter = (
   table: Record<string, unknown>,
-  customMappings: Record<string, PgColumn | SQL> = {},
+  customMappings: Record<string, PgColumn | SQL> = {}
 ): ((columnName: string) => PgColumn | SQL | undefined) => {
   return (columnName: string) => {
     // Check custom mappings first
@@ -278,7 +278,7 @@ export const createTableColumnGetter = (
     // Try common naming pattern conversions (only for valid identifier names)
     if (!columnName.includes('-')) {
       const camelCase = columnName.replace(/_([a-z])/g, (_, letter) =>
-        letter.toUpperCase(),
+        letter.toUpperCase()
       );
       if (table[camelCase] && typeof table[camelCase] === 'object') {
         return table[camelCase] as PgColumn;

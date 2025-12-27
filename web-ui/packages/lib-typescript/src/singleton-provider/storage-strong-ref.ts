@@ -12,15 +12,15 @@
  * @see {@link SingletonStorageStrategy} for the interface this implements
  */
 
-import { log, getStackTrace } from '@compliance-theater/lib-logger';
+import { log, getStackTrace } from "@compliance-theater/logger";
 import {
   GlobalWithMyGlobal,
   SingletonStorageKey,
   SingletonStorageStrategy,
-} from './types';
+} from "./types";
 
 const STORED_MAP_KEY = Symbol.for(
-  '@no-education/typescript/SingletonProvider/StrongReferenceStorage/GlobalMap',
+  "@no-education/typescript/SingletonProvider/StrongReferenceStorage/GlobalMap"
 );
 type StoredMapKeyType = typeof STORED_MAP_KEY;
 
@@ -42,8 +42,10 @@ export class StrongReferenceStorage implements SingletonStorageStrategy {
     if (!Symbol.keyFor(key)) {
       log((l) =>
         l.warn(
-          `StrongReferenceStorage.get called with non-global symbol key: ${String(key)}\n${getStackTrace({ skip: 2, myCodeOnly: true })}`,
-        ),
+          `StrongReferenceStorage.get called with non-global symbol key: ${String(
+            key
+          )}\n${getStackTrace({ skip: 2, myCodeOnly: true })}`
+        )
       );
     }
     return this.#global.get(key);
@@ -53,8 +55,10 @@ export class StrongReferenceStorage implements SingletonStorageStrategy {
     if (!Symbol.keyFor(key)) {
       log((l) =>
         l.warn(
-          `StrongReferenceStorage.get called with non-global symbol key: ${String(key)}\n${getStackTrace({ skip: 2, myCodeOnly: true })}`,
-        ),
+          `StrongReferenceStorage.get called with non-global symbol key: ${String(
+            key
+          )}\n${getStackTrace({ skip: 2, myCodeOnly: true })}`
+        )
       );
     }
     this.#global.set(key, value);

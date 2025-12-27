@@ -1,6 +1,6 @@
 import type { AiProvider, ModelType } from '@/components/ai/chat-panel/types';
 import type { StorageStrategyConfig } from '@/lib/ai/tools/todo/storage/types';
-import type { PickField } from '@compliance-theater/lib-typescript/_types';
+import type { PickField } from '@compliance-theater/typescript/_types';
 import type {
   BooleanFeatureFlagType,
   KnownFeatureType,
@@ -10,7 +10,10 @@ import type {
 } from './known-feature';
 import type { Flagsmith } from 'flagsmith-nodejs';
 
-export type MinimalNodeFlagsmith = Pick<Flagsmith, 'getIdentityFlags' | 'close'>;
+export type MinimalNodeFlagsmith = Pick<
+  Flagsmith,
+  'getIdentityFlags' | 'close'
+>;
 
 export type GetFeatureFlagOptions = {
   flagsmith?: () => MinimalNodeFlagsmith;
@@ -52,11 +55,11 @@ export type HealthCheckConfig = {
     healthy: number;
     warning: number;
     error: number;
-  },
+  };
   retry: {
     exp: number;
     cap: number;
-  }
+  };
   staleTime: number;
 };
 type FlagsmithFeatureObjectValue<T> = {
@@ -128,14 +131,14 @@ type FeatureFlagTypeObjectValueMap = {
 
 export type KnownFeatureValueType<TFeature extends KnownFeatureType> =
   TFeature extends BooleanFeatureFlagType
-  ? boolean
-  : TFeature extends NumberFeatureFlagType
-  ? number
-  : TFeature extends StringFeatureFlagType
-  ? string
-  : TFeature extends ObjectFeatureFlagType
-  ? PickField<FeatureFlagTypeObjectValueMap, TFeature>
-  : never;
+    ? boolean
+    : TFeature extends NumberFeatureFlagType
+    ? number
+    : TFeature extends StringFeatureFlagType
+    ? string
+    : TFeature extends ObjectFeatureFlagType
+    ? PickField<FeatureFlagTypeObjectValueMap, TFeature>
+    : never;
 
 export type AllFeatureFlagType = {
   [K in KnownFeatureType]: KnownFeatureValueType<K>;

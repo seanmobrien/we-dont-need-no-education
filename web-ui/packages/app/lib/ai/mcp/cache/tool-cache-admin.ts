@@ -7,7 +7,7 @@
  */
 
 import { getToolCache, MCPToolCache } from './tool-cache';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { getCacheEnabledFlag, getCacheEnabledFlagSync } from '../tool-flags';
 
 /**
@@ -35,7 +35,7 @@ export class MCPToolCacheAdmin {
           hitRate: stats.hitRate
             ? `${(stats.hitRate * 100).toFixed(1)}%`
             : 'N/A',
-        }),
+        })
       );
     } catch (error) {
       log((l) => l.error('Failed to retrieve cache statistics:', error));
@@ -72,8 +72,8 @@ export class MCPToolCacheAdmin {
   }> {
     log((l) =>
       l.verbose(
-        'healthCheck:MCP tool caching disabled via environment variable',
-      ),
+        'healthCheck:MCP tool caching disabled via environment variable'
+      )
     );
 
     const cacheEnabledFlag = await getCacheEnabledFlag();
@@ -149,15 +149,15 @@ export const initializeMCPCache = async () => {
       log((l) =>
         l.info(
           'MCP tool cache system initialized successfully',
-          healthCheck.details,
-        ),
+          healthCheck.details
+        )
       );
     } else {
       log((l) =>
         l.warn(
           'MCP tool cache system partially unavailable',
-          healthCheck.details,
-        ),
+          healthCheck.details
+        )
       );
     }
   } catch (error) {

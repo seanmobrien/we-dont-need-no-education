@@ -1,6 +1,6 @@
 import type { LanguageModelV2Middleware } from '@ai-sdk/provider';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import {
   STATE_PROTOCOL,
   type StatefulMiddlewareConfig,
@@ -15,7 +15,7 @@ type StateManagementProviderOptionsKey = keyof StateManagementProviderOptions;
 
 type CreateMiddlewareOptions<
   T extends SerializableState = SerializableState,
-  TMiddlewareId extends string = string,
+  TMiddlewareId extends string = string
 > = StatefulMiddlewareConfig<TMiddlewareId> & {
   originalMiddleware:
     | SerializableLanguageModelMiddleware<TMiddlewareId, T>
@@ -24,7 +24,7 @@ type CreateMiddlewareOptions<
 
 const middlewareStateFromOptions = (
   params: Pick<StateManagementParams, 'providerOptions'>,
-  options?: { create?: boolean },
+  options?: { create?: boolean }
 ) => {
   let providerOptions = params?.providerOptions;
   if (!providerOptions) {
@@ -45,7 +45,7 @@ const middlewarePropFromOptions = (
   source: Pick<StateManagementParams, 'providerOptions'>,
   options:
     | { create?: boolean; field: StateManagementProviderOptionsKey }
-    | StateManagementProviderOptionsKey,
+    | StateManagementProviderOptionsKey
 ) => {
   const create =
     typeof options === 'object' && options ? options.create === true : false;
@@ -64,12 +64,12 @@ const middlewarePropFromOptions = (
 };
 
 export const isStateCollectionRequest = (
-  options: StateManagementParams,
+  options: StateManagementParams
 ): boolean =>
   middlewarePropFromOptions(options, STATE_PROTOCOL.COLLECT) === true;
 
 export const isStateRestorationRequest = (
-  options: StateManagementParams,
+  options: StateManagementParams
 ): boolean =>
   middlewarePropFromOptions(options, STATE_PROTOCOL.RESTORE) === true;
 
@@ -149,14 +149,14 @@ const handleStateRestoration = async <T extends SerializableState>({
   const target = ops[STATE_PROTOCOL.RESULTS];
   if (!target) {
     log((l) =>
-      l.warn('No statebag found during state restoration', { middlewareId }),
+      l.warn('No statebag found during state restoration', { middlewareId })
     );
     return;
   }
   const source = target.shift();
   if (!source) {
     log((l) =>
-      l.warn('No state found during state restoration', { middlewareId }),
+      l.warn('No state found during state restoration', { middlewareId })
     );
     return;
   }
@@ -164,7 +164,7 @@ const handleStateRestoration = async <T extends SerializableState>({
     log((l) =>
       l.warn('Middleware ID mismatch during state restoration', {
         middlewareId,
-      }),
+      })
     );
     return;
   }
@@ -187,9 +187,9 @@ const handleStateRestoration = async <T extends SerializableState>({
 
 export const createStatefulMiddleware = <
   T extends SerializableState = SerializableState,
-  TMiddlewareId extends string = string,
+  TMiddlewareId extends string = string
 >(
-  config: CreateMiddlewareOptions<T, TMiddlewareId>,
+  config: CreateMiddlewareOptions<T, TMiddlewareId>
 ): LanguageModelV2Middleware => {
   const { middlewareId, originalMiddleware } = config;
   const serializer: SerializableLanguageModelMiddleware<TMiddlewareId, T> = {

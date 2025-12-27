@@ -1,12 +1,12 @@
 import { auth } from '@/auth';
 import { Session } from '@auth/core/types';
-import { log, logEvent } from '@compliance-theater/lib-logger';
+import { log, logEvent } from '@compliance-theater/logger';
 import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
 import { ApiRequestError } from '@/lib/send-api-request';
 import {
   globalRequiredSingletonAsync,
   SingletonProvider,
-} from '@compliance-theater/lib-typescript/singleton-provider';
+} from '@compliance-theater/typescript/singleton-provider';
 import { NextResponse } from 'next/server';
 import type { TodoStorageStrategy } from './storage';
 import { InMemoryStorageStrategy } from './storage';
@@ -60,7 +60,7 @@ export class TodoManager {
       priority?: TodoPriority;
       session?: Session | null;
       listId?: string;
-    },
+    }
   ): Promise<Todo> {
     const list = await (options?.listId
       ? this.getTodoList(options.listId, {
@@ -72,8 +72,8 @@ export class TodoManager {
         'Unable to find or create default todo list',
         NextResponse.json(
           { error: 'Unable to find or create default todo list' },
-          { status: 405 },
-        ),
+          { status: 405 }
+        )
       );
     }
     const todo = await this.createTodoRecord(
@@ -84,7 +84,7 @@ export class TodoManager {
         priority: options?.priority,
       },
       list,
-      options?.session,
+      options?.session
     );
 
     logEvent('info', 'TODO Item created', {
@@ -101,7 +101,7 @@ export class TodoManager {
       session,
       now: nowFromProps,
       existing,
-    }: { session: Session | null; now?: Date; existing: Todo | undefined },
+    }: { session: Session | null; now?: Date; existing: Todo | undefined }
   ): Promise<Todo> {
     const now = nowFromProps ?? new Date();
     let toolId: string;
@@ -124,7 +124,7 @@ export class TodoManager {
         status: todo.status || 'pending',
         completed: false,
       },
-      todo,
+      todo
     );
     return {
       title: todo.title ?? existing?.title ?? DEFAULT_ITEM_TITLE,
@@ -145,7 +145,7 @@ export class TodoManager {
    */
   async upsertTodoList(
     input: TodoListUpsertInput,
-    { session }: { session?: Session | null } = {},
+    { session }: { session?: Session | null } = {}
   ): Promise<TodoList | LoggedError> {
     if (!input) {
       throw new TypeError('TodoListUpsertInput is required');
@@ -178,8 +178,8 @@ export class TodoManager {
           session: activeSession,
           now,
           existing: existingList?.todos.find((et: Todo) => et.id === t1.id),
-        }),
-      ),
+        })
+      )
     );
     return await this.storage.upsertTodoList({
       id: listId,
@@ -217,7 +217,7 @@ export class TodoManager {
    */
   async getTodoList(
     id: string,
-    { session }: { completed?: boolean; session?: Session | null },
+    { session }: { completed?: boolean; session?: Session | null }
   ): Promise<TodoList | undefined> {
     await TodoManager.validateTodoId({ check: id, session });
     return this.storage.getTodoList(id).then((x) => x ?? undefined);
@@ -229,7 +229,7 @@ export class TodoManager {
   async getTodos(
     completedOrOptions?:
       | boolean
-      | { completed?: boolean; session?: Session | null },
+      | { completed?: boolean; session?: Session | null }
   ): Promise<Todo[]> {
     let completed: boolean | undefined;
     let activeSession: Session | null;
@@ -251,7 +251,7 @@ export class TodoManager {
         unauthorizedServiceResponse({
           req: undefined,
           scopes: ['mcp-tools:read'],
-        }),
+        })
       );
     }
     const [prefix] = await TodoManager.generateTodoPrefix({
@@ -266,7 +266,7 @@ export class TodoManager {
    */
   async getTodo(
     id: string,
-    { session }: { session?: Session | null } = {},
+    { session }: { session?: Session | null } = {}
   ): Promise<Todo | undefined> {
     await TodoManager.validateTodoId({ check: id, session });
     return this.storage.getTodo(id).then((x) => x ?? undefined);
@@ -284,7 +284,7 @@ export class TodoManager {
       status?: TodoStatus;
       priority?: TodoPriority;
     },
-    options?: { session?: Session | null; listId?: string; list?: TodoList },
+    options?: { session?: Session | null; listId?: string; list?: TodoList }
   ): Promise<Todo | undefined> {
     let activeSession: Session | null = null;
     if (id) {
@@ -336,7 +336,7 @@ export class TodoManager {
           status: updates.status ?? 'pending',
           completed: updates.completed || updates.status === 'complete',
         },
-        updates,
+        updates
       );
     const nextPriority = updates.priority ?? 'medium';
 
@@ -383,7 +383,7 @@ export class TodoManager {
 
   async getListIdFromTodoId(
     id: string,
-    { session }: { session?: Session | null } = {},
+    { session }: { session?: Session | null } = {}
   ): Promise<string | undefined> {
     const ret = await this.storage.getTodoToListMapping(id);
     if (ret) {
@@ -397,7 +397,7 @@ export class TodoManager {
    */
   async deleteTodo(
     id: string,
-    { session }: { session?: Session | null } = {},
+    { session }: { session?: Session | null } = {}
   ): Promise<boolean> {
     try {
       // First validate we have access to this item
@@ -454,7 +454,7 @@ export class TodoManager {
    */
   async deleteTodoList(
     id: string,
-    { session }: { session?: Session | null } = {},
+    { session }: { session?: Session | null } = {}
   ): Promise<boolean> {
     try {
       // First validate we have access to this item
@@ -478,7 +478,7 @@ export class TodoManager {
    */
   async toggleTodo(
     id: string,
-    { session }: { session?: Session | null } = {},
+    { session }: { session?: Session | null } = {}
   ): Promise<TodoList | undefined> {
     try {
       const [activeSession] = await TodoManager.validateTodoId({
@@ -614,7 +614,7 @@ export class TodoManager {
       updatedAt?: Date;
     },
     list: TodoList,
-    session?: Session | null,
+    session?: Session | null
   ): Promise<Todo> {
     if (!list) {
       throw new TypeError('Todo list is required to create a todo item');
@@ -666,8 +666,8 @@ export class TodoManager {
         'Failed to create todo record',
         NextResponse.json(
           { error: 'Failed to create todo record' },
-          { status: 500 },
-        ),
+          { status: 500 }
+        )
       );
     }
     return result;
@@ -678,7 +678,7 @@ export class TodoManager {
     updates: {
       completed?: boolean;
       status?: TodoStatus;
-    },
+    }
   ): { status: TodoStatus; completed: boolean } {
     let nextStatus = todo.status;
     let nextCompleted = todo.completed;
@@ -735,7 +735,7 @@ export class TodoManager {
   private static async generateTodoPrefix(
     options: {
       session?: Session | null;
-    } = {},
+    } = {}
   ): Promise<[string, Session]> {
     const activeSession = options.session ?? (await auth());
     if (!activeSession) {
@@ -744,7 +744,7 @@ export class TodoManager {
         unauthorizedServiceResponse({
           req: undefined,
           scopes: ['mcp-tools:read'],
-        }),
+        })
       );
     }
     const userId = activeSession.user?.id;
@@ -754,7 +754,7 @@ export class TodoManager {
         unauthorizedServiceResponse({
           req: undefined,
           scopes: ['mcp-tools:read'],
-        }),
+        })
       );
     }
     const prefix = `todo::user-${userId}::`;
@@ -766,13 +766,15 @@ export class TodoManager {
       session?: Session | null;
       suffix?: string;
       salt?: string;
-    } = {},
+    } = {}
   ): Promise<[string, Session]> {
     const [prefix, activeSession] = await this.generateTodoPrefix({
       session: options.session,
     });
     return [
-      `${prefix}${Date.now()}${options.salt ? `:${options.salt}` : ''}-${options.suffix ?? Math.random().toString(36).substring(2, 9)}`,
+      `${prefix}${Date.now()}${options.salt ? `:${options.salt}` : ''}-${
+        options.suffix ?? Math.random().toString(36).substring(2, 9)
+      }`,
       activeSession,
     ];
   }
@@ -791,7 +793,7 @@ export class TodoManager {
         unauthorizedServiceResponse({
           req: undefined,
           scopes: ['mcp-tools:read'],
-        }),
+        })
       );
     }
     return [activeSession, options.check];
@@ -832,7 +834,7 @@ export class TodoManager {
         }
         return acc;
       },
-      { complete: 0, active: 0, pending: 0, total: 0 },
+      { complete: 0, active: 0, pending: 0, total: 0 }
     );
     if (agg.total === 0) {
       list.status = 'pending';
@@ -874,7 +876,7 @@ export class TodoManager {
         createdAt: now,
         updatedAt: now,
       },
-      { session: activeSession },
+      { session: activeSession }
     );
     // No default list is a fatal error
     if (isError(list)) {
@@ -885,7 +887,7 @@ export class TodoManager {
 }
 
 export const getTodoManager = async (
-  strategy?: TodoStorageStrategy,
+  strategy?: TodoStorageStrategy
 ): Promise<TodoManager> => {
   const provider = SingletonProvider.Instance;
   const managerKey = Symbol.for('@noeducation/ai/TodoManager');
@@ -905,13 +907,13 @@ export const getTodoManager = async (
       const storageStrategy = await createStorageStrategy(
         status.strategy,
         status.config,
-        InMemoryStorageStrategy.Instance,
+        InMemoryStorageStrategy.Instance
       );
       return new TodoManager(storageStrategy);
     },
     {
       weakRef: true,
-    },
+    }
   );
 };
 

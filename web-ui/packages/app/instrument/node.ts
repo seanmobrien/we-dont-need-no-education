@@ -22,7 +22,7 @@ import { config } from './common';
 import AfterManager from '@/lib/site-util/after';
 import UrlFilteredSpanExporter from './url-filter/url-filter-trace-exporter';
 import UrlFilteredLogExporter from './url-filter/url-filtered-log-exporter';
-import { GlobalWithMyGlobal } from '@compliance-theater/lib-typescript/singleton-provider/types';
+import { GlobalWithMyGlobal } from '@compliance-theater/typescript/singleton-provider/types';
 
 enum KnownSeverityLevel {
   Verbose = 'Verbose',
@@ -35,7 +35,7 @@ enum KnownSeverityLevel {
 // Global symbol keys for singleton registry
 const NODE_SDK_KEY = Symbol.for('@noeducation/instrumentation:nodeSdk');
 const REGISTERED_KEY = Symbol.for(
-  '@noeducation/instrumentation/nodeSdk:registered',
+  '@noeducation/instrumentation/nodeSdk:registered'
 );
 
 type GlobalWithNodeSdk = GlobalWithMyGlobal<
@@ -86,7 +86,7 @@ const instrumentServer = () => {
   setRegistered(true);
   if (getNodeSdk()) {
     console.warn(
-      'OTel SDK already initialized, skipping...NOTE: This really should not happen...',
+      'OTel SDK already initialized, skipping...NOTE: This really should not happen...'
     );
     return;
   }
@@ -109,9 +109,9 @@ const instrumentServer = () => {
   const traceExporter = new UrlFilteredSpanExporter(
     new ChunkingTraceExporter(
       new AzureMonitorTraceExporter({ connectionString: connStr }),
-      { maxChunkChars: 8000, keepOriginalKey: false },
+      { maxChunkChars: 8000, keepOriginalKey: false }
     ),
-    urlFilter,
+    urlFilter
   );
   const metricExporter = new AzureMonitorMetricExporter({
     connectionString: connStr,
@@ -119,9 +119,9 @@ const instrumentServer = () => {
   const logExporter = new UrlFilteredLogExporter(
     new ChunkingLogExporter(
       new AzureMonitorLogExporter({ connectionString: connStr }),
-      { maxChunkChars: 8000, keepOriginalKey: false },
+      { maxChunkChars: 8000, keepOriginalKey: false }
     ),
-    urlFilter,
+    urlFilter
   );
 
   const sdk = new NodeSDK({
@@ -168,10 +168,10 @@ const instrumentServer = () => {
             lvl === 'error'
               ? KnownSeverityLevel.Error
               : lvl === 'warn'
-                ? KnownSeverityLevel.Warning
-                : lvl === 'info'
-                  ? KnownSeverityLevel.Information
-                  : KnownSeverityLevel.Verbose;
+              ? KnownSeverityLevel.Warning
+              : lvl === 'info'
+              ? KnownSeverityLevel.Information
+              : KnownSeverityLevel.Verbose;
           switch (record.severity) {
             case KnownSeverityLevel.Error:
             case KnownSeverityLevel.Critical:
@@ -203,7 +203,7 @@ const instrumentServer = () => {
       maxExportBatchSize: 512,
       scheduledDelayMillis: 10000,
       exportTimeoutMillis: 60000,
-    }),
+    })
   );
   logs.setGlobalLoggerProvider(loggerProvider);
 

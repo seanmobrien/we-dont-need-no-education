@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { extractToken, KnownScopeValues, KnownScopeIndex } from './utilities';
 import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
 
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 export const authorized = async ({
   auth,
@@ -31,7 +31,7 @@ export const authorized = async ({
         const expiresAt = new Date(auth.expires).getTime();
         if (Date.now() > expiresAt) {
           log((l) =>
-            l.warn('Session has expired', { expiresAt, now: Date.now(), auth }),
+            l.warn('Session has expired', { expiresAt, now: Date.now(), auth })
           );
           return unauthorizedServiceResponse({
             req: request,
@@ -53,7 +53,7 @@ export const authorized = async ({
               expiresAt: token.exp,
               now: Date.now(),
               token,
-            }),
+            })
           );
           return unauthorizedServiceResponse({
             req: request,

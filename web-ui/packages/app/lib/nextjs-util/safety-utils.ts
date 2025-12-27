@@ -6,10 +6,14 @@
  */
 
 import { Span, SpanStatusCode } from '@opentelemetry/api';
-import { tracer, MetricsRecorder, DEBUG_MODE } from '../ai/mcp/instrumented-sse-transport/metrics/otel-metrics';
+import {
+  tracer,
+  MetricsRecorder,
+  DEBUG_MODE,
+} from '../ai/mcp/instrumented-sse-transport/metrics/otel-metrics';
 import { isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { withTimeoutAsError } from '@/lib/nextjs-util/with-timeout';
 
 // Timeout constants
@@ -21,7 +25,6 @@ export interface OperationMetrics {
   operation: string;
   messageId?: string | number;
 }
-
 
 /**
  * Provides safety utilities for async operations and error handling
@@ -38,7 +41,7 @@ export class SafetyUtils {
    * Creates a safe wrapper for error handlers that never throws
    */
   createSafeErrorHandler(
-    handler: (error: unknown) => void,
+    handler: (error: unknown) => void
   ): (error: unknown) => void {
     return (error: unknown) => {
       try {
@@ -53,7 +56,7 @@ export class SafetyUtils {
                 ? wrapperError.message
                 : String(wrapperError),
             },
-          }),
+          })
         );
       }
     };
@@ -65,7 +68,7 @@ export class SafetyUtils {
   createSafeAsyncWrapper<T extends unknown[], R>(
     operationName: string,
     fn: (...args: T) => R | Promise<R>,
-    errorHandler: (error: unknown) => void,
+    errorHandler: (error: unknown) => void
   ): (...args: T) => Promise<R | void> {
     return async (...args: T): Promise<R | void> => {
       const startTime = Date.now();
@@ -89,7 +92,7 @@ export class SafetyUtils {
           MetricsRecorder.recordOperationDuration(
             duration,
             operationName,
-            'success',
+            'success'
           );
 
           span?.addEvent(`${operationName}.completed`, {
@@ -105,12 +108,12 @@ export class SafetyUtils {
         // Record error metrics
         MetricsRecorder.recordError(
           operationName,
-          isError(error) ? error.name : 'unknown',
+          isError(error) ? error.name : 'unknown'
         );
         MetricsRecorder.recordOperationDuration(
           duration,
           operationName,
-          'error',
+          'error'
         );
 
         span?.recordException(error as Error);
@@ -138,7 +141,9 @@ export class SafetyUtils {
    * Records operation metrics for detailed tracking
    */
   recordOperation(operation: string, messageId?: string | number): string {
-    const operationId = `${operation}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const operationId = `${operation}-${Date.now()}-${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
     this.#operationMetrics.set(operationId, {
       startTime: Date.now(),
       operation,
@@ -152,7 +157,7 @@ export class SafetyUtils {
    */
   completeOperation(
     operationId: string,
-    status: 'success' | 'error' = 'success',
+    status: 'success' | 'error' = 'success'
   ) {
     const metrics = this.#operationMetrics.get(operationId);
     if (metrics) {
@@ -160,7 +165,7 @@ export class SafetyUtils {
       MetricsRecorder.recordOperationDuration(
         duration,
         metrics.operation,
-        status,
+        status
       );
       this.#operationMetrics.delete(operationId);
 
@@ -168,7 +173,7 @@ export class SafetyUtils {
         log((l) =>
           l.debug(`Operation ${metrics.operation} completed`, {
             data: { duration, status, messageId: metrics.messageId },
-          }),
+          })
         );
       }
     }
@@ -177,22 +182,24 @@ export class SafetyUtils {
   /**
    * Creates a timeout wrapper for async operations
    */
-  withTimeout<T>(
-    promise: Promise<T>,
-    timeoutMs: number,
-    operation?: string,
-  ) {
+  withTimeout<T>(promise: Promise<T>, timeoutMs: number, operation?: string) {
     return withTimeoutAsError(promise, timeoutMs, operation);
   }
 }
 
-export const createSafeErrorHandler = (handler: (error: unknown) => void, url?: string) =>
-  new SafetyUtils(url ?? 'url://null').createSafeErrorHandler(handler);
+export const createSafeErrorHandler = (
+  handler: (error: unknown) => void,
+  url?: string
+) => new SafetyUtils(url ?? 'url://null').createSafeErrorHandler(handler);
 
 export const createSafeAsyncWrapper = <T extends unknown[], R>(
   operationName: string,
   fn: (...args: T) => R | Promise<R>,
   errorHandler: (error: unknown) => void,
-  url?: string,
+  url?: string
 ) =>
-  new SafetyUtils(url ?? 'url://null').createSafeAsyncWrapper(operationName, fn, errorHandler);
+  new SafetyUtils(url ?? 'url://null').createSafeAsyncWrapper(
+    operationName,
+    fn,
+    errorHandler
+  );

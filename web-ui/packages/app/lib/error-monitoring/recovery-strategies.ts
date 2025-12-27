@@ -3,7 +3,7 @@
  * Provides automatic and manual recovery mechanisms
  */
 
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { clientNavigateSignIn, clientReload } from '../nextjs-util';
 import { isRunningOnEdge } from '../site-util/env';
 
@@ -46,14 +46,14 @@ export interface RecoveryStrategy {
 
 const uiOnly = (
   action: RecoveryAction | string,
-  doIt: () => void,
+  doIt: () => void
 ): (() => void | Promise<void>) => {
   const recoveryAction =
     typeof action === 'string'
       ? {
-        id: action,
-        label: `Action ${action} not found.`,
-      }
+          id: action,
+          label: `Action ${action} not found.`,
+        }
       : action;
   if (typeof window !== 'undefined' && !isRunningOnEdge()) {
     return doIt;
@@ -61,12 +61,13 @@ const uiOnly = (
     return () =>
       log((l) =>
         l.info(
-          `UI-only action ${recoveryAction.label} skipped in ${typeof window === 'undefined' ? 'server' : 'edge'} environment.`,
-        ),
+          `UI-only action ${recoveryAction.label} skipped in ${
+            typeof window === 'undefined' ? 'server' : 'edge'
+          } environment.`
+        )
       );
   }
 };
-
 
 export function classifyError(error: Error): ErrorType {
   const message = error.message.toLowerCase();
@@ -150,7 +151,6 @@ export function classifyError(error: Error): ErrorType {
   return ErrorType.UNKNOWN;
 }
 
-
 export const recoveryStrategies: RecoveryStrategy[] = [
   {
     errorType: ErrorType.NETWORK,
@@ -174,7 +174,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
             alert('Connection appears to be working. Please try again.');
           } else {
             alert(
-              'No internet connection detected. Please check your connection.',
+              'No internet connection detected. Please check your connection.'
             );
           }
         }),
@@ -236,7 +236,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         description: 'Request access from system administrator',
         action: uiOnly('contact-admin', () => {
           alert(
-            'You do not have permission to perform this action. Please contact your administrator.',
+            'You do not have permission to perform this action. Please contact your administrator.'
           );
         }),
       },
@@ -269,8 +269,8 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         description: 'Slow down your requests and try again later',
         action: uiOnly('reduce-requests', () =>
           alert(
-            'Rate limit exceeded. Please slow down your requests and try again in a minute.',
-          ),
+            'Rate limit exceeded. Please slow down your requests and try again in a minute.'
+          )
         ),
       },
     ],
@@ -287,7 +287,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
           'Server is experiencing issues, try again in a few minutes',
         action: uiOnly('retry-later', () => {
           alert(
-            'Server is temporarily unavailable. Please try again in a few minutes.',
+            'Server is temporarily unavailable. Please try again in a few minutes.'
           );
         }),
       },
@@ -298,10 +298,10 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         action: uiOnly('contact-support', () => {
           const subject = encodeURIComponent('Server Error Report');
           const body = encodeURIComponent(
-            'I encountered a server error while using the application.',
+            'I encountered a server error while using the application.'
           );
           window.open(
-            `mailto:support@example.com?subject=${subject}&body=${body}`,
+            `mailto:support@example.com?subject=${subject}&body=${body}`
           );
         }),
       },
@@ -324,7 +324,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         description: 'Check your input and try again',
         action: uiOnly('review-input', () => {
           alert(
-            'Please review your input and correct any errors before trying again.',
+            'Please review your input and correct any errors before trying again.'
           );
         }),
       },
@@ -389,10 +389,10 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         action: uiOnly('report-bug', () => {
           const subject = encodeURIComponent('Bug Report');
           const body = encodeURIComponent(
-            'I encountered an unexpected error while using the application.',
+            'I encountered an unexpected error while using the application.'
           );
           window.open(
-            `mailto:support@example.com?subject=${subject}&body=${body}`,
+            `mailto:support@example.com?subject=${subject}&body=${body}`
           );
         }),
       },
@@ -401,13 +401,11 @@ export const recoveryStrategies: RecoveryStrategy[] = [
   },
 ];
 
-
 export function getRecoveryActions(error: Error): RecoveryAction[] {
   const errorType = classifyError(error);
   const strategy = recoveryStrategies.find((s) => s.errorType === errorType);
   return strategy?.actions || [];
 }
-
 
 export function getDefaultRecoveryAction(error: Error): RecoveryAction | null {
   const errorType = classifyError(error);
@@ -420,7 +418,6 @@ export function getDefaultRecoveryAction(error: Error): RecoveryAction | null {
 
   return strategy.actions.find((a) => a.id === defaultActionId) || null;
 }
-
 
 export async function attemptAutoRecovery(error: Error): Promise<boolean> {
   const defaultAction = getDefaultRecoveryAction(error);

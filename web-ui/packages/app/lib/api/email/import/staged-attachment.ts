@@ -3,7 +3,7 @@ import { ObjectRepository } from '@/lib/api/_types';
 import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 import { query } from '@/lib/neondb';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { FirstParameter } from '@compliance-theater/lib-typescript';
+import { FirstParameter } from '@compliance-theater/typescript';
 import { GridSortModel } from '@mui/x-data-grid-pro';
 
 export type StagedAttachment = {
@@ -20,7 +20,7 @@ export type StagedAttachment = {
 };
 
 const mapRecordToObject = (
-  record: Record<string, unknown>,
+  record: Record<string, unknown>
 ): StagedAttachment => ({
   stagedMessageId: record.staging_message_id as string,
   partId: record.partId as number,
@@ -49,26 +49,28 @@ export class StagedAttachmentRepository extends BaseObjectRepository<
 
   async create(
     props: Omit<StagedAttachment, 'partId'> &
-      Partial<Pick<StagedAttachment, 'partId'>>,
+      Partial<Pick<StagedAttachment, 'partId'>>
   ): Promise<StagedAttachment> {
     return super.create(props);
   }
 
   async getForMessage(
-    stagedMessageId: string,
+    stagedMessageId: string
   ): Promise<ReadonlyArray<StagedAttachment>> {
     const runQuery = (x: number, y: number, z: number, sort?: GridSortModel) =>
       query(
         (sql) => sql`
-      SELECT * FROM staging_attachment WHERE staging_message_id = ${stagedMessageId} ${buildOrderBy({ source: sort, sql })}`,
+      SELECT * FROM staging_attachment WHERE staging_message_id = ${stagedMessageId} ${buildOrderBy(
+          { source: sort, sql }
+        )}`
       );
     const runQueryCount = () =>
       query(
         (sql) =>
-          sql`SELECT COUNT(*) as records FROM staging_attachment WHERE staging_message_id = ${stagedMessageId}`,
+          sql`SELECT COUNT(*) as records FROM staging_attachment WHERE staging_message_id = ${stagedMessageId}`
       );
     return this.innerList(runQuery, runQueryCount).then(
-      (x) => x.results as ReadonlyArray<StagedAttachment>,
+      (x) => x.results as ReadonlyArray<StagedAttachment>
     );
   }
 
@@ -83,7 +85,7 @@ export class StagedAttachmentRepository extends BaseObjectRepository<
     method: TMethod,
     obj: FirstParameter<
       Pick<ObjectRepository<StagedAttachment, 'partId'>, TMethod>[TMethod]
-    >,
+    >
   ): void {
     if (!obj) {
       throw new ValidationError('No object provided');
@@ -123,7 +125,7 @@ export class StagedAttachmentRepository extends BaseObjectRepository<
     ];
   }
   protected getUpdateQueryProperties(
-    obj: StagedAttachment,
+    obj: StagedAttachment
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): [Record<string, any>] {
     return [

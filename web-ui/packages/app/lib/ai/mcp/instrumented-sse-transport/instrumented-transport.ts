@@ -12,7 +12,7 @@ import type { JSONRPCMessage } from '../ai.sdk';
 
 import { isAbortError, isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
 // Import refactored modules
 import { tracer, MetricsRecorder, DEBUG_MODE } from './metrics/otel-metrics';
@@ -93,7 +93,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
               url: opts.url,
               mode: DEBUG_MODE ? 'DEBUG' : 'WARNING',
             },
-          }),
+          })
         );
       }
 
@@ -120,7 +120,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       this.#messageProcessor = new MessageProcessor(
         opts.url,
         this.#sessionManager,
-        this.#counterManager,
+        this.#counterManager
       );
 
       // Set up event handlers
@@ -131,7 +131,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
           LoggedError.isTurtlesAllTheWayDownBaby(e, {
             log: true,
             message: 'MCP SSE Transport: Error occurred',
-          }),
+          })
         );
       });
 
@@ -139,17 +139,17 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       super.onclose = this.#safetyUtils.createSafeAsyncWrapper(
         'handleClose',
         this.handleClose.bind(this),
-        this.#onerror,
+        this.#onerror
       );
       super.onerror = this.#safetyUtils.createSafeAsyncWrapper(
         'handleError',
         this.handleError.bind(this),
-        this.#onerror,
+        this.#onerror
       );
       super.onmessage = this.#safetyUtils.createSafeAsyncWrapper(
         'handleMessage',
         this.handleMessage.bind(this),
-        this.#onerror,
+        this.#onerror
       );
 
       // Record successful construction
@@ -159,7 +159,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
 
       if (DEBUG_MODE) {
         log((l) =>
-          l.debug('InstrumentedSseTransport initialized successfully'),
+          l.debug('InstrumentedSseTransport initialized successfully')
         );
       }
     } catch (error) {
@@ -167,7 +167,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       MetricsRecorder.recordConnection(opts.url, 'constructor', 'error');
       MetricsRecorder.recordError(
         'constructor',
-        isError(error) ? error.name : 'unknown',
+        isError(error) ? error.name : 'unknown'
       );
 
       constructorSpan?.recordException(error as Error);
@@ -179,7 +179,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       log((l) =>
         l.error('Failed to initialize InstrumentedSseTransport', {
           data: { error: isError(error) ? error.message : String(error) },
-        }),
+        })
       );
 
       throw error;
@@ -195,7 +195,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
   }
 
   override set onmessage(
-    handler: ((message: JSONRPCMessage) => void) | undefined,
+    handler: ((message: JSONRPCMessage) => void) | undefined
   ) {
     this.#onmessage = handler;
   }
@@ -249,7 +249,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
               url: this.url?.toString(),
               mode: DEBUG_MODE ? 'DEBUG' : 'WARNING',
             },
-          }),
+          })
         );
       }
 
@@ -257,7 +257,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       MetricsRecorder.recordConnection(
         this.url?.toString() || 'unknown',
         'start',
-        'attempt',
+        'attempt'
       );
 
       // Timeout capabilities now built into our fetch implementation
@@ -267,7 +267,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       MetricsRecorder.recordConnection(
         this.url?.toString() || 'unknown',
         'start',
-        'success',
+        'success'
       );
 
       // Initialize heartbeat & inactivity watchdog AFTER successful start
@@ -285,8 +285,8 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         const isClosing = this.#isClosing;
         log((l) =>
           l.verbose(
-            `InstrumentedTransport::MCP Client Transport start() aborted; isClosing=${isClosing}`,
-          ),
+            `InstrumentedTransport::MCP Client Transport start() aborted; isClosing=${isClosing}`
+          )
         );
         return;
       }
@@ -295,11 +295,11 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       MetricsRecorder.recordConnection(
         this.url?.toString() || 'unknown',
         'start',
-        'error',
+        'error'
       );
       MetricsRecorder.recordError(
         'start',
-        isError(error) ? error.name : 'unknown',
+        isError(error) ? error.name : 'unknown'
       );
 
       span?.recordException(error as Error);
@@ -316,7 +316,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
             error: isError(error) ? error.message : String(error),
             stack: isError(error) ? error.stack : undefined,
           },
-        }),
+        })
       );
 
       throw error;
@@ -365,7 +365,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
                 ? Date.now() - this.#connectionStartTime
                 : 0,
             },
-          }),
+          })
         );
       }
 
@@ -382,8 +382,8 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         if (isAbortError(e)) {
           log((l) =>
             l.verbose(
-              'InstrumentedSseTransport.close: Ignoring AbortError during close()',
-            ),
+              'InstrumentedSseTransport.close: Ignoring AbortError during close()'
+            )
           );
         } else {
           throw e;
@@ -419,7 +419,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
     } catch (error) {
       MetricsRecorder.recordError(
         'close',
-        isError(error) ? error.name : 'unknown',
+        isError(error) ? error.name : 'unknown'
       );
 
       span?.recordException(error as Error);
@@ -433,7 +433,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       log((l) =>
         l.error('Failed to close MCP Client Transport', {
           data: { error: isError(error) ? error.message : String(error) },
-        }),
+        })
       );
       // throw error;
     } finally {
@@ -468,7 +468,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
               method: messageMethod,
               url: this.url?.toString(),
             },
-          }),
+          })
         );
       }
 
@@ -481,13 +481,13 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         log((l) =>
           l.debug('MCP Client Message sent successfully', {
             data: { messageId, method: messageMethod },
-          }),
+          })
         );
       }
     } catch (error) {
       MetricsRecorder.recordError(
         'send',
-        isError(error) ? error.name : 'unknown',
+        isError(error) ? error.name : 'unknown'
       );
 
       span?.recordException(error as Error);
@@ -505,7 +505,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
             method: messageMethod,
             error: isError(error) ? error.message : String(error),
           },
-        }),
+        })
       );
 
       throw error;
@@ -549,7 +549,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
    */
   forceCompleteToolCall(
     sessionId: string,
-    reason: string = 'manual_completion',
+    reason: string = 'manual_completion'
   ): boolean {
     return this.#sessionManager.forceCompleteToolCall(sessionId, reason);
   }
@@ -558,7 +558,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
    * Gets enhanced headers with trace context for HTTP requests
    */
   getEnhancedHeaders(
-    baseHeaders: Record<string, string> = {},
+    baseHeaders: Record<string, string> = {}
   ): Record<string, string> {
     return TraceContextManager.getEnhancedHeaders(baseHeaders);
   }
@@ -574,7 +574,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
    * Static method to inject trace context into HTTP headers for distributed tracing
    */
   static injectTraceContext(
-    headers: Record<string, string> = {},
+    headers: Record<string, string> = {}
   ): Record<string, string> {
     return TraceContextManager.injectTraceContext(headers);
   }
@@ -648,7 +648,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       MetricsRecorder.recordConnection(
         this.url?.toString() || 'unknown',
         'heartbeat',
-        'success',
+        'success'
       );
       // Inactivity check piggybacked here (alternative to separate timeout reset)
       if (
@@ -662,15 +662,15 @@ export class InstrumentedSseTransport extends SseMCPTransport {
               url: this.url?.toString(),
               idleMs: now - this.#lastActivity,
               threshold: InstrumentedSseTransport.INACTIVITY_TIMEOUT_MS,
-            },
-          ),
+            }
+          )
         );
         this.close().catch((err) =>
           log((l) =>
             l.error('Error while closing after inactivity watchdog', {
               error: isError(err) ? err.message : String(err),
-            }),
-          ),
+            })
+          )
         );
       }
     }, InstrumentedSseTransport.HEARTBEAT_INTERVAL_MS);
@@ -698,14 +698,14 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         l.warn('Auto-closing MCP Client Transport after error grace period', {
           url: this.url?.toString(),
           delayMs: InstrumentedSseTransport.POST_ERROR_AUTOCLOSE_DELAY_MS,
-        }),
+        })
       );
       this.close().catch((err) =>
         log((l) =>
           l.error('Error during post-error autoclose', {
             error: isError(err) ? err.message : String(err),
-          }),
-        ),
+          })
+        )
       );
     }, InstrumentedSseTransport.POST_ERROR_AUTOCLOSE_DELAY_MS);
   }

@@ -13,10 +13,10 @@ import type {
   UserToolProviderCache,
   UserToolProviderCacheConfig,
 } from '../types';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
-import { globalRequiredSingleton } from '@compliance-theater/lib-typescript';
+import { globalRequiredSingleton } from '@compliance-theater/typescript';
 
 /**
  * Cache for maintaining ToolProviderSet instances per user across HTTP requests.
@@ -66,7 +66,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
   private generateCacheKey(
     userId: string,
     sessionId: string,
-    configHash: string,
+    configHash: string
   ): string {
     return `${userId}:${sessionId}:${configHash}`;
   }
@@ -86,13 +86,13 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
       // Only include non-auth headers in hash to avoid session token changes
       headers: config.headers
         ? Object.fromEntries(
-          Object.entries(config.headers).filter(
-            ([key]) =>
-              !key.toLowerCase().includes('auth') &&
-              !key.toLowerCase().includes('cookie') &&
-              key !== 'x-chat-history-id',
-          ),
-        )
+            Object.entries(config.headers).filter(
+              ([key]) =>
+                !key.toLowerCase().includes('auth') &&
+                !key.toLowerCase().includes('cookie') &&
+                key !== 'x-chat-history-id'
+            )
+          )
         : {},
     });
 
@@ -117,7 +117,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
       memoryDisabled: boolean;
       headers?: Record<string, string>;
     },
-    factory: () => Promise<ToolProviderSet>,
+    factory: () => Promise<ToolProviderSet>
   ): Promise<ToolProviderSet> {
     const configHash = this.generateConfigHash(config);
     const cacheKey = this.generateCacheKey(userId, sessionId, configHash);
@@ -160,7 +160,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
             userId,
             cacheKey,
             cacheSize: this.cache.size,
-          }),
+          })
         );
       }
       return toolProviders;
@@ -196,7 +196,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
         l.debug('Tool provider disposed', {
           userId: entry.userId,
           cacheKey,
-        }),
+        })
       );
     } catch (error) {
       log((l) =>
@@ -204,7 +204,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
           userId: entry.userId,
           cacheKey,
           error,
-        }),
+        })
       );
       this.cache.delete(cacheKey);
     }
@@ -216,13 +216,13 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
   private enforceEvictionLimits(currentUserId: string): void {
     // Check per-user limit
     const userEntries = Array.from(this.cache.entries()).filter(
-      ([, entry]) => entry.userId === currentUserId,
+      ([, entry]) => entry.userId === currentUserId
     );
 
     if (userEntries.length >= this.config.maxEntriesPerUser) {
       // Remove oldest entry for this user
       const oldestUserEntry = userEntries.sort(
-        ([, a], [, b]) => a.lastAccessed - b.lastAccessed,
+        ([, a], [, b]) => a.lastAccessed - b.lastAccessed
       )[0];
 
       if (oldestUserEntry) {
@@ -234,7 +234,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
               userId: oldestUserEntry[1].userId,
               cacheKey: oldestUserEntry[0],
               error,
-            }),
+            })
           );
           this.removeEntry(oldestUserEntry[0], oldestUserEntry[1]);
         }
@@ -245,7 +245,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
     if (this.cache.size >= this.config.maxTotalEntries) {
       // Remove oldest entry globally
       const oldestEntry = Array.from(this.cache.entries()).sort(
-        ([, a], [, b]) => a.lastAccessed - b.lastAccessed,
+        ([, a], [, b]) => a.lastAccessed - b.lastAccessed
       )[0];
 
       if (oldestEntry) {
@@ -259,7 +259,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
    */
   public invalidateUser(userId: string): void {
     const userEntries = Array.from(this.cache.entries()).filter(
-      ([, entry]) => entry.userId === userId,
+      ([, entry]) => entry.userId === userId
     );
 
     for (const [cacheKey, entry] of userEntries) {
@@ -270,7 +270,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
       l.debug('Invalidated user tool providers', {
         userId,
         removedCount: userEntries.length,
-      }),
+      })
     );
   }
 
@@ -279,7 +279,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
    */
   public invalidateSession(userId: string, sessionId: string): void {
     const sessionEntries = Array.from(this.cache.entries()).filter(
-      ([, entry]) => entry.userId === userId && entry.sessionId === sessionId,
+      ([, entry]) => entry.userId === userId && entry.sessionId === sessionId
     );
 
     for (const [cacheKey, entry] of sessionEntries) {
@@ -291,7 +291,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
         userId,
         sessionId,
         removedCount: sessionEntries.length,
-      }),
+      })
     );
   }
 
@@ -312,7 +312,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
         entry.toolProviders[Symbol.dispose]();
       } catch (error) {
         log((l) =>
-          l.warn('Error disposing tool provider during cleanup', { error }),
+          l.warn('Error disposing tool provider during cleanup', { error })
         );
       }
     }
@@ -322,7 +322,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
         l.debug('Cleaned up expired tool providers', {
           removedCount: expiredEntries.length,
           remainingCount: this.cache.size,
-        }),
+        })
       );
     }
   }
@@ -336,7 +336,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
         entry.toolProviders[Symbol.dispose]();
       } catch (error) {
         log((l) =>
-          l.warn('Error disposing tool provider during clear', { error }),
+          l.warn('Error disposing tool provider during clear', { error })
         );
       }
     }
@@ -391,7 +391,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
  * Get the singleton instance of the cache.
  */
 const getInstanceInternal = async (
-  config?: Partial<UserToolProviderCacheConfig>,
+  config?: Partial<UserToolProviderCacheConfig>
 ): Promise<UserToolProviderCache> => {
   const cachingEnabled = await getFeatureFlag('mcp_cache_tools');
   if (!cachingEnabled) {
@@ -405,7 +405,7 @@ const getInstanceInternal = async (
           memoryDisabled: boolean;
           headers?: Record<string, string>;
         },
-        factory: () => Promise<ToolProviderSet>,
+        factory: () => Promise<ToolProviderSet>
       ) => factory(),
       shutdown: fnNoOp,
       clear: fnNoOp,
@@ -420,7 +420,7 @@ const getInstanceInternal = async (
   }
   return globalRequiredSingleton(
     '@seanm/wedontneednoeducation/lib/ai/mcp/user-tool-provider-cache',
-    () => new UserToolProviderCacheImpl(config),
+    () => new UserToolProviderCacheImpl(config)
   );
 };
 

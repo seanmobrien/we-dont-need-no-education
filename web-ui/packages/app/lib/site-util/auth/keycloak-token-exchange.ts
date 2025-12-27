@@ -4,7 +4,7 @@ import { getToken } from '@auth/core/jwt';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
 import { env } from '../env';
-import { SingletonProvider } from '@compliance-theater/lib-typescript';
+import { SingletonProvider } from '@compliance-theater/typescript';
 
 export interface KeycloakConfig {
   issuer: string;
@@ -37,7 +37,7 @@ export class TokenExchangeError extends Error {
     message: string,
     public readonly code: string,
     public readonly status?: number,
-    public readonly originalError?: unknown,
+    public readonly originalError?: unknown
   ) {
     super(message);
     this.name = 'TokenExchangeError';
@@ -58,7 +58,10 @@ export class KeycloakTokenExchange {
     };
 
     this.validateConfig();
-    this.tokenEndpoint = `${this.config.issuer.replace(/\/$/, '')}/protocol/openid-connect/token`;
+    this.tokenEndpoint = `${this.config.issuer.replace(
+      /\/$/,
+      ''
+    )}/protocol/openid-connect/token`;
   }
 
   private validateConfig(): void {
@@ -70,13 +73,13 @@ export class KeycloakTokenExchange {
     if (missing.length > 0) {
       throw new TokenExchangeError(
         `Missing required Keycloak configuration: ${missing.join(', ')}`,
-        'INVALID_CONFIG',
+        'INVALID_CONFIG'
       );
     }
   }
 
   async extractKeycloakToken(
-    req: NextRequest | NextApiRequest,
+    req: NextRequest | NextApiRequest
   ): Promise<string> {
     try {
       const token = await getToken({
@@ -87,7 +90,7 @@ export class KeycloakTokenExchange {
       if (!token) {
         throw new TokenExchangeError(
           'No JWT token found in request',
-          'NO_JWT_TOKEN',
+          'NO_JWT_TOKEN'
         );
       }
 
@@ -95,7 +98,7 @@ export class KeycloakTokenExchange {
       if (!keycloakToken || typeof keycloakToken !== 'string') {
         throw new TokenExchangeError(
           'No Keycloak access token found in JWT',
-          'NO_KEYCLOAK_TOKEN',
+          'NO_KEYCLOAK_TOKEN'
         );
       }
 
@@ -108,13 +111,13 @@ export class KeycloakTokenExchange {
         'Failed to extract Keycloak token from request',
         'TOKEN_EXTRACTION_FAILED',
         undefined,
-        error,
+        error
       );
     }
   }
 
   async exchangeForGoogleTokens(
-    params: TokenExchangeParams,
+    params: TokenExchangeParams
   ): Promise<GoogleTokens> {
     const requestParams = new URLSearchParams({
       grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
@@ -138,7 +141,7 @@ export class KeycloakTokenExchange {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           timeout: 10000, // 10 second timeout
-        },
+        }
       );
 
       return this.extractGoogleTokens(response.data);
@@ -158,7 +161,7 @@ export class KeycloakTokenExchange {
           `Keycloak token exchange failed: ${errorMessage}`,
           'EXCHANGE_FAILED',
           status,
-          error,
+          error
         );
       }
 
@@ -166,7 +169,7 @@ export class KeycloakTokenExchange {
         'Unexpected error during token exchange',
         'UNKNOWN_ERROR',
         undefined,
-        error,
+        error
       );
     }
   }
@@ -177,7 +180,7 @@ export class KeycloakTokenExchange {
     if (!access_token || !refresh_token) {
       throw new TokenExchangeError(
         'Invalid token response from Keycloak - missing Google tokens',
-        'INVALID_TOKEN_RESPONSE',
+        'INVALID_TOKEN_RESPONSE'
       );
     }
 
@@ -189,7 +192,7 @@ export class KeycloakTokenExchange {
 
   async getGoogleTokensFromRequest(
     req: NextRequest | NextApiRequest,
-    audience?: string,
+    audience?: string
   ): Promise<GoogleTokens> {
     const keycloakToken = await this.extractKeycloakToken(req);
     return this.exchangeForGoogleTokens({
@@ -202,11 +205,11 @@ export class KeycloakTokenExchange {
 export const keycloakTokenExchange = () =>
   SingletonProvider.Instance.getRequired<KeycloakTokenExchange>(
     '@no-education/KeycloakTokenExchangeInstance',
-    () => new KeycloakTokenExchange(),
+    () => new KeycloakTokenExchange()
   );
 
 export const getGoogleTokensFromKeycloak = async (
-  req: NextRequest | NextApiRequest,
+  req: NextRequest | NextApiRequest
 ): Promise<GoogleTokens> => {
   return keycloakTokenExchange().getGoogleTokensFromRequest(req);
 };

@@ -3,7 +3,7 @@ import {
   isError,
   isTemplateStringsArray,
 } from '@/lib/react-util/utility-methods';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import type {
   TransformedFullQueryResults,
   DbQueryFunction,
@@ -76,7 +76,7 @@ export class AbstractObjectRepository<T extends object> {
    */
   static logDatabaseError(
     paramsOrSource: { error: unknown; source: string } | string,
-    errorFromArgs?: unknown,
+    errorFromArgs?: unknown
   ): never {
     let error: unknown;
     let source: string;
@@ -161,7 +161,7 @@ export class AbstractObjectRepository<T extends object> {
         ] as RecordToSummaryImpl<T>;
       }
       throw new Error(
-        `The summary map "${this.#summaryMap}" is not a valid function.`,
+        `The summary map "${this.#summaryMap}" is not a valid function.`
       );
     }
     return this.#summaryMap;
@@ -180,7 +180,7 @@ export class AbstractObjectRepository<T extends object> {
         ] as RecordToObjectImpl<T>;
       }
       throw new Error(
-        `The object map "${this.#objectMap}" is not a valid function.`,
+        `The object map "${this.#objectMap}" is not a valid function.`
       );
     }
     return this.#objectMap;
@@ -218,12 +218,12 @@ export class AbstractObjectRepository<T extends object> {
    */
   protected forwardCallToDb = <
     ArrayMode extends boolean,
-    FullResults extends boolean,
+    FullResults extends boolean
   >(
     sql: DbQueryFunction<ArrayMode, FullResults>,
     sqlQuery: string | TemplateStringsArray,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    values: Array<any>,
+    values: Array<any>
   ) => {
     values = values?.map((x) => (x instanceof Date ? x.toISOString() : x));
     return isTemplateStringsArray(sqlQuery)
@@ -250,19 +250,19 @@ export class AbstractObjectRepository<T extends object> {
       | ((
           num: number,
           page: number,
-          offset: number,
+          offset: number
         ) => Promise<Array<Partial<T>>>)
       | ((
           num: number,
           page: number,
           offset: number,
           sort?: GridSortModel,
-          filter?: GridFilterModel,
+          filter?: GridFilterModel
         ) => Promise<Array<Partial<T>>>),
     getDataCount: (
-      filter?: GridFilterModel,
+      filter?: GridFilterModel
     ) => Promise<Record<string, unknown>[]>,
-    pagination?: PaginationStats,
+    pagination?: PaginationStats
   ): Promise<PaginatedResultset<Partial<T>>> {
     const { num, page, offset, filter, sort } =
       parsePaginationStats(pagination);
@@ -320,7 +320,7 @@ export class AbstractObjectRepository<T extends object> {
    */
   protected async innerGet(
     validateData: () => void,
-    doQuery: () => Promise<T[]>,
+    doQuery: () => Promise<T[]>
   ): Promise<T | null> {
     validateData();
     try {
@@ -344,7 +344,7 @@ export class AbstractObjectRepository<T extends object> {
    */
   protected async innerUpdate(
     validateData: () => void,
-    doQuery: () => Promise<TransformedFullQueryResults<T>>,
+    doQuery: () => Promise<TransformedFullQueryResults<T>>
   ) {
     validateData();
     try {
@@ -355,14 +355,14 @@ export class AbstractObjectRepository<T extends object> {
           `Failed to update "${this.tableName}" record`,
           {
             table: this.tableName,
-          },
+          }
         );
       }
       log((l) =>
         l.verbose({
           message: `[[AUDIT]] -  ${this.tableName} updated:`,
           row: result.rows[0],
-        }),
+        })
       );
       return result.rows[0];
     } catch (error) {
@@ -382,7 +382,7 @@ export class AbstractObjectRepository<T extends object> {
    */
   protected async innerCreate(
     validateData: () => void,
-    doQuery: () => Promise<T[]>,
+    doQuery: () => Promise<T[]>
   ): Promise<T> {
     validateData();
     try {
@@ -391,14 +391,14 @@ export class AbstractObjectRepository<T extends object> {
         l.verbose({
           message: `[[AUDIT]] -  ${this.tableName} record created:`,
           row: result[0],
-        }),
+        })
       );
       if (result.length !== 1) {
         throw new DataIntegrityError(
           `Failed to create "${this.tableName}" record.`,
           {
             table: this.tableName,
-          },
+          }
         );
       }
       return result[0];
@@ -418,7 +418,7 @@ export class AbstractObjectRepository<T extends object> {
    */
   protected async innerDelete(
     validate: () => void,
-    doQuery: () => Promise<TransformedFullQueryResults<T>>,
+    doQuery: () => Promise<TransformedFullQueryResults<T>>
   ): Promise<boolean> {
     validate();
     try {
@@ -428,13 +428,13 @@ export class AbstractObjectRepository<T extends object> {
           `Failed to delete from ${this.tableName}`,
           {
             table: this.tableName,
-          },
+          }
         );
       }
       log((l) =>
         l.verbose({
           message: `[[AUDIT]] -  ${this.tableName} deleted a record.`,
-        }),
+        })
       );
       return true;
     } catch (error) {

@@ -12,7 +12,7 @@ import type { ModelStat, QueueInfo } from '@/types/statistics';
 import { fetch } from '@/lib/nextjs-util/fetch';
 import { act, renderHook, waitFor } from '@/__tests__/test-utils';
 import { RefObject } from 'react';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 import { isError } from '@/lib/react-util/utility-methods';
 import { assert } from 'console';
 
@@ -126,7 +126,7 @@ describe('Statistics hooks', () => {
 
       expect(result.current.data).toEqual(mockModelResponse.data);
       expect(fetch).toHaveBeenCalledWith(
-        '/api/ai/chat/stats/models?source=database',
+        '/api/ai/chat/stats/models?source=database'
       );
     });
 
@@ -145,7 +145,7 @@ describe('Statistics hooks', () => {
       });
 
       expect(fetch).toHaveBeenCalledWith(
-        '/api/ai/chat/stats/models?source=redis',
+        '/api/ai/chat/stats/models?source=redis'
       );
     });
   });
@@ -241,7 +241,7 @@ describe('Statistics hooks', () => {
       // Should trigger both queries again
       expect(fetch).toHaveBeenCalledTimes(2);
       expect(fetch).toHaveBeenCalledWith(
-        '/api/ai/chat/stats/models?source=database',
+        '/api/ai/chat/stats/models?source=database'
       );
       expect(fetch).toHaveBeenCalledWith('/api/ai/chat/stats/queues');
     });

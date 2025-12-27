@@ -9,7 +9,7 @@ import type {
 } from './types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { fetch } from '@/lib/nextjs-util/server/fetch';
-import { log, logEvent } from '@compliance-theater/lib-logger';
+import { log, logEvent } from '@compliance-theater/logger';
 import { performance } from 'perf_hooks';
 
 type SearchMeta = {
@@ -18,20 +18,20 @@ type SearchMeta = {
 
 export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
   protected static readonly parseId = (
-    metadata: SearchMeta,
+    metadata: SearchMeta
   ): string | undefined => {
     const found = metadata?.attributes?.find((m) => m.key === 'id')?.value;
     return found ? String(found) : undefined;
   };
 
   protected static readonly parseMetadata = (
-    metadata: SearchMeta,
+    metadata: SearchMeta
   ): Record<string, unknown> => {
     const result: Record<string, unknown> = {};
     const processExisting = (
       key: string,
       attr: { value: unknown },
-      arrayByDefault = false,
+      arrayByDefault = false
     ) => {
       const existing = result[key];
       if (Array.isArray(existing)) {
@@ -63,25 +63,27 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
       '@odata.nextLink'?: string;
     },
     query: string,
-    options: TOptions,
+    options: TOptions
   ): AiSearchResultEnvelope => {
     if (json.error) {
       const { code, message } = json.error;
       throw new Error(
         `Error in search response: ${message || '[no message]'}` +
-          ` (code: ${code || '[no code]'})\nRaw: ${JSON.stringify(json)}`,
+          ` (code: ${code || '[no code]'})\nRaw: ${JSON.stringify(json)}`
       );
     }
 
     if (!Array.isArray(json.value)) {
       log((l) =>
         l.warn({
-          message: `No 'value' array in response. query=${query} options=${JSON.stringify(options)}`,
+          message: `No 'value' array in response. query=${query} options=${JSON.stringify(
+            options
+          )}`,
           data: {
             options,
             query,
           },
-        }),
+        })
       );
       return { results: [] };
     }
@@ -89,9 +91,11 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
     if (json.value.length === 0) {
       log((l) =>
         l.warn({
-          message: `No results for query=${query} options=${JSON.stringify(options)}`,
+          message: `No results for query=${query} options=${JSON.stringify(
+            options
+          )}`,
           data: { options, query },
-        }),
+        })
       );
       return { results: [] };
     }
@@ -137,7 +141,7 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
       | IEmbeddingService
       | {
           embeddingService?: IEmbeddingService;
-        },
+        }
   ) {
     if (!embeddingServiceOrOptions) {
       this.embeddingService = new EmbeddingService();
@@ -150,7 +154,7 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
       } else {
         throw new Error(
           'Invalid argument: expected an IEmbeddingService or an object with embeddingService property',
-          { cause: embeddingServiceOrOptions },
+          { cause: embeddingServiceOrOptions }
         );
       }
     }
@@ -160,7 +164,7 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
 
   protected abstract appendScopeFilter(
     payload: HybridSearchPayload,
-    options: TOptions,
+    options: TOptions
   ): void;
 
   protected getSearchApiVersion(): string {
@@ -177,7 +181,7 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
 
   public async hybridSearch(
     naturalQuery: string,
-    options?: TOptions,
+    options?: TOptions
   ): Promise<AiSearchResultEnvelope> {
     const {
       hitsPerPage: topK = 5, // default to 15 results
@@ -227,7 +231,7 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
       const ret = HybridSearchClient.parseResponse(
         body,
         naturalQuery,
-        options ?? ({} as TOptions),
+        options ?? ({} as TOptions)
       );
       const searchId = res.headers?.get('x-ms-azs-searchid');
       if (searchId) {

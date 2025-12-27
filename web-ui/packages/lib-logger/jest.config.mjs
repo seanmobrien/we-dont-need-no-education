@@ -1,13 +1,13 @@
 /** @type {import('jest').Config} */
 const config = {
-  displayName: 'lib-logger',
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  rootDir: '.',
-  testMatch: ['**/__tests__/**/*.test.ts'],
+  displayName: "lib: logger",
+  preset: "ts-jest",
+  testEnvironment: "node",
+  rootDir: ".",
+  testMatch: ["**/__tests__/**/*.test.ts"],
   transform: {
-    '^.+\.ts$': [
-      'ts-jest',
+    "^.+.ts$": [
+      "ts-jest",
       {
         tsconfig: {
           esModuleInterop: true,

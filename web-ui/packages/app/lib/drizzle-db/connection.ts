@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import schema, { DbDatabaseType } from './schema';
-import { isPromise } from '@compliance-theater/lib-typescript/_guards';
+import { isPromise } from '@compliance-theater/typescript/_guards';
 import { LoggedError } from '../react-util';
 
 /**
@@ -54,7 +54,7 @@ const get_DrizDbPromise = (): Promise<DbDatabaseType> | undefined =>
  * clears the stored promise.
  */
 const set_DrizDbPromise = (
-  db: Promise<DbDatabaseType> | undefined,
+  db: Promise<DbDatabaseType> | undefined
 ): Promise<DbDatabaseType> | undefined => {
   (globalThis as GlobalDbRegistry)[DB_PROMISE_KEY] = db;
   return db;
@@ -75,9 +75,9 @@ interface DrizDbInitOverloads {
    * Wait for initialization and invoke the provided callback with the db.
    * The callback may return a value or a promise; the return type is preserved.
    */
-  <T>(
-    then: (db: DbDatabaseType) => T,
-  ): T extends Promise<infer R> ? Promise<R> : Promise<T>;
+  <T>(then: (db: DbDatabaseType) => T): T extends Promise<infer R>
+    ? Promise<R>
+    : Promise<T>;
 }
 
 const getPostgresDriver = async () => {
@@ -104,7 +104,7 @@ const getPostgresDriver = async () => {
  * once the db is available and its result is returned (promisified if needed).
  */
 export const drizDbWithInit: DrizDbInitOverloads = <T>(
-  cb?: (db: DbDatabaseType) => T,
+  cb?: (db: DbDatabaseType) => T
 ) => {
   const resolver = async (db: DbDatabaseType) => {
     if (cb) {
@@ -147,7 +147,7 @@ export const drizDbWithInit: DrizDbInitOverloads = <T>(
       });
     } else {
       throw new Error(
-        'Failed to initialize Drizzle DB - could not create dbPromise',
+        'Failed to initialize Drizzle DB - could not create dbPromise'
       );
     }
   }
@@ -158,9 +158,9 @@ interface DrizDbOverloads {
   /** Return the initialized Drizzle DB synchronously. Throws when initialization is in progress. */
   (): DbDatabaseType;
   /** Invoke the provided function with the initialized db and return its result (promisified if needed). */
-  <T>(
-    fn: (driz: DbDatabaseType) => T,
-  ): T extends Promise<infer R> ? Promise<R> : Promise<T>;
+  <T>(fn: (driz: DbDatabaseType) => T): T extends Promise<infer R>
+    ? Promise<R>
+    : Promise<T>;
 }
 
 /**
@@ -172,7 +172,7 @@ interface DrizDbOverloads {
  * await initialization via `drizDbWithInit()`.
  */
 export const drizDb: DrizDbOverloads = <T>(
-  fn?: (driz: DbDatabaseType) => T,
+  fn?: (driz: DbDatabaseType) => T
 ) => {
   const drizDb = get_DrizDb();
   if (drizDb) {
@@ -203,6 +203,6 @@ export const drizDb: DrizDbOverloads = <T>(
         retry: true,
         enqueue: dbWithInit.then,
       },
-    },
+    }
   );
 };

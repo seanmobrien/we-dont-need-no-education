@@ -1,12 +1,10 @@
-import {
-  type streamText,
-  type ToolSet,
-  type UIMessage,
-} from 'ai';
+import { type streamText, type ToolSet, type UIMessage } from 'ai';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/lib-logger';
+import { log } from '@compliance-theater/logger';
 
-type StreamTextResult<TOOLS extends ToolSet, NEVER> = ReturnType<typeof streamText<TOOLS, NEVER>>;
+type StreamTextResult<TOOLS extends ToolSet, NEVER> = ReturnType<
+  typeof streamText<TOOLS, NEVER>
+>;
 
 export interface StreamedResultContext {
   chatHistoryId: string;
@@ -26,9 +24,9 @@ export const streamingMessageResponse = async <
   result: StreamTextResult<TOOLS, NEVER>;
   context: StreamedResultContext;
 }) => {
-  const { chatHistoryId, threadId, model, getIsRateLimitError, getRetryAfter } = context;
+  const { chatHistoryId, threadId, model, getIsRateLimitError, getRetryAfter } =
+    context;
   try {
-
     // Create a merged UI message chunk stream so we can inject a structured
     // `data-error-notify-retry` chunk when a rate limit is detected. We use the
     // SDK's `toUIMessageStream()` AsyncIterable then forward each chunk as an
@@ -89,20 +87,24 @@ export const streamingMessageResponse = async <
             controller.enqueue(encoder.encode(`data: ${payload}\n\n`));
             chunk = await it.next();
           }
-          log((l) => l.verbose('Chat: Stream closing normally', { chatHistoryId }));
+          log((l) =>
+            l.verbose('Chat: Stream closing normally', { chatHistoryId })
+          );
           controller.close();
         } catch (err) {
-          controller.error(LoggedError.isTurtlesAllTheWayDownBaby(err, {
-            log: true,
-            source: 'route:ai:chat mergedChunks',
-            severity: 'error',
-            data: {
-              chatHistoryId,
-              model,
-              isRateLimitError: getIsRateLimitError(),
-              retryAfter: getRetryAfter(),
-            },
-          }));
+          controller.error(
+            LoggedError.isTurtlesAllTheWayDownBaby(err, {
+              log: true,
+              source: 'route:ai:chat mergedChunks',
+              severity: 'error',
+              data: {
+                chatHistoryId,
+                model,
+                isRateLimitError: getIsRateLimitError(),
+                retryAfter: getRetryAfter(),
+              },
+            })
+          );
         }
       },
       cancel(reason) {
@@ -110,13 +112,12 @@ export const streamingMessageResponse = async <
         // noop
       },
     });
-    return new Response(innerStream,
-      {
-        headers: {
-          'Content-Type': 'text/event-stream;charset=utf-8',
-          'Cache-Control': 'no-cache, no-transform',
-        },
-      });
+    return new Response(innerStream, {
+      headers: {
+        'Content-Type': 'text/event-stream;charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+      },
+    });
   } catch (error) {
     throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,

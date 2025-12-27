@@ -1,5 +1,5 @@
 ---
-"web-ui-workspace": minor
+"compliance-theater/app": minor
 ---
 
 Converting solution to monorepo

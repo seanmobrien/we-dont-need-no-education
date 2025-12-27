@@ -1,14 +1,14 @@
-import { log, safeSerialize } from '@compliance-theater/lib-logger';
+import { log, safeSerialize } from '@compliance-theater/logger';
 import { ErrorReport, ErrorReportResult } from '../types';
 import { ReportActionStrategy } from './report-action-strategy';
 
 export class ServerApplicationInsightsStrategy implements ReportActionStrategy {
-  async execute(
-    report: ErrorReport,
-  ): Promise<Partial<ErrorReportResult>> {
+  async execute(report: ErrorReport): Promise<Partial<ErrorReportResult>> {
     try {
       // Dynamic import so code doesn't hard-depend on OpenTelemetry at runtime
-      const otel = (await import('@opentelemetry/api')) satisfies typeof import('@opentelemetry/api');
+      const otel = (await import(
+        '@opentelemetry/api'
+      )) satisfies typeof import('@opentelemetry/api');
       const { trace, context, SpanStatusCode } = otel;
 
       const activeSpan = trace.getSpan(context.active());
@@ -25,7 +25,7 @@ export class ServerApplicationInsightsStrategy implements ReportActionStrategy {
       if (
         activeSpan &&
         typeof (activeSpan as { isRecording: () => boolean }).isRecording ===
-        'function' &&
+          'function' &&
         (activeSpan as { isRecording: () => boolean }).isRecording()
       ) {
         try {
