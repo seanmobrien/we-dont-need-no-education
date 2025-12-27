@@ -6,10 +6,10 @@ const config = {
   rootDir: ".",
   testMatch: ["**/__tests__/**/*.test.ts"],
   moduleNameMapper: {
-    '^@compliance-theater/lib-logger/core$': '<rootDir>/../lib-logger/src/core',
-    '^@compliance-theater/lib-logger(.*)$': '<rootDir>/../lib-logger/src$1',
-    '^@compliance-theater/lib-typescript(.*)$': '<rootDir>/src$1',
-    '^@/(.*)$': '<rootDir>/../app/$1',
+    "^@compliance-theater/lib-logger/core$": "<rootDir>/../lib-logger/src/core",
+    "^@compliance-theater/lib-logger(.*)$": "<rootDir>/../lib-logger/src$1",
+    "^@compliance-theater/lib-typescript(.*)$": "<rootDir>/src$1",
+    "^@/(.*)$": "<rootDir>/../app/$1",
   },
   transform: {
     "^.+\.ts$": [
