@@ -197,7 +197,7 @@ ENV HOSTNAME="0.0.0.0"
 
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 --shell /bin/sh nextjs \
-  && mkdir -p /app/scripts
+  && mkdir -p /app/scripts && mkdir -p /app/packages/app/lib
 
 # Copy runtime artifacts for self-hosted Next.js (non-standalone)
 COPY --link=true --from=builder /app/node_modules /app/node_modules
@@ -207,6 +207,7 @@ COPY --link=true --from=builder /app/packages/app/public ./public
 COPY --link=true --from=builder /app/packages/app/package.json ./package.json
 COPY --link=true --from=builder /app/packages/app/next.config.* ./
 COPY --link=true --from=pruner /repo/packages/app/scripts ./scripts
+COPY --link=true --from=pruner /repo/packages/app/packages/app/lib/config ./lib/config
 
 # Set up cron for rate retry processing
 RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs \
