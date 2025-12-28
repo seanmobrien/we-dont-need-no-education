@@ -108,7 +108,7 @@ ENV NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID=$NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
 ENV MEM0_API_HOST=$MEM0_API_HOST
 ENV MEM0_UI_HOST=$MEM0_UI_HOST
 ENV MEM0_USERNAME=$MEM0_USERNAME
-ENV FOR_STANDALONE=1
+#ENV FOR_STANDALONE=1
 ENV IS_BUILDING=1
 
 RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
@@ -201,6 +201,7 @@ RUN addgroup --system --gid 1001 nodejs \
 
 # Copy runtime artifacts for self-hosted Next.js (non-standalone)
 COPY --link=true --from=builder /app/node_modules /app/node_modules
+COPY --link=true --from=builder /app/packages/app/node_modules ./node_modules
 COPY --link=true --from=builder /app/packages/app/.next ./.next
 COPY --link=true --from=builder /app/packages/app/public ./public
 COPY --link=true --from=builder /app/packages/app/package.json ./package.json
