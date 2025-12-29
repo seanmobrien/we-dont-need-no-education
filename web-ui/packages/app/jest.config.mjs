@@ -15,12 +15,12 @@ const config = {
   setupFilesAfterEnv: [
     '<rootDir>/__tests__/setup/jest.mock-log.ts',
     '<rootDir>/__tests__/setup/jest.env-vars.ts',
+    '<rootDir>/__tests__/setup/jest.mock-redis.ts',
     '<rootDir>/__tests__/setup/jest.mock-got.ts',
     '<rootDir>/__tests__/setup/jest.mock-opentelemetry.ts',
     '<rootDir>/__tests__/setup/jest.mock-appstartup.ts',
     '<rootDir>/__tests__/jest.test-extensions.ts',
     '<rootDir>/__tests__/setup/jest.mock-node-modules.ts',
-    '<rootDir>/__tests__/setup/jest.mock-redis.ts',
     '<rootDir>/__tests__/setup/jest.mock-health.ts',
     '<rootDir>/__tests__/setup/jest.mock-auth.ts',
     '<rootDir>/__tests__/setup/jest.mock-feature-flags.ts',

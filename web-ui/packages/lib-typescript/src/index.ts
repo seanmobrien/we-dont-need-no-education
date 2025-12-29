@@ -7,11 +7,19 @@
  *
  * @remarks
  * Funtionality is divided into the following categories:
- * - _guards - TypeGuards used to ensure type safety
- * - _generics - Generic utility functions.
- * - _types - Magical utility types that allow for type manipulation and extraction.
+ * - guards - TypeGuards used to ensure type safety
+ * - generics - Generic utility functions.
+ * - types - Magical utility types that allow for type manipulation and extraction.
  */
-export * from './_guards';
+export {
+  isOperationCancelledError,
+  isAbortablePromise,
+  isKeyOf,
+  isMemberOfUnion,
+  isPromise,
+  isNotNull,
+  isValidUuid,
+} from "./guards";
 export type {
   IsNotNull,
   ExcludeExactMatch,
@@ -31,12 +39,32 @@ export type {
   UnionToObject,
   TupleToUnion,
   UnionToTuple,
-} from './_types';
-export * from './_record-decorators';
-export * from './_generics';
-export type { OperationCancelledError } from './abortable-promise';
-export { AbortablePromise } from './abortable-promise';
-export { zodToStructure } from './zod-to-json-structure';
+} from "./types";
+export {
+  getDecoratorSymbols,
+  isRecordWithDirtyState,
+  isRecordDirty,
+  setRecordDirty,
+  isRecordWithUuid,
+  getUuid,
+  newUuid,
+  setUuid,
+  type RecordWithDirtyState,
+  type RecordWithUuid,
+} from "./record-decorators";
+export {
+  type OneOrMany,
+  type ServiceInstanceOverloads,
+  forOneOrMany,
+  serviceInstanceOverloadsFactory,
+  unwrapPromise,
+} from "./generics";
+
+export {
+  AbortablePromise,
+  type OperationCancelledError,
+} from "./abortable-promise";
+export { zodToStructure } from "./zod-to-json-structure";
 export {
   SingletonProvider,
   globalSingleton,
@@ -44,4 +72,6 @@ export {
   globalSingletonAsync,
   globalRequiredSingletonAsync,
   type SingletonConfig,
-} from './singleton-provider';
+  type WeakReferenceStorage,
+  type StrongReferenceStorage,
+} from "./singleton-provider";

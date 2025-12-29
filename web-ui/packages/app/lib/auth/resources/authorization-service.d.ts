@@ -1,4 +1,4 @@
-import type { ServiceInstanceOverloads } from '@compliance-theater/typescript/_generics';
+import type { ServiceInstanceOverloads } from '@compliance-theater/typescript/generics';
 
 /**
  * Authorization Service module declaration
@@ -50,7 +50,7 @@ declare module '@/lib/auth/resources/authorization-service' {
      * @returns {Promise<CheckAccessResult>} The result of the authorization check
      */
     public checkResourceFileAccess(
-      options: CheckAccessOptions
+      options: CheckAccessOptions,
     ): Promise<CheckAccessResult>;
   }
 

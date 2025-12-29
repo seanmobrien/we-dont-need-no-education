@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 
 jest.mock('@/lib/site-util/feature-flags/server', () => ({
   getFeatureFlag: jest.fn(),
@@ -128,7 +128,7 @@ describe('health feature-flag driven behavior', () => {
         {
           params: Promise.resolve({ probe_type: 'startup' }),
           span: mockSpan,
-        } as any
+        } as any,
       );
 
     // First and second calls: still enforcing memory health

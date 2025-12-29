@@ -1,5 +1,5 @@
 /**
- * Tests for lib/typescript/_record-decorators.ts
+ * Tests for lib/typescript/record-decorators.ts
  *
  * This module tests record decorator utilities for:
  * - UUID management in records
@@ -16,11 +16,9 @@ import {
   getUuid,
   newUuid,
   setUuid,
-  type RecordWithDirtyState,
-  type RecordWithUuid,
-} from "@compliance-theater/typescript/_record-decorators";
+} from "../../src/record-decorators";
 
-describe("_record-decorators", () => {
+describe("record-decorators", () => {
   describe("getDecoratorSymbols", () => {
     it("should return dirty and uuid symbols", () => {
       const symbols = getDecoratorSymbols();

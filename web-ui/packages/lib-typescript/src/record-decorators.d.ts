@@ -4,10 +4,10 @@
  * This module provides runtime utilities for adding metadata to records/objects
  * using ES6 Symbols. It supports tracking dirty state and UUIDs on arbitrary objects.
  *
- * @module lib/typescript/_record-decorators
+ * @module lib/typescript/record-decorators
  */
 
-declare module '@/lib/typescript/_record-decorators' {
+declare module "@/lib/typescript/record-decorators" {
   /**
    * A unique symbol used to mark a record as dirty.
    *
@@ -72,7 +72,7 @@ declare module '@/lib/typescript/_record-decorators' {
    * @returns {boolean} - Returns `true` if the object has a dirty state, otherwise `false`.
    */
   export function isRecordWithDirtyState<T extends object>(
-    check: unknown,
+    check: unknown
   ): check is RecordWithDirtyState<T>;
 
   /**
@@ -93,7 +93,7 @@ declare module '@/lib/typescript/_record-decorators' {
    */
   export function setRecordDirty<T extends object>(
     record: object,
-    isDirty?: boolean,
+    isDirty?: boolean
   ): record is RecordWithDirtyState<T>;
 
   /**
@@ -104,7 +104,7 @@ declare module '@/lib/typescript/_record-decorators' {
    * @returns {boolean} - Returns `true` if the object has a uuid, otherwise `false`.
    */
   export function isRecordWithUuid<T extends object>(
-    check: T | unknown,
+    check: T | unknown
   ): check is RecordWithUuid<T>;
 
   /**
@@ -137,6 +137,6 @@ declare module '@/lib/typescript/_record-decorators' {
    */
   export function setUuid<T extends object>(
     record: T,
-    uuid?: string | null,
+    uuid?: string | null
   ): RecordWithUuid<T>;
 }

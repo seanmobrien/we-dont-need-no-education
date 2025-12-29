@@ -1,12 +1,12 @@
-import { IsNotNull } from '../_types';
-import { StrongReferenceStorage } from './storage-strong-ref';
-import { WeakReferenceStorage } from './storage-weak-refs';
+import { IsNotNull } from "../types";
+import { StrongReferenceStorage } from "./storage-strong-ref";
+import { WeakReferenceStorage } from "./storage-weak-ref";
 import {
   GlobalWithMyGlobal,
   SingletonConfig,
   SingletonStorageKey,
   SingletonStorageStrategy,
-} from './types';
+} from "./types";
 
 export class SingletonProvider {
   #strongStorage = new StrongReferenceStorage();
@@ -16,7 +16,7 @@ export class SingletonProvider {
 
   static get Instance(): SingletonProvider {
     const globalSymbol = Symbol.for(
-      '@noeducation/lib/typescript/SingletonProvider',
+      "@noeducation/lib/typescript/SingletonProvider"
     );
     const globalWithProvider = globalThis as GlobalWithMyGlobal<
       SingletonProvider,
@@ -33,19 +33,19 @@ export class SingletonProvider {
   }
 
   #toStorageKey(symbol: string | symbol): SingletonStorageKey {
-    return typeof symbol === 'symbol' ? symbol : Symbol.for(symbol);
+    return typeof symbol === "symbol" ? symbol : Symbol.for(symbol);
   }
 
   #selectStorage(
-    config: SingletonConfig | undefined,
+    config: SingletonConfig | undefined
   ): SingletonStorageStrategy {
     return config?.weakRef ? this.#weakStorage : this.#strongStorage;
   }
 
   #ensureWeakValue(value: unknown): asserts value is object {
-    if (typeof value !== 'object' || value === null) {
+    if (typeof value !== "object" || value === null) {
       throw new TypeError(
-        'Weak reference singletons require a non-null object value.',
+        "Weak reference singletons require a non-null object value."
       );
     }
   }
@@ -78,7 +78,7 @@ export class SingletonProvider {
   #store(
     key: SingletonStorageKey,
     storage: SingletonStorageStrategy,
-    value: unknown,
+    value: unknown
   ): void {
     if (storage === this.#weakStorage) {
       this.#ensureWeakValue(value);
@@ -91,7 +91,7 @@ export class SingletonProvider {
   }
 
   get<T = unknown, S extends string | symbol = string>(
-    symbol: S,
+    symbol: S
   ): T | undefined {
     const key = this.#toStorageKey(symbol);
     return this.#lookupExisting<T>(key);
@@ -100,7 +100,7 @@ export class SingletonProvider {
   getOrCreate<T, S extends string | symbol = string>(
     symbol: S,
     factory: () => IsNotNull<T> | undefined,
-    config: SingletonConfig = {},
+    config: SingletonConfig = {}
   ): T | undefined {
     const key = this.#toStorageKey(symbol);
     const existing = this.#lookupExisting<T>(key);
@@ -114,7 +114,7 @@ export class SingletonProvider {
     }
     if (value === null) {
       throw new TypeError(
-        'Factory for global singleton cannot return null or undefined.',
+        "Factory for global singleton cannot return null or undefined."
       );
     }
 
@@ -126,11 +126,13 @@ export class SingletonProvider {
   getRequired<T, S extends string | symbol = string>(
     symbol: S,
     factory: () => IsNotNull<T> | undefined,
-    config: SingletonConfig = {},
+    config: SingletonConfig = {}
   ): T {
     const ret = this.getOrCreate(symbol, factory, config);
-    if (typeof ret === 'undefined' || ret === null) {
-      throw new TypeError(`Unexpected error creating required singleton ${String(symbol)}`);
+    if (typeof ret === "undefined" || ret === null) {
+      throw new TypeError(
+        `Unexpected error creating required singleton ${String(symbol)}`
+      );
     }
     return ret;
   }
@@ -138,7 +140,7 @@ export class SingletonProvider {
   async getOrCreateAsync<T, S extends string | symbol = string>(
     symbol: S,
     factory: () => Promise<IsNotNull<T> | undefined>,
-    config: SingletonConfig = {},
+    config: SingletonConfig = {}
   ): Promise<T | undefined> {
     const key = this.#toStorageKey(symbol);
 
@@ -179,11 +181,13 @@ export class SingletonProvider {
   async getRequiredAsync<T, S extends string | symbol = string>(
     symbol: S,
     factory: () => Promise<IsNotNull<T> | undefined>,
-    config: SingletonConfig = {},
+    config: SingletonConfig = {}
   ): Promise<T> {
     const ret = await this.getOrCreateAsync(symbol, factory, config);
-    if (typeof ret === 'undefined' || ret === null) {
-      throw new TypeError(`Unexpected error creating required singleton ${String(symbol)}`);
+    if (typeof ret === "undefined" || ret === null) {
+      throw new TypeError(
+        `Unexpected error creating required singleton ${String(symbol)}`
+      );
     }
     return ret;
   }
@@ -211,10 +215,10 @@ export class SingletonProvider {
   set<T, S extends string | symbol = string>(
     symbol: S,
     value: IsNotNull<T>,
-    config: SingletonConfig = {},
+    config: SingletonConfig = {}
   ): void {
     if (value === null || value === undefined) {
-      throw new TypeError('Cannot set singleton value to null or undefined.');
+      throw new TypeError("Cannot set singleton value to null or undefined.");
     }
 
     const key = this.#toStorageKey(symbol);

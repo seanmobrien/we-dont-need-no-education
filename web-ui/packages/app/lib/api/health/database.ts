@@ -4,7 +4,7 @@ import { LoggedError } from '@/lib/react-util';
 import InMemoryCache from '@/lib/api/health/base-cache';
 import { globalRequiredSingleton } from '@compliance-theater/typescript/singleton-provider';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 
 export class DatabaseHealthCache extends InMemoryCache<{
   status: 'healthy' | 'warning' | 'error';
@@ -17,7 +17,7 @@ export class DatabaseHealthCache extends InMemoryCache<{
 export const getDatabaseHealthCache = (): DatabaseHealthCache =>
   globalRequiredSingleton(
     'database-health-cache',
-    () => new DatabaseHealthCache({ ttlMs: 2 * 60 * 1000 })
+    () => new DatabaseHealthCache({ ttlMs: 2 * 60 * 1000 }),
   );
 
 // Ensure cache TTL is initialized from Flagsmith (async). Uses a singleton

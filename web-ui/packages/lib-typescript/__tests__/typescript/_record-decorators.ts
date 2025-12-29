@@ -6,7 +6,7 @@ import {
   isRecordDirty,
   setRecordDirty,
   isRecordWithDirtyState,
-} from "@compliance-theater/typescript/_record-decorators";
+} from "../../src/record-decorators";
 
 const symbols = getDecoratorSymbols();
 

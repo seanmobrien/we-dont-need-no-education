@@ -1,11 +1,11 @@
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
-import { createClient, RedisClientType } from 'redis';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
+import { createClient, type RedisClientType } from 'redis';
 import { env } from '@/lib/site-util/env';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@compliance-theater/logger';
 import AfterManager from '../site-util/after';
 
-export type { RedisClientType } from 'redis';
+export type { RedisClientType };
 
 const REGISTRY_KEY = Symbol.for('@noeducation/redis:RedisClient');
 const SUBSCRIBABLE_REGISTRY_KEY = Symbol.for(
@@ -36,7 +36,7 @@ export const getRedisClient = async (
 ): Promise<RedisClientType> => {
   const { subscribeMode, database } = normalizeOptions(options);
   const registryKey = subscribeMode ? SUBSCRIBABLE_REGISTRY_KEY : REGISTRY_KEY;
-  const clientFactory = async () => {
+  const clientFactory = () => {
     let client: RedisClientType | null = createClient({
       url: env('REDIS_URL'),
       password: env('REDIS_PASSWORD'),
@@ -58,10 +58,11 @@ export const getRedisClient = async (
         return promiseQuit;
       }
       client = null;
-      const innerDatabases = SingletonProvider.Instance.get<
-        Map<number, RedisClientType>,
-        typeof registryKey
-      >(registryKey);
+      const innerDatabases: Map<number, RedisClientType> | undefined =
+        SingletonProvider.Instance.get<
+          Map<number, RedisClientType>,
+          typeof registryKey
+        >(registryKey);
       if (innerDatabases) {
         innerDatabases.delete(database);
         if (innerDatabases.size === 0) {
@@ -126,12 +127,12 @@ export const getRedisClient = async (
         log((l) => l.info('Redis client ready'));
       });
 
-    return await client.connect();
+    return client.connect();
   };
-  const databases = await SingletonProvider.Instance.getRequired(
+  const databases = await SingletonProvider.Instance.getRequiredAsync(
     registryKey,
     async () => {
-      let client = await clientFactory();
+      const client = await clientFactory();
       if (!client || !client.isOpen) {
         throw new TypeError('Failed to create or connect to Redis client');
       }
@@ -150,26 +151,25 @@ export const getRedisClient = async (
 };
 
 export const closeRedisClient = async (): Promise<void> => {
-  const closeInnerInstance = async (
+  const getInstanceMaps = (
     key: typeof REGISTRY_KEY | typeof SUBSCRIBABLE_REGISTRY_KEY,
   ) => {
-    const clients = SingletonProvider.Instance.get<
-      Map<number, RedisClientType>,
-      typeof REGISTRY_KEY
-    >(REGISTRY_KEY);
-    if (!clients) {
-      return true;
+    const clientMap = SingletonProvider.Instance.get(key) as Map<
+      number,
+      RedisClientType
+    >;
+    if (!clientMap) {
+      return [];
     }
-    const result = await Promise.allSettled(
-      Array.from(clients.values()).map((client) => client.quit()),
-    );
-    return result.every((r) => r.status === 'fulfilled');
+    return Array.from(clientMap.values()) as Array<RedisClientType>;
   };
-  const results = await Promise.all([
-    closeInnerInstance(REGISTRY_KEY),
-    closeInnerInstance(SUBSCRIBABLE_REGISTRY_KEY),
-  ]);
-  if (!results.every((r) => r)) {
+  const results = await Promise.allSettled(
+    [
+      ...getInstanceMaps(REGISTRY_KEY),
+      ...getInstanceMaps(SUBSCRIBABLE_REGISTRY_KEY),
+    ].map((client) => client.quit()),
+  );
+  if (!results.every((r) => r.status === 'fulfilled' && r.value === 'OK')) {
     throw new TypeError('Failed to close all Redis client instances');
   }
 };

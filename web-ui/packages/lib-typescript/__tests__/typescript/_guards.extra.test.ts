@@ -1,4 +1,4 @@
-import { isKeyOf } from "@compliance-theater/typescript/_guards";
+import { isKeyOf } from "../../src/guards";
 
 describe("isKeyOf - extra coverage", () => {
   it("supports numeric keys for objects and arrays", () => {

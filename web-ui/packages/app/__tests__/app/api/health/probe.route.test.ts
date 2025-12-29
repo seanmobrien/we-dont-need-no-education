@@ -3,7 +3,7 @@
  */
 
 import { GET } from '@/app/api/health/probe/[probe_type]/route';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 
 // Mock DB health module
 jest.mock('@/lib/api/health/database', () => ({
@@ -67,7 +67,7 @@ describe('health probe route', () => {
       {
         params: Promise.resolve({ probe_type: 'liveness' }),
         span: mockSpan,
-      } as any
+      } as any,
     );
     expect(res!.status).toBe(200);
     const body = await res!.json();
@@ -81,7 +81,7 @@ describe('health probe route', () => {
       {
         params: Promise.resolve({ probe_type: 'readiness' }),
         span: mockSpan,
-      } as any
+      } as any,
     );
     expect(res!.status).toBe(200);
 
@@ -91,7 +91,7 @@ describe('health probe route', () => {
       {
         params: Promise.resolve({ probe_type: 'readiness' }),
         span: mockSpan,
-      } as any
+      } as any,
     );
     expect(res!.status).toBe(503);
   });
@@ -107,11 +107,11 @@ describe('health probe route', () => {
       {
         params: Promise.resolve({ probe_type: 'startup' }),
         span: mockSpan,
-      } as any
+      } as any,
     );
     expect(res!.status).toBe(200);
     expect(
-      SingletonProvider.Instance.get('startup-failure-counter')
+      SingletonProvider.Instance.get('startup-failure-counter'),
     ).toBeUndefined();
   });
 
@@ -126,7 +126,7 @@ describe('health probe route', () => {
       {
         params: Promise.resolve({ probe_type: 'startup' }),
         span: mockSpan,
-      } as any
+      } as any,
     );
     expect(res!.status).toBe(503);
     expect(
@@ -134,7 +134,7 @@ describe('health probe route', () => {
         SingletonProvider.Instance.get('startup-failure-counter') as
           | { count: number }
           | undefined
-      )?.count
+      )?.count,
     ).toBe(1);
   });
 
@@ -153,7 +153,7 @@ describe('health probe route', () => {
       {
         params: Promise.resolve({ probe_type: 'startup' }),
         span: mockSpan,
-      } as any
+      } as any,
     );
     expect(res!.status).toBe(200);
   });

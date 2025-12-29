@@ -21,7 +21,7 @@ This package provides a collection of TypeScript utility types, type guards, gen
 ### Type Guards
 
 ```typescript
-import { isKeyOf, isValidUuid } from "@compliance-theater/typescript/_guards";
+import { isKeyOf, isValidUuid } from "@compliance-theater/typescript/guards";
 
 const obj = { foo: "bar", baz: 123 };
 if (isKeyOf("foo", obj)) {
@@ -39,7 +39,7 @@ if (isValidUuid("550e8400-e29b-41d4-a716-446655440000")) {
 import {
   unwrapPromise,
   ArrayElement,
-} from "@compliance-theater/typescript/_generics";
+} from "@compliance-theater/typescript/generics";
 
 type MyPromiseType = Promise<string>;
 type Unwrapped = unwrapPromise<MyPromiseType>; // string
@@ -62,7 +62,7 @@ const data = map.get("key1", 1); // { value: 'data' }
 ### Singleton Provider
 
 ```typescript
-import { SingletonProvider } from "@compliance-theater/typescript/singleton-provider/provider";
+import { SingletonProvider } from "@compliance-theater/typescript/singleton-provider";
 
 class MyService {}
 
@@ -76,10 +76,10 @@ const service = SingletonProvider.Instance.getSingletonOrCreate(
 
 ### Main Exports
 
-- `_guards`: Type guard utilities
-- `_generics`: Generic type helpers
-- `_types`: Common utility types
-- `_record-decorators`: Record manipulation utilities
+- `guards`: Type guard utilities
+- `generics`: Generic type helpers
+- `types`: Common utility types
+- `record-decorators`: Record manipulation utilities
 - `dual-key-map`: Bi-directional map implementation
 - `abortable-promise`: Promise with abort capability
 - `singleton-provider`: Singleton pattern utilities

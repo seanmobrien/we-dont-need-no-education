@@ -22,7 +22,7 @@ import {
 import { LoggedError } from '@/lib/react-util';
 import { createInstrumentedSpan } from '../utils';
 import { log, safeSerialize } from '@compliance-theater/logger';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import { CacheStrategies } from './cache-strategies';
 import { StreamingStrategy } from './streaming-strategy';
 import { BufferingStrategy } from './buffering-strategy';
@@ -78,7 +78,7 @@ const mergeHeaders = (
     | Headers
     | Record<string, string | string[]>
     | [string, string | string[]][]
-    | undefined
+    | undefined,
 ) => {
   if (!source) return;
 
@@ -90,7 +90,7 @@ const mergeHeaders = (
 
   const processEntry = (
     key: string,
-    value: string | string[] | undefined | null
+    value: string | string[] | undefined | null,
   ) => {
     if (value === undefined || value === null) return;
 
@@ -176,14 +176,14 @@ export const normalizeRequestInit = ({
       if (!init.headers.has('Content-Type')) {
         init.headers.set(
           'Content-Type',
-          'application/x-www-form-urlencoded;charset=UTF-8'
+          'application/x-www-form-urlencoded;charset=UTF-8',
         );
       }
     } else {
       // Record<string, string | string[]>
       // Check if Content-Type exists case-insensitively
       const hasContentType = Object.keys(init.headers).some(
-        (k) => k.toLowerCase() === 'content-type'
+        (k) => k.toLowerCase() === 'content-type',
       );
       if (!hasContentType) {
         init.headers = {
@@ -203,7 +203,7 @@ export const normalizeRequestInit = ({
             connect: initTimeout,
             socket: initTimeout,
           }
-        : initTimeout ?? {};
+        : (initTimeout ?? {});
   }
 
   if (typeof requestInfo === 'string') {
@@ -355,7 +355,7 @@ export class FetchManager implements ServerFetchManager {
         streamMaxTotalBytes: 10 * 1024 * 1024, // Will be overridden by fetchConfig
       },
       cacheStreamToRedis: this.cacheStrategies.cacheStreamToRedis.bind(
-        this.cacheStrategies
+        this.cacheStrategies,
       ),
       fetchConfig: fetchConfigSync,
       releaseSemaphore: () => this.semManager.sem.release(),
@@ -373,7 +373,7 @@ export class FetchManager implements ServerFetchManager {
       },
       cache: this.cache,
       cacheStreamToRedis: this.cacheStrategies.cacheStreamToRedis.bind(
-        this.cacheStrategies
+        this.cacheStrategies,
       ),
       getRedisClient,
       fetchConfig: fetchConfigSync,
@@ -451,14 +451,14 @@ export class FetchManager implements ServerFetchManager {
         `GOT Fetch: About to read [${url}] using - ${safeSerialize(gotOptions, {
           maxObjectDepth: 4,
           maxPropertyDepth: 20,
-        })}`
-      )
+        })}`,
+      ),
     );
     await this.semManager.sem.acquire();
     try {
       const res: GotResponse<Buffer> = await got(
         url,
-        gotOptions as unknown as OptionsOfBufferResponseBody
+        gotOptions as unknown as OptionsOfBufferResponseBody,
       );
       const headersObj: Record<string, string> = {};
       for (const [k, v] of Object.entries(res.headers || {})) {
@@ -528,7 +528,7 @@ export class FetchManager implements ServerFetchManager {
             headersLower,
             domResponse.status,
             span,
-            false
+            false,
           );
         }
         // Use buffering strategy for non-streaming responses
@@ -540,7 +540,7 @@ export class FetchManager implements ServerFetchManager {
             domResponse.status,
             normalizedUrl,
             span,
-            false
+            false,
           );
         return bufferedResult.response;
       });
@@ -588,7 +588,7 @@ export class FetchManager implements ServerFetchManager {
       const domReq = domFetch(
         url,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        normalInit as any
+        normalInit as any,
       );
       // the only timeout we handle here is request timeout
       return normalInit.timeout?.request
@@ -651,7 +651,7 @@ export class FetchManager implements ServerFetchManager {
             headersLower,
             domResponse.status,
             span,
-            false
+            false,
           );
         }
         // Use buffering strategy for non-streaming responses
@@ -663,7 +663,7 @@ export class FetchManager implements ServerFetchManager {
             domResponse.status,
             url,
             span,
-            false
+            false,
           );
         return bufferedResult.response;
       });
@@ -682,21 +682,21 @@ export class FetchManager implements ServerFetchManager {
         // Try memory cache (L1)
         const memoryCached = await this.cacheStrategies.tryMemoryCache(
           cacheKey,
-          span
+          span,
         );
         if (memoryCached) return memoryCached;
 
         // Try Redis cache (L2) - buffered and stream replay
         const redisCached = await this.cacheStrategies.tryRedisCache(
           cacheKey,
-          span
+          span,
         );
         if (redisCached) return redisCached;
 
         // Try inflight deduplication
         const inflightCached = await this.cacheStrategies.tryInflightDedupe(
           cacheKey,
-          span
+          span,
         );
         if (inflightCached) return inflightCached;
 
@@ -751,7 +751,7 @@ export class FetchManager implements ServerFetchManager {
               headersLower,
               resHead.statusCode ?? 200,
               span,
-              true
+              true,
             );
           }
 
@@ -764,7 +764,7 @@ export class FetchManager implements ServerFetchManager {
               resHead.statusCode ?? 200,
               url,
               span,
-              true
+              true,
             );
           return bufferedResult.response;
         } catch (err) {
@@ -797,7 +797,7 @@ export class FetchManager implements ServerFetchManager {
     return await instrumented.executeWithContext(async (span) => {
       const v = await this.doGotFetch(
         url,
-        normalInit as unknown as RequestInit
+        normalInit as unknown as RequestInit,
       );
       span.setAttribute('http.status_code', v.statusCode);
       return makeResponse(v);
@@ -808,12 +808,12 @@ export class FetchManager implements ServerFetchManager {
 export const getFetchManager = (): FetchManager => {
   return SingletonProvider.Instance.getRequired<FetchManager>(
     FETCH_MANAGER_SINGLETON_KEY,
-    () => new FetchManager()
+    () => new FetchManager(),
   );
 };
 
 export const configureFetchManager = (
-  config: Partial<FetchManagerConfig>
+  config: Partial<FetchManagerConfig>,
 ): FetchManager => {
   const instance = new FetchManager(config);
   SingletonProvider.Instance.set(FETCH_MANAGER_SINGLETON_KEY, instance);
@@ -822,7 +822,7 @@ export const configureFetchManager = (
 
 export const resetFetchManager = (): void => {
   const existing = SingletonProvider.Instance.get<FetchManager>(
-    FETCH_MANAGER_SINGLETON_KEY
+    FETCH_MANAGER_SINGLETON_KEY,
   );
   if (existing) {
     existing[Symbol.dispose]();
@@ -832,10 +832,10 @@ export const resetFetchManager = (): void => {
 
 export const serverFetch = async (
   input: RequestInfo,
-  init?: RequestInitWithTimeout
+  init?: RequestInitWithTimeout,
 ) => getFetchManager().fetch(input, init);
 
 export const fetchStream = async (
   input: RequestInfo,
-  init?: RequestInitWithTimeout
+  init?: RequestInitWithTimeout,
 ) => getFetchManager().fetchStream(input, init);

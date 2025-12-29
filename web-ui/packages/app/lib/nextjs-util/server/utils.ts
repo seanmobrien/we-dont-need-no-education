@@ -18,7 +18,7 @@ import {
 } from '@opentelemetry/api';
 import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
-import { isPromise } from '@compliance-theater/typescript/_guards';
+import { isPromise } from '@compliance-theater/typescript/guards';
 
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');
 
@@ -49,14 +49,14 @@ export const wrapRouteRequest = <
     | [NextRequest, WrappedResponseContext<TContext>]
     | [Request, Pick<WrappedResponseContext<TContext>, 'params'>]
     | [Request, WrappedResponseContext<TContext>],
-  TContext extends Record<string, unknown> = Record<string, unknown>
+  TContext extends Record<string, unknown> = Record<string, unknown>,
 >(
   fn: (...args: A) => Promise<Response | NextResponse | undefined>,
   options: {
     log?: boolean;
     buildFallback?: object | typeof EnableOnBuild;
     errorCallback?: (error: unknown) => void | Promise<void>;
-  } = {}
+  } = {},
 ): ((...args: A) => Promise<Response | NextResponse>) => {
   const {
     log: shouldLog = env('NODE_ENV') !== 'production',
@@ -104,7 +104,7 @@ export const wrapRouteRequest = <
               } finally {
                 startupSpan.end();
               }
-            }
+            },
           );
 
           if (appStartupState === 'done') {
@@ -131,7 +131,7 @@ export const wrapRouteRequest = <
             log((l) =>
               l.info(`Processing route request [${url}]`, {
                 args: JSON.stringify(extractedParams),
-              })
+              }),
             );
           }
 
@@ -139,7 +139,7 @@ export const wrapRouteRequest = <
           const result = await (
             fn as unknown as (
               req: NextRequest,
-              context: WrappedResponseContext<TContext>
+              context: WrappedResponseContext<TContext>,
             ) => Promise<Response | NextResponse>
           )(req, {
             ...context,
@@ -149,7 +149,7 @@ export const wrapRouteRequest = <
             if (typeof result === 'object' && 'status' in result) {
               span.setAttribute(
                 'http.status_code',
-                (result as Response).status
+                (result as Response).status,
               );
             }
           } catch {
@@ -198,7 +198,7 @@ export const wrapRouteRequest = <
             'An unexpected error occurred',
             {
               cause: error,
-            }
+            },
           );
           try {
             span.setAttribute('http.status_code', errResponse.status);
@@ -207,7 +207,7 @@ export const wrapRouteRequest = <
               JSON.stringify({
                 status: errResponse.status,
                 statusText: errResponse.statusText,
-              })
+              }),
             );
           } catch {
             // ignore attribute errors
@@ -220,14 +220,14 @@ export const wrapRouteRequest = <
             // ignore span end errors
           }
         }
-      }
+      },
     );
   };
 };
 
 const getRequestSpanInit = async (
   req: Request | NextRequest | undefined,
-  ctx?: { params: Promise<Record<string, unknown>> }
+  ctx?: { params: Promise<Record<string, unknown>> },
 ): Promise<{ attributes: Attributes; parentCtx: OtelContext }> => {
   const { path, query, method } = getPathQueryAndMethod(req);
   const routeParams = await (!!ctx?.params
@@ -248,7 +248,7 @@ const getRequestSpanInit = async (
   const extracted = propagation.extract(
     otelContext.active(),
     headersObj,
-    headerGetter
+    headerGetter,
   );
 
   const attributes: Attributes = {
@@ -262,7 +262,7 @@ const getRequestSpanInit = async (
 };
 
 const getPathQueryAndMethod = (
-  req: Request | NextRequest | undefined
+  req: Request | NextRequest | undefined,
 ): {
   path: string;
   query: string;
@@ -292,7 +292,7 @@ const getPathQueryAndMethod = (
 };
 
 const getHeadersObject = (
-  req: Request | NextRequest | undefined
+  req: Request | NextRequest | undefined,
 ): Record<string, string> => {
   const out: Record<string, string> = {};
   try {
@@ -312,7 +312,7 @@ const getHeadersObject = (
 };
 
 const sanitizeHeaders = (
-  headers: Record<string, string>
+  headers: Record<string, string>,
 ): Record<string, string> => {
   const redacted = new Set([
     'authorization',
@@ -352,7 +352,7 @@ export const createInstrumentedSpan = async ({
       kind !== undefined || attributes !== undefined
         ? { kind, attributes }
         : undefined,
-      parentContext
+      parentContext,
     );
 
     const contextWithSpan = trace.setSpan(parentContext, span);
@@ -363,11 +363,11 @@ export const createInstrumentedSpan = async ({
       contextWithSpan,
       span,
       executeWithContext: async <TResult>(
-        fn: (span: Span) => Promise<TResult>
+        fn: (span: Span) => Promise<TResult>,
       ): Promise<TResult> => {
         try {
           const result = await otelContext.with(contextWithSpan, () =>
-            fn(span!)
+            fn(span!),
           );
           span!.setStatus({ code: SpanStatusCode.OK });
           return result;
@@ -404,7 +404,7 @@ export const createInstrumentedSpan = async ({
       span: undefined as unknown,
       otel: undefined,
       executeWithContext: async <TResult>(
-        fn: (span: Span) => Promise<TResult>
+        fn: (span: Span) => Promise<TResult>,
       ): Promise<TResult> => {
         // No-op span for when OpenTelemetry is not available
         const noOpSpan = {
@@ -412,7 +412,7 @@ export const createInstrumentedSpan = async ({
           setStatus: () => {},
           recordException: () => {},
           end: () => {},
-          spanContext: () => ({} as SpanContext),
+          spanContext: () => ({}) as SpanContext,
           setAttribute: () => {},
           addEvent: () => {},
           addLink: () => {},
@@ -459,7 +459,7 @@ export const reportEvent = async ({
         span.setAttribute('telemetry.error', true);
         span.setAttribute(
           'telemetry.error_message',
-          String(additionalData.error || 'Unknown error')
+          String(additionalData.error || 'Unknown error'),
         );
         span.setStatus({
           code: SpanStatusCode.ERROR,
@@ -473,7 +473,7 @@ export const reportEvent = async ({
           method: eventData.method,
           success: eventData.success,
           keys: JSON.stringify(eventData.keys),
-        })
+        }),
       );
       // Propagate event to Azure Monitor via OTel (trace event + structured log)
       try {
@@ -513,7 +513,7 @@ export const reportEvent = async ({
         }
         if ('error' in eventData && eventData.error) {
           logAttributes['telemetry.error_message'] = LoggedError.buildMessage(
-            eventData.error
+            eventData.error,
           );
         }
 

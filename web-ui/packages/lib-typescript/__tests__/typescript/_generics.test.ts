@@ -1,5 +1,5 @@
 import { AbortablePromise } from "@compliance-theater/typescript/abortable-promise";
-import { unwrapPromise } from "@compliance-theater/typescript/_generics";
+import { unwrapPromise } from "@compliance-theater/typescript/generics";
 
 describe("unwrapPromise", () => {
   it("should return scalar value as-is", async () => {

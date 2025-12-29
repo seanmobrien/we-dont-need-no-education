@@ -1,13 +1,13 @@
 import { isRateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 import { generateText, type ToolSet } from 'ai';
 import { rateLimitQueueManager } from '../middleware/key-rate-limiter/queue-manager';
-import { FirstParameter } from '@compliance-theater/typescript/_types';
+import { FirstParameter } from '@compliance-theater/typescript/types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 export const generateTextWithRetry = async <
   TOOLS extends ToolSet = ToolSet,
   OUTPUT = never,
-  OUTPUT_PARTIAL = never
+  OUTPUT_PARTIAL = never,
 >({
   maxRetries = 5,
   retryTimeout,
@@ -49,8 +49,8 @@ export const generateTextWithRetry = async <
       await new Promise((resolve) =>
         setTimeout(
           resolve,
-          Math.max(20 * 1000, normalError.retryAfter.valueOf() - Date.now())
-        )
+          Math.max(20 * 1000, normalError.retryAfter.valueOf() - Date.now()),
+        ),
       );
     }
   }

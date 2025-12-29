@@ -1,6 +1,6 @@
 import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 
 /**
  * Handler invoked by AfterManager queued operations.
@@ -166,11 +166,11 @@ export default class AfterManager {
   public queue(queueName: string, create: true): Array<TAfterHandler<void>>;
   public queue(
     queueName: string,
-    create: false
+    create: false,
   ): undefined | Array<TAfterHandler<void>>;
   public queue(
     queueName: string,
-    create: boolean = false
+    create: boolean = false,
   ): undefined | Array<TAfterHandler<void>> {
     if (!this.#queues.has(queueName) && create) {
       const newQueue = [] as Array<TAfterHandler<void>>;
@@ -231,7 +231,7 @@ export default class AfterManager {
                 __brand: symbol;
               };
               resolve(timedOut);
-            }, AfterManager.#TIMEOUT)
+            }, AfterManager.#TIMEOUT),
           ), // Timeout after
         ]);
         // Completed can be either the result array from Promise.all or our timeout sentinel.
@@ -265,8 +265,8 @@ export default class AfterManager {
         if (isBrandedObj || isBrandedArray) {
           log((l) =>
             l.warn(
-              `AfterManager ${signalName} timed out before all registered callbacks completed`
-            )
+              `AfterManager ${signalName} timed out before all registered callbacks completed`,
+            ),
           );
           return resolve();
         }
@@ -275,7 +275,7 @@ export default class AfterManager {
           LoggedError.isTurtlesAllTheWayDownBaby(error, {
             log: true,
             source: `AfterManager signal ${signalName}`,
-          })
+          }),
         );
       }
       resolve(); // Replace with actual resolution logic

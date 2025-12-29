@@ -7,7 +7,7 @@
  * @module lib/typescript/singleton-provider/types
  */
 
-declare module '@/lib/typescript/singleton-provider/types' {
+declare module "@/lib/typescript/singleton-provider/types" {
   /**
    * Configuration options for singleton pattern implementations.
    *
@@ -39,7 +39,7 @@ declare module '@/lib/typescript/singleton-provider/types' {
    * const defaultConfig: SingletonConfig = {};
    * ```
    *
-   * @see {@link globalSingleton} in `/lib/typescript/_generics.ts` for singleton implementation
+   * @see {@link globalSingleton} in `/lib/typescript/generics.ts` for singleton implementation
    * @since 1.0.0
    */
   export type SingletonConfig = {

@@ -1,5 +1,5 @@
-import { StrongReferenceStorage } from "@compliance-theater/typescript/singleton-provider/storage-strong-ref";
-import { SingletonStorageKey } from "@compliance-theater/typescript/singleton-provider/types";
+import { StrongReferenceStorage } from "../../../src/singleton-provider/storage-strong-ref";
+import { type SingletonStorageKey } from "../../../src/singleton-provider/types";
 import { log } from "@compliance-theater/logger";
 
 describe("StrongReferenceStorage", () => {
