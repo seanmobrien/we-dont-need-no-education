@@ -17,7 +17,7 @@
  * - compactDocProp, compactCta, compactCtaResponse: Normalize and compact document property/CTA trees.
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { KeyOf } from '@compliance-theater/typescript/types';
+import { KeyOf } from '@compliance-theater/typescript';
 import {
   DocumentSchemaType,
   RelatedDocumentSchemaType,

@@ -1,10 +1,10 @@
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { ArrayElement } from '@compliance-theater/typescript';
 import {
+  ArrayElement,
   isValidUuid,
   BrandedUuid,
-} from '@compliance-theater/typescript/guards';
+} from '@compliance-theater/typescript';
 
 /**
  * Resolves a case file's unit ID from a given document identifier.

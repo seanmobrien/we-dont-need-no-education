@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import documentPropertyShape from './documentPropertyShape';
-import { ArrayElement } from '@compliance-theater/typescript/types';
+import type { ArrayElement } from '@compliance-theater/typescript';
 
 const referencedEmailShape = z.object({
   subject: z.string(),

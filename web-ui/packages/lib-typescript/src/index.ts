@@ -20,6 +20,7 @@ export {
   isNotNull,
   isValidUuid,
 } from "./guards";
+export type { BrandedUuid } from "./guards";
 export type {
   IsNotNull,
   ExcludeExactMatch,

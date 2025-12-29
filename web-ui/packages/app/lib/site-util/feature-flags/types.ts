@@ -1,6 +1,6 @@
 import type { AiProvider, ModelType } from '@/components/ai/chat-panel/types';
 import type { StorageStrategyConfig } from '@/lib/ai/tools/todo/storage/types';
-import type { PickField } from '@compliance-theater/typescript/types';
+import type { PickField } from '@compliance-theater/typescript';
 import type {
   BooleanFeatureFlagType,
   KnownFeatureType,

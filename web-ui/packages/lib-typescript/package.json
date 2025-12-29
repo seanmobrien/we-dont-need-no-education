@@ -10,34 +10,6 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./abortable-promise": {
-      "types": "./dist/abortable-promise.d.ts",
-      "default": "./dist/abortable-promise.js"
-    },
-    "./dual-key-map": {
-      "types": "./dist/dual-key-map.d.ts",
-      "default": "./dist/dual-key-map.js"
-    },
-    "./zod-to-json-structure": {
-      "types": "./dist/zod-to-json-structure.d.ts",
-      "default": "./dist/zod-to-json-structure.js"
-    },
-    "./generics": {
-      "types": "./dist/generics.d.ts",
-      "default": "./dist/generics.js"
-    },
-    "./guards": {
-      "types": "./dist/guards.d.ts",
-      "default": "./dist/guards.js"
-    },
-    "./record-decorators": {
-      "types": "./dist/record-decorators.d.ts",
-      "default": "./dist/record-decorators.js"
-    },
-    "./types": {
-      "types": "./dist/types.d.ts",
-      "default": "./dist/types.js"
-    },
     "./singleton-provider": {
       "types": "./dist/singleton-provider/index.d.ts",
       "default": "./dist/singleton-provider/index.js"
@@ -51,7 +23,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -b tsconfig.json",
+    "build": "tsc -b tsconfig.json --force",
     "test": "jest",
     "lint": "echo 'Linting lib-typescript...'"
   },

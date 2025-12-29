@@ -8,7 +8,8 @@ import React, {
 import { debounce } from '@/lib/react-util/debounce';
 import { ChatPanelConfig, ChatPanelContextValue, DockPosition } from './types';
 import { ChatPanelContext } from './chat-panel-context';
-import { isKeyOf } from '@compliance-theater/typescript/guards';
+import { isKeyOf } from '@compliance-theater/typescript';
+//import { isKeyOf } from '@compliance-theater/typescript';
 import { errorReporter } from '@/lib/error-monitoring/error-reporter';
 
 const STORAGE_KEYS = {

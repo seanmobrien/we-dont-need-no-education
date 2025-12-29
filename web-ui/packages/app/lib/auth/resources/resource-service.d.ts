@@ -1,4 +1,4 @@
-import type { ServiceInstanceOverloads } from '@compliance-theater/typescript/generics';
+import type { ServiceInstanceOverloads } from '@compliance-theater/typescript';
 
 /**
  * Resource Service module declaration

@@ -8,7 +8,7 @@ import { isError } from '@/lib/react-util/utility-methods';
 import {
   BrandedUuid,
   isValidUuid as isValidUuidImpl,
-} from '@compliance-theater/typescript/guards';
+} from '@compliance-theater/typescript';
 import {
   resolveCaseFileId as resolveCaseFileIdImpl,
   resolveCaseFileIdBatch as resolveCaseFileIdBatchImpl,
