@@ -43,6 +43,7 @@ ARG MEM0_USERNAME
 
 ENV PYTHONUNBUFFERED=1
 
+
 # System deps for canvas / fonts used by Next.js build
 RUN apk add --no-cache \
     libc6-compat \
@@ -62,6 +63,9 @@ RUN apk add --no-cache \
   && ln -sf python3 /usr/bin/python
 
 FROM base AS pruner
+
+ENV FOR_STANDALONE=1
+
 WORKDIR /repo
 
 # Install turbo CLI for pruning (small global install avoids full node_modules)
@@ -142,9 +146,11 @@ RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
   export AUTH_GOOGLE_ID="$(cat $SECRETS/AUTH_GOOGLE_ID 2>/dev/null || true)"; \
   export OPENID_KEY_TEXT="$(cat $SECRETS/OPENID_KEY_TEXT 2>/dev/null || true)"; \
   export FLAGSMITH_SDK_KEY="$(cat $SECRETS/FLAGSMITH_SDK_KEY 2>/dev/null || true)"; \
+  export FOR_STANDALONE=1; \
+  export IS_BUILDING=1; \
   yarn build
 
-RUN rm -f packages/app/.env.production.local
+RUN rm -f ./packages/app/.env.production.local
 
 # Production image
 FROM base AS runner
