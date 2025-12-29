@@ -9,35 +9,38 @@ export type { RedisClientType } from 'redis';
 
 const REGISTRY_KEY = Symbol.for('@noeducation/redis:RedisClient');
 const SUBSCRIBABLE_REGISTRY_KEY = Symbol.for(
-  '@noeducation/redis:RedisClient/subscribable'
+  '@noeducation/redis:RedisClient/subscribable',
 );
 
 export type RedisClientOptions = {
   subscribeMode?: boolean;
+  database?: number;
 };
 
 const normalizeOptions = (
-  options: RedisClientOptions | undefined
+  options: RedisClientOptions | undefined,
 ): Required<RedisClientOptions> => ({
   subscribeMode: false,
+  database: 0,
   ...(options ?? {}),
 });
 
 const subsribeModelDisabled = () => {
   throw new TypeError(
-    'Redis client must be created with { subscribeMode: true } to use subscribe features.'
+    'Redis client must be created with { subscribeMode: true } to use subscribe features.',
   );
 };
 
 export const getRedisClient = async (
-  options?: RedisClientOptions
+  options?: RedisClientOptions,
 ): Promise<RedisClientType> => {
-  const { subscribeMode } = normalizeOptions(options);
+  const { subscribeMode, database } = normalizeOptions(options);
   const registryKey = subscribeMode ? SUBSCRIBABLE_REGISTRY_KEY : REGISTRY_KEY;
-  return await SingletonProvider.Instance.getRequired(registryKey, async () => {
+  const clientFactory = async () => {
     let client: RedisClientType | null = createClient({
       url: env('REDIS_URL'),
       password: env('REDIS_PASSWORD'),
+      database,
     });
     let promiseQuit: Promise<string> | null = null;
     const originalQuit = client.quit.bind(client);
@@ -47,15 +50,24 @@ export const getRedisClient = async (
         if (!promiseQuit) {
           log((l) =>
             l.error(
-              'Null client but no quit promise found - no wait context available.'
-            )
+              'Null client but no quit promise found - no wait context available.',
+            ),
           );
           return 'No client to quit.';
         }
         return promiseQuit;
       }
       client = null;
-      SingletonProvider.Instance.delete(REGISTRY_KEY);
+      const innerDatabases = SingletonProvider.Instance.get<
+        Map<number, RedisClientType>,
+        typeof registryKey
+      >(registryKey);
+      if (innerDatabases) {
+        innerDatabases.delete(database);
+        if (innerDatabases.size === 0) {
+          SingletonProvider.Instance.delete(registryKey);
+        }
+      }
       if (onQuit && fromInternal !== REGISTRY_KEY) {
         AfterManager.getInstance().remove('teardown', onQuit);
         onQuit = undefined;
@@ -88,7 +100,7 @@ export const getRedisClient = async (
         return;
       }
       await (client.quit as (fromInternal?: symbol) => Promise<string>)(
-        REGISTRY_KEY
+        REGISTRY_KEY,
       );
     };
     AfterManager.processExit(onQuit);
@@ -115,16 +127,49 @@ export const getRedisClient = async (
       });
 
     return await client.connect();
-  });
+  };
+  const databases = await SingletonProvider.Instance.getRequired(
+    registryKey,
+    async () => {
+      let client = await clientFactory();
+      if (!client || !client.isOpen) {
+        throw new TypeError('Failed to create or connect to Redis client');
+      }
+      return new Map<number, RedisClientType>([[database, client]]);
+    },
+  );
+  let requestedInstance = databases.get(database);
+  if (!requestedInstance) {
+    requestedInstance = await clientFactory();
+    if (!requestedInstance || !requestedInstance.isOpen) {
+      throw new TypeError('Failed to create or connect to Redis client');
+    }
+    databases.set(database, requestedInstance);
+  }
+  return requestedInstance;
 };
 
 export const closeRedisClient = async (): Promise<void> => {
-  const client = SingletonProvider.Instance.get<
-    RedisClientType,
-    typeof REGISTRY_KEY
-  >(REGISTRY_KEY);
-  if (client) {
-    const actualClient = await client;
-    await actualClient.quit();
+  const closeInnerInstance = async (
+    key: typeof REGISTRY_KEY | typeof SUBSCRIBABLE_REGISTRY_KEY,
+  ) => {
+    const clients = SingletonProvider.Instance.get<
+      Map<number, RedisClientType>,
+      typeof REGISTRY_KEY
+    >(REGISTRY_KEY);
+    if (!clients) {
+      return true;
+    }
+    const result = await Promise.allSettled(
+      Array.from(clients.values()).map((client) => client.quit()),
+    );
+    return result.every((r) => r.status === 'fulfilled');
+  };
+  const results = await Promise.all([
+    closeInnerInstance(REGISTRY_KEY),
+    closeInnerInstance(SUBSCRIBABLE_REGISTRY_KEY),
+  ]);
+  if (!results.every((r) => r)) {
+    throw new TypeError('Failed to close all Redis client instances');
   }
 };
