@@ -1,5 +1,5 @@
 import { UIDataTypes, UIMessage, UITools } from 'ai';
-import { ValueOf } from 'next/dist/shared/lib/constants';
+import { ValueOf } from '../core/types';
 
 /**
 Typed tool call that is returned by generateText and streamText.
