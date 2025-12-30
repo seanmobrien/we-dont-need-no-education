@@ -265,7 +265,11 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         MATCH: pattern,
         COUNT: 100,
       })) {
-        keys.push(...keyChunk);
+        if (Array.isArray(keyChunk)) {
+          keys.push(...keyChunk);
+        } else {
+          keys.push(keyChunk);
+        }
       }
       const metadataKeys = keys.filter((key) => !key.endsWith(':todos'));
       if (metadataKeys.length === 0) {
