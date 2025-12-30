@@ -247,7 +247,7 @@ export class ErrorReporter implements ErrorReporterInterface {
         ...baseReport,
         fingerprint: this.generateFingerprint(
           baseReport.error!,
-          enrichedContext ?? context ?? {},
+          enrichedContext,
         ),
       };
     }

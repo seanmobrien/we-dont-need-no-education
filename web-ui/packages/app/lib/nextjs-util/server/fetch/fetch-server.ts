@@ -203,7 +203,7 @@ export const normalizeRequestInit = ({
             connect: initTimeout,
             socket: initTimeout,
           }
-        : (initTimeout ?? {});
+        : initTimeout;
   }
 
   if (typeof requestInfo === 'string') {
