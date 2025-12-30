@@ -77,7 +77,7 @@ import type {
 // Re-export DualKeyMap
 import type { DualKeyMap } from "./dual-key-map";
 
-declare module "@/lib/typescript" {
+declare module "@compliance-theater/typescript" {
   // Re-export type guards
   export {
     isOperationCancelledError,

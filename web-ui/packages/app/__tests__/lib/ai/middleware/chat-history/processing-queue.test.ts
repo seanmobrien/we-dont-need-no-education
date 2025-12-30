@@ -28,7 +28,7 @@ jest.mock('@/lib/ai/middleware/chat-history/stream-handlers', () => ({
   processStreamChunk: jest.fn(),
 }));
 
-jest.mock('@/lib/logger', () => ({
+jest.mock('@compliance-theater/logger', () => ({
   log: jest.fn((cb: (l: { error: jest.Mock }) => void) => {
     const mockLogger = {
       error: jest.fn(),

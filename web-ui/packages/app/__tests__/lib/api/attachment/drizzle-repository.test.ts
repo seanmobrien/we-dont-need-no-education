@@ -53,7 +53,7 @@ jest.mock('@/drizzle/schema', () => {
   };
 });
 
-jest.mock('@/lib/logger', () => ({
+jest.mock('@compliance-theater/logger', () => ({
   log: jest.fn(),
 }));
 

@@ -26,7 +26,7 @@ jest.mock('@/lib/drizzle-db', () => {
     schema: actualSchema.schema,
   };
 });
-jest.mock('@/lib/logger');
+jest.mock('@compliance-theater/logger');
 jest.mock('@/lib/react-util', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn((error) => error),

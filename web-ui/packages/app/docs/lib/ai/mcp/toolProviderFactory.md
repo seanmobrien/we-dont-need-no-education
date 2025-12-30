@@ -271,7 +271,7 @@ ERROR: Error disposing provider after rejection: ConnectionError
 
 ## Dependencies
 
-- `@/lib/logger` - Logging infrastructure
+- `@compliance-theater/logger` - Logging infrastructure
 - `@/lib/react-util` - Utility functions including `getResolvedPromises`
 - `ai` - AI SDK for MCP client creation
 - `./traceable-transport` - Instrumented SSE transport

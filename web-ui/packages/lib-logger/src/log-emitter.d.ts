@@ -1,11 +1,11 @@
 /**
  * Emitter for custom telemetry events
- * @module @/lib/logger/log-emitter
+ * @module @compliance-theater/logger/log-emitter
  */
 
 import type { SendCustomEventListener, SendCustomEventPayload } from './types';
 
-declare module '@/lib/logger/log-emitter' {
+declare module '@compliance-theater/logger/log-emitter' {
   /**
    * Registers a listener for custom events.
    * Returns an unsubscribe function that removes the listener.

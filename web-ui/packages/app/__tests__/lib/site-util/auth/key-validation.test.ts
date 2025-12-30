@@ -29,7 +29,7 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 // Mock the logger
-jest.mock('@/lib/logger', () => ({
+jest.mock('@compliance-theater/logger', () => ({
   log: jest.fn(),
 }));
 const KEY_VALIDATION_STORAGE_KEY = 'lastKeyValidation';

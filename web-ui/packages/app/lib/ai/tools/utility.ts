@@ -118,7 +118,7 @@ export const toolCallbackArrayResultSchemaFactory = <T extends ZodRawShape>(
  */
 export const isValidUuid = deprecate(
   isValidUuidImpl,
-  'isValidUuid is deprecated, import from @/lib/typescript/guards',
+  'isValidUuid is deprecated, import from @compliance-theater/typescript/guards',
   'DEP0002',
 );
 

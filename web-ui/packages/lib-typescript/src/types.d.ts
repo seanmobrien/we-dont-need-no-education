@@ -10,7 +10,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-declare module "@/lib/typescript/types" {
+declare module "@compliance-theater/typescript/types" {
   /**
    * Converts a union type `T` into a tuple type.
    *

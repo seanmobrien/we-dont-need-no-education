@@ -18,7 +18,7 @@
  *
  * @example
  * ```typescript
- * import { SingletonProvider, globalSingleton } from '@/lib/typescript/singleton-provider';
+ * import { SingletonProvider, globalSingleton } from '@compliance-theater/typescript/singleton-provider';
  *
  * // Using the global singleton function
  * const dbConnection = globalSingleton('database', () => createDatabaseConnection());

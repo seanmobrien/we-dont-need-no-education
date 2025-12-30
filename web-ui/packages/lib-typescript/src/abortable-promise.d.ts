@@ -11,7 +11,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ICancellablePromiseExt } from "./types";
 
-declare module "@/lib/typescript/abortable-promise" {
+declare module "@compliance-theater/typescript/abortable-promise" {
   /**
    * Unique symbol identifying abortable promise instances and their errors.
    * Used as a brand to distinguish operation cancelled errors from other errors.

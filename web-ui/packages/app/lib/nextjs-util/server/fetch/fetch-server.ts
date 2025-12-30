@@ -205,7 +205,6 @@ export const normalizeRequestInit = ({
           }
         : initTimeout;
   }
-
   if (typeof requestInfo === 'string') {
     url = requestInfo;
   } else if (requestInfo instanceof URL) {
@@ -229,7 +228,6 @@ export const normalizeRequestInit = ({
     }
     // Timeout has been normalized as timeout under init.timeout,
     // and url extracted, so we want to eliminate then from the request.
-    url = requestInfo.url;
     init = {
       ...{
         ...requestInfo,
@@ -238,6 +236,8 @@ export const normalizeRequestInit = ({
       },
       ...init,
     };
+
+    url = requestInfo.url;
   } else {
     throw new Error('Invalid requestInfo');
   }

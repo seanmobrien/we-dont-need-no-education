@@ -19,7 +19,7 @@
 
 import type { SingletonStorageKey, SingletonStorageStrategy } from "./types";
 
-declare module "@/lib/typescript/singleton-provider/storage-weak-ref" {
+declare module "@compliance-theater/typescript/singleton-provider/storage-weak-ref" {
   /**
    * Storage strategy using weak references for automatic garbage collection.
    *

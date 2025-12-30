@@ -8,7 +8,7 @@
  * @module lib/typescript/dual-key-map
  */
 
-declare module '@/lib/typescript/dual-key-map' {
+declare module "@compliance-theater/typescript/dual-key-map" {
   /**
    * DualKeyMap<TRecordType, TRecordIdType, TRecordNameType>
    *
@@ -61,7 +61,7 @@ declare module '@/lib/typescript/dual-key-map' {
     constructor(
       idField: TIdField,
       nameField: TNameField,
-      entries?: IterableIterator<[TRecordIdType, TRecordType]>,
+      entries?: IterableIterator<[TRecordIdType, TRecordType]>
     );
 
     /**
@@ -105,7 +105,7 @@ declare module '@/lib/typescript/dual-key-map' {
      * ```
      */
     name(
-      idOrName: TRecordIdType | TRecordNameType,
+      idOrName: TRecordIdType | TRecordNameType
     ): TRecordNameType | undefined;
 
     /**

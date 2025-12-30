@@ -24,7 +24,7 @@ import type { StrongReferenceStorage } from "./storage-strong-ref";
  *
  * @example
  * ```typescript
- * import { SingletonProvider, globalSingleton } from '@/lib/typescript/singleton-provider';
+ * import { SingletonProvider, globalSingleton } from '@compliance-theater/typescript/singleton-provider';
  *
  * // Using the global singleton function
  * const dbConnection = globalSingleton('database', () => createDatabaseConnection());
@@ -51,7 +51,7 @@ import type { StrongReferenceStorage } from "./storage-strong-ref";
  * @since 1.0.0
  * @version 1.0.0
  */
-declare module "@/lib/typescript/singleton-provider" {
+declare module "@compliance-theater/typescript/singleton-provider" {
   export type {
     SingletonConfig,
     SingletonStorageStrategy,

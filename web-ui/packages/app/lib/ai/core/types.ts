@@ -6,7 +6,7 @@ export type {
   AiProviderType,
 } from './unions';
 
-type ValueOf<
+export type ValueOf<
   ObjectType,
   ValueType extends keyof ObjectType = keyof ObjectType,
 > = ObjectType[ValueType];

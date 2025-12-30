@@ -13,7 +13,7 @@ import { setupMaps } from '@/__tests__/setup/jest.mock-provider-model-maps';
 // Mock dependencies
 jest.mock('@/lib/redis-client');
 jest.mock('@/lib/ai/core/count-tokens');
-jest.mock('@/lib/logger');
+jest.mock('@compliance-theater/logger');
 
 describe('LanguageModelQueue', () => {
   let mockModel: LanguageModelV2;

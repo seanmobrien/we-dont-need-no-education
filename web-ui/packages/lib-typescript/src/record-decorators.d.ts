@@ -7,7 +7,7 @@
  * @module lib/typescript/record-decorators
  */
 
-declare module "@/lib/typescript/record-decorators" {
+declare module "@compliance-theater/typescript/record-decorators" {
   /**
    * A unique symbol used to mark a record as dirty.
    *

@@ -15,7 +15,7 @@ import type {
  * preserves strong typing by exposing refined TypeScript predicates.
  */
 
-declare module "@/lib/typescript/guards" {
+declare module "@compliance-theater/typescript/guards" {
   /**
    * Checks whether the provided error instance represents an aborted async
    * operation.

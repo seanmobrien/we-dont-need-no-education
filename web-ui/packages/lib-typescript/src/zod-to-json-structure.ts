@@ -9,7 +9,7 @@
  * @example
  * ```typescript
  * import { z } from 'zod';
- * import { zodToStructure } from '@/lib/typescript/zod-to-json-structure';
+ * import { zodToStructure } from '@compliance-theater/typescript/zod-to-json-structure';
  *
  * const userSchema = z.object({
  *   name: z.string(),
@@ -37,7 +37,7 @@ import {
   ZodDefault,
   ZodNullable,
   ZodDate,
-} from 'zod';
+} from "zod";
 
 /**
  * Function signature for converting a SchemaField to a string representation.
@@ -102,24 +102,24 @@ type BasedSchemaField = {
  */
 type SchemaField =
   | (BasedSchemaField & {
-      type: 'array';
-      items: Exclude<SchemaField, 'optional'>;
+      type: "array";
+      items: Exclude<SchemaField, "optional">;
     })
   | (BasedSchemaField & {
-      type: 'object';
+      type: "object";
       properties: Record<string, SchemaField>;
     })
   | (BasedSchemaField & {
-      type: 'number' | 'boolean' | 'date';
+      type: "number" | "boolean" | "date";
       nullable: false | never;
     })
   | (BasedSchemaField & {
-      type: 'string';
+      type: "string";
     })
   | (BasedSchemaField & {
       properties?: Record<string, SchemaField>;
-      items?: Exclude<SchemaField, 'optional'>;
-      type: 'any';
+      items?: Exclude<SchemaField, "optional">;
+      type: "any";
     });
 
 /**
@@ -140,25 +140,25 @@ type SchemaField =
  * // Returns: "age: \/\* [optional] *\/ <number>,"
  */
 const withComma = (input: string): string => {
-  const current = input.split('\n');
+  const current = input.split("\n");
   if (!current.length) {
     return input;
   }
   const lastIndex = current.length - 1;
   const lastItem = current[lastIndex];
-  let flagIndex = lastItem.indexOf('/* [optional');
+  let flagIndex = lastItem.indexOf("/* [optional");
   if (flagIndex === -1) {
-    flagIndex = lastItem.indexOf('/* [nullable');
+    flagIndex = lastItem.indexOf("/* [nullable");
   }
-  let descriptionCommentIndex = lastItem.lastIndexOf('/*');
+  let descriptionCommentIndex = lastItem.lastIndexOf("/*");
   if (descriptionCommentIndex === flagIndex) {
     descriptionCommentIndex = -1;
   }
   current[lastIndex] =
     descriptionCommentIndex > -1
       ? `${lastItem.slice(0, descriptionCommentIndex - 1)},${lastItem.slice(descriptionCommentIndex - 1)}`
-      : lastItem + ',';
-  return current.join('\n');
+      : lastItem + ",";
+  return current.join("\n");
 };
 /**
  * Converts a Zod schema into a SchemaField representation.
@@ -189,13 +189,13 @@ const zodToSchemaField = (schema: ZodTypeAny): SchemaField => {
    */
   const unwrapType = () => {
     // Handle effects/unwrapping
-    if ('schema' in schema._def) {
+    if ("schema" in schema._def) {
       return zodToSchemaField(schema._def.schema);
     }
     if (
-      'unwrap' in schema &&
+      "unwrap" in schema &&
       schema.unwrap &&
-      typeof schema.unwrap === 'function'
+      typeof schema.unwrap === "function"
     ) {
       return zodToSchemaField(schema.unwrap());
     }
@@ -212,26 +212,26 @@ const zodToSchemaField = (schema: ZodTypeAny): SchemaField => {
     ret.nullable = true;
   } else if (schema instanceof ZodString) {
     // String primitive
-    ret.type = 'string';
+    ret.type = "string";
   } else if (schema instanceof ZodNumber) {
     // Number primitive
-    ret.type = 'number';
+    ret.type = "number";
   } else if (schema instanceof ZodBoolean) {
     // Boolean primitive
-    ret.type = 'boolean';
+    ret.type = "boolean";
   } else if (schema instanceof ZodDate) {
     // Date type
-    ret.type = 'date';
+    ret.type = "date";
   } else if (schema instanceof ZodArray) {
     // Array type: recursively process element schema
-    ret.type = 'array';
-    if (ret.type === 'array') {
+    ret.type = "array";
+    if (ret.type === "array") {
       ret.items = zodToSchemaField(schema.element);
     }
   } else if (schema instanceof ZodObject) {
     // Object type: recursively process all properties
-    ret.type = 'object';
-    if (ret.type === 'object') {
+    ret.type = "object";
+    if (ret.type === "object") {
       const shape = schema.shape as Record<string, ZodTypeAny>;
       ret.properties = {};
       for (const key in shape) {
@@ -240,7 +240,7 @@ const zodToSchemaField = (schema: ZodTypeAny): SchemaField => {
     }
   } else {
     // Fallback for unrecognized types
-    ret.type = 'any';
+    ret.type = "any";
   }
   /**
    * Converts this SchemaField to a formatted string representation.
@@ -250,27 +250,27 @@ const zodToSchemaField = (schema: ZodTypeAny): SchemaField => {
    * @returns {string} Formatted string representation of the schema
    */
   ret.toString = (indent: number = 0) => {
-    let builder = '';
+    let builder = "";
     switch (ret.type) {
-      case 'array':
+      case "array":
         // Format: [ <element-type>, ... ] as Array<type>
-        builder = `[ ${ret.items ? withComma(ret.items.toString(indent + 1)) : withComma('unknown')} ... ] as Array<${ret.items?.type ?? 'any'}>`;
+        builder = `[ ${ret.items ? withComma(ret.items.toString(indent + 1)) : withComma("unknown")} ... ] as Array<${ret.items?.type ?? "any"}>`;
         break;
-      case 'object':
+      case "object":
         // Format: { key: <type>, ... } with proper indentation
-        const indentStr = ' '.repeat((indent + 1) * 2);
+        const indentStr = " ".repeat((indent + 1) * 2);
         builder =
-          '{' +
+          "{" +
           Object.entries(ret.properties ?? {})
             .map(([key, value]) =>
-              withComma(`\n${indentStr}${key}: ${value.toString(indent + 1)}`),
+              withComma(`\n${indentStr}${key}: ${value.toString(indent + 1)}`)
             )
-            .join('') +
-          `\n${' '.repeat(indent * 2)}}`;
+            .join("") +
+          `\n${" ".repeat(indent * 2)}}`;
         break;
       case undefined:
         // Fallback for undefined type
-        builder = '<any>';
+        builder = "<any>";
         break;
       default:
         // Primitive types: <string>, <number>, etc.
@@ -279,7 +279,7 @@ const zodToSchemaField = (schema: ZodTypeAny): SchemaField => {
     }
     // Add optional/nullable flags as comment prefix
     if (ret.optional) {
-      builder = `/* [optional${ret.nullable ? ', nullable' : ''}] */ ${builder}`;
+      builder = `/* [optional${ret.nullable ? ", nullable" : ""}] */ ${builder}`;
     } else if (ret.nullable) {
       builder = `/* [nullable] */ ${builder}`;
     }
@@ -291,7 +291,6 @@ const zodToSchemaField = (schema: ZodTypeAny): SchemaField => {
   };
   return ret as SchemaField;
 };
-
 
 export const zodToStructure = (schema: ZodTypeAny): string => {
   const asField = zodToSchemaField(schema);

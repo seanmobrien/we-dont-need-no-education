@@ -14,7 +14,7 @@
  *
  * @example
  * ```typescript
- * import { safeSerialize } from '@/lib/logger/safe-serialize';
+ * import { safeSerialize } from '@compliance-theater/logger/safe-serialize';
  *
  * // Basic serialization with defaults
  * const str = safeSerialize({ user: 'alice', id: 123 });
@@ -29,9 +29,9 @@
  * }
  * ```
  *
- * @module @/lib/logger/safe-serialize
+ * @module @compliance-theater/logger/safe-serialize
  */
-declare module '@/lib/logger/safe-serialize' {
+declare module '@compliance-theater/logger/safe-serialize' {
   /**
    * Configuration options for safe serialization behavior.
    *

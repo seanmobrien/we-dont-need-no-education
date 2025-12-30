@@ -38,7 +38,7 @@ jest.mock('../../../../../lib/ai/middleware/chat-history', () => ({
   wrapChatHistoryMiddleware: jest.fn(({ model }) => model),
 }));
 
-jest.mock('@/lib/logger', () => ({
+jest.mock('@compliance-theater/logger', () => ({
   log: jest.fn((fn) =>
     fn({ verbose: verboseMock, warn: warnMock, debug: debugMock }),
   ),

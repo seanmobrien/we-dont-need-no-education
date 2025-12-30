@@ -1,6 +1,6 @@
 /**
  * Main entry point for logging functionality
- * @module @/lib/logger
+ * @module @compliance-theater/logger
  */
 
 import type {
@@ -15,7 +15,7 @@ import type { CustomAppInsightsEvent } from './event';
 import type { errorLogFactory } from './utilities';
 import type { logger, log, logEvent } from './core';
 import type { simpleScopedLogger } from './simple-scoped-logger';
-declare module '@/lib/logger' {
+declare module '@compliance-theater/logger' {
   export {
     KnownSeverityLevel,
     ILogger,

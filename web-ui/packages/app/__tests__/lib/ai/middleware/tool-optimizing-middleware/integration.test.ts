@@ -29,7 +29,7 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 jest.mock('@/lib/ai/services/model-stats/tool-map');
 jest.mock('@/lib/ai/chat/message-optimizer-tools');
 jest.mock('@/lib/drizzle-db');
-jest.mock('@/lib/logger');
+jest.mock('@compliance-theater/logger');
 jest.mock('@/lib/site-util/metrics', () => ({
   appMeters: {
     createCounter: jest.fn().mockReturnValue({ add: jest.fn() }),

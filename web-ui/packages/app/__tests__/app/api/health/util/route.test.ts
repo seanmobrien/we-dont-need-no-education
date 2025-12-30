@@ -6,7 +6,7 @@ import { SingletonProvider } from '@compliance-theater/typescript/singleton-prov
 import { NextRequest } from 'next/server';
 
 // Mock SingletonProvider
-jest.mock('@/lib/typescript/singleton-provider', () => {
+jest.mock('@compliance-theater/typescript/singleton-provider', () => {
   const clearMock = jest.fn();
   return {
     SingletonProvider: {

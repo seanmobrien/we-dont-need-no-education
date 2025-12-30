@@ -15,7 +15,7 @@ if (!globalThis.ReadableStream) {
 }
 
 // Mock the logger
-jest.mock('@/lib/logger', () => ({
+jest.mock('@compliance-theater/logger', () => ({
   log: jest.fn((fn) => fn({ warn: jest.fn() })),
 }));
 

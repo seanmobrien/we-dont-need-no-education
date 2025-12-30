@@ -11,7 +11,7 @@
  * @example
  * ```typescript
  * import { z } from 'zod';
- * import { zodToStructure } from '@/lib/typescript/zod-to-json-structure';
+ * import { zodToStructure } from '@compliance-theater/typescript/zod-to-json-structure';
  *
  * const userSchema = z.object({
  *   name: z.string(),
@@ -28,8 +28,8 @@
  * ```
  */
 
-declare module '@/lib/typescript/zod-to-json-structure' {
-  import type { ZodTypeAny } from 'zod';
+declare module "@compliance-theater/typescript/zod-to-json-structure" {
+  import type { ZodTypeAny } from "zod";
 
   /**
    * Converts a Zod schema to a human-readable JSON structure string.

@@ -1,10 +1,10 @@
 /**
  * Core logging functionality
- * @module @/lib/logger/core
+ * @module @compliance-theater/logger/core
  */
 
 import type { ILogger, LogEventOverloads } from './types';
-declare module '@/lib/logger/core' {
+declare module '@compliance-theater/logger/core' {
   /**
    * Returns a promise that resolves to an instance of ILogger.
    *

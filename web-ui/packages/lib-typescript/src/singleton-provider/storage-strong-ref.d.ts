@@ -14,7 +14,7 @@
  * @see {@link SingletonStorageStrategy} for the interface this implements
  */
 import type { SingletonStorageKey, SingletonStorageStrategy } from "./types";
-declare module "@/lib/typescript/singleton-provider/storage-strong-ref" {
+declare module "@compliance-theater/typescript/singleton-provider/storage-strong-ref" {
   /**
    * Storage strategy using strong references on the global object.
    *

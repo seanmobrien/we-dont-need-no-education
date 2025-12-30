@@ -7,7 +7,7 @@
  * @module lib/typescript/singleton-provider/types
  */
 
-declare module "@/lib/typescript/singleton-provider/types" {
+declare module "@compliance-theater/typescript/singleton-provider/types" {
   /**
    * Configuration options for singleton pattern implementations.
    *

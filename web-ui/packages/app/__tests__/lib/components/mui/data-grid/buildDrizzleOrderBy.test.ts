@@ -36,7 +36,7 @@ const mockLogger = {
   debug: jest.fn(),
 };
 
-jest.mock('@/lib/logger');
+jest.mock('@compliance-theater/logger');
 
 // Mock Drizzle imports
 jest.mock('drizzle-orm', () => ({
