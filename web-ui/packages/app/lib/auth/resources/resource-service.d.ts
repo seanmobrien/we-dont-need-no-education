@@ -1,4 +1,4 @@
-import type { ServiceInstanceOverloads } from '@compliance-theater/typescript/_generics';
+import type { ServiceInstanceOverloads } from '@compliance-theater/typescript';
 
 /**
  * Resource Service module declaration
@@ -37,7 +37,7 @@ declare module '@/lib/auth/resources/resource-service' {
      * @returns {Promise<TResource | null>} The resource if found, null otherwise
      */
     public findAuthorizedResource<TResource>(
-      name: string
+      name: string,
     ): Promise<TResource | null>;
 
     /**
@@ -48,7 +48,7 @@ declare module '@/lib/auth/resources/resource-service' {
      * @returns {Promise<TResource | null>} The resource if found, null otherwise
      */
     public getAuthorizedResource<TResource>(
-      id: string
+      id: string,
     ): Promise<TResource | null>;
 
     /**
@@ -59,7 +59,7 @@ declare module '@/lib/auth/resources/resource-service' {
      * @returns {Promise<TResource>} The created resource
      */
     public createAuthorizedResource<
-      TResource extends { _id?: string; name: string }
+      TResource extends { _id?: string; name: string },
     >(resource: TResource): Promise<TResource>;
   }
 

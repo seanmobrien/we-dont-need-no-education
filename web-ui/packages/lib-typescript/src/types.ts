@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /**
- * @module _types
+ * @module types
  * This module provides various utility types for TypeScript, including:
  * - Converting between union and tuple types.
  * - Transforming string literal types.
@@ -159,7 +159,7 @@ export type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
  */
 export type ICancellablePromise<T> = Pick<
   Promise<T>,
-  'then' | 'catch' | 'finally'
+  "then" | "catch" | "finally"
 > & {
   cancel: () => void;
 
@@ -179,7 +179,7 @@ export type ICancellablePromise<T> = Pick<
  */
 export type ICancellablePromiseExt<T> = Omit<
   ICancellablePromise<T>,
-  'catch' | 'then' | 'finally'
+  "catch" | "then" | "finally"
 > & {
   /**
    * Registers a callback to be invoked when the promise is canceled.
@@ -225,7 +225,7 @@ export type ICancellablePromiseExt<T> = Omit<
     onrejected?:
       | ((reason: any) => TResult | PromiseLike<TResult>)
       | null
-      | undefined,
+      | undefined
   ): ICancellablePromiseExt<T | TResult>;
 
   then<TResult1 = T, TResult2 = never>(
@@ -236,16 +236,16 @@ export type ICancellablePromiseExt<T> = Omit<
     onrejected?:
       | ((reason: any) => TResult2 | PromiseLike<TResult2>)
       | null
-      | undefined,
+      | undefined
   ): ICancellablePromiseExt<TResult1 | TResult2>;
   catch<TResult = never>(
     onrejected?:
       | ((reason: any) => TResult | PromiseLike<TResult>)
       | null
-      | undefined,
+      | undefined
   ): ICancellablePromiseExt<T | TResult>;
   finally(
-    onfinally?: (() => void) | null | undefined,
+    onfinally?: (() => void) | null | undefined
   ): ICancellablePromiseExt<T>;
 };
 

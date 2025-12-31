@@ -10,6 +10,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./singleton-provider": {
+      "types": "./dist/singleton-provider/index.d.ts",
+      "default": "./dist/singleton-provider/index.js"
+    },
     "./*": {
       "types": "./dist/*.d.ts",
       "default": "./dist/*.js"
@@ -19,7 +23,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -b tsconfig.json",
+    "build": "tsc -b tsconfig.json --force",
     "test": "jest",
     "lint": "echo 'Linting lib-typescript...'"
   },

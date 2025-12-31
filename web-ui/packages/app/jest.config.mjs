@@ -15,12 +15,12 @@ const config = {
   setupFilesAfterEnv: [
     '<rootDir>/__tests__/setup/jest.mock-log.ts',
     '<rootDir>/__tests__/setup/jest.env-vars.ts',
+    '<rootDir>/__tests__/setup/jest.mock-redis.ts',
     '<rootDir>/__tests__/setup/jest.mock-got.ts',
     '<rootDir>/__tests__/setup/jest.mock-opentelemetry.ts',
     '<rootDir>/__tests__/setup/jest.mock-appstartup.ts',
     '<rootDir>/__tests__/jest.test-extensions.ts',
     '<rootDir>/__tests__/setup/jest.mock-node-modules.ts',
-    '<rootDir>/__tests__/setup/jest.mock-redis.ts',
     '<rootDir>/__tests__/setup/jest.mock-health.ts',
     '<rootDir>/__tests__/setup/jest.mock-auth.ts',
     '<rootDir>/__tests__/setup/jest.mock-feature-flags.ts',
@@ -47,8 +47,8 @@ const config = {
       '<rootDir>/__tests__/setup/jest.mock-instrumentation.ts', // Mock instrumentation module
     '^@/lib/site-util/metrics.*$':
       '<rootDir>/__tests__/setup/jest.mock-metrics.ts', // Alias for lib imports
-    '^@/lib/logger(.*)$': '<rootDir>/../lib-logger/src$1',
-    '^@/lib/typescript(.*)$': '<rootDir>/../lib-typescript/src$1',
+    '^@compliance-theater/logger(.*)$': '<rootDir>/../lib-logger/src$1',
+    '^@compliance-theater/typescript(.*)$': '<rootDir>/../lib-typescript/src$1',
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
     '^@compliance-theater/logger(.*)$': '<rootDir>/../lib-logger/src$1', // Resolve workspace logger package for tests
     '^@compliance-theater/typescript(.*)$': '<rootDir>/../lib-typescript/src$1', // Resolve workspace TS utils package for tests

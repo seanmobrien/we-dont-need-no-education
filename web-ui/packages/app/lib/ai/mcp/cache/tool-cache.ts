@@ -12,7 +12,7 @@ import { ToolSet } from 'ai';
 import { getRedisClient, RedisClientType } from '@/lib/redis-client';
 import { log } from '@compliance-theater/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import type { ToolProviderFactoryOptions } from '../types';
 import type {
   ToolCacheConfig,
@@ -44,12 +44,12 @@ export class MCPToolCache {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.memoryCache = new MemoryToolCache(
       this.config.maxMemoryEntries,
-      this.config.defaultTtl
+      this.config.defaultTtl,
     );
     // Setup Redis subscription asynchronously (non-blocking) TODO: Look at turning this on and off with feature support
     this.setupRedisInvalidationSubscription().catch((error) => {
       log((l) =>
-        l.warn('Failed to initialize Redis keyspace notifications:', error)
+        l.warn('Failed to initialize Redis keyspace notifications:', error),
       );
     });
   }
@@ -83,7 +83,7 @@ export class MCPToolCache {
    * Retrieves cached tools with multi-level fallback
    */
   async getCachedTools<TOOLS extends ToolSet = ToolSet>(
-    options: ToolProviderFactoryOptions
+    options: ToolProviderFactoryOptions,
   ): Promise<TOOLS | null> {
     const enabled = (await getCacheEnabledFlag()).value;
     if (!enabled) {
@@ -112,7 +112,7 @@ export class MCPToolCache {
             const remainingTtl = Math.max(
               0,
               this.config.defaultTtl -
-                Math.floor((Date.now() - entry.timestamp) / 1000)
+                Math.floor((Date.now() - entry.timestamp) / 1000),
             );
             this.memoryCache.set(cacheKey, entry, remainingTtl);
             log((l) => l.debug(`MCP tools cache hit (Redis): ${cacheKey}`));
@@ -123,7 +123,7 @@ export class MCPToolCache {
             l.warn('Failed to parse cached MCP tools', {
               cacheKey,
               error: parseError,
-            })
+            }),
           );
         }
       }
@@ -147,7 +147,7 @@ export class MCPToolCache {
   async setCachedTools(
     options: ToolProviderFactoryOptions,
     tools: ToolSet,
-    ttl?: number
+    ttl?: number,
   ): Promise<void> {
     const enabled = (await getCacheEnabledFlag()).value;
     if (!enabled) {
@@ -171,8 +171,8 @@ export class MCPToolCache {
       if (!serialized) {
         log((l) =>
           l.warn(
-            `Failed to serialize MCP tools for storing in redis; will be available in memory cache only: ${cacheKey}`
-          )
+            `Failed to serialize MCP tools for storing in redis; will be available in memory cache only: ${cacheKey}`,
+          ),
         );
         return;
       }
@@ -181,7 +181,7 @@ export class MCPToolCache {
         l.debug(`MCP tools cached: ${cacheKey}`, {
           toolCount: Object.keys(tools).length,
           ttl: cacheTtl,
-        })
+        }),
       );
     } catch (error) {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -234,7 +234,7 @@ export class MCPToolCache {
       }
 
       log((l) =>
-        l.info('All MCP tools cache cleared', { clearedKeys: keys.length })
+        l.info('All MCP tools cache cleared', { clearedKeys: keys.length }),
       );
     } catch (error) {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -305,24 +305,24 @@ export class MCPToolCache {
           if (message && message.startsWith(this.config.keyPrefix)) {
             log((l) =>
               l.debug(
-                `Redis key expired, invalidating memory cache: ${message}`
-              )
+                `Redis key expired, invalidating memory cache: ${message}`,
+              ),
             );
             this.memoryCache.invalidateKey(message);
           }
-        }
+        },
       );
 
       log((l) =>
-        l.debug('Redis keyspace notifications enabled for MCP tool cache')
+        l.debug('Redis keyspace notifications enabled for MCP tool cache'),
       );
     } catch (error) {
       // Non-critical failure - cache will still work without notifications
       log((l) =>
         l.warn(
           'Failed to setup Redis keyspace notifications for cache invalidation',
-          error
-        )
+          error,
+        ),
       );
     }
   }
@@ -437,7 +437,7 @@ export const deserializeWithSchema = <T extends object>(json: string): T => {
       zodex = zodex ?? require('zodex').Zodex;
       if (!zodex) {
         throw new TypeError(
-          'Zodex module is required for schema serialization'
+          'Zodex module is required for schema serialization',
         );
       }
       return zodex.dezerialize(value.serialized);
@@ -451,7 +451,7 @@ export const deserializeWithSchema = <T extends object>(json: string): T => {
         l.warn('Failed to parse cached MCP tools', {
           error: le.toString(),
           json,
-        })
+        }),
       );
       return value;
     }
@@ -459,7 +459,7 @@ export const deserializeWithSchema = <T extends object>(json: string): T => {
 };
 
 export const serializeCacheEntry = <TOOLS extends ToolSet>(
-  entry: TypedToolCacheEntry<TOOLS>
+  entry: TypedToolCacheEntry<TOOLS>,
 ): string | undefined => {
   if (!entry || typeof entry !== 'object') {
     return undefined;
@@ -480,7 +480,7 @@ export const serializeCacheEntry = <TOOLS extends ToolSet>(
 };
 
 export const deserializedCacheEntry = <TOOLS extends ToolSet = ToolSet>(
-  json: string
+  json: string,
 ): TypedToolCacheEntry<TOOLS> | undefined => {
   // Handle unexpeced or explicit not values gracefully
   if (
@@ -501,7 +501,7 @@ export const deserializedCacheEntry = <TOOLS extends ToolSet = ToolSet>(
       return Object.entries(value).reduce(
         (
           acc: Record<keyof TOOLS, TOOLS[keyof TOOLS]>,
-          [toolName, toolJson]: [string, unknown]
+          [toolName, toolJson]: [string, unknown],
         ) => {
           if (!toolJson) {
             return acc;
@@ -513,14 +513,14 @@ export const deserializedCacheEntry = <TOOLS extends ToolSet = ToolSet>(
             log((l) =>
               l.warn('Unexpected null tool after deserialization', {
                 toolName,
-              })
+              }),
             );
           } else {
             acc[toolName as keyof TOOLS] = tool;
           }
           return acc;
         },
-        {} as TOOLS
+        {} as TOOLS,
       );
     });
   } catch (error) {
@@ -533,7 +533,7 @@ export const deserializedCacheEntry = <TOOLS extends ToolSet = ToolSet>(
       l.warn('Failed to parse cached MCP tools', {
         error: le.toString(),
         json,
-      })
+      }),
     );
     return undefined;
   }
@@ -545,7 +545,7 @@ export const deserializedCacheEntry = <TOOLS extends ToolSet = ToolSet>(
  */
 export const getToolCache = async (): Promise<MCPToolCache> => {
   const existing = SingletonProvider.Instance.get<MCPToolCache>(
-    MCP_TOOL_CACHE_SINGLETON_KEY
+    MCP_TOOL_CACHE_SINGLETON_KEY,
   );
   if (existing) {
     return existing;
@@ -562,7 +562,7 @@ export const getToolCache = async (): Promise<MCPToolCache> => {
  * @returns Promise resolving to the configured MCPToolCache instance
  */
 export const configureToolCache = async (
-  config: Partial<ToolCacheConfig>
+  config: Partial<ToolCacheConfig>,
 ): Promise<MCPToolCache> => {
   const instance = new MCPToolCache(config);
   SingletonProvider.Instance.set(MCP_TOOL_CACHE_SINGLETON_KEY, instance);

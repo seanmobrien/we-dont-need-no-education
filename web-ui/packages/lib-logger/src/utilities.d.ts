@@ -4,10 +4,10 @@
  * Provides helpers to detect nested Postgres errors and to generate
  * normalized, serializable error log payloads.
  *
- * @module @/lib/logger/utilities
+ * @module @compliance-theater/logger/utilities
  */
 
-declare module '@/lib/logger/utilities' {
+declare module '@compliance-theater/logger/utilities' {
   /**
    * Shape of a Postgres/DB error we want to extract and log.
    */

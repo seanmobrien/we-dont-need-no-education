@@ -2,7 +2,7 @@
  * @file dual-key-map.test.ts
  * @description Unit tests for DualKeyMap
  */
-import { DualKeyMap } from "@compliance-theater/typescript/dual-key-map";
+import { DualKeyMap } from "../../src/dual-key-map";
 
 type TestRecord = {
   id: number;

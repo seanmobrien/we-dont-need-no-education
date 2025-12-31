@@ -7,6 +7,9 @@ node_modules
 **/.next
 .turbo
 coverage
+*.tsbuildinfo
+dist
+
 
 # Logs and diagnostics
 npm-debug.log*
@@ -27,6 +30,7 @@ yarn-error.log*
 # Git
 .git
 .gitignore
+.upstream
 
 # Cache
 .yarn-cache
@@ -35,4 +39,14 @@ yarn-error.log*
 # Tests
 coverage
 **/coverage
-tests
+**/__tests__
+**/tests
+**/__mocks__
+test-results
+
+
+# Assets not compiled or included in distribution package
+*.md
+.agent
+.claude
+.github

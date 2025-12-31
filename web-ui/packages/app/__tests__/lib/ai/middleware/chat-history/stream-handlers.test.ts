@@ -25,7 +25,7 @@ import { ensureCreateResult } from '@/lib/ai/middleware/chat-history/stream-hand
 // Mock dependencies
 jest.mock('@/lib/drizzle-db');
 jest.mock('@/lib/ai/middleware/chat-history/utility');
-jest.mock('@/lib/logger');
+jest.mock('@compliance-theater/logger');
 
 let mockDb: jest.Mocked<DbDatabaseType>;
 const mockGetNextSequence = getNextSequence as jest.MockedFunction<

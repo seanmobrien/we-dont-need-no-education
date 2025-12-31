@@ -1,10 +1,10 @@
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { ArrayElement } from '@compliance-theater/typescript';
 import {
+  ArrayElement,
   isValidUuid,
   BrandedUuid,
-} from '@compliance-theater/typescript/_guards';
+} from '@compliance-theater/typescript';
 
 /**
  * Resolves a case file's unit ID from a given document identifier.
@@ -18,7 +18,7 @@ import {
  * @returns A promise that resolves to the unit ID as a number, or `undefined` if not found.
  */
 export const resolveCaseFileId = async (
-  documentId: number | string | undefined
+  documentId: number | string | undefined,
 ): Promise<number | undefined> => {
   if (!documentId) {
     return undefined;
@@ -33,7 +33,7 @@ export const resolveCaseFileId = async (
             where: (du, { eq, and, or }) =>
               or(
                 and(eq(du.emailId, documentId), eq(du.documentType, 'email')),
-                eq(du.documentPropertyId, documentId)
+                eq(du.documentPropertyId, documentId),
               ),
             columns: {
               unitId: true,
@@ -49,7 +49,7 @@ export const resolveCaseFileId = async (
               include: { documentId },
             });
             return undefined;
-          })
+          }),
       );
     } else {
       parsedId = parseInt(documentId, 10);
@@ -86,9 +86,9 @@ export const resolveCaseFileIdBatch = async <T extends Array<unknown>>(
     getValue: (input: ArrayElement<T>) => string | number;
     setValue: (
       input: ArrayElement<T>,
-      value: number | BrandedUuid
+      value: number | BrandedUuid,
     ) => ArrayElement<T>;
-  }
+  },
 ): Promise<Array<ArrayElement<T>>> => {
   const { getValue, setValue } = options ?? {
     getValue: (input: ArrayElement<T>) => input as unknown as string | number,
@@ -133,7 +133,7 @@ export const resolveCaseFileIdBatch = async <T extends Array<unknown>>(
     {
       valid: [],
       pending: [],
-    }
+    },
   );
 
   // Now lets try and look up these GUIDs
@@ -146,7 +146,7 @@ export const resolveCaseFileIdBatch = async <T extends Array<unknown>>(
       where: (du, { and, or, eq, inArray }) =>
         or(
           and(inArray(du.emailId, guids), eq(du.documentType, 'email')),
-          inArray(du.documentPropertyId, guids)
+          inArray(du.documentPropertyId, guids),
         ),
       columns: {
         unitId: true,
@@ -160,14 +160,14 @@ export const resolveCaseFileIdBatch = async <T extends Array<unknown>>(
     (acc, request) => {
       const matchValue = getValue(request);
       const record = records.find(
-        (r) => r.documentPropertyId === matchValue || r.emailId === matchValue
+        (r) => r.documentPropertyId === matchValue || r.emailId === matchValue,
       );
       if (record) {
         acc.resolved.push(setValue(request, record.unitId));
       }
       return acc;
     },
-    { resolved: valid }
+    { resolved: valid },
   );
   return resolved;
 };

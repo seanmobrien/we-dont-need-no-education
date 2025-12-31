@@ -1,9 +1,9 @@
 /**
  * Custom event types for Application Insights telemetry
- * @module @/lib/logger/event
+ * @module @compliance-theater/logger/event
  */
 
-declare module '@/lib/logger/event' {
+declare module '@compliance-theater/logger/event' {
   /**
    * Represents a custom event with optional measurements and a dispose function.
    *

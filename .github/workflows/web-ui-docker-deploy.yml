@@ -110,9 +110,9 @@ jobs:
       - name: Generate build environment configuration
         run: |
           set -euo pipefail
-          
+
           echo "::group::Creating build environment file"
-          
+
           # Create .env.production.local with all build-time variables
           cat << 'ENV_EOF' > ./web-ui/packages/app/.env.production.local
           # Public variables (safe to embed in client bundle)
@@ -123,26 +123,26 @@ jobs:
           NEXT_PUBLIC_LOG_LEVEL_CLIENT=${{ vars.NEXT_PUBLIC_LOG_LEVEL_CLIENT }}
           NEXT_PUBLIC_FLAGSMITH_API_URL=${{ vars.NEXT_PUBLIC_FLAGSMITH_API_URL }}
           NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID=${{ vars.NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID }}
-          
+
           # OpenTelemetry configuration
           OTEL_SERVICE_NAME=${{ vars.OTEL_SERVICE_NAME }}
           OTEL_RESOURCE_ATTRIBUTES=${{ vars.OTEL_RESOURCE_ATTRIBUTES }}
-          
+
           # Azure service endpoints (non-sensitive)
           AZURE_OPENAI_ENDPOINT=${{ vars.AZURE_OPENAI_ENDPOINT }}
           AZURE_AISEARCH_ENDPOINT=${{ vars.AZURE_AISEARCH_ENDPOINT }}
           AZURE_AISEARCH_DOCUMENTS_INDEX_NAME=${{ vars.AZURE_AISEARCH_DOCUMENTS_INDEX_NAME }}
           AZURE_AISEARCH_POLICY_INDEX_NAME=${{ vars.AZURE_AISEARCH_POLICY_INDEX_NAME }}
           AZURE_STORAGE_ACCOUNT_NAME=${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}
-          
+
           # Mem0 configuration
           MEM0_UI_HOST=${{ vars.MEM0_UI_HOST }}
           MEM0_USERNAME=${{ vars.MEM0_USERNAME }}
           MEM0_API_HOST=${{ vars.MEM0_API_HOST }}
-          
+
           # OAuth configuration (client IDs are public)
           AUTH_GOOGLE_ID=${{ secrets.AUTH_GOOGLE_ID }}
-          
+
           # Server-side secrets (NOT embedded in client bundle)
           AZURE_STORAGE_CONNECTION_STRING=${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
           REDIS_URL=${{ secrets.REDIS_URL }}
@@ -155,6 +155,8 @@ jobs:
           AZURE_STORAGE_ACCOUNT_KEY=${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
           FLAGSMITH_SDK_KEY=${{ secrets.FLAGSMITH_SDK_KEY }}
           OPENID_KEY_TEXT=${{ secrets.OPENID_KEY_TEXT }}
+          FOR_STANDALONE=1
+
           ENV_EOF
           
           # Validate the file was created

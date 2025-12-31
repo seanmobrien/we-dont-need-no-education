@@ -1,4 +1,4 @@
-import type { RedisClientType } from '@/lib/redis-client';
+import type { RedisClientType } from 'redis';
 import { getRedisClient } from '@/lib/redis-client';
 import type { Todo, TodoList } from '../types';
 import type { TodoStorageStrategy, StorageStrategyConfig } from './types';
@@ -141,7 +141,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
   private async getTodoIdsForList(
     redis: RedisClientType,
-    listId: string
+    listId: string,
   ): Promise<string[]> {
     const listTodosKey = this.getListTodosKey(listId);
     return redis.zRange(listTodosKey, 0, -1);
@@ -150,7 +150,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
   private async hydrateTodos(
     redis: RedisClientType,
     listId: string,
-    options?: { completed?: boolean }
+    options?: { completed?: boolean },
   ): Promise<Todo[]> {
     const todoIds = await this.getTodoIdsForList(redis, listId);
     if (todoIds.length === 0) {
@@ -160,7 +160,9 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
     const todoKeys = todoIds.map((id) => this.getTodoKey(id));
     const values = await redis.mGet(todoKeys);
     const todos = values
-      .map((value) => (value ? this.deserializeTodo(value) : undefined))
+      .map((value): Todo | undefined =>
+        value ? this.deserializeTodo(value) : undefined,
+      )
       .filter((value): value is Todo => Boolean(value));
 
     if (options?.completed !== undefined) {
@@ -181,11 +183,11 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
       if (existingTodoIds.length > 0) {
         const incomingIds = new Set(list.todos.map((todo) => todo.id));
         const removedIds = existingTodoIds.filter(
-          (todoId) => !incomingIds.has(todoId)
+          (todoId) => !incomingIds.has(todoId),
         );
         if (removedIds.length > 0) {
           await Promise.all(
-            removedIds.map((todoId) => this.deleteTodo(todoId))
+            removedIds.map((todoId) => this.deleteTodo(todoId)),
           );
         }
       }
@@ -197,7 +199,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
       // Store individual todos and mappings in parallel
       await Promise.all(
-        list.todos.map((todo) => this.upsertTodo(todo, { list: list.id }))
+        list.todos.map((todo) => this.upsertTodo(todo, { list: list.id })),
       );
 
       // Refresh TTL on membership set to align with metadata
@@ -207,7 +209,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         l.debug('Todo list upserted to Redis', {
           listId: list.id,
           todoCount: list.todos.length,
-        })
+        }),
       );
 
       return list;
@@ -222,7 +224,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
   async getTodoList(
     listId: string,
-    options?: { completed?: boolean }
+    options?: { completed?: boolean },
   ): Promise<TodoList | undefined> {
     try {
       const redis = await this.ensureConnected();
@@ -259,11 +261,15 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
       // Get all list keys using non-blocking scanIterator
       const keys: string[] = [];
-      for await (const key of redis.scanIterator({
+      for await (const keyChunk of redis.scanIterator({
         MATCH: pattern,
         COUNT: 100,
       })) {
-        keys.push(key);
+        if (Array.isArray(keyChunk)) {
+          keys.push(...keyChunk);
+        } else {
+          keys.push(keyChunk);
+        }
       }
       const metadataKeys = keys.filter((key) => !key.endsWith(':todos'));
       if (metadataKeys.length === 0) {
@@ -276,7 +282,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         .map((key, index) => ({ key, value: values[index] }))
         .filter(
           (entry): entry is { key: string; value: string } =>
-            entry.value !== null
+            entry.value !== null,
         );
 
       const hydratedLists = await Promise.all(
@@ -291,7 +297,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
             id: listId,
             todos,
           } satisfies TodoList;
-        })
+        }),
       );
 
       return hydratedLists;
@@ -327,7 +333,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         l.debug('Todo list deleted from Redis', {
           listId,
           deleted: deletedKeys > 0,
-        })
+        }),
       );
 
       return true;
@@ -342,7 +348,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
   async upsertTodo(
     todo: Todo,
-    options: { list: TodoList | string }
+    options: { list: TodoList | string },
   ): Promise<Todo> {
     try {
       const redis = await this.ensureConnected();
@@ -373,7 +379,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         l.debug('Todo upserted to Redis', {
           todoId: todo.id,
           listId,
-        })
+        }),
       );
 
       return todo;
@@ -418,11 +424,15 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
       // Get all todo keys using scanIterator (non-blocking)
       const keys: string[] = [];
-      for await (const key of redis.scanIterator({
+      for await (const keyChunk of redis.scanIterator({
         MATCH: pattern,
         COUNT: 100,
       })) {
-        keys.push(key);
+        if (Array.isArray(keyChunk)) {
+          keys.push(...keyChunk);
+        } else {
+          keys.push(keyChunk);
+        }
       }
       if (keys.length === 0) {
         return [];
@@ -432,7 +442,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
       const values = await redis.mGet(keys);
       const todos = values
         .filter((value): value is string => value !== null)
-        .map((value) => this.deserializeTodo(value));
+        .map((value): Todo => this.deserializeTodo(value));
 
       // Filter by completion status if requested
       if (options?.completed !== undefined) {
@@ -471,7 +481,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         l.debug('Todo deleted from Redis', {
           todoId,
           deleted: results[0] > 0,
-        })
+        }),
       );
 
       return results[0] > 0;
@@ -509,12 +519,12 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
       // Count keys using scanIterator (non-blocking)
       let count = 0;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      for await (const key of redis.scanIterator({
+      for await (const keyChunk of redis.scanIterator({
         MATCH: pattern,
         COUNT: 100,
       })) {
-        count++;
+        const batchCount = Array.isArray(keyChunk) ? keyChunk.length : 1;
+        count += batchCount;
       }
       return count;
     } catch (error) {
@@ -554,32 +564,48 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
       const membershipKeys: string[] = [];
 
       // Scan for all matching keys using non-blocking scanIterator
-      for await (const key of redis.scanIterator({
+      for await (const keyChunk of redis.scanIterator({
         MATCH: listPattern,
         COUNT: 100,
       })) {
-        listKeys.push(key);
+        if (Array.isArray(keyChunk)) {
+          listKeys.push(...keyChunk);
+        } else {
+          listKeys.push(keyChunk);
+        }
       }
 
-      for await (const key of redis.scanIterator({
+      for await (const keyChunk of redis.scanIterator({
         MATCH: todoPattern,
         COUNT: 100,
       })) {
-        todoKeys.push(key);
+        if (Array.isArray(keyChunk)) {
+          todoKeys.push(...keyChunk);
+        } else {
+          todoKeys.push(keyChunk);
+        }
       }
 
-      for await (const key of redis.scanIterator({
+      for await (const keyChunk of redis.scanIterator({
         MATCH: mappingPattern,
         COUNT: 100,
       })) {
-        mappingKeys.push(key);
+        if (Array.isArray(keyChunk)) {
+          mappingKeys.push(...keyChunk);
+        } else {
+          mappingKeys.push(keyChunk);
+        }
       }
 
-      for await (const key of redis.scanIterator({
+      for await (const keyChunk of redis.scanIterator({
         MATCH: membershipPattern,
         COUNT: 100,
       })) {
-        membershipKeys.push(key);
+        if (Array.isArray(keyChunk)) {
+          membershipKeys.push(...keyChunk);
+        } else {
+          membershipKeys.push(keyChunk);
+        }
       }
 
       const allKeys = [
@@ -600,7 +626,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
           todosCleared: todoKeys.length,
           matchesCleared: mappingKeys.length,
           membershipsCleared: membershipKeys.length,
-        })
+        }),
       );
 
       return {

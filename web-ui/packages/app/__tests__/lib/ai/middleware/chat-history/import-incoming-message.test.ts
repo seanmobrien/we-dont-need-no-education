@@ -30,7 +30,7 @@ import { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 // Mock dependencies
 jest.mock('@/lib/ai/middleware/chat-history/utility');
 jest.mock('@/lib/ai/core');
-jest.mock('@/lib/logger');
+jest.mock('@compliance-theater/logger');
 /*
 jest.mock('@/lib/drizzle-db', () => ({
   schema: {

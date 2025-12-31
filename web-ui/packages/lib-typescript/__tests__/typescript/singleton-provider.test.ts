@@ -3,7 +3,7 @@ import {
   globalSingleton,
   globalSingletonAsync,
   type SingletonConfig,
-} from "@compliance-theater/typescript/singleton-provider";
+} from "../../src/singleton-provider";
 
 describe("SingletonProvider", () => {
   let provider: SingletonProvider;

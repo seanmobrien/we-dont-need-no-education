@@ -1,10 +1,10 @@
 /**
  * Abstract logger base class
- * @module @/lib/logger/abstract-logger
+ * @module @compliance-theater/logger/abstract-logger
  */
 
 import type { ILogger } from './types';
-declare module '@/lib/logger/abstract-logger' {
+declare module '@compliance-theater/logger/abstract-logger' {
   /**
    * Abstract base class for logger implementations.
    */

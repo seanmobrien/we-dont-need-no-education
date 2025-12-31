@@ -13,7 +13,7 @@ import { fetch } from '@/lib/nextjs-util/server';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { LRUCache } from 'lru-cache';
 import { SingletonProvider } from '@compliance-theater/typescript';
-import { serviceInstanceOverloadsFactory } from '@compliance-theater/typescript/_generics';
+import { serviceInstanceOverloadsFactory } from '@compliance-theater/typescript';
 
 /**
  * Configuration for the ResourceService cache
@@ -29,7 +29,7 @@ type BaseAttributes = Record<
 >;
 
 export type BasicResourceRecord<
-  TAttributes extends BaseAttributes = BaseAttributes
+  TAttributes extends BaseAttributes = BaseAttributes,
 > = {
   /** Unique resource ID in Keycloak */
   _id: string;
@@ -61,7 +61,7 @@ export class ResourceService {
   public static get Instance(): ResourceService {
     const ret = SingletonProvider.Instance.getOrCreate(
       '@no-education/lib/auth/resources/resource-service',
-      () => new ResourceService()
+      () => new ResourceService(),
     );
     if (!ret) {
       throw LoggedError.isTurtlesAllTheWayDownBaby(
@@ -69,7 +69,7 @@ export class ResourceService {
         {
           log: true,
           source: 'ResourceService',
-        }
+        },
       );
     }
     return ret;
@@ -156,14 +156,14 @@ export class ResourceService {
       ? TInferAttributes
       : never = TResource extends BasicResourceRecord<infer TInferAttributes>
       ? TInferAttributes
-      : never
+      : never,
   >(name: string): Promise<BasicResourceRecord<TAttributes> | null> {
     try {
       const pat = await this.getProtectionApiToken();
 
       // First find the resource ID by name
       const queryUrl = `${env(
-        'AUTH_KEYCLOAK_ISSUER'
+        'AUTH_KEYCLOAK_ISSUER',
       )}/authz/protection/resource_set?name=${encodeURIComponent(name)}`;
       const queryRes = await fetch(queryUrl, {
         headers: {
@@ -185,7 +185,7 @@ export class ResourceService {
 
       // Then get the full resource details using the first ID found
       return await this.getAuthorizedResource<TResource, TAttributes>(
-        resourceIds[0]
+        resourceIds[0],
       );
     } catch (error) {
       throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -210,12 +210,12 @@ export class ResourceService {
       infer TInferAttributes
     >
       ? TInferAttributes
-      : never
+      : never,
   >(id: string): Promise<BasicResourceRecord<TAttributes> | null> {
     try {
       const pat = await this.getProtectionApiToken();
       const resourceUrl = `${env(
-        'AUTH_KEYCLOAK_ISSUER'
+        'AUTH_KEYCLOAK_ISSUER',
       )}/authz/protection/resource_set/${id}`;
 
       const resourceResponse = await fetch(resourceUrl, {
@@ -229,7 +229,7 @@ export class ResourceService {
           return null;
         }
         throw new Error(
-          `Failed to get resource details: ${resourceResponse.statusText}`
+          `Failed to get resource details: ${resourceResponse.statusText}`,
         );
       }
       const resource =
@@ -252,12 +252,12 @@ export class ResourceService {
    * @returns The created resource
    */
   public async createAuthorizedResource<
-    TResource extends { _id?: string; name: string }
+    TResource extends { _id?: string; name: string },
   >(resource: TResource): Promise<TResource & { _id: string }> {
     try {
       const pat = await this.getProtectionApiToken();
       const resourcesUrl = `${env(
-        'AUTH_KEYCLOAK_ISSUER'
+        'AUTH_KEYCLOAK_ISSUER',
       )}/authz/protection/resource_set`;
 
       const createResponse = await fetch(resourcesUrl, {
@@ -272,7 +272,7 @@ export class ResourceService {
       if (!createResponse.ok) {
         const errorText = await createResponse.text();
         throw new Error(
-          `Failed to create resource: ${createResponse.statusText} - ${errorText}`
+          `Failed to create resource: ${createResponse.statusText} - ${errorText}`,
         );
       }
 
@@ -290,5 +290,5 @@ export class ResourceService {
 }
 
 export const resourceService = serviceInstanceOverloadsFactory(
-  () => ResourceService.Instance
+  () => ResourceService.Instance,
 );

@@ -11,7 +11,7 @@ import { handleCacheHit, handleCacheMiss } from './cacheEventHandlers';
 import { createStreamFromCachedText } from './streamUtils';
 import { handleResponseCaching } from './cacheStrategy';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { newUuid } from '@compliance-theater/typescript/_record-decorators';
+import { newUuid } from '@compliance-theater/typescript';
 import { MiddlewareStateManager } from '../state-management';
 import { log } from '@compliance-theater/logger';
 
@@ -132,7 +132,7 @@ const originalCacheWithRedis: LanguageModelV2Middleware = {
             redis,
             cacheKey,
             streamResponse,
-            'stream '
+            'stream ',
           );
         },
       });

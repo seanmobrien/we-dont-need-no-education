@@ -9,10 +9,9 @@
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { ICancellablePromiseExt } from "./types";
 
-declare module '@/lib/typescript/abortable-promise' {
-  import type { ICancellablePromiseExt } from '@/lib/typescript/_types';
-
+declare module "@compliance-theater/typescript/abortable-promise" {
   /**
    * Unique symbol identifying abortable promise instances and their errors.
    * Used as a brand to distinguish operation cancelled errors from other errors.
@@ -96,7 +95,7 @@ declare module '@/lib/typescript/abortable-promise' {
      * ```
      */
     static isAbortablePromise<T = unknown>(
-      e: unknown,
+      e: unknown
     ): e is AbortablePromise<T>;
 
     /**
@@ -118,8 +117,8 @@ declare module '@/lib/typescript/abortable-promise' {
       executor: (
         resolve: (value: T | PromiseLike<T>) => void,
         reject: (reason?: any) => void,
-        signal: AbortSignal,
-      ) => void,
+        signal: AbortSignal
+      ) => void
     );
 
     /**
@@ -156,7 +155,7 @@ declare module '@/lib/typescript/abortable-promise' {
       onrejected?:
         | ((reason: any) => TResult2 | PromiseLike<TResult2>)
         | null
-        | undefined,
+        | undefined
     ): ICancellablePromiseExt<TResult1 | TResult2>;
 
     /**
@@ -170,7 +169,7 @@ declare module '@/lib/typescript/abortable-promise' {
       onrejected?:
         | ((reason: any) => TResult | PromiseLike<TResult>)
         | null
-        | undefined,
+        | undefined
     ): ICancellablePromiseExt<T | TResult>;
 
     /**
@@ -180,7 +179,7 @@ declare module '@/lib/typescript/abortable-promise' {
      * @returns A new AbortablePromise for chaining
      */
     finally(
-      onfinally?: (() => void) | null | undefined,
+      onfinally?: (() => void) | null | undefined
     ): ICancellablePromiseExt<T>;
 
     /**
@@ -216,7 +215,7 @@ declare module '@/lib/typescript/abortable-promise' {
       onrejected?:
         | ((reason: any) => TResult | PromiseLike<TResult>)
         | null
-        | undefined,
+        | undefined
     ): ICancellablePromiseExt<T | TResult>;
 
     /**

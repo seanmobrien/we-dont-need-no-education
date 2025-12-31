@@ -6,7 +6,7 @@ jest.mock('@/lib/auth/utilities', () => ({
   decodeToken: jest.fn(),
 }));
 
-jest.mock('@/lib/logger', () => ({
+jest.mock('@compliance-theater/logger', () => ({
   log: jest.fn(),
 }));
 

@@ -1,10 +1,10 @@
 /**
  * Simple scoped logger for creating loggers with a specific scope/prefix
- * @module @/lib/logger/simple-scoped-logger
+ * @module @compliance-theater/logger/simple-scoped-logger
  */
 
 import type { SimpleLogger } from './types';
-declare module '@/lib/logger/simple-scoped-logger' {
+declare module '@compliance-theater/logger/simple-scoped-logger' {
   /**
    * Creates a simple scoped logger with a specified prefix.
    *

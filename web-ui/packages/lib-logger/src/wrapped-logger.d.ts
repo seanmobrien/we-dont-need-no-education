@@ -1,10 +1,10 @@
 /**
  * Wrapped logger implementation
- * @module @/lib/logger/wrapped-logger
+ * @module @compliance-theater/logger/wrapped-logger
  */
 
 import type { ILogger } from './types';
-declare module '@/lib/logger/wrapped-logger' {
+declare module '@compliance-theater/logger/wrapped-logger' {
   /**
    * Wrapped logger that provides additional functionality around a base logger.
    */

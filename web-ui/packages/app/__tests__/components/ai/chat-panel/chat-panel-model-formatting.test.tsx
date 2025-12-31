@@ -24,7 +24,7 @@ jest.mock('@ai-sdk/react', () => ({
 }));
 
 // Mock other dependencies
-jest.mock('@/lib/logger', () => ({
+jest.mock('@compliance-theater/logger', () => ({
   log: () => () => {},
 }));
 

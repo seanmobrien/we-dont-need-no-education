@@ -1,9 +1,9 @@
 /**
  * Type definitions for logging interfaces and severity levels
- * @module @/lib/logger/types
+ * @module @compliance-theater/logger/types
  */
 
-declare module '@/lib/logger/types' {
+declare module '@compliance-theater/logger/types' {
   /**
    * Represents a simple logging interface with methods for different log levels.
    *

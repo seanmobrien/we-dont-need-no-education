@@ -1,6 +1,6 @@
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { isKeyOf } from '@compliance-theater/typescript';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import { NextRequest, NextResponse } from 'next/server';
 
 const HealthActionValues = ['reset-globals'] as const;
@@ -53,7 +53,7 @@ export const POST = wrapRouteRequest(async (req: NextRequest) => {
   if (!strategy) {
     return NextResponse.json(
       { error: `Invalid action: ${body.action}` },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

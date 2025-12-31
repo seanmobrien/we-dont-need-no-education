@@ -45,7 +45,7 @@ type DynamicImports = {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           newSession: any;
           trigger?: 'update';
-        }
+        },
       ) => Awaitable<Session | DefaultSession>;
     };
     signIn: {

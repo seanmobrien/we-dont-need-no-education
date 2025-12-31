@@ -13,13 +13,8 @@
  * @module lib/typescript/singleton-provider/storage-strong-ref
  * @see {@link SingletonStorageStrategy} for the interface this implements
  */
-
-declare module '@/lib/typescript/singleton-provider/storage-strong-ref' {
-  import type {
-    SingletonStorageKey,
-    SingletonStorageStrategy,
-  } from '@/lib/typescript/singleton-provider/types';
-
+import type { SingletonStorageKey, SingletonStorageStrategy } from "./types";
+declare module "@compliance-theater/typescript/singleton-provider/storage-strong-ref" {
   /**
    * Storage strategy using strong references on the global object.
    *

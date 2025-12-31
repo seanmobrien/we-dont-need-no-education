@@ -8,7 +8,7 @@ import { isError } from '@/lib/react-util/utility-methods';
 import {
   BrandedUuid,
   isValidUuid as isValidUuidImpl,
-} from '@compliance-theater/typescript/_guards';
+} from '@compliance-theater/typescript';
 import {
   resolveCaseFileId as resolveCaseFileIdImpl,
   resolveCaseFileIdBatch as resolveCaseFileIdBatchImpl,
@@ -22,7 +22,7 @@ interface ToolCallbackResultOverloads {
 
 export const toolCallbackResultFactory: ToolCallbackResultOverloads = <T>(
   result: T | Error,
-  message?: string
+  message?: string,
 ): ToolCallbackResult<T> => {
   if (isError(result)) {
     return {
@@ -63,7 +63,7 @@ export const toolCallbackResultSchemaFactory = <T extends ZodRawShape>(
   resultSchema:
     | z.ZodObject<T>
     | z.ZodString
-    | z.ZodUnion<[z.ZodString, z.ZodObject<T>]>
+    | z.ZodUnion<[z.ZodString, z.ZodObject<T>]>,
 ) => {
   const error = z.object({
     isError: z.literal(true),
@@ -87,7 +87,7 @@ export const toolCallbackArrayResultSchemaFactory = <T extends ZodRawShape>(
   resultSchema:
     | z.ZodObject<T>
     | z.ZodString
-    | z.ZodUnion<[z.ZodString, z.ZodObject<T>]>
+    | z.ZodUnion<[z.ZodString, z.ZodObject<T>]>,
 ) => {
   const error = z.object({
     isError: z.literal(true),
@@ -118,8 +118,8 @@ export const toolCallbackArrayResultSchemaFactory = <T extends ZodRawShape>(
  */
 export const isValidUuid = deprecate(
   isValidUuidImpl,
-  'isValidUuid is deprecated, import from @/lib/typescript/_guards',
-  'DEP0002'
+  'isValidUuid is deprecated, import from @compliance-theater/typescript/guards',
+  'DEP0002',
 );
 
 /**
@@ -136,7 +136,7 @@ export const isValidUuid = deprecate(
 export const resolveCaseFileId = deprecate(
   resolveCaseFileIdImpl,
   'resolveCaseFileId is deprecated, import from @/lib/api/document-unit/resolve-case-file-id',
-  'DEP0003'
+  'DEP0003',
 );
 
 /**
@@ -155,7 +155,7 @@ export const resolveCaseFileId = deprecate(
  * @returns A promise that resolves to an array of objects with a numeric `caseFileId`.
  */
 export const resolveCaseFileIdBatch = async (
-  requests: Array<CaseFileRequestProps>
+  requests: Array<CaseFileRequestProps>,
 ): Promise<Array<ValidCaseFileRequestProps>> =>
   resolveCaseFileIdBatchImpl(requests, {
     getValue: (input: CaseFileRequestProps) => input.caseFileId,

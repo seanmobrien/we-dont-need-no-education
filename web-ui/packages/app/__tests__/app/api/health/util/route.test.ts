@@ -2,11 +2,11 @@
  * @jest-environment node
  */
 import { POST } from '@/app/api/health/util/route';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider/provider';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import { NextRequest } from 'next/server';
 
 // Mock SingletonProvider
-jest.mock('@/lib/typescript/singleton-provider/provider', () => {
+jest.mock('@compliance-theater/typescript/singleton-provider', () => {
   const clearMock = jest.fn();
   return {
     SingletonProvider: {

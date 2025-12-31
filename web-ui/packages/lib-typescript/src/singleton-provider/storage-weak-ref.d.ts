@@ -13,16 +13,13 @@
  * - Caches that can be regenerated if needed
  * - Optional services that don't need guaranteed persistence
  *
- * @module lib/typescript/singleton-provider/storage-weak-refs
+ * @module lib/typescript/singleton-provider/storage-weak-ref
  * @see {@link SingletonStorageStrategy} for the interface this implements
  */
 
-declare module '@/lib/typescript/singleton-provider/storage-weak-refs' {
-  import type {
-    SingletonStorageKey,
-    SingletonStorageStrategy,
-  } from '@/lib/typescript/singleton-provider/types';
+import type { SingletonStorageKey, SingletonStorageStrategy } from "./types";
 
+declare module "@compliance-theater/typescript/singleton-provider/storage-weak-ref" {
   /**
    * Storage strategy using weak references for automatic garbage collection.
    *

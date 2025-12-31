@@ -43,6 +43,7 @@ ARG MEM0_USERNAME
 
 ENV PYTHONUNBUFFERED=1
 
+
 # System deps for canvas / fonts used by Next.js build
 RUN apk add --no-cache \
     libc6-compat \
@@ -62,6 +63,9 @@ RUN apk add --no-cache \
   && ln -sf python3 /usr/bin/python
 
 FROM base AS pruner
+
+ENV FOR_STANDALONE=1
+
 WORKDIR /repo
 
 # Install turbo CLI for pruning (small global install avoids full node_modules)
@@ -142,9 +146,11 @@ RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
   export AUTH_GOOGLE_ID="$(cat $SECRETS/AUTH_GOOGLE_ID 2>/dev/null || true)"; \
   export OPENID_KEY_TEXT="$(cat $SECRETS/OPENID_KEY_TEXT 2>/dev/null || true)"; \
   export FLAGSMITH_SDK_KEY="$(cat $SECRETS/FLAGSMITH_SDK_KEY 2>/dev/null || true)"; \
-  yarn --cwd packages/app run build
+  export FOR_STANDALONE=1; \
+  export IS_BUILDING=1; \
+  yarn build
 
-RUN rm -f packages/app/.env.production.local
+RUN rm -f ./packages/app/.env.production.local
 
 # Production image
 FROM base AS runner
@@ -199,13 +205,12 @@ RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 --shell /bin/sh nextjs \
   && mkdir -p /app/scripts
 
-# Copy runtime artifacts for self-hosted Next.js (non-standalone)
-COPY --link=true --from=builder /app/node_modules /app/node_modules
-COPY --link=true --from=builder /app/packages/app/.next ./.next
+# Copy Next.js standalone output from the app workspace
+COPY --link=true --from=builder /app/packages/app/.next/standalone ./
+COPY --link=true --from=builder /app/packages/app/.next/static ./.next/static
 COPY --link=true --from=builder /app/packages/app/public ./public
-COPY --link=true --from=builder /app/packages/app/package.json ./package.json
-COPY --link=true --from=builder /app/packages/app/next.config.* ./
-COPY --link=true --from=pruner /repo/packages/app/scripts ./scripts
+COPY --link=true --from=builder /app/packages/app/scripts /app/scripts
+
 
 # Set up cron for rate retry processing
 RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs \
@@ -219,4 +224,4 @@ RUN mkdir -p /var/log \
 EXPOSE 3000
 EXPOSE 9229
 
-CMD ["sh", "-c", "crond && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -c \"NODE_OPTIONS=\\\"$NODE_OPTIONS --inspect=0.0.0.0:9229\\\" node node_modules/next/dist/bin/next start -H 0.0.0.0 -p 3000\"; else su nextjs -c \"node node_modules/next/dist/bin/next start -H 0.0.0.0 -p 3000\"; fi"]
+CMD ["sh", "-c", "crond && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -c \"node --inspect=0.0.0.0:9229 server.js\"; else su nextjs -c \"node server.js\"; fi"]

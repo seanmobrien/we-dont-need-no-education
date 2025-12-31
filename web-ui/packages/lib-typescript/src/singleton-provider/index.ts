@@ -18,7 +18,7 @@
  *
  * @example
  * ```typescript
- * import { SingletonProvider, globalSingleton } from '@/lib/typescript/singleton-provider';
+ * import { SingletonProvider, globalSingleton } from '@compliance-theater/typescript/singleton-provider';
  *
  * // Using the global singleton function
  * const dbConnection = globalSingleton('database', () => createDatabaseConnection());
@@ -46,46 +46,61 @@
  * @version 1.0.0
  */
 
-import { SingletonProvider } from './provider';
-import type { IsNotNull } from '../_types';
-import type { SingletonConfig } from './types';
+import { SingletonProvider } from "./provider";
+import type { IsNotNull } from "../types";
+import type { SingletonConfig } from "./types";
 
-export type { SingletonConfig, SingletonStorageStrategy } from './types';
-export { SingletonProvider } from './provider';
+export type {
+  SingletonConfig,
+  SingletonStorageStrategy,
+  SingletonStorageKey,
+  GlobalWithMyGlobal,
+} from "./types";
+export type { WeakReferenceStorage } from "./storage-weak-ref";
+export type { StrongReferenceStorage } from "./storage-strong-ref";
+export { SingletonProvider } from "./provider";
 
 export const globalSingleton = <T, S extends string | symbol = string>(
   symbol: S,
   factory: () => IsNotNull<T> | undefined,
-  config: SingletonConfig = {},
-): T | undefined => SingletonProvider.Instance.getOrCreate(symbol, factory, config);
+  config: SingletonConfig = {}
+): T | undefined =>
+  SingletonProvider.Instance.getOrCreate(symbol, factory, config);
 
 export const globalRequiredSingleton = <T, S extends string | symbol = string>(
   symbol: S,
   factory: () => IsNotNull<T> | undefined,
-  config: SingletonConfig = {},
+  config: SingletonConfig = {}
 ): T => {
   const ret = globalSingleton<T, S>(symbol, factory, config);
-  if (typeof ret === 'undefined' || ret == null) {
-    throw new TypeError(`Unable to create required global ${symbol.toString()}`)
+  if (typeof ret === "undefined" || ret == null) {
+    throw new TypeError(
+      `Unable to create required global ${symbol.toString()}`
+    );
   }
   return ret;
-}
+};
 
 export const globalSingletonAsync = <T, S extends string | symbol = string>(
   symbol: S,
   factory: () => Promise<IsNotNull<T> | undefined>,
-  config: SingletonConfig = {},
+  config: SingletonConfig = {}
 ): Promise<T | undefined> =>
   SingletonProvider.Instance.getOrCreateAsync<T, S>(symbol, factory, config);
 
-export const globalRequiredSingletonAsync = async <T, S extends string | symbol = string>(
+export const globalRequiredSingletonAsync = async <
+  T,
+  S extends string | symbol = string,
+>(
   symbol: S,
   factory: () => Promise<IsNotNull<T> | undefined>,
-  config: SingletonConfig = {},
+  config: SingletonConfig = {}
 ): Promise<T> => {
   const ret = await globalSingletonAsync<T, S>(symbol, factory, config);
-  if (typeof ret === 'undefined' || ret == null) {
-    throw new TypeError(`Unable to create required global ${symbol.toString()}`)
+  if (typeof ret === "undefined" || ret == null) {
+    throw new TypeError(
+      `Unable to create required global ${symbol.toString()}`
+    );
   }
   return ret;
-}
+};

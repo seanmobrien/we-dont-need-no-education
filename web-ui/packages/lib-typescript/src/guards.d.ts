@@ -1,9 +1,8 @@
-import type { IsNotNull, UnionToTuple } from './_types';
+import type { IsNotNull, UnionToTuple } from "./types";
 import type {
   AbortablePromise,
   OperationCancelledError,
-} from './abortable-promise';
-
+} from "./abortable-promise";
 
 /**
  * Type declarations for type guard utilities.
@@ -16,9 +15,7 @@ import type {
  * preserves strong typing by exposing refined TypeScript predicates.
  */
 
-
-
-declare module '@/lib/typescript/_guards' {
+declare module "@compliance-theater/typescript/guards" {
   /**
    * Checks whether the provided error instance represents an aborted async
    * operation.
@@ -43,7 +40,7 @@ declare module '@/lib/typescript/_guards' {
    * ```
    */
   export function isOperationCancelledError(
-    error: unknown,
+    error: unknown
   ): error is OperationCancelledError;
 
   /**
@@ -62,7 +59,7 @@ declare module '@/lib/typescript/_guards' {
    * ```
    */
   export function isAbortablePromise<T = unknown>(
-    obj: unknown,
+    obj: unknown
   ): obj is AbortablePromise<T>;
 
   /**
@@ -75,7 +72,7 @@ declare module '@/lib/typescript/_guards' {
      */
     <T extends readonly (string | number | symbol)[]>(
       key: unknown,
-      check: T,
+      check: T
     ): key is T[number];
     /**
      * Allow calling with no second argument or an explicit undefined/null to check only the key shape
@@ -194,7 +191,7 @@ declare module '@/lib/typescript/_guards' {
    * ```
    */
   export function isNotNull<T>(
-    value: T | null | undefined,
+    value: T | null | undefined
   ): value is IsNotNull<T>;
 
   /**

@@ -1,9 +1,9 @@
 /**
  * Logger constants and known severity levels
- * @module @/lib/logger/constants
+ * @module @compliance-theater/logger/constants
  */
 
-declare module '@/lib/logger/constants' {
+declare module '@compliance-theater/logger/constants' {
   /**
    * Azure Monitor sample rate attribute key
    */

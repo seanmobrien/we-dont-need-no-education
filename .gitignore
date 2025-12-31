@@ -10,6 +10,8 @@ node_modules
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+
+# Intentionally exclude package-lock because we use yarn.lock
 package-lock.json
 
 # testing
@@ -18,9 +20,13 @@ coverage
 # next.js
 **/.next/**
 out/
+.next
+.turbo
+
 
 # production
 /build
+dist
 
 # misc
 .DS_Store
@@ -52,6 +58,7 @@ next-env.d.ts
 #**/.vscode
 .vs
 .vs/**
+**/.vscode
 
 *.lilith
 logs

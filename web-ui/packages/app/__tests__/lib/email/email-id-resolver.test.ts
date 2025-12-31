@@ -1,9 +1,7 @@
 import { jest } from '@jest/globals';
 
-jest.mock('@/lib/typescript/_guards', () => {
-  const origModule = jest.requireActual(
-    '@/lib/typescript/_guards'
-  ) as typeof import('@/lib/typescript/_guards');
+jest.mock('@compliance-theater/typescript', () => {
+  const origModule = jest.requireActual('@compliance-theater/typescript');
   return {
     ...origModule,
     isValidUuid: jest.fn(),
@@ -25,7 +23,7 @@ jest.mock('@/lib/react-util', () => ({
 */
 
 import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
-import { isValidUuid } from '@compliance-theater/typescript/_guards';
+import { isValidUuid } from '@compliance-theater/typescript';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 const mockDrizDb = drizDbWithInit as jest.MockedFunction<typeof drizDbWithInit>;

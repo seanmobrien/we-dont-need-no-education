@@ -14,8 +14,8 @@ type RedisClientMock = {
     [
       key: string,
       members:
-      | { score: number; value: string }
-      | { score: number; value: string }[],
+        | { score: number; value: string }
+        | { score: number; value: string }[],
     ]
   >;
   zRange: jest.Mock<
@@ -45,6 +45,7 @@ type RedisClientMock = {
     [key: string, start: number, stop: number]
   >;
   rPush: jest.Mock<Promise<number>, [key: string, value: string | string[]]>;
+  isOpen?: boolean;
 };
 
 // Storage for mock data
@@ -53,7 +54,7 @@ const mockSortedSetData = new Map<string, Map<string, number>>();
 
 jest.mock('redis', () => {
   let clientInstance: RedisClientMock | null = null;
-
+  const origModule = jest.requireActual('redis');
   const createClient = jest.fn((arg?: any) => {
     if (arg === 'teardown') {
       clientInstance = null;
@@ -64,7 +65,10 @@ jest.mock('redis', () => {
     if (!clientInstance) {
       clientInstance = {
         ping: jest.fn(() => Promise.resolve('PONG')),
-        connect: jest.fn(() => Promise.resolve(clientInstance!)),
+        connect: jest.fn(() => {
+          clientInstance!.isOpen = true;
+          return Promise.resolve(clientInstance!);
+        }),
         quit: jest.fn(() => Promise.resolve('OK')),
         get: jest.fn((key: string) => {
           return Promise.resolve(mockRedisData.get(key) || null);
@@ -202,6 +206,7 @@ jest.mock('redis', () => {
     return clientInstance;
   });
   return {
+    ...origModule,
     createClient,
   };
 });

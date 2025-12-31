@@ -1,5 +1,5 @@
 import { drizDbWithInit } from '@/lib/drizzle-db';
-import { isValidUuid } from '@compliance-theater/typescript/_guards';
+import { isValidUuid } from '@compliance-theater/typescript';
 import { redirect, notFound } from 'next/navigation';
 import { LoggedError } from '../react-util';
 import { SiteRoute } from '../site-util/url-builder/_types';
@@ -13,7 +13,7 @@ import { SiteRoute } from '../site-util/url-builder/_types';
  */
 export async function resolveEmailIdWithRedirect(
   emailIdParam: string,
-  currentPath: string
+  currentPath: string,
 ): Promise<string | null> {
   const emailId = await resolveEmailId(emailIdParam);
   // If no email id provided, show 404
@@ -37,7 +37,7 @@ export async function resolveEmailIdWithRedirect(
  * @returns The resolved email ID if valid, otherwise null
  */
 export async function resolveEmailId(
-  emailIdParam: string
+  emailIdParam: string,
 ): Promise<string | null> {
   // If no email id provided, return null
   if (!emailIdParam) {

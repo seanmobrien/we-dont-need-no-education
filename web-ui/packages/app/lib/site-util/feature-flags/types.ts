@@ -1,6 +1,6 @@
 import type { AiProvider, ModelType } from '@/components/ai/chat-panel/types';
 import type { StorageStrategyConfig } from '@/lib/ai/tools/todo/storage/types';
-import type { PickField } from '@compliance-theater/typescript/_types';
+import type { PickField } from '@compliance-theater/typescript';
 import type {
   BooleanFeatureFlagType,
   KnownFeatureType,
@@ -133,12 +133,12 @@ export type KnownFeatureValueType<TFeature extends KnownFeatureType> =
   TFeature extends BooleanFeatureFlagType
     ? boolean
     : TFeature extends NumberFeatureFlagType
-    ? number
-    : TFeature extends StringFeatureFlagType
-    ? string
-    : TFeature extends ObjectFeatureFlagType
-    ? PickField<FeatureFlagTypeObjectValueMap, TFeature>
-    : never;
+      ? number
+      : TFeature extends StringFeatureFlagType
+        ? string
+        : TFeature extends ObjectFeatureFlagType
+          ? PickField<FeatureFlagTypeObjectValueMap, TFeature>
+          : never;
 
 export type AllFeatureFlagType = {
   [K in KnownFeatureType]: KnownFeatureValueType<K>;

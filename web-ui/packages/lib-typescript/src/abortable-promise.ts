@@ -1,6 +1,6 @@
-import { ICancellablePromiseExt } from './_types';
+import { ICancellablePromiseExt } from "./types";
 
-export const abortablePromise: unique symbol = Symbol('abortablePromise');
+export const abortablePromise: unique symbol = Symbol("abortablePromise");
 
 export type OperationCancelledError = Error & { [abortablePromise]: true };
 
@@ -17,7 +17,7 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
   }
 
   #promise: Promise<T>;
-  readonly #isMe: symbol = Symbol('AbortablePromise');
+  readonly #isMe: symbol = Symbol("AbortablePromise");
   [Symbol.toStringTag]: string = this.#isMe.toString();
   [abortablePromise] = true;
   readonly #controller: AbortController;
@@ -27,8 +27,8 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
       resolve: (value: T | PromiseLike<T>) => void,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       reject: (reason?: any) => void,
-      signal: AbortSignal,
-    ) => void,
+      signal: AbortSignal
+    ) => void
   ) {
     const controller = new AbortController();
     this.#controller = controller;
@@ -48,18 +48,18 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
 
       onAbortCallback = () => {
         if (!settled) {
-          const error = new Error('Promise was cancelled', {
+          const error = new Error("Promise was cancelled", {
             cause: this.#isMe,
           }) as OperationCancelledError;
           error[abortablePromise] = true;
           wrappedReject(error);
         }
       };
-      controller.signal.addEventListener('abort', onAbortCallback);
+      controller.signal.addEventListener("abort", onAbortCallback);
       executor(wrappedResolve, wrappedReject, controller.signal);
     }).finally(() => {
       if (onAbortCallback) {
-        controller.signal.removeEventListener('abort', onAbortCallback);
+        controller.signal.removeEventListener("abort", onAbortCallback);
         onAbortCallback = undefined;
       }
     });
@@ -77,7 +77,7 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
       | null
       | undefined,
     onrejected?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined,
+    ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined
   ): ICancellablePromiseExt<TResult1 | TResult2> {
     this.#promise = this.#promise.then(onfulfilled, onrejected) as Promise<T>;
     return this as ICancellablePromiseExt<TResult1 | TResult2>;
@@ -85,7 +85,7 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
 
   catch<TResult = never>(
     onrejected?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined,
+    ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined
   ): ICancellablePromiseExt<T | TResult> {
     // Don't catch cancellation errors - those should only be handled by cancelled()
     this.#promise = this.#promise.catch((e) => {
@@ -98,7 +98,7 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
   }
 
   finally(
-    onfinally?: (() => void) | null | undefined,
+    onfinally?: (() => void) | null | undefined
   ): ICancellablePromiseExt<T> {
     this.#promise = this.#promise.finally(onfinally);
     return this;
@@ -110,7 +110,7 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
 
   cancelled<TResult = never>(
     onrejected?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined,
+    ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined
   ): ICancellablePromiseExt<T | TResult> {
     this.#promise = this.#promise.catch((e) => {
       if (this.isMyAbortError(e)) {

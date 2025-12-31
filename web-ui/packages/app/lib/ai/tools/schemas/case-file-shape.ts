@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import documentPropertyShape from './documentPropertyShape';
-import { ArrayElement } from '@compliance-theater/typescript/_types';
+import type { ArrayElement } from '@compliance-theater/typescript';
 
 const referencedEmailShape = z.object({
   subject: z.string(),
@@ -38,10 +38,10 @@ const referencedEmailShape = z.object({
               .nullable()
               .describe('Case File ID for a related record.'),
             createdOn: z.string().optional().nullable(),
-          })
+          }),
         )
         .describe('Documents associated with the attachment.'),
-    })
+    }),
   ),
 });
 
@@ -57,7 +57,7 @@ export const DocumentSchema = z.object({
     .nullable()
     .optional()
     .describe(
-      'Document property ID associated with the document.  While unitId / documentId is the preferred identifier, this value can be used to refer to this record in some tools.'
+      'Document property ID associated with the document.  While unitId / documentId is the preferred identifier, this value can be used to refer to this record in some tools.',
     ),
   documentType: z.string().optional().nullable()
     .describe(`Type of the document this case file describes.  Valid values include:
@@ -145,7 +145,7 @@ export const DocumentSchema = z.object({
               })
               .optional()
               .nullable(),
-          })
+          }),
         )
         .nullable()
         .optional()
@@ -169,13 +169,13 @@ export const DocumentSchema = z.object({
                     .optional()
                     .nullable()
                     .describe(
-                      'Case file Id assigned to the attachment.  This value can be passed to getCaseFileDocument and similar tools to retreive attachment conntent and additional information.'
+                      'Case file Id assigned to the attachment.  This value can be passed to getCaseFileDocument and similar tools to retreive attachment conntent and additional information.',
                     ),
-                })
+                }),
               )
               .nullable()
               .optional(),
-          })
+          }),
         )
         .nullable()
         .optional()
@@ -184,14 +184,14 @@ export const DocumentSchema = z.object({
         .optional()
         .nullable()
         .describe(
-          'Details of the email this case file is a reply to, if applicable.'
+          'Details of the email this case file is a reply to, if applicable.',
         ),
       repliesTo: z
         .array(referencedEmailShape)
         .optional()
         .nullable()
         .describe(
-          'Details of emails sent to this case file is a reply to, if applicable.'
+          'Details of emails sent to this case file is a reply to, if applicable.',
         ),
     })
     .nullable()
@@ -205,7 +205,7 @@ export const DocumentSchema = z.object({
           description: z
             .union([z.string(), z.array(z.string())])
             .describe(
-              'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.'
+              'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.',
             ),
           sourceDoc: z.object({
             documentType: z
@@ -232,12 +232,12 @@ export const DocumentSchema = z.object({
             content: z.string().optional().nullable(),
           }),
         }),
-      ])
+      ]),
     )
     .nullable()
     .optional()
     .describe(
-      'Relationships to other documents, where this document is the target.'
+      'Relationships to other documents, where this document is the target.',
     ),
   docRel_sourceDoc: z
     .array(
@@ -247,7 +247,7 @@ export const DocumentSchema = z.object({
           description: z
             .union([z.string(), z.array(z.string())])
             .describe(
-              'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.'
+              'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.',
             ),
           targetDoc: z
             .object({
@@ -272,7 +272,7 @@ export const DocumentSchema = z.object({
             .optional()
             .nullable()
             .describe(
-              'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.'
+              'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.',
             ),
           targetDoc: z
             .object({
@@ -291,12 +291,12 @@ export const DocumentSchema = z.object({
             .optional()
             .nullable(),
         }),
-      ])
+      ]),
     )
     .nullable()
     .optional()
     .describe(
-      'Relationships to other documents, where this document is the source.'
+      'Relationships to other documents, where this document is the source.',
     ),
 });
 
