@@ -2,6 +2,7 @@
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": [
     "**/.env.*local",
+    "patches/**",
     "packages/app/scripts/**",
     "packages/app/public/**",
     "packages/lib-logger/tsconfig.json",
