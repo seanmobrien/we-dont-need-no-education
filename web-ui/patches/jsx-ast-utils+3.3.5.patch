@@ -1,0 +1,40 @@
+diff --git a/node_modules/jsx-ast-utils/lib/values/expressions/index.js b/node_modules/jsx-ast-utils/lib/values/expressions/index.js
+index 2e12a31..5f8577a 100644
+--- a/node_modules/jsx-ast-utils/lib/values/expressions/index.js
++++ b/node_modules/jsx-ast-utils/lib/values/expressions/index.js
+@@ -140,6 +140,7 @@ var TYPES = {
+   OptionalCallExpression: _OptionalCallExpression2.default,
+   OptionalMemberExpression: _OptionalMemberExpression2.default,
+   CallExpression: _CallExpression2.default,
++  TSInstantiationExpression: _CallExpression2.default,
+   UnaryExpression: _UnaryExpression2.default,
+   ThisExpression: _ThisExpression2.default,
+   ConditionalExpression: _ConditionalExpression2.default,
+@@ -234,6 +235,7 @@ var LITERAL_TYPES = _extends({}, TYPES, {
+   OptionalCallExpression: noop,
+   OptionalMemberExpression: noop,
+   CallExpression: noop,
++  TSInstantiationExpression: noop,
+   UnaryExpression: function UnaryExpression(value) {
+     var extractedVal = TYPES.UnaryExpression.call(undefined, value);
+     return extractedVal === undefined ? null : extractedVal;
+diff --git a/node_modules/jsx-ast-utils/src/values/expressions/index.js b/node_modules/jsx-ast-utils/src/values/expressions/index.js
+index d4ebeb5..573d68b 100644
+--- a/node_modules/jsx-ast-utils/src/values/expressions/index.js
++++ b/node_modules/jsx-ast-utils/src/values/expressions/index.js
+@@ -44,6 +44,7 @@ const TYPES = {
+   OptionalCallExpression,
+   OptionalMemberExpression,
+   CallExpression,
++  TSInstantiationExpression: CallExpression,
+   UnaryExpression,
+   ThisExpression,
+   ConditionalExpression,
+@@ -133,6 +134,7 @@ const LITERAL_TYPES = {
+   OptionalCallExpression: noop,
+   OptionalMemberExpression: noop,
+   CallExpression: noop,
++  TSInstantiationExpression: noop,
+   UnaryExpression: (value) => {
+     const extractedVal = TYPES.UnaryExpression.call(undefined, value);
+     return extractedVal === undefined ? null : extractedVal;

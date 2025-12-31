@@ -10,12 +10,16 @@
     "dev": "turbo run dev",
     "debug": "turbo run debug",
     "build": "turbo run build",
+    "clean:build": "turbo run clean:build",
     "test": "turbo run test",
     "test:unit": "turbo run test:unit",
     "test:e2e": "turbo run test:e2e",
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
+    "patch-package": "^8.0.0",
+    "postinstall-postinstall": "^2.1.0",
     "turbo": "^2.3.3"
   }
 }

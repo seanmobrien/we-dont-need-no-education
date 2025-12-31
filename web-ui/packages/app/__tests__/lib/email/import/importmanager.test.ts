@@ -32,7 +32,7 @@ import {
 import { managerMapFactory } from '@/lib/email/import/google/managermapfactory';
 import { ImportManagerMap } from '@/lib/email/import/types';
 import { TransactionalStateManagerBase } from '@/lib/email/import/default/transactional-statemanager';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 const mockManagerMapFactory = managerMapFactory as jest.MockedFunction<
   typeof managerMapFactory
@@ -82,7 +82,7 @@ describe('DefaultImportManager', () => {
   beforeEach(() => {
     (query as jest.Mock).mockImplementation(() => Promise.resolve([]));
     (queryExt as jest.Mock).mockImplementation(() =>
-      Promise.resolve({ rowCount: 0, rows: [] })
+      Promise.resolve({ rowCount: 0, rows: [] }),
     );
     manager = new DefaultImportManager(provider);
   });

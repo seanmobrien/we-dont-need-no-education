@@ -1,5 +1,5 @@
 /* @jest-environment node */
- 
+
 /**
  *
  * @fileoverview Tests for the auth keys API endpoint
@@ -14,7 +14,7 @@ import { NextRequest } from 'next/server';
 import { POST, GET } from '@/app/api/auth/keys/route';
 // import { auth } from '@/auth';
 import { drizDb } from '@/lib/drizzle-db';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 
 // Mock dependencies

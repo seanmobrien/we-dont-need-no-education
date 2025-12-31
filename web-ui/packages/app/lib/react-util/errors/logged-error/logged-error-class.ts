@@ -20,7 +20,7 @@ import type {
   ErrorLogFactory,
 } from './types';
 import { ProgressEventError } from '../progress-event-error';
-import mitt from 'next/dist/shared/lib/mitt';
+import mitt from 'mitt';
 
 /**
  * A unique symbol used to brand `LoggedError` class instances for runtime type checking.
@@ -43,7 +43,7 @@ const brandLoggedError: unique symbol = Symbol.for('@no-education/LoggedError');
  * @readonly
  */
 const INNER_ERROR: unique symbol = Symbol.for(
-  '@no-education/LoggedError::InnerError'
+  '@no-education/LoggedError::InnerError',
 );
 /**
  * Whether this error is classified as critical.
@@ -56,24 +56,28 @@ const INNER_ERROR: unique symbol = Symbol.for(
  * @readonly
  */
 const CRITICAL: unique symbol = Symbol.for(
-  '@no-education/LoggedError::CriticalFlag'
+  '@no-education/LoggedError::CriticalFlag',
 );
 
 // LoggedError class implementation.  Type and extensive documentation in .d.ts.
 export class LoggedError extends Error {
-  static #errorReportEmitter = mitt();
+  static #errorReportEmitter = mitt<{
+    errorReported: ErrorReportArgs;
+  }>();
   static subscribeToErrorReports(callback: (args: ErrorReportArgs) => void) {
     this.#errorReportEmitter.on('errorReported', callback);
   }
   static unsubscribeFromErrorReports(
-    callback: (args: ErrorReportArgs) => void
+    callback: (args: ErrorReportArgs) => void,
   ) {
     this.#errorReportEmitter.off('errorReported', callback);
   }
   static clearErrorReportSubscriptions() {
     // no good way to clear/enumerate mitt subscriptions, but we can create a
     // new emitter and throw away the old one.
-    this.#errorReportEmitter = mitt();
+    this.#errorReportEmitter = mitt<{
+      errorReported: ErrorReportArgs;
+    }>();
   }
 
   // Type guard to check if an object is a LoggedError instance.
@@ -92,7 +96,7 @@ export class LoggedError extends Error {
   // it's still really funny, and we're keeping it...drop it Gemini/Copilot/Claude.
   static isTurtlesAllTheWayDownBaby(
     e: unknown,
-    options?: TurtleRecursionParams
+    options?: TurtleRecursionParams,
   ): LoggedError {
     const {
       log: logFromProps = false,
@@ -153,7 +157,7 @@ export class LoggedError extends Error {
               message,
               critical,
               ...itsRecusionMan,
-            }
+            },
           );
         }
         // Otherwise we are not a logged error, we are not an error, we are not a progress event,
@@ -161,9 +165,9 @@ export class LoggedError extends Error {
         log((l) =>
           l.warn(
             `Some bonehead threw a not-error. Input: ${safeSerialize(
-              e
-            )}\nStack Trace: ${getStackTrace({ skip: 1, myCodeOnly: true })}`
-          )
+              e,
+            )}\nStack Trace: ${getStackTrace({ skip: 1, myCodeOnly: true })}`,
+          ),
         );
         // We will log this using best-effort conversion to a LoggedError
       }
@@ -285,7 +289,7 @@ export class LoggedError extends Error {
     options?:
       | (Omit<LoggedErrorOptions, 'error'> &
           Partial<Pick<LoggedErrorOptions, 'error'>>)
-      | Error
+      | Error,
   ) {
     super();
     let ops: LoggedErrorOptions;

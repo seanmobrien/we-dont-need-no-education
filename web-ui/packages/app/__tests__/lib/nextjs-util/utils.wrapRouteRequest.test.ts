@@ -11,7 +11,7 @@ jest.unmock('@opentelemetry/sdk-trace-base');
  */
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { ILogger, logger } from '@compliance-theater/logger';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 import { NextRequest } from 'next/dist/server/web/spec-extension/request';
 
 const consoleSpy = hideConsoleOutput();

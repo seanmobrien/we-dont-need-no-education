@@ -11,7 +11,8 @@ import type { PgColumn } from 'drizzle-orm/pg-core';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { SQL, lte, inArray } from 'drizzle-orm/sql';
 import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
-import { NEVER_USE_USER_ID } from '@/lib/constants';
+
+const NEVER_USE_USER_ID = -942370932 as const;
 
 /**
  * Chat summary interface for the data grid
@@ -39,7 +40,7 @@ const getColumnFromName = (
     columnTurns: ColumnType;
     columnMessages: ColumnType;
     columnTokens: ColumnType;
-  }
+  },
 ): ColumnType | undefined => {
   switch (columnName) {
     case 'id':
@@ -151,7 +152,7 @@ export const GET = wrapRouteRequest(
           msg: `[[AUDIT]] - Chat history list (${viewType} view) ${result.results.length} matches:`,
           resultset: result.results.map((x) => x.id),
           viewType,
-        })
+        }),
       );
       return NextResponse.json(result);
     } catch (error) {
@@ -161,11 +162,11 @@ export const GET = wrapRouteRequest(
       });
       return NextResponse.json(
         { error: 'Internal Server Error' },
-        { status: 500 }
+        { status: 500 },
       );
     }
   },
-  { buildFallback: { rows: [], rowCount: 0 } }
+  { buildFallback: { rows: [], rowCount: 0 } },
 );
 
 export const dynamic = 'force-dynamic';

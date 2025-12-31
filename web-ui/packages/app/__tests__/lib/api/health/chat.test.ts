@@ -4,7 +4,7 @@ import { checkChatHealth } from '../../../../lib/api/health/chat';
 import { getRedisClient } from '@/lib/redis-client';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getMem0EnabledFlag } from '@/lib/ai/mcp/tool-flags';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 // Mock dependencies
 jest.mock('@/lib/redis-client');

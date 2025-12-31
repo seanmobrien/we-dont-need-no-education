@@ -15,7 +15,7 @@ import type {
   CacheStrategyDeps,
 } from '@/lib/nextjs-util/server/fetch/fetch-types';
 import { type RedisClientType, createClient } from 'redis';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 /*
 
@@ -55,7 +55,7 @@ const mockFetchConfig = jest.fn(() => ({
     response: undefined,
     send: undefined,
     request: undefined,
-  }
+  },
 }));
 
 jest.mock('@/lib/nextjs-util/server/fetch/fetch-config', () => ({

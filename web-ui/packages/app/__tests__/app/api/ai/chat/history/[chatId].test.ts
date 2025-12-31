@@ -9,8 +9,6 @@
  * - Proper drizzle query construction and data transformation
  */
 
-
-
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();
 
@@ -88,7 +86,7 @@ jest.mock('@/lib/react-util', () => ({
 import { auth } from '@/auth';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { eq, and } from 'drizzle-orm';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 const mockConsole = hideConsoleOutput();
 

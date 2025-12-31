@@ -20,7 +20,7 @@ jest.mock('@/lib/ai/middleware/chat-history/utility', () => {
 /**
  * Integration tests for chat history middleware supporting both streaming and text completions
  */
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 import { createChatHistoryMiddlewareEx } from '@/lib/ai/middleware/chat-history';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';

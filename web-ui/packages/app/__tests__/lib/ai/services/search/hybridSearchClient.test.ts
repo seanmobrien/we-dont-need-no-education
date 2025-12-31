@@ -3,7 +3,7 @@
  */
 
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 setupImpersonationMock();
 

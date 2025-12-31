@@ -11,7 +11,7 @@ export enum ErrorSeverity {
 
 export type KnownEnvironmentType = 'development' | 'staging' | 'production';
 
-export interface ErrorContext {
+export type ErrorContext = {
   userId?: string;
   sessionId?: string;
   source?: string;
@@ -23,22 +23,22 @@ export interface ErrorContext {
   breadcrumbs?: string[];
   additionalData?: Record<string, unknown>;
   error?: Error;
-}
+} & Record<string, unknown>;
 
-export interface ErrorReport {
+export type ErrorReport = {
   error: Error;
   severity: ErrorSeverity;
   context: ErrorContext;
   fingerprint?: string;
   tags?: Record<string, string>;
-}
+};
 
 export type ErrorReporterConfigDebounceParams = {
   debounceIntervalMs: number;
   debounceCleanupIntervalMs: number;
 };
 
-export interface ErrorReporterConfig {
+export type ErrorReporterConfig = {
   enableStandardLogging: boolean;
   enableConsoleLogging: boolean;
   enableExternalReporting: boolean;
@@ -47,12 +47,12 @@ export interface ErrorReporterConfig {
   environment: KnownEnvironmentType;
   debounce?: ErrorReporterConfigDebounceParams;
   // Circuit Breaker Config
-  triggerMax?: number;          // Max errors in window before triggering suppression
-  triggerTtl?: number;          // Window size for trigger count / Suppression duration
-  switchMax?: number;           // Max trigger trips before permanent switch
-  switchTtl?: number;           // Window size for switch count
-  triggerTimeout?: number;      // Duration to suppress when triggered
-}
+  triggerMax?: number; // Max errors in window before triggering suppression
+  triggerTtl?: number; // Window size for trigger count / Suppression duration
+  switchMax?: number; // Max trigger trips before permanent switch
+  switchTtl?: number; // Window size for switch count
+  triggerTimeout?: number; // Duration to suppress when triggered
+};
 
 export type CircuitBreakerConfig = {
   triggerMax: number;
@@ -61,8 +61,6 @@ export type CircuitBreakerConfig = {
   switchTtl: number;
   triggerTimeout: number;
 };
-
-
 
 export type ErrorReportResult = Omit<SuppressionResult, 'rule'> & {
   report: ErrorReport;
@@ -111,14 +109,14 @@ export interface ErrorReporterInterface {
 export type IContextEnricher = {
   enrichContext: (context: ErrorContext) => Promise<ErrorContext>;
 };
-export interface ErrorSuppressionRule {
+export type ErrorSuppressionRule = {
   id: string;
   pattern: string | RegExp;
   source?: string | RegExp;
   suppressCompletely?: boolean;
   reload?: boolean;
   reason?: string;
-}
+};
 
 export type SuppressionResult = {
   suppress: boolean;

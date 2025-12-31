@@ -28,7 +28,7 @@ import { openai } from '@ai-sdk/openai';
 import { generateText, LanguageModelMiddleware, wrapLanguageModel } from 'ai';
 import { LanguageModelV2, LanguageModelV2CallOptions } from '@ai-sdk/provider';
 import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 import { metricsCollector } from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
 
 // Mock function to simulate different response types

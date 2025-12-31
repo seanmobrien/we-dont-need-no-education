@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@compliance-theater/logger';
 // (normalizeNullableNumeric no longer needed directly; handled in validation module)
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { NEVER_USE_USER_ID } from '@/lib/constants';
 
 import { EmailService } from '@/lib/api/email/email-service';
 import {
@@ -26,6 +25,8 @@ import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
 import { getAccessToken } from '@/lib/auth/access-token';
 
 export const dynamic = 'force-dynamic';
+
+const NEVER_USE_USER_ID = -942370932 as const;
 
 /**
  * Handles the GET request to fetch a list of emails with sender and recipient information.
@@ -93,15 +94,15 @@ export const GET = wrapRouteRequest(
           and(
             and(
               eq(schema.emails.emailId, schema.documentUnits.emailId),
-              eq(schema.documentUnits.documentType, 'email')
+              eq(schema.documentUnits.documentType, 'email'),
             ),
-            inArray(schema.documentUnits.userId, eligibleUserIds)
-          )
+            inArray(schema.documentUnits.userId, eligibleUserIds),
+          ),
         )
         // Inner join to contacts to get sender name and email
         .innerJoin(
           schema.contacts,
-          eq(schema.emails.senderId, schema.contacts.contactId)
+          eq(schema.emails.senderId, schema.contacts.contactId),
         );
       return await selectForGrid<EmailMessageSummary>({
         req,
@@ -119,7 +120,7 @@ export const GET = wrapRouteRequest(
           sentOn: new Date(
             emailDomain.sentOn
               ? Date.parse(String(emailDomain.sentOn))
-              : Date.now()
+              : Date.now(),
           ),
           threadId: emailDomain.threadId
             ? Number(emailDomain.threadId)
@@ -146,7 +147,7 @@ export const GET = wrapRouteRequest(
 
     return Response.json(results);
   },
-  { buildFallback: buildFallbackGrid }
+  { buildFallback: buildFallbackGrid },
 );
 
 /**
@@ -167,7 +168,7 @@ export const POST = wrapRouteRequest(
       if (!validated.success) {
         return NextResponse.json(
           { error: 'Validation failed', details: validated.error.flatten() },
-          { status: 400 }
+          { status: 400 },
         );
       }
       const emailService = new EmailService();
@@ -178,7 +179,7 @@ export const POST = wrapRouteRequest(
           message: 'Email created successfully',
           email: createdEmail,
         },
-        { status: 201 }
+        { status: 201 },
       );
     } catch (error) {
       if (ValidationError.isValidationError(error)) {
@@ -188,14 +189,14 @@ export const POST = wrapRouteRequest(
         l.error({
           source: 'POST email',
           error,
-        })
+        }),
       );
       return NextResponse.json(
         { error: 'Internal Server Error' },
-        { status: 500 }
+        { status: 500 },
       );
     }
-  }
+  },
 );
 
 /**
@@ -216,7 +217,7 @@ export const PUT = wrapRouteRequest(
       if (!validated.success) {
         return NextResponse.json(
           { error: 'Validation failed', details: validated.error.flatten() },
-          { status: 400 }
+          { status: 400 },
         );
       }
       const emailService = new EmailService();
@@ -224,7 +225,7 @@ export const PUT = wrapRouteRequest(
 
       return NextResponse.json(
         { message: 'Email updated successfully', email: updatedEmail },
-        { status: 200 }
+        { status: 200 },
       );
     } catch (error) {
       if (ValidationError.isValidationError(error)) {
@@ -233,10 +234,10 @@ export const PUT = wrapRouteRequest(
       log((l) => l.error({ source: 'PUT email', error }));
       return NextResponse.json(
         { error: 'Internal Server Error' },
-        { status: 500 }
+        { status: 500 },
       );
     }
-  }
+  },
 );
 
 /**
@@ -255,7 +256,7 @@ export const DELETE = wrapRouteRequest(
       if (!emailId) {
         return NextResponse.json(
           { error: 'Email ID is required' },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -268,14 +269,14 @@ export const DELETE = wrapRouteRequest(
 
       return NextResponse.json(
         { message: 'Email deleted successfully' },
-        { status: 200 }
+        { status: 200 },
       );
     } catch (error) {
       log((l) => l.error({ source: 'DELETE email', error }));
       return NextResponse.json(
         { error: 'Internal Server Error' },
-        { status: 500 }
+        { status: 500 },
       );
     }
-  }
+  },
 );

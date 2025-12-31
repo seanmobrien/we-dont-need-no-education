@@ -21,18 +21,20 @@
   "scripts": {
     "build": "tsc -b tsconfig.json",
     "test": "jest",
-    "lint": "echo 'Linting lib-logger...'"
+    "lint": "echo 'Linting lib-logger...'",
+    "clean:build": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    "pino": "^9.6.0",
-    "pino-pretty": "^13.0.0",
     "@opentelemetry/api": "1.9.0",
-    "@opentelemetry/api-logs": "0.57.2"
+    "@opentelemetry/api-logs": "0.57.2",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "typescript": "^5",
     "jest": "^30.0.5",
-    "ts-jest": "^29.3.4"
+    "rimraf": "^6.1.2",
+    "ts-jest": "^29.3.4",
+    "typescript": "^5"
   }
 }

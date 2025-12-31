@@ -19,6 +19,7 @@
     "preinstall": "node -e \"if(process.env.npm_execpath.indexOf('yarn') === -1) throw new Error('Please use yarn instead of npm')\"",
     "dev": "next dev",
     "build": "cross-env NODE_OPTIONS='--max-old-space-size=3096' next build --profile",
+    "clean:build": "rimraf .next dist tsconfig.tsbuildinfo",
     "drizzle-generate": "drizzle-kit generate --config=drizzle.config.ts",
     "debug": "cross-env NODE_OPTIONS='--inspect' next dev",
     "test": "jest",
@@ -85,6 +86,7 @@
     "@opentelemetry/sdk-trace-base": "1.30.1",
     "@opentelemetry/semantic-conventions": "^1.30.0",
     "@protobufjs/eventemitter": "^1.1.0",
+    "@redis/client": ">=5.5.6",
     "@tanstack/react-query": "^5.80.10",
     "@tanstack/react-virtual": "^3.13.12",
     "@textea/json-viewer": "4.0.1",
@@ -109,6 +111,7 @@
     "lodash": "^4.17.21",
     "markdown-to-jsx": "^7.7.6",
     "mcp-handler": "^1.0.2",
+    "mitt": "^3.0.1",
     "mui-markdown": "^2.0.1",
     "next": "^15.5.9",
     "next-auth": "^5.0.0-beta.30",
@@ -130,7 +133,6 @@
     "react-resizable": "^3.0.5",
     "readable-web-to-node-stream": "^5.0.0",
     "redis": ">=5.5.6",
-    "@redis/client": ">=5.5.6",
     "semanticencoding": "^0.0.2",
     "tough-cookie": "^6.0.0",
     "ts-node": "^10.9.2",
@@ -172,6 +174,7 @@
     "jest-mock-extended": "^4.0.0-beta1",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.3",
+    "rimraf": "^6.1.2",
     "ts-jest": "^29.3.4",
     "undici": "^7.16.0",
     "web-streams-polyfill": "^4.2.0"
@@ -198,6 +201,7 @@
     "esbuild": ">=0.25.0",
     "@textea/json-viewer/**/@mui/material": ">=7.3.6",
     "@textea/json-viewer/**/react": ">=19.2.0",
-    "@textea/json-viewer/**/react-dom": ">=19.2.0"
+    "@textea/json-viewer/**/react-dom": ">=19.2.0",
+    "jsx-ast-utils": "^4.4.2"
   }
 }

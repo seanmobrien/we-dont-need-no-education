@@ -10,7 +10,7 @@
  * @since 2025-07-19
  */
 
-import { memo, useMemo } from 'react';
+import { memo, useMemo, type ComponentType } from 'react';
 import { DashboardSidebarPageItem } from '@toolpad/core/DashboardLayout';
 import { NavigationPageItem } from '@toolpad/core/AppProvider';
 import siteBuilder from '@/lib/site-util/url-builder';
@@ -150,11 +150,7 @@ export const CustomEmailPageItem = memo(
             <ListItemButton sx={stableSx.listItemButton}>
               <Link
                 data-id={itemId}
-                role="link"
-                component={
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  NextLink<any>
-                }
+                component={NextLink as ComponentType<{ href: string }>}
                 href={parentHref.toString()}
                 aria-current={
                   pathname.toString() === parentHref.toString()
