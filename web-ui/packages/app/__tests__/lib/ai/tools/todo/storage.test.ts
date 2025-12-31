@@ -10,6 +10,7 @@ import {
 } from '@/lib/ai/tools/todo/storage/factory';
 import type { Todo, TodoList } from '@/lib/ai/tools/todo/types';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { SingletonProvider } from '@compliance-theater/typescript';
 
 const idPrefix = `todo::user-test-user-id::`;
 const consoleSpy = hideConsoleOutput();
@@ -323,6 +324,7 @@ describe('RedisStorageStrategy', () => {
       keyPrefix: 'test-todo',
       ttl: 3600,
     });
+    SingletonProvider.Instance.clear();
   });
 
   afterEach(async () => {

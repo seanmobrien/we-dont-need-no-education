@@ -428,7 +428,11 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         MATCH: pattern,
         COUNT: 100,
       })) {
-        keys.push(...keyChunk);
+        if (Array.isArray(keyChunk)) {
+          keys.push(...keyChunk);
+        } else {
+          keys.push(keyChunk);
+        }
       }
       if (keys.length === 0) {
         return [];
@@ -519,7 +523,8 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         MATCH: pattern,
         COUNT: 100,
       })) {
-        count += keyChunk.length;
+        const batchCount = Array.isArray(keyChunk) ? keyChunk.length : 1;
+        count += batchCount;
       }
       return count;
     } catch (error) {
@@ -563,28 +568,44 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         MATCH: listPattern,
         COUNT: 100,
       })) {
-        listKeys.push(...keyChunk);
+        if (Array.isArray(keyChunk)) {
+          listKeys.push(...keyChunk);
+        } else {
+          listKeys.push(keyChunk);
+        }
       }
 
       for await (const keyChunk of redis.scanIterator({
         MATCH: todoPattern,
         COUNT: 100,
       })) {
-        todoKeys.push(...keyChunk);
+        if (Array.isArray(keyChunk)) {
+          todoKeys.push(...keyChunk);
+        } else {
+          todoKeys.push(keyChunk);
+        }
       }
 
       for await (const keyChunk of redis.scanIterator({
         MATCH: mappingPattern,
         COUNT: 100,
       })) {
-        mappingKeys.push(...keyChunk);
+        if (Array.isArray(keyChunk)) {
+          mappingKeys.push(...keyChunk);
+        } else {
+          mappingKeys.push(keyChunk);
+        }
       }
 
       for await (const keyChunk of redis.scanIterator({
         MATCH: membershipPattern,
         COUNT: 100,
       })) {
-        membershipKeys.push(...keyChunk);
+        if (Array.isArray(keyChunk)) {
+          membershipKeys.push(...keyChunk);
+        } else {
+          membershipKeys.push(keyChunk);
+        }
       }
 
       const allKeys = [
