@@ -66,7 +66,6 @@ jest.mock('redis', () => {
       clientInstance = {
         ping: jest.fn(() => Promise.resolve('PONG')),
         connect: jest.fn(() => {
-          console.log('Mock Redis client connecting');
           clientInstance!.isOpen = true;
           return Promise.resolve(clientInstance!);
         }),
