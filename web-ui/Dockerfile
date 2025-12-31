@@ -206,9 +206,9 @@ RUN addgroup --system --gid 1001 nodejs \
   && mkdir -p /app/scripts
 
 # Copy Next.js standalone output from the app workspace
-COPY --link=true --from=builder /app/packages/app/.next/standalone ./
-COPY --link=true --from=builder /app/packages/app/.next/static ./.next/static
-COPY --link=true --from=builder /app/packages/app/public ./public
+COPY --link=true --from=builder /app/packages/app/.next/standalone /app
+COPY --link=true --from=builder /app/packages/app/.next/static /app/static
+COPY --link=true --from=builder /app/packages/app/public /app/public
 COPY --link=true --from=builder /app/packages/app/scripts /app/scripts
 
 
@@ -220,6 +220,8 @@ RUN mkdir -p /var/log \
   && chown nextjs:nodejs /var/log \
   && chown -R nextjs:nodejs /app \
   && find /app/scripts -type f -name '*.sh' -exec chmod +x {} + || true
+
+WORKDIR /app
 
 EXPOSE 3000
 EXPOSE 9229

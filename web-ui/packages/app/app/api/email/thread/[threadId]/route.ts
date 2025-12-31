@@ -10,8 +10,8 @@ import {
 import { query, queryExt } from '@/lib/neondb';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { getAccessibleUserIds } from '@/lib/auth/resources/case-file/case-file-helpers';
-import { NEVER_USE_USER_ID } from '@/lib/constants';
 
+const NEVER_USE_USER_ID = -942370932 as const;
 export const dynamic = 'force-dynamic';
 
 export const GET = wrapRouteRequest(
@@ -45,7 +45,9 @@ export const GET = wrapRouteRequest(
       if (expand !== 'true' && expand !== '1') {
         return NextResponse.json(threadRecord[0], { status: 200 });
       }
-      const eligibleUserIds = await getAccessibleUserIds(req) ?? [NEVER_USE_USER_ID];
+      const eligibleUserIds = (await getAccessibleUserIds(req)) ?? [
+        NEVER_USE_USER_ID,
+      ];
 
       // pull away
       const result = await queryExt(

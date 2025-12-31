@@ -34,9 +34,10 @@
       "@/*": [
         "./*"
       ],
+      /*
       "/(rsc)/./*": [
         "./*"
-      ],
+      ],*/
       "@compliance-theater/logger": [
         "../lib-logger/dist"
       ],
