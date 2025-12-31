@@ -10,6 +10,7 @@
     "dev": "turbo run dev",
     "debug": "turbo run debug",
     "build": "turbo run build",
+    "clean:build": "turbo run clean:build",
     "test": "turbo run test",
     "test:unit": "turbo run test:unit",
     "test:e2e": "turbo run test:e2e",

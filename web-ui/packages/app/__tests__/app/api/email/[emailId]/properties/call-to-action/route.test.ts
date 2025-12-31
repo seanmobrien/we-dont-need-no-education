@@ -12,7 +12,7 @@ import { NextRequest } from 'next/server';
 import { GET } from '@/app/api/email/[emailId]/properties/call-to-action/route';
 import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 // Mock external dependencies
 jest.mock('@/lib/neondb');

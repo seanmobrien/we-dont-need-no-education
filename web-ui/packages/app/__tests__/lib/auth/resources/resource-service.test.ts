@@ -7,7 +7,7 @@ import { resourceService } from '@/lib/auth/resources/resource-service';
 import { authorizationService } from '@/lib/auth/resources/authorization-service';
 import { fetch } from '@/lib/nextjs-util/server';
 import { decodeToken } from '@/lib/auth/utilities';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 // Mock dependencies
 jest.mock('@/lib/nextjs-util/server', () => ({
@@ -20,7 +20,8 @@ jest.mock('@/lib/auth/utilities', () => ({
 
 jest.mock('@/lib/site-util/env', () => ({
   env: jest.fn((key) => {
-    if (key === 'AUTH_KEYCLOAK_ISSUER') return 'https://keycloak.example.com/realms/test';
+    if (key === 'AUTH_KEYCLOAK_ISSUER')
+      return 'https://keycloak.example.com/realms/test';
     if (key === 'AUTH_KEYCLOAK_CLIENT_ID') return 'client-id';
     return 'value';
   }),
@@ -54,7 +55,7 @@ describe('ResourceService', () => {
         expect.objectContaining({
           method: 'POST',
           body: expect.any(URLSearchParams),
-        })
+        }),
       );
     });
 
@@ -94,7 +95,8 @@ describe('ResourceService', () => {
         json: async () => mockResource,
       });
 
-      const result = await resourceService().findAuthorizedResource('case-file:1');
+      const result =
+        await resourceService().findAuthorizedResource('case-file:1');
 
       expect(result).toEqual(mockResource);
     });
@@ -120,7 +122,7 @@ describe('ResourceService', () => {
         'https://keycloak.example.com/realms/test/authz/protection/resource_set/res-123',
         expect.objectContaining({
           headers: { Authorization: `Bearer ${mockPat}` },
-        })
+        }),
       );
     });
 
@@ -152,8 +154,10 @@ describe('ResourceService', () => {
         statusText: 'Internal Server Error',
       });
 
-      await expect(resourceService().getAuthorizedResource('res-123')).rejects.toThrow(
-        'Failed to get resource details: Internal Server Error'
+      await expect(
+        resourceService().getAuthorizedResource('res-123'),
+      ).rejects.toThrow(
+        'Failed to get resource details: Internal Server Error',
       );
     });
   });
@@ -185,7 +189,7 @@ describe('AuthorizationService', () => {
       const result = await service.checkResourceFileAccess({
         resourceId: 'resource-123',
         scope: 'case-file:read',
-        bearerToken: 'user-token'
+        bearerToken: 'user-token',
       });
 
       expect(result.success).toBe(true);
@@ -211,7 +215,7 @@ describe('AuthorizationService', () => {
       const result = await service.checkResourceFileAccess({
         resourceId: 'resource-123',
         permissions: ['write'],
-        bearerToken: 'user-token'
+        bearerToken: 'user-token',
       });
 
       expect(result.success).toBe(true);
@@ -233,7 +237,7 @@ describe('AuthorizationService', () => {
       const result = await service.checkResourceFileAccess({
         resourceId: 'resource-123',
         permissions: ['write'],
-        bearerToken: 'user-token'
+        bearerToken: 'user-token',
       });
 
       expect(result.success).toBe(false);
@@ -258,7 +262,7 @@ describe('AuthorizationService', () => {
       const result = await service.checkResourceFileAccess({
         resourceId: 'resource-123',
         permissions: ['read'],
-        bearerToken: 'user-token'
+        bearerToken: 'user-token',
       });
 
       expect(result.success).toBe(false);
@@ -274,7 +278,7 @@ describe('AuthorizationService', () => {
 
       const result = await service.checkResourceFileAccess({
         resourceId: 'resource-123',
-        bearerToken: 'invalid-token'
+        bearerToken: 'invalid-token',
       });
 
       expect(result.success).toBe(false);
@@ -290,7 +294,7 @@ describe('AuthorizationService', () => {
 
       const result = await service.checkResourceFileAccess({
         resourceId: 'resource-123',
-        bearerToken: 'user-token'
+        bearerToken: 'user-token',
       });
 
       expect(result.success).toBe(false);

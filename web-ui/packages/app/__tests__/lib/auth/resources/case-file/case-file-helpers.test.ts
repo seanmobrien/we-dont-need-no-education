@@ -3,7 +3,7 @@
 import { getAccessibleUserIds } from '@/lib/auth/resources/case-file/case-file-helpers';
 import { authorizationService } from '@/lib/auth/resources/authorization-service';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 // Mock the authorization service
 jest.mock('@/lib/auth/resources/authorization-service');
@@ -14,12 +14,14 @@ describe('getAccessibleUserIds', () => {
 
   beforeAll(() => {
     // Setup the mock implementation for the authorizationService factory
-    (authorizationService as unknown as jest.Mock).mockImplementation((callback) => {
-      const mockService = {
-        getUserEntitlements: mockGetUserEntitlements,
-      };
-      return callback(mockService);
-    });
+    (authorizationService as unknown as jest.Mock).mockImplementation(
+      (callback) => {
+        const mockService = {
+          getUserEntitlements: mockGetUserEntitlements,
+        };
+        return callback(mockService);
+      },
+    );
   });
 
   beforeEach(() => {

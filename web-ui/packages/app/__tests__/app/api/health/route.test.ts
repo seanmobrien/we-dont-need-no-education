@@ -30,7 +30,7 @@ jest.mock('@/lib/ai/mcp/providers', () => ({
   }),
 }));
 import { auth } from '@/auth';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 import { GET } from '@/app/api/health/route';
 import { NextRequest } from 'next/server';
 import { fromUserId } from '@/lib/auth/impersonation/impersonation-factory';

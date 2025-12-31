@@ -15,7 +15,6 @@ exports[`CustomEmailPageItem marks parent as current page when pathname matches 
         class="MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineAlways css-xygh2q-MuiTypography-root-MuiLink-root"
         data-id="navmenu-email-email"
         href="/messages/email/123"
-        role="link"
       >
         Email
       </a>
@@ -64,7 +63,6 @@ exports[`CustomEmailPageItem should link to chat history page when item is Chat 
         class="MuiTypography-root MuiTypography-inherit MuiLink-root MuiLink-underlineAlways css-xygh2q-MuiTypography-root-MuiLink-root"
         data-id="navmenu-email-chat-history"
         href="/messages/chat"
-        role="link"
       >
         Chat History
       </a>

@@ -19,6 +19,7 @@
     "preinstall": "node -e \"if(process.env.npm_execpath.indexOf('yarn') === -1) throw new Error('Please use yarn instead of npm')\"",
     "dev": "next dev",
     "build": "cross-env NODE_OPTIONS='--max-old-space-size=3096' next build --profile",
+    "clean:build": "rimraf .next dist tsconfig.tsbuildinfo",
     "drizzle-generate": "drizzle-kit generate --config=drizzle.config.ts",
     "debug": "cross-env NODE_OPTIONS='--inspect' next dev",
     "test": "jest",
@@ -173,6 +174,7 @@
     "jest-mock-extended": "^4.0.0-beta1",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.3",
+    "rimraf": "^6.1.2",
     "ts-jest": "^29.3.4",
     "undici": "^7.16.0",
     "web-streams-polyfill": "^4.2.0"

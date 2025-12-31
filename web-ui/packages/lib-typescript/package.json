@@ -25,7 +25,8 @@
   "scripts": {
     "build": "tsc -b tsconfig.json --force",
     "test": "jest",
-    "lint": "echo 'Linting lib-typescript...'"
+    "lint": "echo 'Linting lib-typescript...'",
+    "clean:build": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@compliance-theater/logger": "0.1.0"

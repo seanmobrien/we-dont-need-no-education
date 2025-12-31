@@ -20,6 +20,11 @@
         "AZURE_*"
       ]
     },
+    "clean:build": {
+      "cache": false,
+      "persistent": false,
+      "outputs": []
+    },
     "dev": {
       "cache": false,
       "persistent": true
