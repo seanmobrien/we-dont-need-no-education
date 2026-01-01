@@ -1,10 +1,10 @@
 import type { NextConfig } from 'next';
 import { withBundleAnalyzer } from './lib/config/bundle-analyzers';
 import { withIgnorePacks } from './lib/config/ignore-unsupported-packs-plugin';
-// import { withStripRscPrefixPlugin } from './lib/config/strip-rsc-prefix-plugin';
+import { withStripRscPrefixPlugin } from './lib/config/strip-rsc-prefix-plugin';
 import { withReactConfigFactory, withTypescriptConfig } from './lib/config';
 
-export const nextConfig: NextConfig = // withStripRscPrefixPlugin(
+export const nextConfig: NextConfig = withStripRscPrefixPlugin(
   withIgnorePacks(
     withBundleAnalyzer(
       withReactConfigFactory()(
@@ -18,7 +18,7 @@ export const nextConfig: NextConfig = // withStripRscPrefixPlugin(
         }),
       ),
     ),
-    // ),
-  );
+  ),
+);
 
 export default nextConfig;
