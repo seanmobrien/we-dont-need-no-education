@@ -15,7 +15,11 @@
         "../lib-logger/dist/*"
       ]
     },
-    "noEmit": false
+    "noEmit": false,
+    "types": [
+      "node",
+      "jest"
+    ],
   },
   "include": [
     "src/**/*"
