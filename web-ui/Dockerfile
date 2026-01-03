@@ -19,6 +19,7 @@ ARG AZURE_STORAGE_ACCOUNT_NAME
 ARG MEM0_API_HOST
 ARG MEM0_UI_HOST
 ARG MEM0_USERNAME
+ARG BUILD_CACHE
 
 FROM node:24-alpine AS base
 
@@ -40,6 +41,7 @@ ARG AZURE_STORAGE_ACCOUNT_NAME
 ARG MEM0_API_HOST
 ARG MEM0_UI_HOST
 ARG MEM0_USERNAME
+ARG BUILD_CACHE
 
 ENV PYTHONUNBUFFERED=1
 
@@ -75,14 +77,60 @@ RUN npm install -g turbo@2.3.3
 COPY --link=true . .
 
 # Produce a pruned workspace for the app package
-RUN turbo prune --scope=@compliance-theater/app --docker
+RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
+  --mount=type=secret,id=AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING \
+  --mount=type=secret,id=AZURE_MONITOR_CONNECTION_STRING \
+  --mount=type=secret,id=REDIS_URL \
+  --mount=type=secret,id=REDIS_PASSWORD \
+  --mount=type=secret,id=AZURE_API_KEY \
+  --mount=type=secret,id=AZURE_AISEARCH_KEY \
+  --mount=type=secret,id=AUTH_GOOGLE_SECRET \
+  --mount=type=secret,id=AUTH_GOOGLE_APIKEY \
+  --mount=type=secret,id=AZURE_STORAGE_ACCOUNT_KEY \
+  --mount=type=secret,id=AZURE_STORAGE_CONNECTION_STRING \
+  --mount=type=secret,id=AUTH_GOOGLE_ID \
+  --mount=type=secret,id=OPENID_KEY_TEXT \
+  --mount=type=secret,id=FLAGSMITH_SDK_KEY \
+  NEXT_PUBLIC_HOSTNAME="$NEXT_PUBLIC_HOSTNAME" \
+  NEXT_PUBLIC_LOG_LEVEL_CLIENT="$NEXT_PUBLIC_LOG_LEVEL_CLIENT" \
+  NEXT_PUBLIC_DEFAULT_AI_MODEL="$NEXT_PUBLIC_DEFAULT_AI_MODEL" \
+  NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT="$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT" \
+  NEXT_PUBLIC_FLAGSMITH_API_URL="$NEXT_PUBLIC_FLAGSMITH_API_URL" \
+  NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID="$NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID" \
+  FOR_STANDALONE=1 \
+  IS_BUILDING=1 \
+  SECRETS=/run/secrets; \
+  TMP_ENV="$(mktemp)"; \
+  export NEXT_PUBLIC_HOSTNAME NEXT_PUBLIC_LOG_LEVEL_CLIENT NEXT_PUBLIC_DEFAULT_AI_MODEL \
+    NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT NEXT_PUBLIC_FLAGSMITH_API_URL NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID \
+    FOR_STANDALONE IS_BUILDING; \
+  export NEXT_PUBLIC_MUI_LICENSE="$(cat $SECRETS/NEXT_PUBLIC_MUI_LICENSE 2>/dev/null || true)"; \
+  export AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING="$(cat $SECRETS/AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING 2>/dev/null || true)"; \
+  export NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING="$AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING"; \
+  export AZURE_MONITOR_CONNECTION_STRING="$(cat $SECRETS/AZURE_MONITOR_CONNECTION_STRING 2>/dev/null || true)"; \
+  export NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING="$AZURE_MONITOR_CONNECTION_STRING"; \
+  _w_env() { var="$1"; secret_file="$2"; eval "current=\${$var:-}"; [ -z "$current" ] && current="$(cat "$secret_file" 2>/dev/null || true)"; [ -n "$current" ] && printf "%s=%s\n" "$var" "$current" >> "$TMP_ENV"; }; \
+  _w_env AZURE_STORAGE_ACCOUNT_KEY "$SECRETS/AZURE_STORAGE_ACCOUNT_KEY"; \
+  _w_env AZURE_STORAGE_CONNECTION_STRING "$SECRETS/AZURE_STORAGE_CONNECTION_STRING"; \
+  _w_env AUTH_GOOGLE_ID "$SECRETS/AUTH_GOOGLE_ID"; \
+  _w_env OPENID_KEY_TEXT "$SECRETS/OPENID_KEY_TEXT"; \
+  _w_env REDIS_URL "$SECRETS/REDIS_URL"; \
+  _w_env REDIS_PASSWORD "$SECRETS/REDIS_PASSWORD"; \
+  _w_env AZURE_API_KEY "$SECRETS/AZURE_API_KEY"; \
+  _w_env AZURE_AISEARCH_KEY "$SECRETS/AZURE_AISEARCH_KEY"; \
+  _w_env AUTH_GOOGLE_SECRET "$SECRETS/AUTH_GOOGLE_SECRET"; \
+  _w_env AUTH_GOOGLE_APIKEY "$SECRETS/AUTH_GOOGLE_APIKEY"; \
+  _w_env FLAGSMITH_SDK_KEY "$SECRETS/FLAGSMITH_SDK_KEY"; \
+  set -a; [ -f "$TMP_ENV" ] && . "$TMP_ENV"; set +a; \
+  turbo prune --scope=@compliance-theater/app --docker; \
+  rm -f "$TMP_ENV"
 
 # Dependencies layer uses pruned workspace
 FROM base AS deps
 WORKDIR /app
 
 # Copy pruned package manifests and lockfile
-COPY --link=true --from=pruner /repo/out/json/ ./
+COPY --link=true --from=pruner /repo/out/full/ ./
 COPY --link=true --from=pruner /repo/out/yarn.lock ./yarn.lock
 
 RUN yarn install --frozen-lockfile
@@ -91,7 +139,7 @@ RUN yarn install --frozen-lockfile
 FROM deps AS builder
 WORKDIR /app
 
-COPY --link=true --from=pruner /repo/out/full/ ./
+COPY --link=true --from=deps /app/ ./
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT
@@ -103,17 +151,19 @@ ENV AZURE_STORAGE_ACCOUNT_NAME=$AZURE_STORAGE_ACCOUNT_NAME
 ENV OTEL_SERVICE_NAME=$OTEL_SERVICE_NAME
 ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
 ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
+ENV MEM0_API_HOST=$MEM0_API_HOST
+ENV MEM0_UI_HOST=$MEM0_UI_HOST
+ENV MEM0_USERNAME=$MEM0_USERNAME
+ENV FOR_STANDALONE=1
+ENV IS_BUILDING=1
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
 ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
 ENV NEXT_PUBLIC_FLAGSMITH_API_URL=$NEXT_PUBLIC_FLAGSMITH_API_URL
 ENV NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID=$NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
-ENV MEM0_API_HOST=$MEM0_API_HOST
-ENV MEM0_UI_HOST=$MEM0_UI_HOST
-ENV MEM0_USERNAME=$MEM0_USERNAME
-ENV FOR_STANDALONE=1
-ENV IS_BUILDING=1
+ENV NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=$AZURE_MONITOR_CONNECTION_STRING
+ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 
 RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
   --mount=type=secret,id=AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING \
@@ -131,28 +181,38 @@ RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
   --mount=type=secret,id=OPENID_KEY_TEXT \
   --mount=type=secret,id=FLAGSMITH_SDK_KEY \
   SECRETS=/run/secrets; \
-  export NEXT_PUBLIC_MUI_LICENSE="$(cat $SECRETS/NEXT_PUBLIC_MUI_LICENSE 2>/dev/null || true)"; \
-  export AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING="$(cat $SECRETS/AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING 2>/dev/null || true)"; \
-  export AZURE_MONITOR_CONNECTION_STRING="$(cat $SECRETS/AZURE_MONITOR_CONNECTION_STRING 2>/dev/null || true)"; \
-  export REDIS_URL="$(cat $SECRETS/REDIS_URL 2>/dev/null || true)"; \
-  export REDIS_PASSWORD="$(cat $SECRETS/REDIS_PASSWORD 2>/dev/null || true)"; \
+  TMP_ENV="$(mktemp)"; \  
   export DATABASE_URL="$(cat $SECRETS/DATABASE_URL 2>/dev/null || true)"; \
-  export AZURE_API_KEY="$(cat $SECRETS/AZURE_API_KEY 2>/dev/null || true)"; \
-  export AZURE_AISEARCH_KEY="$(cat $SECRETS/AZURE_AISEARCH_KEY 2>/dev/null || true)"; \
-  export AUTH_GOOGLE_SECRET="$(cat $SECRETS/AUTH_GOOGLE_SECRET 2>/dev/null || true)"; \
-  export AUTH_GOOGLE_APIKEY="$(cat $SECRETS/AUTH_GOOGLE_APIKEY 2>/dev/null || true)"; \
-  export AZURE_STORAGE_ACCOUNT_KEY="$(cat $SECRETS/AZURE_STORAGE_ACCOUNT_KEY 2>/dev/null || true)"; \
-  export AZURE_STORAGE_CONNECTION_STRING="$(cat $SECRETS/AZURE_STORAGE_CONNECTION_STRING 2>/dev/null || true)"; \
-  export AUTH_GOOGLE_ID="$(cat $SECRETS/AUTH_GOOGLE_ID 2>/dev/null || true)"; \
-  export OPENID_KEY_TEXT="$(cat $SECRETS/OPENID_KEY_TEXT 2>/dev/null || true)"; \
-  export FLAGSMITH_SDK_KEY="$(cat $SECRETS/FLAGSMITH_SDK_KEY 2>/dev/null || true)"; \
-  export FOR_STANDALONE=1; \
-  export IS_BUILDING=1; \
-  yarn build
+  export NEXT_PUBLIC_MUI_LICENSE="$(cat $SECRETS/NEXT_PUBLIC_MUI_LICENSE 2>/dev/null || true)"; \
+  export AZURE_MONITOR_CONNECTION_STRING="$(cat $SECRETS/AZURE_MONITOR_CONNECTION_STRING 2>/dev/null || true)"; \
+  printf "%s=%s\n" "NEXT_PUBLIC_MUI_LICENSE" "$NEXT_PUBLIC_MUI_LICENSE" >> "$TMP_ENV"; \
+  printf "%s=%s\n" "AZURE_MONITOR_CONNECTION_STRING" "$AZURE_MONITOR_CONNECTION_STRING" >> "$TMP_ENV"; \
+  printf "%s=%s\n" "NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING" "$AZURE_MONITOR_CONNECTION_STRING" >> "$TMP_ENV"; \
+  printf "%s=%s\n" "AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING" "$AZURE_MONITOR_CONNECTION_STRING" >> "$TMP_ENV"; \
+  printf "%s=%s\n" "NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING" "$AZURE_MONITOR_CONNECTION_STRING" >> "$TMP_ENV"; \
+  _w_env() { var="$1"; secret_file="$2"; eval "current=\${$var:-}"; [ -z "$current" ] && current="$(cat "$secret_file" 2>/dev/null || true)"; [ -n "$current" ] && printf "%s=%s\n" "$var" "$current" >> "$TMP_ENV"; }; \
+  _w_env AZURE_STORAGE_ACCOUNT_KEY "$SECRETS/AZURE_STORAGE_ACCOUNT_KEY"; \
+  _w_env AZURE_STORAGE_CONNECTION_STRING "$SECRETS/AZURE_STORAGE_CONNECTION_STRING"; \
+  _w_env AUTH_GOOGLE_ID "$SECRETS/AUTH_GOOGLE_ID"; \
+  _w_env OPENID_KEY_TEXT "$SECRETS/OPENID_KEY_TEXT"; \
+  _w_env REDIS_URL "$SECRETS/REDIS_URL"; \
+  _w_env REDIS_PASSWORD "$SECRETS/REDIS_PASSWORD"; \
+  _w_env AZURE_API_KEY "$SECRETS/AZURE_API_KEY"; \
+  _w_env AZURE_AISEARCH_KEY "$SECRETS/AZURE_AISEARCH_KEY"; \
+  _w_env AUTH_GOOGLE_SECRET "$SECRETS/AUTH_GOOGLE_SECRET"; \
+  _w_env AUTH_GOOGLE_APIKEY "$SECRETS/AUTH_GOOGLE_APIKEY"; \
+  _w_env FLAGSMITH_SDK_KEY "$SECRETS/FLAGSMITH_SDK_KEY"; \
+  _w_env NEXT_PUBLIC_MUI_LICENSE "$SECRETS/NEXT_PUBLIC_MUI_LICENSE"; \
+  _w_env NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING "$SECRETS/AZURE_MONITOR_CONNECTION_STRING "; \
+  _w_env AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING "$SECRETS/AZURE_MONITOR_CONNECTION_STRING "; \
+  _w_env NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING "$SECRETS/AZURE_MONITOR_CONNECTION_STRING "; \
+  _w_env AZURE_MONITOR_CONNECTION_STRING "$SECRETS/AZURE_MONITOR_CONNECTION_STRING "; \
+  set -a; [ -f "$TMP_ENV" ] && . "$TMP_ENV"; set +a; \
+  cp "$TMP_ENV" ./packages/app/.env.local; \
+  cp "$TMP_ENV" ./packages/app/.env.production.local; \  
+  yarn build; \
+  rm -f "$TMP_ENV" ./packages/app/.env.local ./packages/app/.env.production.local;
 
-RUN rm -f ./packages/app/.env.production.local
-
-# Production image
 FROM base AS runner
 WORKDIR /app/packages/app
 
@@ -179,22 +239,13 @@ LABEL org.opencontainers.image.description="A web UI for the Compliance Tracker 
 LABEL org.opencontainers.image.authors="stopbullyingpriorlake@gmail.com"
 LABEL org.opencontainers.image.licenses="EJL-1.0"
 
-ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
-ENV NODE_ENV=production
-ENV FOR_STANDALONE=1
 ENV AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT
 ENV AZURE_AISEARCH_ENDPOINT=$AZURE_AISEARCH_ENDPOINT
 ENV AZURE_AISEARCH_DOCUMENTS_INDEX_NAME=$AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
 ENV AZURE_AISEARCH_POLICY_INDEX_NAME=$AZURE_AISEARCH_POLICY_INDEX_NAME
-ENV AZURE_STORAGE_CONNECTION_STRING=$AZURE_STORAGE_CONNECTION_STRING
 ENV AZURE_STORAGE_ACCOUNT_NAME=$AZURE_STORAGE_ACCOUNT_NAME
-ENV OTEL_SERVICE_NAME=$OTEL_SERVICE_NAME
-ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
-ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
 ENV MEM0_API_HOST=$MEM0_API_HOST
 ENV MEM0_UI_HOST=$MEM0_UI_HOST
 ENV MEM0_USERNAME=$MEM0_USERNAME
@@ -208,22 +259,22 @@ RUN addgroup --system --gid 1001 nodejs \
 WORKDIR /app
 
 # Copy Next.js standalone output from the app workspace
+#COPY --link=true --from=builder ./packages/app/.next /app/.next
+COPY --link=true --from=builder /app/node_modules /app/node_modules
 COPY --link=true --from=builder /app/packages/app/.next/standalone /app
 COPY --link=true --from=builder /app/packages/app/.next/static /app/.next/static
-COPY --link=true --from=builder /app/packages/app/public /app/public
-COPY --link=true --from=builder /app/packages/app/scripts /app/scripts
+COPY --link=true --from=pruner /repo/packages/app/public /app/public
+COPY --link=true --from=pruner /repo/packages/app/scripts /app/scripts
 
-
-# Set up cron for rate retry processing
+# Set up cron and write runtime env file (pulling from secrets when env is unset)
 RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs \
-  && crontab -u nextjs /etc/crontabs/nextjs
-
-RUN mkdir -p /var/log \
+  && crontab -u nextjs /etc/crontabs/nextjs \
+  mkdir -p /var/log \
   && chown nextjs:nodejs /var/log \
   && chown -R nextjs:nodejs /app \
-  && find /app/scripts -type f -name '*.sh' -exec chmod +x {} + || true
+  && find /app/scripts -type f -name '*.sh' -exec chmod +x {} + || true; 
 
-WORKDIR /app/packages/app
+WORKDIR /app
 
 EXPOSE 3000
 EXPOSE 9229

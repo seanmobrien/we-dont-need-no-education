@@ -6,9 +6,16 @@ node_modules
 .next
 **/.next
 .turbo
+**/.turbo
+**/.github
+**/.upstream
+**/.yarn-cache
+**/test-results
 coverage
+**/coverage
 *.tsbuildinfo
 dist
+**/dist
 
 
 # Logs and diagnostics
@@ -23,9 +30,13 @@ yarn-error.log*
 .DS_Store
 
 # Local env and secrets
-#.env
-#.env.*
+.env
+.env.*
+.env.local
+**/env.local
+**/.env
 *.local
+**/*.local
 
 # Git
 .git
@@ -47,6 +58,8 @@ test-results
 
 # Assets not compiled or included in distribution package
 *.md
+**/*.md
+**/*.claude
 .agent
 .claude
 .github

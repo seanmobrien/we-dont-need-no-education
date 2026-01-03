@@ -22,17 +22,26 @@ export const register = async () => {
   }
   globalWithFlag[REGISTERED_KEY] = true;
 
-  if (typeof window === 'undefined') {
-    // This is a server-side environment (Node.js or edge runtime)
-    if (process.env.NEXT_RUNTIME === 'nodejs') {
-      const { default: instrumentServer } = await import('@/instrument/node');
-      instrumentServer();
+  console.log('About to register instrumentation');
+  try {
+    if (typeof window === 'undefined') {
+      // This is a server-side environment (Node.js or edge runtime)
+      if (process.env.NEXT_RUNTIME === 'nodejs') {
+        const { default: instrumentServer } = await import('@/instrument/node');
+        instrumentServer();
+      } else {
+        console.log('[otel] Instrumentation disabled for edge runtime on server');
+      }
     } else {
-      //const { default: instrumentEdge } = await import('@/instrument/edge');
-      // instrumentEdge();
+      if (process.env.NEXT_RUNTIME !== 'edge') {
+        const { default: instrumentBrowser } = await import('@/instrument/browser');
+        instrumentBrowser();
+      } else {
+        console.log('[otel] Instrumentation disabled for edge runtime in browser');
+      }
     }
-  } else {
-    const { default: instrumentBrowser } = await import('@/instrument/browser');
-    instrumentBrowser();
+  }catch (error) {
+    console.error('[otel] Failed to register instrumentation; advanced metric tracking will not be available.', error);
   }
+  
 };
