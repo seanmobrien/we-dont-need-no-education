@@ -5,6 +5,7 @@ type GlobalWithInstrumentationFlag = typeof globalThis & {
 };
 
 export const register = async () => {
+  debugger;
   const globalWithFlag = globalThis as GlobalWithInstrumentationFlag;
   if (globalWithFlag[REGISTERED_KEY]) {
     // Logging is not availalbe until after instrumentation is complete

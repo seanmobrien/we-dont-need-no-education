@@ -1,10 +1,14 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": [
-    "**/.env.*local",
+    "**/*.local",
+    "**/.env",
+    "**/tsconfig.json",
+    "**/*.mjs",
     "patches/**",
     "packages/app/scripts/**",
     "packages/app/public/**",
+    "packages/app/instrument/**",
     "packages/lib-logger/tsconfig.json",
     "packages/lib-typescript/tsconfig.json"
   ],
@@ -13,11 +17,20 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
         "NODE_ENV",
-        "NEXT_PUBLIC_*",
+        "CRYTPO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",        
         "DATABASE_URL",
-        "REDIS_URL",
-        "AZURE_*"
+        "FOR_STANDALONE",
+        "IS_BUILDING"
       ]
     },
     "clean:build": {

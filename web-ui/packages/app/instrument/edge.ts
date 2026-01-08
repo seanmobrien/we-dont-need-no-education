@@ -1,6 +1,9 @@
 // import { config } from './common';
 
 const instrument = () => {
+  
+  console.log('Starting OTel SDK instrumentation for edge...');
+  debugger;
   /*
   if (!config.instrumentations) {
     config.instrumentations = ['auto'];

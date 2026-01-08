@@ -79,6 +79,8 @@ const cleanup = async (): Promise<void> => {
   }
 };
 const instrumentServer = () => {
+  console.log('Starting OTel SDK instrumentation for NodeJS server updated code...');
+  debugger;
   if (getRegistered()) {
     console.warn('OTel SDK already registered, skipping.');
     return;
@@ -114,11 +116,11 @@ const instrumentServer = () => {
     urlFilter,
   );
   const metricExporter = new AzureMonitorMetricExporter({
-    connectionString: connStr,
+    connectionString: connStr ?? process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING ?? process.env.AZURE_MONITOR_CONNECTION_STRING,
   });
   const logExporter = new UrlFilteredLogExporter(
     new ChunkingLogExporter(
-      new AzureMonitorLogExporter({ connectionString: connStr }),
+      new AzureMonitorLogExporter({ connectionString: connStr ?? process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING ?? process.env.AZURE_MONITOR_CONNECTION_STRING }),
       { maxChunkChars: 8000, keepOriginalKey: false },
     ),
     urlFilter,
