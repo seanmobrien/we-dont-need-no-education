@@ -269,7 +269,7 @@ COPY --link=true --from=pruner /repo/packages/app/scripts /app/scripts
 # Set up cron and write runtime env file (pulling from secrets when env is unset)
 RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs \
   && crontab -u nextjs /etc/crontabs/nextjs \
-  mkdir -p /var/log \
+  && mkdir -p /var/log \
   && chown nextjs:nodejs /var/log \
   && chown -R nextjs:nodejs /app \
   && find /app/scripts -type f -name '*.sh' -exec chmod +x {} + || true; 
