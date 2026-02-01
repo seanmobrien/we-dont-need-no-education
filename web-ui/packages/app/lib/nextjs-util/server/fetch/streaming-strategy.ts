@@ -12,7 +12,7 @@
  * - Missing Content-Length with Transfer-Encoding present
  */
 
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { makeStreamResponse, nodeStreamToReadableStream } from '../response';
 import type { StreamingStrategyDeps } from './fetch-types';
 import type { EventEmitter } from 'events';

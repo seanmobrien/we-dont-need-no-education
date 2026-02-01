@@ -1,26 +1,22 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Chip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  IconButton,
-  Collapse,
-  Paper,
-  Grid,
-  Divider,
-  Checkbox,
-  FormControlLabel,
-} from '@mui/material';
-import {
-  ExpandMore as ExpandMoreIcon,
-  Code as CodeIcon,
-  Info as InfoIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import IconButton from '@mui/material/IconButton';
+import Collapse from '@mui/material/Collapse';
+import Paper from '@mui/material/Paper';
+import Grid from '@mui/material/Grid';
+import Divider from '@mui/material/Divider';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CodeIcon from '@mui/icons-material/Code';
+import InfoIcon from '@mui/icons-material/Info';
 import { ChatMessage } from '@/lib/ai/chat/types';
 import { ToolDetailsDialog } from './tool-details-dialog';
 

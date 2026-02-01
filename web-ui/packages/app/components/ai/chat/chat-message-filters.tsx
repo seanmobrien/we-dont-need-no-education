@@ -12,18 +12,17 @@
 'use client';
 
 import * as React from 'react';
-import {
-  Box,
-  Typography,
-  FormControlLabel,
-  Switch,
-  Button,
-  Badge,
-  Chip,
-  TextField,
-  InputAdornment,
-} from '@mui/material';
-import { FilterList, Search } from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import Button from '@mui/material/Button';
+import Badge from '@mui/material/Badge';
+import Chip from '@mui/material/Chip';
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+import FilterList from '@mui/icons-material/FilterList';
+import Search from '@mui/icons-material/Search';
 import type { ChatMessage } from '@/lib/ai/chat/types';
 
 // Available message types for filtering

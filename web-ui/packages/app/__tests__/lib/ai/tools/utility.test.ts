@@ -1,10 +1,15 @@
 import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { DatabaseMockType } from '@/__tests__/setup/jest.mock-drizzle';
 
 // Mock the database connection
 import type { DbDatabaseType } from '@/lib/drizzle-db';
 
+const validUuid = '12345678-1234-4567-8901-123456789012';
+
+
 // HACK: This hack is a little ugly, but OK because beforeEach will initialize before each test
-let mockDb: jest.Mocked<DbDatabaseType> = withJestTestExtensions().makeMockDb() as jest.Mocked<DbDatabaseType>;
+let mockDb = withJestTestExtensions().makeMockDb();
 
 // Mock LoggedError
 jest.mock('@/lib/react-util/errors/logged-error', () => ({
@@ -19,18 +24,20 @@ import {
 import {
   resolveCaseFileIdBatch
 } from '@/lib/ai/tools/utility';
-// import { db } from '@/lib/drizzle-db';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { documentProperty } from '@/drizzle/schema';
 
 const mockLoggedError = LoggedError as jest.Mocked<typeof LoggedError>;
 
 describe('resolveCaseFileId', () => {
   beforeEach(async () => {
     // jest.clearAllMocks();
-    mockDb = withJestTestExtensions().makeMockDb() as jest.Mocked<DbDatabaseType>;
+    mockDb = withJestTestExtensions().makeMockDb() as jest.Mocked<DatabaseMockType>;
     (mockDb.query.documentUnits.findFirst as jest.Mock).mockImplementation(
       () => {
-        return Promise.resolve(1);
+        return Promise.resolve({
+          unitId: 1,
+          documentPropertyId: validUuid
+        });
       },
     );
   });
@@ -54,7 +61,6 @@ describe('resolveCaseFileId', () => {
   });
 
   describe('when documentId is a valid UUID string', () => {
-    const validUuid = '12345678-1234-4567-8901-123456789012';
 
     it('should query database and return unitId when found by emailId', async () => {
       const mockResult = { unitId: 456 };
@@ -195,7 +201,7 @@ describe('resolveCaseFileIdBatch', () => {
   beforeEach(() => {
     // mockDb.query.documentUnits.findMany.mockClear();
     mockLoggedError.isTurtlesAllTheWayDownBaby.mockClear();
-    mockDb = withJestTestExtensions().makeMockDb() as jest.Mocked<DbDatabaseType>;
+    mockDb = withJestTestExtensions().makeMockDb();
   });
 
   describe('with empty input', () => {

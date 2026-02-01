@@ -22,14 +22,12 @@ import {
 import { isAbortablePromise } from '@compliance-theater/typescript';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@compliance-theater/logger';
-import {
-  TableRow,
-  TableCell,
-  Checkbox,
-  CircularProgress,
-  Typography,
-  useTheme,
-} from '@mui/material';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
+import Checkbox from '@mui/material/Checkbox';
+import CircularProgress from '@mui/material/CircularProgress';
+import Typography from '@mui/material/Typography';
+import { useTheme } from '@mui/material/styles';
 import { isError } from '@/lib/react-util/utility-methods';
 
 const ImportRecord: React.FC<ImportRecordProps> = ({

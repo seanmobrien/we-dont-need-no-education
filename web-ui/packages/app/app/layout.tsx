@@ -57,9 +57,13 @@ export default async function RootLayout({
       </html>
     );
   }
-  const themeName = await cookies().then((x) =>
-    x.get('theme')?.value === 'light' ? 'light' : 'dark',
-  );
+  let themeName: 'light' | 'dark' | undefined;
+  try{
+    const cookieStore = await cookies();
+    themeName = cookieStore.get('theme')?.value === 'light' ? 'light' : 'dark';
+  } catch {
+    themeName = undefined;
+  }
   return (
     <html lang="en" suppressHydrationWarning>
       <head></head>

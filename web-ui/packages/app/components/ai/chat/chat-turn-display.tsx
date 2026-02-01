@@ -1,27 +1,23 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Chip,
-  Card,
-  CardContent,
-  IconButton,
-  Collapse,
-  Paper,
-  Grid,
-  Divider,
-  Alert,
-  Checkbox,
-  FormControlLabel,
-} from '@mui/material';
-import {
-  Settings as SettingsIcon,
-  Schedule as ScheduleIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import IconButton from '@mui/material/IconButton';
+import Collapse from '@mui/material/Collapse';
+import Paper from '@mui/material/Paper';
+import Grid from '@mui/material/Grid';
+import Divider from '@mui/material/Divider';
+import Alert from '@mui/material/Alert';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import SettingsIcon from '@mui/icons-material/Settings';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import WarningIcon from '@mui/icons-material/Warning';
+import ErrorIcon from '@mui/icons-material/Error';
 import { ChatMessageDisplay } from './chat-message-display';
 import { ChatTurn } from '@/lib/ai/chat/types';
 import type { SelectedChatItem } from '@/lib/ai/chat/export';

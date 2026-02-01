@@ -22,6 +22,10 @@
   "files": [
     "dist"
   ],
+  "engines": {
+    "node": ">=22.0.0",
+    "yarn": ">=1.22.0"
+  },
   "scripts": {
     "build": "tsc -b tsconfig.json --force",
     "test": "jest",

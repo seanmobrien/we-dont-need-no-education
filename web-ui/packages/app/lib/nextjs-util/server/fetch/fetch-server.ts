@@ -19,7 +19,7 @@ import {
   fetchConfigSync,
   FETCH_MANAGER_SINGLETON_KEY,
 } from './fetch-config';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { createInstrumentedSpan } from '../utils';
 import { log, safeSerialize } from '@compliance-theater/logger';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';

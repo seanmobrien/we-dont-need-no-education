@@ -3,7 +3,7 @@ import { getFeatureFlag } from './server';
 import { log } from '@compliance-theater/logger/core';
 import { auth } from '@/auth';
 import { isKnownFeatureType } from './known-feature';
-import { AllFeatureFlagsDefault } from './known-feature-defaults';
+import { AllFeatureFlagsDefault, type GetFeatureFlagDefault } from './known-feature-defaults';
 import type {
   KnownFeatureValueType,
   KnownFeatureType,
@@ -416,7 +416,7 @@ export const wellKnownFlagSync = <T extends KnownFeatureType>(
         createAutoRefreshFeatureFlagSync<T>({
           key: key,
           userId: userId ?? 'server',
-          initialValue: AllFeatureFlagsDefault[key],
+          initialValue: AllFeatureFlagsDefault[key] as (GetFeatureFlagDefault<T> | undefined),
           load: true,
           ...restOfOptions,
         })

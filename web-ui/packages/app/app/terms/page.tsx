@@ -1,14 +1,12 @@
 'use client';
 
-import {
-  Box,
-  Button,
-  Container,
-  Divider,
-  Paper,
-  Typography,
-  useTheme,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Container from '@mui/material/Container';
+import Divider from '@mui/material/Divider';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import { useTheme } from '@mui/material/styles';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import GavelIcon from '@mui/icons-material/Gavel';

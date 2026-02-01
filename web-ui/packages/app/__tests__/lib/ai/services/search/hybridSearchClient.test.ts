@@ -30,7 +30,7 @@ import type {
   CaseFileSearchOptions,
   PolicySearchOptions,
 } from '@/lib/ai/tools/types';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 // Build a concrete test subclass to expose protected static parsing helpers.
 interface TestOptions {

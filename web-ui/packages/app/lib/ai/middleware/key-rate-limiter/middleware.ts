@@ -26,7 +26,7 @@ import {
 import { LanguageModel } from 'ai';
 import { ModelMap } from '../../services/model-stats/model-map';
 import { MiddlewareStateManager } from '../state-management';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 type RateLimitRetryState = {
   rateLimitContext: RateLimitRetryContext;

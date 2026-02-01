@@ -1,24 +1,20 @@
 'use client';
-import {
-  Box,
-  Button,
-  Container,
-  Typography,
-  Card,
-  CardContent,
-  useTheme,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Container from '@mui/material/Container';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import { useTheme } from '@mui/material/styles';
 import { useSession } from '@/components/auth/session-provider';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import {
-  Email as EmailIcon,
-  Chat as ChatIcon,
-  Search as SearchIcon,
-  Assessment as AssessmentIcon,
-  Security as SecurityIcon,
-  Storage as StorageIcon,
-} from '@mui/icons-material';
+import EmailIcon from '@mui/icons-material/Email';
+import ChatIcon from '@mui/icons-material/Chat';
+import SearchIcon from '@mui/icons-material/Search';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import SecurityIcon from '@mui/icons-material/Security';
+import StorageIcon from '@mui/icons-material/Storage';
 
 export default function Home() {
   const { data: session } = useSession();
@@ -35,55 +31,37 @@ export default function Home() {
 
   const features = [
     {
-      icon: (
-        <EmailIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />
-      ),
+      icon: <EmailIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />,
       title: 'Email Evidence Management',
       description:
         'Import, organize, and analyze email communications to build comprehensive cases from institutional correspondence.',
     },
     {
-      icon: (
-        <ChatIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />
-      ),
+      icon: <ChatIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />,
       title: 'AI-Powered Analysis',
       description:
         'Leverage advanced AI to identify Title IX violations, institutional failures, and critical evidence in school communications.',
     },
     {
-      icon: (
-        <SearchIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />
-      ),
+      icon: <SearchIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />,
       title: 'Smart Document Search',
       description:
         'Semantic search capabilities find similar patterns of institutional misconduct across all your evidence.',
     },
     {
-      icon: (
-        <AssessmentIcon
-          sx={{ fontSize: 48, color: 'var(--color-primary-main)' }}
-        />
-      ),
+      icon: <AssessmentIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />,
       title: 'Case Building Dashboard',
       description:
         'Real-time monitoring of evidence analysis and case strength with comprehensive reporting tools.',
     },
     {
-      icon: (
-        <SecurityIcon
-          sx={{ fontSize: 48, color: 'var(--color-primary-main)' }}
-        />
-      ),
+      icon: <SecurityIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />,
       title: 'Privacy-First Design',
       description:
         'Your data is encrypted at rest and in transit. We never sell, mine, or share your information with third parties.',
     },
     {
-      icon: (
-        <StorageIcon
-          sx={{ fontSize: 48, color: 'var(--color-primary-main)' }}
-        />
-      ),
+      icon: <StorageIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />,
       title: 'Self-Hosting Available',
       description:
         'Complete control over your data with the ability to self-host the entire platform on your own infrastructure.',

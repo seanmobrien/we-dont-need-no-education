@@ -13,9 +13,7 @@ import {
 import type { ChatMessage } from '@/lib/ai/chat/types';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
-// Mock MUI components
-jest.mock('@mui/material', () => ({
-  ...jest.requireActual('@mui/material'),
+const MuiMocks = {
   Box: ({ children, ...props }: any) => <div {...props}>{children}</div>,
   Typography: ({ children, ...props }: any) => (
     <span {...props}>{children}</span>
@@ -56,7 +54,31 @@ jest.mock('@mui/material', () => ({
   InputAdornment: ({ children, ...props }: any) => (
     <div {...props}>{children}</div>
   ),
+} as const;
+
+
+
+// Mock MUI components
+jest.mock('@mui/material', () => ({
+  ...jest.requireActual('@mui/material'),  
+  Box: (props: any) => MuiMocks.Box(props),
+  Typography: (props: any) => MuiMocks.Typography(props),
+  FormControlLabel: (props: any) => MuiMocks.FormControlLabel(props),
+  Switch: (props: any) => MuiMocks.Switch(props),
+  Button: (props: any) => MuiMocks.Button(props),
+  Badge: (props: any) => MuiMocks.Badge(props),
+  Chip: (props: any) => MuiMocks.Chip(props),
+  TextField: (props: any) => MuiMocks.TextField(props),
+  InputAdornment: (props: any) => MuiMocks.InputAdornment(props),
 }));
+
+Object.entries(MuiMocks).forEach(([key, Component]) => {
+  jest.mock(`@mui/material/${key}`, () => ({
+    __esModule: true,
+    default: (props: any) => Component(props),
+  }));
+});
+
 
 jest.mock('@mui/icons-material', () => ({
   FilterList: (props: any) => <div {...props}>FilterIcon</div>,

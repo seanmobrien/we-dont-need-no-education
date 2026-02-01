@@ -25,7 +25,7 @@ import { SubmitRefCallbackInstance } from './_types';
 import { useEmail, useWriteEmail } from '@/lib/hooks/use-email';
 import siteMap from '@/lib/site-util/url-builder';
 import { useRouter } from 'next/navigation';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 type EmailFormAfterSaveBehavior = 'none' | 'redirect';
 

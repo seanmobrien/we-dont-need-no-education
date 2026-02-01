@@ -3,7 +3,7 @@ import { EmailDashboardLayout } from '@/components/email-message/dashboard-layou
 import EmailViewer from '@/components/email-message/email-viewer';
 import { extractParams } from '@/lib/nextjs-util/server/utils';
 import { resolveEmailIdWithRedirect } from '@/lib/email/email-id-resolver';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import React from 'react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';

@@ -4,6 +4,8 @@ import { Flags } from 'flagsmith-nodejs';
 import type { RedisClientType } from 'redis';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
+const defaultFlagsOptions = { flags: {}, traits: {} };
+
 describe('FlagsmithRedisCache', () => {
   let mockRedisClient: jest.Mocked<RedisClientType>;
 
@@ -17,7 +19,7 @@ describe('FlagsmithRedisCache', () => {
     // Hard to verify internal LruCacheConfig without inspecting private properties or behavior.
 
     // Let's verify Redis default keyPrefix by doing a set
-    await cache.set('test-key', new Flags({}));
+    await cache.set('test-key', new Flags(defaultFlagsOptions));
 
     expect(mockRedisClient.set).toHaveBeenCalledWith(
       'flagsmith:test-key',
@@ -38,7 +40,7 @@ describe('FlagsmithRedisCache', () => {
       }
     });
 
-    await cache.set('test-key', new Flags({}));
+    await cache.set('test-key', new Flags(defaultFlagsOptions));
 
     expect(mockRedisClient.set).toHaveBeenCalledWith(
       'custom:test-key',
@@ -64,7 +66,7 @@ describe('FlagsmithRedisCache', () => {
   it('should consider an empty key as a fail-free no-op', async () => {
     const cache = new FlagsmithRedisCache();
 
-    await cache.set(null as any, new Flags({}));
+    await cache.set(null as any, new Flags(defaultFlagsOptions));
   });
 
   it('should fetch from Redis if not in LRU (L1 miss, L2 hit) and populate LRU', async () => {
@@ -73,7 +75,7 @@ describe('FlagsmithRedisCache', () => {
 
     mockRedisClient.get.mockResolvedValue(JSON.stringify(flagsData));
 
-    const result = await cache.get('miss-key');
+    const result = await cache.get('miss-key'); 
 
     expect(mockRedisClient.get).toHaveBeenCalledWith('test:miss-key');
     expect(result).toBeInstanceOf(Flags);
@@ -141,7 +143,7 @@ describe('FlagsmithRedisCache', () => {
     expect(await cache.has('key')).toBe(true);
 
     // In L1 (seed it)
-    await cache.set('key', new Flags({}));
+    await cache.set('key', new Flags(defaultFlagsOptions));
     // Should not call redis exists if in L1
     mockRedisClient.exists.mockClear();
     expect(await cache.has('key')).toBe(true);

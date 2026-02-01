@@ -4,7 +4,7 @@ import { ServerBoundDataGrid } from '../server-bound-data-grid';
 import { EmailPropertyGridProps } from '../types';
 import siteBuilder from '@/lib/site-util/url-builder';
 import { useParams } from 'next/navigation';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import EmailPropertyToolbar from './email-property-toolbar';
 import { GridValidRowModel } from '@mui/x-data-grid-pro';
 

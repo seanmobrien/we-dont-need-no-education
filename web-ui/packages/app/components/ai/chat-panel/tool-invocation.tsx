@@ -1,12 +1,10 @@
-import {
-  Box,
-  Button,
-  CircularProgress,
-  IconButton,
-  MenuItem,
-  Select,
-  Stack,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import IconButton from '@mui/material/IconButton';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import Stack from '@mui/material/Stack';
 import { useCallback, useState } from 'react';
 import { signResponse } from '@/lib/ai/client/confirmation';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';

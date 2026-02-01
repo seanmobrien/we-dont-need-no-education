@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { MenuItem, ListItemText, Typography } from '@mui/material';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemText from '@mui/material/ListItemText';
+import Typography from '@mui/material/Typography';
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import { useTodoLists } from '@/lib/hooks/use-todo';
 import { Loading } from '../general/loading';

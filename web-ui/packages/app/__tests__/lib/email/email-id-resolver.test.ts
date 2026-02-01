@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 
 jest.mock('@compliance-theater/typescript', () => {
-  const origModule = jest.requireActual('@compliance-theater/typescript');
+  const origModule = jest.requireActual('@compliance-theater/typescript') as any;
   return {
     ...origModule,
     isValidUuid: jest.fn(),

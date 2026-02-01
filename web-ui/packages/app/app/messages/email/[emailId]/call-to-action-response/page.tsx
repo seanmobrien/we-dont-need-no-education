@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import CtaResponseGrid from './grid';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
 import { auth } from '@/auth';

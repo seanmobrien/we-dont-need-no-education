@@ -3,7 +3,9 @@ import type { Session } from '@auth/core/types';
 import * as React from 'react';
 import { useState } from 'react';
 import Box from '@mui/material/Box';
-import { FormControlLabel, Switch, Typography } from '@mui/material';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import Typography from '@mui/material/Typography';
 import ChatList from '@/components/ai/chat/list';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 

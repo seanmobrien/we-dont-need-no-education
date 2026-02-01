@@ -1,15 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  useMediaQuery,
-  DialogContentText,
-} from '@mui/material';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import DialogContentText from '@mui/material/DialogContentText';
 import { useSession } from '@/components/auth/session-provider';
 import { signIn } from 'next-auth/react'; // only needed if you're using next-auth v4-style login helpers
 import { useTheme } from '@mui/material/styles';

@@ -1,5 +1,9 @@
 import { EmailProperty } from '@/data-models/api/email-properties/property-type';
-import { Stack, Paper, Typography, Chip, Box } from '@mui/material';
+import Stack from '@mui/material/Stack';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import Box from '@mui/material/Box';
 import { useMemo } from 'react';
 
 const normalDescriptionBody = {

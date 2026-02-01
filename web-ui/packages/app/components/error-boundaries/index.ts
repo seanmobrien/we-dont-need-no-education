@@ -3,7 +3,9 @@
  */
 
 // Main error boundary fallback component
-export { RenderErrorBoundaryFallback } from './renderFallback';
+export { RenderErrorBoundaryFallback } from './render-fallback';
+// Server-side adapter for react-error-boundary FallbackProps interface
+export { RenderFallbackFromBoundary } from './render-fallback-from-boundary';
 
 // Client-side error management
 export { ClientErrorManager } from './ClientErrorManager';
@@ -29,6 +31,3 @@ export {
   DevErrorManager as DevErrorManagerClient,
   ProdErrorManager as ProdErrorManagerClient,
 } from './ErrorManagerProvider';
-
-// HOC and wrapper components
-// export { withErrorBoundary, ErrorBoundaryWrapper } from './with-error-boundary';

@@ -1,8 +1,11 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, ElementType } from 'react';
 import { GridColDef } from '@mui/x-data-grid';
-import { Box, Button, IconButton, Chip } from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Chip from '@mui/material/Chip';
 import NextLink from 'next/link';
 import Link from '@mui/material/Link';
 import AddIcon from '@mui/icons-material/Add';
@@ -171,13 +174,10 @@ export const TodoListGrid = () => {
         flex: 1,
         renderCell: (params) => (
           <Link
-            component={
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              NextLink<any>
-            }
+            component={NextLink as unknown as ElementType}
             href={siteBuilder.messages.todoLists(
               encodeURIComponent(params.row.id),
-            )}
+            ).toString()}
             title="View todo list"
             aria-label={`Open todo list: ${params.value}`}
             sx={stableSx.titleLink}

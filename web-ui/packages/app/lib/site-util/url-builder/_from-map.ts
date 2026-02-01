@@ -1,4 +1,8 @@
-import type { IUrlBuilder, MappedPageOverloads } from './_types';
+import type {
+  IUrlBuilder,
+  MappedPageOverloads,
+  SiteRouteType,
+} from './_types';
 import { UrlBuilder } from './_impl';
 import { Route } from 'next';
 
@@ -14,13 +18,11 @@ export const mappedPageOverloadFactory = (
   page: string,
 ): MappedPageOverloads => {
   const ret: MappedPageOverloads = <
-    T extends
-      | __next_route_internal_types__.DynamicRoutes
-      | __next_route_internal_types__.StaticRoutes,
+    T extends SiteRouteType,
   >(
     slug?: string | number | object,
     params?: object,
-  ): __next_route_internal_types__.RouteImpl<T> => {
+  ): Route<T> => {
     if (typeof slug === 'object') {
       return builder.page(page, slug).pathname as Route<T>;
     } else if (typeof slug === 'string' || typeof slug === 'number') {

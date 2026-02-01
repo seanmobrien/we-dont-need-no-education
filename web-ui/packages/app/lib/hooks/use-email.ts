@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { EmailMessage } from '@/data-models';
 import { getEmail, writeEmailRecord } from '@/lib/api/client';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 // Query keys for email-related queries
 export const emailKeys = {

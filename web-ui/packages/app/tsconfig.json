@@ -61,6 +61,11 @@
       "node",
       "jest"
     ],
+    // Look for ambient types in both local and repo-level node_modules.
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../node_modules/@types"
+    ],
     "strict": true,
     "strictNullChecks": true,
     "target": "ESNext"

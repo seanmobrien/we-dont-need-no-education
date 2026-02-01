@@ -80,6 +80,9 @@ export interface SingletonStorageStrategy {
   delete(key: SingletonStorageKey): void;
   clear(): void;
 }
+
+type GlobalThis = typeof globalThis;
+
 /**
  * Extended global object type with singleton storage capabilities.
  *
@@ -92,6 +95,6 @@ export interface SingletonStorageStrategy {
  * @template T - The type of singleton value stored globally
  * @template S - The symbol type used as the storage key
  */
-export type GlobalWithMyGlobal<T, S extends symbol> = typeof globalThis & {
+export type GlobalWithMyGlobal<T, S extends symbol> = GlobalThis & {
   [K in S]?: T;
 };

@@ -9,7 +9,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import { ClientErrorManager } from '@/components/error-boundaries/ClientErrorManager';
-import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
+import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/render-fallback';
 import {
   errorReporter,
   ErrorSeverity,

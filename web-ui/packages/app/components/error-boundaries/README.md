@@ -68,7 +68,6 @@ Non-Render Errors → ClientErrorManager [Variable]
 
 - **`useErrorReporter`** - Hook for error reporting in components
 - **`withErrorBoundary`** - HOC for wrapping components
-- **`ErrorBoundaryWrapper`** - Inline error boundary component
 
 ## 🚀 Key Features
 
@@ -261,28 +260,6 @@ export default withErrorBoundary(ProblematicComponent, {
     clearComponentCache();
   },
 });
-```
-
-### 🔧 Inline Error Boundaries
-
-```tsx
-import { ErrorBoundaryWrapper } from '@/components/error-boundaries';
-
-export function Dashboard() {
-  return (
-    <div>
-      <h1>Dashboard</h1>
-
-      {/* Isolate chart errors */}
-      <ErrorBoundaryWrapper name="ChartsSection">
-        <ExpensiveChartComponent />
-      </ErrorBoundaryWrapper>
-
-      {/* Critical section - let errors bubble up */}
-      <CriticalUserData />
-    </div>
-  );
-}
 ```
 
 ## ⚙️ Configuration Options
@@ -500,9 +477,8 @@ __tests__/
 
 ```tsx
 // ✅ Good: Isolate risky components
-<ErrorBoundaryWrapper name="ChartSection">
-  <ExpensiveChart />
-</ErrorBoundaryWrapper>
+const SafeChart = withErrorBoundary(ExpensiveChart);
+<SafeChart />
 
 // ❌ Avoid: Wrapping entire app (breaks SSR)
 <ErrorBoundary>
@@ -590,40 +566,6 @@ import ClientErrorManager from './ClientErrorManager'; // Breaks SSR
 - **Memory usage**: < 100KB for error storage
 - **Performance monitoring**: No measurable impact on page load
 
-## 📋 Migration Guide
-
-### From Basic Error Boundaries
-
-```tsx
-// Before: Basic error boundary
-<ErrorBoundary fallback={<div>Error occurred</div>}>
-  <MyComponent />
-</ErrorBoundary>
-
-// After: Enhanced error boundary
-<ErrorBoundaryWrapper name="MyComponent">
-  <MyComponent />
-</ErrorBoundaryWrapper>
-```
-
-### From Manual Error Handling
-
-```tsx
-// Before: Manual try-catch everywhere
-try {
-  await apiCall();
-} catch (error) {
-  console.error(error);
-  showGenericError();
-}
-
-// After: Integrated error reporting
-try {
-  await apiCall();
-} catch (error) {
-  reportApiError(error, '/api/endpoint', 'GET');
-  throw error; // Let error boundary handle UI
-}
 ```
 
 ## 🤝 Contributing

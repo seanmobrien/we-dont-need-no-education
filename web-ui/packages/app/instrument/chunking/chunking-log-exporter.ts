@@ -12,7 +12,7 @@ import type {
 } from '@opentelemetry/sdk-logs';
 import type { AnyValueMap } from '@opentelemetry/api-logs';
 import type { ExportResult } from '@opentelemetry/core';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@compliance-theater/logger';
 
 export type LogChunkingOptions = {

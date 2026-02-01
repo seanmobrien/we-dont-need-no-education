@@ -32,7 +32,7 @@ import {
 import { ProcessingQueue } from '@/lib/ai/middleware/chat-history/processing-queue';
 import { generateChatId } from '@/lib/ai/core';
 import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type {
   LanguageModelV2CallOptions,
   LanguageModelV2Middleware,

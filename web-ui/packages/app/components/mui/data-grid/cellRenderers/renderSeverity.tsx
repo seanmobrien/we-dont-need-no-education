@@ -11,7 +11,7 @@ import { alpha, styled } from '@mui/material/styles';
 import Slider, { sliderClasses, SliderProps } from '@mui/material/Slider';
 import Tooltip from '@mui/material/Tooltip';
 import { debounce } from '@mui/material/utils';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 
 interface ProgressBarProps {
   value: number;

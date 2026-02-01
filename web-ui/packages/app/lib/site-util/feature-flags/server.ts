@@ -16,7 +16,7 @@ import {
 
 import { globalSingleton } from '@compliance-theater/typescript';
 import { env } from '../env';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { extractFlagValue } from './util';
 
 import { fetch as serverFetch } from '@/lib/nextjs-util/server/fetch';

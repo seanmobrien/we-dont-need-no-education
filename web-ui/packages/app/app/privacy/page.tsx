@@ -1,21 +1,17 @@
 'use client';
-import {
-  Box,
-  Container,
-  Typography,
-  Paper,
-  Divider,
-  useTheme,
-  Button,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import Divider from '@mui/material/Divider';
+import Button from '@mui/material/Button';
+import { useTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import {
-  Security as SecurityIcon,
-  Lock as LockIcon,
-  CloudOff as CloudOffIcon,
-  Code as CodeIcon,
-} from '@mui/icons-material';
+import SecurityIcon from '@mui/icons-material/Security';
+import LockIcon from '@mui/icons-material/Lock';
+import CloudOffIcon from '@mui/icons-material/CloudOff';
+import CodeIcon from '@mui/icons-material/Code';
 
 export default function PrivacyPolicy() {
   const router = useRouter();

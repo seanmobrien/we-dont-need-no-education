@@ -7,17 +7,17 @@ import { ErrorReportResult, ErrorSeverity } from './types';
 
 export const useProcessedError = ({
   error,
-  reset,
+  resetAction,
   errorBoundary = 'RootError',
 }: {
   error: Error | null;
-  reset: () => void;
+  resetAction : () => void;
   errorBoundary?: string;
 }) => {
   const [processedError, setProcessedError] =
     useState<ErrorReportResult | null>(null);
 
-  useEffect(() => {
+  useEffect(() => {   
     // If there's no error, clear any processed error state and exit
     if (!error) {
       if (processedError) {
@@ -33,7 +33,7 @@ export const useProcessedError = ({
           r.generateFingerprint(error, processedError.report.context)
         )
     ) {
-      reset();
+      resetAction();
       return;
     }
     // If we get here, we have an error and it's different from the last processed one...send a report
@@ -59,7 +59,7 @@ export const useProcessedError = ({
             processedError &&
             result.report.fingerprint === processedError.report.fingerprint
           ) {
-            reset();
+            resetAction();
             return result;
           }
           // Update state to reflect the processed error
@@ -73,7 +73,7 @@ export const useProcessedError = ({
             return current;
           });
           if (result.suppress) {
-            reset();
+            resetAction();
           }
           return result;
         })
@@ -109,7 +109,7 @@ export const useProcessedError = ({
     return () => {
       cancelled = true;
     };
-  }, [error, processedError, reset, errorBoundary]);
+  }, [error, processedError, resetAction, errorBoundary]);
 
   return useMemo(() => {
     const renderError = processedError

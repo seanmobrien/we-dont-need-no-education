@@ -2,41 +2,37 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { fetch } from '@/lib/nextjs-util/fetch';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Button,
-  LinearProgress,
-  Chip,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
-  CircularProgress,
-  Paper,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  IconButton,
-  Tooltip,
-  Alert,
-} from '@mui/material';
-import {
-  PlayArrow,
-  RestartAlt,
-  Description,
-  CheckCircle,
-  Schedule,
-  Warning,
-  Info,
-  ExpandMore,
-  Refresh,
-  Save,
-  Upload,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import LinearProgress from '@mui/material/LinearProgress';
+import Chip from '@mui/material/Chip';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import Divider from '@mui/material/Divider';
+import CircularProgress from '@mui/material/CircularProgress';
+import Paper from '@mui/material/Paper';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import Alert from '@mui/material/Alert';
+import PlayArrow from '@mui/icons-material/PlayArrow';
+import RestartAlt from '@mui/icons-material/RestartAlt';
+import Description from '@mui/icons-material/Description';
+import CheckCircle from '@mui/icons-material/CheckCircle';
+import Schedule from '@mui/icons-material/Schedule';
+import Warning from '@mui/icons-material/Warning';
+import Info from '@mui/icons-material/Info';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import Refresh from '@mui/icons-material/Refresh';
+import Save from '@mui/icons-material/Save';
+import Upload from '@mui/icons-material/Upload';
 import { useMutation } from '@tanstack/react-query';
 import { TimelineAgent } from '@/lib/ai/agents/timeline';
 import {

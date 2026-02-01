@@ -1,20 +1,18 @@
 import React from 'react';
-import {
-  Typography,
-  Chip,
-  Box,
-  Grid,
-  Divider,
-  LinearProgress,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Link,
-  Alert,
-  CircularProgress,
-  Stack,
-  Button,
-} from '@mui/material';
+import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
+import Divider from '@mui/material/Divider';
+import LinearProgress from '@mui/material/LinearProgress';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import Link from '@mui/material/Link';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+import Stack from '@mui/material/Stack';
+import Button from '@mui/material/Button';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {

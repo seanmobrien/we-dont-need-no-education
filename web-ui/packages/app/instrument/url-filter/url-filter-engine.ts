@@ -8,7 +8,7 @@ import {
 import { LRUCache } from 'lru-cache';
 import { log } from '@compliance-theater/logger';
 import { hash } from 'node:crypto'; // or use a fast-hash library
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
  * Keys commonly used to represent URLs in log attributes

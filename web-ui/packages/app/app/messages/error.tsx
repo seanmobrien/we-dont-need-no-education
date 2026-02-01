@@ -1,32 +1,30 @@
 'use client'; // Error boundaries must be Client Components
 
-import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
+import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/render-fallback';
 import { useProcessedError } from '@/lib/error-monitoring/use-processed-error';
 
 type ErrorWithDigest = Error & { digest?: string };
 
+export type ErrorMessageProps = {
+  error: ErrorWithDigest;
+  resetAction: () => void;
+}
+
 export default function Error({
   error,
-  reset,
-}: {
-  error: ErrorWithDigest;
-  reset: () => void;
-}) {
+  resetAction,
+}: ErrorMessageProps) {
   const { processedError } = useProcessedError({
     error,
-    reset,
+    resetAction,
     errorBoundary: 'MessagesError',
   });
 
-  if (!processedError) {
-    return <></>;
-  }
-  return (
-    <div>
+  return (<>
+  {processedError && ( <div>
       <RenderErrorBoundaryFallback
         error={processedError}
-        resetErrorBoundary={reset}
+        resetErrorBoundaryAction={resetAction}
       />
-    </div>
-  );
+    </div>)}</>);
 }

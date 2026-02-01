@@ -59,7 +59,8 @@ const config = {
     '^prexit$': '<rootDir>/__tests__/setup/jest.mock-prexit.ts', // Mock prexit module
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
     '^(@|\\.)/lib/auth/keycloak-provider$':
-      '<rootDir>/__tests__/mocks/keycloak-provider.js', // Mock static file imports
+      '<rootDir>/__tests__/mocks/keycloak-provider.js', // Mock static file imports,
+    '^@mui/icons-material/(.*)$': '<rootDir>/../__mocks__/mui-icon-mock.tsx', // Mock all MUI icons to a singular mock
   },
   transform: {
     '^.+\\.(ts|tsx)$': [
