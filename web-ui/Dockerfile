@@ -198,7 +198,7 @@ RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
   SECRETS=/run/secrets; \
   TMP_ENV="$(mktemp)"; \
   add_var() { name="$1"; value="$2"; [ -n "$value" ] && printf "%s=%s\n" "$name" "$value" >> "$TMP_ENV"; }; \
-  read_secret() { name="$1"; file="$2"; current="${!name:-}"; [ -z "$current" ] && current="$(cat "$file" 2>/dev/null || true)"; add_var "$name" "$current"; }; \
+  read_secret() { name="$1"; file="$2"; eval "current=\${$name:-}"; [ -z "$current" ] && current="$(cat "$file" 2>/dev/null || true)"; add_var "$name" "$current"; }; \
   read_secret NEXT_PUBLIC_MUI_LICENSE "$SECRETS/NEXT_PUBLIC_MUI_LICENSE"; \
   read_secret AZURE_MONITOR_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
   read_secret NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
