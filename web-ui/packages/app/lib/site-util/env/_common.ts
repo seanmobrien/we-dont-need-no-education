@@ -4,54 +4,14 @@ import z from 'zod';
 import { isAiModelType } from '@/lib/ai/core/guards';
 import { AiModelType, AiModelTypeValues } from '@/lib/ai/core/unions';
 
-/**
- * @module site-util/env/_common
- *
- * This module provides utilities for determining the current runtime environment.
- *
- * @typedef {('nodejs' | 'edge' | 'client' | 'static')} RuntimeConfig
- * Represents the possible runtime environments.
- *
- * - 'nodejs': Running in a Node.js environment.
- * - 'edge': Running in an Edge environment (e.g., Deno).
- * - 'client': Running in a client-side environment (e.g., browser).
- * - 'static': Running in a static environment.
- *
- * @function runtime
- * Returns the current runtime environment.
- *
- * @returns {RuntimeConfig} The current runtime environment.
- *
- * @function isRunningOnServer
- * Checks if the code is running on the server.
- *
- * @returns {boolean} `true` if running on the server, otherwise `false`.
- *
- * @function isRunningOnClient
- * Checks if the code is running on the client.
- *
- * @returns {boolean} `true` if running on the client, otherwise `false`.
- */
-
-/**
- * Represents the possible runtime environments.
- *
- * - 'nodejs': Running in a Node.js environment.
- * - 'edge': Running in an Edge environment (e.g., Deno).
- * - 'client': Running in a client-side environment (e.g., browser).
- * - 'static': Running in a static environment.
- */
 export type RuntimeConfig = 'nodejs' | 'edge' | 'client' | 'static' | 'server';
-
-/**
- * Determines the current runtime environment.
- *
- * @returns {RuntimeConfig} The current runtime environment.
- */
 const currentRuntime: RuntimeConfig = (() => {
   if (typeof window !== 'undefined') {
     // Client-side detection
-    if ('Deno' in window) {
+    if ('Deno' in window || 
+        (typeof process !== 'undefined' && 
+         typeof process.env === 'object' && 
+         process.env.NEXT_RUNTIME === 'edge')) {
       return 'edge';
     } else if ('process' in window) {
       return 'nodejs';
@@ -59,63 +19,52 @@ const currentRuntime: RuntimeConfig = (() => {
     return 'client';
   } else {
     // Server-side detection
-    if (typeof process !== 'undefined') {
+    if (typeof process !== 'undefined' && typeof process.env === 'object') {
+      if (process.env.NEXT_RUNTIME === 'edge') {
+        return 'edge';
+      }
       return 'nodejs';
     }
     return 'server';
   }
-  return 'static';
 })();
 
-/**
- * Returns the current runtime environment.
- *
- * @returns {RuntimeConfig} The current runtime environment.
- */
 export const runtime = (): RuntimeConfig => currentRuntime;
 
-/**
- * Checks if the code is running on the server.
- *
- * @returns {boolean} `true` if running on the server, otherwise `false`.
- */
-export const isRunningOnServer = (): boolean =>
-  currentRuntime !== 'client' && !!process.env.AUTH_SECRET;
-
-/**
- * Checks if the code is running on the client.
- *
- * @returns {boolean} `true` if running on the client, otherwise `false`.
- */
-export const isRunningOnClient = (): boolean => {
-  switch (currentRuntime) {
-    case 'client':
-      return true;
-    case 'edge':
-      return false;
-    default:
-      return !process.env.AUTH_SECRET;
+export const isRunningOnServer = (): boolean => {
+  if (typeof window !== 'undefined') {
+    return false;
   }
+  return currentRuntime !== 'client' && 
+         typeof process !== 'undefined' && 
+         typeof process.env === 'object' && 
+         (!!process.env.AUTH_SECRET || currentRuntime === 'nodejs');
 };
-/**
- * Checks if the code is running on the edge.
- *
- * @returns {boolean} `true` if running on the edge, otherwise `false`.
- */
-export const isRunningOnEdge = (): boolean =>
-  process.env.NEXT_RUNTIME === 'edge' ||
-  (process.env.NEXT_RUNTIME ?? '').toLowerCase() === 'edge';
 
-/**
- * A collection of Zod processors for various environment variables.
- */
+export const isRunningOnClient = (): boolean => {
+  if (typeof window !== 'undefined') {
+    return true;
+  }
+  return currentRuntime === 'client';
+};
+
+export const isRunningOnEdge = (): boolean => {
+  if (typeof process === 'undefined' || typeof process.env !== 'object') {
+    return false;
+  }
+  return process.env.NEXT_RUNTIME === 'edge' ||
+    (process.env.NEXT_RUNTIME ?? '').toLowerCase() === 'edge';
+};
+
+export const isBuilding = (): boolean => {
+  if (typeof process === 'undefined' || typeof process.env !== 'object') {
+    return false;
+  }
+  return !!process.env.NEXT_PHASE && 
+    process.env.NEXT_PHASE.indexOf('-build') > 0;
+};
+
 export const ZodProcessors = {
-  /**
-   * Processor for URL strings.
-   * Ensures the value is a valid URL and removes trailing slashes.
-   *
-   * @returns {ZodString} A Zod string schema for URLs.
-   */
   url: (): z.ZodEffects<z.ZodString, string, string> =>
     z.string().transform((val, ctx) => {
       try {
@@ -130,14 +79,8 @@ export const ZodProcessors = {
         return z.NEVER;
       }
     }),
-  /**
-   * Processor for log level strings.
-   * Provides a default value of 'info' if not specified.
-   *
-   * @returns {ZodString} A Zod string schema for log levels.
-   */
   logLevel: (level: string = 'info'): z.ZodDefault<z.ZodString> =>
-    z.string().default(level ?? 'info'),
+    z.string().default(level),
 
   aiModelType: (
     defaultValue: AiModelType,
@@ -155,12 +98,6 @@ export const ZodProcessors = {
         return z.NEVER;
       }, z.enum(AiModelTypeValues))
       .default(defaultValue),
-  /**
-   * Processor for integer values.
-   * Ensures the value is a valid integer and provides a default value of 120 if not specified.
-   *
-   * @returns {ZodType<number, ZodTypeDef, unknown>} A Zod schema for integers.
-   */
   integer: (): z.ZodType<number, z.ZodTypeDef, unknown> =>
     z.preprocess((val) => {
       if (typeof val === 'string') {
@@ -172,26 +109,15 @@ export const ZodProcessors = {
       return val;
     }, z.number().int()),
 
-  /**
-   * Processor for boolean values.
-   * Ensures the value is a valid boolean and provides a default value of false if not specified.
-   *
-   * @returns {ZodBoolean} A Zod boolean schema.
-   */
   boolean: (): z.ZodDefault<z.ZodBoolean> => z.boolean().default(false),
 
-  /**
-   * Processor for truthy boolean values.
-   * Ensures the value is a valid boolean and provides a default value if not specified.
-   *
-   * @returns {ZodBoolean} A Zod boolean schema.
-   */
   truthy: (
     defaultValue = false,
   ): z.ZodType<boolean, z.ZodEffectsDef<z.ZodBoolean>, unknown> =>
     z.preprocess(
       (val: unknown) => {
-        return typeof val === undefined ||
+        return typeof val === 'undefined' ||
+          val === undefined ||
           val === null ||
           (typeof val === 'string' && val.trim() === '')
           ? !!defaultValue
@@ -201,28 +127,12 @@ export const ZodProcessors = {
       z.boolean(),
     ),
 
-  /**
-   * Processor for array values.
-   * Ensures the value is a valid array and provides a default value of an empty array if not specified.
-   *
-   * @returns {ZodArray} A Zod array schema.
-   */
   array: (): z.ZodDefault<z.ZodArray<z.ZodUnknown>> =>
     z.array(z.unknown()).default([]),
 
-  /**
-   * Processor for object values.
-   * Ensures the value is a valid object and provides a default value of an empty object if not specified.
-   *
-   * @returns {ZodObject} A Zod object schema.
-   */
   object: (): z.ZodDefault<z.ZodObject<z.ZodRawShape>> =>
     z.object({}).default({}),
 
-  /**
-   * Trimmed nullable string processor
-   * @returns
-   */
   nullableString: (): z.ZodEffects<
     z.ZodNullable<z.ZodString>,
     string | null,
@@ -234,12 +144,6 @@ export const ZodProcessors = {
       .transform((val) => (val ? val.trim() : null)),
 };
 
-/**
- * Retrieves environment variable values from the provided source object,
- * giving precedence to `process.env` values if they exist and are non-empty.
- * @param source The source value to read from.
- * @returns A record with keys from the source and values from either process.env or the source.
- */
 export const getMappedSource = <
   TSource extends Record<string, string | number | undefined>,
 >(

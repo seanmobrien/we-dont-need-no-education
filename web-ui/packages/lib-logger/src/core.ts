@@ -115,7 +115,15 @@ export const logEvent: LogEventOverloads = async (
 
   // Pino will intercept this log and send to OTel
   return log((l) => {
-    const log = l[severity] || l.info;
-    log(event);
+    const log = (l[severity] || l.info)?.bind(l);
+    if (typeof log !== 'function') {
+        throw new Error(`Log level method ${severity} is not a function on logger`, {
+            cause: {
+                method: log,
+                instance: l,
+            }
+        });
+    }
+    return log(event);
   });
 };

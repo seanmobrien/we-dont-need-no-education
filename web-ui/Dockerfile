@@ -21,7 +21,7 @@ ARG MEM0_UI_HOST
 ARG MEM0_USERNAME
 ARG BUILD_CACHE
 
-FROM node:24-alpine AS base
+FROM node:25-alpine AS base
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
@@ -283,7 +283,7 @@ RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.
   && chown -R nextjs:nodejs /app \
   && find /app/scripts -type f -name '*.sh' -exec chmod +x {} + || true;
 
-WORKDIR /app
+WORKDIR /app/packages/app
 
 EXPOSE 3000
 EXPOSE 9229
