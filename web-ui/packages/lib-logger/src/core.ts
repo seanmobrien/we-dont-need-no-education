@@ -121,11 +121,11 @@ export const logEvent: LogEventOverloads = async (
       // This prevents crashes during logging while still capturing the event
       const fallbackLog = l.info?.bind(l);
       if (typeof fallbackLog === 'function') {
-        // Log a warning about the fallback using the fallback logger itself
+        // Log a warning about the fallback, then log the actual event
         fallbackLog({
           msg: `Log level method '${severity}' is not available, falling back to 'info'`,
-          severity,
-          event,
+          requestedSeverity: severity,
+          actualSeverity: 'info',
         });
         return fallbackLog(event);
       }
