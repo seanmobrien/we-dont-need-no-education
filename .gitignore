@@ -65,3 +65,4 @@ logs
 attachments
 db/backups/prod_current_nodropdb.sql
 db/backups/prod_current.sql
+secrets
