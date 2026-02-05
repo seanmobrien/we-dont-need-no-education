@@ -25,7 +25,11 @@ export const resolveCaseFileId = async (
   }
   let parsedId: number | undefined;
   if (typeof documentId === 'string') {
-    const isUuid = isValidUuid(documentId);
+    // UUID v4 format validation: xxxxxxxx-xxxx-4xxx-[89ab]xxx-xxxxxxxxxxxx
+    // Must contain only hexadecimal digits (0-9, a-f, A-F) and hyphens
+    const uuidFormatRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    const isValidFormat = uuidFormatRegex.test(documentId);
+    const isUuid = isValidFormat && isValidUuid(documentId);
     if (isUuid) {
       parsedId = await drizDbWithInit((db) =>
         db.query.documentUnits

@@ -122,7 +122,8 @@ describe('Chat History Middleware', () => {
     // Setup default mocks
     mockGenerateChatId.mockReturnValue({ seed: 1, id: 'generated-chat-id' });
     if (
-      typeof (LoggedError as any)?.isTurtlesAllTheWayDownBaby === 'function'
+      typeof (LoggedError as any)?.isTurtlesAllTheWayDownBaby === 'function' &&
+      jest.isMockFunction((LoggedError as any).isTurtlesAllTheWayDownBaby)
     ) {
       (LoggedError as any).isTurtlesAllTheWayDownBaby.mockClear();
     }

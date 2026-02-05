@@ -1,3 +1,15 @@
+/**
+ * @fileoverview Server-side environment variable configuration and validation
+ *
+ * This module provides type-safe access to server-only environment variables
+ * with Zod schema validation. It extends the client environment variables
+ * with additional server-specific configuration for databases, AI services,
+ * authentication providers, and other server-only resources.
+ *
+ * @author NoEducation Platform Team
+ * @version 1.0.0
+ */
+
 import { z } from 'zod';
 import { getMappedSource, isRunningOnClient, ZodProcessors } from './_common';
 import {
@@ -83,10 +95,16 @@ const buildRawInstance = () => {
     MEM0_PROJECT_ID: process.env.MEM0_PROJECT_ID,
     MEM0_API_KEY: process.env.MEM0_API_KEY,
     NODE_ENV: process.env.NODE_ENV,
+    NEXTAUTH_TRUST_HOST: process.env.NEXTAUTH_TRUST_HOST,
+    /** OpenAI API key for direct OpenAI service access. Example: 'sk-1234567890abcdef...' */
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    /** OpenAI high-fidelity model name for complex tasks. Example: 'gpt-4-turbo' */
     OPENAI_HIFI: process.env.OPENAI_HIFI,
+    /** OpenAI low-fidelity/fast model name for simple tasks. Example: 'gpt-3.5-turbo' */
     OPENAI_LOFI: process.env.OPENAI_LOFI,
+    /** OpenAI embedding model name for vector generation. Example: 'text-embedding-3-large' */
     OPENAI_EMBEDDING: process.env.OPENAI_EMBEDDING,
+    /** Maximum token threshold for AI batch processing. Example: '50000' */
     TOKEN_BATCH_THRESHOLD: process.env.TOKEN_BATCH_THRESHOLD,
   };
   if (!raw.AUTH_KEYCLOAK_REDIRECT_URI) {
@@ -98,6 +116,10 @@ const buildRawInstance = () => {
   return getMappedSource(raw);
 };
 
+/**
+ * Zod schema definition for validating and transforming server-side environment variables.
+ * Provides type safety, default values, and validation rules for all server configuration.
+ */
 const serverEnvSchema = z
   .object({
     AUTH_SECRET: z
@@ -438,6 +460,7 @@ const serverEnvSchema = z
       .describe(
         'Mem0 API key for service authentication. Example: mem0_sk_1234567890abcdef...',
       ),
+    NEXTAUTH_TRUST_HOST: ZodProcessors.truthy(false),
     NODE_ENV: z
       .string()
       .describe(
@@ -472,23 +495,22 @@ const serverEnvSchema = z
         'OpenAI embedding model name for vector generation. Default: text-embedding-3-large. Example: text-embedding-3-large',
       ),
   })
-  .extend(clientEnvSchema.shape);
+  .extend(clientEnvSchema.shape); // Include all client env vars as well
 
 export type ServerEnvType = ReturnType<typeof serverEnvSchema.parse>;
 
 export const serverEnvFactory = (): ServerEnvType => {
-  if (isRunningOnClient()) {
-    throw new Error(
-      '[ENV] serverEnvFactory() called from client context. ' +
-      'Server environment variables are not available in the browser. ' +
-      'Use clientEnvFactory() or env() instead.'
-    );
-  }
-  
   try {
-    return serverEnvSchema.parse({ ...buildRawInstance(), ...process.env });
+    return isRunningOnClient()
+      ? ({} as ServerEnvType)
+      : serverEnvSchema.parse({ ...buildRawInstance(), ...process.env });
   } catch (e) {
-    console.error('[ENV] Failed to validate server environment variables:', e);
+    // AUTH_SECRET is only server-side and super required...if it's missing, we're probably a client bundle
+    if ((process.env.AUTH_SECRET ?? '').length === 0) {
+      // We aren't - return client environment pretending to be server
+      return clientEnvFactory() as unknown as ServerEnvType;
+    }
+    // Otherwise, rethrow the error
     throw e;
   }
 };

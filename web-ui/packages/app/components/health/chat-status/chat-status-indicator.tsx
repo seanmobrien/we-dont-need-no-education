@@ -48,13 +48,13 @@ function getStatusIcon(status: ChatHealthStatus, isLoading: boolean) {
 
   switch (status) {
     case 'healthy':
-      return <HealthyIcon fontSize="small" />;
+      return <HealthyIcon fontSize="small" data-testid='CheckCircleIcon' />;
     case 'warning':
-      return <WarningIcon fontSize="small" />;
+      return <WarningIcon fontSize="small" data-testid='WarningIcon' />;
     case 'error':
-      return <ErrorIcon fontSize="small" />;
+      return <ErrorIcon fontSize="small" data-testid='ErrorIcon' />;
     default:
-      return <ChatIcon fontSize="small" />;
+      return <ChatIcon fontSize="small" data-testid='ChatIcon' />;
   }
 }
 

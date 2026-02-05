@@ -244,7 +244,7 @@ export const ChatMenu = ({
         id="chat-menu-button"
         data-testid="button-chat-menu"
       >
-        <MoreVertIcon />
+        <MoreVertIcon data-testid='MoreVertIcon' />
       </IconButton>
       <Menu
         id="basic-menu"

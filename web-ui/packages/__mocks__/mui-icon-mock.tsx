@@ -1,5 +1,3 @@
-import * as React from 'react';
-
 export const MockIcon = (props: any) => {
   return (
     <div>
@@ -9,3 +7,5 @@ export const MockIcon = (props: any) => {
     </div>
   );
 }
+
+export default MockIcon;
