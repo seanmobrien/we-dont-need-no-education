@@ -25,8 +25,8 @@ const config = {
   clearMocks: true,
   resetMocks: false,
   setupFilesAfterEnv: [
-    "<rootDir>/../app/__tests__/setup/jest.mock-log.ts",
-    "<rootDir>/../app/__tests__/setup/jest.env-vars.ts",
+    "<rootDir>/__tests__/shared/setup/jest.mock-log.ts",
+    "<rootDir>/__tests__/shared/setup/jest.env-vars.ts",
   ],
 };
 

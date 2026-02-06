@@ -77,13 +77,12 @@
     "./*.ts",
     "next-env.d.ts",
     ".next/types/**/*.ts"
-    // ".next/types/**/*.ts",
-    // ".next/types/**/*.d.ts"
   ],
   "exclude": [
     "node_modules",
     ".upstream/**/*.*",
     "**/.upstream/**/*.*",
-    "submodules/**/*.*"
+    "submodules/**/*.*",
+    ".next"
   ]
 }

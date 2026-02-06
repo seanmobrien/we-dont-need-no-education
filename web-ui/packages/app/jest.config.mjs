@@ -1,48 +1,35 @@
+import { config as baseConfig } from '__tests__/shared/jest.config-shared.mjs';
+
 const config = {
-  preset: 'ts-jest', // Use ts-jest preset for TypeScript support
-  testEnvironment: 'jsdom', // Set the test environment to jsdom
-  testEnvironmentOptions: {
-    // Configure jsdom for React 19 concurrent features
-    features: {
-      FetchExternalResources: false,
-      ProcessExternalResources: false,
-    },
-  },
-  // Ensure environment globals (Response/Request/Headers) are available before modules load
+  ...baseConfig,
+  // Curretnly no pre-setup files, but this is where they would go  
   setupFiles: [
-    /*'<rootDir>/__tests__/setup/jest.mock-log.ts'*/
   ],
   setupFilesAfterEnv: [
-    '<rootDir>/__tests__/setup/jest.mock-log.ts',
-    '<rootDir>/__tests__/setup/jest.env-vars.ts',
-    '<rootDir>/__tests__/setup/jest.mock-redis.ts',
-    '<rootDir>/__tests__/setup/jest.mock-got.ts',
-    '<rootDir>/__tests__/setup/jest.mock-opentelemetry.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-log.ts',
+    '<rootDir>/__tests__/shared/setup/jest.env-vars.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-redis.ts',
+    '<rootDir>/__tests__/shared/setup/jest.localStorage.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-got.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-opentelemetry.ts',
     '<rootDir>/__tests__/setup/jest.mock-appstartup.ts',
     '<rootDir>/__tests__/jest.test-extensions.ts',
-    '<rootDir>/__tests__/setup/jest.mock-node-modules.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-node-modules.ts',
     '<rootDir>/__tests__/setup/jest.mock-health.ts',
     '<rootDir>/__tests__/setup/jest.mock-auth.ts',
-    '<rootDir>/__tests__/setup/jest.mock-feature-flags.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-feature-flags.ts',
     '<rootDir>/__tests__/setup/jest.mock-ai.ts',
-    '<rootDir>/__tests__/setup/jest.setup.env.ts',
+    '<rootDir>/__tests__/shared/setup/jest.setup.env.ts',
     '<rootDir>/__tests__/setup/jest.mock-drizzledb.ts',
     '<rootDir>/__tests__/setup/jest.setup.ts',
   ], // Setup file for global imports
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled
-  testMatch: [
-    '**/__tests__/**/*.test.(ts|tsx)',
-    // '**/?(*.)+(spec|test).(ts|tsx)',
-    '!/.next/**',
-    '!/.upstream/**',
-    '!/(rsc)/**',
-  ], // Test file patterns
 
   // Concurrency configuration to prevent hanging issues
   // maxWorkers: process.env.CI ? 2 : '50%', // Limit workers in CI, use 50% of cores locally
   // maxConcurrency: 5, // Limit concurrent tests to prevent resource contention
 
   moduleNameMapper: {
+    ...baseConfig.moduleNameMapper,
     '@/instrumentation(.*)$':
       '<rootDir>/__tests__/setup/jest.mock-instrumentation.ts', // Mock instrumentation module
     '^@/lib/site-util/metrics.*$':
