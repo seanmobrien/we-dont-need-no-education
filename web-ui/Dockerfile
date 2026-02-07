@@ -91,7 +91,7 @@ ENV FOR_STANDALONE=1
 WORKDIR /repo
 
 # Install turbo CLI for pruning (small global install avoids full node_modules)
-RUN npm install -g turbo@2.3.3
+RUN npm install -g turbo@^2.8.3
 
 # Copy workspace to compute prune graph
 COPY --link=true . .

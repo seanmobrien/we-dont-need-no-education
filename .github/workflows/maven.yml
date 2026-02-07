@@ -84,7 +84,7 @@ jobs:
         working-directory: ./web-ui
         run: |
           git clone https://github.com/folio-org/folio-tools.git
-          yarn version --no-git-tag-version --new-version `folio-tools/github-actions-scripts/folioci_npmver.sh`
+          yarn version --immediate "$(folio-tools/github-actions-scripts/folioci_npmver.sh)"
           rm -rf folio-tools
         env:
           JOB_ID: ${{ github.run_number }}
