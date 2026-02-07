@@ -201,9 +201,6 @@
   "resolutions": {
     "axios": ">=1.8.2",
     "esbuild": ">=0.25.0",
-    "@textea/json-viewer/**/@mui/material": ">=7.3.6",
-    "@textea/json-viewer/**/react": ">=19.2.0",
-    "@textea/json-viewer/**/react-dom": ">=19.2.0",
     "jsx-ast-utils": "^4.4.2"
   }
 }

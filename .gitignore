@@ -10,6 +10,9 @@ node_modules
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+install-state.gz
+.yarn
+.yarn-cache
 
 # Intentionally exclude package-lock because we use yarn.lock
 package-lock.json
