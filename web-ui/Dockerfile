@@ -126,7 +126,10 @@ ARG BUILD_CACHE
 # Copy pruned package manifests and lockfile
 COPY --link=true --from=pruner /repo/out/full/ ./
 COPY --link=true --from=pruner /repo/out/yarn.lock ./yarn.lock
+COPY --link=true --from=pruner /repo/.yarnrc.yml ./.yarnrc.yml
+COPY --link=true --from=pruner /repo/.yarn/ ./.yarn/
 
+RUN corepack enable
 RUN yarn install --frozen-lockfile
 
 # Build layer with pruned source

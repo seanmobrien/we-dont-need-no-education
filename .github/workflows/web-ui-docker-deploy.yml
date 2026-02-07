@@ -28,6 +28,11 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
+      - name: Verify Yarn 4 release file
+        run: |
+          test -f ./web-ui/.yarn/releases/yarn-4.12.0.cjs
+        shell: bash
+
       # Extract short SHA for use throughout workflow
       - name: Extract short SHA
         id: sha

@@ -49,9 +49,9 @@ jobs:
           UNIT_TESTING: '1'
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v3.9.1
+        uses: actions/setup-node@v4
         with:
-          node-version: '24.x'
+          node-version: '25.x'
           cache: yarn
           cache-dependency-path: 'web-ui/yarn.lock'
 
@@ -60,14 +60,23 @@ jobs:
         shell: bash
         working-directory: ./web-ui
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODEJS_VERSION }}
+          node-version: '25.x'
           check-latest: true
           always-auth: true
 
+      - name: Enable Corepack and Yarn 4.12.0
+        run: |
+          corepack enable
+          corepack prepare yarn@4.12.0 --activate
+        shell: bash
+
       - name: Set yarn config
-        run: yarn config set @folio:registry $FOLIO_NPM_REGISTRY
+        run: |
+          if [ -n "${FOLIO_NPM_REGISTRY:-}" ]; then
+            yarn config set @folio:registry "$FOLIO_NPM_REGISTRY"
+          fi
         shell: bash
         working-directory: ./web-ui
 
