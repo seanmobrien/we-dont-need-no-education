@@ -94,7 +94,17 @@ jobs:
 
       - name: Run yarn install
         working-directory: ./web-ui
-        run: yarn install --ignore-scripts --frozen-lockfile
+        run: |
+          set -euo pipefail
+          # If this runner is using Yarn v1, use legacy flags. Otherwise use Yarn 4+ flags.
+          YV=$(yarn -v 2>/dev/null || true)
+          if printf "%s" "$YV" | grep -qE '^1\.'; then
+            yarn install --ignore-scripts --frozen-lockfile
+          else
+            corepack enable || true
+            corepack prepare yarn@4.12.0 --activate || true
+            yarn install --immutable
+          fi
         shell: bash
 
       - name: Run yarn list

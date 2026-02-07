@@ -130,7 +130,8 @@ COPY --link=true --from=pruner /repo/.yarnrc.yml ./.yarnrc.yml
 COPY --link=true --from=pruner /repo/.yarn/ ./.yarn/
 
 RUN corepack enable
-RUN yarn install --frozen-lockfile
+RUN corepack prepare yarn@4.12.0 --activate || true
+RUN yarn install --immutable
 
 # Build layer with pruned source
 FROM deps AS builder
