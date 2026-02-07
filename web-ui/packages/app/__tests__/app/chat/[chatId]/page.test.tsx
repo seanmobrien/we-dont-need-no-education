@@ -1,7 +1,7 @@
 /* @jest-environment node */
 
 import React from 'react';
-import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
+import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
 
 /**
  * NOTE: Global test environment mocks are defined in __tests__/jest.setup.ts.

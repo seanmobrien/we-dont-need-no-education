@@ -8,8 +8,8 @@
  * - Verifies refresh_token grant path avoids headless login
  * - Verifies expired cached token falls back to login and persists rotated token
  */
-import { createMockTracer } from '@/__tests__/setup/jest.mock-tracing';
-import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
+import { createMockTracer } from '@/__tests__/shared/setup/jest.mock-tracing';
+import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
 // Helpers to craft minimal JWT strings with exp claim
 const b64url = (obj: unknown) =>
   Buffer.from(JSON.stringify(obj), 'utf8')

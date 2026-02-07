@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import { mockDeep } from 'jest-mock-extended';
-import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
+import type { DbDatabaseType } from '../../app/lib/drizzle-db/schema';
+//import type { DbDatabaseType } from '../../../lib/drizzle-db/schema';
 import {
   IMockInsertBuilder,
   IMockQueryBuilder,
@@ -9,7 +10,7 @@ import {
   MockDbQueryRecord,
   QueryBuilderMethodValues,
   DatabaseMockType,
-} from './jest.mock-drizzle';
+} from '../jest.mock-drizzle';
 import {
   FirstParameter,
   isKeyOf,
@@ -18,7 +19,7 @@ import {
 } from '@compliance-theater/typescript';
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
-const actualSchema = jest.requireActual('/lib/drizzle-db/schema');
+const actualSchema = jest.requireActual('../../app/lib/drizzle-db/schema');
 
 export class MockQueryBuilder implements IMockQueryBuilder {
   readonly from: jest.Mock;
@@ -482,7 +483,7 @@ jest.mock('@/lib/drizzle-db', () => {
 // Make mocks sticky
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { drizDb } from '@/lib/drizzle-db';
+import { drizDb } from '../../app/lib/drizzle-db';
 import { sql } from 'drizzle-orm';
 import { withJestTestExtensions } from '../jest.test-extensions';
 

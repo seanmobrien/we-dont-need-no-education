@@ -1,7 +1,7 @@
 const prexit = (fn: () => Promise<void>) => {
   return new Promise<void>((resolve) => {
     fn()
-      .then(() => console.log('process cleanup complete.'))
+      .then(() => {})
       .catch((err) => console.error('Error:', err))
       .finally(() => resolve());
   });

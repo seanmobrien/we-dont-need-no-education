@@ -1,6 +1,6 @@
-import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
+import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { DatabaseMockType } from '@/__tests__/setup/jest.mock-drizzle';
+import { DatabaseMockType } from '../../../../../__tests__/jest.mock-drizzle';
 
 // Mock the database connection
 import type { DbDatabaseType } from '@/lib/drizzle-db';

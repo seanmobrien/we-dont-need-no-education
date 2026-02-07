@@ -1,5 +1,5 @@
 /**
- * Tests for lib/typescript/abortable-promise.ts
+ * Tests for @compliance-theater/typescript/abortable-promise.ts
  *
  * This module tests the AbortablePromise class which provides:
  * - Cancellable promises with AbortController integration

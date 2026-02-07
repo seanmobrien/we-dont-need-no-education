@@ -25,7 +25,7 @@ jest.mock('next-auth/jwt', () => {
 jest.mock('@/auth', () => {
   const originalModule = jest.requireActual('@/auth');
   const withJestTestExtensions =
-    require('@/__tests__/jest.test-extensions').withJestTestExtensions;
+    require('@/__tests__/shared/jest.test-extensions').withJestTestExtensions;
   return {
     __esModule: true,
     ...originalModule,

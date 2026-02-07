@@ -1,3 +1,71 @@
+/**
+ * @typedef {import('jest').Config.InitialOptions} ConfigType
+ */
+
+
+/**
+ * @template { ConfigType } TConfig
+ * @typedef { keyof ConfigType } ConfigTypeKey
+ */
+
+/**
+ * @template { ConfigType } TConfig
+ * @template { ConfigTypeKey<TConfig> } TKey
+ * @typedef { TConfig[TKey] } ConfigTypeField
+ */
+
+/**
+ * @template { ConfigType } TConfig
+ * @template { ConfigTypeKey<TConfig> } TKey
+ * @typedef { {
+ *  source: TConfig;
+ *  field: TKey;
+ *  match: RegExp | ((input: ConfigTypeField<TConfig, TKey>[keyof ConfigTypeField<TConfig, TKey>]) => boolean);
+ * } } FilterProps
+ */
+
+/**
+ * @template {ConfigType} TConfig
+ * @template { ConfigTypeKey<TConfig> } TKey
+ * @param {FilterProps<TConfig, TKey>} props
+ * @returns {TConfig}
+ */
+export const filter = (props) => {
+  // Destructure args
+  const { source, field, match } = props;
+  // Extract initial collection value from source
+  const initialCollection = source?.[field];
+  if (!initialCollection) {
+    return source;
+  }
+  // if match is a regex then wrap it with a simple predicate
+  const predicate = typeof match === 'function'
+    ? match
+    : (input) => match.test(input);
+  let filteredCollection;
+  // If initialCollection is an array
+  if (Array.isArray(initialCollection)) {
+    // Then use Array.filter to build filteredCollection
+    filteredCollection = initialCollection.filter(predicate);
+  } else if (typeof initialCollection === 'object') {
+    // Else extract keys from initialCollection object and 
+    // reduce them int filteredCollection
+    filteredCollection = Object.keys(initialCollection).reduce(
+      (prev, current, currentIndex) => {
+        const fieldValue = current[currentIndex];
+        if (predicate(fieldValue)) {
+          prev[currentIndex] = fieldValue;
+        }
+        return prev;
+      }, {});
+  } else {
+    // Otherwise we have an unsupported value type - throw
+    throw new Error('Unsupported collection type', { cause: initialCollection });
+  }
+  source[field] = filteredCollection;
+  return source;
+};
+
 const config = {
   preset: 'ts-jest', // Use ts-jest preset for TypeScript support
   testEnvironment: 'jsdom', // Set the test environment to jsdom
@@ -8,7 +76,16 @@ const config = {
       ProcessExternalResources: false,
     },
   },
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled  
+  setupFilesAfterEnv: [
+    '<rootDir>/__tests__/shared/setup/jest.mock-log.ts',
+    '<rootDir>/__tests__/shared/setup/jest.env-vars.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-redis.ts',
+    '<rootDir>/__tests__/shared/setup/jest.localStorage.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-opentelemetry.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-got.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-node-modules.ts',
+  ],
   testMatch: [
     '**/__tests__/**/*.test.(ts|tsx)',
     '!/.next/**',
@@ -17,7 +94,23 @@ const config = {
     '!/(rsc)/**',
   ],
   moduleNameMapper: {
+    // All material UI icons are served by a single mock
     '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx', // Mock all MUI icons to a singular mock
+    // Instrumentation library mock
+    '@/instrumentation(.*)$':
+      '<rootDir>/__mocks__/shared/setup/instrumentation.ts', // Mock instrumentation module
+    // Keycloak providers mock
+    '^(@|\\.)/lib/auth/keycloak-provider$':
+      '<rootDir>/__mocks__/shared/keycloak-provider.js', // Mock static file imports,
+    // Metrics module mock
+    '^@/lib/site-util/metrics.*$':
+      '<rootDir>/__mocks__/shared/metrics.ts', // Alias for lib imports
+    // Prexit module mock
+    '^prexit$': '<rootDir>/__mocks__/shared/prexit.ts', // Mock prexit module
+    // Zodex module mock
+    '^zodex$': '<rootDir>/__mocks__/shared/zodex.js',
+    // css modules
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
   },
   transform: {
     '^.+\\.(ts|tsx)$': [

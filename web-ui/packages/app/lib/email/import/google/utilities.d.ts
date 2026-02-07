@@ -3,7 +3,7 @@
  * @module @/lib/email/import/google/utilities
  */
 import type { gmail_v1 } from 'googleapis';
-import type { ArrayElement } from '../../../../lib/typescript';
+import type { ArrayElement } from '@compliance-theater/typescript';
 import type { ParsedHeaderMap } from '../../parsedHeaderMap';
 import type { ParsedContact, RecipientType } from '../types';
 

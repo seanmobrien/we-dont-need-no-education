@@ -1,4 +1,4 @@
-import type { DatabaseMockType } from "./setup/jest.mock-drizzle";
+import type { DatabaseMockType } from "./jest.mock-drizzle";
 
 const testExtensionFactory = () => {
   return {

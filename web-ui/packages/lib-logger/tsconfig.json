@@ -1,5 +1,5 @@
 {
-  "extends": "../app/tsconfig.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
@@ -8,6 +8,10 @@
     "declarationMap": true,
     "baseUrl": ".",
     "paths": {},
+    "types": [
+      "node",
+      "jest"
+    ],
     "noEmit": false
   },
   "include": [

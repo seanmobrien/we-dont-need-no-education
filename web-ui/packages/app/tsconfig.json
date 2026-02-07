@@ -1,43 +1,11 @@
 {
+  "extends": "../../tsconfig.next.json",
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "allowJs": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "isolatedModules": true,
-    "incremental": true,
-    "noEmit": true,
-    "removeComments": true,
-    "jsx": "preserve", // Ensure JSX is supported
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "es6",
-      "esnext"
-    ],
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "moduleDetection": "auto",
-    "noImplicitAny": true,
-    "noImplicitThis": true,
-    "noFallthroughCasesInSwitch": true,
-    "plugins": [
-      {
-        "name": "ts-node"
-      },
-      {
-        "name": "next"
-      }
-    ],
     "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
       ],
-      /*
-      "/(rsc)/./*": [
-        "./*"
-      ],*/
       "@compliance-theater/logger": [
         "../lib-logger/dist"
       ],
@@ -51,8 +19,6 @@
         "../lib-typescript/dist/*"
       ]
     },
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
     // Explicit types prevent accidental inclusion of @types packages (for
     // example mocha) that collide with jest globals in the monorepo.
     // We include node + jest here so tests and runtime node types are
@@ -65,10 +31,7 @@
     "typeRoots": [
       "./node_modules/@types",
       "../../node_modules/@types"
-    ],
-    "strict": true,
-    "strictNullChecks": true,
-    "target": "ESNext"
+    ]
   },
   "include": [
     "**/*.d.ts",
@@ -76,7 +39,7 @@
     "**/*.tsx",
     "./*.ts",
     "next-env.d.ts",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
   ],
   "exclude": [
     "node_modules",

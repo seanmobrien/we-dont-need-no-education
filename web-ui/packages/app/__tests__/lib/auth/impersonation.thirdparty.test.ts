@@ -3,7 +3,7 @@
  */
 
 
-import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
+import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
 import type { Got } from 'got';
 import got from 'got';
 

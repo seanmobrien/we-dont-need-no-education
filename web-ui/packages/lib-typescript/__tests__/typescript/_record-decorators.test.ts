@@ -1,5 +1,5 @@
 /**
- * Tests for lib/typescript/record-decorators.ts
+ * Tests for @compliance-theater/typescript/record-decorators.ts
  *
  * This module tests record decorator utilities for:
  * - UUID management in records
