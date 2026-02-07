@@ -84,7 +84,9 @@ jobs:
         working-directory: ./web-ui
         run: |
           git clone https://github.com/folio-org/folio-tools.git
-          yarn version --immediate "$(folio-tools/github-actions-scripts/folioci_npmver.sh)"
+          NEW_VERSION="$(folio-tools/github-actions-scripts/folioci_npmver.sh)"
+          export NEW_VERSION
+          node -e "const fs=require('fs'); const path=require('path'); const root=process.cwd(); const version=process.env.NEW_VERSION; const targets=[path.join(root,'package.json')]; const packagesDir=path.join(root,'packages'); if (fs.existsSync(packagesDir)) { for (const entry of fs.readdirSync(packagesDir)) { const file=path.join(packagesDir, entry, 'package.json'); if (fs.existsSync(file)) targets.push(file); } } for (const file of targets) { const data=JSON.parse(fs.readFileSync(file,'utf8')); data.version=version; fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n'); }"
           rm -rf folio-tools
         env:
           JOB_ID: ${{ github.run_number }}
