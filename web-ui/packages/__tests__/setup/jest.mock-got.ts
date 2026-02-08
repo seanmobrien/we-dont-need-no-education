@@ -84,7 +84,7 @@ try{
 
 import { fetch as clientFetch } from '@/lib/nextjs-util/fetch';
 import { fetch as serverFetch } from '@/lib/nextjs-util/server/fetch';
-import got from 'got';
+import got from 'got'; 
 
 let originalFetch: typeof globalThis.fetch | undefined;
 
