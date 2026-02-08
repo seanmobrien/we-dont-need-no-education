@@ -72,25 +72,25 @@ jobs:
           corepack prepare yarn@4.12.0 --activate
         shell: bash
 
-      - name: Set yarn config
-        run: |
-          if [ -n "${FOLIO_NPM_REGISTRY:-}" ]; then
-            yarn config set @folio:registry "$FOLIO_NPM_REGISTRY"
-          fi
-        shell: bash
-        working-directory: ./web-ui
+      # - name: Set yarn config
+      #   run: |
+      #     if [ -n "${FOLIO_NPM_REGISTRY:-}" ]; then
+      #       yarn config set @folio:registry "$FOLIO_NPM_REGISTRY"
+      #     fi
+      #   shell: bash
+      #   working-directory: ./web-ui
 
-      - name: Set FOLIO NPM snapshot version
-        working-directory: ./web-ui
-        run: |
-          git clone https://github.com/folio-org/folio-tools.git
-          NEW_VERSION="$(folio-tools/github-actions-scripts/folioci_npmver.sh)"
-          export NEW_VERSION
-          node -e "const fs=require('fs'); const path=require('path'); const root=process.cwd(); const version=process.env.NEW_VERSION; const targets=[path.join(root,'package.json')]; const packagesDir=path.join(root,'packages'); if (fs.existsSync(packagesDir)) { for (const entry of fs.readdirSync(packagesDir)) { const file=path.join(packagesDir, entry, 'package.json'); if (fs.existsSync(file)) targets.push(file); } } for (const file of targets) { const data=JSON.parse(fs.readFileSync(file,'utf8')); data.version=version; fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n'); }"
-          rm -rf folio-tools
-        env:
-          JOB_ID: ${{ github.run_number }}
-        shell: bash
+      # - name: Set FOLIO NPM snapshot version
+      #   working-directory: ./web-ui
+      #   run: |
+      #     git clone https://github.com/folio-org/folio-tools.git
+      #     NEW_VERSION="$(folio-tools/github-actions-scripts/folioci_npmver.sh)"
+      #     export NEW_VERSION
+      #     node -e "const fs=require('fs'); const path=require('path'); const root=process.cwd(); const version=process.env.NEW_VERSION; const targets=[path.join(root,'package.json')]; const packagesDir=path.join(root,'packages'); if (fs.existsSync(packagesDir)) { for (const entry of fs.readdirSync(packagesDir)) { const file=path.join(packagesDir, entry, 'package.json'); if (fs.existsSync(file)) targets.push(file); } } for (const file of targets) { const data=JSON.parse(fs.readFileSync(file,'utf8')); data.version=version; fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n'); }"
+      #     rm -rf folio-tools
+      #   env:
+      #     JOB_ID: ${{ github.run_number }}
+      #   shell: bash
 
       - name: Run yarn install
         working-directory: ./web-ui
@@ -107,10 +107,10 @@ jobs:
           fi
         shell: bash
 
-      - name: Run yarn list
-        working-directory: ./web-ui
-        run: yarn list --pattern @folio
-        shell: bash
+      # - name: Run yarn list
+      #   working-directory: ./web-ui
+      #   run: yarn list --pattern @folio
+      #   shell: bash
 
       - name: Run yarn lint
         working-directory: ./web-ui
@@ -123,10 +123,10 @@ jobs:
         run: xvfb-run --server-args="-screen 0 1024x768x24" yarn test $YARN_TEST_OPTIONS
         shell: bash
 
-      - name: Run yarn formatjs-compile
+      - name: Run yarn build
         working-directory: ./web-ui
-        if: ${{ env.COMPILE_TRANSLATION_FILES == 'true' }}
-        run: yarn formatjs-compile
+        #if: ${{ env.COMPILE_TRANSLATION_FILES == 'true' }}
+        run: yarn build
         shell: bash
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     # - name: Update dependency graph
