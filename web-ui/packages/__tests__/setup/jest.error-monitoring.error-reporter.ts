@@ -29,4 +29,4 @@ jest.mock('@/lib/error-monitoring/error-reporter', () => {
   };
 });
 
-import { errorReporter } from '../../app/lib/error-monitoring/error-reporter';
+import { errorReporter } from '@/lib/error-monitoring/error-reporter';

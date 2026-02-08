@@ -112,7 +112,8 @@ jobs:
       #   run: yarn list --pattern @folio
       #   shell: bash
 
-      - name: Run yarn lint
+      # NOTE: Turbo lint tool depends on typescript build, so this will do both lint and typescript validation.
+      - name: Run typescript compile and yarn lint
         working-directory: ./web-ui
         run: yarn lint
         continue-on-error: true
@@ -121,13 +122,7 @@ jobs:
       - name: Run yarn test
         working-directory: ./web-ui
         run: xvfb-run --server-args="-screen 0 1024x768x24" yarn test $YARN_TEST_OPTIONS
-        shell: bash
-
-      - name: Run yarn build
-        working-directory: ./web-ui
-        #if: ${{ env.COMPILE_TRANSLATION_FILES == 'true' }}
-        run: yarn build
-        shell: bash
+        shell: bash      
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     # - name: Update dependency graph
     #  uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6

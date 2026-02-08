@@ -33,6 +33,26 @@
         "IS_BUILDING"
       ]
     },
+    "build:typescript": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "CRYTPO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",        
+        "DATABASE_URL",
+        "FOR_STANDALONE",
+        "IS_BUILDING"
+      ]
+    },
     "clean:build": {
       "cache": false,
       "persistent": false,
@@ -60,7 +80,7 @@
       "cache": false
     },
     "lint": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["build:typescript"],
       "outputs": []
     }
   }

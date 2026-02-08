@@ -18,8 +18,10 @@
   "scripts": {
     "preinstall": "node -e \"if(process.env.npm_execpath.indexOf('yarn') === -1) throw new Error('Please use yarn instead of npm')\"",
     "dev": "next dev",
-    "build": "cross-env NODE_OPTIONS='--max-old-space-size=4098' FOR_STANDALONE='1' IS_BUILDING='1' next build --profile",
-    "debug:build": "cross-env NODE_OPTIONS='--max-old-space-size=4098' FOR_STANDALONE='1' IS_BUILDING='1' next build --profile --debug --debug-prerender",
+    "build": "cross-env NODE_OPTIONS='--max-old-space-size=4096' FOR_STANDALONE='1' IS_BUILDING='1' next build --profile",
+    "build:typescript": "echo 'Building app folder typescript...' && cross-env NODE_OPTIONS='--max-old-space-size=4096' FOR_STANDALONE='1' IS_BUILDING='1' tsc -p tsconfig.json --noEmit && echo 'TypeScript build complete.' || (echo 'Typescript compile did not succeed' >&2; exit 1)",
+    "build:slow": "cross-env NODE_OPTIONS='--max-old-space-size=2048' FOR_STANDALONE='1' IS_BUILDING='1' timeout 1800 next build",
+    "debug:build": "cross-env NODE_OPTIONS='--max-old-space-size=4096' FOR_STANDALONE='1' IS_BUILDING='1' next build --profile --debug --debug-prerender",
     "clean:build": "rimraf .next dist tsconfig.tsbuildinfo",
     "drizzle-generate": "drizzle-kit generate --config=drizzle.config.ts",
     "debug": "cross-env NODE_OPTIONS='--inspect' FOR_STANDALONE='1' next dev",
@@ -39,8 +41,6 @@
     "test:e2e:report": "playwright show-report",
     "lint": "next lint",
     "vercel-build": "cross-env NODE_OPTIONS='--max-old-space-size=4096' FOR_STANDALONE='1' IS_BUILDING='1' next build",
-    "build:slow": "cross-env NODE_OPTIONS='--max-old-space-size=2048' FOR_STANDALONE='1' IS_BUILDING='1' timeout 1800 next build",
-    "build:typescript": "cross-env NODE_OPTIONS='--max-old-space-size=2048' FOR_STANDALONE='1' IS_BUILDING='1' tsc -p tsconfig.json --noEmit",
     "test:timeout": "timeout 600 jest",
     "test:long": "jest --testTimeout=60000"
   },
