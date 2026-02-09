@@ -85,9 +85,6 @@ jobs:
       - name: Enable Corepack and activate Yarn 4.12.0
         working-directory: ./web-ui
         run: |
-          if ! command -v corepack >/dev/null 2>&1; then
-            npm install --global corepack
-          fi
           corepack enable
           corepack prepare yarn@4.12.0 --activate
           yarn --version
