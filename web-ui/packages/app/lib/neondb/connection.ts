@@ -1,4 +1,4 @@
-import { env } from '@repo/lib-site-util-env';
+import { env } from '@compliance-theater/env';
 import { LoggedError } from '../react-util/errors/logged-error';
 import type { PostgresSql } from './postgres';
 import AfterManager from '../site-util/after';

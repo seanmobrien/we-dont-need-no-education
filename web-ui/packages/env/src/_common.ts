@@ -1,8 +1,8 @@
-import { isTruthy } from '@repo/app/lib/react-util/utility-methods';
-import { LoggedError } from '@repo/app/lib/react-util/errors/logged-error';
+import { isTruthy } from '@compliance-theater/app/lib/react-util/utility-methods';
+import { LoggedError } from '@compliance-theater/app/lib/react-util/errors/logged-error';
 import z from 'zod';
-import { isAiModelType } from '@repo/app/lib/ai/core/guards';
-import { AiModelType, AiModelTypeValues } from '@repo/app/lib/ai/core/unions';
+import { isAiModelType } from '@compliance-theater/app/lib/ai/core/guards';
+import { AiModelType, AiModelTypeValues } from '@compliance-theater/app/lib/ai/core/unions';
 
 /**
  * @module site-util/env/_common

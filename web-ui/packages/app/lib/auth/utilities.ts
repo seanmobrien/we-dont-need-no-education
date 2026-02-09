@@ -6,7 +6,7 @@ import {
   type JWTPayload,
 } from 'jose';
 import { LRUCache } from 'lru-cache';
-import { env } from '@repo/lib-site-util-env';
+import { env } from '@compliance-theater/env';
 
 export const KnownScopeValues = ['mcp-tool:read', 'mcp-tool:write'] as const;
 export type KnownScope = (typeof KnownScopeValues)[number];

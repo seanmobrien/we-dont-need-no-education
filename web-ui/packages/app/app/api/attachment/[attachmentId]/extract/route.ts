@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { wrapRouteRequest, extractParams } from '@/lib/nextjs-util/server/utils';
 import { BlobServiceClient } from '@azure/storage-blob';
-import { env } from '@repo/lib-site-util-env';
+import { env } from '@compliance-theater/env';
 import { log } from '@/lib/logger';
 import { EmailAttachmentDrizzleRepository } from '@/lib/api/attachment';
 

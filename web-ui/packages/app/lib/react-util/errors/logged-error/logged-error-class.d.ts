@@ -1,35 +1,6 @@
 import type { TurtleRecursionParams, LoggedErrorOptions, ErrorReportArgs, ErrorLogFactory } from './types';
-/**
- * A unique symbol used to brand `LoggedError` class instances for runtime type checking.
- *
- * This symbol ensures that `LoggedError` instances can be reliably identified even
- * across different JavaScript execution contexts or when serialized/deserialized.
- *
- * @private
- * @readonly
- */
 declare const brandLoggedError: unique symbol;
-/**
- * The underlying Error object that this LoggedError wraps.
- *
- * This contains the original error information including message, stack trace,
- * and other properties. The LoggedError acts as a proxy to this underlying error
- * while adding enhanced functionality.
- *
- * @private
- * @readonly
- */
 declare const INNER_ERROR: unique symbol;
-/**
- * Whether this error is classified as critical.
- *
- * Critical errors indicate serious system failures that may require immediate
- * attention, alerting, or special handling procedures. Non-critical errors
- * are typically logged but don't trigger emergency responses.
- *
- * @private
- * @readonly
- */
 declare const CRITICAL: unique symbol;
 export declare class LoggedError extends Error {
     #private;

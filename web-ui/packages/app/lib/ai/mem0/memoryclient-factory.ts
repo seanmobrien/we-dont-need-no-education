@@ -5,7 +5,7 @@ import type {
   HealthCheckParams,
 } from './types/health-check';
 import { fromRequest, ImpersonationService } from '@/lib/auth/impersonation';
-import { env } from '@repo/lib-site-util-env';
+import { env } from '@compliance-theater/env';
 import { log } from '@/lib/logger';
 
 /**

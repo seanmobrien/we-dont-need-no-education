@@ -34,7 +34,7 @@
       "@/*": [
         "./*"
       ],
-      "@repo/app/*": [
+      "@compliance-theater/app/*": [
         "./*"
       ],
       "/(rsc)/./*": [

@@ -1,6 +1,6 @@
 import { log, safeSerialize } from '@/lib/logger';
 import { isAbortError, LoggedError } from '@/lib/react-util';
-import { isRunningOnServer } from '@repo/lib-site-util-env';
+import { isRunningOnServer } from '@compliance-theater/env';
 import type { Readable as ReadableType } from 'node:stream';
 
 const toUint8 = (

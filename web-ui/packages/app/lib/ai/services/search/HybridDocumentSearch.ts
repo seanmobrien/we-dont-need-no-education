@@ -1,4 +1,4 @@
-import { env } from '@repo/lib-site-util-env';
+import { env } from '@compliance-theater/env';
 import { CaseFileSearchOptions } from '../../tools/types';
 import { CaseFileSearchScopeType } from '../../tools/unions';
 import { HybridSearchClient } from './HybridSearchBase';

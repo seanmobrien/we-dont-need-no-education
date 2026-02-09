@@ -19,7 +19,7 @@ import { generateHash } from './telemetry';
 import { getMem0ApiUrl } from '../pollyfills';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { ImpersonationService } from '@/lib/auth/impersonation';
-import { env } from '@repo/lib-site-util-env';
+import { env } from '@compliance-theater/env';
 import { log } from '@/lib/logger';
 import {
   createInstrumentedSpan,

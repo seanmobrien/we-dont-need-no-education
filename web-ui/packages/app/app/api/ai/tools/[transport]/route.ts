@@ -56,7 +56,7 @@ import {
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { FirstParameter } from '@/lib/typescript';
 import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
-import { env } from '@repo/lib-site-util-env';
+import { env } from '@compliance-theater/env';
 import { type BasicResourceRecord, resourceService } from '@/lib/auth/resources/resource-service';
 import { authorizationService } from '@/lib/auth/resources/authorization-service';
 import { getAccessToken } from '@/lib/auth/access-token';

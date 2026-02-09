@@ -2,7 +2,7 @@ import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { onOutputGenerated } from '@/lib/ai/middleware/memory-middleware/direct-access/output-generated';
 import { memoryClientFactory } from '@/lib/ai/mem0';
 import { fromRequest } from '@/lib/auth/impersonation/impersonation-factory';
-import { env } from '@repo/lib-site-util-env';
+import { env } from '@compliance-theater/env';
 
 export const GET = wrapRouteRequest(async () => {
   const result = await onOutputGenerated({

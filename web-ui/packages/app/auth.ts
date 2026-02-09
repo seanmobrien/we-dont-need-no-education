@@ -11,7 +11,7 @@ import type {
 import NextAuth from 'next-auth'; // Added NextAuthConfig
 import type { Adapter, AdapterSession, AdapterUser } from '@auth/core/adapters';
 import type { CredentialInput, Provider } from '@auth/core/providers';
-import { isRunningOnEdge } from '@repo/lib-site-util-env';
+import { isRunningOnEdge } from '@compliance-theater/env';
 import { logEvent } from '@/lib/logger';
 
 import { setupKeyCloakProvider } from './lib/auth/keycloak-provider';

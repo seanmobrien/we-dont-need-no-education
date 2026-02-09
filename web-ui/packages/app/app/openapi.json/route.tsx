@@ -1,5 +1,5 @@
 import { wrapRouteRequest, fetch } from '@/lib/nextjs-util/server';
-import { env } from '@repo/lib-site-util-env';
+import { env } from '@compliance-theater/env';
 import { NextResponse } from 'next/dist/server/web/spec-extension/response';
 
 export const GET = wrapRouteRequest(async () => {

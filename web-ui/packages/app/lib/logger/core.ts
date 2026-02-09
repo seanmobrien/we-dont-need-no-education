@@ -1,5 +1,5 @@
 import pino from 'pino';
-import { env, isRunningOnServer } from '@repo/lib-site-util-env';
+import { env, isRunningOnServer } from '@compliance-theater/env';
 import { WrappedLogger } from './wrapped-logger';
 import type { ILogger, EventSeverity, LogEventOverloads } from './types';
 import { CustomAppInsightsEvent } from './event';

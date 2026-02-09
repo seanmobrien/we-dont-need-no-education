@@ -8,7 +8,7 @@
  * @module lib/auth/resources/resource-service
  */
 
-import { env } from '@repo/lib-site-util-env';
+import { env } from '@compliance-theater/env';
 import { fetch } from '@/lib/nextjs-util/server';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { LRUCache } from 'lru-cache';

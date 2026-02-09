@@ -47,9 +47,9 @@ const config = {
       '<rootDir>/__tests__/setup/jest.mock-instrumentation.ts', // Mock instrumentation module
     '^@/lib/site-util/metrics.*$':
       '<rootDir>/__tests__/setup/jest.mock-metrics.ts', // Alias for lib imports
-    '^@repo/app/(.*)$': '<rootDir>/$1', // Map @repo/app to current directory
-    '^@repo/lib-site-util-env$': '<rootDir>/../lib-site-util-env/src/index.ts', // Map env package
-    '^@repo/lib-site-util-env/(.*)$': '<rootDir>/../lib-site-util-env/src/$1', // Map env package subpaths
+    '^@compliance-theater/app/(.*)$': '<rootDir>/$1', // Map @repo/app to current directory
+    '^@compliance-theater/env$': '<rootDir>/../env/src/index.ts', // Map env package
+    '^@compliance-theater/env/(.*)$': '<rootDir>/../env/src/$1', // Map env package subpaths
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
     //'^~@/(.*)$': '<rootDir>/__tests__/$1', // Alias for module imports
     '^zodex$': '<rootDir>/__tests__/mocks/zodex.js',

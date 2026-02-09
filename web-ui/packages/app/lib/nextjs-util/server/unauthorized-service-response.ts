@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SessionTokenKey } from '@/lib/auth/utilities';
-import { env } from '@repo/lib-site-util-env';
+import { env } from '@compliance-theater/env';
 
 export const unauthorizedServiceResponse = ({
   req,

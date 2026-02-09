@@ -6,7 +6,7 @@ import type { StagedAttachment } from '@/lib/api/email/import/staged-attachment'
 import { NextApiRequest } from 'next/types';
 import { NextRequest } from 'next/server';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { env } from '@repo/lib-site-util-env';
+import { env } from '@compliance-theater/env';
 
 export type AttachmentDownloadJob = {
   model: StagedAttachment;

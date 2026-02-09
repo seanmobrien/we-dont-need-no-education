@@ -22,14 +22,6 @@ type AnnotatedErrorMessageType = {
 };
 export type AnnotatedErrorMessageBase = DataUIPart<AnnotatedErrorMessageType>;
 export type AnnotatedErrorPart<TError extends keyof AnnotatedErrorMessageType> = DataUIPart<Pick<AnnotatedErrorMessageType, TError>>;
-/**
- * Represents an annotated error message, extending the base annotated message.
- *
- * @property type - The fixed string literal 'error' indicating this is an error message.
- * @property data - An object containing details about the error.
- * @property data.reason - A string describing the reason for the error.
- * @property data.retryAfter - (Optional) The number of seconds to wait before retrying the operation.
- */
 export type AnnotatedErrorMessage = AnnotatedErrorPart<'error-retry'>;
 export type AnnotatedRetryMessage = AnnotatedErrorPart<'error-notify-retry'>;
 export type AnnotatedMessage = AnnotatedErrorMessage | AnnotatedRetryMessage | AnnotatedErrorMessageBase;

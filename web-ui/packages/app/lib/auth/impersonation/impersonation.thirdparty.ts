@@ -8,7 +8,7 @@
  */
 import { got } from 'got';
 import { CookieJar } from 'tough-cookie';
-import { env } from '@repo/lib-site-util-env';
+import { env } from '@compliance-theater/env';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import CryptoService from '@/lib/site-util/auth/crypto-service';
