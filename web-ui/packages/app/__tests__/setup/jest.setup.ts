@@ -110,7 +110,6 @@ import '@testing-library/jest-dom';
 import { TextEncoder, TextDecoder } from 'util';
 import { mock } from 'jest-mock-extended';
 import { zerialize } from 'zodex';
-import FormatAlignCenterSharp from '@mui/icons-material/FormatAlignCenterSharp';
 import { createElement } from 'react';
 import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
 import instrument, { getAppInsights } from '@/instrument/browser';
