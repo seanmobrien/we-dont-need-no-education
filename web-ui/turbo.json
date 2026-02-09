@@ -41,7 +41,7 @@
         "AZURE_*",
         "NEXT_*",
         "NODE_ENV",
-        "CRYTPO_*",
+        "CRYPTO_*",
         "GOOGLE_*",
         "LOG_LEVEL_SERVER",
         "MEM0_*",
