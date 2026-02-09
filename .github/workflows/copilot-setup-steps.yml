@@ -92,5 +92,5 @@ jobs:
 
       - name: Run yarn install
         working-directory: ./web-ui
-        run: yarn install --ignore-scripts --immutable
+        run: yarn install --immutable
         shell: bash
