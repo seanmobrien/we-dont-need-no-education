@@ -185,7 +185,6 @@ export { getAppInsights, getReactPlugin, getClickPlugin };
 
 const instrument = () => {
   console.log('Starting OTel SDK instrumentation for NodeJS browser...');
-  debugger;
   ensureSendCustomEventListener();
   console.info('Client-side event instrumentation initialized.');
   return Promise.resolve(void 0);
