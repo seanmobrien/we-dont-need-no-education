@@ -41,37 +41,50 @@ jest.mock('got', () => {
   };
 });
 
-
-jest.mock('@/lib/nextjs-util/fetch', () => {
-  let mockFetch = jest.fn().mockImplementation(() => {
-    return makeResponse();
+try{
+  jest.mock('@/lib/nextjs-util/fetch', () => {
+    let mockFetch = jest.fn().mockImplementation(() => {
+      return makeResponse();
+    });
+    return {
+      fetch: mockFetch
+    };
   });
-  return {
-    fetch: mockFetch
-  };
-});
+}catch{
 
-jest.mock('@/lib/nextjs-util/server/fetch', () => {
-  let mockFetch = jest.fn().mockImplementation(() => {
-    return makeResponse();
-  });
-  return {
-    fetch: mockFetch
-  };
-});
+}
 
-jest.mock('@/lib/nextjs-util/dynamic-fetch', () => {
-  let mockFetch = jest.fn().mockImplementation(() => {
-    return makeResponse();
+try{
+  jest.mock('@/lib/nextjs-util/server/fetch', () => {
+    let mockFetch = jest.fn().mockImplementation(() => {
+      return makeResponse();
+    });
+    return {
+      fetch: mockFetch
+    };
   });
-  return {
-    fetch: mockFetch
-  };
-});
+}catch{
+
+}
+
+try{
+  jest.mock('@/lib/nextjs-util/dynamic-fetch', () => {
+    let mockFetch = jest.fn().mockImplementation(() => {
+      return makeResponse();
+    });
+    return {
+      fetch: mockFetch
+    };
+  });  
+} catch {
+
+}
+
+
 
 import { fetch as clientFetch } from '@/lib/nextjs-util/fetch';
 import { fetch as serverFetch } from '@/lib/nextjs-util/server/fetch';
-import got from 'got';
+import got from 'got'; 
 
 let originalFetch: typeof globalThis.fetch | undefined;
 

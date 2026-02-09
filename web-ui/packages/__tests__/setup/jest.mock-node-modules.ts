@@ -26,12 +26,17 @@ jest.mock('next/navigation', () => ({
   useSearchParams: jest.fn(() => new URLSearchParams()),
 }));
 
-jest.mock('@/components/general/telemetry/track-with-app-insight', () => ({
-  TrackWithAppInsight: jest.fn((props: any) => {
-    const { children, ...rest } = props;
-    return createElement('div', rest, children);
-  }),
-}));
+try{
+  jest.mock('@/components/general/telemetry/track-with-app-insight', () => ({
+    TrackWithAppInsight: jest.fn((props: any) => {
+      const { children, ...rest } = props;
+      return createElement('div', rest, children);
+    }),
+  }));
+}catch{
+
+}
+
 jest.mock('@microsoft/applicationinsights-react-js', () => ({
   withAITracking: (_plugin: any, Component: any) => Component,
 }));

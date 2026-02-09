@@ -114,11 +114,11 @@ const instrumentServer = () => {
     urlFilter,
   );
   const metricExporter = new AzureMonitorMetricExporter({
-    connectionString: connStr,
+    connectionString: connStr ?? process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING ?? process.env.AZURE_MONITOR_CONNECTION_STRING,
   });
   const logExporter = new UrlFilteredLogExporter(
     new ChunkingLogExporter(
-      new AzureMonitorLogExporter({ connectionString: connStr }),
+      new AzureMonitorLogExporter({ connectionString: connStr ?? process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING ?? process.env.AZURE_MONITOR_CONNECTION_STRING }),
       { maxChunkChars: 8000, keepOriginalKey: false },
     ),
     urlFilter,

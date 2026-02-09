@@ -15,7 +15,7 @@ import { POST, GET } from '@/app/api/auth/keys/route';
 // import { auth } from '@/auth';
 import { drizDb } from '@/lib/drizzle-db';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
-import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
+import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
 
 // Mock dependencies
 // jest.mock('@/auth');

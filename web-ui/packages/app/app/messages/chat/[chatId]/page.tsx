@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import { auth } from '@/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 import { ChatHistory } from '@/components/ai/chat/history';

@@ -1,5 +1,9 @@
 import React, { useCallback, useMemo } from 'react';
-import { Box, Paper, Typography, Avatar, Stack } from '@mui/material';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Avatar from '@mui/material/Avatar';
+import Stack from '@mui/material/Stack';
 import {
   isToolOrDynamicToolUIPart,
   UIDataTypes,

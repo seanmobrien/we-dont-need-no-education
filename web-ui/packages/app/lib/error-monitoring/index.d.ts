@@ -13,7 +13,6 @@ export { ErrorSeverity } from './error-reporter';
 export { useErrorReporter } from './use-error-reporter';
 export {
   withErrorBoundary,
-  ErrorBoundaryWrapper,
   ErrorBoundaryDecorator,
 } from './with-error-boundary';
 

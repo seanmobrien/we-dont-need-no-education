@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import { UIMessage } from 'ai';
 import { Loading } from '@/components/general/loading';
 import { ChatMessageV2 } from './chat-message';

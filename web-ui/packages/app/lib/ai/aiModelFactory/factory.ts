@@ -45,7 +45,7 @@ import {
   caseProviderMatch,
 } from './util';
 import { getAvailability } from './model-availability-manager';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
  * Setup middleware for language models with caching and retry logic

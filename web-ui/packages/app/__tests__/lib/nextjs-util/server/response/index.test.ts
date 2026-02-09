@@ -554,9 +554,9 @@ describe('makeJsonResponse', () => {
 
       const errorResponse = makeJsonResponse(
         { success: false, error: 'Validation failed' },
-        { status: 400 },
+        { status: 400 },  
       );
-      expect(await errorResponse.json()).toEqual({
+      expect(await errorResponse  .json()).toEqual({
         success: false,
         error: 'Validation failed',
       });
@@ -567,7 +567,7 @@ describe('makeJsonResponse', () => {
 describe('makeStreamResponse', () => {
   describe('basic functionality', () => {
     it('should create response from ReadableStream', () => {
-      const stream = createReadableStream(['chunk1', 'chunk2']);
+      const stream = createReadableStream(['chunk1', 'chunk2']) as any;
       const response = makeStreamResponse(stream);
 
       expect(response.status).toBe(200);
@@ -575,7 +575,7 @@ describe('makeStreamResponse', () => {
     });
 
     it('should provide stream() method to access ReadableStream', () => {
-      const originalStream = createReadableStream(['test']);
+      const originalStream = createReadableStream(['test']) as any;
       const response = makeStreamResponse(originalStream);
 
       const stream = (response as any).stream();
@@ -583,14 +583,14 @@ describe('makeStreamResponse', () => {
     });
 
     it('should handle custom status', () => {
-      const stream = createReadableStream(['test']);
+      const stream = createReadableStream(['test']) as any;
       const response = makeStreamResponse(stream, { status: 201 });
 
       expect(response.status).toBe(201);
     });
 
     it('should handle custom headers', () => {
-      const stream = createReadableStream(['test']);
+      const stream = createReadableStream(['test']) as any;
       const response = makeStreamResponse(stream, {
         headers: { 'Content-Type': 'text/event-stream', 'X-Custom': 'value' },
       });
@@ -602,7 +602,7 @@ describe('makeStreamResponse', () => {
 
   describe('text()', () => {
     it('should concatenate stream chunks as text', async () => {
-      const stream = createReadableStream(['Hello', ' ', 'World']);
+      const stream = createReadableStream(['Hello', ' ', 'World']) as any;
       const response = makeStreamResponse(stream);
 
       const text = await response.text();
@@ -614,7 +614,7 @@ describe('makeStreamResponse', () => {
         new TextEncoder().encode('Hello'),
         new TextEncoder().encode(' '),
         new TextEncoder().encode('World'),
-      ]);
+      ]) as any;
       const response = makeStreamResponse(stream);
 
       const text = await response.text();
@@ -622,7 +622,7 @@ describe('makeStreamResponse', () => {
     });
 
     it('should handle empty stream', async () => {
-      const stream = createReadableStream([]);
+      const stream = createReadableStream([]) as any;
       const response = makeStreamResponse(stream);
 
       const text = await response.text();
@@ -630,7 +630,7 @@ describe('makeStreamResponse', () => {
     });
 
     it('should handle UTF-8 characters', async () => {
-      const stream = createReadableStream(['Hello ', '世界 ', '🌍']);
+      const stream = createReadableStream(['Hello ', '世界 ', '🌍']) as any;
       const response = makeStreamResponse(stream);
 
       const text = await response.text();
@@ -641,7 +641,7 @@ describe('makeStreamResponse', () => {
   describe('json()', () => {
     it('should parse JSON from stream', async () => {
       const data = { message: 'Hello', count: 42 };
-      const stream = createReadableStream([JSON.stringify(data)]);
+      const stream = createReadableStream([JSON.stringify(data)]) as any;
       const response = makeStreamResponse(stream);
 
       const json = await response.json();
@@ -655,7 +655,7 @@ describe('makeStreamResponse', () => {
       const stream = createReadableStream([
         jsonString.slice(0, mid),
         jsonString.slice(mid),
-      ]);
+      ]) as any;
       const response = makeStreamResponse(stream);
 
       const json = await response.json();
@@ -663,7 +663,7 @@ describe('makeStreamResponse', () => {
     });
 
     it('should throw on invalid JSON', async () => {
-      const stream = createReadableStream(['not valid json']);
+      const stream = createReadableStream(['not valid json']) as any;
       const response = makeStreamResponse(stream);
 
       await expect(response.json()).rejects.toThrow();
@@ -675,7 +675,7 @@ describe('makeStreamResponse', () => {
       const stream = createReadableStream([
         new Uint8Array([1, 2, 3]),
         new Uint8Array([4, 5]),
-      ]);
+      ]) as any;
       const response = makeStreamResponse(stream);
 
       const arrayBuffer = await response.arrayBuffer();
@@ -686,7 +686,7 @@ describe('makeStreamResponse', () => {
     });
 
     it('should handle string chunks', async () => {
-      const stream = createReadableStream(['Hello', 'World']);
+      const stream = createReadableStream(['Hello', 'World']) as any;
       const response = makeStreamResponse(stream);
 
       const arrayBuffer = await response.arrayBuffer();
@@ -695,7 +695,7 @@ describe('makeStreamResponse', () => {
     });
 
     it('should handle empty stream', async () => {
-      const stream = createReadableStream([]);
+      const stream = createReadableStream([]) as any;
       const response = makeStreamResponse(stream);
 
       const arrayBuffer = await response.arrayBuffer();
@@ -716,7 +716,7 @@ describe('makeStreamResponse', () => {
     });
 
     it('should handle init without headers', () => {
-      const stream = createReadableStream(['test']);
+      const stream = createReadableStream(['test']) as any;
       const response = makeStreamResponse(stream, { status: 201 });
 
       expect(response.status).toBe(201);
@@ -724,7 +724,7 @@ describe('makeStreamResponse', () => {
     });
 
     it('should handle undefined init', () => {
-      const stream = createReadableStream(['test']);
+      const stream = createReadableStream(['test']) as any;
       const response = makeStreamResponse(stream, undefined);
 
       expect(response.status).toBe(200);
@@ -757,7 +757,7 @@ describe('makeStreamResponse', () => {
 
     it('should work for streaming large files', async () => {
       const chunks = Array.from({ length: 100 }, (_, i) => `chunk${i}`);
-      const stream = createReadableStream(chunks);
+      const stream = createReadableStream(chunks) as any;
 
       const response = makeStreamResponse(stream);
       const text = await response.text();
@@ -769,7 +769,7 @@ describe('makeStreamResponse', () => {
 
 describe('FetchResponse with ReadableStream', () => {
   it('should accept ReadableStream in constructor', async () => {
-    const stream = createReadableStream(['stream', ' ', 'data']);
+    const stream = createReadableStream(['stream', ' ', 'data']) as any;
     const response = new FetchResponse(stream);
 
     expect(response.body).toBeInstanceOf(ReadableStream);
@@ -780,7 +780,7 @@ describe('FetchResponse with ReadableStream', () => {
   });
 
   it('should stream() returns the original stream', () => {
-    const stream = createReadableStream(['test']);
+    const stream = createReadableStream(['test']) as any;
     const response = new FetchResponse(stream);
 
     expect(response.stream()).toBe(stream);
@@ -788,7 +788,7 @@ describe('FetchResponse with ReadableStream', () => {
 
   it('should handle json() from stream', async () => {
     const data = { key: 'value' };
-    const stream = createReadableStream([JSON.stringify(data)]);
+    const stream = createReadableStream([JSON.stringify(data)]) as any;
     const response = new FetchResponse(stream);
 
     const json = await response.json();
@@ -799,7 +799,7 @@ describe('FetchResponse with ReadableStream', () => {
     const stream = createReadableStream([
       new Uint8Array([1, 2]),
       new Uint8Array([3]),
-    ]);
+    ]) as any;
     const response = new FetchResponse(stream);
 
     const buffer = await response.arrayBuffer();
@@ -807,7 +807,7 @@ describe('FetchResponse with ReadableStream', () => {
   });
 
   it('should set bodyUsed to true after reading stream', async () => {
-    const stream = createReadableStream(['test']);
+    const stream = createReadableStream(['test']) as any;
     const response = new FetchResponse(stream);
 
     expect(response.bodyUsed).toBe(false);
@@ -816,7 +816,7 @@ describe('FetchResponse with ReadableStream', () => {
   });
 
   it('should throw if reading stream twice', async () => {
-    const stream = createReadableStream(['test']);
+    const stream = createReadableStream(['test']) as any;
     const response = new FetchResponse(stream);
 
     await response.text();
@@ -824,7 +824,7 @@ describe('FetchResponse with ReadableStream', () => {
   });
 
   it('should clone() stream', async () => {
-    const stream = createReadableStream(['test']);
+    const stream = createReadableStream(['test']) as any;
     const response = new FetchResponse(stream);
     const clone = response.clone();
 
@@ -844,7 +844,7 @@ describe('FetchResponse with ReadableStream', () => {
   });
 
   it('should throw if cloning used stream', async () => {
-    const stream = createReadableStream(['test']);
+    const stream = createReadableStream(['test']) as any;
     const response = new FetchResponse(stream);
     await response.text();
 

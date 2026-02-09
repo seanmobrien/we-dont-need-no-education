@@ -99,7 +99,7 @@ describe('app/api/health/route GET', () => {
     const {
       memoryClientFactory,
     } = require('/lib/ai/mem0/memoryclient-factory');
-    const { logger } = require('/lib/logger');
+    const { logger } = require('@compliance-theater/logger');
 
     memoryClientFactory.mockResolvedValue({
       healthCheck: jest.fn().mockResolvedValue({

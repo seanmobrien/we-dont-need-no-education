@@ -7,7 +7,7 @@ import { globalRequiredSingleton } from '@compliance-theater/typescript/singleto
 import { getRedisClient } from '@/lib/redis-client';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getMem0EnabledFlag } from '@/lib/ai/mcp/tool-flags';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { NextRequest } from 'next/server';
 import { ToolProviderSet } from '@/lib/ai/mcp/types';
 

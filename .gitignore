@@ -10,6 +10,7 @@ node_modules
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+install-state.gz
 
 # Intentionally exclude package-lock because we use yarn.lock
 package-lock.json
@@ -65,3 +66,4 @@ logs
 attachments
 db/backups/prod_current_nodropdb.sql
 db/backups/prod_current.sql
+secrets

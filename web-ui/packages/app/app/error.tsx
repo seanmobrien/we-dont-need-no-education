@@ -1,6 +1,6 @@
 'use client'; // Error boundaries must be Client Components
 
-import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
+import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/render-fallback';
 import { useProcessedError } from '@/lib/error-monitoring/use-processed-error';
 
 type ErrorProps = {
@@ -12,21 +12,27 @@ type ErrorProps = {
  * Root-level error boundary that catches errors throughout the app
  * This provides a fallback UI for any unhandled errors in the app router
  */
-export default function Error({ error, reset }: ErrorProps) {
+const Error = ({ error, reset }: ErrorProps) => {
   const { processedError } = useProcessedError({
     error,
-    reset,
+    resetAction: reset,
   });
-
-  if (!processedError) {
-    return null;
-  }
   return (
-    <div>
-      <RenderErrorBoundaryFallback
-        error={processedError}
-        resetErrorBoundary={reset}
-      />
+    <>
+    {!!processedError ? (
+      <div>
+        <RenderErrorBoundaryFallback
+          error={processedError}
+          resetErrorBoundaryAction={reset}   
+        />
     </div>
+    ) : (
+      <div>
+        <p>An unexpected error occurred. Please try again later.</p>
+      </div>
+    )}
+    </>
   );
-}
+};
+
+export default Error;

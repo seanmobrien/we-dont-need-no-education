@@ -8,6 +8,11 @@ import {
   SingletonStorageStrategy,
 } from "./types";
 
+const globalSymbol = Symbol.for(
+    "@noeducation/lib/typescript/SingletonProvider"
+  );
+type GlobalSymbolType = typeof globalSymbol;
+
 export class SingletonProvider {
   #strongStorage = new StrongReferenceStorage();
   #weakStorage = new WeakReferenceStorage();
@@ -15,12 +20,10 @@ export class SingletonProvider {
   #pendingFactories: Map<SingletonStorageKey, Promise<unknown>> = new Map();
 
   static get Instance(): SingletonProvider {
-    const globalSymbol = Symbol.for(
-      "@noeducation/lib/typescript/SingletonProvider"
-    );
+    
     const globalWithProvider = globalThis as GlobalWithMyGlobal<
       SingletonProvider,
-      typeof globalSymbol
+      GlobalSymbolType
     >;
     if (!globalWithProvider[globalSymbol]) {
       globalWithProvider[globalSymbol] = new SingletonProvider();

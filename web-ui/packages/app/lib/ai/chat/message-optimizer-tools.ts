@@ -11,7 +11,7 @@ import { createHash } from 'crypto';
 import { appMeters, hashUserId } from '@/lib/site-util/metrics';
 // import { ToolMap } from '../services/model-stats/tool-map';
 import { createAgentHistoryContext } from '../middleware/chat-history/create-chat-history-context';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import z from 'zod';
 import { DbTransactionType, drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { ThisDbQueryProvider } from '@/lib/drizzle-db/schema';

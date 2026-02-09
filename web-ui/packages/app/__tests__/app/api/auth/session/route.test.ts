@@ -9,7 +9,7 @@ import { GET } from '@/app/api/auth/session/route';
 import { getActiveUserPublicKeys } from '@/lib/site-util/auth/user-keys-server';
 import { NextURL } from 'next/dist/server/web/next-url';
 import { NextRequest } from 'next/server';
-import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
+import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
 
 const mockedGetActiveUserPublicKeys =
   getActiveUserPublicKeys as jest.MockedFunction<

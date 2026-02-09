@@ -1,23 +1,56 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": [
-    "**/.env.*local",
+    "**/*.local",
+    "**/.env",
+    "**/tsconfig.*",
+    "tsconfig.*",
+    "**/*.mjs",
+    ".yarn/**",
     "patches/**",
     "packages/app/scripts/**",
     "packages/app/public/**",
-    "packages/lib-logger/tsconfig.json",
-    "packages/lib-typescript/tsconfig.json"
+    "packages/app/instrument/**"
   ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
         "NODE_ENV",
-        "NEXT_PUBLIC_*",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",        
         "DATABASE_URL",
-        "REDIS_URL",
-        "AZURE_*"
+        "FOR_STANDALONE",
+        "IS_BUILDING"
+      ]
+    },
+    "build:typescript": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "CRYTPO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",        
+        "DATABASE_URL",
+        "FOR_STANDALONE",
+        "IS_BUILDING"
       ]
     },
     "clean:build": {
@@ -47,7 +80,7 @@
       "cache": false
     },
     "lint": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["build:typescript"],
       "outputs": []
     }
   }

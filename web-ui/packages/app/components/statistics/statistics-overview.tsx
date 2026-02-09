@@ -1,22 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import {
-  Typography,
-  Card,
-  CardContent,
-  Box,
-  Chip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  CircularProgress,
-  Alert,
-  IconButton,
-  Tooltip,
-  Switch,
-  FormControlLabel,
-} from '@mui/material';
+import Typography from '@mui/material/Typography';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Grid from '@mui/material/Grid';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';

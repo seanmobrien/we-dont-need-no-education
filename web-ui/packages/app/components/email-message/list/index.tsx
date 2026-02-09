@@ -4,10 +4,11 @@ import {
   useMemo,
   useCallback,
   MouseEvent as ReactMouseEvent,
+  ElementType,
 } from 'react';
 import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
 import siteMap from '@/lib/site-util/url-builder';
-import { Box } from '@mui/material';
+import Box from '@mui/material/Box';
 import { EmailGridProps } from '@/components/mui/data-grid/types';
 import {
   GridCallbackDetails,
@@ -102,10 +103,7 @@ const createColumns = (
       return params.value ? (
         <Link
           onMouseEnter={() => prefetchEmail(params.row.emailId)}
-          component={
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            NextLink<any>
-          }
+          component={NextLink as unknown as ElementType}
           href={siteMap.messages.email(params.row.emailId).toString()}
           title="Open email message"
           aria-label={

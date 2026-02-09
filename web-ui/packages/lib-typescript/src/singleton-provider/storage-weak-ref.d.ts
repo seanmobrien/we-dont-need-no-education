@@ -13,7 +13,7 @@
  * - Caches that can be regenerated if needed
  * - Optional services that don't need guaranteed persistence
  *
- * @module lib/typescript/singleton-provider/storage-weak-ref
+ * @module @compliance-theater/typescript/singleton-provider/storage-weak-ref
  * @see {@link SingletonStorageStrategy} for the interface this implements
  */
 

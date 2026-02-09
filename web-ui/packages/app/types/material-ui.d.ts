@@ -8,7 +8,7 @@
  *
  * @example
  * ```typescript
- * import { Checkbox } from '@mui/material';
+ * import Checkbox from '@mui/material/Checkbox';
  *
  * // Extended Checkbox with custom inputProps support
  * <Checkbox

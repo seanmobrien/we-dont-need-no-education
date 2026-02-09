@@ -7,13 +7,11 @@ import React, {
   useRef,
 } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  Box,
-  TextField,
-  Stack,
-  InputAdornment,
-  IconButton,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import TextField from '@mui/material/TextField';
+import Stack from '@mui/material/Stack';
+import InputAdornment from '@mui/material/InputAdornment';
+import IconButton from '@mui/material/IconButton';
 import PublishIcon from '@mui/icons-material/Publish';
 import { useChat } from '@ai-sdk/react';
 import { UIMessage, DefaultChatTransport } from 'ai';

@@ -1,16 +1,14 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, ElementType } from 'react';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import {
-  Box,
-  Button,
-  IconButton,
-  Chip,
-  Typography,
-  Breadcrumbs,
-  Link as MuiLink,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Chip from '@mui/material/Chip';
+import Typography from '@mui/material/Typography';
+import Breadcrumbs from '@mui/material/Breadcrumbs';
+import MuiLink from '@mui/material/Link';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -272,13 +270,10 @@ export default function TodoItemsGrid({ listId }: TodoItemsGridProps) {
         <Box sx={{ mb: 2 }}>
           <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 2 }}>
             <MuiLink
-              component={
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                NextLink<any>
-              }
+              component={NextLink as unknown as ElementType}
               underline="hover"
               color="inherit"
-              href={siteBuilder.messages.page('todo-lists')}
+              href={siteBuilder.messages.page('todo-lists').toString()}
             >
               <ArrowBackIcon sx={{ mr: 0.5, verticalAlign: 'middle' }} />
               All Lists

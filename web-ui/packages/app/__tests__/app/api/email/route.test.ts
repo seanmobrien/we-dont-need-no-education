@@ -68,7 +68,7 @@ import { POST, PUT, GET } from '@/app/api/email/route';
 import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 
-import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
+import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
 import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 

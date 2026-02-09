@@ -1,8 +1,8 @@
-export type SiteRouteType =
-  | __next_route_internal_types__.DynamicRoutes
-  | __next_route_internal_types__.StaticRoutes;
-export type SiteRoute<T extends SiteRouteType = SiteRouteType> =
-  __next_route_internal_types__.RouteImpl<T>;
+import type { Route } from 'next';
+
+// Constrain route-like strings using Next's Route type without depending on internal namespaces.
+export type SiteRouteType = string;
+export type SiteRoute<T extends SiteRouteType = SiteRouteType> = Route<T>;
 
 export interface PageOverloads {
   (page: string, slug: string | number, params?: object): URL;

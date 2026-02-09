@@ -9,7 +9,7 @@
  * Each strategy can be tested independently and follows dependency injection pattern.
  */
 
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   makeResponse,
   makeStreamResponse,

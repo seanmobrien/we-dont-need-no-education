@@ -10,13 +10,14 @@
 'use client';
 
 import * as React from 'react';
-import { Chip, Tooltip, CircularProgress, Box } from '@mui/material';
-import {
-  CheckCircle as HealthyIcon,
-  Warning as WarningIcon,
-  Error as ErrorIcon,
-  Chat as ChatIcon,
-} from '@mui/icons-material';
+import Chip from '@mui/material/Chip';
+import Tooltip from '@mui/material/Tooltip';
+import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box';
+import HealthyIcon from '@mui/icons-material/CheckCircle';
+import WarningIcon from '@mui/icons-material/Warning';
+import ErrorIcon from '@mui/icons-material/Error';
+import ChatIcon from '@mui/icons-material/Chat';
 import { useHealth } from '../health-provider/health-context';
 import { BOX_SX_VARIANTS, BoxSxVariantKey } from '../health-status-styles';
 
@@ -47,13 +48,13 @@ function getStatusIcon(status: ChatHealthStatus, isLoading: boolean) {
 
   switch (status) {
     case 'healthy':
-      return <HealthyIcon fontSize="small" />;
+      return <HealthyIcon fontSize="small" data-testid='CheckCircleIcon' />;
     case 'warning':
-      return <WarningIcon fontSize="small" />;
+      return <WarningIcon fontSize="small" data-testid='WarningIcon' />;
     case 'error':
-      return <ErrorIcon fontSize="small" />;
+      return <ErrorIcon fontSize="small" data-testid='ErrorIcon' />;
     default:
-      return <ChatIcon fontSize="small" />;
+      return <ChatIcon fontSize="small" data-testid='ChatIcon' />;
   }
 }
 

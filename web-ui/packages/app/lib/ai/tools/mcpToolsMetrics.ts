@@ -6,7 +6,7 @@
  */
 
 import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
  * Type definitions for MCP tool metrics

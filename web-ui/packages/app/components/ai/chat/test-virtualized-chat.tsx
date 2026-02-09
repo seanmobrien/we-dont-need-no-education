@@ -1,19 +1,17 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Badge,
-  Chip,
-  ToggleButton,
-  ToggleButtonGroup,
-  FormControlLabel,
-  Switch,
-  Button,
-} from '@mui/material';
-import { FilterList } from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import Badge from '@mui/material/Badge';
+import Chip from '@mui/material/Chip';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import Button from '@mui/material/Button';
+import FilterList from '@mui/icons-material/FilterList';
 import { VirtualizedChatDisplay } from './virtualized-chat-display';
 import { ChatMessage, ChatTurn } from '@/lib/ai';
 

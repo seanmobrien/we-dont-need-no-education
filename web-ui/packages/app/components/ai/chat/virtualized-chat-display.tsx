@@ -54,7 +54,11 @@
 
 import React, { useRef, useState, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Box, Switch, FormControlLabel, FormGroup, Paper } from '@mui/material';
+import Box from '@mui/material/Box';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormGroup from '@mui/material/FormGroup';
+import Paper from '@mui/material/Paper';
 import { ChatTurnDisplay } from './chat-turn-display';
 import {
   createTextMeasurer,

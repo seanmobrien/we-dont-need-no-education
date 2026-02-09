@@ -11,7 +11,7 @@ import {
 // import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
-import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
+import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/render-fallback';
 
 // Mock the recovery strategies
 const mockReload = jest.fn();
@@ -35,6 +35,9 @@ const testTheme = createTheme({
     mode: 'light',
     error: {
       main: '#f44336',
+    },
+    background: {
+      paper: '#ffffff',
     },
   },
 });
@@ -101,7 +104,7 @@ describe('RenderErrorBoundaryFallback', () => {
       <TestWrapper>
         <RenderErrorBoundaryFallback
           error={error}
-          resetErrorBoundary={resetFn}
+          resetErrorBoundaryAction={resetFn}
         />
       </TestWrapper>,
     );
@@ -546,7 +549,7 @@ describe('RenderErrorBoundaryFallback', () => {
         <ThemeProvider theme={darkTheme}>
           <RenderErrorBoundaryFallback
             error={testError}
-            resetErrorBoundary={mockResetErrorBoundary}
+            resetErrorBoundaryAction={mockResetErrorBoundary}
           />
         </ThemeProvider>,
       );

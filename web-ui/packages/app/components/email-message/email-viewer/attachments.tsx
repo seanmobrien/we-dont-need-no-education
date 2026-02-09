@@ -1,3 +1,5 @@
+'use client';
+
 import Divider from "@mui/material/Divider";
 import IconButton from "@mui/material/IconButton";
 import List from '@mui/material/List';
@@ -7,16 +9,14 @@ import ListItemText from "@mui/material/ListItemText";
 import Box from "@mui/system/Box";
 import Typography from "@mui/material/Typography";
 import { EmailViewerProps } from "./types";
-import {
-  AttachFile as AttachFileIcon,
-  GetApp as DownloadIcon,
-} from '@mui/icons-material';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import DownloadIcon from '@mui/icons-material/GetApp';
 import { useEmailAttachmentsQuery } from "./hooks";
 import { LoadingAttachments } from "./loading";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
 import React from "react";
-import { RenderErrorBoundaryFallback } from "../../error-boundaries/renderFallback";
+import { RenderFallbackFromBoundary } from "../../error-boundaries/render-fallback-from-boundary";
 import { EmailAttachment } from "./types";
 
 
@@ -34,7 +34,7 @@ export const Attachments: React.FC<EmailViewerProps> = ({ emailId }) => {
     <QueryErrorResetBoundary>
         {({ reset }) => (
           <ErrorBoundary
-            fallbackRender={RenderErrorBoundaryFallback}
+            fallbackRender={RenderFallbackFromBoundary}
             onReset={reset}
           >
             <React.Suspense fallback={<LoadingAttachments />}>

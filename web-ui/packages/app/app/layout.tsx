@@ -11,8 +11,8 @@ import { ChatPanelProvider } from '@/components/ai/chat-panel';
 import { SessionProvider } from '@/components/auth/session-provider';
 import { KeyRefreshNotify } from '@/components/auth/key-refresh-notify';
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
-import { Suspense } from 'react';
-import { cookies } from 'next/headers';
+import { Suspense} from 'react';
+// import { cookies } from 'next/headers';
 import { FlagProvider } from '@/components/general/flags/flag-provider';
 import { state } from '@/lib/site-util/app-startup';
 
@@ -57,9 +57,17 @@ export default async function RootLayout({
       </html>
     );
   }
-  const themeName = await cookies().then((x) =>
-    x.get('theme')?.value === 'light' ? 'light' : 'dark',
-  );
+  const themeName = 'light';
+ 
+  /*
+  let themeName: 'light' | 'dark' | undefined;
+  try{
+    const cookieStore = await cookies();
+    themeName = cookieStore.get('theme')?.value === 'light' ? 'light' : 'dark';
+  } catch {
+    themeName = undefined;
+  }
+  */
   return (
     <html lang="en" suppressHydrationWarning>
       <head></head>

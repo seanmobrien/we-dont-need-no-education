@@ -5,7 +5,7 @@
  * readable string representations that show the expected structure of data.
  * Useful for documentation, debugging, and displaying schema information to users.
  *
- * @module lib/typescript/zod-to-json-structure
+ * @module @compliance-theater/typescript/zod-to-json-structure
  * @example
  * ```typescript
  * import { z } from 'zod';

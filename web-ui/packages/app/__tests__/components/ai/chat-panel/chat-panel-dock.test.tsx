@@ -100,8 +100,9 @@ describe('ChatPanel Docking Functionality', () => {
     const dockRightOption = await screen.findByText('Dock Right');
     fireEvent.click(dockRightOption);
 
-    // Open menu again
-    fireEvent.click(menuButton);
+    // Open menu again using the current button element after re-render
+    const updatedMenuButton = screen.getByTestId('button-chat-menu');
+    fireEvent.click(updatedMenuButton);
 
     await waitFor(() => {
       fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));

@@ -4,7 +4,7 @@
  * This module provides runtime utilities for adding metadata to records/objects
  * using ES6 Symbols. It supports tracking dirty state and UUIDs on arbitrary objects.
  *
- * @module lib/typescript/record-decorators
+ * @module @compliance-theater/typescript/record-decorators
  */
 
 declare module "@compliance-theater/typescript/record-decorators" {

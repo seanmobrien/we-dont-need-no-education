@@ -29,9 +29,15 @@ import type {
   LanguageModelV2ProviderDefinedTool,
 } from '@ai-sdk/provider';
 import type { UIMessage } from 'ai';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 // Mock dependencies
+jest.mock('@/lib/react-util/errors/logged-error', () => ({
+  LoggedError: {
+    isTurtlesAllTheWayDownBaby: jest.fn(),
+  },
+}));
+
 jest.mock('@/lib/ai/services/model-stats/tool-map');
 jest.mock('@/lib/ai/chat/message-optimizer-tools');
 jest.mock('@compliance-theater/logger');
@@ -86,7 +92,7 @@ describe('Tool Optimizing Middleware', () => {
   let sampleTools: LanguageModelV2FunctionTool[];
 
   beforeEach(() => {
-    // jest.clearAllMocks();
+    jest.clearAllMocks();
 
     // Mock ToolMap instance
     mockToolMapInstance = {

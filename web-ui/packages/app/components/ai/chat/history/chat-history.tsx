@@ -19,22 +19,20 @@
 'use client';
 
 import * as React from 'react';
-import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  Chip,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  FormControlLabel,
-  Switch,
-  Button,
-  Paper,
-} from '@mui/material';
-import { ExpandMore } from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Grid from '@mui/material/Grid';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Switch from '@mui/material/Switch';
+import Button from '@mui/material/Button';
+import Paper from '@mui/material/Paper';
+import ExpandMore from '@mui/icons-material/ExpandMore';
 import { VirtualizedChatDisplay } from '@/components/ai/chat/virtualized-chat-display';
 import { ChatExportMenu } from '@/components/ai/chat/chat-export-menu';
 import {

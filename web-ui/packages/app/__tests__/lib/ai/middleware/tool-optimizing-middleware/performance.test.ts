@@ -19,6 +19,7 @@ import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
 import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
 import type { LanguageModelV2FunctionTool } from '@ai-sdk/provider';
 import type { UIMessage } from 'ai';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 // Mock dependencies
 jest.mock('@/lib/ai/services/model-stats/tool-map');
@@ -432,6 +433,7 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
 
   describe('Error Performance', () => {
     it('should handle errors efficiently without significant performance impact', async () => {
+      hideConsoleOutput().setup();
       mockToolMapInstance.scanForTools.mockRejectedValue(
         new Error('Scanning error'),
       );

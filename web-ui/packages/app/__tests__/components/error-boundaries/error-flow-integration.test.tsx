@@ -9,13 +9,14 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import { ClientErrorManager } from '@/components/error-boundaries/ClientErrorManager';
-import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
+import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/render-fallback';
 import {
   errorReporter,
   ErrorSeverity,
   ErrorReporterInterface,
 } from '@/lib/error-monitoring';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { RenderFallbackFromBoundary } from '@/components/error-boundaries';
 
 // Mock the error reporter and recovery strategies
 /*
@@ -115,7 +116,7 @@ describe('Error Flow Integration Tests', () => {
       render(
         <TestWrapper>
           <ErrorBoundary
-            fallbackRender={RenderErrorBoundaryFallback}
+            FallbackComponent={RenderFallbackFromBoundary}
             onError={onError}
           >
             <ThrowingComponent />
@@ -137,7 +138,9 @@ describe('Error Flow Integration Tests', () => {
     it('should debounce duplicate global errors', async () => {
       render(
         <TestWrapper>
-          <ErrorBoundary fallbackRender={RenderErrorBoundaryFallback}>
+          <ErrorBoundary 
+            FallbackComponent={RenderFallbackFromBoundary}
+          >
             <ClientErrorManager debounceMs={10000} />
           </ErrorBoundary>
         </TestWrapper>,

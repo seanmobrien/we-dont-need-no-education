@@ -13,9 +13,9 @@ import {
 import type { ChatMessage } from '@/lib/ai/chat/types';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
-// Mock MUI components
-jest.mock('@mui/material', () => ({
-  ...jest.requireActual('@mui/material'),
+/*
+
+const MuiMocks = {
   Box: ({ children, ...props }: any) => <div {...props}>{children}</div>,
   Typography: ({ children, ...props }: any) => (
     <span {...props}>{children}</span>
@@ -26,8 +26,8 @@ jest.mock('@mui/material', () => ({
       {label}
     </label>
   ),
-  Switch: ({ checked, onChange, ...props }: any) => (
-    <input type="checkbox" checked={checked} onChange={onChange} {...props} />
+  Switch: ({ checked, onChange, ...prop s }: any) => (
+    <input type="checkbox" role='switch' checked={checked} onChange={onChange} {...props} />
   ),
   Button: ({ children, onClick, ...props }: any) => (
     <button onClick={onClick} {...props}>
@@ -56,12 +56,38 @@ jest.mock('@mui/material', () => ({
   InputAdornment: ({ children, ...props }: any) => (
     <div {...props}>{children}</div>
   ),
+} as const;
+
+
+
+// Mock MUI components
+jest.mock('@mui/material', () => ({
+  ...jest.requireActual('@mui/material'),  
+  Box: (props: any) => MuiMocks.Box(props),
+  Typography: (props: any) => MuiMocks.Typography(props),
+  FormControlLabel: (props: any) => MuiMocks.FormControlLabel(props),
+  Switch: (props: any) => MuiMocks.Switch(props),
+  Button: (props: any) => MuiMocks.Button(props),
+  Badge: (props: any) => MuiMocks.Badge(props),
+  Chip: (props: any) => MuiMocks.Chip(props),
+  TextField: (props: any) => MuiMocks.TextField(props),
+  InputAdornment: (props: any) => MuiMocks.InputAdornment(props),
 }));
+
+Object.entries(MuiMocks).forEach(([key, Component]) => {
+  jest.mock(`@mui/material/${key}`, () => ({
+    __esModule: true,
+    default: (props: any) => Component(props),
+  }));
+});
+
 
 jest.mock('@mui/icons-material', () => ({
   FilterList: (props: any) => <div {...props}>FilterIcon</div>,
   Search: (props: any) => <div {...props}>SearchIcon</div>,
 }));
+*/
+
 
 // Mock data
 const mockMessages: ChatMessage[] = [
@@ -139,7 +165,7 @@ describe('ChatMessageFilters', () => {
 
     expect(screen.getByText('Test Filters')).toBeInTheDocument();
     expect(screen.getByText('Enable Filtering')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox')).not.toBeChecked();
+    expect(screen.getByRole('switch')).not.toBeChecked();
   });
 
   it('shows filter options when filtering is enabled', () => {
@@ -164,19 +190,16 @@ describe('ChatMessageFilters', () => {
     render(<ChatMessageFilters {...mockProps} enableFilters={true} />);
 
     // Each badge should show the count of messages of that type
-    expect(screen.getByText('user').closest('[data-badge]')).toHaveAttribute(
-      'data-badge',
+    expect(screen.getByText('user').parentElement?.parentElement?.querySelector('.MuiBadge-badge')).toHaveTextContent(
       '1',
     );
     expect(
-      screen.getByText('assistant').closest('[data-badge]'),
-    ).toHaveAttribute('data-badge', '1');
-    expect(screen.getByText('system').closest('[data-badge]')).toHaveAttribute(
-      'data-badge',
+      screen.getByText('assistant')?.parentElement?.parentElement?.querySelector('.MuiBadge-badge'),
+    ).toHaveTextContent('1');
+    expect(screen.getByText('system')?.parentElement?.parentElement?.querySelector('.MuiBadge-badge')).toHaveTextContent(
       '1',
     );
-    expect(screen.getByText('tool').closest('[data-badge]')).toHaveAttribute(
-      'data-badge',
+    expect(screen.getByText('tool')?.parentElement?.parentElement?.querySelector('.MuiBadge-badge')).toHaveTextContent(
       '1',
     );
   });
@@ -319,7 +342,7 @@ describe('ChatMessageFilters', () => {
       />,
     );
 
-    const checkbox = screen.getByRole('checkbox');
+    const checkbox = screen.getByRole('switch');
     fireEvent.click(checkbox); // Use click instead of change for better simulation
 
     expect(onEnableFiltersChange).toHaveBeenCalledWith(false);

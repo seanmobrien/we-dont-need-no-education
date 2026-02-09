@@ -11,7 +11,7 @@
  */
 
 import * as React from 'react';
-import { Stack } from '@mui/material';
+import Stack from '@mui/material/Stack';
 import { ThemeSelector } from '@/components/theme/theme-selector';
 import { Account } from '@toolpad/core/Account';
 

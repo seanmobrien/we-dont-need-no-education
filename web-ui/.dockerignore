@@ -14,6 +14,7 @@ node_modules
 coverage
 **/coverage
 *.tsbuildinfo
+**/tsconfig.tsbuildinfo
 dist
 **/dist
 

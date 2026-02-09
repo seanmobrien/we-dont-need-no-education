@@ -3,6 +3,7 @@ import { screen, render, renderHook, waitFor, act } from '../../test-utils';
 import { useEmail, useWriteEmail, emailKeys } from '@/lib/hooks/use-email';
 import { getEmail, writeEmailRecord } from '@/lib/api/client';
 import { UseMutateFunction } from '@tanstack/react-query';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 // Mock the API client functions
 jest.mock('@/lib/api/client', () => ({
@@ -98,6 +99,7 @@ describe('useEmailQuery hooks', () => {
     it(
       'should handle errors properly',
       async () => {
+        hideConsoleOutput().setup();
         const mockError = new Error('Failed to fetch email');
         // Mock the getEmail function to reject with error
         mockedGetEmail.mockImplementation(() => {
@@ -192,6 +194,7 @@ describe('useEmailQuery hooks', () => {
     it(
       'should handle write errors properly',
       async () => {
+        hideConsoleOutput().setup();
         const mockError = {
           message: 'Failed to write email',
           code: 500,

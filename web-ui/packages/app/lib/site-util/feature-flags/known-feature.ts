@@ -44,14 +44,18 @@ export type BooleanFeatureFlagType = (typeof BooleanFeatureFlagValues)[number];
 export type StringFeatureFlagType = (typeof StringFeatureFlagValues)[number];
 export type ObjectFeatureFlagType = (typeof ObjectFeatureFlagValues)[number];
 
-export const KnownFeatureValues = [
+export const KnownFeatureValues = [ 
   ...BooleanFeatureFlagValues,
   ...NumberFeatureFlagValues,
   ...StringFeatureFlagValues,
   ...ObjectFeatureFlagValues,
 ] as const;
 
-export type KnownFeatureType = (typeof KnownFeatureValues)[number];
+export type KnownFeatureType = 
+ | NumberFeatureFlagType 
+ | BooleanFeatureFlagType 
+ | StringFeatureFlagType 
+ | ObjectFeatureFlagType;
 
 export const KnownFeatureKeyMap: Readonly<
   Record<KnownFeatureType, KnownFeatureType>

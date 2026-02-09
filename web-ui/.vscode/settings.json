@@ -86,5 +86,8 @@
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "debug.javascript.autoAttachFilter": "onlyWithFlag"
+  "debug.javascript.autoAttachFilter": "onlyWithFlag",
+  "[javascript]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features"
+  }
 }

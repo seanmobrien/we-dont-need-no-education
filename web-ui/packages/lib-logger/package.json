@@ -15,11 +15,16 @@
       "default": "./dist/*.js"
     }
   },
+  "engines": {
+    "node": ">=22.0.0",
+    "yarn": ">=1.22.0"
+  },
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "tsc -b tsconfig.json",
+    "build:typescript": "echo 'Building lib/logger typescript...' && tsc -b tsconfig.json && echo 'TypeScript build complete.' || (echo 'Typescript compile did not succeed' >&2; exit 1)",
     "test": "jest",
     "lint": "echo 'Linting lib-logger...'",
     "clean:build": "rimraf .next dist tsconfig.tsbuildinfo"

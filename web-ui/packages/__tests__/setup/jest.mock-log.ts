@@ -55,9 +55,8 @@ jest.mock('@compliance-theater/logger', () => {
   };
 });
 
-import { logger, log } from '@compliance-theater/logger/core';
-import { log as log2 } from '@compliance-theater/logger';
-import { errorReporter } from '@/lib/error-monitoring';
+import { logger } from '@compliance-theater/logger/core';
+import { log } from '@compliance-theater/logger';
 import { withJestTestExtensions } from '../jest.test-extensions';
 
 let emitWarningMock: jest.SpyInstance | undefined;

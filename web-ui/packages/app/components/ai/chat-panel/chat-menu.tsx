@@ -1,15 +1,10 @@
-import {
-  Divider,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  SlotProps,
-  MenuListProps,
-  MenuListSlotPropsOverrides,
-  MenuOwnerState,
-} from '@mui/material';
+import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import type { SlotProps, MenuListProps, MenuListSlotPropsOverrides, MenuOwnerState } from '@mui/material';
 import {
   Dispatch,
   SetStateAction,
@@ -249,7 +244,7 @@ export const ChatMenu = ({
         id="chat-menu-button"
         data-testid="button-chat-menu"
       >
-        <MoreVertIcon />
+        <MoreVertIcon data-testid='MoreVertIcon' />
       </IconButton>
       <Menu
         id="basic-menu"

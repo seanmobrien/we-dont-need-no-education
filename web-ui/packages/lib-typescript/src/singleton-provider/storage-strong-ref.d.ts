@@ -10,7 +10,7 @@
  * This is the recommended storage strategy for most singleton use cases where you want
  * guaranteed persistence and don't need automatic cleanup.
  *
- * @module lib/typescript/singleton-provider/storage-strong-ref
+ * @module @compliance-theater/typescript/singleton-provider/storage-strong-ref
  * @see {@link SingletonStorageStrategy} for the interface this implements
  */
 import type { SingletonStorageKey, SingletonStorageStrategy } from "./types";

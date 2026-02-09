@@ -1,14 +1,12 @@
 import React from 'react';
-import {
-  Typography,
-  Box,
-  Grid,
-  Divider,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Stack,
-} from '@mui/material';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
+import Divider from '@mui/material/Divider';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import Stack from '@mui/material/Stack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { EmailProperty } from '@/data-models/api';
 import { EmailMasterPanel } from '@/components/mui/data-grid';

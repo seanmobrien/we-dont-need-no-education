@@ -42,7 +42,7 @@ const ensureSendCustomEventListener = () => {
   if (unsubscribeSendCustomEvent) return;
 
   const handler: SendCustomEventListener = (
-    payload: SendCustomEventPayload
+    payload: SendCustomEventPayload,
   ) => {
     if (typeof window === 'undefined') return;
 
@@ -50,7 +50,7 @@ const ensureSendCustomEventListener = () => {
     if (appInsights?.trackEvent) {
       appInsights.trackEvent(
         { name: payload.event.event },
-        payload.event.measurements
+        payload.event.measurements,
       );
       payload.processed = true;
     }
@@ -125,7 +125,7 @@ const getAppInsights = () => {
             const lookFor = envelope.baseData.name.toLowerCase();
             if (
               ignoreNames.findIndex(
-                (name) => lookFor.lastIndexOf(name) !== -1
+                (name) => lookFor.lastIndexOf(name) !== -1,
               ) !== -1 ||
               ignoreRegex.some((regex) => regex.test(lookFor))
             ) {
@@ -152,7 +152,7 @@ const getAppInsights = () => {
             return false;
           }
           return true;
-        }
+        },
       );
 
       appInsightState.appInsightInstance.addTelemetryInitializer((envelope) => {
@@ -162,7 +162,7 @@ const getAppInsights = () => {
           config.attributes!['service.instance'] ?? 'service-instance'
         }-browser`.replace(
           'WebUi--undefined',
-          'ObApps.ComplianceTheatre-WebUi'
+          'ObApps.ComplianceTheatre-WebUi',
         );
         envelope.data ??= {};
         envelope.data.baseData ??= {};
@@ -184,6 +184,7 @@ const getAppInsights = () => {
 export { getAppInsights, getReactPlugin, getClickPlugin };
 
 const instrument = () => {
+  console.log('Starting OTel SDK instrumentation for NodeJS browser...');
   ensureSendCustomEventListener();
   console.info('Client-side event instrumentation initialized.');
   return Promise.resolve(void 0);

@@ -43,5 +43,4 @@ export const register = async () => {
   }catch (error) {
     console.error('[otel] Failed to register instrumentation; advanced metric tracking will not be available.', error);
   }
-  
 };

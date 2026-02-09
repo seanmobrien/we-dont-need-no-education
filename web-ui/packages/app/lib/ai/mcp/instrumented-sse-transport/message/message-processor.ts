@@ -10,7 +10,7 @@ import { SessionManager } from '../session/session-manager';
 import { MetricsRecorder, DEBUG_MODE } from '../metrics/otel-metrics';
 import { CounterManager } from '../metrics/counter-manager';
 import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
  * Handles message processing and tool call lifecycle management

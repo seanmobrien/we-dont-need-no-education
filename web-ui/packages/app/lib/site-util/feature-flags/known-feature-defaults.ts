@@ -3,12 +3,13 @@ import type { StorageStrategyConfig } from '@/lib/ai/tools/todo/storage/types';
 import { env } from '../env';
 
 import type {
-  AllFeatureFlagType,
+  KnownFeatureValueTypeMap,
   ModelConfig,
   ModelProviderFactoryConfig,
   EnhancedFetchConfig,
 } from './types';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
+import { PickField } from '@compliance-theater/typescript/types';
 
 const DEFAULT_IN_MEMORY_STORAGE_CONFIG =
   {} as const satisfies StorageStrategyConfig;
@@ -87,7 +88,7 @@ const ModelConfigDefaults: ModelConfigDefaultType = {
   },
 } as const;
 
-export const AllFeatureFlagsDefault: AllFeatureFlagType = {
+export const AllFeatureFlagsDefault: KnownFeatureValueTypeMap = {
   health_checks: {
     staleTime: 5 * 1000,
     refresh: {
@@ -133,6 +134,10 @@ export const AllFeatureFlagsDefault: AllFeatureFlagType = {
   todo_storage_in_memory_config: DEFAULT_IN_MEMORY_STORAGE_CONFIG,
   todo_storage_redis_config: DEFAULT_REDIS_STORAGE_CONFIG,
 } as const;
+
+export type GetFeatureFlagDefault<K extends keyof KnownFeatureValueTypeMap> = {
+  [k in K]: PickField<KnownFeatureValueTypeMap, k>
+}[K];
 
 export const FLAGSMITH_SERVER_SINGLETON_KEY =
   '@noeducation/flagsmith-server' as const;

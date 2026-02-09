@@ -1,17 +1,15 @@
 import React from 'react';
-import {
-  Typography,
-  Chip,
-  Box,
-  Grid,
-  Divider,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  LinearProgress,
-  Rating,
-  Stack,
-} from '@mui/material';
+import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import Box from '@mui/material/Box';
+import Grid from '@mui/material/Grid';
+import Divider from '@mui/material/Divider';
+import Accordion from '@mui/material/Accordion';
+import AccordionSummary from '@mui/material/AccordionSummary';
+import AccordionDetails from '@mui/material/AccordionDetails';
+import LinearProgress from '@mui/material/LinearProgress';
+import Rating from '@mui/material/Rating';
+import Stack from '@mui/material/Stack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { KeyPointsDetails } from '@/data-models/api';
 import { EmailMasterPanel } from '@/components/mui/data-grid';

@@ -5,7 +5,6 @@ import type {
   BooleanFeatureFlagType,
   KnownFeatureType,
   NumberFeatureFlagType,
-  ObjectFeatureFlagType,
   StringFeatureFlagType,
 } from './known-feature';
 import type { Flagsmith } from 'flagsmith-nodejs';
@@ -67,37 +66,29 @@ type FlagsmithFeatureObjectValue<T> = {
   readonly value?: Readonly<T>;
 };
 
+/**
+ * Timeout configuration for the enhanced fetch implementation.
+ *
+ * @property {number} [lookup] - DNS lookup timeout.
+ * @property {number} [connect] - Connection timeout.
+ * @property {number} [secureConnect] - SSL handshake timeout.
+ * @property {number} [socket] - Socket timeout; resets when data is transferred.
+ * @property {number} [send] - Send timeout: from connect until all data is written to the stream.
+ * @property {number} [response] - Response timeout: from send until headers are received.
+ * @property {number} [request] - Request timeout: from request initiation to response end (global timeout).
+ */
+type EnhancedFetchConfigTimeout = {
+  lookup?: number;
+  connect?: number;
+  secureConnect?: number;
+  socket?: number;
+  send?: number;
+  response?: number;
+  request?: number;
+};
+
 export type EnhancedFetchConfig = {
-  timeout: {
-    /**
-     * DNS lookup timeout
-     */
-    lookup: number | undefined;
-    /**
-     * Connection timeout
-     */
-    connect: number | undefined;
-    /**
-     * SSL handshake timeout
-     */
-    secureConnect: number | undefined;
-    /**
-     * Socket timeout - resets when data is transferred
-     */
-    socket: number | undefined;
-    /**
-     * Send timeout: Connect -> when all data is written to the stream
-     */
-    send: number | undefined;
-    /**
-     * Response timeout: Send -> headers received
-     */
-    response: number | undefined;
-    /**
-     * Request timeout: From request initiation to response end; global timeout
-     */
-    request: number | undefined;
-  };
+  timeout: EnhancedFetchConfigTimeout;
 };
 
 export type FeatureFlagObjectValue =
@@ -129,22 +120,20 @@ type FeatureFlagTypeObjectValueMap = {
   health_checks: HealthCheckConfig;
 };
 
-export type KnownFeatureValueType<TFeature extends KnownFeatureType> =
-  TFeature extends BooleanFeatureFlagType
-    ? boolean
-    : TFeature extends NumberFeatureFlagType
-      ? number
-      : TFeature extends StringFeatureFlagType
-        ? string
-        : TFeature extends ObjectFeatureFlagType
-          ? PickField<FeatureFlagTypeObjectValueMap, TFeature>
-          : never;
+export type KnownFeatureValueTypeMap = {
+  [K in BooleanFeatureFlagType]: boolean;
+} & {
+  [K in NumberFeatureFlagType]: number;
+} & {
+  [K in StringFeatureFlagType]: string;
+} & FeatureFlagTypeObjectValueMap;
 
-export type AllFeatureFlagType = {
-  [K in KnownFeatureType]: KnownFeatureValueType<K>;
-};
+export type KnownFeatureValueType<TFeature extends KnownFeatureType> = 
+  PickField<KnownFeatureValueTypeMap, TFeature>;
+
+export type AllFeatureFlagType = KnownFeatureValueTypeMap;
 export type FeatureFlagValueType<K extends KnownFeatureType> =
-  K extends keyof AllFeatureFlagType ? Pick<AllFeatureFlagType, K>[K] : never;
+  K extends keyof AllFeatureFlagType ? PickField<AllFeatureFlagType, K> : never;
 /**
  * Native flag value types supported by Flagsmith.
  */
@@ -167,8 +156,7 @@ export type NativeFlag = {
   isDefault?: boolean;
 };
 
-export type AutoRefreshFeatureFlag<T extends KnownFeatureType> = {
-  get value(): KnownFeatureValueType<T>;
+export type AutoRefreshFeatureFlagBase = {
   get lastError(): Error | null;
   get expiresAt(): number;
   get ttlRemaining(): number;
@@ -182,8 +170,12 @@ export type AutoRefreshFeatureFlag<T extends KnownFeatureType> = {
   removeOnChangedListener(listener: () => void): void;
   addOnDisposedListener(listener: () => void): void;
   removeOnDisposedListener(listener: () => void): void;
-  forceRefresh(): Promise<KnownFeatureValueType<T>>;
   [Symbol.dispose]: () => void;
+};
+
+export type AutoRefreshFeatureFlag<T extends KnownFeatureType> = AutoRefreshFeatureFlagBase & {
+  get value(): KnownFeatureValueType<T>;
+  forceRefresh(): Promise<KnownFeatureValueType<T>>;
 };
 
 export type AutoRefreshFeatureFlagOptions<T extends KnownFeatureType> = {

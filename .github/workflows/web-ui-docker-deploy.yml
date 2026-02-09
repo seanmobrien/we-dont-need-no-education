@@ -28,6 +28,11 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
+      - name: Verify Yarn 4 release file
+        run: |
+          test -f ./web-ui/.yarn/releases/yarn-4.12.0.cjs
+        shell: bash
+
       # Extract short SHA for use throughout workflow
       - name: Extract short SHA
         id: sha
@@ -54,6 +59,7 @@ jobs:
           [ -z "${{ secrets.REDIS_PASSWORD }}" ] && MISSING_SECRETS="$MISSING_SECRETS REDIS_PASSWORD"
           [ -z "${{ secrets.FLAGSMITH_SDK_KEY }}" ] && MISSING_SECRETS="$MISSING_SECRETS FLAGSMITH_SDK_KEY"
           [ -z "${{ secrets.OPENID_KEY_TEXT }}" ] && MISSING_SECRETS="$MISSING_SECRETS OPENID_KEY_TEXT"
+          [ -z "${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}" ] && MISSING_SECRETS="$MISSING_SECRETS NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"
           
           # Variables validation
           [ -z "${{ vars.NEXT_PUBLIC_DEFAULT_AI_MODEL }}" ] && MISSING_VARS="$MISSING_VARS NEXT_PUBLIC_DEFAULT_AI_MODEL"

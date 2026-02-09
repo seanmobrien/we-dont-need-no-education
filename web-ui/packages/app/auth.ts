@@ -11,7 +11,7 @@ import type {
 import NextAuth from 'next-auth'; // Added NextAuthConfig
 import type { Adapter, AdapterSession, AdapterUser } from '@auth/core/adapters';
 import type { CredentialInput, Provider } from '@auth/core/providers';
-import { isRunningOnEdge } from '@/lib/site-util/env';
+import { isRunningOnEdge, env } from '@/lib/site-util/env';
 import { logEvent } from '@compliance-theater/logger';
 
 import { setupKeyCloakProvider } from './lib/auth/keycloak-provider';
@@ -241,5 +241,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
       logo: '/static/logo/logo-dark.png',
       brandColor: '#1898a8', // Custom brand color
     },
+    trustHost: env('NEXTAUTH_TRUST_HOST'),
   } satisfies AuthConfig;
 });
