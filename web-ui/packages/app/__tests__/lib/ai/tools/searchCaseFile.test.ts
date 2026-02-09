@@ -18,8 +18,7 @@ import {
   hybridDocumentSearchFactory,
 } from '@/lib/ai/services/search';
 
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 
 describe('searchCaseFile', () => {
   const mockHybridSearch = jest.fn();

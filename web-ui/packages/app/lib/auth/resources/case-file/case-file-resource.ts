@@ -1,6 +1,5 @@
 import { env } from '@/lib/site-util/env';
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 import type { NextRequest } from 'next/server';
 import { getRequestTokens } from '../../access-token';
 import { resourceService } from '../resource-service';

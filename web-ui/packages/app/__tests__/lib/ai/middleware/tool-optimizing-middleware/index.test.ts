@@ -29,7 +29,7 @@ import type {
   LanguageModelV2ProviderDefinedTool,
 } from '@ai-sdk/provider';
 import type { UIMessage } from 'ai';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 
 // Mock dependencies
 jest.mock('@/lib/react-util/errors/logged-error', () => ({

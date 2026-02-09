@@ -28,7 +28,7 @@ import type {
 import type { FetchConfig } from './fetch-types';
 import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
 import { flagsmithServerFactory } from '@/lib/site-util/feature-flags/server';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 
 const FETCH_CONFIG_SALT = 'fetch-config-v1' as const;
 const FETCH_CONFIG_SERVER_TIMEOUT = 5 * 60 * 1000; // 5 minutes

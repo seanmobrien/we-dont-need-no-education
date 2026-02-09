@@ -9,7 +9,7 @@ import {
   DefaultImportManager,
   queueStagedAttachments,
 } from '@/lib/email/import/google';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 
 export const dynamic = 'force-dynamic';
 

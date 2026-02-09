@@ -10,9 +10,8 @@
 
 import { env } from '@/lib/site-util/env';
 import { fetch } from '@/lib/nextjs-util/server';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError, log } from '@compliance-theater/logger';
 import { decodeToken } from '../utilities';
-import { log } from '@compliance-theater/logger';
 import {
   serviceInstanceOverloadsFactory,
   SingletonProvider,

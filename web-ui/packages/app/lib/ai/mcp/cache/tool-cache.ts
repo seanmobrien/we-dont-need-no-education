@@ -10,8 +10,7 @@
 import { createHash } from 'crypto';
 import { ToolSet } from 'ai';
 import { getRedisClient, RedisClientType } from '@/lib/redis-client';
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import type { ToolProviderFactoryOptions } from '../types';
 import type {

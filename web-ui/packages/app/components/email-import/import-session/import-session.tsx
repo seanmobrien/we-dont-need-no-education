@@ -14,9 +14,8 @@ import TableBody from '@mui/material/TableBody';
 import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
 import Mail from '@mui/icons-material/Mail';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError, log } from '@compliance-theater/logger';
 import { searchEmails } from '@/lib/api/email/import/google';
-import { log } from '@compliance-theater/logger';
 import EnhancedTableHead, {
   HeadCell,
 } from '@/components/general/enhanced-table-head';

@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { query } from '@/lib/neondb';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
@@ -8,7 +8,6 @@ import type {
   ImportStage,
   StagedMessageSummary,
 } from '@/data-models/api/import/email-message';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
  * Handles GET requests to fetch a paginated list of emails with sender and recipient information.

@@ -2,7 +2,7 @@ import type { JWT } from '@auth/core/jwt';
 import type { SessionWithAccountId } from '../types';
 import type { Session } from '@auth/core/types';
 
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { decodeToken } from '../utilities';
 
 export const setupSession = async ({

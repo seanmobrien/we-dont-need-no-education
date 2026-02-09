@@ -14,13 +14,12 @@
  * - Memory and Redis caching for complete buffered responses
  */
 
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError, log } from '@compliance-theater/logger';
 import {
   makeResponse,
   makeStreamResponse,
   nodeStreamToReadableStream,
 } from './../response';
-import { log } from '@compliance-theater/logger';
 import type { BufferingStrategyDeps, CachedValue } from './fetch-types';
 import type { EventEmitter } from 'events';
 import type { Readable } from 'stream';

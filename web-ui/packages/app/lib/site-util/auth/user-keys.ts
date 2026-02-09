@@ -1,4 +1,4 @@
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 
 // Key pair management for user signing (detailed docs live in user-keys.d.ts)
 class UserKeyManager {

@@ -1,5 +1,5 @@
 import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { DatabaseMockType } from '../../../../../__tests__/jest.mock-drizzle';
 
 // Mock the database connection

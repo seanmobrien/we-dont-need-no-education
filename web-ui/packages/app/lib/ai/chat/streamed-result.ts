@@ -1,6 +1,5 @@
 import { type streamText, type ToolSet, type UIMessage } from 'ai';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/logger';
+import { LoggedError, log } from '@compliance-theater/logger';
 
 type StreamTextResult<TOOLS extends ToolSet, NEVER> = ReturnType<
   typeof streamText<TOOLS, NEVER>

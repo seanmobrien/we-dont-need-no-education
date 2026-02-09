@@ -8,7 +8,7 @@ import {
   mapRecordToThreadSummary,
 } from '@/lib/api/email/util';
 import { query, queryExt } from '@/lib/neondb';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { getAccessibleUserIds } from '@/lib/auth/resources/case-file/case-file-helpers';
 
 const NEVER_USE_USER_ID = -942370932 as const;

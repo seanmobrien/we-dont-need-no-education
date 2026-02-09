@@ -19,10 +19,9 @@ import {
   type DbDatabaseType,
   schema,
 } from '@/lib/drizzle-db';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError, log } from '@compliance-theater/logger';
 import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
 import { isKeyOf } from '@compliance-theater/typescript';
-import { log } from '@compliance-theater/logger';
 
 /**
  * Primary provider canonical names.

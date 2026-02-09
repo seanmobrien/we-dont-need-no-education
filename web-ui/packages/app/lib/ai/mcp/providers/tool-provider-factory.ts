@@ -7,16 +7,14 @@
  * @author NoEducation Team
  */
 
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError } from '@compliance-theater/logger';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import EventEmitter from '@protobufjs/eventemitter';
 import type { Tool, ToolSet } from 'ai';
 import {
   getResolvedPromises,
-  isAbortError,
-  isError,
 } from '@/lib/react-util/utility-methods';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { isAbortError, isError } from '@compliance-theater/logger';
 import { withEmittingDispose } from '@/lib/nextjs-util/utils';
 import { SingletonProvider } from '@compliance-theater/typescript';
 

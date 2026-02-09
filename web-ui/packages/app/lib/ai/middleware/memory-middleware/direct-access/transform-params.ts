@@ -2,8 +2,7 @@ import {
   LanguageModelV2CallOptions,
   LanguageModelV2Prompt,
 } from '@ai-sdk/provider';
-import { log, safeSerialize } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
 import { aiModelFactory } from '../../../aiModelFactory';
 import {
   ChatHistoryContext,

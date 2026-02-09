@@ -12,7 +12,7 @@ import type {
   WriteApiRequestParams,
 } from './types';
 import { ApiRequestError } from './api-request-error';
-import { LoggedError } from '../react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { getHeaderValue } from '../nextjs-util';
 import { fetch } from '@/lib/nextjs-util/fetch';
 

@@ -10,9 +10,7 @@ import { Span, SpanStatusCode } from '@opentelemetry/api';
 import { SseMCPTransport } from '../ai.sdk';
 import type { JSONRPCMessage } from '../ai.sdk';
 
-import { isAbortError, isError } from '@/lib/react-util/utility-methods';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/logger';
+import { isError, isAbortError, LoggedError, log } from '@compliance-theater/logger';
 
 // Import refactored modules
 import { tracer, MetricsRecorder, DEBUG_MODE } from './metrics/otel-metrics';

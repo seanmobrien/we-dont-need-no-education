@@ -20,7 +20,7 @@ import {
 } from '@/data-models/api/import/email-message';
 import { NextRequest } from 'next/server';
 import { loadEmail } from '@/lib/api/email/import/google';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { query, queryExt } from '@/lib/neondb';

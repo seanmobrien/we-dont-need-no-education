@@ -1,5 +1,5 @@
-import { isError, LoggedError, type ErrorReportArgs } from '@compliance-theater/logger';
-import { log, safeSerialize } from '@compliance-theater/logger';
+import { isError, LoggedError, log, safeSerialize } from '@compliance-theater/logger';
+import type { ErrorReportArgs } from '@compliance-theater/logger';
 import {
   ErrorSeverity,
   KnownEnvironmentType,

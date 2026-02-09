@@ -56,7 +56,7 @@ export const extractToken = async (req: Request): Promise<JWT | null> => {
   } catch (error) {
     try {
       // Delay-load loggederror to prevent circular dependency
-      const LoggedError = await import('@/lib/react-util/errors/logged-error').then((m) => m.LoggedError);
+      const LoggedError = await import('@compliance-theater/logger').then((m) => m.LoggedError);
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'auth-utilities::extractToken',

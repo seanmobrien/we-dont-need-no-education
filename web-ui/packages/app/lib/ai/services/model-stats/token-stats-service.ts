@@ -1,7 +1,6 @@
 import { getRedisClient } from '@/lib/redis-client';
 import { drizDbWithInit, schema, sql } from '@/lib/drizzle-db';
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 import {
   ModelQuota,
   QuotaCheckResult,

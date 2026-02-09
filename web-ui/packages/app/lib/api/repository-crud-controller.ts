@@ -12,7 +12,7 @@ import {
   isRequestOrApiRequest,
   isNextResponse,
 } from '@/lib/nextjs-util/guards';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { ObjectRepository } from './_types';
 import { isPaginationStats } from '@/data-models/_utilities';
 import { PaginatedResultset } from '@/data-models/_types';

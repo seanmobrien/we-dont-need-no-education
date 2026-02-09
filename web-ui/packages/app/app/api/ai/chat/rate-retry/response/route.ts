@@ -2,8 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { auth } from '@/auth';
 import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/logger';
+import { LoggedError, log } from '@compliance-theater/logger';
 import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
 // import { authOptions } from '@/auth';
 

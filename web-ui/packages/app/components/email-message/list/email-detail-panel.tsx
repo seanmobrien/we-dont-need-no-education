@@ -36,7 +36,7 @@ import {
   getCallToActionResponse,
   getNotes,
 } from '@/lib/api/email/properties/client';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { useQuery } from '@tanstack/react-query';
 import { dataGridQueryClient } from '@/lib/components/mui/data-grid/query-client';
 

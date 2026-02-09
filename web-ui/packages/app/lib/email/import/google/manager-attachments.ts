@@ -1,6 +1,6 @@
 import { ImportStage } from '@/data-models/api/import/email-message';
 import { AdditionalStageOptions, StageProcessorContext } from '../types';
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
 import {
   Semaphore,
@@ -13,7 +13,6 @@ import {
   StagedAttachmentRepository,
 } from '@/lib/api/email/import/staged-attachment';
 import { EmailAttachmentRepository } from '@/lib/api/email/database';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 type AttachmentImportResult =
   | {

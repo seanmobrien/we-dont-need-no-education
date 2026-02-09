@@ -3,8 +3,7 @@ import {
   buildFallbackGrid,
   wrapRouteRequest,
 } from '@/lib/nextjs-util/server/utils';
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { extractParams } from '@/lib/nextjs-util/server/utils';
 import { eq } from 'drizzle-orm';
 import { drizDbWithInit, schema } from '@/lib/drizzle-db';

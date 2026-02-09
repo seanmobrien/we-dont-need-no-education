@@ -9,8 +9,7 @@
 import { got } from 'got';
 import { CookieJar } from 'tough-cookie';
 import { env } from '@/lib/site-util/env';
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 import CryptoService from '@/lib/site-util/auth/crypto-service';
 import type {
   ImpersonationService,

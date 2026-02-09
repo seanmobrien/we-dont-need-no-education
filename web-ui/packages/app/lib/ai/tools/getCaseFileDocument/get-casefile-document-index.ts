@@ -1,5 +1,5 @@
 import { drizDb } from '@/lib/drizzle-db';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { DocumentResourceIndex } from '../documentResource';
 import { DocumentIndexResourceToolResult } from '../types';
 import {

@@ -1,4 +1,4 @@
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError, log } from '@compliance-theater/logger';
 import {
   Amendment,
   AmendmentResult,
@@ -20,7 +20,6 @@ import {
   violationDetails,
 } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { log } from '@compliance-theater/logger';
 import { toolCallbackResultFactory } from './utility';
 import { newUuid } from '@compliance-theater/typescript';
 import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';

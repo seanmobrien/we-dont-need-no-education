@@ -24,7 +24,7 @@ import {
   classifyError,
 } from '@/lib/error-monitoring/recovery-strategies';
 import type { RecoveryAction } from '@/lib/error-monitoring/recovery-strategies';
-import { dumpError, LoggedError } from '@/lib/react-util/errors/logged-error';
+import { dumpError, LoggedError } from '@compliance-theater/logger';
 
 const fnNoOp = () => {};
 

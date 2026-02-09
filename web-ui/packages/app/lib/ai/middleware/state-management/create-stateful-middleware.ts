@@ -1,6 +1,5 @@
 import type { LanguageModelV2Middleware } from '@ai-sdk/provider';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/logger';
+import { LoggedError, log } from '@compliance-theater/logger';
 import {
   STATE_PROTOCOL,
   type StatefulMiddlewareConfig,

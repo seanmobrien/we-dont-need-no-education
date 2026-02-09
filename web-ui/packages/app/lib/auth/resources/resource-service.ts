@@ -10,7 +10,7 @@
 
 import { env } from '@/lib/site-util/env';
 import { fetch } from '@/lib/nextjs-util/server';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { LRUCache } from 'lru-cache';
 import { SingletonProvider } from '@compliance-theater/typescript';
 import { serviceInstanceOverloadsFactory } from '@compliance-theater/typescript';

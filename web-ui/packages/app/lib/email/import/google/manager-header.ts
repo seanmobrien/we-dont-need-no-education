@@ -15,9 +15,7 @@ import {
 } from '../types';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
 import { AggregateError } from '@/lib/react-util/errors/aggregate-error';
-import { isError } from '@/lib/react-util/utility-methods';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { CustomAppInsightsEvent, log } from '@compliance-theater/logger';
+import { isError, LoggedError, CustomAppInsightsEvent, log } from '@compliance-theater/logger';
 import { newUuid } from '@compliance-theater/typescript';
 const EmailPropertyTypeMap: Map<string, number> = new Map();
 const parseEmailId = (x: string) => {

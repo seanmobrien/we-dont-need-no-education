@@ -2,7 +2,7 @@ import { log, safeSerialize } from '@compliance-theater/logger';
 import {
   initializeErrorReporterConfig,
   reporter,
-} from '../react-util/errors/logged-error-reporter';
+} from '@/lib/react-util/errors/logged-error-reporter';
 import { initializeProviderConfig } from '../ai/aiModelFactory/util';
 import { globalRequiredSingleton } from '@compliance-theater/typescript';
 import AfterManager from './after';

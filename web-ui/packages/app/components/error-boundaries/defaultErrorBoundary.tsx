@@ -3,9 +3,8 @@ import { ErrorBoundary, type FallbackProps, type ErrorBoundaryProps } from 'reac
 import { type ErrorInfo, type PropsWithChildren, type ReactNode, useCallback } from 'react';
 import { RenderErrorBoundaryFallback } from './render-fallback';
 import { useProcessedError } from '@/lib/error-monitoring/use-processed-error';
-import { safeSerialize } from '@compliance-theater/logger';
+import { safeSerialize, LoggedError } from '@compliance-theater/logger';
 import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring/error-reporter';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 export const DefaultErrorFallbackRender = ({
   error,

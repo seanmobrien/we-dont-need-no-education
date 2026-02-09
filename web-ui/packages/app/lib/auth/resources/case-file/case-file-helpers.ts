@@ -1,8 +1,7 @@
 import { resolveCaseFileId } from '@/lib/api/document-unit/resolve-case-file-id';
 import { drizDbWithInit } from '@/lib/drizzle-db';
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { deprecate } from '@/lib/nextjs-util/utils';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { authorizationService } from '../authorization-service';
 import { normalizedAccessToken } from '../../access-token';
 import type { NextRequest } from 'next/server';

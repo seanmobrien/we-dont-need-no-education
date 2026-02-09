@@ -7,9 +7,8 @@ import type {
   HybridSearchPayload,
   AiSearchResultEnvelope,
 } from './types';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError, log, logEvent } from '@compliance-theater/logger';
 import { fetch } from '@/lib/nextjs-util/server/fetch';
-import { log, logEvent } from '@compliance-theater/logger';
 import { performance } from 'perf_hooks';
 
 type SearchMeta = {

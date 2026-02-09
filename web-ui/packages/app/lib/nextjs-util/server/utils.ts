@@ -1,7 +1,6 @@
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@/lib/site-util/env';
-import { log, safeSerialize } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
 import { startup } from '@/lib/site-util/app-startup';
 import type { NextRequest, NextResponse } from 'next/server';
 import {

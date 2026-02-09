@@ -27,7 +27,7 @@ import {
 import { fetch } from '@/lib/nextjs-util/fetch';
 import { Session } from '@auth/core/types';
 import { useNotifications } from '@toolpad/core';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { InvalidGrantError } from '@/lib/auth/errors';
 
 export const SessionContext = createContext<SessionContextType<object> | null>(

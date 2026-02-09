@@ -2,7 +2,7 @@ import { isRateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 import { generateText, type ToolSet } from 'ai';
 import { rateLimitQueueManager } from '../middleware/key-rate-limiter/queue-manager';
 import { FirstParameter } from '@compliance-theater/typescript';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 
 export const generateTextWithRetry = async <
   TOOLS extends ToolSet = ToolSet,

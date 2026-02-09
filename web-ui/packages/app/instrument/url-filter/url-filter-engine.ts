@@ -6,9 +6,8 @@ import {
   UrlFilterOptions,
 } from './url-filter-rules';
 import { LRUCache } from 'lru-cache';
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { hash } from 'node:crypto'; // or use a fast-hash library
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
  * Keys commonly used to represent URLs in log attributes

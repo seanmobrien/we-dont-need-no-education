@@ -58,7 +58,7 @@
  *   - Avoid adding UI concerns (formatting dates) here; return raw canonical data.
  */
 import { type ChatDetails } from '@/lib/ai/chat/types';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { fetch } from '@/lib/nextjs-util/fetch';
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
 

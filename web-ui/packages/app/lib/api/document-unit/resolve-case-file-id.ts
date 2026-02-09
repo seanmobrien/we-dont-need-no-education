@@ -1,5 +1,5 @@
 import { drizDbWithInit } from '@/lib/drizzle-db';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import {
   ArrayElement,
   isValidUuid,
