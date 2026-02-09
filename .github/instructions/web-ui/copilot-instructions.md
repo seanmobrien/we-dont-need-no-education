@@ -22,3 +22,6 @@ The Title IX Victim Advocacy Platform is a sophisticated advocacy technology sol
 ### Frontend (TypeScript/React)
 
 - See [typescript-react-instructions.md](typescript-react.instructions.md) for React-specific guidelines.
+- See [./mcp.md](./mcp.md) for MCP tool usage guidelines.
+- See [./mem0.md](./mem0.md) for Mem0 implementation guidelines
+- See [./vercel-ai.md](./vercel-ai.md) for Vercel AI integration guidelines.
