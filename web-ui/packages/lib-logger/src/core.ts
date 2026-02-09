@@ -117,12 +117,24 @@ export const logEvent: LogEventOverloads = async (
   return log((l) => {
     const log = (l[severity] || l.info)?.bind(l);
     if (typeof log !== 'function') {
-        throw new Error(`Log level method ${severity} is not a function on logger`, {
-            cause: {
-                method: log,
-                instance: l,
-            }
+      // Fall back to 'info' level if the requested severity is not available
+      // This prevents crashes during logging while still capturing the event
+      const fallbackLog = l.info?.bind(l);
+      if (typeof fallbackLog === 'function') {
+        // Log a warning about the fallback, then log the actual event
+        fallbackLog({
+          msg: `Log level method '${severity}' is not available, falling back to 'info'`,
+          requestedSeverity: severity,
+          actualSeverity: 'info',
         });
+        return fallbackLog(event);
+      }
+      // If even 'info' is not available, log to console as last resort
+      console.warn(
+        `Logger misconfigured: neither '${severity}' nor 'info' methods are available`,
+        { severity, event },
+      );
+      return;
     }
     return log(event);
   });
