@@ -116,7 +116,7 @@ jobs:
       - name: Run typescript compile and yarn lint
         working-directory: ./web-ui
         run: yarn lint
-        continue-on-error: true
+        # continue-on-error: true
         shell: bash
 
       - name: Run yarn test
