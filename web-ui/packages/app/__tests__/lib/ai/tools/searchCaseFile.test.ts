@@ -4,7 +4,8 @@ import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 
 setupImpersonationMock();
 
-jest.mock('@/lib/react-util/errors/logged-error', () => ({
+jest.mock('@compliance-theater/logger', () => ({
+  ...jest.requireActual('@compliance-theater/logger'),
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },

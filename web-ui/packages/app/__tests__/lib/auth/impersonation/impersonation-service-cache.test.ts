@@ -8,7 +8,8 @@ import { ImpersonationServiceCache } from '@/lib/auth/impersonation/impersonatio
 import type { ImpersonationService } from '@/lib/auth/impersonation';
 
 // Mock LoggedError
-jest.mock('@/lib/react-util/errors/logged-error', () => ({
+jest.mock('@compliance-theater/logger', () => ({
+  ...jest.requireActual('@compliance-theater/logger'),
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },

@@ -32,7 +32,8 @@ import type { UIMessage } from 'ai';
 import { LoggedError } from '@compliance-theater/logger';
 
 // Mock dependencies
-jest.mock('@/lib/react-util/errors/logged-error', () => ({
+jest.mock('@compliance-theater/logger', () => ({
+  ...jest.requireActual('@compliance-theater/logger'),
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },

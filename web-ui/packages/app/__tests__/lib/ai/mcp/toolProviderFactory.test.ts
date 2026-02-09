@@ -40,7 +40,8 @@ jest.mock('@/lib/ai/mcp/cache', () => {
   };
 });
 
-jest.mock('@/lib/react-util/errors/logged-error', () => ({
+jest.mock('@compliance-theater/logger', () => ({
+  ...jest.requireActual('@compliance-theater/logger'),
   LoggedError: mockLoggedError,
 }));
 

@@ -12,7 +12,8 @@ const validUuid = '12345678-1234-4567-8901-123456789012';
 let mockDb = withJestTestExtensions().makeMockDb();
 
 // Mock LoggedError
-jest.mock('@/lib/react-util/errors/logged-error', () => ({
+jest.mock('@compliance-theater/logger', () => ({
+  ...jest.requireActual('@compliance-theater/logger'),
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
