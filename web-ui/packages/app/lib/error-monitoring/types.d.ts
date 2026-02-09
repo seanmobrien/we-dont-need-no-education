@@ -28,7 +28,12 @@
  *
  * @module @/lib/error-monitoring/types
  */
+
+import type { ErrorContext, IContextEnricher } from '@compliance-theater/logger';
+
 declare module '@/lib/error-monitoring/types' {
+  export type { ErrorContext, IContextEnricher };
+
   /**
    * Error severity levels for reporting, prioritization, and alerting.
    *
@@ -117,141 +122,6 @@ declare module '@/lib/error-monitoring/types' {
    * ```
    */
   export type KnownEnvironmentType = 'development' | 'staging' | 'production';
-
-  /**
-   * Comprehensive error context information for debugging and analysis.
-   *
-   * This interface captures environmental, user, and application state at the time
-   * of an error, providing essential information for reproduction and diagnosis.
-   * All fields are optional to support partial context capture in constrained
-   * environments (edge runtime, error boundaries, etc.).
-   *
-   * @example
-   * ```typescript
-   * const context: ErrorContext = {
-   *   userId: 'user-123',
-   *   source: 'MessageService',
-   *   url: window.location.href,
-   *   timestamp: new Date(),
-   *   breadcrumbs: ['page-load', 'fetch-messages', 'render-list'],
-   *   additionalData: {
-   *     messageCount: 50,
-   *     filterApplied: 'unread'
-   *   }
-   * };
-   * ```
-   */
-  export interface ErrorContext {
-    /**
-     * Unique identifier for the user who encountered the error.
-     *
-     * Used to track error patterns per user, identify affected accounts,
-     * and correlate errors with user actions.
-     */
-    userId?: string;
-
-    /**
-     * Unique identifier for the current user session.
-     *
-     * Enables grouping of errors within a single session to understand
-     * error sequences and session-specific issues.
-     */
-    sessionId?: string;
-
-    /**
-     * Source component, service, or module where the error occurred.
-     *
-     * Helps quickly identify the origin of errors during triage and analysis.
-     *
-     * @example 'EmailService', 'MessageList', 'AuthProvider'
-     */
-    source?: string;
-
-    /**
-     * Browser user agent string for environment identification.
-     *
-     * Automatically captured in browser environments to track browser-specific
-     * issues and compatibility problems.
-     */
-    userAgent?: string;
-
-    /**
-     * Full URL where the error occurred.
-     *
-     * Includes pathname, query parameters, and hash for precise error location.
-     * Automatically captured in browser environments.
-     */
-    url?: string;
-
-    /**
-     * Timestamp when the error occurred.
-     *
-     * Automatically set by the error reporter if not provided. Used for
-     * chronological analysis and time-based correlation.
-     */
-    timestamp?: Date;
-
-    /**
-     * React component stack trace from error boundary.
-     *
-     * Captured by React error boundaries to show the component hierarchy
-     * leading to the error. Useful for diagnosing component interaction issues.
-     *
-     * @example
-     * ```
-     * at MessageList (MessageList.tsx:45)
-     * at MainLayout (Layout.tsx:23)
-     * at App (App.tsx:10)
-     * ```
-     */
-    componentStack?: string;
-
-    /**
-     * Name or identifier of the error boundary that caught this error.
-     *
-     * Helps identify which error boundary caught the error and understand
-     * error containment boundaries in the application.
-     *
-     * @example 'RootErrorBoundary', 'MessageListBoundary'
-     */
-    errorBoundary?: string;
-
-    /**
-     * Ordered list of user actions or events leading to the error.
-     *
-     * Provides a chronological trail of actions that led to the error,
-     * essential for reproducing issues. Should be concise identifiers.
-     *
-     * @example ['login', 'navigate-to-messages', 'click-filter', 'fetch-failed']
-     */
-    breadcrumbs?: string[];
-
-    /**
-     * Additional context-specific data for debugging.
-     *
-     * Flexible field for attaching any relevant data that helps diagnose
-     * the error. Should be JSON-serializable for storage and transmission.
-     *
-     * @example
-     * ```typescript
-     * {
-     *   requestId: 'req-abc-123',
-     *   retryCount: 3,
-     *   cacheHit: false,
-     *   queryParams: { page: 1, limit: 50 }
-     * }
-     * ```
-     */
-    additionalData?: Record<string, unknown>;
-
-    /**
-     * The Error object itself, if available.
-     *
-     * Included in context to allow custom enrichment by implementing
-     * the {@link IContextEnricher} interface on custom error classes.
-     */
-    error?: Error;
-  }
 
   /**
    * Complete error report structure for external monitoring services.
@@ -874,20 +744,6 @@ declare module '@/lib/error-monitoring/types' {
    * }
    * ```
    */
-  export type IContextEnricher = {
-    /**
-     * Enrich error context with class-specific information.
-     *
-     * Called by the error reporter to allow custom error classes to add
-     * relevant debugging information to the error context. Should return
-     * the enriched context or the original if no enrichment is needed.
-     *
-     * @param context - Current error context
-     * @returns Promise resolving to enriched context
-     */
-    enrichContext: (context: ErrorContext) => Promise<ErrorContext>;
-  };
-
   /**
    * Configuration for error suppression patterns.
    *

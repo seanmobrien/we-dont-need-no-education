@@ -1,4 +1,4 @@
-import { isError } from '@/lib/react-util/utility-methods';
+import { isError, LoggedError, type ErrorReportArgs } from '@compliance-theater/logger';
 import { log, safeSerialize } from '@compliance-theater/logger';
 import {
   ErrorSeverity,
@@ -15,10 +15,6 @@ import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
 import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import { shouldSuppressError } from './utility';
-import {
-  type ErrorReportArgs,
-  LoggedError,
-} from '@/lib/react-util/errors/logged-error';
 import { LRUCache } from 'lru-cache';
 import { StrategyCollectionFactory } from './strategies/strategy-collection-factory';
 import { CircuitBreaker } from './circuit-breaker';

@@ -2,6 +2,10 @@
  * @see ./types.ts for type definitions and documentation
  */
 
+import type { ErrorContext, IContextEnricher } from '@compliance-theater/logger';
+
+export type { ErrorContext, IContextEnricher };
+
 export enum ErrorSeverity {
   LOW = 'low',
   MEDIUM = 'medium',
@@ -10,20 +14,6 @@ export enum ErrorSeverity {
 }
 
 export type KnownEnvironmentType = 'development' | 'staging' | 'production';
-
-export type ErrorContext = {
-  userId?: string;
-  sessionId?: string;
-  source?: string;
-  userAgent?: string;
-  url?: string;
-  timestamp?: Date;
-  componentStack?: string;
-  errorBoundary?: string;
-  breadcrumbs?: string[];
-  additionalData?: Record<string, unknown>;
-  error?: Error;
-} & Record<string, unknown>;
 
 export type ErrorReport = {
   error: Error;
@@ -106,9 +96,6 @@ export interface ErrorReporterInterface {
   clearStoredErrors(): void;
 }
 
-export type IContextEnricher = {
-  enrichContext: (context: ErrorContext) => Promise<ErrorContext>;
-};
 export type ErrorSuppressionRule = {
   id: string;
   pattern: string | RegExp;
