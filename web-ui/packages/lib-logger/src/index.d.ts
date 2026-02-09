@@ -15,6 +15,23 @@ import type { CustomAppInsightsEvent } from './event';
 import type { errorLogFactory } from './utilities';
 import type { logger, log, logEvent } from './core';
 import type { simpleScopedLogger } from './simple-scoped-logger';
+import type {
+  LoggedError,
+  dumpError,
+  ProgressEventError,
+  LoggedErrorOptions,
+  ErrorLogFactory,
+  TurtleRecursionParams,
+  ErrorReportArgs,
+  ErrorContext,
+  IContextEnricher,
+  SafeProgressEvent,
+  isError,
+  isAbortError,
+  isProgressEvent,
+  isXmlHttpRequest,
+  getStackTrace,
+} from './errors';
 declare module '@compliance-theater/logger' {
   export {
     KnownSeverityLevel,
@@ -29,5 +46,20 @@ declare module '@compliance-theater/logger' {
     log,
     logEvent,
     simpleScopedLogger,
+    LoggedError,
+    dumpError,
+    ProgressEventError,
+    LoggedErrorOptions,
+    ErrorLogFactory,
+    TurtleRecursionParams,
+    ErrorReportArgs,
+    ErrorContext,
+    IContextEnricher,
+    SafeProgressEvent,
+    isError,
+    isAbortError,
+    isProgressEvent,
+    isXmlHttpRequest,
+    getStackTrace,
   };
 }
