@@ -30,7 +30,7 @@ This repository contains a comprehensive AI-powered advocacy platform designed t
   - `packages/`
     - `app`: Next.js front-end web application
     - `lib-typescript`: Shared TypeScript utility library
-    - `lib-logger`: Logging utility library  
+    - `lib-logger`: Logging utility library
 - `chat/`: Java 21 backend with Maven multi-module architecture, LangChain4j integration
 - `db/`: PostgreSQL database schema and migration files
 - `.github/copilot-instructions.md`: Comprehensive development guidelines (this file)
