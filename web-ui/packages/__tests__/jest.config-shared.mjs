@@ -51,10 +51,10 @@ export const filter = (props) => {
     // Else extract keys from initialCollection object and 
     // reduce them int filteredCollection
     filteredCollection = Object.keys(initialCollection).reduce(
-      (prev, current, currentIndex) => {
-        const fieldValue = current[currentIndex];
+      (prev, current) => {
+        const fieldValue = initialCollection[current];
         if (predicate(fieldValue)) {
-          prev[currentIndex] = fieldValue;
+          prev[current] = fieldValue;
         }
         return prev;
       }, {});
