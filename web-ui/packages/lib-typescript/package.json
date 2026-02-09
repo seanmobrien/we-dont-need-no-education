@@ -27,18 +27,19 @@
     "yarn": ">=1.22.0"
   },
   "scripts": {
-    "build": "tsc -b tsconfig.json --force",
+    "build": "tsc -b tsconfig.json",
+    "build:typescript": "echo 'Building lib/typescript typescript...' && tsc -b tsconfig.json && echo 'TypeScript build complete.' || (echo 'Typescript compile did not succeed' >&2; exit 1)",
     "test": "jest",
     "lint": "echo 'Linting lib-typescript...'",
     "clean:build": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    "@compliance-theater/logger": "0.1.0"
+    "@compliance-theater/logger": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
-    "typescript": "^5",
     "jest": "^30.0.5",
-    "ts-jest": "^29.3.4"
+    "ts-jest": "^29.3.4",
+    "typescript": "^5"
   }
 }

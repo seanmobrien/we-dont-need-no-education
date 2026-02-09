@@ -4,7 +4,7 @@
  * This module defines the core type system for the singleton provider implementation,
  * including configuration options, storage strategies, and internal type utilities.
  *
- * @module lib/typescript/singleton-provider/types
+ * @module @compliance-theater/typescript/singleton-provider/types
  */
 
 declare module "@compliance-theater/typescript/singleton-provider/types" {
@@ -39,7 +39,7 @@ declare module "@compliance-theater/typescript/singleton-provider/types" {
    * const defaultConfig: SingletonConfig = {};
    * ```
    *
-   * @see {@link globalSingleton} in `/lib/typescript/generics.ts` for singleton implementation
+   * @see {@link globalSingleton} in `@compliance-theater/typescript/generics.ts` for singleton implementation
    * @since 1.0.0
    */
   export type SingletonConfig = {

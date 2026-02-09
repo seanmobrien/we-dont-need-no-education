@@ -127,6 +127,7 @@ export const RenderErrorBoundaryFallback = ({
       return <></>;
     }
 
+    const backgroundColor = theme?.palette?.background?.paper || '#fff';
 
     return (
       <Box sx={{ mt: 1 }}>
@@ -145,7 +146,7 @@ export const RenderErrorBoundaryFallback = ({
             sx={{
               mt: 1,
               p: 1,
-              backgroundColor: theme.palette.background.paper,
+              backgroundColor: backgroundColor,
               borderRadius: 1,
               fontSize: '0.75rem',
               overflow: 'auto',
@@ -161,7 +162,7 @@ export const RenderErrorBoundaryFallback = ({
       </Box>
     );
 
-  }, [errorStack, showDetails, handleToggleDetails, theme.palette.background.paper]);
+  }, [errorStack, showDetails, handleToggleDetails, theme?.palette?.background?.paper]);
 
   const memoizedRecoveryActions = useMemo(() => {
     if (!recoveryActions || recoveryActions.length === 0) {
@@ -211,8 +212,8 @@ export const RenderErrorBoundaryFallback = ({
     alignItems: 'center',
     gap: 1,
     pb: 1,
-    color: theme.palette.error.main,
-  }), [theme.palette.error.main]);
+    color: theme?.palette?.error?.main || '#d32f2f',
+  }), [theme?.palette?.error?.main]);
 
   return (
     <Dialog

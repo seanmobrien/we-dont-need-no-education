@@ -5,7 +5,7 @@
  * an ID field or a name field. Useful for scenarios where entities can be referenced
  * by multiple keys, such as models, providers, or other registry patterns.
  *
- * @module lib/typescript/dual-key-map
+ * @module @compliance-theater/typescript/dual-key-map
  */
 
 declare module "@compliance-theater/typescript/dual-key-map" {

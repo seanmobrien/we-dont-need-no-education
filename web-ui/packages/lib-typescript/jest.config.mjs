@@ -1,32 +1,23 @@
+import baseConfig from './__tests__/shared/jest.config-shared.mjs';
+
 /** @type {import('jest').Config} */
 const config = {
-  displayName: "lib: typescript",
+  ...baseConfig,
+  displayName: "Libraries: typescript",
   preset: "ts-jest",
   testEnvironment: "node",
   rootDir: ".",
-  testMatch: ["**/__tests__/**/*.test.ts"],
   moduleNameMapper: {
+    ...baseConfig.moduleNameMapper,
     "^@compliance-theater/logger/core$": "<rootDir>/../lib-logger/src/core",
     "^@compliance-theater/logger(.*)$": "<rootDir>/../lib-logger/src$1",
     "^@compliance-theater/typescript(.*)$": "<rootDir>/src$1",
     "^@/(.*)$": "<rootDir>/../app/$1",
   },
-  transform: {
-    "^.+.ts$": [
-      "ts-jest",
-      {
-        tsconfig: {
-          esModuleInterop: true,
-          allowSyntheticDefaultImports: true,
-        },
-      },
-    ],
-  },
-  clearMocks: true,
-  resetMocks: false,
   setupFilesAfterEnv: [
-    "<rootDir>/../app/__tests__/setup/jest.mock-log.ts",
-    "<rootDir>/../app/__tests__/setup/jest.env-vars.ts",
+    ...(baseConfig.setupFilesAfterEnv ?? []),
+    "<rootDir>/__tests__/shared/setup/jest.mock-log.ts",
+    "<rootDir>/__tests__/shared/setup/jest.env-vars.ts",
   ],
 };
 

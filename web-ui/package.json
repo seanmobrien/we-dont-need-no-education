@@ -5,13 +5,14 @@
   "workspaces": [
     "packages/*"
   ],
-  "packageManager": "yarn@1.22.22",
+  "packageManager": "yarn@4.12.0",
   "scripts": {
     "dev": "turbo run dev",
     "debug": "turbo run debug",
     "build": "turbo run build",
     "clean:build": "turbo run clean:build",
-    "test": "turbo run test",
+    "test": "turbo run test --force",
+    "test:fast": "turbo run test",
     "test:unit": "turbo run test:unit",
     "test:e2e": "turbo run test:e2e",
     "lint": "turbo run lint",
@@ -20,6 +21,6 @@
   "devDependencies": {
     "patch-package": "^8.0.0",
     "postinstall-postinstall": "^2.1.0",
-    "turbo": "^2.3.3"
+    "turbo": "^2.8.3"
   }
 }

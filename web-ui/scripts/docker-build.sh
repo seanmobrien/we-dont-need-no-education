@@ -18,6 +18,9 @@ SECRETS_DIR="$PROJECT_ROOT/secrets"
 CONTAINER_NAME="web-ui-local"
 IMAGE_TAG="web-ui:localbuild"
 
+# Set only on build runs
+DOCKER_EXTRA_BUILD_ARGS=""
+
 # Parse command line arguments
 ACTION="${1:-build-and-run}"
 shift || true
@@ -139,10 +142,25 @@ function create_build_secrets() {
     fi
 }
 
+# Ensure Next.js standalone build exists
+function ensure_standalone() {
+    local standalone_dir="$PROJECT_ROOT/packages/app/.next/standalone"
+    if [ ! -d "$standalone_dir" ]; then
+        echo -e "\n${RED}ERROR: Next.js standalone build not found.${NC}" >&2
+        echo -e "${RED}Expected directory: $standalone_dir${NC}" >&2
+        echo -e "${RED}Please build the app (e.g. run: yarn workspace @compliance-theater/app build) before running this script.${NC}\n" >&2
+        exit 1
+    fi
+    echo -e "${GREEN}✓${NC} Found Next.js standalone directory: $standalone_dir"
+}
+
 function build_image() {
     echo -e "\n${YELLOW}[Building Docker Image]${NC}"
     
     cd "$PROJECT_ROOT"
+    
+    # Verify standalone build exists before attempting to build the image
+    ensure_standalone
     
     # Extract git commit hash
     VCS_REF="${VCS_REF:-$(git rev-parse HEAD 2>/dev/null || echo 'unknown')}"
@@ -198,6 +216,7 @@ function build_image() {
         --label org.opencontainers.image.source="https://github.com/seanmobrien/we-dont-need-no-education" \
         --label org.opencontainers.image.title="we-dont-need-no-education" \
         --label org.opencontainers.image.url="https://github.com/seanmobrien/we-dont-need-no-education" \
+        $DOCKER_EXTRA_BUILD_ARGS \
         --file ./Dockerfile \
         -t "$IMAGE_TAG" \
         .
@@ -443,6 +462,7 @@ case "$ACTION" in
     build)
         load_environment
         create_build_secrets
+        DOCKER_EXTRA_BUILD_ARGS=$DOCKER_EXTRA_ARGS
         build_image
         cleanup_build_secrets
         show_summary

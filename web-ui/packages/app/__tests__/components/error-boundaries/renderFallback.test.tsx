@@ -36,6 +36,9 @@ const testTheme = createTheme({
     error: {
       main: '#f44336',
     },
+    background: {
+      paper: '#ffffff',
+    },
   },
 });
 

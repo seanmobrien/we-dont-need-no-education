@@ -4,7 +4,7 @@ import { KeyRefreshNotifyWrapper as KeyRefreshWrapper } from '@/components/auth/
 
 describe('KeyRefreshWrapper', () => {
   it('renders with default state snapshot', () => {
-    const { container } = render(
+    const { container } =  render(
       <KeyRefreshWrapper>
         <div>Test child content</div>
       </KeyRefreshWrapper>,

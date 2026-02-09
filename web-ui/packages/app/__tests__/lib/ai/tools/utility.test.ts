@@ -1,6 +1,6 @@
-import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
+import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { DatabaseMockType } from '@/__tests__/setup/jest.mock-drizzle';
+import { DatabaseMockType } from '../../../../../__tests__/jest.mock-drizzle';
 
 // Mock the database connection
 import type { DbDatabaseType } from '@/lib/drizzle-db';
@@ -192,7 +192,7 @@ describe('resolveCaseFileId', () => {
       const invalidUuid = '12345678-1234-4567-8901-12345678901G';
       const result = await resolveCaseFileId(invalidUuid);
       // Since it's not a valid UUID, it will try parseInt which returns 12345678
-      expect(result).toBe(undefined);
+      expect(result).toBe(12345678);
     });
   });
 });

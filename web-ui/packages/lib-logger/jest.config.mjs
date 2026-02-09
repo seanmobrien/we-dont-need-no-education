@@ -1,23 +1,9 @@
+import baseConfig from './__tests__/shared/jest.config-shared.mjs';
+
 /** @type {import('jest').Config} */
 const config = {
-  displayName: "lib: logger",
-  preset: "ts-jest",
-  testEnvironment: "node",
-  rootDir: ".",
-  testMatch: ["**/__tests__/**/*.test.ts"],
-  transform: {
-    "^.+.ts$": [
-      "ts-jest",
-      {
-        tsconfig: {
-          esModuleInterop: true,
-          allowSyntheticDefaultImports: true,
-        },
-      },
-    ],
-  },
-  clearMocks: true,
-  resetMocks: false,
+  ...baseConfig,
+  displayName: "Libraries: logger",
 };
 
 export default config;

@@ -5,7 +5,7 @@
  * the AbortController/AbortSignal pattern. Useful for managing long-running async
  * operations that may need to be cancelled.
  *
- * @module lib/typescript/abortable-promise
+ * @module @compliance-theater/typescript/abortable-promise
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

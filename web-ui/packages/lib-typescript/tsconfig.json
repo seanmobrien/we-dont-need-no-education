@@ -1,5 +1,5 @@
 {
-  "extends": "../app/tsconfig.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
@@ -22,12 +22,13 @@
     ],
   },
   "include": [
-    "src/**/*"
+    "src/**/*.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "__tests__"
   ],
   "references": [
     {

@@ -44,7 +44,7 @@ ARG MEM0_USERNAME
 ARG BUILD_CACHE
 
 ENV PYTHONUNBUFFERED=1
-
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 # System deps for canvas / fonts used by Next.js build
 RUN apk add --no-cache \
@@ -86,18 +86,20 @@ ARG MEM0_UI_HOST
 ARG MEM0_USERNAME
 ARG BUILD_CACHE
 
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV FOR_STANDALONE=1
 
 WORKDIR /repo
 
 # Install turbo CLI for pruning (small global install avoids full node_modules)
-RUN npm install -g turbo@2.3.3
+RUN npm install -g turbo@^2.8.3
 
 # Copy workspace to compute prune graph
 COPY --link=true . .
 
 # Produce a pruned workspace for the app package
-RUN turbo prune --scope=@compliance-theater/app --docker
+RUN turbo prune --scope=@compliance-theater/app --docker && \
+cp tsconfig.*.json out/full
 
 # Dependencies layer uses pruned workspace
 FROM base AS deps
@@ -123,11 +125,15 @@ ARG MEM0_UI_HOST
 ARG MEM0_USERNAME
 ARG BUILD_CACHE
 
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
 # Copy pruned package manifests and lockfile
 COPY --link=true --from=pruner /repo/out/full/ ./
 COPY --link=true --from=pruner /repo/out/yarn.lock ./yarn.lock
+COPY --link=true --from=pruner /repo/.yarnrc.yml ./.yarnrc.yml
+COPY --link=true --from=pruner /repo/.yarn/ ./.yarn/
 
-RUN yarn install --frozen-lockfile
+RUN node .yarn/releases/yarn-4.12.0.cjs install --immutable
 
 # Build layer with pruned source
 FROM deps AS builder
@@ -157,6 +163,7 @@ WORKDIR /app
 COPY --link=true --from=deps /app/ ./
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT
 ENV AZURE_AISEARCH_ENDPOINT=$AZURE_AISEARCH_ENDPOINT
 ENV AZURE_AISEARCH_DOCUMENTS_INDEX_NAME=$AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
@@ -219,8 +226,9 @@ RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
   set -a; [ -f "$TMP_ENV" ] && . "$TMP_ENV"; set +a; \
   cp "$TMP_ENV" ./packages/app/.env.local; \
   cp "$TMP_ENV" ./packages/app/.env.production.local; \
-  yarn build; \
-  rm -f "$TMP_ENV" ./packages/app/.env.local ./packages/app/.env.production.local
+  node .yarn/releases/yarn-4.12.0.cjs build; \
+  rm -f "$TMP_ENV" ./packages/app/.env.local ./packages/app/.env.production.local; \
+  if [ ! -d "./packages/app/.next/standalone" ]; then echo "Error: standalone build output missing" >&2; exit 1; fi
 
 FROM base AS runner
 WORKDIR /app/packages/app
@@ -269,10 +277,11 @@ RUN addgroup --system --gid 1001 nodejs \
 WORKDIR /app
 
 # Copy Next.js standalone output from the app workspace
-#COPY --link=true --from=builder ./packages/app/.next /app/.next
 COPY --link=true --from=builder /app/packages/app/.next/standalone /app
-COPY --link=true --from=builder /app/packages/app/.next/static /app/.next/static
+COPY --link=true --from=builder /app/packages/app/.next/static /app/packages/app/.next/static
+# NOTE: we only need one of these 2 copy statements, but not sure which one
 COPY --link=true --from=pruner /repo/packages/app/public /app/public
+COPY --link=true --from=pruner /repo/packages/app/public /app/packages/app/public
 COPY --link=true --from=pruner /repo/packages/app/scripts /app/scripts
 
 # Set up cron and write runtime env file (pulling from secrets when env is unset)

@@ -14,13 +14,6 @@ jest.mock('next/navigation', () => ({
   redirect: jest.fn(),
   notFound: jest.fn(),
 }));
-/*
-jest.mock('@/lib/react-util', () => ({
-  LoggedError: {
-    isTurtlesAllTheWayDownBaby: jest.fn(), // isTurtlesAllTheWayDownBaby might be a static method on the real class, so we can mock the class export like this
-  },
-}));
-*/
 
 import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
 import { isValidUuid } from '@compliance-theater/typescript';

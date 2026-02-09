@@ -1,5 +1,5 @@
 {
-  "name": "compliance-theater-mono-root",
+  "name": "compliance-theater-repo-root",
   "version": "0.0.0",
   "private": true,
   "workspaces": [
@@ -11,12 +11,10 @@
   },
   "scripts": {
     "preinstall": "node preinstall.js",
-    "dev": "cd web-ui && yarn dev",
-    "build": "cd web-ui && yarn build",
-    "test": "cd web-ui && yarn test",
-    "test:unit": "cd web-ui && yarn test:unit",
-    "test:e2e": "cd web-ui && yarn test:e2e",
-    "lint": "cd web-ui && yarn lint"
+    "dev": "echo noop",
+    "build": "echo noop",
+    "test": "echo noop",
+    "lint": "echo noop"
   },
-  "packageManager": "yarn@1.22.22"
+  "packageManager": "yarn@4.12.0"
 }
