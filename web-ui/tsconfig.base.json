@@ -6,7 +6,7 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "incremental": true,
-    "noEmit": true,
+    "noEmit": false,
     "removeComments": true,
     "jsx": "preserve",
     "lib": [

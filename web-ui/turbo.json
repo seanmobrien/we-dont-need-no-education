@@ -3,14 +3,14 @@
   "globalDependencies": [
     "**/*.local",
     "**/.env",
-    "**/tsconfig.json",
+    "**/tsconfig.*",
+    "tsconfig.*",
     "**/*.mjs",
+    ".yarn/**",
     "patches/**",
     "packages/app/scripts/**",
     "packages/app/public/**",
-    "packages/app/instrument/**",
-    "packages/lib-logger/tsconfig.json",
-    "packages/lib-typescript/tsconfig.json"
+    "packages/app/instrument/**"
   ],
   "tasks": {
     "build": {

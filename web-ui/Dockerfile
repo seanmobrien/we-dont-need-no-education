@@ -98,7 +98,8 @@ RUN npm install -g turbo@^2.8.3
 COPY --link=true . .
 
 # Produce a pruned workspace for the app package
-RUN turbo prune --scope=@compliance-theater/app --docker
+RUN turbo prune --scope=@compliance-theater/app --docker && \
+cp tsconfig.*.json out/full
 
 # Dependencies layer uses pruned workspace
 FROM base AS deps
@@ -132,9 +133,7 @@ COPY --link=true --from=pruner /repo/out/yarn.lock ./yarn.lock
 COPY --link=true --from=pruner /repo/.yarnrc.yml ./.yarnrc.yml
 COPY --link=true --from=pruner /repo/.yarn/ ./.yarn/
 
-RUN corepack enable
-RUN corepack prepare yarn@4.12.0 --activate || true
-RUN yarn install --immutable
+RUN node .yarn/releases/yarn-4.12.0.cjs install --immutable
 
 # Build layer with pruned source
 FROM deps AS builder
@@ -227,8 +226,9 @@ RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
   set -a; [ -f "$TMP_ENV" ] && . "$TMP_ENV"; set +a; \
   cp "$TMP_ENV" ./packages/app/.env.local; \
   cp "$TMP_ENV" ./packages/app/.env.production.local; \
-  yarn build; \
-  rm -f "$TMP_ENV" ./packages/app/.env.local ./packages/app/.env.production.local
+  node .yarn/releases/yarn-4.12.0.cjs build; \
+  rm -f "$TMP_ENV" ./packages/app/.env.local ./packages/app/.env.production.local; \
+  if [ ! -d "./packages/app/.next/standalone" ]; then echo "Error: standalone build output missing" >&2; exit 1; fi
 
 FROM base AS runner
 WORKDIR /app/packages/app
@@ -277,10 +277,11 @@ RUN addgroup --system --gid 1001 nodejs \
 WORKDIR /app
 
 # Copy Next.js standalone output from the app workspace
-#COPY --link=true --from=builder ./packages/app/.next /app/.next
 COPY --link=true --from=builder /app/packages/app/.next/standalone /app
-COPY --link=true --from=builder /app/packages/app/.next/static /app/.next/static
+COPY --link=true --from=builder /app/packages/app/.next/static /app/packages/app/.next/static
+# NOTE: we only need one of these 2 copy statements, but not sure which one
 COPY --link=true --from=pruner /repo/packages/app/public /app/public
+COPY --link=true --from=pruner /repo/packages/app/public /app/packages/app/public
 COPY --link=true --from=pruner /repo/packages/app/scripts /app/scripts
 
 # Set up cron and write runtime env file (pulling from secrets when env is unset)
