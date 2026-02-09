@@ -79,8 +79,6 @@ const cleanup = async (): Promise<void> => {
   }
 };
 const instrumentServer = () => {
-  console.log('Starting OTel SDK instrumentation for NodeJS server updated code...');
-  debugger;
   if (getRegistered()) {
     console.warn('OTel SDK already registered, skipping.');
     return;
