@@ -12,8 +12,7 @@ import type {
   DocumentRelationshipType,
 } from './drizzle-types';
 import { schema } from './schema';
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '../react-util';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { newUuid } from '@compliance-theater/typescript';
 import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';
 

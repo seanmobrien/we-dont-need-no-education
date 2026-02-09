@@ -10,7 +10,7 @@ import {
 import { NextResponse } from 'next/server';
 import type { TodoStorageStrategy } from './storage';
 import { InMemoryStorageStrategy } from './storage';
-import { isError, LoggedError } from '@/lib/react-util';
+import { isError, LoggedError } from '@compliance-theater/logger';
 import type {
   Todo,
   TodoList,

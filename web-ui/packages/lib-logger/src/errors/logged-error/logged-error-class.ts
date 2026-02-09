@@ -2,10 +2,10 @@
 // The runtime implementation remains here. Keep implementation edits minimal.
 
 import {
-  errorLogFactory as standardErrorLogFactory,
   log,
-  safeSerialize,
 } from '../../core';
+import { errorLogFactory as standardErrorLogFactory } from '../../utilities';
+import { safeSerialize } from '../../safe-serialize';
 import {
   isAbortError,
   isError,
@@ -65,17 +65,17 @@ export class LoggedError extends Error {
     errorReported: ErrorReportArgs;
   }>();
   static subscribeToErrorReports(callback: (args: ErrorReportArgs) => void) {
-    this.#errorReportEmitter.on('errorReported', callback);
+    LoggedError.#errorReportEmitter.on('errorReported', callback);
   }
   static unsubscribeFromErrorReports(
     callback: (args: ErrorReportArgs) => void,
   ) {
-    this.#errorReportEmitter.off('errorReported', callback);
+    LoggedError.#errorReportEmitter.off('errorReported', callback);
   }
   static clearErrorReportSubscriptions() {
     // no good way to clear/enumerate mitt subscriptions, but we can create a
     // new emitter and throw away the old one.
-    this.#errorReportEmitter = mitt<{
+    LoggedError.#errorReportEmitter = mitt<{
       errorReported: ErrorReportArgs;
     }>();
   }

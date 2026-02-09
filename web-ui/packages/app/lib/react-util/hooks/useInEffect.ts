@@ -1,9 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
-import { LoggedError } from '../errors';
 import { isError } from '../utility-methods';
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError } from '@compliance-theater/logger';
 
 type UseInEffectRecordResolver = {
   resolve: (value: unknown) => void;

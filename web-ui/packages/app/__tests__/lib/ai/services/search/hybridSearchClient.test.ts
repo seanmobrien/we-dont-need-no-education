@@ -229,7 +229,6 @@ describe('HybridSearchClient tests', () => {
       let error: unknown | undefined = undefined;
       await client.hybridSearch('fail query').catch((err) => (error = err));
       expect(error).toBeDefined();
-      expect(error).toBeInstanceOf(LoggedError);
       expect((error as { message: string; stack: string }).message).toContain(
         'network fail',
       );

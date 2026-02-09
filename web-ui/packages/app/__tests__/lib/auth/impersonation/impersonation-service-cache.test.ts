@@ -7,14 +7,6 @@ import { jest } from '@jest/globals';
 import { ImpersonationServiceCache } from '@/lib/auth/impersonation/impersonation-service-cache';
 import type { ImpersonationService } from '@/lib/auth/impersonation';
 
-// Mock LoggedError
-jest.mock('@compliance-theater/logger', () => ({
-  ...jest.requireActual('@compliance-theater/logger'),
-  LoggedError: {
-    isTurtlesAllTheWayDownBaby: jest.fn(),
-  },
-}));
-
 // Mock ImpersonationService implementation
 const mockImpersonationService = (): ImpersonationService => {
   return {

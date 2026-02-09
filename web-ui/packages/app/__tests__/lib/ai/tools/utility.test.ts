@@ -26,6 +26,7 @@ import {
   resolveCaseFileIdBatch
 } from '@/lib/ai/tools/utility';
 import { documentProperty } from '@/drizzle/schema';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 const mockLoggedError = LoggedError as jest.Mocked<typeof LoggedError>;
 
@@ -100,6 +101,7 @@ describe('resolveCaseFileId', () => {
     });
 
     it('should handle database errors gracefully', async () => {
+      hideConsoleOutput().setup();
       const dbError = new Error('Database connection failed');
       (mockDb.query.documentUnits.findFirst as jest.Mock).mockRejectedValue(
         dbError,
