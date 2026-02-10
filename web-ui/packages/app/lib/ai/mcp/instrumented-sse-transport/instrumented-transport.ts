@@ -305,7 +305,6 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         code: SpanStatusCode.ERROR,
         message: isError(error) ? error.message : String(error),
       });
-      debugger;
 
       this.#safetyUtils.completeOperation(operationId, 'error');
       log((l) =>

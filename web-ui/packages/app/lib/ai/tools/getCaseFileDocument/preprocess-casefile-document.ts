@@ -240,7 +240,7 @@ ___END CASE FILE___`,
           ],
         },
       ],
-      temperature: 0.1,
+      // temperature: 0.1,
       experimental_telemetry: {
         isEnabled: true,
         functionId: 'completion-tool-case-file-preprocess',
