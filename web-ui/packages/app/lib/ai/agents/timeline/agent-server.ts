@@ -535,7 +535,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
         originatingUserId: this.#userId ?? '-1',
         operation: operation ? `timeline:${operation}` : 'timeline:agent',
         opTags: opProps,
-        chatId: generateChatId(Math.random() * 1000).id,
+        chatId: generateChatId().id,
       });
       if (!this.#chatHistoryContext) {
         throw new TypeError('Unknown failure creating chat history context.');
