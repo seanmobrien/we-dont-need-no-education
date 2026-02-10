@@ -20,7 +20,7 @@ jest.mock('@compliance-theater/logger', () => ({
 }));
 
 // Mock the env helper
-jest.mock('@/lib/site-util/env', () => ({
+jest.mock('@compliance-theater/env', () => ({
   env: jest.fn(() => 'http://localhost:3000'),
 }));
 

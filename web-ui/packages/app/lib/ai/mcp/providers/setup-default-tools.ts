@@ -30,7 +30,7 @@
  * caller can hand to higher-level AI tooling.
  */
 import { toolProviderSetFactory } from './tool-provider-factory';
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import { ToolProviderFactoryOptions, ToolProviderSet } from '../types';
 import { NextRequest } from 'next/server';
 import {

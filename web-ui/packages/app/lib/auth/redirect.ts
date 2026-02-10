@@ -1,4 +1,4 @@
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 
 export const redirect = ({
   url,

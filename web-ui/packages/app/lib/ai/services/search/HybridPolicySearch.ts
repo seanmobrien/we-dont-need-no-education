@@ -1,4 +1,4 @@
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import type { PolicySearchOptions } from '../../tools/types';
 import type { PolicySearchScopeType } from '../../tools/unions';
 import { HybridSearchClient } from './HybridSearchBase';

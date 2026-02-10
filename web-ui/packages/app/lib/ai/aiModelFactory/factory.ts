@@ -1,7 +1,7 @@
 import { createAzure } from '@ai-sdk/azure';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import type {
   EmbeddingModelV2,
   LanguageModelV2,

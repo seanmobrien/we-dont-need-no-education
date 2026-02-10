@@ -3,7 +3,7 @@ import axios, { AxiosResponse } from 'axios';
 import { getToken } from '@auth/core/jwt';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
-import { env } from '../env';
+import { env } from '@compliance-theater/env';
 import { SingletonProvider } from '@compliance-theater/typescript';
 
 export interface KeycloakConfig {

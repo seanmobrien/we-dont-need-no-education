@@ -18,7 +18,7 @@ jest.mock('@/lib/auth/utilities', () => ({
   decodeToken: jest.fn(),
 }));
 
-jest.mock('@/lib/site-util/env', () => ({
+jest.mock('@compliance-theater/env', () => ({
   env: jest.fn((key) => {
     if (key === 'AUTH_KEYCLOAK_ISSUER')
       return 'https://keycloak.example.com/realms/test';

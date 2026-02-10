@@ -5,7 +5,7 @@
 
 import { log } from '@compliance-theater/logger';
 import { clientNavigateSignIn, clientReload } from '../nextjs-util';
-import { isRunningOnEdge } from '../site-util/env';
+import { isRunningOnEdge } from '@compliance-theater/env';
 
 /**
  * Determines the type of error for appropriate recovery strategy

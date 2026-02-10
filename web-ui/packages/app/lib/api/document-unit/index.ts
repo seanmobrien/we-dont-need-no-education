@@ -15,7 +15,7 @@ import {
   SASProtocol,
   StorageSharedKeyCredential,
 } from '@azure/storage-blob';
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
 import { pgDbWithInit } from '@/lib/neondb/connection';
 

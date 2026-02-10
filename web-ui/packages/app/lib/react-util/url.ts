@@ -1,4 +1,4 @@
-import { env } from '../site-util/env';
+import { env } from '@compliance-theater/env';
 import { SiteRoute, SiteRouteType } from '../site-util/url-builder/_types';
 import { UrlObject } from 'url';
 

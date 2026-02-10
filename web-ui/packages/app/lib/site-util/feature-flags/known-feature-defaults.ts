@@ -1,6 +1,6 @@
 import type { AiProvider } from '@/components/ai/chat-panel/types';
 import type { StorageStrategyConfig } from '@/lib/ai/tools/todo/storage/types';
-import { env } from '../env';
+import { env } from '@compliance-theater/env';
 
 import type {
   KnownFeatureValueTypeMap,

@@ -8,7 +8,7 @@
  */
 import { got } from 'got';
 import { CookieJar } from 'tough-cookie';
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import { log, LoggedError } from '@compliance-theater/logger';
 import CryptoService from '@/lib/site-util/auth/crypto-service';
 import type {

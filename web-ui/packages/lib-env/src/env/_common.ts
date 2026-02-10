@@ -1,8 +1,6 @@
-import { isTruthy } from '@/lib/react-util/utility-methods';
+import { isTruthy } from './utils';
 import { LoggedError } from '@compliance-theater/logger';
 import z from 'zod';
-import { isAiModelType } from '@/lib/ai/core/guards';
-import { AiModelType, AiModelTypeValues } from '@/lib/ai/core/unions';
 
 export type RuntimeConfig = 'nodejs' | 'edge' | 'client' | 'static' | 'server';
 const currentRuntime: RuntimeConfig = (() => {
@@ -82,22 +80,6 @@ export const ZodProcessors = {
   logLevel: (level: string = 'info'): z.ZodDefault<z.ZodString> =>
     z.string().default(level),
 
-  aiModelType: (
-    defaultValue: AiModelType,
-  ): z.ZodDefault<z.ZodType<AiModelType, z.ZodTypeDef, unknown>> =>
-    z
-      .preprocess((val, ctx) => {
-        if (isAiModelType(val)) {
-          return val;
-        }
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Invalid AI model type: ${val}`,
-          path: ctx.path,
-        });
-        return z.NEVER;
-      }, z.enum(AiModelTypeValues))
-      .default(defaultValue),
   integer: (): z.ZodType<number, z.ZodTypeDef, unknown> =>
     z.preprocess((val) => {
       if (typeof val === 'string') {

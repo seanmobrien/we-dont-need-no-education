@@ -17,7 +17,6 @@ import {
   clientRawInstance,
   clientEnvSchema,
 } from './_client';
-import { AiModelType } from '@/lib/ai/core';
 
 const buildRawInstance = () => {
   const raw = {
@@ -165,14 +164,14 @@ const serverEnvSchema = z
     AZURE_OPENAI_DEPLOYMENT_CHAT: z
       .string()
       .optional()
-      .default('gpt-4.1' as AiModelType)
+      .default('gpt-4.1')
       .describe(
         'Azure OpenAI deployment name for chat completions. Default: gpt-4.1. Example: gpt-4-turbo',
       ),
     AZURE_OPENAI_DEPLOYMENT_EMBEDDING: z
       .string()
       .optional()
-      .default('text-embedding-3-large' as AiModelType)
+      .default('text-embedding-3-large')
       .describe(
         'Azure OpenAI deployment name for text embeddings. Default: text-embedding-3-large. Example: text-embedding-ada-002',
       ),
@@ -193,21 +192,21 @@ const serverEnvSchema = z
     AZURE_OPENAI_DEPLOYMENT_HIFI: z
       .string()
       .optional()
-      .default('gpt-4.1' as AiModelType)
+      .default('gpt-4.1')
       .describe(
         'Azure OpenAI deployment name for high-fidelity chat models. Default: gpt-4.1. Example: gpt-4-turbo',
       ),
     AZURE_OPENAI_DEPLOYMENT_LOFI: z
       .string()
       .optional()
-      .default('gpt-4o-mini' as AiModelType)
+      .default('gpt-4o-mini')
       .describe(
         'Azure OpenAI deployment name for low-fidelity/fast chat models. Default: gpt-4o-mini. Example: gpt-35-turbo',
       ),
     AZURE_OPENAI_DEPLOYMENT_COMPLETIONS: z
       .string()
       .optional()
-      .default('gpt-4o-mini' as AiModelType)
+      .default('gpt-4o-mini')
       .describe(
         'Azure OpenAI deployment name for text completions. Default: gpt-4o-mini. Example: gpt-35-turbo',
       ),
@@ -321,21 +320,21 @@ const serverEnvSchema = z
     GOOGLE_GENERATIVE_HIFI: z
       .string()
       .optional()
-      .default('gemini-2.5-pro' as AiModelType)
+      .default('gemini-2.5-pro')
       .describe(
         'Google Generative AI high-fidelity model name. Default: gemini-2.5-pro. Example: gemini-2.0-flash-exp',
       ),
     GOOGLE_GENERATIVE_LOFI: z
       .string()
       .optional()
-      .default('gemini-2.5-flash' as AiModelType)
+      .default('gemini-2.5-flash')
       .describe(
         'Google Generative AI low-fidelity/fast model name. Default: gemini-2.5-flash. Example: gemini-2.0-flash',
       ),
     GOOGLE_GENERATIVE_EMBEDDING: z
       .string()
       .optional()
-      .default('google-embedding' as AiModelType)
+      .default('google-embedding')
       .describe(
         'Google Generative AI embedding model name. Default: google-embedding. Example: text-embedding-004',
       ),
@@ -476,21 +475,21 @@ const serverEnvSchema = z
     OPENAI_HIFI: z
       .string()
       .optional()
-      .default('gpt-5' as AiModelType)
+      .default('gpt-5')
       .describe(
         'OpenAI high-fidelity model name for complex reasoning tasks. Default: gpt-5. Example: gpt-4-turbo',
       ),
     OPENAI_LOFI: z
       .string()
       .optional()
-      .default('gpt-5-mini' as AiModelType)
+      .default('gpt-5-mini')
       .describe(
         'OpenAI low-fidelity/fast model name for simple tasks. Default: gpt-5-mini. Example: gpt-3.5-turbo',
       ),
     OPENAI_EMBEDDING: z
       .string()
       .optional()
-      .default('text-embedding-3-large' as AiModelType)
+      .default('text-embedding-3-large')
       .describe(
         'OpenAI embedding model name for vector generation. Default: text-embedding-3-large. Example: text-embedding-3-large',
       ),

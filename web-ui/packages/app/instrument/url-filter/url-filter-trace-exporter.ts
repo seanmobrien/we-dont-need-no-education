@@ -9,7 +9,7 @@ import {
   globalRequiredSingleton,
   globalSingleton,
 } from '@compliance-theater/typescript/singleton-provider';
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 
 /*
  * Global LRU cache tracking filtered span IDs.

@@ -1,4 +1,4 @@
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import { LoggedError } from '@compliance-theater/logger';
 import type { PostgresSql } from './postgres';
 import AfterManager from '../site-util/after';

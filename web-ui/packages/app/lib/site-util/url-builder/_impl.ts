@@ -1,6 +1,6 @@
 import { mappedPageOverloadFactory } from './_from-map';
 import { IUrlBuilder, MappedPageOverloads, UrlBuilderInfo } from './_types';
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 
 const appendParams = (url: URL, params: object | undefined) => {
   if (!params) {
