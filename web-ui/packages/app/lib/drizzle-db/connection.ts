@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import schema, { DbDatabaseType } from './schema';
 import { isPromise } from '@compliance-theater/typescript/guards';
-import { LoggedError } from '../react-util';
+import { LoggedError } from '@compliance-theater/logger';
 
 /**
  * Drizzle DB connection helpers

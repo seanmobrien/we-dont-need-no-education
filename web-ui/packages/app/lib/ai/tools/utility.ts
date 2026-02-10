@@ -4,7 +4,7 @@ import {
   ToolCallbackResult,
   ValidCaseFileRequestProps,
 } from './types';
-import { isError } from '@/lib/react-util/utility-methods';
+import { isError } from '@compliance-theater/logger';
 import {
   BrandedUuid,
   isValidUuid as isValidUuidImpl,

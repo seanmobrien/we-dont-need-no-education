@@ -14,8 +14,7 @@ import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
 import { env } from '@/lib/site-util/env';
 import { auth } from '@/auth';
 import { type NextRequest, NextResponse } from 'next/server';
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { isTruthy } from '@/lib/react-util/utility-methods';
 import {
   unauthorizedServiceResponse,

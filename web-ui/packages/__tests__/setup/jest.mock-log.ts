@@ -45,6 +45,16 @@ jest.mock('@compliance-theater/logger/core', () => {
 
 jest.mock('@compliance-theater/logger', () => {
   const originalModule = jest.requireActual('@compliance-theater/logger');
+  
+  // Spy on static methods instead of replacing the class to preserve instanceof behavior
+  const LoggedErrorWithSpies = originalModule.LoggedError;
+  jest.spyOn(LoggedErrorWithSpies, 'subscribeToErrorReports');
+  jest.spyOn(LoggedErrorWithSpies, 'unsubscribeFromErrorReports');
+  jest.spyOn(LoggedErrorWithSpies, 'clearErrorReportSubscriptions');
+  jest.spyOn(LoggedErrorWithSpies, 'isLoggedError');
+  jest.spyOn(LoggedErrorWithSpies, 'buildMessage');
+  jest.spyOn(LoggedErrorWithSpies, 'isTurtlesAllTheWayDownBaby');
+
   return {
     ...originalModule,
     logEvent: jest.fn(() => Promise.resolve()),
@@ -52,11 +62,12 @@ jest.mock('@compliance-theater/logger', () => {
     log: jest.fn((cb: (l: LoggerInstance) => void) => cb(getLogger())),
     errorLogFactory: jest.fn((x) => x),
     simpleScopedLogger: jest.fn(() => getLogger()),
+    LoggedError: LoggedErrorWithSpies
   };
 });
 
+import { LoggedError } from '@compliance-theater/logger';
 import { logger } from '@compliance-theater/logger/core';
-import { log } from '@compliance-theater/logger';
 import { withJestTestExtensions } from '../jest.test-extensions';
 
 let emitWarningMock: jest.SpyInstance | undefined;

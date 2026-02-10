@@ -6,10 +6,9 @@ import type {
   LanguageModelV2ProviderDefinedTool,
 } from '@ai-sdk/provider';
 // UIMessage import removed historically; prompt format is canonical now.
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError, log } from '@compliance-theater/logger';
 import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
 import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
-import { log } from '@compliance-theater/logger';
 import { appMeters, hashUserId } from '@/lib/site-util/metrics';
 
 const toolOptimizationCounter = appMeters.createCounter(

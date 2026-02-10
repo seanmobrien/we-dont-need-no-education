@@ -1,5 +1,5 @@
 import { isTruthy } from '@/lib/react-util/utility-methods';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import z from 'zod';
 import { isAiModelType } from '@/lib/ai/core/guards';
 import { AiModelType, AiModelTypeValues } from '@/lib/ai/core/unions';

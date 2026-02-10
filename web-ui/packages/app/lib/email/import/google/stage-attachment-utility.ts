@@ -1,4 +1,4 @@
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { AttachmentStagedResult, StageAttachmentProps } from './types';
 import { queueAttachment } from './attachment-download';
 import { StagedAttachmentRepository } from '@/lib/api/email/import/staged-attachment';

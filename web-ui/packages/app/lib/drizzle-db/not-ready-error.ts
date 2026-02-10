@@ -1,4 +1,4 @@
-import { isError } from '../react-util/utility-methods';
+import { isError } from '@compliance-theater/logger';
 import { drizDbWithInit } from './connection';
 import { DbDatabaseType } from './schema';
 

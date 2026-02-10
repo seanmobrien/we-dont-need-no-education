@@ -11,7 +11,7 @@ import {
   drizDb,
   schema,
 } from '@/lib/drizzle-db';
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { getNextSequence } from './utility';
 import type { StreamHandlerContext, StreamHandlerResult } from './types';
 import { ensureCreateResult } from './stream-handler-result';
@@ -19,7 +19,6 @@ import {
   reserveMessageIds,
   upsertToolMessage,
 } from './import-incoming-message';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { StreamProcessor } from './stream-processor';
 
 const flushMessageParts = async ({

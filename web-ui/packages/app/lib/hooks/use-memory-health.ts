@@ -33,7 +33,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetch } from '@/lib/nextjs-util/fetch';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import type {
   MemoryStatusHookResult,
   HealthCheckResponse,

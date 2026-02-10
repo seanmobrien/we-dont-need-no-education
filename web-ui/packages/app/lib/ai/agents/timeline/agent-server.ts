@@ -19,9 +19,8 @@ import {
   createAgentHistoryContext,
   wrapChatHistoryMiddleware,
 } from '@/lib/ai/middleware/chat-history';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError, log } from '@compliance-theater/logger';
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
-import { log } from '@compliance-theater/logger';
 import { auth } from '@/auth';
 import { generateTextWithRetry } from '@/lib/ai/core/generate-text-with-retry';
 

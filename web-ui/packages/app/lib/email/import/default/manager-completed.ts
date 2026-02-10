@@ -6,7 +6,7 @@ import {
 } from '../types';
 import { TransactionalStateManagerBase } from './transactional-statemanager';
 import { ImportStage } from '@/data-models/api/import/email-message';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 
 class CompletedStateManager extends TransactionalStateManagerBase {
   constructor(stage: ImportStage, options: AdditionalStageOptions) {

@@ -2,8 +2,7 @@ import type { RedisClientType } from 'redis';
 import { getRedisClient } from '@/lib/redis-client';
 import type { Todo, TodoList } from '../types';
 import type { TodoStorageStrategy, StorageStrategyConfig } from './types';
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 
 const DEFAULT_TTL = 86400; // 24 hours
 const DEFAULT_KEY_PREFIX = 'todo';

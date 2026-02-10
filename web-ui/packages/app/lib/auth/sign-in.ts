@@ -16,10 +16,9 @@
  */
 
 import { Account, Awaitable, Profile, User } from '@auth/core/types';
-import { log, logEvent } from '@compliance-theater/logger';
+import { log, logEvent, LoggedError } from '@compliance-theater/logger';
 import { CredentialInput } from '@auth/core/providers';
 import { AdapterUser } from '@auth/core/adapters';
-import { LoggedError } from '../react-util';
 import { updateAccountTokens } from './server/update-account-tokens';
 /**
  * Persist token fields for an external OAuth account to the local `accounts`

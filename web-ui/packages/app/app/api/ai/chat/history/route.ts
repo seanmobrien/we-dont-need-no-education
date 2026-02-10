@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import {

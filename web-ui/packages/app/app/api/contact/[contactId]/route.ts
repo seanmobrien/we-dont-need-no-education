@@ -4,10 +4,9 @@ import {
   extractParams,
 } from '@/lib/nextjs-util/server/utils';
 import { query, queryExt } from '@/lib/neondb';
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { globalContactCache } from '@/data-models/api';
 import { isTruthy } from '@/lib/react-util/utility-methods';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 export const dynamic = 'force-dynamic';
 

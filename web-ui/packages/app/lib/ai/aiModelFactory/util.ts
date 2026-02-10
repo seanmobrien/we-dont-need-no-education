@@ -11,7 +11,7 @@ import {
 import type { AutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/types';
 import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 import { KnownFeatureType } from '@/lib/site-util/feature-flags';
-import { LoggedError } from '@/lib/react-util/errors/logged-error/logged-error-class';
+import { LoggedError } from '@compliance-theater/logger';
 import { log } from '@compliance-theater/logger';
 
 export const AutoRefreshProviderFlagKeyMap = {

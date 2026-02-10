@@ -4,7 +4,7 @@ import { type KnownFeatureType, isKnownFeatureType } from './known-feature';
 import { AllFeatureFlagsDefault } from './known-feature-defaults';
 
 import { env } from '../env';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import type { FeatureFlagValueType } from './types';
 import { extractFlagValue } from './util';
 import { globalSingletonAsync } from '@compliance-theater/typescript';

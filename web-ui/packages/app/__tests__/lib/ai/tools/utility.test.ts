@@ -1,5 +1,5 @@
 import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { DatabaseMockType } from '../../../../../__tests__/jest.mock-drizzle';
 
 // Mock the database connection
@@ -12,7 +12,8 @@ const validUuid = '12345678-1234-4567-8901-123456789012';
 let mockDb = withJestTestExtensions().makeMockDb();
 
 // Mock LoggedError
-jest.mock('@/lib/react-util/errors/logged-error', () => ({
+jest.mock('@compliance-theater/logger', () => ({
+  ...jest.requireActual('@compliance-theater/logger'),
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
@@ -25,6 +26,7 @@ import {
   resolveCaseFileIdBatch
 } from '@/lib/ai/tools/utility';
 import { documentProperty } from '@/drizzle/schema';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 const mockLoggedError = LoggedError as jest.Mocked<typeof LoggedError>;
 
@@ -99,6 +101,7 @@ describe('resolveCaseFileId', () => {
     });
 
     it('should handle database errors gracefully', async () => {
+      hideConsoleOutput().setup();
       const dbError = new Error('Database connection failed');
       (mockDb.query.documentUnits.findFirst as jest.Mock).mockRejectedValue(
         dbError,

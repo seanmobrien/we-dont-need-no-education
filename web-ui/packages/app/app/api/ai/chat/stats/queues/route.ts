@@ -6,7 +6,7 @@ import type {
   RateLimitedRequest,
   ModelClassification,
 } from '@/lib/ai/middleware/key-rate-limiter/types';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 
 export const dynamic = 'force-dynamic';
 

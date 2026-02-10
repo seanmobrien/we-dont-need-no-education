@@ -1,4 +1,4 @@
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { getFeatureFlag } from './server';
 import { log } from '@compliance-theater/logger/core';
 import { auth } from '@/auth';

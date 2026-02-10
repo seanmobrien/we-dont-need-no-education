@@ -124,8 +124,7 @@ import { result, xorBy } from 'lodash';
 
 import { ITraits } from 'flagsmith/react';
 import { P } from 'ts-pattern';
-import { LoggedError } from '@/lib/react-util/errors/logged-error/logged-error-class';
-import { ErrorReportArgs } from '@/lib/react-util/errors/logged-error/types';
+import { LoggedError, ErrorReportArgs } from '@compliance-theater/logger';
 import { ErrorReporterInterface } from '@/lib/error-monitoring/types';
 globalThis.TextEncoder = TextEncoder as any;
 globalThis.TextDecoder = TextDecoder as any;

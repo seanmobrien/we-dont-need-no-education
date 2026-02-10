@@ -7,7 +7,7 @@ import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import { useCallback, useState } from 'react';
 import { signResponse } from '@/lib/ai/client/confirmation';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { useNotifications } from '@toolpad/core/useNotifications';
 import { DynamicToolUIPart, ToolUIPart, UITools } from 'ai';
 

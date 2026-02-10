@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getImportMessageStatus } from '../../../_utilitites';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 
 export const dynamic = 'force-dynamic';
 

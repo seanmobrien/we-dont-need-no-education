@@ -5,9 +5,8 @@ import type {
   LanguageModelV2Content,
 } from '@ai-sdk/provider';
 
-import { log, safeSerialize } from '@compliance-theater/logger';
+import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
 import { MiddlewareStateManager } from '../state-management';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type {
   MemoryMiddlewareAugmentationStrategy,
   MemoryMiddlewareContext,

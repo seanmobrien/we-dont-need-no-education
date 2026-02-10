@@ -4,7 +4,8 @@ import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 
 setupImpersonationMock();
 
-jest.mock('@/lib/react-util/errors/logged-error', () => ({
+jest.mock('@compliance-theater/logger', () => ({
+  ...jest.requireActual('@compliance-theater/logger'),
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
@@ -18,8 +19,7 @@ import {
   hybridDocumentSearchFactory,
 } from '@/lib/ai/services/search';
 
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 
 describe('searchCaseFile', () => {
   const mockHybridSearch = jest.fn();

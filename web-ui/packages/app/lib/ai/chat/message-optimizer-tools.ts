@@ -5,13 +5,12 @@ import {
 } from '@ai-sdk/provider';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { createHash } from 'crypto';
 // import { v4 as uuidv4 } from 'uuid';
 import { appMeters, hashUserId } from '@/lib/site-util/metrics';
 // import { ToolMap } from '../services/model-stats/tool-map';
 import { createAgentHistoryContext } from '../middleware/chat-history/create-chat-history-context';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import z from 'zod';
 import { DbTransactionType, drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { ThisDbQueryProvider } from '@/lib/drizzle-db/schema';

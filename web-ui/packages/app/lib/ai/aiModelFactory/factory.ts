@@ -16,7 +16,7 @@ import {
   AiModelTypeValue_Embedding,
   AiModelTypeValue_GoogleEmbedding,
 } from '@/lib/ai/core/unions';
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError } from '@compliance-theater/logger';
 
 import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
 import { cacheWithRedis } from '../middleware/cacheWithRedis';
@@ -45,7 +45,6 @@ import {
   caseProviderMatch,
 } from './util';
 import { getAvailability } from './model-availability-manager';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
  * Setup middleware for language models with caching and retry logic

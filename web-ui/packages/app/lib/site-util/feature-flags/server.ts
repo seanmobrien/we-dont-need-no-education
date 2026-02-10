@@ -16,11 +16,10 @@ import {
 
 import { globalSingleton } from '@compliance-theater/typescript';
 import { env } from '../env';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError, log } from '@compliance-theater/logger';
 import { extractFlagValue } from './util';
 
 import { fetch as serverFetch } from '@/lib/nextjs-util/server/fetch';
-import { log } from '@compliance-theater/logger';
 import { FlagsmithRedisCache } from './flagsmith-cache';
 
 /**

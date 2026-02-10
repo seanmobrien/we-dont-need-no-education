@@ -2,7 +2,7 @@
 
 import { getAccessibleUserIds } from '@/lib/auth/resources/case-file/case-file-helpers';
 import { authorizationService } from '@/lib/auth/resources/authorization-service';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 // Mock the authorization service

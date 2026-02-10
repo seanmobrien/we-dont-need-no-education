@@ -1,8 +1,7 @@
 import { drizDbWithInit, type DbDatabaseType, schema } from '@/lib/drizzle-db';
 import type { ChatToolType } from '@/lib/drizzle-db/drizzle-types';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError, log } from '@compliance-theater/logger';
 import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
-import { log } from '@compliance-theater/logger';
 import type {
   LanguageModelV2ProviderDefinedTool,
   LanguageModelV2FunctionTool,

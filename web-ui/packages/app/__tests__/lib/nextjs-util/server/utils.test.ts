@@ -12,8 +12,7 @@ import {
 import { errorResponseFactory } from '@/lib/nextjs-util/server/error-response';
 import { trace, context as otelContext, propagation } from '@opentelemetry/api';
 import { SpanStatusCode } from '@opentelemetry/api';
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { NextRequest } from 'next/dist/server/web/spec-extension/request';
 
 // Mock external dependencies
@@ -55,7 +54,8 @@ jest.mock('@opentelemetry/api-logs', () => ({
   },
 }));
 
-jest.mock('@/lib/react-util/errors/logged-error', () => ({
+jest.mock('@compliance-theater/logger', () => ({
+  ...jest.requireActual('@compliance-theater/logger'),
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn((error) => {
       return error;

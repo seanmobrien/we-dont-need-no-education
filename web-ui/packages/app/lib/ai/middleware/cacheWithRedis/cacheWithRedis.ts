@@ -10,10 +10,9 @@ import type { CacheableResponse } from './types';
 import { handleCacheHit, handleCacheMiss } from './cacheEventHandlers';
 import { createStreamFromCachedText } from './streamUtils';
 import { handleResponseCaching } from './cacheStrategy';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError, log } from '@compliance-theater/logger';
 import { newUuid } from '@compliance-theater/typescript';
 import { MiddlewareStateManager } from '../state-management';
-import { log } from '@compliance-theater/logger';
 
 // Enterprise configuration and metrics
 const config = getCacheConfig();

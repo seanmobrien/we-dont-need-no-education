@@ -4,8 +4,26 @@
  * @module @/lib/nextjs-util/server
  */
 
+import type { errorResponseFactory } from './error-response'
+import type { ServerErrorResponseType } from './types';
+import type { 
+    extractParams, 
+    EnableOnBuild, 
+    buildFallbackGrid,
+    wrapRouteRequest,
+    createInstrumentedSpan,
+    reportEvent
+  } from './utils'
+
 declare module '@/lib/nextjs-util/server' {
-  export { errorResponseFactory } from './error-response';
-  export * from './utils';
-  export type { ServerErrorResponseType } from './types';
+  export { errorResponseFactory };
+  export { 
+    extractParams, 
+    EnableOnBuild, 
+    buildFallbackGrid,
+    wrapRouteRequest,
+    createInstrumentedSpan,
+    reportEvent
+  };
+  export type { ServerErrorResponseType };
 }

@@ -39,13 +39,11 @@ jest.mock('../../../../../lib/ai/middleware/chat-history', () => ({
 }));
 
 jest.mock('@compliance-theater/logger', () => ({
+  ...jest.requireActual('@compliance-theater/logger'),
   log: jest.fn((fn) =>
     fn({ verbose: verboseMock, warn: warnMock, debug: debugMock }),
   ),
   safeSerialize: jest.fn((value) => JSON.stringify(value)),
-}));
-
-jest.mock('../../../../../lib/react-util/errors/logged-error', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn((err) => err as Error),
     isLoggedError: jest.fn(() => false),

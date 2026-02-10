@@ -30,11 +30,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 
 import { CookieJar } from 'tough-cookie';
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { got } from 'got';
 import { parse as parseHtml } from 'node-html-parser';
 import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { CryptoService } from '@/lib/site-util/auth/crypto-service';
 import { getRedisClient } from '@/lib/redis-client';
 import { env } from '@/lib/site-util/env';

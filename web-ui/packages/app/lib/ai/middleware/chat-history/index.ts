@@ -4,12 +4,11 @@ import type {
   LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
 
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError, log } from '@compliance-theater/logger';
 import type { ChatHistoryContext } from './types';
 import { enqueueStream, ProcessingQueue } from './processing-queue';
 import { JSONValue, simulateReadableStream, wrapLanguageModel } from 'ai';
 import { MiddlewareStateManager } from '../state-management';
-import { log } from '@compliance-theater/logger';
 import { ToolMap } from '../../services/model-stats/tool-map';
 import { createToolOptimizingMiddleware } from '../tool-optimizing-middleware';
 export type { ChatHistoryContext } from './types';

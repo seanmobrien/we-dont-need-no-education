@@ -9,7 +9,7 @@ import type {
   RequestWithAccessTokenOverloads,
   AccessTokenOrRequestOverloadsExt,
 } from './types';
-import { LoggedError } from '../react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 
 const accessTokenOnRequest: unique symbol = Symbol();
 

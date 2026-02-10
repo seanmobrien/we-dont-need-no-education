@@ -1,11 +1,9 @@
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError, isError, log } from '@compliance-theater/logger';
 import { ToolCallbackResult } from '../types';
 import {
   SEQUENTIAL_THINKING_TOOL,
   SequentialThinkingServer,
 } from './sequential-thinking-server';
-import { isError } from '@/lib/react-util/utility-methods';
-import { log } from '@compliance-theater/logger';
 import z from 'zod';
 
 let sequentialThinkingTool: SequentialThinkingServer | undefined = undefined;

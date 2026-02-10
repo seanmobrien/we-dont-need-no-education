@@ -1,8 +1,7 @@
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import { createClient, type RedisClientType } from 'redis';
 import { env } from '@/lib/site-util/env';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@compliance-theater/logger';
+import { LoggedError, log } from '@compliance-theater/logger';
 import AfterManager from '../site-util/after';
 
 export type { RedisClientType };

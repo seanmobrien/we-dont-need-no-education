@@ -1,7 +1,6 @@
 'use client';
 
-import { log } from '@compliance-theater/logger';
-import { isError } from '@/lib/react-util/utility-methods';
+import { log, isError, LoggedError } from '@compliance-theater/logger';
 import {
   useState,
   useCallback,
@@ -25,7 +24,6 @@ import { SubmitRefCallbackInstance } from './_types';
 import { useEmail, useWriteEmail } from '@/lib/hooks/use-email';
 import siteMap from '@/lib/site-util/url-builder';
 import { useRouter } from 'next/navigation';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 type EmailFormAfterSaveBehavior = 'none' | 'redirect';
 

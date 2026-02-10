@@ -5,7 +5,8 @@ import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();
 
 jest.mock('@/lib/ai/services/search');
-jest.mock('@/lib/react-util/errors/logged-error', () => ({
+jest.mock('@compliance-theater/logger', () => ({
+  ...jest.requireActual('@compliance-theater/logger'),
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn((error, options) => {
       return new Error(options.message);
@@ -16,7 +17,7 @@ jest.mock('@/lib/react-util/errors/logged-error', () => ({
 
 import { searchPolicyStore } from '@/lib/ai/tools/searchPolicyStore';
 import { HybridPolicySearch } from '@/lib/ai/services/search';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import { hybridPolicySearchFactory } from '@/lib/ai/services/search';
 import { toolCallbackResultFactory } from '@/lib/ai/tools/utility';
 

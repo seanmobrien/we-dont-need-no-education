@@ -4,8 +4,7 @@ import type {
 } from '@ai-sdk/provider';
 import { JSONValue } from 'ai';
 import { drizDb } from '@/lib/drizzle-db';
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 import type {
   ChatHistoryContext,
   FlushContext,

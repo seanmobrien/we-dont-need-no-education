@@ -9,7 +9,7 @@ import {
   ImportSourceMessage,
   ImportStage,
 } from '@/data-models/api/import/email-message';
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { gmail_v1 } from 'googleapis';
 import { mapContacts } from './utilities';
 import { ContactRepository } from '@/lib/api/contacts/database';
@@ -20,7 +20,6 @@ import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error
 import { ParsedHeaderMap } from '../../parsedHeaderMap';
 import { query } from '@/lib/neondb';
 import { ContactSummary } from '@/data-models/api/contact';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 type ParsedEmailProps = {
   savedSender: ContactSummary;

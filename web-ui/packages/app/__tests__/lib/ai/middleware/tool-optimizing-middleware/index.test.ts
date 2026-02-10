@@ -29,10 +29,12 @@ import type {
   LanguageModelV2ProviderDefinedTool,
 } from '@ai-sdk/provider';
 import type { UIMessage } from 'ai';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
+import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 // Mock dependencies
-jest.mock('@/lib/react-util/errors/logged-error', () => ({
+jest.mock('@compliance-theater/logger', () => ({
+  ...jest.requireActual('@compliance-theater/logger'),
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
@@ -201,6 +203,7 @@ describe('Tool Optimizing Middleware', () => {
     });
 
     it('should handle tool scanning errors gracefully', async () => {
+      hideConsoleOutput().setup();
       mockToolMapInstance.scanForTools.mockRejectedValue(
         new Error('Database error'),
       );
@@ -325,6 +328,7 @@ describe('Tool Optimizing Middleware', () => {
     });
 
     it('should handle message optimization errors gracefully', async () => {
+      hideConsoleOutput().setup();
       mockOptimizeMessages.mockRejectedValue(new Error('Optimization failed'));
 
       const middleware = createToolOptimizingMiddleware({
@@ -466,6 +470,7 @@ describe('Tool Optimizing Middleware', () => {
     });
 
     it('should handle partial failures gracefully', async () => {
+      hideConsoleOutput().setup();
       mockToolMapInstance.scanForTools.mockRejectedValue(
         new Error('Tool scan failed'),
       );
@@ -498,6 +503,7 @@ describe('Tool Optimizing Middleware', () => {
   describe('Error Handling', () => {
     it('should handle complete middleware failure gracefully', async () => {
       // Mock ToolMap.getInstance to fail
+      hideConsoleOutput().setup();
       (mockToolMap.getInstance as jest.Mock).mockRejectedValue(
         new Error('Critical failure'),
       );
@@ -530,6 +536,7 @@ describe('Tool Optimizing Middleware', () => {
     });
 
     it('should preserve parameter structure on errors', async () => {
+      hideConsoleOutput().setup();
       mockOptimizeMessages.mockRejectedValue(new Error('Optimization error'));
 
       const middleware = createToolOptimizingMiddleware({

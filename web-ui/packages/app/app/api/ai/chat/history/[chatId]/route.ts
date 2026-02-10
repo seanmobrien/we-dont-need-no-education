@@ -3,7 +3,7 @@ import { auth } from '@/auth';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { eq, and } from 'drizzle-orm';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import type { ChatDetails, ChatTurn } from '@/lib/ai/chat';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 

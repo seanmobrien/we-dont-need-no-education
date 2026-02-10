@@ -11,7 +11,7 @@ import { log } from '@compliance-theater/logger/core';
 import { decodeToken } from '../utilities';
 import { getAccountTokens } from '../server/get-account-tokens';
 import { createHash } from 'crypto';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 
 const hashFromServer = async (input: string): Promise<string> =>
   createHash('sha256').update(input).digest('hex');

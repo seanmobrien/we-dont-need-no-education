@@ -9,9 +9,6 @@ setupImpersonationMock();
 // Mock all dependencies first
 const mockGetResolvedPromises = jest.fn() as jest.MockedFunction<any>;
 const mockIsError = jest.fn() as jest.MockedFunction<any>;
-const mockLoggedError = {
-  isTurtlesAllTheWayDownBaby: jest.fn() as jest.MockedFunction<any>,
-};
 const mockCreateMCPClient = jest.fn() as jest.MockedFunction<any>;
 const mockInstrumentedSseTransport = jest.fn() as jest.MockedFunction<any>;
 // Returns either a map of cached tools or null when none cached
@@ -40,9 +37,6 @@ jest.mock('@/lib/ai/mcp/cache', () => {
   };
 });
 
-jest.mock('@/lib/react-util/errors/logged-error', () => ({
-  LoggedError: mockLoggedError,
-}));
 
 /*
 jest.mock('ai', () => ({
@@ -95,8 +89,9 @@ import {
 import type {
   ConnectableToolProvider,
   MCPClientConfig,
-  ToolProviderFactoryOptions,
-} from '../../../../lib/ai/mcp/types';
+  ToolProviderFactoryOptions, 
+} from '@/lib/ai/mcp/types';
+import { LoggedError as mockLoggedError } from '@compliance-theater/logger'
 import { ToolSet } from 'ai';
 import z from 'zod';
 import { createAutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
@@ -158,7 +153,7 @@ describe('toolProviderFactory', () => {
     mockMCPClient.close.mockReset();
     mockCreateMCPClient.mockReset();
     mockGetResolvedPromises.mockReset();
-    mockLoggedError.isTurtlesAllTheWayDownBaby.mockReset();
+    (mockLoggedError.isTurtlesAllTheWayDownBaby as jest.Mock).mockReset();
 
     // Set up default implementations
     mockIsError.mockImplementation((error: unknown) => error instanceof Error);
@@ -458,7 +453,7 @@ describe('toolProviderSetFactory', () => {
     } as unknown as never);
     // Reset individual mocks instead of clearing all global mocks
     mockGetResolvedPromises.mockReset();
-    mockLoggedError.isTurtlesAllTheWayDownBaby.mockReset();
+    (mockLoggedError.isTurtlesAllTheWayDownBaby as jest.Mock).mockReset();
   });
 
   describe('successful connections', () => {

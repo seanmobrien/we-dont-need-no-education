@@ -1,5 +1,4 @@
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { appMeters } from '@/lib/site-util/metrics';
 
 // OpenTelemetry Metrics - Enterprise observability

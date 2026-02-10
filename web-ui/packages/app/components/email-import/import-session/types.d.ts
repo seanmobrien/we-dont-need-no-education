@@ -6,7 +6,7 @@ import {
   MessageImportStatusWithChildren,
   MessageImportStatus,
 } from '../../../data-models/api/import/email-message';
-import { LoggedError } from '../../../lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 
 declare module '@/components/email-import/import-session/types' {
   /**

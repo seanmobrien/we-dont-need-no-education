@@ -1,18 +1,18 @@
-// Documentation is authoritative in: lib/react-util/errors/logged-error.d.ts
+// Documentation is authoritative in: logged-error.d.ts
 // The runtime implementation remains here. Keep implementation edits minimal.
 
 import {
-  errorLogFactory as standardErrorLogFactory,
   log,
-  safeSerialize,
-} from '@compliance-theater/logger';
+} from '../../core';
+import { errorLogFactory as standardErrorLogFactory } from '../../utilities';
+import { safeSerialize } from '../../safe-serialize';
 import {
   isAbortError,
   isError,
   isProgressEvent,
-} from './../../utility-methods';
-import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
-import { asKnownSeverityLevel } from '@compliance-theater/logger/constants';
+  getStackTrace,
+} from '../utilities/error-guards';
+import { asKnownSeverityLevel } from '../../constants';
 import type {
   TurtleRecursionParams,
   LoggedErrorOptions,
@@ -65,17 +65,17 @@ export class LoggedError extends Error {
     errorReported: ErrorReportArgs;
   }>();
   static subscribeToErrorReports(callback: (args: ErrorReportArgs) => void) {
-    this.#errorReportEmitter.on('errorReported', callback);
+    LoggedError.#errorReportEmitter.on('errorReported', callback);
   }
   static unsubscribeFromErrorReports(
     callback: (args: ErrorReportArgs) => void,
   ) {
-    this.#errorReportEmitter.off('errorReported', callback);
+    LoggedError.#errorReportEmitter.off('errorReported', callback);
   }
   static clearErrorReportSubscriptions() {
     // no good way to clear/enumerate mitt subscriptions, but we can create a
     // new emitter and throw away the old one.
-    this.#errorReportEmitter = mitt<{
+    LoggedError.#errorReportEmitter = mitt<{
       errorReported: ErrorReportArgs;
     }>();
   }

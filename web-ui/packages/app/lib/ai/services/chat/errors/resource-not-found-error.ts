@@ -1,4 +1,4 @@
-import { isError } from '@/lib/react-util/utility-methods';
+import { isError } from '@compliance-theater/logger';
 
 export type ModelResourceType = 'provider' | 'model' | 'tool' | 'model-quota';
 

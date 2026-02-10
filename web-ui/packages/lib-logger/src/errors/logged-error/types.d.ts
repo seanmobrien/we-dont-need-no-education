@@ -1,5 +1,5 @@
-import type { ErrorContext } from '@/lib/error-monitoring/types';
-import type { KnownSeverityLevel } from '@compliance-theater/logger';
+import type { ErrorContext } from '../types';
+import type { KnownSeverityLevel } from '../../constants';
 
 export type LoggedErrorOptions = ErrorOptions & {
   error: Error;

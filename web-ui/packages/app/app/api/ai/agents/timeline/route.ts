@@ -6,7 +6,7 @@ import {
   TimelineAgentFactory,
   ServerTimelineAgent as TimelineAgent,
 } from '@/lib/ai/agents/timeline/agent-server';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 
 const buildFallback = {
   success: true,

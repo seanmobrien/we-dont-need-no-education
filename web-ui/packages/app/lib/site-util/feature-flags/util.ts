@@ -1,4 +1,4 @@
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '@compliance-theater/logger';
 import {
   isKnownFeatureBooleanType,
   isKnownFeatureObjectType,

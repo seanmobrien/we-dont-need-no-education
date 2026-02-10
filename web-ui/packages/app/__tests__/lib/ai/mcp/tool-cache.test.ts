@@ -16,7 +16,9 @@ import {
 
 // Mock Redis and logger
 jest.mock('@/lib/redis-client');
-jest.mock('@/lib/react-util/errors/logged-error');
+jest.mock('@compliance-theater/logger', () => ({
+  ...jest.requireActual('@compliance-theater/logger'),
+}));
 
 import { getRedisClient, type RedisClientType } from '@/lib/redis-client';
 import {

@@ -13,8 +13,7 @@ import type {
   UserToolProviderCache,
   UserToolProviderCacheConfig,
 } from '../types';
-import { log } from '@compliance-theater/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
 import { globalRequiredSingleton } from '@compliance-theater/typescript';
 

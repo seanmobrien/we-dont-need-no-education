@@ -11,9 +11,8 @@ import {
   extractParams,
 } from '@/lib/nextjs-util/server/utils';
 import { NextRequest, NextResponse } from 'next/server';
-import { isError } from '@/lib/react-util/utility-methods';
+import { isError, log } from '@compliance-theater/logger';
 import { amendCaseRecord } from '@/lib/ai/tools/amend-case-record';
-import { log } from '@compliance-theater/logger';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 import {
   checkCaseFileAuthorization,

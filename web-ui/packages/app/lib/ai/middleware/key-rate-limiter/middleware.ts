@@ -12,7 +12,7 @@ import type {
   RateLimitRetryContext,
   RateLimitFactoryOptions,
 } from './types';
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError } from '@compliance-theater/logger';
 import { checkModelAvailabilityAndFallback } from './model-availability';
 import {
   handleRateLimitError,
@@ -26,7 +26,6 @@ import {
 import { LanguageModel } from 'ai';
 import { ModelMap } from '../../services/model-stats/model-map';
 import { MiddlewareStateManager } from '../state-management';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 type RateLimitRetryState = {
   rateLimitContext: RateLimitRetryContext;

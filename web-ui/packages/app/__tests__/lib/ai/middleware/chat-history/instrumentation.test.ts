@@ -67,7 +67,7 @@ import {
   createChatHistoryError,
 } from '@/lib/ai/middleware/chat-history/instrumentation';
 import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
-import { isError } from '@/lib/react-util/utility-methods';
+import { isError } from '@compliance-theater/logger';
 
 describe('Chat History Instrumentation', () => {
   beforeEach(() => {

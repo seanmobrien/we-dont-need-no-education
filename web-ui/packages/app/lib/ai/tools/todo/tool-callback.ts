@@ -1,4 +1,4 @@
-import { log } from '@compliance-theater/logger';
+import { log, LoggedError, isError } from '@compliance-theater/logger';
 import {
   toolCallbackResultFactory,
   toolCallbackResultSchemaFactory,
@@ -7,8 +7,6 @@ import { getTodoManager } from './todo-manager';
 import type { Todo, TodoList, TodoPriority, TodoStatus } from './types';
 import { SEQUENTIAL_THINKING_TOOL_NAME } from '@/lib/ai/tools/sequentialthinking/tool-callback';
 import z from 'zod';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { isError } from '@/lib/react-util/utility-methods';
 import { auth } from '@/auth';
 
 // Zod schema for Todo serialization
