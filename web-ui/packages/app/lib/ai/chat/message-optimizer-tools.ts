@@ -859,7 +859,7 @@ export const summarizeMessageRecord = async ({
           messageSummary: z.string(),
           chatTitle: z.string(),
         }),
-        temperature: 0.3,
+        // temperature: 0.3,
         experimental_telemetry: {
           isEnabled: true,
           functionId: 'completion-message-summarization',
@@ -1228,7 +1228,7 @@ Respond with just the summary text, no additional formatting.`;
         messageSummary: z.string(),
         chatTitle: z.string(),
       }),
-      temperature: 0.3,
+      // temperature: 0.3,
       experimental_telemetry: {
         isEnabled: true,
         functionId: 'completion-message-tool-summarization',

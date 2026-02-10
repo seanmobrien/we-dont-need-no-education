@@ -45,6 +45,7 @@ export const withIgnorePacks: NextConfigPlugin = <TArg extends NextConfig>(
         '@auth/drizzle-adapter',
         'next-auth',
         'ai',
+        '@compliance-theater/*',
       ],
     },
     serverExternalPackages: [

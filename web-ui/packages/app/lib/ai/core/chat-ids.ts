@@ -1,4 +1,8 @@
 import { log } from '@compliance-theater/logger';
+import { cryptoRandomBytes } from '@/lib/react-util/crypto-random-bytes';
+
+const CHAT_ID_LENGTH = 8;
+const CHAT_ID_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
 /**
  * Creates a seeded pseudo-random number generator function using a linear congruential generator algorithm.
@@ -31,10 +35,9 @@ export const notCryptoSafeKeyHash = (str: string): string => {
 };
 
 /**
- * Generates a chat ID using a simple seeded random function.
- * The generated ID is an 8-character string consisting of lowercase letters, digits, and special characters.
- * If a seed is provided, the same ID will be generated for the same seed.
- * This function is not cryptographically secure.
+ * Generates an 8-character chat ID.
+ * - With a seed: deterministic ID generation (not cryptographically secure).
+ * - Without a seed: cryptographically secure random ID generation.
  *
  * @param seed - Optional. The seed value to initialize the random number generator. If not provided, a random seed is used.
  * @returns An object containing the seed used and the generated chat ID string.
@@ -42,29 +45,61 @@ export const notCryptoSafeKeyHash = (str: string): string => {
 export const generateChatId = (
   seed?: number | string
 ): { seed: number; id: string } => {
-  // Does not need to be cryptographically secure, so we can use a simple seeded random function
   let actualSeed: number;
-  if (!seed) {
-    actualSeed = Math.floor(Math.random() * 1000000);
-  } else if (typeof seed === 'number') {
-    actualSeed = seed;
-  } else {
-    actualSeed = Number.parseInt(notCryptoSafeKeyHash(seed), 10);
-  }
-  const random = seededRandom(actualSeed);
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  let id = '';
-  for (let i = 0; i < 8; i++) {
-    const cb = chars[Math.floor(random() * chars.length)];
-    if (cb === undefined) {
-      log((l) => l.error('Chat ID generation failed', { seed: actualSeed }));
+
+  if (seed === undefined || seed === null) {
+    let id = '';
+    const unbiasedUpperBound =
+      Math.floor(256 / CHAT_ID_CHARS.length) * CHAT_ID_CHARS.length;
+
+    while (id.length < CHAT_ID_LENGTH) {
+      const bytes = cryptoRandomBytes(CHAT_ID_LENGTH - id.length);
+      for (let i = 0; i < bytes.length && id.length < CHAT_ID_LENGTH; i++) {
+        const byte = bytes[i];
+        if (byte === undefined || byte >= unbiasedUpperBound) {
+          continue;
+        }
+
+        const idx = byte % CHAT_ID_CHARS.length;
+        const next = CHAT_ID_CHARS[idx];
+        if (next === undefined) {
+          log((l) =>
+            l.error('Chat ID generation failed (secure random)', { idx, byte })
+          );
+          continue;
+        }
+        id += next;
+      }
     }
-    id += cb ?? '';
+
+    const seedBytes = cryptoRandomBytes(4);
+    const seedView = new DataView(
+      seedBytes.buffer,
+      seedBytes.byteOffset,
+      seedBytes.byteLength
+    );
+    actualSeed = seedView.getUint32(0);
+    return { seed: actualSeed, id };
   }
-  return {
-    seed: actualSeed,
-    id,
-  };
+
+  actualSeed =
+    typeof seed === 'number'
+      ? Math.trunc(seed)
+      : Number.parseInt(notCryptoSafeKeyHash(seed), 10);
+
+  const random = seededRandom(actualSeed);
+  let id = '';
+  for (let i = 0; i < CHAT_ID_LENGTH; i++) {
+    const idx = Math.floor(random() * CHAT_ID_CHARS.length);
+    const cb = CHAT_ID_CHARS[idx];
+    if (cb === undefined) {
+      log((l) => l.error('Chat ID generation failed', { seed: actualSeed, idx }));
+      continue;
+    }
+    id += cb;
+  }
+
+  return { seed: actualSeed, id };
 };
 
 /**
@@ -132,7 +167,7 @@ export const generateChatId = (
  */
 export const splitIds = (id: string): [string, string | undefined] => {
   if (!id) {
-    log((l) => l.warn('No ID provided to splitIds, returning emtpy values.'));
+    log((l) => l.warn('No ID provided to splitIds, returning empty values.'));
     return ['', undefined];
   }
   const splitIndex = id.indexOf(':');
