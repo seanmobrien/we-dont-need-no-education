@@ -98,6 +98,12 @@ const extractRequestParams = async (req: NextRequest) => {
   const { messages, id } = (await req.json()) ?? {};
   const modelFromRequest =
     req.headers.get('x-active-model') ?? env('NEXT_PUBLIC_DEFAULT_AI_MODEL');
+  const defaultModel = env('NEXT_PUBLIC_DEFAULT_AI_MODEL');
+  const model = isAiLanguageModelType(modelFromRequest)
+    ? modelFromRequest
+    : isAiLanguageModelType(defaultModel)
+      ? defaultModel
+      : 'hifi';
   const writeEnabled = req.headers.get('x-write-enabled') === 'true';
   const memoryDisabled = req.headers.get('x-memory-disabled') === 'true';
   const activePage = req.headers.get('x-active-page') === 'true';
@@ -112,9 +118,7 @@ const extractRequestParams = async (req: NextRequest) => {
     modelFromRequest,
     writeEnabled,
     memoryDisabled,
-    model: isAiLanguageModelType(modelFromRequest)
-      ? modelFromRequest
-      : env('NEXT_PUBLIC_DEFAULT_AI_MODEL'),
+    model,
   };
 };
 

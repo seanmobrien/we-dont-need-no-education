@@ -109,7 +109,7 @@ const buildRawInstance = () => {
   if (!raw.AUTH_KEYCLOAK_REDIRECT_URI) {
     raw.AUTH_KEYCLOAK_REDIRECT_URI = new URL(
       `/api/auth/callback/keycloak`,
-      process.env.NEXT_PUBLIC_HOSTNAME,
+      process.env.NEXT_PUBLIC_HOSTNAME ?? 'http://localhost:3000',
     ).toString();
   }
   return getMappedSource(raw);

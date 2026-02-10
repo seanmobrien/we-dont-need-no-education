@@ -17,6 +17,9 @@
       ],
       "@compliance-theater/typescript/*": [
         "../lib-typescript/dist/*"
+      ],
+      "@compliance-theater/env": [
+        "../lib-env/dist"
       ]
     },
     // Explicit types prevent accidental inclusion of @types packages (for
