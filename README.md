@@ -20,7 +20,26 @@ This platform combines a modern web interface with sophisticated AI-powered back
 
 ## Architecture
 
-### Frontend (`/web-ui/`)
+### Monorepo Structure
+
+This project uses a traditional monorepo structure with [Turborepo](https://turbo.build/) for efficient build orchestration. The Node.js frontend lives under `web-ui/` as a self-contained monorepo, while the Java backend is in `chat/`, maintaining clear separation between the two solutions. See [MONOREPO_GUIDE.md](./MONOREPO_GUIDE.md) for detailed migration information.
+
+```
+├── web-ui/              # Node.js monorepo (self-contained)
+│   ├── packages/
+│   │   └── app/        # Main Next.js frontend application
+│   ├── package.json    # Web UI workspace configuration
+│   ├── turbo.json      # Build orchestration
+│   ├── jest.config.mjs # Test configuration
+│   └── yarn.lock       # Dependency lock file
+├── chat/               # Java backend with AI processing
+├── db/                 # Database schema and migrations
+└── package.json        # Root (delegates to web-ui)
+```
+
+**Note**: The monorepo migration is in progress. Core libraries (`lib/*`) will be extracted into standalone packages under `web-ui/packages/` for better modularity and reusability.
+
+### Frontend (`/web-ui/packages/app/`)
 
 - **Framework**: Next.js 15.x with TypeScript
 - **UI Library**: Material UI with data grid components
@@ -56,8 +75,8 @@ This platform combines a modern web interface with sophisticated AI-powered back
 
 ```bash
 cd web-ui
-npm install
-npm run dev
+yarn install
+yarn dev
 ```
 
 ### Backend Setup
@@ -77,58 +96,27 @@ Create appropriate `.env` files with:
 - Redis connection details
 - Authentication secrets
 
-### Local Development Authentication Bypass
-
-⚠️ **CRITICAL SECURITY WARNING** ⚠️
-
-For local development convenience, this application supports bypassing authentication. This feature is **EXTREMELY DANGEROUS** and must be used with caution:
-
-#### Setup
-
-1. Set the `LOCAL_DEV_AUTH_BYPASS_USER_ID` environment variable to any user ID (e.g., "1", "123")
-2. The application will automatically authenticate all requests as this user
-3. JWT tokens are automatically minted for the bypass user
-
-#### Security Safeguards
-
-- **Localhost Only**: The bypass only works when running on localhost, 127.0.0.1, or local network addresses
-- **Automatic Validation**: The application validates the hostname and throws a scary error if not running locally
-- **No Production Use**: The bypass is completely disabled in production environments
-
-#### Example `.env.local` (for local development only)
-
-```bash
-# DANGER: Only use in local development!
-LOCAL_DEV_AUTH_BYPASS_USER_ID=123
-```
-
-#### ⚠️ NEVER DO THESE THINGS ⚠️
-
-- **NEVER** commit this variable set to any value in `.env` files
-- **NEVER** deploy with this variable set in production
-- **NEVER** set this variable on any non-localhost environment
-
-The application will detect and prevent misuse with aggressive error messages designed to protect against accidental production deployment.
-
-For more security information, see [SECURITY.md](./SECURITY.md).
-
 ## Project Structure
 
 ```
-├── web-ui/           # Next.js frontend application for victims and advocates
-├── chat/             # Java backend with AI processing for evidence analysis
-│   ├── core/         # Core utilities and shared functionality
-│   ├── scb-core/     # Victim advocacy core models and repositories
-│   ├── scb-embed/    # Document embedding and evidence search
-│   └── scb-chatbot/  # Main AI assistant for case building
-├── db/               # Database schema and migrations
-└── docs/             # Additional documentation
+├── web-ui/
+│   └── packages/
+│       └── app/       # Next.js frontend application for victims and advocates
+├── chat/              # Java backend with AI processing for evidence analysis
+│   ├── core/          # Core utilities and shared functionality
+│   ├── scb-core/      # Victim advocacy core models and repositories
+│   ├── scb-embed/     # Document embedding and evidence search
+│   └── scb-chatbot/   # Main AI assistant for case building
+├── db/                # Database schema and migrations
+├── package.json       # Root workspace configuration
+└── MONOREPO_GUIDE.md  # Detailed monorepo migration guide
 ```
 
 ## Module Documentation
 
+- [Monorepo Guide](./MONOREPO_GUIDE.md) - Comprehensive monorepo structure and migration guide
 - [Chat Backend README](./chat/README.md) - Comprehensive guide to the Java backend for evidence analysis
-- [Web UI README](./web-ui/README.md) - Frontend application documentation for victim advocacy interface
+- [Web App README](./web-ui/packages/app/README.md) - Frontend application documentation for victim advocacy interface
 - [Core Module](./chat/core/README.md) - Shared utilities and common functionality
 - [SCB Core](./chat/scb-core/README.md) - Core models and data access layer for case management
 - [SCB Embed](./chat/scb-embed/README.md) - Document embedding and evidence search functionality

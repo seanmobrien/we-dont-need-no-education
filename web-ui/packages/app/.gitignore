@@ -1,0 +1,10 @@
+# Test Output Logs\ntest_output.log
+(rsc)
+(ssr)
+(rsc)/**
+playwright-report
+
+# profile / performance files
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot

@@ -1,0 +1,124 @@
+import type { JWT } from '@auth/core/jwt';
+import type { Account } from '@auth/core/types';
+import type { AdapterUser } from '@auth/core/adapters';
+import { log } from '@compliance-theater/logger';
+import { decodeToken } from './utilities';
+import type { NextAuthUserWithAccountId } from './types';
+
+/**
+ * JWT callback used by NextAuth to shape the JWT sent to the client and stored
+ * in cookies. This module contains a single exported `jwt` function which acts
+ * as the NextAuth `jwt` callback. It is responsible for ensuring our custom
+ * application fields (notably `account_id`) are copied from the authenticated
+ * user object into the JWT so they are available in subsequent requests.
+ *
+ * Rationale:
+ * - NextAuth executes this callback whenever a session is created or updated.
+ * - The `token` parameter is the current JWT payload and will be returned
+ *   (possibly mutated) to be serialized into the cookie.
+ * - The `user` parameter is provided only on sign-in (or when the provider
+ *   returns a user object). We use it to copy app-specific fields into `token`.
+ *
+ * Security: Only copy values that are safe to send to the client. `account_id`
+ * is considered safe application metadata (non-secret numeric id) but avoid
+ * copying sensitive information into the JWT.
+ */
+export const jwt = async ({
+  token,
+  user,
+  account,
+}: {
+  /**
+   * The JWT payload (mutable). Fields added here are serialized and sent to
+   * the client. Use `token` to read or write values persisted in the session
+   * cookie.
+   */
+  token: JWT;
+  /**
+   * The user object returned by the authentication provider during sign-in.
+   * - When present, it can be an application-extended `NextAuthUserWithAccountId`
+   *   (our credentials provider sets `account_id`) or a generic `AdapterUser`.
+   * - It is `undefined` for subsequent callback invocations where only the
+   *   token is being refreshed/read.
+   */
+  user?: NextAuthUserWithAccountId | AdapterUser | null;
+  /**
+   * The account object associated with the user sign-in. Typically
+   * used to access provider-specific tokens.
+   */
+  account?: Account | null;
+}) => {
+  // 1. Initial Sign-In: Update token with account data
+  if (account && user) {
+    // We do NOT store access_token or refresh_token in the JWT Cookie anymore.
+    // They are stored in the DB (via Drizzle Adapter) and retrieved server-side in the session callback.
+    // token.access_token = account.access_token;
+    // token.refresh_token = account.refresh_token;
+
+    // Set a long-lived session expiry for the Cookie (e.g. 2 hours) to decouple it from Access Token expiry (5 mins).
+    // This allows the Middleware to pass authenticated (but potentially expired-access-token) users to the Server,
+    // where the session callback will handle the DB-based token refresh transparently.
+    const sessionDuration = 2 * 60 * 60; // 2 hours in seconds
+    token.expires_at = Math.floor(Date.now() / 1000) + sessionDuration;
+
+    // token.idToken = account.id_token;
+  }
+
+  // When a user is present (typically during sign-in), copy canonical ids
+  // and any application-specific metadata we want available in the JWT.
+  if (user) {
+    // Canonical NextAuth id - always copy this so token consumers can identify
+    // the authenticated principal without needing to fetch user records.
+    token.id = user.id;
+
+    // Our CredentialsProvider sets `account_id` on the user when available.
+    // We only copy it when the property exists and is truthy to avoid
+    // introducing `undefined`/`null` values into the token shape.
+    //
+    // Note: `account_id` is treated as non-sensitive application metadata.
+    if ('account_id' in user && !!user.account_id) {
+      token.account_id = user.account_id;
+    }
+
+    if (account?.access_token) {
+      try {
+        // Decode JWT payload using jose library via utility function
+        // Note: verify=false means no signature validation (decode only)
+        // For signature validation, set verify=true
+        const accessTokenPayload = (await decodeToken({
+          token: account.access_token,
+          verify: true,
+        })) as {
+          account_id?: number;
+          resource_access?: { [key: string]: string[] };
+        };
+
+        if (accessTokenPayload?.account_id) {
+          if (!token.account_id) {
+            token.account_id = accessTokenPayload.account_id;
+          }
+        }
+        if (accessTokenPayload.resource_access) {
+          token.resource_access = {
+            ...accessTokenPayload.resource_access,
+            ...token.resource_access,
+          };
+        }
+      } catch (decodeError) {
+        // Log but don't throw - gracefully handle invalid JWT format
+        log((l) =>
+          l.warn('Failed to decode access_token JWT payload:', decodeError)
+        );
+      }
+    }
+  }
+
+  // 2. Token Rotation Logic REMOVED
+  // We no longer handle token refresh in the JWT callback (Edge or Server).
+  // It is handled in the Session callback (Server-Only) using DB-backed tokens.
+  // This avoids the "Half-Open" state where Edge refreshes but cannot save to DB.
+
+  // Always return the (possibly mutated) token. NextAuth will serialize this
+  // value and include it in the session cookie / client-side JWT.
+  return token;
+};

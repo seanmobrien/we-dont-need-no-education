@@ -1,0 +1,51 @@
+{
+  "extends": "../../tsconfig.next.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@compliance-theater/logger": [
+        "../lib-logger/dist"
+      ],
+      "@compliance-theater/logger/*": [
+        "../lib-logger/dist/*"
+      ],
+      "@compliance-theater/typescript": [
+        "../lib-typescript/dist"
+      ],
+      "@compliance-theater/typescript/*": [
+        "../lib-typescript/dist/*"
+      ]
+    },
+    // Explicit types prevent accidental inclusion of @types packages (for
+    // example mocha) that collide with jest globals in the monorepo.
+    // We include node + jest here so tests and runtime node types are
+    // available while preventing other ambient test typings from leaking in.
+    "types": [
+      "node",
+      "jest"
+    ],
+    // Look for ambient types in both local and repo-level node_modules.
+    "typeRoots": [
+      "./node_modules/@types",
+      "../../node_modules/@types"
+    ]
+  },
+  "include": [
+    "**/*.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "./*.ts",
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+  ],
+  "exclude": [
+    "node_modules",
+    ".upstream/**/*.*",
+    "**/.upstream/**/*.*",
+    "submodules/**/*.*",
+    ".next"
+  ]
+}

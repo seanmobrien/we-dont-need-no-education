@@ -1,0 +1,66 @@
+# Dependency directories
+node_modules
+**/node_modules
+
+# Build outputs
+.next
+**/.next
+.turbo
+**/.turbo
+**/.github
+**/.upstream
+**/.yarn-cache
+**/test-results
+coverage
+**/coverage
+*.tsbuildinfo
+**/tsconfig.tsbuildinfo
+dist
+**/dist
+
+
+# Logs and diagnostics
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Editor and tooling
+.vscode
+.idea
+.DS_Store
+
+# Local env and secrets
+.env
+.env.*
+.env.local
+**/env.local
+**/.env
+*.local
+**/*.local
+
+# Git
+.git
+.gitignore
+.upstream
+
+# Cache
+.yarn-cache
+.pnpm-store
+
+# Tests
+coverage
+**/coverage
+**/__tests__
+**/tests
+**/__mocks__
+test-results
+
+
+# Assets not compiled or included in distribution package
+*.md
+**/*.md
+**/*.claude
+.agent
+.claude
+.github

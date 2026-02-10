@@ -1,0 +1,87 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    "**/*.local",
+    "**/.env",
+    "**/tsconfig.*",
+    "tsconfig.*",
+    "**/*.mjs",
+    ".yarn/**",
+    "patches/**",
+    "packages/app/scripts/**",
+    "packages/app/public/**",
+    "packages/app/instrument/**"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",        
+        "DATABASE_URL",
+        "FOR_STANDALONE",
+        "IS_BUILDING"
+      ]
+    },
+    "build:typescript": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",        
+        "DATABASE_URL",
+        "FOR_STANDALONE",
+        "IS_BUILDING"
+      ]
+    },
+    "clean:build": {
+      "cache": false,
+      "persistent": false,
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "debug": {
+      "cache": false,
+      "persistent": true
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "inputs": ["**/*.test.ts", "**/*.test.tsx", "__tests__/**/*"]
+    },
+    "test:unit": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "cache": false
+    },
+    "lint": {
+      "dependsOn": ["build:typescript"],
+      "outputs": []
+    }
+  }
+}

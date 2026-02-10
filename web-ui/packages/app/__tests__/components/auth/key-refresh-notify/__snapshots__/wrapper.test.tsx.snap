@@ -1,0 +1,70 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`KeyRefreshWrapper renders with default state snapshot 1`] = `
+<div>
+  <div>
+    Test child content
+  </div>
+  <div
+    class="MuiSnackbar-root MuiSnackbar-anchorOriginBottomLeft css-1ahi5tg-MuiSnackbar-root"
+    role="presentation"
+  >
+    <span
+      class="MuiBadge-root css-13xwjag-MuiBadge-root"
+      direction="up"
+      style="opacity: 1; transform: scale(1, 1); transition: opacity 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,transform 150ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;"
+    >
+      <div
+        class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation0 MuiAlert-root MuiAlert-colorInfo MuiAlert-standardInfo MuiAlert-standard css-1fw1u0o-MuiPaper-root-MuiAlert-root"
+        role="alert"
+        style="--Paper-shadow: none;"
+      >
+        <div
+          class="MuiAlert-icon css-vab54s-MuiAlert-icon"
+        >
+          <svg
+            aria-hidden="true"
+            class="MuiSvgIcon-root MuiSvgIcon-fontSizeInherit css-1ckov0h-MuiSvgIcon-root"
+            data-testid="InfoOutlinedIcon"
+            focusable="false"
+            viewBox="0 0 24 24"
+          >
+            <path
+              d="M11,9H13V7H11M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20, 12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10, 10 0 0,0 12,2M11,17H13V11H11V17Z"
+            />
+          </svg>
+        </div>
+        <div
+          class="MuiAlert-message css-zioonp-MuiAlert-message"
+        >
+          Loading session details...
+        </div>
+        <div
+          class="MuiAlert-action css-rgppqo-MuiAlert-action"
+        >
+          <button
+            aria-label="Close"
+            class="MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-sizeSmall css-38cjb0-MuiButtonBase-root-MuiIconButton-root"
+            tabindex="0"
+            title="Close"
+            type="button"
+          >
+            <div>
+              <span>
+                Mock Icon: 
+              </span>
+              <svg
+                data-testid="mui-icon"
+                font-size="small"
+              />
+            </div>
+          </button>
+        </div>
+      </div>
+      <span
+        class="MuiBadge-badge MuiBadge-standard MuiBadge-invisible MuiBadge-anchorOriginTopRight MuiBadge-anchorOriginTopRightRectangular MuiBadge-overlapRectangular MuiBadge-colorPrimary css-aikwdp-MuiBadge-badge"
+      />
+    </span>
+  </div>
+</div>
+`;

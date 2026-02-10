@@ -1,24 +1,5 @@
-# Rate retry configuration
-ARG RATE_RETRY_INTERVAL_MINUTES
-ARG NEXT_PUBLIC_HOSTNAME
-ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
-ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
-ARG NEXT_PUBLIC_FLAGSMITH_API_URL
-ARG NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
-ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
-ARG OTEL_SERVICE_NAME
-ARG OTEL_RESOURCE_ATTRIBUTES
-ARG AZURE_OPENAI_ENDPOINT
-ARG AZURE_AISEARCH_ENDPOINT
-ARG AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
-ARG AZURE_AISEARCH_POLICY_INDEX_NAME
-ARG AZURE_STORAGE_CONNECTION_STRING
-ARG AZURE_STORAGE_ACCOUNT_NAME
-ARG MEM0_API_HOST
-ARG MEM0_UI_HOST
-ARG MEM0_USERNAME
-
-FROM node:24-alpine AS base
+# syntax=docker/dockerfile:1.7
+# Multi-stage build aligned with the monorepo (web-ui root) and Next.js standalone output
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
@@ -38,10 +19,34 @@ ARG AZURE_STORAGE_ACCOUNT_NAME
 ARG MEM0_API_HOST
 ARG MEM0_UI_HOST
 ARG MEM0_USERNAME
+ARG BUILD_CACHE
+
+FROM node:25-alpine AS base
+
+ARG RATE_RETRY_INTERVAL_MINUTES
+ARG NEXT_PUBLIC_HOSTNAME
+ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
+ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
+ARG NEXT_PUBLIC_FLAGSMITH_API_URL
+ARG NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
+ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
+ARG OTEL_SERVICE_NAME
+ARG OTEL_RESOURCE_ATTRIBUTES
+ARG AZURE_OPENAI_ENDPOINT
+ARG AZURE_AISEARCH_ENDPOINT
+ARG AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
+ARG AZURE_AISEARCH_POLICY_INDEX_NAME
+ARG AZURE_STORAGE_CONNECTION_STRING
+ARG AZURE_STORAGE_ACCOUNT_NAME
+ARG MEM0_API_HOST
+ARG MEM0_UI_HOST
+ARG MEM0_USERNAME
+ARG BUILD_CACHE
 
 ENV PYTHONUNBUFFERED=1
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-# Install all required dependencies in one layer
+# System deps for canvas / fonts used by Next.js build
 RUN apk add --no-cache \
     libc6-compat \
     dcron \
@@ -59,8 +64,7 @@ RUN apk add --no-cache \
     pixman \
   && ln -sf python3 /usr/bin/python
 
-# Install dependencies only when needed
-FROM base AS deps
+FROM base AS pruner
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
@@ -68,7 +72,7 @@ ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
 ARG NEXT_PUBLIC_FLAGSMITH_API_URL
 ARG NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
-ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
+ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
 ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG AZURE_OPENAI_ENDPOINT
@@ -80,31 +84,67 @@ ARG AZURE_STORAGE_ACCOUNT_NAME
 ARG MEM0_API_HOST
 ARG MEM0_UI_HOST
 ARG MEM0_USERNAME
+ARG BUILD_CACHE
 
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+ENV FOR_STANDALONE=1
+
+WORKDIR /repo
+
+# Install turbo CLI for pruning (small global install avoids full node_modules)
+RUN npm install -g turbo@^2.8.3
+
+# Copy workspace to compute prune graph
+COPY --link=true . .
+
+# Produce a pruned workspace for the app package
+RUN turbo prune --scope=@compliance-theater/app --docker && \
+cp tsconfig.*.json out/full
+
+# Dependencies layer uses pruned workspace
+FROM base AS deps
 WORKDIR /app
 
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat dcron build-base cairo-dev pango-dev jpeg-dev giflib-dev fontconfig-dev freetype-dev curl python3 py3-pip pixman 
-  
-# Install dependencies based on the preferred package manager
-COPY --link=true package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+ARG RATE_RETRY_INTERVAL_MINUTES
+ARG NEXT_PUBLIC_HOSTNAME
+ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
+ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
+ARG NEXT_PUBLIC_FLAGSMITH_API_URL
+ARG NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
+ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
+ARG OTEL_SERVICE_NAME
+ARG OTEL_RESOURCE_ATTRIBUTES
+ARG AZURE_OPENAI_ENDPOINT
+ARG AZURE_AISEARCH_ENDPOINT
+ARG AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
+ARG AZURE_AISEARCH_POLICY_INDEX_NAME
+ARG AZURE_STORAGE_CONNECTION_STRING
+ARG AZURE_STORAGE_ACCOUNT_NAME
+ARG MEM0_API_HOST
+ARG MEM0_UI_HOST
+ARG MEM0_USERNAME
+ARG BUILD_CACHE
 
-# Rebuild the source code only when needed
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+
+# Copy pruned package manifests and lockfile
+COPY --link=true --from=pruner /repo/out/full/ ./
+COPY --link=true --from=pruner /repo/out/yarn.lock ./yarn.lock
+COPY --link=true --from=pruner /repo/.yarnrc.yml ./.yarnrc.yml
+COPY --link=true --from=pruner /repo/.yarn/ ./.yarn/
+
+RUN node .yarn/releases/yarn-4.12.0.cjs install --immutable
+
+# Build layer with pruned source
 FROM deps AS builder
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
-ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
 ARG NEXT_PUBLIC_FLAGSMITH_API_URL
 ARG NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
+ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
 ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG AZURE_OPENAI_ENDPOINT
@@ -116,22 +156,14 @@ ARG AZURE_STORAGE_ACCOUNT_NAME
 ARG MEM0_API_HOST
 ARG MEM0_UI_HOST
 ARG MEM0_USERNAME
+ARG BUILD_CACHE
 
 WORKDIR /app
 
-COPY --link=true --from=deps /app/node_modules ./node_modules
-COPY --link=true ./app ./app
-COPY --link=true ./components ./components
-COPY --link=true ./data-models ./data-models
-COPY --link=true ./drizzle ./drizzle
-COPY --link=true ./lib ./lib
-COPY --link=true ./types ./types
-COPY --link=true ./instrument ./instrument
-COPY --link=true ./scripts ./scripts
-COPY --link=true ./public ./public
-COPY --link=true ./*.ts ./*.mjs ./*.json ./*.lock ./*.production.local ./ 
+COPY --link=true --from=deps /app/ ./
 
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT
 ENV AZURE_AISEARCH_ENDPOINT=$AZURE_AISEARCH_ENDPOINT
 ENV AZURE_AISEARCH_DOCUMENTS_INDEX_NAME=$AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
@@ -141,50 +173,71 @@ ENV AZURE_STORAGE_ACCOUNT_NAME=$AZURE_STORAGE_ACCOUNT_NAME
 ENV OTEL_SERVICE_NAME=$OTEL_SERVICE_NAME
 ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
 ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
+ENV MEM0_API_HOST=$MEM0_API_HOST
+ENV MEM0_UI_HOST=$MEM0_UI_HOST
+ENV MEM0_USERNAME=$MEM0_USERNAME
+ENV FOR_STANDALONE=1
+ENV IS_BUILDING=1
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
 ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
 ENV NEXT_PUBLIC_FLAGSMITH_API_URL=$NEXT_PUBLIC_FLAGSMITH_API_URL
 ENV NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID=$NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
-ENV MEM0_API_HOST=$MEM0_API_HOST
-ENV MEM0_UI_HOST=$MEM0_UI_HOST
-ENV MEM0_USERNAME=$MEM0_USERNAME
-ENV FOR_STANDALONE=1
-ENV IS_BUILDING=1
+#ENV NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=$NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING
+ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 
-RUN \
-  --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE,env=NEXT_PUBLIC_MUI_LICENSE \
-  --mount=type=secret,id=AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING,env=AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING \
-  --mount=type=secret,id=AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING,env=AZURE_MONITOR_CONNECTION_STRING \
-  --mount=type=secret,id=REDIS_URL,env=REDIS_URL \
-  --mount=type=secret,id=REDIS_PASSWORD,env=REDIS_PASSWORD \
-  --mount=type=secret,id=DATABASE_URL,env=DATABASE_URL \
-  --mount=type=secret,id=AZURE_API_KEY,env=AZURE_API_KEY \
-  --mount=type=secret,id=AZURE_AISEARCH_KEY,env=AZURE_AISEARCH_KEY \
-  --mount=type=secret,id=AUTH_GOOGLE_SECRET,env=AUTH_GOOGLE_SECRET \
-  --mount=type=secret,id=AUTH_GOOGLE_APIKEY,env=AUTH_GOOGLE_APIKEY \
-  --mount=type=secret,id=AZURE_STORAGE_ACCOUNT_KEY,env=AZURE_STORAGE_ACCOUNT_KEY \
-  --mount=type=secret,id=AZURE_STORAGE_CONNECTION_STRING,env=AZURE_STORAGE_CONNECTION_STRING \
-  --mount=type=secret,id=AUTH_GOOGLE_ID,env=AUTH_GOOGLE_ID \
-  --mount=type=secret,id=OPENID_KEY_TEXT,env=OPENID_KEY_TEXT \
-  --mount=type=secret,id=FLAGSMITH_SDK_KEY,env=FLAGSMITH_SDK_KEY \
-  if [ -f yarn.lock ]; then yarn run build; \
-  elif [ -f package-lock.json ]; then npm run build; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
+  --mount=type=secret,id=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING \
+  --mount=type=secret,id=AZURE_MONITOR_CONNECTION_STRING \
+  --mount=type=secret,id=REDIS_URL \
+  --mount=type=secret,id=REDIS_PASSWORD \
+  --mount=type=secret,id=DATABASE_URL \
+  --mount=type=secret,id=AZURE_API_KEY \
+  --mount=type=secret,id=AZURE_AISEARCH_KEY \
+  --mount=type=secret,id=AUTH_GOOGLE_SECRET \
+  --mount=type=secret,id=AUTH_GOOGLE_APIKEY \
+  --mount=type=secret,id=AZURE_STORAGE_ACCOUNT_KEY \
+  --mount=type=secret,id=AZURE_STORAGE_CONNECTION_STRING \
+  --mount=type=secret,id=AUTH_GOOGLE_ID \
+  --mount=type=secret,id=OPENID_KEY_TEXT \
+  --mount=type=secret,id=FLAGSMITH_SDK_KEY \
+  SECRETS=/run/secrets; \
+  TMP_ENV="$(mktemp)"; \
+  add_var() { name="$1"; value="$2"; [ -n "$value" ] && printf "%s=%s\n" "$name" "$value" >> "$TMP_ENV"; }; \
+  read_secret() { name="$1"; file="$2"; eval "current=\${$name:-}"; [ -z "$current" ] && current="$(cat "$file" 2>/dev/null || true)"; add_var "$name" "$current"; }; \
+  read_secret NEXT_PUBLIC_MUI_LICENSE "$SECRETS/NEXT_PUBLIC_MUI_LICENSE"; \
+  read_secret AZURE_MONITOR_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
+  read_secret NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
+  read_secret AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
+  read_secret NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
+  read_secret DATABASE_URL "$SECRETS/DATABASE_URL"; \
+  read_secret AZURE_STORAGE_ACCOUNT_KEY "$SECRETS/AZURE_STORAGE_ACCOUNT_KEY"; \
+  read_secret AZURE_STORAGE_CONNECTION_STRING "$SECRETS/AZURE_STORAGE_CONNECTION_STRING"; \
+  read_secret AUTH_GOOGLE_ID "$SECRETS/AUTH_GOOGLE_ID"; \
+  read_secret OPENID_KEY_TEXT "$SECRETS/OPENID_KEY_TEXT"; \
+  read_secret REDIS_URL "$SECRETS/REDIS_URL"; \
+  read_secret REDIS_PASSWORD "$SECRETS/REDIS_PASSWORD"; \
+  read_secret AZURE_API_KEY "$SECRETS/AZURE_API_KEY"; \
+  read_secret AZURE_AISEARCH_KEY "$SECRETS/AZURE_AISEARCH_KEY"; \
+  read_secret AUTH_GOOGLE_SECRET "$SECRETS/AUTH_GOOGLE_SECRET"; \
+  read_secret AUTH_GOOGLE_APIKEY "$SECRETS/AUTH_GOOGLE_APIKEY"; \
+  read_secret FLAGSMITH_SDK_KEY "$SECRETS/FLAGSMITH_SDK_KEY"; \
+  set -a; [ -f "$TMP_ENV" ] && . "$TMP_ENV"; set +a; \
+  cp "$TMP_ENV" ./packages/app/.env.local; \
+  cp "$TMP_ENV" ./packages/app/.env.production.local; \
+  node .yarn/releases/yarn-4.12.0.cjs build; \
+  rm -f "$TMP_ENV" ./packages/app/.env.local ./packages/app/.env.production.local; \
+  if [ ! -d "./packages/app/.next/standalone" ]; then echo "Error: standalone build output missing" >&2; exit 1; fi
 
-RUN  rm -f .env.production.local
-
-# Production image, copy all the files and run next
 FROM base AS runner
+WORKDIR /app/packages/app
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
-ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
+ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
 ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG AZURE_OPENAI_ENDPOINT
@@ -197,31 +250,20 @@ ARG MEM0_API_HOST
 ARG MEM0_UI_HOST
 ARG MEM0_USERNAME
 
-LABEL co.obapps.vendor="OBrien Appplications"
+LABEL co.obapps.vendor="OBrien Applications"
 LABEL co.obapps.name="Compliance Tracker Web UI"
-LABEL org.opencontainers.image.description="A web UI for the Compliance Tracker application, which helps users track and manage compliance issues in educational institutions."
-LABEL org.opencontainers.image.authors="stopbullyingpriorlake@gmail.com"  
+LABEL org.opencontainers.image.description="A web UI for the Compliance Tracker application."
+LABEL org.opencontainers.image.authors="stopbullyingpriorlake@gmail.com"
 LABEL org.opencontainers.image.licenses="EJL-1.0"
 
-WORKDIR /app
-
-ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
-ENV NODE_ENV=production
-ENV FOR_STANDALONE=1
 ENV AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT
 ENV AZURE_AISEARCH_ENDPOINT=$AZURE_AISEARCH_ENDPOINT
 ENV AZURE_AISEARCH_DOCUMENTS_INDEX_NAME=$AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
 ENV AZURE_AISEARCH_POLICY_INDEX_NAME=$AZURE_AISEARCH_POLICY_INDEX_NAME
-ENV AZURE_STORAGE_CONNECTION_STRING=$AZURE_STORAGE_CONNECTION_STRING
 ENV AZURE_STORAGE_ACCOUNT_NAME=$AZURE_STORAGE_ACCOUNT_NAME
-ENV OTEL_SERVICE_NAME=$OTEL_SERVICE_NAME
-ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
+ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
-ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
-ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
 ENV MEM0_API_HOST=$MEM0_API_HOST
 ENV MEM0_UI_HOST=$MEM0_UI_HOST
 ENV MEM0_USERNAME=$MEM0_USERNAME
@@ -230,31 +272,29 @@ ENV HOSTNAME="0.0.0.0"
 
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 --shell /bin/sh nextjs \
-  && mkdir /app/scripts
+  && mkdir -p /app/scripts
 
-# Automatically leverage output traces to reduce image size
+WORKDIR /app
 
-COPY --link=true --from=builder /app/.next/standalone ./
-COPY --link=true --from=builder /app/.next/static ./.next/static
-COPY --link=true --from=builder /app/public ./public
+# Copy Next.js standalone output from the app workspace
+COPY --link=true --from=builder /app/packages/app/.next/standalone /app
+COPY --link=true --from=builder /app/packages/app/.next/static /app/packages/app/.next/static
+# NOTE: we only need one of these 2 copy statements, but not sure which one
+COPY --link=true --from=pruner /repo/packages/app/public /app/public
+COPY --link=true --from=pruner /repo/packages/app/public /app/packages/app/public
+COPY --link=true --from=pruner /repo/packages/app/scripts /app/scripts
 
-# Copy rate retry script
-COPY --link=true --from=builder /app/scripts/rate-retry-client.sh ./scripts/rate-retry-client.sh
+# Set up cron and write runtime env file (pulling from secrets when env is unset)
+RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs \
+  && crontab -u nextjs /etc/crontabs/nextjs \
+  && mkdir -p /var/log \
+  && chown nextjs:nodejs /var/log \
+  && chown -R nextjs:nodejs /app \
+  && find /app/scripts -type f -name '*.sh' -exec chmod +x {} + || true;
 
-# Set up cron for rate retry processing
-RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs
-RUN crontab -u nextjs /etc/crontabs/nextjs
-
-# Ensure log directory exists, set owner and execute modes
-RUN mkdir -p /var/log && chown nextjs:nodejs /var/log && chown -R nextjs:nodejs /app && chmod +x /app/scripts/*.sh
+WORKDIR /app/packages/app
 
 EXPOSE 3000
-
-# Expose debug port for Node.js inspector (when RUN_DEBUGGER=1)
 EXPOSE 9229
 
-# server.js is created by next build from the standalone output
-# https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
-# Start cron daemon as root, then switch to nextjs user to run the server
-# If RUN_DEBUGGER=1, start Node.js with inspector enabled
-CMD ["sh", "-c", "crond && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -c 'node --inspect=0.0.0.0:9229 server.js'; else su nextjs -c 'node server.js'; fi"]
+CMD ["sh", "-c", "crond && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -c \"node --inspect-brk=0.0.0.0:9229 server.js\"; else su nextjs -c \"node server.js\"; fi"]

@@ -1,0 +1,20 @@
+{
+  "name": "compliance-theater-repo-root",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "web-ui",
+    "web-ui/packages/*"
+  ],
+  "devDependencies": {
+    "@changesets/cli": "^2.29.8"
+  },
+  "scripts": {
+    "preinstall": "node preinstall.js",
+    "dev": "echo noop",
+    "build": "echo noop",
+    "test": "echo noop",
+    "lint": "echo noop"
+  },
+  "packageManager": "yarn@4.12.0"
+}
