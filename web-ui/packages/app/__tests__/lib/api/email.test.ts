@@ -1,4 +1,4 @@
-jest.mock('@/lib/send-api-request');
+jest.mock('@compliance-theater/send-api-request');
 jest.mock('@/lib/site-util/url-builder');
 
 import {
