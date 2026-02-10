@@ -1007,6 +1007,7 @@ __metadata:
     "@opentelemetry/api-logs": "npm:0.57.2"
     "@types/node": "npm:^24.0.0"
     jest: "npm:^30.0.5"
+    mitt: "npm:^3.0.1"
     pino: "npm:^9.6.0"
     pino-pretty: "npm:^13.0.0"
     rimraf: "npm:^6.1.2"
