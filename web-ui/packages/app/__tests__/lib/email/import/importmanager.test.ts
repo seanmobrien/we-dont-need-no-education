@@ -24,7 +24,7 @@ import { LoggedError } from '@compliance-theater/logger';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { query, queryExt } from '@/lib/neondb';
-import { sendApiRequest } from '@/lib/send-api-request';
+import { sendApiRequest } from '@compliance-theater/send-api-request';
 import {
   ICancellablePromise,
   ICancellablePromiseExt,

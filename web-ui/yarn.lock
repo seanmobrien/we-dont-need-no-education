@@ -876,6 +876,7 @@ __metadata:
     "@badgateway/oauth2-client": "npm:^3.3.1"
     "@compliance-theater/env": "workspace:*"
     "@compliance-theater/logger": "workspace:*"
+    "@compliance-theater/send-api-request": "workspace:*"
     "@compliance-theater/typescript": "workspace:*"
     "@emotion/cache": "npm:^11.14.0"
     "@emotion/react": "npm:^11.14.0"
@@ -1028,6 +1029,22 @@ __metadata:
     rimraf: "npm:^6.1.2"
     ts-jest: "npm:^29.3.4"
     typescript: "npm:^5"
+  languageName: unknown
+  linkType: soft
+
+"@compliance-theater/send-api-request@workspace:*, @compliance-theater/send-api-request@workspace:packages/lib-send-api-request":
+  version: 0.0.0-use.local
+  resolution: "@compliance-theater/send-api-request@workspace:packages/lib-send-api-request"
+  dependencies:
+    "@compliance-theater/logger": "workspace:*"
+    "@compliance-theater/typescript": "workspace:*"
+    "@types/node": "npm:^24.0.0"
+    jest: "npm:^30.0.5"
+    rimraf: "npm:^6.1.2"
+    ts-jest: "npm:^29.3.4"
+    typescript: "npm:^5"
+  peerDependencies:
+    next: ^15.0.0
   languageName: unknown
   linkType: soft
 

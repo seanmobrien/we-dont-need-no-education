@@ -21,6 +21,7 @@ const config = {
     '^@compliance-theater/logger(.*)$': '<rootDir>/../lib-logger/src$1', // Resolve workspace logger package for tests
     '^@compliance-theater/typescript(.*)$': '<rootDir>/../lib-typescript/src$1', // Resolve workspace TS utils package for tests
     '^@compliance-theater/env(.*)$': '<rootDir>/../lib-env/src$1', // Resolve workspace TS utils package for tests
+    '^@compliance-theater/send-api-request(.*)$': '<rootDir>/../lib-send-api-request/src$1', // Resolve workspace send-api-request package for tests
   },
 };
 

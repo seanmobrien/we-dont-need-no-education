@@ -1,0 +1,47 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@compliance-theater/logger": [
+        "../lib-logger/dist"
+      ],
+      "@compliance-theater/logger/*": [
+        "../lib-logger/dist/*"
+      ],
+      "@compliance-theater/typescript": [
+        "../lib-typescript/dist"
+      ],
+      "@compliance-theater/typescript/*": [
+        "../lib-typescript/dist/*"
+      ]
+    },
+    "noEmit": false,
+    "types": [
+      "node",
+      "jest"
+    ]
+  },
+  "include": [
+    "src/**/*.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+  "references": [
+    {
+      "path": "../lib-logger"
+    },
+    {
+      "path": "../lib-typescript"
+    }
+  ]
+}

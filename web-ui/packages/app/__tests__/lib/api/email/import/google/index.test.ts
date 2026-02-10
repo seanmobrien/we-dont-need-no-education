@@ -1,4 +1,4 @@
-jest.mock('@/lib/send-api-request');
+jest.mock('@compliance-theater/send-api-request');
 jest.mock('@/lib/site-util/url-builder');
 
 import {
@@ -9,7 +9,7 @@ import {
 import {
   sendApiRequest,
   apiRequestHelperFactory,
-} from '@/lib/send-api-request';
+} from '@compliance-theater/send-api-request';
 import siteMap from '@/lib/site-util/url-builder';
 
 const apiHelper = {

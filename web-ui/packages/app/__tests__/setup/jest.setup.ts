@@ -101,7 +101,7 @@ jest.mock('@compliance-theater/env', () => {
 
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
-import { sendApiRequest } from '@/lib/send-api-request';
+import { sendApiRequest } from '@compliance-theater/send-api-request';
 
 import 'jest';
 import '@testing-library/jest-dom';
