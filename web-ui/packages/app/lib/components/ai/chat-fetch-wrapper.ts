@@ -6,7 +6,7 @@ import {
 } from '@tanstack/react-query';
 import { log } from '@compliance-theater/logger';
 import { useCallback } from 'react';
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import { fetch } from '@/lib/nextjs-util/fetch';
 
 /**

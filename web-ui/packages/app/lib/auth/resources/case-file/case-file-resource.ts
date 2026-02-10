@@ -1,4 +1,4 @@
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import { log, LoggedError } from '@compliance-theater/logger';
 import type { NextRequest } from 'next/server';
 import { getRequestTokens } from '../../access-token';

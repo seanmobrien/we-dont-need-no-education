@@ -6,7 +6,7 @@ import {
 } from '@/lib/ai/mem0/memoryclient-factory';
 import { getMemoryHealthCache } from '@/lib/api/health/memory';
 import { checkDatabaseHealth } from '@/lib/api/health/database';
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import { LoggedError } from '@compliance-theater/logger';
 import { fromRequest } from '@/lib/auth/impersonation';
 import { MemoryHealthCheckResponse } from '@/lib/ai/mem0/types/health-check';

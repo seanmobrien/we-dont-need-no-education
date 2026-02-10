@@ -89,7 +89,7 @@ if (typeof window !== 'undefined') {
 
 import dotenv from 'dotenv';
 
-jest.mock('@/lib/site-util/env', () => {
+jest.mock('@compliance-theater/env', () => {
   return {
     env: jest.fn((key: string) => {
       return process.env[key] || '';

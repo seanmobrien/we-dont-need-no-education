@@ -20,6 +20,7 @@ const config = {
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports    
     '^@compliance-theater/logger(.*)$': '<rootDir>/../lib-logger/src$1', // Resolve workspace logger package for tests
     '^@compliance-theater/typescript(.*)$': '<rootDir>/../lib-typescript/src$1', // Resolve workspace TS utils package for tests
+    '^@compliance-theater/env(.*)$': '<rootDir>/../lib-env/src$1', // Resolve workspace TS utils package for tests
   },
 };
 

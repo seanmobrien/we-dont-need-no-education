@@ -36,7 +36,7 @@ import { parse as parseHtml } from 'node-html-parser';
 import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
 import { CryptoService } from '@/lib/site-util/auth/crypto-service';
 import { getRedisClient } from '@/lib/redis-client';
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import { SimpleRateLimiter } from '@/lib/react-util/simple-rate-limiter';
 import { SimpleCircuitBreaker } from '@/lib/react-util/simple-circuit-breaker';
 import type {

@@ -11,7 +11,7 @@ import { splitIds, generateChatId } from '@/lib/ai/core/chat-ids';
 import { getRetryErrorInfo } from '@/lib/ai/chat/error-helpers';
 import { getUserToolProviderCache } from '@/lib/ai/mcp/cache';
 import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import { auth } from '@/auth';
 import { type NextRequest, NextResponse } from 'next/server';
 import { log, LoggedError } from '@compliance-theater/logger';
@@ -98,6 +98,12 @@ const extractRequestParams = async (req: NextRequest) => {
   const { messages, id } = (await req.json()) ?? {};
   const modelFromRequest =
     req.headers.get('x-active-model') ?? env('NEXT_PUBLIC_DEFAULT_AI_MODEL');
+  const defaultModel = env('NEXT_PUBLIC_DEFAULT_AI_MODEL');
+  const model = isAiLanguageModelType(modelFromRequest)
+    ? modelFromRequest
+    : isAiLanguageModelType(defaultModel)
+      ? defaultModel
+      : 'hifi';
   const writeEnabled = req.headers.get('x-write-enabled') === 'true';
   const memoryDisabled = req.headers.get('x-memory-disabled') === 'true';
   const activePage = req.headers.get('x-active-page') === 'true';
@@ -112,9 +118,7 @@ const extractRequestParams = async (req: NextRequest) => {
     modelFromRequest,
     writeEnabled,
     memoryDisabled,
-    model: isAiLanguageModelType(modelFromRequest)
-      ? modelFromRequest
-      : env('NEXT_PUBLIC_DEFAULT_AI_MODEL'),
+    model,
   };
 };
 

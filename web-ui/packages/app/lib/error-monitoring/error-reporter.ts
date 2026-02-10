@@ -10,7 +10,7 @@ import {
   IContextEnricher,
   ErrorReportResult,
 } from './types';
-import { isRunningOnEdge } from '../site-util/env';
+import { isRunningOnEdge } from '@compliance-theater/env';
 import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
 import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';

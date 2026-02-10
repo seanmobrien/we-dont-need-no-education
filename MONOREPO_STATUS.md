@@ -42,24 +42,24 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
 
 ## What Still Needs to Be Done
 
-### 🔧 Phase 2: Extract Core Library Packages (0% Complete)
+### 🔧 Phase 2: Extract Core Library Packages (18% Complete)
 
 **Priority Order** (extract in this sequence to respect dependencies):
 
 1. **`web-ui/packages/lib-logger`** ← `web-ui/packages/app/lib/logger`
    - No dependencies, needed by almost everything
-   - Estimated: 2-3 hours
+   - ✅ **COMPLETED**
   
 2. **`web-ui/packages/lib-env` ← `web-ui/packages/app/lib/site-util/env`
    - No dependencies, needed by almost everything
-   - Functionality will need to be slightly reworked for maximum effectiveness.  Specifically
-     - Each library that references site-util/env should be able to define a minimal schema for the environment variables it cares about
-     - Should continue to get the same intellisense / client vs. server schema / Zod-based validation of env vars at runtime we cuurently have
-   - Estimated: 2-3 hours
+   - ✅ **COMPLETED**
+   - Refactored to remove hard dependencies on AI types and react-util
+   - Moved `isTruthy` utility into env package
+   - All imports updated to use `@compliance-theater/env`
 
 3. **`web-ui/packages/lib-typescript`** ← `web-ui/packages/app/lib/typescript`
-   - No dependencies, utility types
-   - Estimated: 1-2 hours
+   - No dependencies, needed by almost everything
+   - ✅ **COMPLETED**
 
 4. **`web-ui/packages/lib-send-api-request`** ← `web-ui/packages/app/lib/send-api-request`
    - Depends on logger

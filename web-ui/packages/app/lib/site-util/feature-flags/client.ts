@@ -3,7 +3,7 @@ import type { IFlagsmith } from 'flagsmith';
 import { type KnownFeatureType, isKnownFeatureType } from './known-feature';
 import { AllFeatureFlagsDefault } from './known-feature-defaults';
 
-import { env } from '../env';
+import { env } from '@compliance-theater/env';
 import { LoggedError } from '@compliance-theater/logger';
 import type { FeatureFlagValueType } from './types';
 import { extractFlagValue } from './util';

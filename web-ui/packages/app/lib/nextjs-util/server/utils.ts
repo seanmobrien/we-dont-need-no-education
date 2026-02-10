@@ -1,5 +1,5 @@
 import { errorResponseFactory } from './error-response/index';
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
 import { startup } from '@/lib/site-util/app-startup';
 import type { NextRequest, NextResponse } from 'next/server';

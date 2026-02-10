@@ -4,7 +4,7 @@ import {
   extractParams,
 } from '@/lib/nextjs-util/server/utils';
 import { BlobServiceClient } from '@azure/storage-blob';
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import { log } from '@compliance-theater/logger';
 import { EmailAttachmentDrizzleRepository } from '@/lib/api/attachment';
 

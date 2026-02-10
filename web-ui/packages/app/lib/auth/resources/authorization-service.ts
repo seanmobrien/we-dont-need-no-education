@@ -8,7 +8,7 @@
  * @module lib/auth/resources/authorization-service
  */
 
-import { env } from '@/lib/site-util/env';
+import { env } from '@compliance-theater/env';
 import { fetch } from '@/lib/nextjs-util/server';
 import { LoggedError, log } from '@compliance-theater/logger';
 import { decodeToken } from '../utilities';

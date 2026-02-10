@@ -15,7 +15,7 @@ import {
 } from './known-feature-defaults';
 
 import { globalSingleton } from '@compliance-theater/typescript';
-import { env } from '../env';
+import { env } from '@compliance-theater/env';
 import { LoggedError, log } from '@compliance-theater/logger';
 import { extractFlagValue } from './util';
 

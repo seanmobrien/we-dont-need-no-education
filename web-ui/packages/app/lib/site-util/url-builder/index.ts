@@ -5,7 +5,7 @@ export type {
   UrlBuilderInfo,
   UrlMap,
 } from './_types';
-import { env } from '../env';
+import { env } from '@compliance-theater/env';
 import { mappedUrlBuilderFactory } from './_from-map';
 
 export { mappedUrlBuilderFactory };

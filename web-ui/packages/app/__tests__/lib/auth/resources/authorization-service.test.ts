@@ -6,7 +6,7 @@ import { decodeToken } from '@/lib/auth/utilities';
 
 jest.mock('@/lib/nextjs-util/server');
 jest.mock('@/lib/auth/utilities');
-jest.mock('@/lib/site-util/env', () => ({
+jest.mock('@compliance-theater/env', () => ({
   env: jest.fn((key) => {
     if (key === 'AUTH_KEYCLOAK_ISSUER') return 'http://keycloak/realm';
     if (key === 'AUTH_KEYCLOAK_CLIENT_ID') return 'client-id';
