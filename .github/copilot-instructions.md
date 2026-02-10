@@ -26,12 +26,16 @@ This repository contains a comprehensive AI-powered advocacy platform designed t
 
 ## Repository Structure
 
-- `web-ui/`: Next.js 15 frontend with TypeScript, Material UI, and AI chat interface
+- `web-ui/`: Monorepo containing Next.js 15 frontend with TypeScript, Material UI, and AI chat interface
+  - `packages/`
+    - `app`: Next.js front-end web application
+    - `lib-typescript`: Shared TypeScript utility library
+    - `lib-logger`: Logging utility library
 - `chat/`: Java 21 backend with Maven multi-module architecture, LangChain4j integration
 - `db/`: PostgreSQL database schema and migration files
-- `copilot-instructions.md`: Comprehensive development guidelines (reference for detailed patterns)
+- `.github/copilot-instructions.md`: Comprehensive development guidelines (this file)
 
 ## Key Technologies
 
-- **Frontend**: See [web-ui/instructions/copilot-instructions.md](web-ui/instructions/copilot-instructions.md) for general patterns and [web-ui/instructions/typescript-react.instructions.md](web-ui/instructions/typescript-react.instructions.md) for React-specific guidelines
-- **Backend**: See [chat/instructions/copilot-instructions.md](chat/instructions/copilot-instructions.md)
+- **Frontend**: See [instructions/web-ui/copilot-instructions.md](instructions/web-ui/copilot-instructions.md) for general patterns and [instructions/web-ui/typescript-react.instructions.md](./instructions/web-ui/typescript-react.instructions.md) for React-specific guidelines
+- **Backend**: See [instructions/java.md](instructions/java.md)
