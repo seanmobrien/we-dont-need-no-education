@@ -137,7 +137,7 @@ describe('DefaultImportManager', () => {
       expect(result).toEqual({
         success: false,
         message: 'Test error',
-        error: expect.any(Error),
+        error: expect.any(LoggedError),
       });
     });
   });

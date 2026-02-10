@@ -88,7 +88,7 @@ export const getStackTrace = ({
 }: { skip?: number; max?: number; myCodeOnly?: boolean } = {}): string => {
   const originalStackFrames = new Error().stack?.split('\n') ?? [];
   let stackFrames = [...originalStackFrames];
-  if (myCodeOnly && stackFrames) {
+  if (myCodeOnly && stackFrames.length > 0) {
     const mustNotInclude = [
       'node_modules',
       'internal/',

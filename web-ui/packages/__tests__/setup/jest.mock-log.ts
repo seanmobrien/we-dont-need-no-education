@@ -46,21 +46,14 @@ jest.mock('@compliance-theater/logger/core', () => {
 jest.mock('@compliance-theater/logger', () => {
   const originalModule = jest.requireActual('@compliance-theater/logger');
   
-  class MockLoggedError extends originalModule.LoggedError
-  {
-    constructor(
-      message: any,
-      options?: any
-    ){
-      super(message, options);
-    }
-    static subscribeToErrorReports = jest.fn(originalModule.LoggedError.subscribeToErrorReports);
-    static unsubscribeFromErrorReports = jest.fn(originalModule.LoggedError.unsubscribeFromErrorReports);
-    static clearErrorReportSubscriptions = jest.fn(originalModule.LoggedError.clearErrorReportSubscriptions);
-    static isLoggedError = jest.fn(originalModule.LoggedError.isLoggedError);
-    static buildMessage = jest.fn(originalModule.LoggedError.buildMessage);
-    static isTurtlesAllTheWayDownBaby = jest.fn(originalModule.LoggedError.isTurtlesAllTheWayDownBaby)
-  }
+  // Spy on static methods instead of replacing the class to preserve instanceof behavior
+  const LoggedErrorWithSpies = originalModule.LoggedError;
+  jest.spyOn(LoggedErrorWithSpies, 'subscribeToErrorReports');
+  jest.spyOn(LoggedErrorWithSpies, 'unsubscribeFromErrorReports');
+  jest.spyOn(LoggedErrorWithSpies, 'clearErrorReportSubscriptions');
+  jest.spyOn(LoggedErrorWithSpies, 'isLoggedError');
+  jest.spyOn(LoggedErrorWithSpies, 'buildMessage');
+  jest.spyOn(LoggedErrorWithSpies, 'isTurtlesAllTheWayDownBaby');
 
   return {
     ...originalModule,
@@ -69,11 +62,11 @@ jest.mock('@compliance-theater/logger', () => {
     log: jest.fn((cb: (l: LoggerInstance) => void) => cb(getLogger())),
     errorLogFactory: jest.fn((x) => x),
     simpleScopedLogger: jest.fn(() => getLogger()),
-    LoggedError: MockLoggedError
+    LoggedError: LoggedErrorWithSpies
   };
 });
 
-import { log, LoggedError, LoggedErrorOptions } from '@compliance-theater/logger';
+import { LoggedError } from '@compliance-theater/logger';
 import { logger } from '@compliance-theater/logger/core';
 import { withJestTestExtensions } from '../jest.test-extensions';
 

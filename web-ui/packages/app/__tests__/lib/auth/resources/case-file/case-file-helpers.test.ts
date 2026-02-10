@@ -71,6 +71,6 @@ describe('getAccessibleUserIds', () => {
     const error = new Error('Network error');
     mockGetUserEntitlements.mockRejectedValue(error);
 
-    await expect(getAccessibleUserIds(mockToken)).rejects.toThrow();
+    await expect(getAccessibleUserIds(mockToken)).rejects.toThrow(LoggedError);
   });
 });

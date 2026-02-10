@@ -1,5 +1,4 @@
 export { isError, isRecord } from './utility-methods';
-// export { LoggedError } from '@compliance-theater/logger';
 
 // Import error types for type guards
 import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/abort-chat-message-request-error';
