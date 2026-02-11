@@ -91,7 +91,10 @@ const instrumentServer = () => {
     return;
   }
 
-  const connStr = process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING;
+  const connStr = process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING    
+    ?? process.env.AZURE_MONITOR_CONNECTION_STRING;
+  console.info(`[otel] Azure Monitor Connection String: [${connStr}]`);
+
 
   // Skip instrumentation in development if no valid connection string
   if (
@@ -108,17 +111,20 @@ const instrumentServer = () => {
   };
   const traceExporter = new UrlFilteredSpanExporter(
     new ChunkingTraceExporter(
-      new AzureMonitorTraceExporter({ connectionString: connStr }),
+      new AzureMonitorTraceExporter({ 
+        connectionString: connStr,        
+        //connectionString: connStr 
+      }),
       { maxChunkChars: 8000, keepOriginalKey: false },
     ),
     urlFilter,
   );
   const metricExporter = new AzureMonitorMetricExporter({
-    connectionString: connStr ?? process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING ?? process.env.AZURE_MONITOR_CONNECTION_STRING,
+    connectionString: connStr,
   });
   const logExporter = new UrlFilteredLogExporter(
     new ChunkingLogExporter(
-      new AzureMonitorLogExporter({ connectionString: connStr ?? process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING ?? process.env.AZURE_MONITOR_CONNECTION_STRING }),
+      new AzureMonitorLogExporter({ connectionString: connStr }),
       { maxChunkChars: 8000, keepOriginalKey: false },
     ),
     urlFilter,
