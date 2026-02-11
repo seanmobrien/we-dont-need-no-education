@@ -5,10 +5,10 @@ import type { LikeNextRequest, LikeNextResponse } from './nextjs-types';
 export const isRequestOrApiRequest = (req: unknown): req is LikeNextRequest =>
   typeof req === 'object' &&
   !!req &&
-  'body' in req &&
-  typeof req.body === 'object' &&
   'method' in req &&
-  typeof req.method === 'string';
+  typeof (req as { method?: unknown }).method === 'string' &&
+  'headers' in req &&
+  typeof (req as { headers?: unknown }).headers === 'object';
 
 export const isNextApiRequest = (req: unknown): req is NextApiRequest =>
   isRequestOrApiRequest(req) &&
