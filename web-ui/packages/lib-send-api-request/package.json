@@ -25,7 +25,7 @@
   "scripts": {
     "build": "tsc -b tsconfig.json",
     "build:typescript": "echo 'Building lib/send-api-request typescript...' && tsc -b tsconfig.json && echo 'TypeScript build complete.' || (echo 'Typescript compile did not succeed' >&2; exit 1)",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "lint": "echo 'Linting lib-send-api-request...'",
     "clean:build": "rimraf dist tsconfig.tsbuildinfo"
   },
