@@ -8,7 +8,7 @@ jest.unmock('@opentelemetry/sdk-trace-base');
 jest.mock('@/lib/neondb');
 jest.mock('google-auth-library');
 jest.mock('googleapis');
-jest.mock('@/lib/send-api-request');
+jest.mock('@compliance-theater/send-api-request');
 jest.mock('@/lib/api/email/import/google');
 
 jest.mock('@/lib/email/import/google/managermapfactory');
@@ -24,7 +24,6 @@ import { LoggedError } from '@compliance-theater/logger';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { query, queryExt } from '@/lib/neondb';
-import { sendApiRequest } from '@/lib/send-api-request';
 import {
   ICancellablePromise,
   ICancellablePromiseExt,

@@ -4,6 +4,14 @@ import baseConfig from './__tests__/shared/jest.config-shared.mjs';
 const config = {
   ...baseConfig,
   displayName: "Libraries: logger",
+  preset: "ts-jest",
+  testEnvironment: "node",
+  rootDir: ".",
+  moduleNameMapper: {
+    ...baseConfig.moduleNameMapper,
+    "^@compliance-theater/logger/core$": "<rootDir>/src/core",
+    "^@compliance-theater/logger(.*)$": "<rootDir>/src$1",
+  },
 };
 
 export default config;

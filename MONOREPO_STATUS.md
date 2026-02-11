@@ -42,7 +42,7 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
 
 ## What Still Needs to Be Done
 
-### 🔧 Phase 2: Extract Core Library Packages (18% Complete)
+### 🔧 Phase 2: Extract Core Library Packages (36% Complete)
 
 **Priority Order** (extract in this sequence to respect dependencies):
 
@@ -62,8 +62,11 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
    - ✅ **COMPLETED**
 
 4. **`web-ui/packages/lib-send-api-request`** ← `web-ui/packages/app/lib/send-api-request`
-   - Depends on logger
-   - Estimated: 2 hours
+   - Depends on logger, typescript
+   - ✅ **COMPLETED**
+   - Copied minimal Next.js utilities (getHeaderValue, guards, types) to avoid dependency on un-extracted nextjs-util
+   - All 11 imports updated to use `@compliance-theater/send-api-request`
+   - Tests passing, lint clean
 
 5. **`web-ui/packages/lib-database`** ← merge:
    - `web-ui/packages/app/drizzle/`

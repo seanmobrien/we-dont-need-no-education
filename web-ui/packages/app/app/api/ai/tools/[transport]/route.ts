@@ -5,7 +5,7 @@ import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { createMcpHandler } from 'mcp-handler';
 import { KnownScopeIndex, KnownScopeValues } from '@/lib/auth/utilities';
 import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
-import { ApiRequestError } from '@/lib/send-api-request';
+import { ApiRequestError } from '@compliance-theater/send-api-request';
 import type { NextRequest } from 'next/server';
 // tool imports
 import {

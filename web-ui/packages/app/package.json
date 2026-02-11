@@ -57,6 +57,7 @@
     "@badgateway/oauth2-client": "^3.3.1",
     "@compliance-theater/env": "workspace:*",
     "@compliance-theater/logger": "workspace:*",
+    "@compliance-theater/send-api-request": "workspace:*",
     "@compliance-theater/typescript": "workspace:*",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",

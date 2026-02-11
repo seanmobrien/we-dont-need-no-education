@@ -2,7 +2,11 @@ import { ICancellablePromiseExt } from '@compliance-theater/typescript';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
 import { UrlObject } from 'url';
-import { SiteRoute } from '../site-util/url-builder/_types';
+import type { Route } from 'next';
+
+// Type for Next.js routes
+export type SiteRouteType = string;
+export type SiteRoute<T extends SiteRouteType = SiteRouteType> = Route<T>;
 
 /**
  * Represents the parameters required for making an API request.

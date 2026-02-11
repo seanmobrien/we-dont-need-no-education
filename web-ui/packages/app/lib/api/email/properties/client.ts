@@ -12,7 +12,7 @@ import siteMap from '@/lib/site-util/url-builder';
 import {
   apiRequestHelperFactory,
   ApiRequestHelper,
-} from '@/lib/send-api-request';
+} from '@compliance-theater/send-api-request';
 import { ICancellablePromiseExt } from '@compliance-theater/typescript';
 
 const apiRequest = <TResult>(

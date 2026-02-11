@@ -5,9 +5,9 @@ import type {
   DeleteApiRequestParams,
   ReadApiRequestParams,
   WriteApiRequestParams,
-} from '@/lib/send-api-request/types';
+} from '@compliance-theater/send-api-request';
 
-const { ApiRequestError } = jest.requireActual('/lib/send-api-request');
+const { ApiRequestError } = jest.requireActual('@compliance-theater/send-api-request');
 
 const sendApiRequest = jest.fn((x) => {
   return Promise.resolve({});
