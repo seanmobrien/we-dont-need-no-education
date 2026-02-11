@@ -9,7 +9,7 @@ import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelper
 
 import type { ObjectRepository } from '../_types';
 import { AbstractObjectRepository } from '../abstractObjectRepository';
-import { drizDbWithInit, schema } from '@compliance-theater/database';
+import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
 
 const mapRecordToSummary = (record: Record<string, unknown>) => ({
   threadId: Number(record.thread_id),

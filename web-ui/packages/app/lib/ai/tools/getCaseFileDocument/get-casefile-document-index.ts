@@ -1,4 +1,4 @@
-import { drizDb } from '@compliance-theater/database';
+import { drizDb } from '@compliance-theater/database/orm';
 import { LoggedError } from '@compliance-theater/logger';
 import { DocumentResourceIndex } from '../documentResource';
 import { DocumentIndexResourceToolResult } from '../types';

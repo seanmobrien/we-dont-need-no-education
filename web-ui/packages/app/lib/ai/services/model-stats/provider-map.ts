@@ -18,7 +18,7 @@ import {
   type ProvidersType,
   type DbDatabaseType,
   schema,
-} from '@compliance-theater/database';
+} from '@compliance-theater/database/orm';
 import { LoggedError, log } from '@compliance-theater/logger';
 import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
 import { isKeyOf } from '@compliance-theater/typescript';

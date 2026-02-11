@@ -1,4 +1,4 @@
-import { drizDbWithInit } from '@compliance-theater/database';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
 import {
   ObjectRepository,
   DrizzleRepositoryConfig,

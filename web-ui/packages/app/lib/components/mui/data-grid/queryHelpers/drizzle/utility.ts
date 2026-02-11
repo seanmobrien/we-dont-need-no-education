@@ -1,4 +1,4 @@
-import { schema } from '@compliance-theater/database';
+import { schema } from '@compliance-theater/database/orm';
 import { isKeyOf } from '@compliance-theater/typescript';
 import { toCamelCase } from 'drizzle-orm/casing';
 import { PgColumn, PgTable, TableConfig } from 'drizzle-orm/pg-core';

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { drizDbWithInit } from '@compliance-theater/database';
-import { schema } from '@compliance-theater/database';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
+import { schema } from '@compliance-theater/database/orm';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { isModelAvailable } from '@/lib/ai/aiModelFactory';
 import { getInstance as getTokenStatsService } from '@/lib/ai/services/model-stats/token-stats-service';

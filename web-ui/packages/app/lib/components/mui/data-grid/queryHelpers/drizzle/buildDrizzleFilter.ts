@@ -34,7 +34,7 @@ import type { AnyPgSelect } from 'drizzle-orm/pg-core';
 import { isGridFilterModel } from '../../guards';
 import { columnMapFactory, parseFilterOptions } from '../utility';
 import { isTruthy } from '@/lib/react-util/utility-methods';
-import { schema } from '@compliance-theater/database';
+import { schema } from '@compliance-theater/database/orm';
 import { log } from '@compliance-theater/logger';
 import type {
   BuildDrizzleAttachmentOrEmailFilterProps,

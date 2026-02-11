@@ -10,7 +10,7 @@ import {
   DbTransactionType,
   drizDb,
   schema,
-} from '@compliance-theater/database';
+} from '@compliance-theater/database/orm';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { getNextSequence } from './utility';
 import type { StreamHandlerContext, StreamHandlerResult } from './types';

@@ -1,10 +1,10 @@
-// Re-export driver types and utilities (excluding sql to avoid conflicts)
+// Re-export driver types ONLY (no runtime code to avoid loading Node.js modules in edge/browser)
 export type * from './driver/types';
-export * from './driver/index-postgres';
 export type { DbQueryFunction } from './driver/index-postgres';
-export { pgDb, pgDbWithInit } from './driver/connection';
+// Driver connection functions are available via '@compliance-theater/database/driver'
+// ORM connection functions (drizDb, drizDbWithInit, schema) are available via '@compliance-theater/database/orm'
 
-// Re-export ORM types and utilities
+// Re-export ORM types (safe for edge/browser)
 export type {
   DatabaseType,
   SchemaType,
@@ -50,8 +50,9 @@ export type {
   DbQueryResultHKT,
   DbTransactionType,  
 } from './orm/schema';
-export * from './orm/connection';
-export * from './orm/db-helpers';
+
+// Re-export only lightweight utilities that don't require postgres
+// These are safe to use in edge/browser environments
 export { sql, type DrizzleSqlType } from './orm/drizzle-sql';
 export { 
   isDrizzleError, 
@@ -60,5 +61,5 @@ export {
   type PostgresError 
 } from './orm/drizzle-error';
 
-// Re-export schema tables
-export * from './schema/schema';
+// Note: Schema tables, database connections, and helpers are available via '@compliance-theater/database/orm'
+// This prevents loading Node.js-specific modules (postgres, fs, net, tls) in edge/browser bundles

@@ -1,5 +1,5 @@
-import { drizDbWithInit, type DbDatabaseType, schema } from '@compliance-theater/database';
-import type { ChatToolType } from '@compliance-theater/database';
+import { drizDbWithInit, type DbDatabaseType, schema } from '@compliance-theater/database/orm';
+import type { ChatToolType } from '@compliance-theater/database/orm';
 import { LoggedError, log } from '@compliance-theater/logger';
 import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
 import type {

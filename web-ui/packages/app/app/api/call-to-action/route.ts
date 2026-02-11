@@ -5,8 +5,8 @@ import {
   wrapRouteRequest,
 } from '@/lib/nextjs-util/server/utils';
 import { eq, and, sql, SQL } from 'drizzle-orm';
-import { drizDbWithInit } from '@compliance-theater/database';
-import { schema } from '@compliance-theater/database';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
+import { schema } from '@compliance-theater/database/orm';
 import {
   DrizzleSelectQuery,
   getEmailColumn,

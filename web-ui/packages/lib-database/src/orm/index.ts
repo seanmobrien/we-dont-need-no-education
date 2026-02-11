@@ -15,6 +15,8 @@ export type {
   ChatMessagesType,
   ChatsType,
   ChatTurnsType,
+  ChatToolType,
+  ChatToolCallsType,
   UserPublicKeysType,
   ViolationDetailsType,
   ComplianceScoreType,

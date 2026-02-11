@@ -6,8 +6,8 @@ import {
 } from '@/lib/nextjs-util/server/utils';
 import { EmailProperty } from '@/data-models/api/email-properties/property-type';
 import { eq, and, ne } from 'drizzle-orm';
-import { drizDbWithInit } from '@compliance-theater/database';
-import { schema } from '@compliance-theater/database';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
+import { schema } from '@compliance-theater/database/orm';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,

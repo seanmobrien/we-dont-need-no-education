@@ -1,7 +1,7 @@
 import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';
 import { isDocumentUnitType } from '@/data-models/api/document-unit';
 import { documentProperty, documentUnits } from '@compliance-theater/database/schema';
-import { drizDb } from '@compliance-theater/database';
+import { drizDb } from '@compliance-theater/database/orm';
 import { newUuid } from '@compliance-theater/typescript';
 import { log } from '@compliance-theater/logger';
 import { eq } from 'drizzle-orm';

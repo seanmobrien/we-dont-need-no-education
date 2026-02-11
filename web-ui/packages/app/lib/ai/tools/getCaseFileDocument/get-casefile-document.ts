@@ -46,7 +46,7 @@
  * @since 1.0.0
  */
 
-import { drizDbWithInit } from '@compliance-theater/database';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
 import {
   resolveCaseFileIdBatch,
   toolCallbackArrayResultSchemaFactory,

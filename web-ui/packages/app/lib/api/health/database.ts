@@ -1,5 +1,5 @@
-import { drizDbWithInit } from '@compliance-theater/database';
-import { sql } from '@compliance-theater/database';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
+import { sql } from '@compliance-theater/database/orm';
 import { LoggedError } from '@compliance-theater/logger';
 import InMemoryCache from '@/lib/api/health/base-cache';
 import { globalRequiredSingleton } from '@compliance-theater/typescript/singleton-provider';

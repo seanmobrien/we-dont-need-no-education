@@ -29,7 +29,7 @@ import {
   DbTransactionType,
   addDocumentRelations,
   addNotesToDocument,
-} from '@compliance-theater/database';
+} from '@compliance-theater/database/orm';
 import { appMeters } from '@/lib/site-util/metrics';
 import { CaseFileAmendmentShape } from './schemas/caseFileAmendmentShape';
 import { AmendmentResultShape } from './schemas/amendment-result-schema';
