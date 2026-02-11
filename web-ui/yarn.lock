@@ -860,6 +860,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@compliance-theater/after@workspace:*, @compliance-theater/after@workspace:packages/lib-after":
+  version: 0.0.0-use.local
+  resolution: "@compliance-theater/after@workspace:packages/lib-after"
+  dependencies:
+    "@compliance-theater/logger": "workspace:*"
+    "@compliance-theater/typescript": "workspace:*"
+    "@types/node": "npm:^24.0.0"
+    jest: "npm:^30.0.5"
+    prexit: "npm:^2.3.0"
+    rimraf: "npm:^6.1.2"
+    ts-jest: "npm:^29.3.4"
+    typescript: "npm:^5"
+  languageName: unknown
+  linkType: soft
+
 "@compliance-theater/app@workspace:packages/app":
   version: 0.0.0-use.local
   resolution: "@compliance-theater/app@workspace:packages/app"
@@ -874,6 +889,7 @@ __metadata:
     "@azure/monitor-opentelemetry-exporter": "npm:1.0.0-beta.31"
     "@azure/storage-blob": "npm:^12.27.0"
     "@badgateway/oauth2-client": "npm:^3.3.1"
+    "@compliance-theater/after": "workspace:*"
     "@compliance-theater/env": "workspace:*"
     "@compliance-theater/logger": "workspace:*"
     "@compliance-theater/send-api-request": "workspace:*"
