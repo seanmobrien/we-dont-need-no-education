@@ -109,8 +109,9 @@ export const createAgentHistoryContext = ({
       traceFlags,
     },
   };
+  const secureRandomId = generateChatId().id;
   const chatId =
-    chatIdFromProps ?? generateChatId(`agent-${operation}-${Date.now()}`).id;
+    chatIdFromProps ?? `agent-${operation}-${secureRandomId}`;
   return hydrateContext({
     userId: String(AgentUserId),
     chatId: chatId,
