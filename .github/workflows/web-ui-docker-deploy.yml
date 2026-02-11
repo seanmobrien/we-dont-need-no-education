@@ -173,7 +173,7 @@ jobs:
             echo "::error::Failed to create .env.production.local file"
             exit 1
           fi
-          
+          cp ./web-ui/packages/app/.env.production.local ./web-ui/packages/app/.env
           echo "✅ Build environment file created with $(wc -l < ./web-ui/packages/app/.env.production.local) variables"
           echo "::endgroup::"
 
@@ -248,7 +248,7 @@ jobs:
       - name: Cleanup sensitive files
         if: always()
         run: |
-          rm -f ./web-ui/packages/app/.env.production.local
+          rm -f ./web-ui/packages/app/.env.production.local ./web-ui/packages/app/.env
           echo "✅ Sensitive files removed"
 
       # Extract and validate deploy tag with audit logging
