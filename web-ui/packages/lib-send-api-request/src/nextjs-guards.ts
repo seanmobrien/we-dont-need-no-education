@@ -33,20 +33,25 @@ export const isLikeNextResponse = <Data = unknown>(
   typeof res === 'object' &&
   !!res &&
   'status' in res &&
-  typeof res.status === 'function';
+  (typeof (res as { status?: unknown }).status === 'function' ||
+    typeof (res as { status?: unknown }).status === 'number');
 
 export const isNextApiResponse = <Data = unknown>(
   res: unknown,
 ): res is NextApiResponse<Data> =>
   isLikeNextResponse(res) &&
+  typeof (res as { status?: unknown }).status === 'function' &&
   'json' in res &&
-  typeof res.json === 'function' &&
+  typeof (res as { json?: unknown }).json === 'function' &&
   'getHeader' in res &&
-  typeof res.getHeader === 'function';
+  typeof (res as { getHeader?: unknown }).getHeader === 'function';
 
 export const isNextResponse = <Data = unknown>(
   res: unknown,
 ): res is NextResponse<Data> =>
   isLikeNextResponse<Data>(res) &&
+  typeof (res as { status?: unknown }).status === 'number' &&
+  'headers' in res &&
+  typeof (res as { headers?: unknown }).headers === 'object' &&
   'cookies' in res &&
-  typeof res.cookies === 'object';
+  typeof (res as { cookies?: unknown }).cookies === 'object';
