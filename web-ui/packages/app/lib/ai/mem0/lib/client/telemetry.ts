@@ -2,7 +2,7 @@
 import type { TelemetryClient, TelemetryOptions } from './telemetry.types';
 import { log } from '@compliance-theater/logger/core';
 import { fetch } from '@/lib/nextjs-util/fetch';
-import crypto from 'crypto';
+import { cryptoRandomBytes } from '@/lib/react-util/crypto-random-bytes';
 
 let version = '2.1.26';
 
@@ -17,7 +17,7 @@ const POSTHOG_HOST = 'https://us.i.posthog.com/i/v0/e/';
 // Simple hash function using cryptographically secure random bytes
 const generateHash = (input: string): string => {
   // 16 bytes -> 32 hex characters; sufficient for a stable, opaque ID
-  const randomBytes = crypto.randomBytes(16);
+  const randomBytes = cryptoRandomBytes(16);
   return randomBytes.toString('hex');
 };
 
