@@ -2,6 +2,7 @@
 import type { TelemetryClient, TelemetryOptions } from './telemetry.types';
 import { log } from '@compliance-theater/logger/core';
 import { fetch } from '@/lib/nextjs-util/fetch';
+import { cryptoRandomBytes } from '@/lib/react-util/crypto-random-bytes';
 
 let version = '2.1.26';
 
@@ -13,12 +14,11 @@ try {
 const POSTHOG_API_KEY = 'phc_hgJkUVJFYtmaJqrvf6CYN67TIQ8yhXAkWzUn9AMU4yX';
 const POSTHOG_HOST = 'https://us.i.posthog.com/i/v0/e/';
 
-// Simple hash function using random strings
+// Simple hash function using cryptographically secure random bytes
 const generateHash = (input: string): string => {
-  const randomStr =
-    Math.random().toString(36).substring(2, 15) +
-    Math.random().toString(36).substring(2, 15);
-  return randomStr;
+  // 16 bytes -> 32 hex characters; sufficient for a stable, opaque ID
+  const randomBytes = cryptoRandomBytes(16);
+  return randomBytes.toString('hex');
 };
 
 class UnifiedTelemetry implements TelemetryClient {
