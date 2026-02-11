@@ -38,11 +38,7 @@
     "clean:build": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    "@compliance-theater/logger": "workspace:*",
-    "@mui/icons-material": "^7.3.6",
-    "@mui/material": "^7.3.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "@compliance-theater/logger": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
@@ -53,6 +49,8 @@
     "typescript": "^5"
   },
   "peerDependencies": {
+    "@mui/icons-material": "^7.3.6",
+    "@mui/material": "^7.3.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   }
