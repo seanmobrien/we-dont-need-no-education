@@ -11,8 +11,8 @@ import {
   ErrorReportResult,
 } from './types';
 import { isRunningOnEdge } from '@compliance-theater/env';
-import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
-import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
+import { isDrizzleError, errorFromCode } from '@compliance-theater/database';
+import type { PostgresError } from '@compliance-theater/database';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import { shouldSuppressError } from './utility';
 import { LRUCache } from 'lru-cache';

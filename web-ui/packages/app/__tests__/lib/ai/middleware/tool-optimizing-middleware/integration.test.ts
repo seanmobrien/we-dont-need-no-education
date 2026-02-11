@@ -23,12 +23,12 @@ import type {
   LanguageModelV2FunctionTool,
 } from '@ai-sdk/provider';
 import type { UIMessage } from 'ai';
-import { drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDbWithInit } from '@compliance-theater/database';
 
 // Mock dependencies
 jest.mock('@/lib/ai/services/model-stats/tool-map');
 jest.mock('@/lib/ai/chat/message-optimizer-tools');
-jest.mock('@/lib/drizzle-db');
+jest.mock('@compliance-theater/database');
 jest.mock('@compliance-theater/logger');
 jest.mock('@/lib/site-util/metrics', () => ({
   appMeters: {

@@ -8,7 +8,7 @@ import {
   StageProcessorContext,
   AdditionalStageOptions,
 } from '../types';
-import { query, queryExt } from '@/lib/neondb';
+import { query, queryExt } from '@compliance-theater/database/driver';
 import { CustomAppInsightsEvent, log } from '@compliance-theater/logger';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';

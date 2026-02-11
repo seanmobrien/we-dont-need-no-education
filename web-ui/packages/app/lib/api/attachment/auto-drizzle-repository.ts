@@ -1,6 +1,6 @@
 import { BaseDrizzleRepository } from '../_baseDrizzleRepository';
 import { EmailAttachment } from '@/data-models/api/attachment';
-import { emailAttachments } from '@/drizzle/schema';
+import { emailAttachments } from '@compliance-theater/database/schema';
 
 /**
  * Maps a database record to an EmailAttachment domain object

@@ -13,8 +13,8 @@ import {
   handleFinish,
   processStreamChunk,
 } from '@/lib/ai/middleware/chat-history/stream-handlers';
-import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
-import { chatMessages, tokenUsage } from '@/drizzle/schema';
+import { DbDatabaseType, drizDb } from '@compliance-theater/database';
+import { chatMessages, tokenUsage } from '@compliance-theater/database/schema';
 import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
 import { log } from '@compliance-theater/logger';
 import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
@@ -23,7 +23,7 @@ import { hideConsoleOutput } from '@/__tests__/test-utils';
 import { ensureCreateResult } from '@/lib/ai/middleware/chat-history/stream-handler-result';
 
 // Mock dependencies
-jest.mock('@/lib/drizzle-db');
+jest.mock('@compliance-theater/database');
 jest.mock('@/lib/ai/middleware/chat-history/utility');
 jest.mock('@compliance-theater/logger');
 

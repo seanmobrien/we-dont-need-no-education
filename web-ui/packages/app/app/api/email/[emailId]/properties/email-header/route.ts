@@ -9,7 +9,7 @@ import {
   getEmailColumn,
   selectForGrid,
 } from '@/lib/components/mui/data-grid/server';
-import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { drizDbWithInit, schema } from '@compliance-theater/database';
 import { and, eq } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
 import {

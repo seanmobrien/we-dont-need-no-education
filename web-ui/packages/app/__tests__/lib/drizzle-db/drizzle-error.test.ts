@@ -1,4 +1,4 @@
-import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
+import { isDrizzleError, errorFromCode } from '@compliance-theater/database';
 import { LoggedError } from '@compliance-theater/logger';
 
 describe('isDrizzleError and errorFromCode', () => {

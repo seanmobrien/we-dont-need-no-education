@@ -10,7 +10,7 @@
 import { BaseDrizzleRepository } from '@/lib/api/_baseDrizzleRepository';
 
 // Mock all external dependencies
-jest.mock('@/lib/drizzle-db');
+jest.mock('@compliance-theater/database');
 jest.mock('@compliance-theater/logger');
 jest.mock('@/lib/react-util');
 

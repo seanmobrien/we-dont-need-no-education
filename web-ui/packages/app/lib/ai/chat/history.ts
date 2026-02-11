@@ -29,7 +29,7 @@
  *  selection and the returned object under the authorized branch—preserving
  *  the guard so unauthorized requests still receive only `{ ok: false }`.
  */
-import { drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDbWithInit } from '@compliance-theater/database';
 import { isUserAuthorized } from '@/lib/site-util/auth';
 
 /**

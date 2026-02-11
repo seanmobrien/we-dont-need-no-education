@@ -24,8 +24,8 @@
  * ```
  */
 
-import * as tables from '@/drizzle/schema';
-import * as dbRelations from '@/drizzle/custom-relations';
+import * as tables from '@compliance-theater/database/schema';
+import * as dbRelations from '@compliance-theater/database/schema';
 import {
   PgQueryResultHKT,
   PgTable,
@@ -260,7 +260,7 @@ export type DbSchemaType = DbTransactionParam extends (
  * @example
  * ```typescript
  * import type { DbTransactionType } from '@/lib/drizzle-db/schema';
- * import { db } from '@/lib/drizzle-db';
+ * import { db } from '@compliance-theater/database';
  *
  * // Type-safe transaction function
  * async function createUserWithProfile(

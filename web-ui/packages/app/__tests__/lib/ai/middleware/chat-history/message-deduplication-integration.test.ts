@@ -19,7 +19,7 @@ import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
 import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
 import { generateChatId } from '@/lib/ai/core';
 import { log } from '@compliance-theater/logger';
-import type { DbTransactionType } from '@/lib/drizzle-db';
+import type { DbTransactionType } from '@compliance-theater/database';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
@@ -28,7 +28,7 @@ import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/c
 jest.mock('@/lib/ai/middleware/chat-history/utility');
 jest.mock('@/lib/ai/core');
 jest.mock('@compliance-theater/logger');
-jest.mock('@/lib/drizzle-db', () => ({
+jest.mock('@compliance-theater/database', () => ({
   schema: {
     chats: {
       id: 'mocked-chats-id-column',

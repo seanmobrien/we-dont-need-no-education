@@ -1,5 +1,5 @@
-import { schema } from '@/lib/drizzle-db/schema';
-import type { ChatMessagesType, DbTransactionType } from '@/lib/drizzle-db';
+import { schema } from '@compliance-theater/database';
+import type { ChatMessagesType, DbTransactionType } from '@compliance-theater/database';
 import { ChatHistoryContext, ToolStatus } from './types';
 import { eq, desc, and } from 'drizzle-orm';
 import { log } from '@compliance-theater/logger';

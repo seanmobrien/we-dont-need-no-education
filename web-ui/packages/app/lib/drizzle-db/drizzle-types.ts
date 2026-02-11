@@ -374,7 +374,7 @@ export type CallToActionResponsiveActionLinkType =
  *
  * @example
  * ```typescript
- * import type { UserPublicKeysType } from '@/lib/drizzle-db';
+ * import type { UserPublicKeysType } from '@compliance-theater/database';
  *
  * function getUserPublicKeys(keys: UserPublicKeysType[]) {
  *   keys.forEach(key => {

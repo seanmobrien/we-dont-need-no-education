@@ -4,7 +4,7 @@ import {
   documentRelationshipReason,
   documentUnits,
   documentProperty,
-} from '@/drizzle/schema';
+} from '@compliance-theater/database/schema';
 import type {
   DatabaseType,
   DbTransactionType,

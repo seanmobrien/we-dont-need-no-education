@@ -3,7 +3,7 @@ import type {
   SharedV2ProviderOptions,
 } from '@ai-sdk/provider';
 import { JSONValue } from 'ai';
-import { drizDb } from '@/lib/drizzle-db';
+import { drizDb } from '@compliance-theater/database';
 import { log, LoggedError } from '@compliance-theater/logger';
 import type {
   ChatHistoryContext,

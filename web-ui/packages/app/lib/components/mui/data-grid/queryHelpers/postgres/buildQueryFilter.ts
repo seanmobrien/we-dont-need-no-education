@@ -4,7 +4,7 @@ import {
   isSqlNeonAdapter,
   SqlDb,
   unwrapAdapter,
-} from '@/lib/neondb';
+} from '@compliance-theater/database/driver';
 import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
 import { LikeNextRequest } from '@/lib/nextjs-util/types';
 import { columnMapFactory } from '../utility';

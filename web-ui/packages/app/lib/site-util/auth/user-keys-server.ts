@@ -4,7 +4,7 @@ import {
   schema,
   type UserPublicKeysType,
   drizDbWithInit,
-} from '@/lib/drizzle-db';
+} from '@compliance-theater/database';
 import { auth } from '@/auth';
 
 export const getActiveUserPublicKeys = async ({

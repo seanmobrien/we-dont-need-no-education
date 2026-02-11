@@ -5,7 +5,7 @@ import type {
   GridSortModel,
 } from '@mui/x-data-grid-pro';
 import type { Sql } from 'postgres';
-import type { ISqlNeonAdapter, SqlDb } from '@/lib/neondb';
+import type { ISqlNeonAdapter, SqlDb } from '@compliance-theater/database/driver';
 
 /**
  * Props for configuring the buildOrderBy function for PostgreSQL.

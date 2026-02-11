@@ -3,7 +3,7 @@ import { LoggedError } from '@compliance-theater/logger';
 import { DatabaseMockType } from '../../../../../__tests__/jest.mock-drizzle';
 
 // Mock the database connection
-import type { DbDatabaseType } from '@/lib/drizzle-db';
+import type { DbDatabaseType } from '@compliance-theater/database';
 
 const validUuid = '12345678-1234-4567-8901-123456789012';
 
@@ -25,7 +25,7 @@ import {
 import {
   resolveCaseFileIdBatch
 } from '@/lib/ai/tools/utility';
-import { documentProperty } from '@/drizzle/schema';
+import { documentProperty } from '@compliance-theater/database/schema';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 const mockLoggedError = LoggedError as jest.Mocked<typeof LoggedError>;

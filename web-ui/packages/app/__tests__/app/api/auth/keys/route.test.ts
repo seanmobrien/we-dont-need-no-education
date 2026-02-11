@@ -13,13 +13,13 @@
 import { NextRequest } from 'next/server';
 import { POST, GET } from '@/app/api/auth/keys/route';
 // import { auth } from '@/auth';
-import { drizDb } from '@/lib/drizzle-db';
+import { drizDb } from '@compliance-theater/database';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
 
 // Mock dependencies
 // jest.mock('@/auth');
-jest.mock('@/lib/drizzle-db', () => {
+jest.mock('@compliance-theater/database', () => {
   const actualSchema = jest.requireActual('/lib/drizzle-db/schema');
   return {
     drizDb: jest.fn(),

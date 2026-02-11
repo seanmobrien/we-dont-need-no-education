@@ -6,8 +6,8 @@ import {
 } from '@/lib/nextjs-util/server/utils';
 import { ViolationDetails } from '@/data-models/api/email-properties/extended-properties';
 import { eq, and } from 'drizzle-orm';
-import { drizDbWithInit } from '@/lib/drizzle-db';
-import { schema } from '@/lib/drizzle-db/schema';
+import { drizDbWithInit } from '@compliance-theater/database';
+import { schema } from '@compliance-theater/database';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { DefaultDrizzleEmailColumnMap } from '@/lib/components/mui/data-grid/server';
 import { PgColumn } from 'drizzle-orm/pg-core';

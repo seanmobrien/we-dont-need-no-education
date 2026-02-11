@@ -17,7 +17,7 @@ import {
 } from '@azure/storage-blob';
 import { env } from '@compliance-theater/env';
 import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
-import { pgDbWithInit } from '@/lib/neondb/connection';
+import { pgDbWithInit } from '@compliance-theater/database/driver';
 
 /**
  * Repository for managing `DocumentUnit` objects.

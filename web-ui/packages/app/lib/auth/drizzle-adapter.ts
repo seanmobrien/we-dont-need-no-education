@@ -1,6 +1,6 @@
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { log } from '@compliance-theater/logger';
-import { schema, drizDbWithInit } from '@/lib/drizzle-db';
+import { schema, drizDbWithInit } from '@compliance-theater/database';
 import { AdapterAccount } from '@auth/core/adapters';
 import { and, sql } from 'drizzle-orm';
 

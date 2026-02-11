@@ -5,7 +5,7 @@
 // @ts-check
 
 // Mock the dependencies
-jest.mock('@/lib/drizzle-db', () => {
+jest.mock('@compliance-theater/database', () => {
   const { mockDeep } = require('jest-mock-extended');
 
   // Create a mock database instance that supports all drizzle operations
@@ -25,7 +25,7 @@ jest.mock('@/lib/drizzle-db', () => {
   };
 });
 
-jest.mock('@/drizzle/schema', () => {
+jest.mock('@compliance-theater/database/schema', () => {
   const { Table } = require('drizzle-orm');
   const { PgTable } = require('drizzle-orm/pg-core');
 

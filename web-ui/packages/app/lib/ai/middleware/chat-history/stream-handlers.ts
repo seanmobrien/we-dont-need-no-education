@@ -3,14 +3,14 @@ import type {
   LanguageModelV2StreamPart,
   LanguageModelV2ToolCall,
 } from '@ai-sdk/provider';
-import { chatMessages, chatTurns, tokenUsage } from '@/drizzle/schema';
+import { chatMessages, chatTurns, tokenUsage } from '@compliance-theater/database/schema';
 import { eq, and } from 'drizzle-orm';
 import {
   ChatMessagesType,
   DbTransactionType,
   drizDb,
   schema,
-} from '@/lib/drizzle-db';
+} from '@compliance-theater/database';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { getNextSequence } from './utility';
 import type { StreamHandlerContext, StreamHandlerResult } from './types';

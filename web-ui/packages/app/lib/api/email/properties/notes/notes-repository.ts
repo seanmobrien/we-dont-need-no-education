@@ -7,7 +7,7 @@ import {
   EmailPropertyRepository,
   mapEmailPropertyRecordToObject,
 } from '../email-property-repository';
-import { TransformedFullQueryResults } from '@/lib/neondb';
+import { TransformedFullQueryResults } from '@compliance-theater/database/driver';
 
 const mapRecordToObject = (record: Record<string, unknown>): EmailProperty => {
   return {

@@ -4,7 +4,7 @@ import { isError, log } from '@compliance-theater/logger';
 import type {
   TransformedFullQueryResults,
   DbQueryFunction,
-} from '@/lib/neondb';
+} from '@compliance-theater/database/driver';
 import { ValidationError } from '../react-util';
 import { DataIntegrityError } from '../react-util/errors/data-integrity-error';
 import { LoggedError } from '@compliance-theater/logger';

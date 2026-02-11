@@ -9,7 +9,7 @@
  */
 
 import type { ContactSummary } from '@/data-models/api/contact';
-import { query } from '@/lib/neondb';
+import { query } from '@compliance-theater/database/driver';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 
 /**

@@ -5,7 +5,7 @@
 jest.unmock('@opentelemetry/api');
 jest.unmock('@opentelemetry/sdk-trace-base');
 
-jest.mock('@/lib/neondb');
+jest.mock('@compliance-theater/database/driver');
 jest.mock('google-auth-library');
 jest.mock('googleapis');
 jest.mock('@compliance-theater/send-api-request');
@@ -23,7 +23,7 @@ import { loadEmail } from '@/lib/api/email/import/google';
 import { LoggedError } from '@compliance-theater/logger';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
-import { query, queryExt } from '@/lib/neondb';
+import { query, queryExt } from '@compliance-theater/database/driver';
 import {
   ICancellablePromise,
   ICancellablePromiseExt,

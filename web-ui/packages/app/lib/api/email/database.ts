@@ -7,9 +7,9 @@ import {
   EmailMessageSummary,
 } from '@/data-models/api/email-message';
 import { BaseObjectRepository } from '../_baseObjectRepository';
-import { query } from '@/lib/neondb';
+import { query } from '@compliance-theater/database/driver';
 import { AbstractObjectRepository } from '../abstractObjectRepository';
-import { db } from '@/lib/neondb';
+import { db } from '@compliance-theater/database/driver';
 
 type RepositoryEmailSummary = Omit<
   EmailMessageSummary,

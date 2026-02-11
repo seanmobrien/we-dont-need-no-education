@@ -1,5 +1,5 @@
 import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
-import type { ChatToolType } from '@/lib/drizzle-db/drizzle-types';
+import type { ChatToolType } from '@compliance-theater/database';
 import {
   ResourceNotFoundError,
   isResourceNotFoundError,

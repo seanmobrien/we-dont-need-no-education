@@ -1,6 +1,6 @@
 import { PaginationStats, PaginatedResultset } from '@/data-models/_types';
 import { log } from '@compliance-theater/logger';
-import { query, queryExt, TransformedFullQueryResults } from '@/lib/neondb';
+import { query, queryExt, TransformedFullQueryResults } from '@compliance-theater/database/driver';
 import {
   FirstParameter,
   PartialExceptFor,

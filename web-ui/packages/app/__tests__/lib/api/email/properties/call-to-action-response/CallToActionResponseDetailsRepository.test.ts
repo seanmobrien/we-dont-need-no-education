@@ -2,11 +2,11 @@
 /**
  * @jest-environment node
  */
-jest.mock('@/lib/neondb');
+jest.mock('@compliance-theater/database/driver');
 
 import { CallToActionResponseDetailsRepository } from '@/lib/api/email/properties/call-to-action-response/call-to-action-response-details-repository';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { query, queryExt } from '@/lib/neondb';
+import { query, queryExt } from '@compliance-theater/database/driver';
 import { CallToActionResponseDetails } from '@/data-models/api';
 
 describe('CallToActionResponseDetailsRepository', () => {

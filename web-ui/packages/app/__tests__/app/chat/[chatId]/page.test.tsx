@@ -35,7 +35,7 @@ const setSession = (userId: number | null) => {
 };
 
 const drizDbWithInitMock = jest.fn();
-jest.mock('@/lib/drizzle-db', () => ({
+jest.mock('@compliance-theater/database', () => ({
   drizDbWithInit: (
     cb?: (db: {
       query: { chats: { findFirst: typeof drizDbWithInitMock } };

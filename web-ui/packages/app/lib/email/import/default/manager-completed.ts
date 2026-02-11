@@ -1,4 +1,4 @@
-import { query } from '@/lib/neondb';
+import { query } from '@compliance-theater/database/driver';
 import {
   AdditionalStageOptions,
   ImportStageManagerFactory,

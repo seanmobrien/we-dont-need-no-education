@@ -8,7 +8,7 @@ import {
   ImportStatusType,
   MessageImportStatus,
 } from '@/data-models/api/import/email-message';
-import { query } from '@/lib/neondb';
+import { query } from '@compliance-theater/database/driver';
 import { NextRequest, NextResponse } from 'next/server';
 import { googleProviderFactory } from './_googleProviderFactory';
 import { isError, LoggedError } from '@compliance-theater/logger';

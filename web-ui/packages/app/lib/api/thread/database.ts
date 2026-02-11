@@ -1,4 +1,4 @@
-import { query, queryExt } from '@/lib/neondb';
+import { query, queryExt } from '@compliance-theater/database/driver';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
 import { PartialExceptFor } from '@compliance-theater/typescript';
@@ -9,7 +9,7 @@ import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelper
 
 import type { ObjectRepository } from '../_types';
 import { AbstractObjectRepository } from '../abstractObjectRepository';
-import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { drizDbWithInit, schema } from '@compliance-theater/database';
 
 const mapRecordToSummary = (record: Record<string, unknown>) => ({
   threadId: Number(record.thread_id),

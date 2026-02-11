@@ -3,7 +3,7 @@ import {
   wrapRouteRequest,
   extractParams,
 } from '@/lib/nextjs-util/server/utils';
-import { query, queryExt } from '@/lib/neondb';
+import { query, queryExt } from '@compliance-theater/database/driver';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { globalContactCache } from '@/data-models/api';
 import { isTruthy } from '@/lib/react-util/utility-methods';

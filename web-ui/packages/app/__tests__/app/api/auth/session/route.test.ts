@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-jest.mock('@/lib/drizzle-db');
+jest.mock('@compliance-theater/database');
 jest.mock('@/lib/site-util/auth/user-keys-server');
 
 import { GET } from '@/app/api/auth/session/route';

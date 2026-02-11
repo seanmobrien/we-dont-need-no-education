@@ -1,7 +1,7 @@
 import {
   errorFromCode,
   PG_ERROR_CODE_DESCRIPTIONS,
-} from '@/lib/drizzle-db/drizzle-error';
+} from '@compliance-theater/database';
 
 describe('Postgres error code helpers', () => {
   test('returns canonical description for known code', () => {

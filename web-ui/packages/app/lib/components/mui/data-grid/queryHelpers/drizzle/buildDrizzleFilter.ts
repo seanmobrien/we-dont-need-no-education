@@ -34,7 +34,7 @@ import type { AnyPgSelect } from 'drizzle-orm/pg-core';
 import { isGridFilterModel } from '../../guards';
 import { columnMapFactory, parseFilterOptions } from '../utility';
 import { isTruthy } from '@/lib/react-util/utility-methods';
-import { schema } from '@/lib/drizzle-db';
+import { schema } from '@compliance-theater/database';
 import { log } from '@compliance-theater/logger';
 import type {
   BuildDrizzleAttachmentOrEmailFilterProps,
@@ -96,7 +96,7 @@ export const appendFilter = ({
  *
  * @example
  * ```typescript
- * import { emails } from '@/drizzle/schema';
+ * import { emails } from '@compliance-theater/database/schema';
  *
  * const condition = buildDrizzleAttachmentOrEmailFilter({
  *   attachments: true,
@@ -194,7 +194,7 @@ export const buildDrizzleAttachmentOrEmailFilter = ({
  *
  * @example
  * ```typescript
- * import { users } from '@/drizzle/schema';
+ * import { users } from '@compliance-theater/database/schema';
  *
  * const getColumn = (name: string) => {
  *   switch (name) {

@@ -25,7 +25,7 @@ jest.mock('ai', () => ({
   generateText: jest.fn(),
   generateObject: jest.fn(),
 }));
-jest.mock('@/lib/drizzle-db', () => ({
+jest.mock('@compliance-theater/database', () => ({
   drizDbWithInit: jest.fn(() => ({
     transaction: jest.fn((callback) =>
       callback({

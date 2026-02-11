@@ -15,14 +15,14 @@ import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();
 
 import { importIncomingMessage } from '@/lib/ai/middleware/chat-history/import-incoming-message';
-import { schema } from '@/lib/drizzle-db';
+import { schema } from '@compliance-theater/database';
 import {
   getNextSequence,
   getNewMessages,
 } from '@/lib/ai/middleware/chat-history/utility';
 import { generateChatId } from '@/lib/ai/core';
 import { log } from '@compliance-theater/logger';
-import type { DbTransactionType } from '@/lib/drizzle-db';
+import type { DbTransactionType } from '@compliance-theater/database';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import { LanguageModelV2CallOptions } from '@ai-sdk/provider';
@@ -32,7 +32,7 @@ jest.mock('@/lib/ai/middleware/chat-history/utility');
 jest.mock('@/lib/ai/core');
 jest.mock('@compliance-theater/logger');
 /*
-jest.mock('@/lib/drizzle-db', () => ({
+jest.mock('@compliance-theater/database', () => ({
   schema: {
     chats: {
       id: 'mocked-chats-id-column',

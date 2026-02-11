@@ -7,7 +7,7 @@ import {
 } from '@/lib/api/email/email-service';
 import { EmailDomain } from '@/lib/api/email/email-drizzle-repository';
 import { EmailMessage } from '@/data-models/api/email-message';
-import { query } from '@/lib/neondb';
+import { query } from '@compliance-theater/database/driver';
 
 // Mock the EmailDrizzleRepository
 const mockRepository = {
@@ -24,7 +24,7 @@ jest.mock('@/lib/api/email/email-drizzle-repository', () => ({
 }));
 
 // Mock neondb for query operations
-jest.mock('@/lib/neondb', () => ({
+jest.mock('@compliance-theater/database/driver', () => ({
   query: jest.fn(),
 }));
 

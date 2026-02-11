@@ -28,11 +28,11 @@ jest.mock('@/auth', () => ({
   auth: jest.fn(),
 }));
 
-jest.mock('@/lib/drizzle-db', () => ({
+jest.mock('@compliance-theater/database', () => ({
   drizDbWithInit: jest.fn(),
 }));
 
-jest.mock('@/lib/drizzle-db/schema', () => ({
+jest.mock('@compliance-theater/database', () => ({
   schema: {
     chats: {
       id: 'chats.id',
@@ -84,7 +84,7 @@ jest.mock('@/lib/react-util', () => ({
 
 // Import mocked dependencies
 import { auth } from '@/auth';
-import { drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDbWithInit } from '@compliance-theater/database';
 import { eq, and } from 'drizzle-orm';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { query } from '@/lib/neondb';
+import { query } from '@compliance-theater/database/driver';
 import { LoggedError } from '@compliance-theater/logger';
 import {
   buildFallbackGrid,

@@ -10,7 +10,7 @@ import {
   DocumentPropertyResource,
   DocumentResourceIndex,
 } from './documentResource';
-import { violationDetails } from '@/drizzle/schema';
+import { violationDetails } from '@compliance-theater/database/schema';
 
 /**
  * Options for performing a policy search, extending {@link HybridSearchOptions}.
