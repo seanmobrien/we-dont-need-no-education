@@ -34,7 +34,6 @@ export const ThemeProvider = ({
       const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) as ThemeType;
       if (
         savedTheme &&
-        savedTheme !== currentTheme &&
         (savedTheme === 'dark' || savedTheme === 'light')
       ) {
         setCurrentTheme((ct) => {
