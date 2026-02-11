@@ -29,7 +29,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock theme provider
-jest.mock('@/lib/themes', () => ({
+jest.mock('@compliance-theater/themes', () => ({
   useTheme: () => ({
     theme: {
       palette: {

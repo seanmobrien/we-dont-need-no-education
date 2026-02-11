@@ -22,7 +22,7 @@ import type { Session } from '@auth/core/types';
 import { EmailContextProvider } from '@/components/email-message/email-context';
 import { useCallback, useMemo } from 'react';
 import { useParams, usePathname } from 'next/navigation';
-import { useTheme } from '@/lib/themes/provider';
+import { useTheme } from '@compliance-theater/themes';
 
 // Import extracted components
 import { CustomEmailPageItem } from './custom-email-page-item';

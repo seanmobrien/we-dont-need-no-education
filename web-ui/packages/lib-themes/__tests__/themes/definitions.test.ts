@@ -1,0 +1,32 @@
+import { describe, it, expect } from '@jest/globals';
+import { themes, darkTheme, colorfulTheme } from '@compliance-theater/themes';
+
+describe('Theme Definitions', () => {
+  it('should have dark and light themes available', () => {
+    expect(themes).toBeDefined();
+    expect(themes.dark).toBeDefined();
+    expect(themes.light).toBeDefined();
+  });
+
+  it('should have dark theme with dark mode', () => {
+    expect(darkTheme.palette.mode).toBe('dark');
+  });
+
+  it('should have light theme with light mode', () => {
+    expect(colorfulTheme.palette.mode).toBe('light');
+  });
+
+  it('should have light theme with specified colors', () => {
+    expect(colorfulTheme.palette.primary.main).toBe('#1abbf9');
+    expect(colorfulTheme.palette.secondary.main).toBe('#ff79f9');
+    expect(colorfulTheme.palette.background?.default).toBe('#ffffff');
+    expect(colorfulTheme.palette.warning?.main).toBe('#f5a9b8');
+  });
+
+  it('should have consistent theme structure', () => {
+    expect(darkTheme.typography.fontFamily).toBe(
+      colorfulTheme.typography.fontFamily,
+    );
+    expect(darkTheme.spacing(1)).toBe(colorfulTheme.spacing(1));
+  });
+});

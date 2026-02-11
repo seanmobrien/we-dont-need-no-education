@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import MuiXLicense from '@/components/mui/MuiXLicense';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
-import { ThemeProvider } from '@/lib/themes/provider';
+import { ThemeProvider } from '@compliance-theater/themes';
 import './globals.css';
 import QueryProvider from '@/components/general/react-query/query-provider';
 import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
