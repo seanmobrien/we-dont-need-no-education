@@ -255,20 +255,582 @@ yarn test:e2e
 
 ## Development Workflow
 
-### Adding a New Package
+### Adding a New Package to the Monorepo
 
-1. Create directory: `web-ui/packages/new-package/`
-2. Create package.json with `@compliance-theater/new-package` name
-3. Create `src/index.ts` as main entry point
-4. Create `tsconfig.json` extending root
-5. Add to `web-ui/packages/app/package.json` dependencies:
+This section documents the complete process for creating a new package in the `web-ui/packages/` monorepo. The patterns described here are based on existing packages (`lib-logger`, `lib-env`, `lib-typescript`, `lib-send-api-request`) and should be followed for consistency.
 
-   ```json
-   "@compliance-theater/new-package": "workspace:*"
-   ```
+#### Overview of Package Structure
 
-6. Import in code: `import { something } from '@compliance-theater/new-package'`
-7. Run `yarn install` to link workspace
+Each package follows this standardized structure:
+
+```txt
+web-ui/packages/[package-name]/
+├── src/
+│   ├── index.ts              # Main export file
+│   └── [implementation files]
+├── __tests__/
+│   ├── shared/
+│   │   ├── jest.config-shared.mjs  # Shared Jest configuration
+│   │   └── setup/              # Test setup files (optional)
+│   └── *.test.ts              # Test files
+├── __mocks__/                  # Package-specific mocks (optional)
+├── package.json               # Package metadata and dependencies
+├── tsconfig.json              # TypeScript configuration
+└── jest.config.mjs            # Jest configuration
+```
+
+#### Step-by-Step Package Creation Process
+
+##### Step 1: Create Package Directory Structure
+
+```bash
+# Create the package directory
+mkdir -p web-ui/packages/[package-name]/src
+mkdir -p web-ui/packages/[package-name]/__tests__/shared
+```
+
+##### Step 2: Create package.json
+
+Create `web-ui/packages/[package-name]/package.json` using this template:
+
+```json
+{
+  "name": "@compliance-theater/[package-name]",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Brief description of what this package does",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b tsconfig.json",
+    "build:typescript": "echo 'Building [package-name] typescript...' && tsc -b tsconfig.json && echo 'TypeScript build complete.' || (echo 'Typescript compile did not succeed' >&2; exit 1)",
+    "test": "jest",
+    "lint": "echo 'Linting [package-name]...'",
+    "clean:build": "rimraf dist tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    // Add package-specific dependencies here
+    // Use workspace:* protocol for local packages:
+    // "@compliance-theater/logger": "workspace:*"
+  },
+  "peerDependencies": {
+    // Add peer dependencies if needed (e.g., Next.js, React)
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "jest": "^30.0.5",
+    "rimraf": "^6.1.2",
+    "ts-jest": "^29.3.4",
+    "typescript": "^5"
+  }
+}
+```
+
+**Key points:**
+- **Name**: Always use `@compliance-theater/` scope
+- **Exports**: The dual export pattern (`"."` and `"./*"`) allows importing both the main entry and submodules
+- **Workspace dependencies**: Use `workspace:*` protocol for referencing other monorepo packages
+- **Peer dependencies**: Use for optional external dependencies (e.g., Next.js, React) that may not be needed by all consumers
+
+##### Step 3: Create tsconfig.json
+
+Create `web-ui/packages/[package-name]/tsconfig.json`:
+
+```json
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "baseUrl": ".",
+    "paths": {
+      // Add path mappings for dependencies on other local packages
+      // Example for depending on logger:
+      // "@compliance-theater/logger": ["../lib-logger/dist"],
+      // "@compliance-theater/logger/*": ["../lib-logger/dist/*"]
+    },
+    "noEmit": false,
+    "types": [
+      "node",
+      "jest"
+    ]
+  },
+  "include": [
+    "src/**/*.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+  "references": [
+    // Add TypeScript project references for packages you depend on
+    // Example:
+    // { "path": "../lib-logger" }
+  ]
+}
+```
+
+**Key points:**
+- **extends**: Always extend `../../tsconfig.base.json` for consistent base configuration
+- **composite**: Must be `true` to enable TypeScript project references
+- **paths**: Map workspace packages to their `dist` folders for proper resolution during build
+- **references**: List all workspace packages this package depends on (must also be in `paths` and `package.json`)
+
+##### Step 4: Create Shared Jest Configuration
+
+Create `web-ui/packages/[package-name]/__tests__/shared/jest.config-shared.mjs`:
+
+For packages without React dependencies (pure utilities):
+
+```javascript
+const config = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  testEnvironmentOptions: {},
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  setupFilesAfterEnv: [
+    '<rootDir>/__tests__/shared/setup/jest.mock-log.ts',
+    '<rootDir>/__tests__/shared/setup/jest.env-vars.ts',
+    // Add other setup files as needed
+  ],
+  testMatch: [
+    '**/__tests__/**/*.test.(ts|tsx)',
+    '!/.next/**',
+    '!/dist/**',
+  ],
+  moduleNameMapper: {
+    // Add mappings for mocks and workspace packages
+    // Point to source files, not dist, during testing:
+    // "^@compliance-theater/logger(.*)$": "<rootDir>/../lib-logger/src$1",
+  },
+  transform: {
+    '^.+\\.(ts|tsx)$': [
+      'ts-jest',
+      {
+        tsconfig: {
+          jsx: 'react-jsx',
+        },
+      },
+    ],
+  },
+  transformIgnorePatterns: [
+    '<rootDir>/node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client))',
+  ],
+  collectCoverageFrom: [
+    '**/*.{ts,tsx}',
+    '!**/*.d.ts',
+    '!__(tests|mocks)__/**/*.*',
+    '!dist/**/*.*',
+  ],
+  coverageDirectory: '<rootDir>/coverage',
+  coverageReporters: ['json', 'lcov', 'text', 'clover'],
+  testTimeout: 1000,
+  openHandlesTimeout: 1000,
+  clearMocks: true,
+  resetMocks: false,
+};
+
+export default config;
+```
+
+For packages with React dependencies:
+
+```javascript
+const config = {
+  preset: 'ts-jest',
+  testEnvironment: 'jsdom',  // Changed from 'node'
+  testEnvironmentOptions: {
+    // Configure jsdom for React 19 concurrent features
+    features: {
+      FetchExternalResources: false,
+      ProcessExternalResources: false,
+    },
+  },
+  // ... rest same as above, but add React-specific mocks
+  moduleNameMapper: {
+    // CSS modules
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    // MUI icons mock
+    '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx',
+    // ... other mappings
+  },
+  // ... rest of config
+};
+
+export default config;
+```
+
+**Key points:**
+- **testEnvironment**: Use `'node'` for pure utilities, `'jsdom'` for React components
+- **setupFilesAfterEnv**: List setup files that run before each test (mocks, environment variables, etc.)
+- **moduleNameMapper**: Map workspace packages to their `src` folders (not `dist`) for testing
+- **transformIgnorePatterns**: Allow transpilation of ESM-only packages
+
+##### Step 5: Create Package Jest Configuration
+
+Create `web-ui/packages/[package-name]/jest.config.mjs`:
+
+```javascript
+import baseConfig from './__tests__/shared/jest.config-shared.mjs';
+
+/** @type {import('jest').Config} */
+const config = {
+  ...baseConfig,
+  displayName: "Libraries: [package-name]",
+  preset: "ts-jest",
+  testEnvironment: "node",  // or "jsdom" for React
+  rootDir: ".",
+  moduleNameMapper: {
+    ...baseConfig.moduleNameMapper,
+    // Add package-specific mappings to map published paths to source:
+    "^@compliance-theater/[package-name]/(.*)$": "<rootDir>/src/$1",
+    "^@compliance-theater/[package-name]$": "<rootDir>/src",
+  },
+};
+
+export default config;
+```
+
+**Key points:**
+- **Import shared config**: Always import from `./__tests__/shared/jest.config-shared.mjs`
+- **Spread baseConfig**: Use `...baseConfig` to inherit shared configuration
+- **moduleNameMapper**: Override/extend to map your package's published imports back to source files during tests
+
+##### Step 6: Create Source Entry Point
+
+Create `web-ui/packages/[package-name]/src/index.ts`:
+
+```typescript
+// Export types first (using type-only exports where possible)
+export type { YourType, AnotherType } from './types';
+
+// Then export implementations
+export { yourFunction, YourClass } from './implementation';
+export { helperFunction } from './helpers';
+
+// Error types and utilities
+export { YourError } from './errors';
+export type { YourErrorOptions } from './errors';
+```
+
+**Key points:**
+- **Type exports first**: Group type exports at the top using `export type` syntax
+- **Clear organization**: Export related functionality together
+- **Explicit exports**: List each export individually for clarity
+- **Follow conventions**: Match the pattern used in existing packages (see `lib-logger/src/index.ts`)
+
+##### Step 7: Implement Package Source Code
+
+Create your implementation files in `web-ui/packages/[package-name]/src/`:
+
+- Use clear, descriptive filenames
+- Keep files focused on a single responsibility
+- Follow existing code conventions from similar packages
+- Use TypeScript for all implementation files
+- Create separate `.d.ts` files for complex type definitions if needed
+
+##### Step 8: Add Tests
+
+Create test files in `web-ui/packages/[package-name]/__tests__/`:
+
+```typescript
+// Example: __tests__/my-feature.test.ts
+import { myFunction } from '../src/my-feature';
+
+describe('myFunction', () => {
+  it('should do what it is supposed to do', () => {
+    const result = myFunction('input');
+    expect(result).toBe('expected output');
+  });
+
+  it('should handle edge cases', () => {
+    expect(() => myFunction(null)).toThrow();
+  });
+});
+```
+
+**Key points:**
+- **Test files**: Use `*.test.ts` or `*.test.tsx` naming convention
+- **Import from source**: Import directly from `../src/` during development
+- **Comprehensive tests**: Cover happy paths, edge cases, and error conditions
+- **Run tests**: Use `yarn workspace @compliance-theater/[package-name] test`
+
+##### Step 9: Add Package to App Dependencies
+
+If the app package needs to use your new package, add it to `web-ui/packages/app/package.json`:
+
+```json
+{
+  "dependencies": {
+    "@compliance-theater/[package-name]": "workspace:*"
+  }
+}
+```
+
+Then run:
+
+```bash
+cd web-ui
+yarn install
+```
+
+**Key points:**
+- **workspace:* protocol**: Always use this for local package references
+- **Run yarn install**: This creates symlinks in node_modules pointing to your package
+
+##### Step 10: Update App TypeScript Configuration (if needed)
+
+If the app needs to import your package, you may need to add path mappings to `web-ui/packages/app/tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@compliance-theater/[package-name]": ["../ [package-name]/dist"],
+      "@compliance-theater/[package-name]/*": ["../[package-name]/dist/*"]
+    }
+  },
+  "references": [
+    { "path": "../[package-name]" }
+  ]
+}
+```
+
+##### Step 11: Build and Test Your Package
+
+```bash
+# Build the package
+cd web-ui/packages/[package-name]
+yarn build
+
+# Run tests
+yarn test
+
+# Or from workspace root:
+cd web-ui
+yarn workspace @compliance-theater/[package-name] build
+yarn workspace @compliance-theater/[package-name] test
+```
+
+##### Step 12: Import and Use in Application Code
+
+In your application code (or other packages), import your new package:
+
+```typescript
+// Named imports
+import { myFunction, MyType } from '@compliance-theater/[package-name]';
+
+// Submodule imports (if you have multiple entry points)
+import { specificFunction } from '@compliance-theater/[package-name]/submodule';
+```
+
+##### Step 13: Verify End-to-End
+
+1. **Build all packages**: `cd web-ui && yarn build`
+2. **Run all tests**: `cd web-ui && yarn test`
+3. **Start development server**: `cd web-ui && yarn dev`
+4. **Verify in browser/runtime**: Ensure your package works correctly when used
+
+#### Common Patterns and Best Practices
+
+##### Workspace Dependencies with `workspace:*`
+
+Always reference local packages using the workspace protocol:
+
+```json
+{
+  "dependencies": {
+    "@compliance-theater/logger": "workspace:*",
+    "@compliance-theater/typescript": "workspace:*"
+  }
+}
+```
+
+This ensures Yarn creates symlinks to local packages rather than trying to fetch them from a registry.
+
+##### TypeScript Path Mapping
+
+In `tsconfig.json`, map workspace packages to their compiled `dist` directories:
+
+```json
+{
+  "compilerOptions": {
+    "paths": {
+      "@compliance-theater/logger": ["../lib-logger/dist"],
+      "@compliance-theater/logger/*": ["../lib-logger/dist/*"]
+    }
+  }
+}
+```
+
+This allows TypeScript to resolve imports correctly during builds.
+
+##### Jest Module Mapping
+
+In Jest config, map workspace packages to their `src` directories:
+
+```javascript
+moduleNameMapper: {
+  "^@compliance-theater/logger(.*)$": "<rootDir>/../lib-logger/src$1",
+}
+```
+
+This allows Jest to test against source files directly, enabling better debugging and coverage.
+
+##### Project References
+
+For packages with dependencies on other workspace packages, add TypeScript project references:
+
+```json
+{
+  "references": [
+    { "path": "../lib-logger" },
+    { "path": "../lib-typescript" }
+  ]
+}
+```
+
+This enables TypeScript to build packages in the correct order and provides better IDE support.
+
+##### Shared Test Setup Files
+
+Common test setup files can be symlinked or referenced from the app package:
+
+```javascript
+// Option 1: Copy to package
+setupFilesAfterEnv: [
+  '<rootDir>/__tests__/shared/setup/jest.mock-log.ts',
+]
+
+// Option 2: Reference from app (if appropriate)
+setupFilesAfterEnv: [
+  '<rootDir>/../app/__tests__/shared/setup/jest.mock-log.ts',
+]
+```
+
+Use Option 1 for packages that need to be independent, Option 2 for packages tightly coupled to the app.
+
+##### Package Naming Conventions
+
+- **Libraries**: `lib-[name]` (e.g., `lib-logger`, `lib-database`)
+- **Features**: `[feature-name]` (e.g., `instrument`, `data-models`)
+- **Components**: `components` or `ui-components`
+- **Test Utilities**: `test-utils`
+
+##### Export Patterns
+
+Follow consistent export patterns in `src/index.ts`:
+
+```typescript
+// 1. Type exports (with 'export type' syntax)
+export type { ILogger, EventSeverity } from './types';
+
+// 2. Constants and enums
+export { KnownSeverityLevel } from './constants';
+
+// 3. Main functionality
+export { logger, log, logEvent } from './core';
+
+// 4. Utilities
+export { errorLogFactory, getStackTrace } from './utilities';
+
+// 5. Error handling
+export { LoggedError, dumpError } from './errors';
+export type { LoggedErrorOptions } from './errors';
+```
+
+This organization makes it easy for consumers to find what they need.
+
+##### Dependency Management
+
+Follow this dependency order to avoid circular dependencies:
+
+1. **No dependencies**: `lib-logger`, `lib-env`, `lib-typescript`
+2. **Depends on (1)**: `lib-send-api-request`, `lib-redis-client`, `lib-database`
+3. **Depends on (2)**: `lib-site-util`, `lib-react-util`
+4. **Depends on (3)**: `lib-nextjs-util`, `lib-auth`
+5. **Feature packages**: `instrument`, `data-models`, `components`
+
+Always extract packages in this order during refactoring.
+
+#### Troubleshooting
+
+##### "Cannot find module '@compliance-theater/[package-name]'"
+
+1. Verify package is listed in `package.json` dependencies with `workspace:*`
+2. Run `yarn install` from workspace root
+3. Check that `node_modules/@compliance-theater/[package-name]` exists as a symlink
+4. Verify TypeScript `paths` configuration includes the package
+5. Rebuild the package: `yarn workspace @compliance-theater/[package-name] build`
+
+##### "Module not found" in tests
+
+1. Check Jest `moduleNameMapper` points to `src` not `dist`
+2. Verify test imports use published package name, not relative paths
+3. Check `transformIgnorePatterns` allows transpilation of your package
+4. Run `yarn test` with `--no-cache` to clear Jest cache
+
+##### TypeScript cannot find types
+
+1. Verify `tsconfig.json` has `composite: true`
+2. Check `declaration: true` and `declarationMap: true` are set
+3. Build the package to generate `.d.ts` files
+4. Verify `paths` points to `dist` folder
+5. Check consuming package has project reference to your package
+
+##### Circular dependency errors
+
+1. Review the dependency order (see Dependency Management section)
+2. Check for imports that create cycles
+3. Consider extracting shared types to a separate package
+4. Use dependency injection or interfaces to break cycles
+
+#### Summary Checklist
+
+When creating a new package, verify:
+
+- [ ] Package directory created under `web-ui/packages/[package-name]/`
+- [ ] `package.json` with proper name, version, exports, and workspace dependencies
+- [ ] `tsconfig.json` extending base config with proper paths and references
+- [ ] `jest.config.mjs` and shared config created
+- [ ] `src/index.ts` with organized exports
+- [ ] Implementation files in `src/`
+- [ ] Tests in `__tests__/`
+- [ ] Package added to app dependencies (if needed)
+- [ ] App tsconfig updated with paths and references (if needed)
+- [ ] Package builds successfully: `yarn build`
+- [ ] Tests pass: `yarn test`
+- [ ] Can be imported in application code
+- [ ] Documentation added to package README (optional but recommended)
+
+#### Additional Resources
+
+- **Existing Examples**: Review `lib-logger`, `lib-env`, `lib-typescript`, `lib-send-api-request` for reference implementations
+- **Turborepo**: https://turbo.build/repo/docs
+- **Yarn Workspaces**: https://classic.yarnpkg.com/en/docs/workspaces/
+- **TypeScript Project References**: https://www.typescriptlang.org/docs/handbook/project-references.html
 
 ### Making Changes
 
