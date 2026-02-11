@@ -2,6 +2,7 @@
 export type * from './driver/types';
 export * from './driver/index-postgres';
 export type { DbQueryFunction } from './driver/index-postgres';
+export { pgDb, pgDbWithInit } from './driver/connection';
 
 // Re-export ORM types and utilities
 export type {
@@ -21,6 +22,8 @@ export type {
   ChatMessagesType,
   ChatsType,
   ChatTurnsType,
+  ChatToolType,
+  ChatToolCallsType,
   UserPublicKeysType,
   ViolationDetailsType,
   ComplianceScoreType,
@@ -38,7 +41,7 @@ export type {
   ProvidersType,
   ModelsType,
   ModelQuotasType,
-  Types
+  Types,
 } from './orm/drizzle-types';
 export type {
   DbFullSchemaType,
@@ -49,7 +52,13 @@ export type {
 } from './orm/schema';
 export * from './orm/connection';
 export * from './orm/db-helpers';
-export { sql as drizzleSql, type DrizzleSqlType } from './orm/drizzle-sql';
+export { sql, type DrizzleSqlType } from './orm/drizzle-sql';
+export { 
+  isDrizzleError, 
+  errorFromCode, 
+  PG_ERROR_CODE_DESCRIPTIONS,
+  type PostgresError 
+} from './orm/drizzle-error';
 
 // Re-export schema tables
 export * from './schema/schema';

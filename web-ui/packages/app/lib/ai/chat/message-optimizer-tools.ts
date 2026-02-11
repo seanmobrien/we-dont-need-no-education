@@ -12,8 +12,7 @@ import { appMeters, hashUserId } from '@/lib/site-util/metrics';
 // import { ToolMap } from '../services/model-stats/tool-map';
 import { createAgentHistoryContext } from '../middleware/chat-history/create-chat-history-context';
 import z from 'zod';
-import { DbTransactionType, drizDbWithInit, schema } from '@compliance-theater/database';
-import { ThisDbQueryProvider } from '@compliance-theater/database';
+import { DatabaseType, DbTransactionType, drizDbWithInit, schema } from '@compliance-theater/database';
 import { and, eq, not } from 'drizzle-orm';
 import { AttributeValue } from '@opentelemetry/api';
 import { isKeyOf } from '@compliance-theater/typescript';
@@ -761,9 +760,9 @@ export const summarizeMessageRecord = async ({
   newTitle: boolean;
 }> => {
   try {
-    const qp: ThisDbQueryProvider = (await (tx
+    const qp: DatabaseType | DbTransactionType = (await (tx
       ? Promise.resolve(tx)
-      : drizDbWithInit())) as unknown as ThisDbQueryProvider;
+      : drizDbWithInit())) as DatabaseType | DbTransactionType;
 
     const isThisMessage = and(
       eq(schema.chatMessages.chatId, chatId),
