@@ -226,7 +226,9 @@ Extract packages in small batches (2-3 at a time) following dependency order, ve
 
 1. **Choose Approach**: Decide which strategy to use (recommend Hybrid)
 
-2. **Start with lib-logger**:
+2. **Review Package Creation Guide**: See [Adding a New Package to the Monorepo](MONOREPO_GUIDE.md#adding-a-new-package-to-the-monorepo) for detailed step-by-step instructions
+
+3. **Start with lib-logger** (example - already completed):
    ```bash
    # Create the package structure
    mkdir -p packages/lib-logger/src
@@ -242,14 +244,14 @@ Extract packages in small batches (2-3 at a time) following dependency order, ve
    # Commit
    ```
 
-3. **Establish Pattern**: Once lib-logger works, use it as a template for others
+4. **Establish Pattern**: Use completed packages (lib-logger, lib-env, lib-typescript, lib-send-api-request) as templates for others
 
-4. **Automate Where Possible**: Create scripts for:
+5. **Automate Where Possible**: Create scripts for:
    - Package scaffolding
    - Import path updates
    - Testing verification
 
-5. **Document as You Go**: Update MONOREPO_GUIDE.md with any lessons learned
+6. **Document as You Go**: Update MONOREPO_GUIDE.md with any lessons learned
 
 ## Key Success Factors
 
@@ -268,6 +270,7 @@ Extract packages in small batches (2-3 at a time) following dependency order, ve
 ## Resources
 
 - **MONOREPO_GUIDE.md**: Complete technical guide with templates
+  - **[Adding a New Package](MONOREPO_GUIDE.md#adding-a-new-package-to-the-monorepo)**: Step-by-step guide for creating new packages in the monorepo
 - **README.md**: Updated with monorepo structure
 - **turbo.json**: Build orchestration configuration
 - **jest.config.mjs**: Root test configuration
