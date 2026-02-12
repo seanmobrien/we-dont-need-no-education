@@ -269,25 +269,42 @@ web-ui/packages/[package-name]/
 │   ├── index.ts              # Main export file
 │   └── [implementation files]
 ├── __tests__/
-│   ├── shared/
-│   │   ├── jest.config-shared.mjs  # Shared Jest configuration
-│   │   └── setup/              # Test setup files (optional)
+│   ├── shared -> ../../__tests__  # Symlink to shared test config
 │   └── *.test.ts              # Test files
-├── __mocks__/                  # Package-specific mocks (optional)
+├── __mocks__/
+│   └── shared -> ../../__mocks__  # Symlink to shared mocks
 ├── package.json               # Package metadata and dependencies
 ├── tsconfig.json              # TypeScript configuration
 └── jest.config.mjs            # Jest configuration
 ```
+
+**Key structure notes:**
+- `__tests__/shared` is a **symbolic link** to `packages/__tests__` (the shared test configuration directory)
+- `__mocks__/shared` is a **symbolic link** to `packages/__mocks__` (the shared mocks directory)
+- These symlinks allow all packages to share common test setup and mocks without duplication
 
 #### Step-by-Step Package Creation Process
 
 ##### Step 1: Create Package Directory Structure
 
 ```bash
-# Create the package directory
+# Create the package directory and source folder
 mkdir -p web-ui/packages/[package-name]/src
-mkdir -p web-ui/packages/[package-name]/__tests__/shared
+
+# Create __tests__ directory and symlink to shared test configuration
+mkdir -p web-ui/packages/[package-name]/__tests__
+cd web-ui/packages/[package-name]/__tests__
+ln -sf ../../__tests__ shared
+
+# Create __mocks__ directory and symlink to shared mocks
+cd ..
+mkdir -p __mocks__
+cd __mocks__
+ln -sf ../../__mocks__ shared
+cd ../..
 ```
+
+**Important:** The `shared` directories are symbolic links, not regular directories. This pattern allows all packages to share common test setup files and mocks from `packages/__tests__` and `packages/__mocks__` without duplication.
 
 ##### Step 2: Create package.json
 
@@ -398,11 +415,13 @@ Create `web-ui/packages/[package-name]/tsconfig.json`:
 - **paths**: Map workspace packages to their `dist` folders for proper resolution during build
 - **references**: List all workspace packages this package depends on (must also be in `paths` and `package.json`)
 
-##### Step 4: Create Shared Jest Configuration
+##### Step 4: Access Shared Jest Configuration
 
-Create `web-ui/packages/[package-name]/__tests__/shared/jest.config-shared.mjs`:
+The shared Jest configuration is accessed via the symbolic link you created in Step 1. The shared configuration lives in `packages/__tests__/jest.config-shared.mjs` and is accessible to your package via `__tests__/shared/`.
 
-For packages without React dependencies (pure utilities):
+**Note:** You don't need to create the shared config file - it already exists in `packages/__tests__/jest.config-shared.mjs` and is accessible through the symlink you created.
+
+For reference, the shared configuration for packages without React dependencies (pure utilities) looks like this:
 
 ```javascript
 const config = {
@@ -483,8 +502,9 @@ export default config;
 ```
 
 **Key points:**
+- **Shared via symlink**: The shared configuration is accessed through the `__tests__/shared` symlink
 - **testEnvironment**: Use `'node'` for pure utilities, `'jsdom'` for React components
-- **setupFilesAfterEnv**: List setup files that run before each test (mocks, environment variables, etc.)
+- **setupFilesAfterEnv**: List setup files that run before each test (accessed via shared symlink)
 - **moduleNameMapper**: Map workspace packages to their `src` folders (not `dist`) for testing
 - **transformIgnorePatterns**: Allow transpilation of ESM-only packages
 
@@ -716,21 +736,53 @@ This enables TypeScript to build packages in the correct order and provides bett
 
 ##### Shared Test Setup Files
 
-Common test setup files can be symlinked or referenced from the app package:
+All packages share common test setup files and mocks via symbolic links:
+
+```bash
+# Structure
+packages/
+├── __tests__/              # Shared test configuration (one copy)
+│   ├── jest.config-shared.mjs
+│   └── setup/
+│       ├── jest.mock-log.ts
+│       ├── jest.env-vars.ts
+│       └── ...
+├── __mocks__/              # Shared mocks (one copy)
+│   ├── instrumentation.ts
+│   ├── keycloak-provider.js
+│   └── ...
+└── [package-name]/
+    ├── __tests__/
+    │   └── shared -> ../../__tests__  # Symlink to packages/__tests__
+    └── __mocks__/
+        └── shared -> ../../__mocks__  # Symlink to packages/__mocks__
+```
+
+**How it works:**
+- All shared test setup and mock files live in `packages/__tests__/` and `packages/__mocks__/`
+- Each package creates symbolic links: `__tests__/shared` and `__mocks__/shared`
+- In Jest config, reference setup files via the symlink:
 
 ```javascript
-// Option 1: Copy to package
 setupFilesAfterEnv: [
   '<rootDir>/__tests__/shared/setup/jest.mock-log.ts',
-]
-
-// Option 2: Reference from app (if appropriate)
-setupFilesAfterEnv: [
-  '<rootDir>/../app/__tests__/shared/setup/jest.mock-log.ts',
+  '<rootDir>/__tests__/shared/setup/jest.env-vars.ts',
 ]
 ```
 
-Use Option 1 for packages that need to be independent, Option 2 for packages tightly coupled to the app.
+**Benefits:**
+- Single source of truth for test configuration
+- No duplication of mock files
+- Easy to update shared setup across all packages
+- Follows the pattern used by the app package
+
+**Creating the symlinks:**
+```bash
+# In your package directory
+cd web-ui/packages/[package-name]
+mkdir -p __tests__ && cd __tests__ && ln -sf ../../__tests__ shared && cd ..
+mkdir -p __mocks__ && cd __mocks__ && ln -sf ../../__mocks__ shared && cd ..
+```
 
 ##### Package Naming Conventions
 
