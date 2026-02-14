@@ -14,9 +14,8 @@ import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { EmailDashboardToolbarAction } from '@/components/email-message/dashboard-layout/email-dashboard-toolbar-action';
 import '@testing-library/jest-dom';
-
 // Mock the ThemeSelector component
-jest.mock('@/components/theme/theme-selector', () => {
+jest.mock('@compliance-theater/themes/components/theme-selector', () => {
   const MockThemeSelector = () => (
     <div data-testid="theme-selector">Theme Selector</div>
   );

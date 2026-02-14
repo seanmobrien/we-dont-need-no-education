@@ -1,11 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import '@testing-library/jest-dom';
 import { render, screen, waitFor, act } from '@testing-library/react';
-import { ThemeProvider, useTheme } from '@compliance-theater/themes';
-import { themes } from '@compliance-theater/themes';
+import { ThemeProvider, useTheme, themes } from '../../src/themes';
 
-// Increase timeout for async tests
-jest.setTimeout(10000);
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -75,11 +72,10 @@ describe('ThemeProvider', () => {
       );
 
       // Use a longer timeout and allow React to process the effects
-      await waitFor(() => {
-        const child = screen.getByTestId('child');
-        expect(child).toBeInTheDocument();
+      await waitFor(() => {        
+        expect(screen.getByTestId('child')).toBeInTheDocument();        
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
   });
 
   describe('Default Theme', () => {
@@ -94,7 +90,7 @@ describe('ThemeProvider', () => {
         const themeElement = screen.getByTestId('current-theme');
         expect(themeElement.textContent).toBe('dark');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
 
     it('should use custom default theme when provided', async () => {
       render(
@@ -107,7 +103,7 @@ describe('ThemeProvider', () => {
         const themeElement = screen.getByTestId('current-theme');
         expect(themeElement.textContent).toBe('light');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
   });
 
   describe('Theme from localStorage', () => {
@@ -126,7 +122,7 @@ describe('ThemeProvider', () => {
         const themeElement = screen.getByTestId('current-theme');
         expect(themeElement.textContent).toBe('light');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
 
     it('should ignore invalid theme from localStorage', async () => {
       localStorageMock.setItem('selectedTheme', 'invalid-theme');
@@ -141,7 +137,7 @@ describe('ThemeProvider', () => {
         const themeElement = screen.getByTestId('current-theme');
         expect(themeElement.textContent).toBe('dark');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
 
     it('should use default theme if localStorage is empty', async () => {
       render(
@@ -154,7 +150,7 @@ describe('ThemeProvider', () => {
         const themeElement = screen.getByTestId('current-theme');
         expect(themeElement.textContent).toBe('dark');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
   });
 
   describe('Theme Switching', () => {
@@ -179,7 +175,7 @@ describe('ThemeProvider', () => {
         const themeElement = screen.getByTestId('current-theme');
         expect(themeElement.textContent).toBe('light');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
 
     it('should switch from light to dark theme', async () => {
       render(
@@ -239,7 +235,7 @@ describe('ThemeProvider', () => {
       await waitFor(() => {
         expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
 
     it('should set data-toolpad-color-scheme attribute', async () => {
       render(
@@ -251,7 +247,7 @@ describe('ThemeProvider', () => {
       await waitFor(() => {
         expect(document.documentElement.getAttribute('data-toolpad-color-scheme')).toBe('dark');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
 
     it('should set data-mui-color-scheme attribute', async () => {
       render(
@@ -263,7 +259,7 @@ describe('ThemeProvider', () => {
       await waitFor(() => {
         expect(document.documentElement.getAttribute('data-mui-color-scheme')).toBe('dark');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
 
     it('should update all CSS attributes when theme changes', async () => {
       render(
@@ -286,7 +282,7 @@ describe('ThemeProvider', () => {
         expect(document.documentElement.getAttribute('data-toolpad-color-scheme')).toBe('light');
         expect(document.documentElement.getAttribute('data-mui-color-scheme')).toBe('light');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
   });
 
   describe('Theme Context', () => {
@@ -301,7 +297,7 @@ describe('ThemeProvider', () => {
         const modeElement = screen.getByTestId('theme-mode');
         expect(modeElement.textContent).toBe('dark');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
 
     it('should provide correct theme object after switching', async () => {
       render(
@@ -324,7 +320,7 @@ describe('ThemeProvider', () => {
         const modeElement = screen.getByTestId('theme-mode');
         expect(modeElement.textContent).toBe('light');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
   });
 
   describe('useTheme Hook', () => {
@@ -337,7 +333,7 @@ describe('ThemeProvider', () => {
       }).toThrow('useTheme must be used within a ThemeProvider');
 
       consoleError.mockRestore();
-    });
+    }, 10000);
 
     it('should return theme context when used within provider', async () => {
       let hookResult: ReturnType<typeof useTheme> | null = null;
@@ -360,7 +356,7 @@ describe('ThemeProvider', () => {
         expect(hookResult?.theme).toBe(themes.dark);
         expect(typeof hookResult?.setTheme).toBe('function');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
   });
 
   describe('Theme Object Integration', () => {
@@ -384,7 +380,7 @@ describe('ThemeProvider', () => {
         expect(receivedTheme).toBe(themes.dark);
         expect(receivedTheme?.palette?.mode).toBe('dark');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
 
     it('should use actual light theme from definitions', async () => {
       let receivedTheme: any = null;
@@ -402,10 +398,10 @@ describe('ThemeProvider', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('theme-test')).toBeInTheDocument();
+        expect(screen.getByTestId('theme-test')).not.toBeUndefined();
         expect(receivedTheme).toBe(themes.light);
         expect(receivedTheme?.palette?.mode).toBe('light');
       }, { timeout: 5000, interval: 100 });
-    });
+    }, 10000);
   });
 });

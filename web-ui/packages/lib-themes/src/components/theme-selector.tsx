@@ -6,9 +6,7 @@ import MenuItem from '@mui/material/MenuItem';
 import ListSubheader from '@mui/material/ListSubheader';
 import Tooltip from '@mui/material/Tooltip';
 import PaletteIcon from '@mui/icons-material/Palette';
-import { type ThemeType } from '@compliance-theater/themes';
-import { themeDisplayNames } from '@compliance-theater/themes';
-import { useTheme } from '@compliance-theater/themes';
+import { useTheme, themeDisplayNames, type ThemeType } from '../themes';
 
 const availableThemes: ThemeType[] = ['dark', 'light'] as const;
 const origins = {

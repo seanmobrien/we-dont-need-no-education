@@ -208,7 +208,7 @@ components/email-message/dashboard-layout/
 - **next/navigation**: Next.js navigation utilities
 
 ### Internal Dependencies
-- **@/components/theme/theme-selector**: Theme switching component
+- **@compliance-theater/themes/components/theme-selector**: Theme switching component
 - **@/components/email-message/email-context**: Email context provider
 - **@/lib/themes**: Theme configuration and utilities
 - **@/lib/site-util/url-builder**: URL construction utilities

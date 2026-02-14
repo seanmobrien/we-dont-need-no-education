@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { cn, styles } from '@compliance-theater/themes';
+import { cn, styles } from '../../src/styles';
 
 describe('Utility Classes', () => {
   describe('cn function', () => {
