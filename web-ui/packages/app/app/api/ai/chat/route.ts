@@ -15,7 +15,7 @@ import { env } from '@compliance-theater/env';
 import { auth } from '@/auth';
 import { type NextRequest, NextResponse } from 'next/server';
 import { log, LoggedError } from '@compliance-theater/logger';
-import { isTruthy } from '@/lib/react-util/utility-methods';
+import { isTruthy } from '@compliance-theater/react/utility-methods';
 import {
   unauthorizedServiceResponse,
   wrapRouteRequest,

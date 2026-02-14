@@ -12,7 +12,7 @@
  *   - The `asErrorLike` function converts a string or ErrorLike into a branded ErrorLike object.
  *
  * @example
- *   import { isErrorLike, asErrorLike, isStringOrErrorLike } from '@/lib/react-util/errors/error-like';
+ *   import { isErrorLike, asErrorLike, isStringOrErrorLike } from '@compliance-theater/react/errors/error-like';
  *
  *   function handleError(err: unknown) {
  *     if (isErrorLike(err)) {

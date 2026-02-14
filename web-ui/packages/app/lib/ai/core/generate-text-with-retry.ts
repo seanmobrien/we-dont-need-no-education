@@ -1,4 +1,4 @@
-import { isRateRetryError } from '@/lib/react-util/errors/rate-retry-error';
+import { isRateRetryError } from '@compliance-theater/react/errors/rate-retry-error';
 import { generateText, type ToolSet } from 'ai';
 import { rateLimitQueueManager } from '../middleware/key-rate-limiter/queue-manager';
 import { FirstParameter } from '@compliance-theater/typescript';

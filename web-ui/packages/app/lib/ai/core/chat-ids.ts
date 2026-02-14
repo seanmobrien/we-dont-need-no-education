@@ -1,5 +1,5 @@
 import { log } from '@compliance-theater/logger';
-import { cryptoRandomBytes } from '@/lib/react-util/crypto-random-bytes';
+import { cryptoRandomBytes } from '@compliance-theater/react/crypto-random-bytes';
 
 const CHAT_ID_LENGTH = 8;
 const CHAT_ID_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';

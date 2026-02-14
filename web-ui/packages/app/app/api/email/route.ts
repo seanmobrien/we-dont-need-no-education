@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@compliance-theater/logger';
 // (normalizeNullableNumeric no longer needed directly; handled in validation module)
-import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 
 import { EmailService } from '@/lib/api/email/email-service';
 import {

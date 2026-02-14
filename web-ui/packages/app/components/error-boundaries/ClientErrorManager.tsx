@@ -14,7 +14,7 @@ import {
   ErrorLike,
   isErrorLike,
   StringOrErrorLike,
-} from '@/lib/react-util/errors/error-like';
+} from '@compliance-theater/react/errors/error-like';
 import { DEFAULT_SUPPRESSION_RULES } from '@/lib/error-monitoring/default-suppression-rules';
 import { shouldSuppressError } from '@/lib/error-monitoring/utility';
 import type { ErrorSuppressionRule } from '@/lib/error-monitoring/types';
