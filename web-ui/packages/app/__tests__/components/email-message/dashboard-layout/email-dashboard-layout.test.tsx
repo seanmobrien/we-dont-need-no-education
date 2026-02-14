@@ -169,10 +169,13 @@ describe('EmailDashboardLayout', () => {
     },
     expires: '2024-12-31',
   } as Session;
-
+  // Ideally a good compiler will strip this out, but this is javascript, so who knows XD.  Explicitly referencing imported sticky-mocks
+  // to avoid compiler/LLM feedback about them not being used.
+  const notReallyUsed = (ThemeSelector as jest.Mock).getMockName() ?? (usePathname as jest.Mock).getMockName() ?? 'notReallyUsed';
   const defaultProps = {
     children: <div data-testid="dashboard-content">Dashboard Content</div>,
     session: mockSession,
+    mockName: notReallyUsed,
   };
 
   beforeEach(() => {
