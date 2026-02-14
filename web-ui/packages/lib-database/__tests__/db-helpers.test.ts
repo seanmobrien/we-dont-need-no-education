@@ -5,6 +5,7 @@ const mockDb = {
   select: jest.fn().mockReturnThis(),
   from: jest.fn().mockReturnThis(),
   where: jest.fn().mockReturnThis(),
+  limit: jest.fn().mockReturnThis(),
   execute: jest.fn(),
   insert: jest.fn().mockReturnThis(),
   values: jest.fn().mockReturnThis(),
@@ -69,7 +70,9 @@ describe('Database Helpers', () => {
     });
 
     it('should look up existing reason by normalized name', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ id: 123, reason: 'duplicate' }]);
+      mockDb.execute.mockResolvedValueOnce([
+        { relationReasonId: 123, description: 'duplicate' },
+      ]);
 
       const result = await getDocumentRelationReason({
         db: mockDb,
@@ -80,10 +83,13 @@ describe('Database Helpers', () => {
       expect(result).toBe(123);
       expect(mockDb.select).toHaveBeenCalled();
       expect(mockDb.where).toHaveBeenCalled();
+      expect(mockDb.limit).toHaveBeenCalledWith(1);
     });
 
     it('should normalize reason to lowercase', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ id: 123, reason: 'related' }]);
+      mockDb.execute.mockResolvedValueOnce([
+        { relationReasonId: 123, description: 'related' },
+      ]);
 
       await getDocumentRelationReason({
         db: mockDb,
@@ -98,7 +104,7 @@ describe('Database Helpers', () => {
       // First call to check if exists returns empty
       mockDb.execute.mockResolvedValueOnce([]);
       // Second call to insert returns the new ID
-      mockDb.execute.mockResolvedValueOnce([{ id: 999 }]);
+      mockDb.returning.mockResolvedValueOnce([{ relationReasonId: 999 }]);
 
       const result = await getDocumentRelationReason({
         db: mockDb,
@@ -109,6 +115,7 @@ describe('Database Helpers', () => {
       expect(result).toBe(999);
       expect(mockDb.insert).toHaveBeenCalled();
       expect(mockDb.values).toHaveBeenCalled();
+      expect(mockDb.returning).toHaveBeenCalled();
     });
 
     it('should not create new reason when not found and add is false', async () => {
@@ -137,7 +144,9 @@ describe('Database Helpers', () => {
     });
 
     it('should trim whitespace from reason', async () => {
-      mockDb.execute.mockResolvedValueOnce([{ id: 456, reason: 'trimmed' }]);
+      mockDb.execute.mockResolvedValueOnce([
+        { relationReasonId: 456, description: 'trimmed' },
+      ]);
 
       await getDocumentRelationReason({
         db: mockDb,

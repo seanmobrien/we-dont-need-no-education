@@ -131,7 +131,11 @@ export default class AfterManager {
    * @returns true when the handler was added, false when it was already present
    */
   public add(queueName: string, handler: TAfterHandler<void>): boolean {
-    const queue = this.queue(queueName, true)!;
+    let queue = this.#queues.get(queueName);
+    if (!queue) {
+      queue = [];
+      this.#queues.set(queueName, queue);
+    }
     if (!queue.includes(handler)) {
       queue.push(handler);
       return true;
@@ -147,9 +151,12 @@ export default class AfterManager {
    * @returns true when the handler was removed
    */
   public remove(queueName: string, handler: TAfterHandler<void>): boolean {
-    const q = this.queue(queueName);
-    const index = q?.indexOf(handler);
-    if (typeof index === 'number' && index !== -1) {
+    const q = this.#queues.get(queueName);
+    if (!q) {
+      return false;
+    }
+    const index = q.indexOf(handler);
+    if (index !== -1) {
       q.splice(index, 1);
       return true;
     }
@@ -217,11 +224,11 @@ export default class AfterManager {
   public async signal(signalName: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
       try {
-        const handlers = this.queue(signalName, false);
-        if (!handlers) {
+        const queueHandlers = this.#queues.get(signalName);
+        if (!queueHandlers) {
           return resolve();
         }
-        const promises = handlers.map((handler) => handler());
+        const promises = queueHandlers.map((handler) => handler());
         const completed = await Promise.race([
           Promise.all(promises),
           new Promise((resolve) =>

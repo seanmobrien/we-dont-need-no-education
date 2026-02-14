@@ -9,7 +9,7 @@ import type {
   LanguageModelV2CallOptions,
   LanguageModelV2ToolResultPart,
 } from '@ai-sdk/provider';
-import { type DbTransactionType } from '../../../drizzle-db';
+import { type DbTransactionType } from '@compliance-theater/database/orm';
 import { ToolStatus } from './types';
 
 declare module '@/lib/ai/middleware/chat-history/utility' {

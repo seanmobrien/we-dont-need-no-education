@@ -19,8 +19,8 @@
       "default": "./dist/orm/index.js"
     },
     "./schema": {
-      "types": "./dist/schema/schema.d.ts",
-      "default": "./dist/schema/schema.js"
+      "types": "./dist/drizzle/schema.d.ts",
+      "default": "./dist/drizzle/schema.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
@@ -37,6 +37,9 @@
   "scripts": {
     "build": "tsc -b tsconfig.json",
     "build:typescript": "echo 'Building lib-database typescript...' && tsc -b tsconfig.json && echo 'TypeScript build complete.' || (echo 'Typescript compile did not succeed' >&2; exit 1)",
+    "drizzle-generate": "drizzle-kit generate --config=drizzle.config.ts",
+    "drizzle-migrate": "drizzle-kit migrate --config=drizzle.config.ts",
+    "drizzle-studio": "drizzle-kit studio --config=drizzle.config.ts",
     "test": "jest",
     "lint": "echo 'Linting lib-database...'",
     "clean:build": "rimraf .next dist tsconfig.tsbuildinfo"

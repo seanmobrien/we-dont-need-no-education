@@ -5,7 +5,7 @@ import AfterManager from '@compliance-theater/after';
 
 type TPgDbRecordType = Record<string, unknown>;
 
-class PgDbDriver<TQueryRecord> {
+export class PgDbDriver<TQueryRecord> {
   static Instance<TRecord>(): PgDbDriver<TRecord> {
     const GLOBAL_KEY = Symbol.for('@noeducation/neondb:PgDbDriver');
     const registry = globalThis as unknown as {

@@ -14,7 +14,7 @@ import type {
   PostgresStatement,
 } from './postgres';
 import type { IResultset } from './types';
-declare module '@/lib/neondb/index-postgres' {
+declare module '@compliance-theater/database/driver/index-postgres' {
   export type QueryProps<ResultType extends object = Record<string, unknown>> =
     {
       transform?: <RecordType extends Record<string, unknown>>(

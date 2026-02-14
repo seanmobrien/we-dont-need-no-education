@@ -1,9 +1,13 @@
 import AfterManager from '../src/index';
+import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
+
+const AFTER_MANAGER_KEY = Symbol.for('@noeducation/after-manager-instance');
 
 describe('AfterManager', () => {
   let manager: AfterManager;
 
   beforeEach(() => {
+    SingletonProvider.Instance.delete(AFTER_MANAGER_KEY);
     // Get a fresh instance for each test
     manager = AfterManager.getInstance();
   });
@@ -14,6 +18,7 @@ describe('AfterManager', () => {
     if (teardownQueue) {
       teardownQueue.forEach(handler => manager.remove('teardown', handler));
     }
+    SingletonProvider.Instance.delete(AFTER_MANAGER_KEY);
   });
 
   describe('getInstance', () => {

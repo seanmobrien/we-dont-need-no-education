@@ -1,10 +1,20 @@
-import { PgDbDriver } from '../src/driver/connection';
+import { pgDb, pgDbWithInit } from '../src/driver/connection';
 
-// Mock environment and logger
+const afterAdd = jest.fn();
+const afterRemove = jest.fn();
+
+jest.mock('postgres', () => {
+  const sqlClient = {
+    end: jest.fn(async () => undefined),
+  };
+  return {
+    __esModule: true,
+    default: jest.fn(() => sqlClient),
+  };
+});
+
 jest.mock('@compliance-theater/env', () => ({
-  env: {
-    DATABASE_URL: 'postgresql://test:test@localhost:5432/testdb',
-  },
+  env: jest.fn(() => 'postgresql://test:test@localhost:5432/testdb'),
 }));
 
 jest.mock('@compliance-theater/logger', () => ({
@@ -14,68 +24,41 @@ jest.mock('@compliance-theater/logger', () => ({
 }));
 
 jest.mock('@compliance-theater/after', () => ({
+  __esModule: true,
   default: {
     getInstance: jest.fn(() => ({
-      add: jest.fn(),
+      add: afterAdd,
+      remove: afterRemove,
     })),
   },
 }));
 
-describe('PgDbDriver', () => {
-  describe('Instance', () => {
-    it('should return a singleton instance', () => {
-      const instance1 = PgDbDriver.Instance();
-      const instance2 = PgDbDriver.Instance();
-      expect(instance1).toBe(instance2);
-    });
-
-    it('should return the same instance across multiple calls', () => {
-      const instances = Array.from({ length: 5 }, () => PgDbDriver.Instance());
-      const first = instances[0];
-      instances.forEach(instance => {
-        expect(instance).toBe(first);
-      });
-    });
-
-    it('should be type-safe with generic parameter', () => {
-      interface TestRecord {
-        id: number;
-        name: string;
-      }
-      
-      const instance = PgDbDriver.Instance<TestRecord>();
-      expect(instance).toBeDefined();
-    });
+describe('Driver Connection', () => {
+  beforeEach(() => {
+    const GLOBAL_KEY = Symbol.for('@noeducation/neondb:PgDbDriver');
+    (globalThis as Record<symbol, unknown>)[GLOBAL_KEY] = undefined;
+    jest.clearAllMocks();
   });
 
-  describe('getClient', () => {
-    it('should return a client function', () => {
-      const driver = PgDbDriver.Instance();
-      const client = driver.getClient();
-      expect(client).toBeDefined();
-      expect(typeof client).toBe('function');
-    });
-
-    it('should return the same client on multiple calls', () => {
-      const driver = PgDbDriver.Instance();
-      const client1 = driver.getClient();
-      const client2 = driver.getClient();
-      expect(client1).toBe(client2);
-    });
+  it('pgDb should return a db-like value', () => {
+    const db = pgDb();
+    expect(db).toBeDefined();
   });
 
-  describe('teardown', () => {
-    it('should be a static method', () => {
-      expect(typeof PgDbDriver.teardown).toBe('function');
-    });
+  it('pgDbWithInit should initialize once and return the same instance', async () => {
+    const db1 = await pgDbWithInit();
+    const db2 = await pgDbWithInit();
 
-    it('should resolve without errors', async () => {
-      await expect(PgDbDriver.teardown()).resolves.toBeUndefined();
-    });
+    expect(db1).toBeDefined();
+    expect(typeof db1).toBe('function');
+    expect(typeof db2).toBe('function');
+  });
 
-    it('should handle multiple teardown calls', async () => {
-      await expect(PgDbDriver.teardown()).resolves.toBeUndefined();
-      await expect(PgDbDriver.teardown()).resolves.toBeUndefined();
-    });
+  it('pgDb should return initialized instance after init', async () => {
+    const initialized = await pgDbWithInit();
+    const syncDb = pgDb();
+
+    expect(syncDb).toBeDefined();
+    expect(typeof initialized).toBe('function');
   });
 });

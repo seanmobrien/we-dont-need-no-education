@@ -1,126 +1,5 @@
-/**
- * PostgresError represents the shape of an error object returned by
- * PostgreSQL drivers (for example node-postgres / pg) and by wrappers such
- * as Drizzle/driver adapters. It extends the standard JavaScript `Error`
- * with Postgres-specific fields (many mapped from the server's error
- * response) and with optional driver/wrapper additions.
- *
- * This interface is intentionally permissive: most properties are
- * optional because different drivers, connection pools, and Postgres
- * server versions populate different subsets of fields. Code that
- * consumes `PostgresError` should therefore treat fields as possibly
- * `undefined` and use safe checks (optional chaining / strict equality)
- * when making decisions based on the error contents.
- *
- * Common usage patterns:
- * - Inspect `code` (SQLSTATE) to branch on specific error classes
- *   (e.g. '23505' => unique_violation).
- * - Use `detail`, `hint`, and `constraint` for richer diagnostics
- *   (useful when logging or surfacing errors to developers).
- * - The `query` and `parameters` fields (driver/wrapper additions)
- *   may be present and are helpful for retry logic and observability,
- *   but should never be logged in full in production if they contain
- *   sensitive data.
- *
- * Example:
- * ```ts
- * function handleDbError(err: unknown) {
- *   if ((err as PostgresError)?.code === '23505') {
- *     // unique violation - handle conflict
- *   }
- *   const pgErr = err as PostgresError;
- *   console.error('DB error', {
- *     sqlstate: pgErr.code,
- *     table: pgErr.table,
- *     constraint: pgErr.constraint,
- *     hint: pgErr.hint,
- *   });
- * }
- * ```
- *
- * Notes:
- * - `code` is the SQLSTATE error code (string). See
- *   https://www.postgresql.org/docs/current/errcodes-appendix.html for
- *   semantic meanings (e.g. '23505' = unique_violation).
- * - `position` and `internalPosition` are character offsets (as strings)
- *   returned by the server for parse/compile/runtime errors; they are
- *   usually present for syntax errors only.
- * - Driver/wrapper fields (`query`, `parameters`, `cause`, `originalError`)
- *   are non-standard and may be added by library layers around the raw
- *   driver. Treat them as optional and implementation-specific.
- */
-export interface PostgresError extends Error {
-  /**
-   * Always 'DrizzleError' for errors thrown by Drizzle or its adapters.
-   */
-  name: 'DrizzleError';
-  /**
-   * SQLSTATE error code reported by Postgres (string). See Postgres
-   * documentation for values (e.g. '23505' = unique_violation).
-   */
-  code?: string;
-  /** Severity reported by Postgres (e.g. "ERROR", "FATAL", "PANIC"). */
-  severity?: string;
-  /** Detailed human-readable error message from Postgres. */
-  detail?: string;
-  /** An optional hint from Postgres about how to resolve the error. */
-  hint?: string;
-  /** Position (character offset) of error within the query string (when present). */
-  position?: string;
-  /** Internal position within a nested/internal query (when present). */
-  internalPosition?: string;
-  /** The text of the internally generated query (when present). */
-  internalQuery?: string;
-  /** Where the error occurred (context text), if the server provided it. */
-  where?: string;
-  /** Schema name related to the error (if applicable). */
-  schema?: string;
-  /** Table name related to the error (if applicable). */
-  table?: string;
-  /** Column name related to the error (if applicable). */
-  column?: string;
-  /** Data type name related to the error (if applicable). */
-  dataType?: string;
-  /** Constraint name when the error is a constraint violation. */
-  constraint?: string; // constraint name for violations
-  /** Source filename reported by Postgres server (internal). */
-  file?: string;
-  /** Source line number reported by Postgres server (internal). */
-  line?: string;
-  /** Source routine reported by Postgres server (internal). */
-  routine?: string;
-  // driver/drizzle additions:
-  /** The SQL text the driver executed (if the wrapper recorded it). */
-  query?: string;
-  /** The bound parameters for `query`, if recorded by the wrapper/driver. */
-  parameters?: unknown[];
-  /** Cause or wrapped error object (when an adapter wraps the original error). */
-  cause?: unknown; // drizzle/other wrapper may set this
-  /** Original lower-level error if the wrapper preserved it. */
-  originalError?: unknown;
-}
-/**
- * Type guard to check if an error is a DrizzleError.
- *
- * @param error - The error to check.
- * @returns True if the error is a DrizzleError, false otherwise.
- */
-export const isDrizzleError = (error: unknown): error is PostgresError =>
-  typeof error === 'object' &&
-  error != null &&
-  'name' in error &&
-  error.name === 'DrizzleError';
+import type { IPostgresError } from "./types";
 
-/**
- * Canonical mapping of PostgreSQL SQLSTATE codes to short descriptions.
- * The keys are upper-cased SQLSTATE strings (5-character class or specific
- * codes) and values are the canonical short description tokens used in
- * Postgres documentation and other toolchains.
- *
- * This map intentionally contains only the most commonly encountered
- * SQLSTATE codes and the comprehensive list used by our codebase. If you
- * need additional codes, append them here following the same pattern.
- */
 export const PG_ERROR_CODE_DESCRIPTIONS: Record<string, string> = {
   '00000': 'successful_completion',
   '01000': 'warning',
@@ -383,33 +262,65 @@ export const PG_ERROR_CODE_DESCRIPTIONS: Record<string, string> = {
   XX001: 'data_corrupted',
   XX002: 'index_corrupted',
 };
+export type PgErrorCode = keyof typeof PG_ERROR_CODE_DESCRIPTIONS;
+export type PgErrorDescription = (typeof PG_ERROR_CODE_DESCRIPTIONS)[PgErrorCode];
 
-/**
- * Return a short canonical description for the provided SQLSTATE code.
- *
- * @param code - SQLSTATE code (case-insensitive, may include whitespace)
- * @returns canonical description string (for example 'unique_violation') or
- *   `undefined` if the code is not present in the built-in mapping.
- *
- * @example
- * ```ts
- * describePostgresErrorCode('23505'); // -> 'unique_violation'
- * describePostgresErrorCode(' 22p02 '); // -> 'invalid_text_representation'
- * ```
- */
-export const errorFromCode = (
-  code: string | undefined | unknown,
-): string | undefined => {
-  let k: string | undefined;
-  if (typeof code === 'string') {
-    k = code;
-  } else if (isDrizzleError(code)) {
-    k = code.code;
-  } else {
-    k = undefined;
+export class PostgresError extends Error implements IPostgresError {  
+  static isDrizzleError(error: unknown): error is IPostgresError {
+    return typeof error === 'object'
+      && error != null
+      && 'name' in error
+      && error.name === 'DrizzleError';
   }
-  if (!k) {
-    return undefined;
+  static errorFromCode = (code: string | undefined | unknown): PgErrorDescription | undefined => {
+    let k: string | undefined;
+    if (typeof code === 'string') {
+      k = code;
+    } else if (isDrizzleError(code)) {
+      k = code.code;
+    } else {
+      k = undefined;
+    }
+    const key = k?.trim()?.toUpperCase();
+    return key && key in PG_ERROR_CODE_DESCRIPTIONS
+      ? PG_ERROR_CODE_DESCRIPTIONS[key]
+      : undefined;
   }
-  return PG_ERROR_CODE_DESCRIPTIONS[k.trim().toUpperCase()];
-};
+  code?: string;
+  severity?: string;
+  detail?: string;
+  hint?: string;
+  position?: string;
+  internalPosition?: string;
+  internalQuery?: string;
+  where?: string;
+  schema?: string;
+  table?: string;
+  column?: string;
+  dataType?: string;
+  constraint?: string; 
+  file?: string;
+  line?: string;
+  routine?: string;
+  query?: string;
+  parameters?: unknown[];
+  cause?: unknown; 
+  originalError?: unknown;
+
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    super.name = 'DrizzleError';    
+  }
+  get name() : 'DrizzleError' {
+    return super.name as 'DrizzleError';
+  }
+  get codeDescription(): PgErrorDescription | undefined {
+    return PostgresError.errorFromCode(this.code);
+  }
+}
+
+export const isDrizzleError = (error: unknown): error is IPostgresError =>
+  PostgresError.isDrizzleError(error);
+
+export const errorFromCode = (code: string | undefined | unknown): PgErrorDescription | undefined =>
+  PostgresError.errorFromCode(code);

@@ -2,10 +2,10 @@ import type { PostgresSql } from './postgres';
 
 /**
  * PostgreSQL database driver connection manager
- * @module @/lib/neondb/connection
+ * @module @compliance-theater/database/driver/connection
  */
 
-declare module '@/lib/neondb/connection' {
+declare module '@compliance-theater/database/driver/connection' {
   /**
    * Singleton database driver for managing PostgreSQL connections via the Neon serverless driver.
    *

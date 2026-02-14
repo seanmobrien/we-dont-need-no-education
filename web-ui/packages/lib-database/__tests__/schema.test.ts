@@ -31,7 +31,9 @@ describe('Database Schema', () => {
       // Users table should have expected properties
       const usersTable = schema.users;
       expect(usersTable).toBeDefined();
-      expect(usersTable).toHaveProperty('_');
+      expect((usersTable as any)[Symbol.for('drizzle:IsDrizzleTable')]).toBe(
+        true
+      );
       
       // Check it's a Drizzle table
       const tableName = (usersTable as any)[Symbol.for('drizzle:Name')];

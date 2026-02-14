@@ -1,13 +1,13 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
-import schema, { DbDatabaseType } from './schema';
+import schema, { type DbDatabaseType } from './schema';
 import { isPromise } from '@compliance-theater/typescript/guards';
-import { LoggedError } from '@compliance-theater/logger';
+import { LoggedError } from '@compliance-theater/logger/errors/logged-error';
 
 /**
  * Drizzle DB connection helpers
  *
  * This module lazily initializes a Drizzle ORM `DbDatabaseType` instance using
- * a pg driver provided by `../neondb/connection`. The initialized instance is
+ * a pg driver provided by `@compliance-theater/database/driver/connection`. The initialized instance is
  * cached on `globalThis.__obapps` so it survives module reloads and is shared
  * across the process. Two convenience entry points are provided:
  *
@@ -84,7 +84,9 @@ const getPostgresDriver = async () => {
   let connection = (globalThis as GlobalDbRegistry)[PG_DRIVER_KEY];
   if (!connection) {
     try {
-      const postgresql = await import('../driver/connection');
+      const postgresql = await import(
+        '@compliance-theater/database/driver/connection'
+      );
       connection = postgresql.pgDbWithInit;
       (globalThis as GlobalDbRegistry)[PG_DRIVER_KEY] = connection;
     } catch (error) {

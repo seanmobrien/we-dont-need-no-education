@@ -28,11 +28,8 @@ jest.mock('@/auth', () => ({
   auth: jest.fn(),
 }));
 
-jest.mock('@compliance-theater/database', () => ({
+jest.mock('@compliance-theater/database/orm', () => ({
   drizDbWithInit: jest.fn(),
-}));
-
-jest.mock('@compliance-theater/database', () => ({
   schema: {
     chats: {
       id: 'chats.id',
@@ -62,6 +59,7 @@ jest.mock('@compliance-theater/database', () => ({
       messageOrder: 'chatMessages.messageOrder',
       toolName: 'chatMessages.toolName',
       functionCall: 'chatMessages.functionCall',
+      toolResult: 'chatMessages.toolResult',
       statusId: 'chatMessages.statusId',
       providerId: 'chatMessages.providerId',
       metadata: 'chatMessages.metadata',
@@ -84,7 +82,7 @@ jest.mock('@/lib/react-util', () => ({
 
 // Import mocked dependencies
 import { auth } from '@/auth';
-import { drizDbWithInit } from '@compliance-theater/database';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { eq, and } from 'drizzle-orm';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 

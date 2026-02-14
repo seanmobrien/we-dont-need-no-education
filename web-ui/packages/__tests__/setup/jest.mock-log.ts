@@ -35,10 +35,25 @@ const getLogger = () => {
   return globalWithLogger[logSymbol];
 };
 
-jest.mock('@compliance-theater/logger/core', () => {
+
+let internalLog: (jest.Mock<void, [cb: (l: LoggerInstance) => void], any>) | undefined = undefined;
+let internalLogger: (jest.Mock<Promise<LoggerInstance>, [], any>) | undefined = undefined;
+
+
+jest.mock('@compliance-theater/logger/core', () => {  
   return {
-    logger: jest.fn(() => Promise.resolve(getLogger())),
-    log: jest.fn((cb: (l: LoggerInstance) => void) => cb(getLogger())),
+    get logger() {
+      if (!internalLogger) {        
+        internalLogger = jest.fn(() => Promise.resolve(getLogger()));
+        return internalLogger;
+      } 
+    },
+    get log() { 
+      internalLog = internalLog ?? jest.fn((cb: (l: LoggerInstance) => void) => {
+          cb(getLogger());
+        });
+      return internalLog;
+    },
     logEvent: jest.fn(() => Promise.resolve()),
   };
 });
@@ -58,8 +73,18 @@ jest.mock('@compliance-theater/logger', () => {
   return {
     ...originalModule,
     logEvent: jest.fn(() => Promise.resolve()),
-    logger: jest.fn(() => getLogger()),
-    log: jest.fn((cb: (l: LoggerInstance) => void) => cb(getLogger())),
+    get logger() {
+      if (!internalLogger) {        
+        internalLogger = jest.fn(() => Promise.resolve(getLogger()));
+        return internalLogger;
+      } 
+    },
+    get log() { 
+      internalLog = internalLog ?? jest.fn((cb: (l: LoggerInstance) => void) => {
+          cb(getLogger());
+        });
+      return internalLog;
+    },
     errorLogFactory: jest.fn((x) => x),
     simpleScopedLogger: jest.fn(() => getLogger()),
     LoggedError: LoggedErrorWithSpies

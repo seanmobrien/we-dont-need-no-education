@@ -1,5 +1,5 @@
 /**
- * PostgresError represents the shape of an error object returned by
+ * IPostgresError represents the shape of an error object returned by
  * PostgreSQL drivers (for example node-postgres / pg) and by wrappers such
  * as Drizzle/driver adapters. It extends the standard JavaScript `Error`
  * with Postgres-specific fields (many mapped from the server's error
@@ -8,7 +8,7 @@
  * This interface is intentionally permissive: most properties are
  * optional because different drivers, connection pools, and Postgres
  * server versions populate different subsets of fields. Code that
- * consumes `PostgresError` should therefore treat fields as possibly
+ * consumes `IPostgresError` should therefore treat fields as possibly
  * `undefined` and use safe checks (optional chaining / strict equality)
  * when making decisions based on the error contents.
  *
@@ -25,10 +25,10 @@
  * Example:
  * ```ts
  * function handleDbError(err: unknown) {
- *   if ((err as PostgresError)?.code === '23505') {
+ *   if ((err as IPostgresError)?.code === '23505') {
  *     // unique violation - handle conflict
  *   }
- *   const pgErr = err as PostgresError;
+ *   const pgErr = err as IPostgresError;
  *   console.error('DB error', {
  *     sqlstate: pgErr.code,
  *     table: pgErr.table,
@@ -49,7 +49,7 @@
  *   are non-standard and may be added by library layers around the raw
  *   driver. Treat them as optional and implementation-specific.
  */
-export interface PostgresError extends Error {
+export interface IPostgresError extends Error {
   /**
    * Always 'DrizzleError' for errors thrown by Drizzle or its adapters.
    */
@@ -105,7 +105,7 @@ export interface PostgresError extends Error {
  * @param error - The error to check.
  * @returns True if the error is a DrizzleError, false otherwise.
  */
-export const isDrizzleError = (error: unknown): error is PostgresError =>
+export const isDrizzleError = (error: unknown): error is IPostgresError =>
   typeof error === 'object' &&
   error != null &&
   'name' in error &&
@@ -393,8 +393,8 @@ export const PG_ERROR_CODE_DESCRIPTIONS: Record<string, string> = {
  *
  * @example
  * ```ts
- * describePostgresErrorCode('23505'); // -> 'unique_violation'
- * describePostgresErrorCode(' 22p02 '); // -> 'invalid_text_representation'
+ * describeIPostgresErrorCode('23505'); // -> 'unique_violation'
+ * describeIPostgresErrorCode(' 22p02 '); // -> 'invalid_text_representation'
  * ```
  */
 export const errorFromCode = (

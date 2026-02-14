@@ -24,8 +24,9 @@
  * ```
  */
 
-import * as tables from '../schema/schema';
-import * as dbRelations from '../schema/custom-relations';
+import * as tables from '../drizzle/schema';
+import * as dbRelations from '../drizzle/custom-relations';
+
 import {
   PgQueryResultHKT,
   PgTable,

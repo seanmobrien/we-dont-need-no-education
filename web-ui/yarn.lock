@@ -953,7 +953,6 @@ __metadata:
     canvas: "npm:^3.2.0"
     cross-env: "npm:^10.0.0"
     dotenv: "npm:^16.5.0"
-    drizzle-kit: "npm:^0.31.1"
     drizzle-orm: "npm:^0.44.1"
     esbuild: "npm:>=0.25.0"
     eslint: "npm:^9"
@@ -1091,6 +1090,7 @@ __metadata:
     "@compliance-theater/logger": "workspace:*"
     "@types/node": "npm:^24.0.0"
     jest: "npm:^30.0.5"
+    rimraf: "npm:^6.1.2"
     ts-jest: "npm:^29.3.4"
     typescript: "npm:^5"
   languageName: unknown

@@ -4,7 +4,7 @@ import {
   documentRelationshipReason,
   documentUnits,
   documentProperty,
-} from '../schema/schema';
+} from '../drizzle/schema';
 import type {
   DatabaseType,
   DbTransactionType,
@@ -12,7 +12,8 @@ import type {
   DocumentRelationshipType,
 } from './drizzle-types';
 import { schema } from './schema';
-import { log, LoggedError } from '@compliance-theater/logger';
+import { LoggedError } from '@compliance-theater/logger/errors/logged-error/logged-error-class';
+import { log } from '@compliance-theater/logger/core';
 import { newUuid } from '@compliance-theater/typescript';
 import { EmailPropertyTypeTypeId } from './data-models-types';
 
@@ -68,6 +69,9 @@ export const getDocumentRelationReason = async ({
     if (relationReasonId || !add) {
       return relationReasonId;
     }
+  }
+  if (!add) {
+    return undefined;
   }
   const [{ relationReasonId: newRelationReasonId } = {}] = await db
     .insert(documentRelationshipReason)

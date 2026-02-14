@@ -10,7 +10,7 @@
  * @since 2025-07-26
  */
 
-declare module '@/lib/neondb/postgres' {
+declare module '@compliance-theater/database/driver/postgres' {
   // Re-export all postgres types with comprehensive documentation preserved
   export * from './postgres';
 }

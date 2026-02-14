@@ -1,51 +1,53 @@
-import { drizDb, drizDbWithInit } from '../src/orm/connection';
+const mockDb = {
+  query: {},
+  select: jest.fn(),
+};
 
-// Mock the driver connection
-jest.mock('../src/driver/connection', () => ({
-  pgDbWithInit: jest.fn().mockResolvedValue({
-    query: jest.fn(),
-    select: jest.fn(),
-  }),
+jest.mock('drizzle-orm/postgres-js', () => ({
+  drizzle: jest.fn(() => mockDb),
+}));
+
+jest.mock('@compliance-theater/database/driver/connection', () => ({
+  pgDbWithInit: jest.fn().mockResolvedValue({}),
+}));
+
+jest.mock('../src/orm/schema', () => ({
+  __esModule: true,
+  default: {},
+  schema: {},
 }));
 
 describe('ORM Connection', () => {
-  describe('drizDb', () => {
-    it('should return a database instance', () => {
-      const db = drizDb();
-      expect(db).toBeDefined();
-      expect(typeof db).toBe('object');
-    });
-
-    it('should return the same instance on multiple calls (singleton)', () => {
-      const db1 = drizDb();
-      const db2 = drizDb();
-      expect(db1).toBe(db2);
-    });
-
-    it('should have query methods', () => {
-      const db = drizDb();
-      expect(db.query).toBeDefined();
-      expect(db.select).toBeDefined();
-    });
+  beforeEach(() => {
+    (globalThis as Record<symbol, unknown>)[
+      Symbol.for('@noeducation/drizzle-db-instance')
+    ] = undefined;
+    (globalThis as Record<symbol, unknown>)[
+      Symbol.for('@noeducation/drizzle-db-promise')
+    ] = undefined;
+    (globalThis as Record<symbol, unknown>)[
+      Symbol.for('@noeducation/pg-driver-factory')
+    ] = undefined;
+    jest.resetModules();
+    jest.clearAllMocks();
   });
 
-  describe('drizDbWithInit', () => {
-    it('should return a promise that resolves to a database instance', async () => {
-      const db = await drizDbWithInit();
-      expect(db).toBeDefined();
-      expect(typeof db).toBe('object');
-    });
+  it('drizDbWithInit should resolve a database instance', async () => {
+    const { drizDbWithInit } = await import('../src/orm/connection');
+    const db = await drizDbWithInit();
 
-    it('should have query methods', async () => {
-      const db = await drizDbWithInit();
-      expect(db.query).toBeDefined();
-      expect(db.select).toBeDefined();
-    });
+    expect(db).toBeDefined();
+    expect(db).toBe(mockDb);
+  });
 
-    it('should return the same instance on multiple awaited calls', async () => {
-      const db1 = await drizDbWithInit();
-      const db2 = await drizDbWithInit();
-      expect(db1).toBe(db2);
-    });
+  it('drizDb should return initialized singleton instance', async () => {
+    const { drizDb, drizDbWithInit } = await import('../src/orm/connection');
+
+    const initialized = await drizDbWithInit();
+    const db1 = drizDb();
+    const db2 = drizDb();
+
+    expect(db1).toBe(initialized);
+    expect(db2).toBe(db1);
   });
 });

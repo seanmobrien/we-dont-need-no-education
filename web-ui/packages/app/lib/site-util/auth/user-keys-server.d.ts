@@ -1,4 +1,4 @@
-import type { DatabaseType } from '../../drizzle-db';
+import type { DatabaseType } from '@compliance-theater/database/orm';
 
 declare module '@/lib/site-util/auth/user-keys-server' {
   /**

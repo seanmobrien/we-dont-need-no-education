@@ -89,5 +89,8 @@
   "debug.javascript.autoAttachFilter": "onlyWithFlag",
   "[javascript]": {
     "editor.defaultFormatter": "vscode.typescript-language-features"
+  },
+  "chat.tools.terminal.autoApprove": {
+    "yarn workspace": true
   }
 }

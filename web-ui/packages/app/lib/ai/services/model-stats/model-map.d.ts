@@ -10,7 +10,7 @@
  * @since 2025-08-23
  */
 
-import { type DbDatabaseType } from '../../../drizzle-db';
+import { type DbDatabaseType } from '@compliance-theater/database/orm';
 import { LanguageModel } from 'ai';
 import { ModelClassification } from '../../middleware/key-rate-limiter/types';
 import { ProviderPrimaryNameType } from './provider-map';

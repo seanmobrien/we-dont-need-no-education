@@ -8,7 +8,6 @@ import { ValidationError } from '@/lib/react-util/errors/validation-error';
 
 import { drizDb, drizDbWithInit } from '@compliance-theater/database';
 /*
-// Mock drizzle-db
 jest.mock('@compliance-theater/database', () => {
   const { mockDeep } = require('jest-mock-extended');
   
@@ -81,7 +80,6 @@ describe('EmailDrizzleRepository', () => {
     repository = new EmailDrizzleRepository();
 
     // Get the mock database instance
-    //const { drizDb } = require('/lib/drizzle-db');
     mockDb = drizDb();
   });
 

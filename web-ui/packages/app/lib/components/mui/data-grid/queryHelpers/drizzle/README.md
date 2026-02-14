@@ -18,8 +18,8 @@ import {
   buildDrizzleOrderBy,
   createColumnGetter,
 } from '@/lib/components/mui/data-grid/buildDrizzleOrderBy';
-import { db } from '@/lib/drizzle-db';
-import { users } from '@/drizzle/schema';
+import { drizDb as db } from '@compliance-theater/database/orm';
+import { users } from '@compliance-theater/database/schema';
 
 // Define available columns for sorting
 const sortableColumns = {

@@ -5,7 +5,7 @@
 
 declare module '@/lib/drizzle-db/drizzle-error' {
   /**
-   * PostgresError represents the shape of an error object returned by
+   * IPostgresError represents the shape of an error object returned by
    * PostgreSQL drivers and Drizzle adapters. It extends the standard Error
    * with Postgres-specific fields from the server's error response.
    *
@@ -15,10 +15,10 @@ declare module '@/lib/drizzle-db/drizzle-error' {
    * @example
    * ```typescript
    * function handleDbError(err: unknown) {
-   *   if ((err as PostgresError)?.code === '23505') {
+   *   if ((err as IPostgresError)?.code === '23505') {
    *     // unique_violation - handle conflict
    *   }
-   *   const pgErr = err as PostgresError;
+   *   const pgErr = err as IPostgresError;
    *   console.error('DB error', {
    *     sqlstate: pgErr.code,
    *     table: pgErr.table,
@@ -28,7 +28,7 @@ declare module '@/lib/drizzle-db/drizzle-error' {
    * }
    * ```
    */
-  export interface PostgresError extends Error {
+  export interface IPostgresError extends Error {
     name: 'DrizzleError';
     code?: string;
     severity?: string;
@@ -58,7 +58,7 @@ declare module '@/lib/drizzle-db/drizzle-error' {
    * @param error - The error to check
    * @returns True if the error is a DrizzleError, false otherwise
    */
-  export const isDrizzleError: (error: unknown) => error is PostgresError;
+  export const isDrizzleError: (error: unknown) => error is IPostgresError;
 
   /**
    * Canonical mapping of PostgreSQL SQLSTATE codes to short descriptions.

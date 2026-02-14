@@ -6,6 +6,7 @@ jest.unmock('@opentelemetry/api');
 jest.unmock('@opentelemetry/sdk-trace-base');
 
 jest.mock('@compliance-theater/database/driver');
+jest.mock('@compliance-theater/database/schema', () => ({}));
 jest.mock('google-auth-library');
 jest.mock('googleapis');
 jest.mock('@compliance-theater/send-api-request');

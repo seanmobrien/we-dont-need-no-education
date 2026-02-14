@@ -183,7 +183,7 @@ describe('Chat History Middleware Integration', () => {
     it('should gracefully handle database errors in wrapStream', async () => {
       // Arrange - Mock transaction to fail
       mockConsole.setup();
-      const mockDb = require('/lib/drizzle-db');
+      const mockDb = require('@compliance-theater/database/orm');
       mockDb.drizDb.mockImplementationOnce(() => ({
         transaction: jest.fn(() => Promise.reject(new Error('DB Error'))),
       }));

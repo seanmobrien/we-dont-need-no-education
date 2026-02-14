@@ -10,7 +10,7 @@
  * @since 2025-08-23
  */
 
-import { type ProvidersType, type DbDatabaseType } from '../../../drizzle-db';
+import { type ProvidersType, type DbDatabaseType } from '@compliance-theater/database/orm';
 
 declare module '@/lib/ai/services/model-stats/provider-map' {
   /**

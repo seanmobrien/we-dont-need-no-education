@@ -3,8 +3,13 @@
  * @module @/lib/neondb
  */
 
-declare module '@/lib/neondb' {
-  export type * from './types';
+declare module '@compliance-theater/database/driver' {
+  
+  export type {
+    CommandMeta,
+    IResultset,    
+  };
+
   export * from './index-postgres';
   export type { DbQueryFunction } from './index-postgres';
 }

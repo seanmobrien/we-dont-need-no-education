@@ -1,25 +1,25 @@
 /**
  * Type guard functions for PostgreSQL result types
- * @module @/lib/neondb/_guards
+ * @module @compliance-theater/database/driver/_guards
  */
-import type { PostgresError, RowList } from 'postgres';
+import type { IPostgresError, RowList } from 'postgres';
 import type { IResultset } from './types';
 
-declare module '@/lib/neondb/_guards' {
+declare module '@compliance-theater/database/driver/_guards' {
   /**
-   * Type guard to check if an error is a PostgresError.
+   * Type guard to check if an error is a IPostgresError.
    *
-   * PostgresError objects have a specific structure with properties like
+   * IPostgresError objects have a specific structure with properties like
    * `severity`, `code`, `detail`, and others that standard errors don't have.
    * This guard helps narrow the error type for better error handling.
    *
    * **Checked Properties:**
    * - Error must be an object
    * - Error must have a `name` property
-   * - The `name` property must equal `'PostgresError'`
+   * - The `name` property must equal `'IPostgresError'`
    *
    * @param error - The error to check
-   * @returns `true` if the error is a PostgresError, `false` otherwise
+   * @returns `true` if the error is a IPostgresError, `false` otherwise
    *
    * @example
    * ```typescript
@@ -27,7 +27,7 @@ declare module '@/lib/neondb/_guards' {
    *   await db`INSERT INTO users (email) VALUES (${email})`;
    * } catch (error) {
    *   if (isDbError(error)) {
-   *     // error is now typed as PostgresError
+   *     // error is now typed as IPostgresError
    *     console.error(`DB Error [${error.code}]: ${error.message}`);
    *     if (error.code === '23505') {
    *       console.error('Unique constraint violation');
@@ -53,7 +53,7 @@ declare module '@/lib/neondb/_guards' {
    * }
    * ```
    */
-  export function isDbError(error: unknown): error is PostgresError;
+  export function isDbError(error: unknown): error is IPostgresError;
 
   /**
    * Type guard function to check if a given value is an instance of `IResultset<T>`.

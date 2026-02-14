@@ -1,6 +1,6 @@
 import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import { PartialExceptFor } from '@compliance-theater/typescript';
-import { TransformedFullQueryResults } from '../neondb';
+import { TransformedFullQueryResults } from '@compliance-theater/database/driver';
 import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
 
 /**

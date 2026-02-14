@@ -63,8 +63,8 @@ For full test coverage, set up the database:
 
 ```bash
 # Generate and run migrations
-yarn drizzle-generate
-npx drizzle-kit migrate
+yarn workspace @compliance-theater/database drizzle-generate
+yarn workspace @compliance-theater/database drizzle-migrate
 
 # Optional: Seed with test data
 # (The tests are designed to work with or without existing data)

@@ -13,7 +13,7 @@
  * The goal is to enable expressive, type-safe test doubles without leaking
  * implementation details of the real database layer.
  */
-import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
+import type { DbDatabaseType } from '@compliance-theater/database/orm';
 
 /**
  * List of query builder method names that tests commonly stub.
@@ -39,6 +39,7 @@ export const QueryBuilderMethodValues = [
 export const InsertBuilderMethodValues = [
   'values',
   'onConflictDoUpdate',
+  'returning',
 ] as const;
 export type InsertBuilderMethodType =
   (typeof InsertBuilderMethodValues)[number];

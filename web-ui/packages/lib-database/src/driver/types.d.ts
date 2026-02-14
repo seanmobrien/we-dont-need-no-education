@@ -5,7 +5,7 @@
  * @module @/lib/neondb/types
  */
 
-declare module '@/lib/neondb/types' {
+declare module '@compliance-theater/database/driver/types' {
   import { ColumnList, ResultMeta } from 'postgres';
 
   /**

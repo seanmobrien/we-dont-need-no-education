@@ -5,7 +5,7 @@ jest.mock('@/lib/redis-client');
 
 // Fix the schema mock to have the correct structure
 jest.mock('@compliance-theater/database', () => {
-  const actualModule = jest.requireActual('/lib/drizzle-db');
+  const actualModule = jest.requireActual('@compliance-theater/database/orm');
   // The actualModule.schema contains the nested structure, we need to flatten it
   const flatSchema = actualModule.schema.schema || actualModule.schema;
   return {

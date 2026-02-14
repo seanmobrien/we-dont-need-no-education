@@ -206,9 +206,9 @@ export interface PostgresStatement {
 
 /**
  * Represents an error from PostgreSQL.
- * Equivalent to postgres.PostgresError from 'postgres' package.
+ * Equivalent to postgres.IPostgresError from 'postgres' package.
  */
-export interface PostgresError extends Error {
+export interface IPostgresError extends Error {
   /** PostgreSQL error severity */
   severity: string;
   /** PostgreSQL error code */
@@ -516,9 +516,9 @@ export interface PostgresSql<T >
 
   /** Add event listeners */
   on(event: 'connect', listener: (connection: unknown) => void): this;
-  on(event: 'error', listener: (error: PostgresError) => void): this;
+  on(event: 'error', listener: (error: IPostgresError) => void): this;
   on(event: 'close', listener: () => void): this;
-  on(event: 'notice', listener: (notice: PostgresError) => void): this;
+  on(event: 'notice', listener: (notice: IPostgresError) => void): this;
   on(event: string, listener: (...args: unknown[]) => void): this;
 
   /** Remove event listeners */
@@ -611,7 +611,7 @@ export type {
   PostgresHelper as Helper,
   PostgresPendingQuery as PendingQuery,
   PostgresStatement as Statement,
-  //PostgresError as PostgresError,
+  //IPostgresError as IPostgresError,
   PostgresTransaction as Transaction,
   //PostgresSql as Sql,
   PostgresFactory as Postgres,

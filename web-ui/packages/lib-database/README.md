@@ -146,13 +146,22 @@ Database connection is configured via environment variables (managed by `@compli
 
 ## Schema Migrations
 
-Migration files are located in `/src/schema/migrations/` (originally from `/drizzle/*.sql`).
+Migration files are located in `/drizzle/`.
 
-To generate new migrations:
+To generate and apply migrations:
 
 ```bash
-# From the app package
+# From the lib-database package
+cd web-ui/packages/lib-database
+
+# Generate migration artifacts
 yarn drizzle-generate
+
+# Apply migrations
+yarn drizzle-migrate
+
+# Open Drizzle Studio
+yarn drizzle-studio
 ```
 
 ## Dependencies
