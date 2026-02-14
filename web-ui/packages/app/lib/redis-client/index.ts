@@ -2,7 +2,7 @@ import { SingletonProvider } from '@compliance-theater/typescript/singleton-prov
 import { createClient, type RedisClientType } from 'redis';
 import { env } from '@compliance-theater/env';
 import { LoggedError, log } from '@compliance-theater/logger';
-import AfterManager from '../site-util/after';
+import AfterManager from '@compliance-theater/after';
 
 export type { RedisClientType };
 
