@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { themes, darkTheme, colorfulTheme } from '@/lib/themes/definitions';
+import { themes, darkTheme, colorfulTheme } from '../../src/themes';
 
 describe('Theme Definitions', () => {
   it('should have dark and light themes available', () => {

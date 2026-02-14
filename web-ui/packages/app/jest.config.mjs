@@ -28,6 +28,7 @@ const config = {
     '^@compliance-theater/env(.*)$': '<rootDir>/../lib-env/src$1', // Resolve workspace TS utils package for tests
     '^@compliance-theater/after(.*)$': '<rootDir>/../lib-after/src$1',
     '^@compliance-theater/send-api-request(.*)$': '<rootDir>/../lib-send-api-request/src$1', // Resolve workspace send-api-request package for tests
+    '^@compliance-theater/themes(.*)$': '<rootDir>/../lib-themes/src$1', // Resolve workspace themes package for tests
   },
 };
 

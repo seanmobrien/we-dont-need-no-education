@@ -8,7 +8,7 @@ jest.mock('@mui/material/styles', () => {
   };
 });
 
-import { ThemeProvider as MuiThemeProvider } from '@/lib/themes/provider';
+import { ThemeProvider as MuiThemeProvider } from '@compliance-theater/themes/provider';
 import '@testing-library/jest-dom';
 import {
   render,
@@ -21,11 +21,11 @@ import {
 import Queries from '@testing-library/dom/types/queries';
 import React, { act, PropsWithChildren } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '@/lib/themes/provider';
+import { ThemeProvider } from '@compliance-theater/themes';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
 import { SessionProvider } from '@/components/auth/session-provider';
 import { FlagProvider } from '@/components/general/flags/flag-provider';
-import type { ThemeType } from '@/lib/themes/types';
+import type { ThemeType } from '@compliance-theater/themes';
 
 type CustomRenderOptions = RenderOptions & {
   withFlags?: boolean;

@@ -12,7 +12,7 @@
 
 import * as React from 'react';
 import Stack from '@mui/material/Stack';
-import { ThemeSelector } from '@/components/theme/theme-selector';
+import { ThemeSelector } from '@compliance-theater/themes/components/theme-selector';
 import { Account } from '@toolpad/core/Account';
 
 /**

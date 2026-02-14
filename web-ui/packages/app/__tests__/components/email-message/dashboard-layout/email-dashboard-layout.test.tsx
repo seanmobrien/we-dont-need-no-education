@@ -29,7 +29,8 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock theme provider
-jest.mock('@/lib/themes', () => ({
+jest.mock('@compliance-theater/themes', () => ({
+  __esModule: true,
   useTheme: () => ({
     theme: {
       palette: {
@@ -147,59 +148,6 @@ jest.mock('@/components/email-message/dashboard-layout/branding', () => ({
     logo: <span data-testid="branding-logo">Logo</span>,
   },
 }));
-
-// Mock MUI icons
-const MockIcon = ({ testId }: { testId: string }) => (
-  <span data-testid={testId}>{testId}</span>
-);
-
-jest.mock('@mui/icons-material/Sync', () => {
-  const SyncIcon = () => <MockIcon testId="sync-icon" />;
-  SyncIcon.displayName = 'SyncIcon';
-  return SyncIcon;
-});
-
-jest.mock('@mui/icons-material/Dashboard', () => {
-  const DashboardIcon = () => <MockIcon testId="dashboard-icon" />;
-  DashboardIcon.displayName = 'DashboardIcon';
-  return DashboardIcon;
-});
-
-jest.mock('@mui/icons-material/Drafts', () => {
-  const DraftsIcon = () => <MockIcon testId="drafts-icon" />;
-  DraftsIcon.displayName = 'DraftsIcon';
-  return DraftsIcon;
-});
-
-jest.mock('@mui/icons-material/Key', () => {
-  const KeyIcon = () => <MockIcon testId="key-icon" />;
-  KeyIcon.displayName = 'KeyIcon';
-  return KeyIcon;
-});
-
-jest.mock('@mui/icons-material/TextSnippet', () => {
-  const TextSnippetIcon = () => <MockIcon testId="text-snippet-icon" />;
-  TextSnippetIcon.displayName = 'TextSnippetIcon';
-  return TextSnippetIcon;
-});
-
-jest.mock('@mui/icons-material/CallToAction', () => {
-  const CallToActionIcon = () => <MockIcon testId="call-to-action-icon" />;
-  CallToActionIcon.displayName = 'CallToActionIcon';
-  return CallToActionIcon;
-});
-
-jest.mock('@mui/icons-material/Reply', () => {
-  const ReplyIcon = () => <MockIcon testId="reply-icon" />;
-  ReplyIcon.displayName = 'ReplyIcon';
-  return ReplyIcon;
-});
-
-jest.mock('@mui/icons-material/PrivacyTip', () => {
-  const PrivacyTipIcon = () => <MockIcon testId="privacy-tip-icon" />;
-  PrivacyTipIcon.displayName = 'PrivacyTipIcon';
-  return PrivacyTipIcon;
-});
 
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 import type { Session } from '@auth/core/types';
