@@ -11,6 +11,11 @@
       "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./fetch": {
+      "types": "./dist/fetch/index.d.ts",
+      "workspace-source": "./src/fetch/index.ts",
+      "default": "./dist/fetch/index.js"
+    },
     "./server": {
       "types": "./dist/server/index.d.ts",
       "workspace-source": "./src/server/index.ts",
