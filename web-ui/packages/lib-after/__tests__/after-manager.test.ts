@@ -271,7 +271,10 @@ describe('AfterManager', () => {
 
     it('should timeout if handlers take too long', async () => {
       const slowHandler = jest.fn(async () => {
-        await new Promise(resolve => setTimeout(resolve, 10000)); // 10 seconds
+        await new Promise((resolve) => {
+          const timer = setTimeout(resolve, 10000); // 10 seconds
+          timer.unref?.();
+        });
       });
       
       manager.add('test-queue', slowHandler);

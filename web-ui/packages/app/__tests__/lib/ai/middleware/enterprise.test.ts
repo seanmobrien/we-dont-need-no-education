@@ -7,7 +7,7 @@
  * Comprehensive test suite for configuration, metrics, and advanced behaviors
  */
 
-jest.mock('@/lib/site-util/after', () => {
+jest.mock('@compliance-theater/after', () => {
   const afterManager = {
     getInstance: () => ({
       add: jest.fn(),

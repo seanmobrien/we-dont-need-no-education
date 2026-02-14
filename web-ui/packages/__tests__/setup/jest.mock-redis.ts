@@ -54,7 +54,6 @@ const mockSortedSetData = new Map<string, Map<string, number>>();
 
 jest.mock('redis', () => {
   let clientInstance: RedisClientMock | null = null;
-  const origModule = jest.requireActual('redis');
   const createClient = jest.fn((arg?: any) => {
     if (arg === 'teardown') {
       clientInstance = null;
@@ -206,7 +205,6 @@ jest.mock('redis', () => {
     return clientInstance;
   });
   return {
-    ...origModule,
     createClient,
   };
 });
