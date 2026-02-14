@@ -29,21 +29,23 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock theme provider
-jest.mock('@compliance-theater/themes', () => ({
+jest.mock('@compliance-theater/themes', () => {
+  const origModule = jest.requireActual('@compliance-theater/themes');
+  return ({
   __esModule: true,
-  ThemeProvider: ({ children }: { children: React.ReactNode; defaultTheme?: string }) => (
-    <div data-testid="theme-provider">{children}</div>
-  ),
-  useTheme: () => ({
-    theme: {
-      palette: {
-        mode: 'light',
-        primary: { main: '#1976d2' },
-        secondary: { main: '#dc004e' },
+  ThemeProvider: jest.fn(origModule.ThemeProvider),
+  ThemeSelector: jest.fn(origModule.ThemeSelector),
+  useTheme: jest.fn(() => ({
+      theme: {
+        palette: {
+          mode: 'light',
+          primary: { main: '#1976d2' },
+          secondary: { main: '#dc004e' },
+        },
       },
-    },
-  }),
-}));
+    })),
+  });
+});
 
 // Mock EmailContextProvider
 jest.mock('@/components/email-message/email-context', () => ({
@@ -155,6 +157,7 @@ jest.mock('@/components/email-message/dashboard-layout/branding', () => ({
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 import type { Session } from '@auth/core/types';
 import { usePathname } from 'next/navigation';
+import { ThemeSelector } from '@compliance-theater/themes';
 
 describe('EmailDashboardLayout', () => {
   const mockSession: Session = {
@@ -166,10 +169,13 @@ describe('EmailDashboardLayout', () => {
     },
     expires: '2024-12-31',
   } as Session;
-
+  // Ideally a good compiler will strip this out, but this is javascript, so who knows XD.  Explicitly referencing imported sticky-mocks
+  // to avoid compiler/LLM feedback about them not being used.
+  const notReallyUsed = (ThemeSelector as jest.Mock).getMockName() ?? (usePathname as jest.Mock).getMockName() ?? 'notReallyUsed';
   const defaultProps = {
     children: <div data-testid="dashboard-content">Dashboard Content</div>,
     session: mockSession,
+    mockName: notReallyUsed,
   };
 
   beforeEach(() => {
