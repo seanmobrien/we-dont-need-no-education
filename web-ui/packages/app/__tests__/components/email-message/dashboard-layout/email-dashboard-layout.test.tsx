@@ -29,18 +29,23 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock theme provider
-jest.mock('@compliance-theater/themes', () => ({
+jest.mock('@compliance-theater/themes', () => {
+  const origModule = jest.requireActual('@compliance-theater/themes');
+  return ({
   __esModule: true,
-  useTheme: () => ({
-    theme: {
-      palette: {
-        mode: 'light',
-        primary: { main: '#1976d2' },
-        secondary: { main: '#dc004e' },
+  ThemeProvider: jest.fn(origModule.ThemeProvider),
+  ThemeSelector: jest.fn(origModule.ThemeSelector),
+  useTheme: jest.fn(() => ({
+      theme: {
+        palette: {
+          mode: 'light',
+          primary: { main: '#1976d2' },
+          secondary: { main: '#dc004e' },
+        },
       },
-    },
-  }),
-}));
+    })),
+  });
+});
 
 // Mock EmailContextProvider
 jest.mock('@/components/email-message/email-context', () => ({
@@ -152,6 +157,7 @@ jest.mock('@/components/email-message/dashboard-layout/branding', () => ({
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 import type { Session } from '@auth/core/types';
 import { usePathname } from 'next/navigation';
+import { ThemeSelector } from '@compliance-theater/themes';
 
 describe('EmailDashboardLayout', () => {
   const mockSession: Session = {
