@@ -27,9 +27,9 @@
       "default": "./dist/themes/provider.js"
     },
     "./components/theme-selector": {
-      "types": "./dist/components/theme-selector.d.ts",
-      "workspace-source": "./src/components/theme-selector.ts",
-      "default": "./dist/components/theme-selector.js"
+      "types": "./dist/themes/theme-selector.d.ts",
+      "workspace-source": "./src/themes/theme-selector.tsx",
+      "default": "./dist/themes/theme-selector.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",

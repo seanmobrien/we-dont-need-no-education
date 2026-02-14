@@ -81,9 +81,7 @@ export const wrapRouteRequest = <
         try {
           if (
             buildFallback !== EnableOnBuild &&
-            (
-              // process.env.IS_BUILDING == '1' ||
-              process.env.NEXT_PHASE === 'phase-production-build')
+            process.env.NEXT_PHASE === 'phase-production-build'
           ) {
             const res = Response.json(buildFallback ?? globalBuildFallback, {
               status: 200,
