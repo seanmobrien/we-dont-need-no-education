@@ -19,6 +19,7 @@ import {
   fetchConfigSync,
   FETCH_MANAGER_SINGLETON_KEY,
 } from './fetch-config';
+import type { FetchConfig as IFetchConfig } from './fetch-types';
 import { LoggedError, log, safeSerialize } from '@compliance-theater/logger';
 import { createInstrumentedSpan } from '../utils';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
@@ -33,7 +34,7 @@ import type {
 } from './fetch-types';
 import { EnhancedFetchConfig, DEFAULT_ENHANCED_FETCH_CONFIG } from './enhanced-fetch-config';
 import { withTimeout } from '../../with-timeout';
-import { TimeoutError } from '../utilities/timeout-error';
+import { TimeoutError } from '../../utilities/timeout-error';
 
 const DEFAULT_CONCURRENCY = 8;
 const DEFAULT_CACHE_SIZE = 500;
@@ -67,7 +68,7 @@ const DEFAULT_CONFIG: FetchManagerConfig = {
   streamDetectBuffer: DEFAULT_STREAM_DETECT_BUFFER,
   streamBufferMax: DEFAULT_STREAM_BUFFER_MAX,
   maxResponseSize: DEFAULT_MAX_RESPONSE_SIZE,
-  timeout: AllFeatureFlagsDefault.models_fetch_enhanced.timeout,
+  timeout: DEFAULT_ENHANCED_FETCH_CONFIG.timeout,
 };
 
 const mergeHeaders = (
@@ -564,8 +565,8 @@ export class FetchManager implements ServerFetchManager {
 
   #isEnhancedEnabled(): Promise<boolean> {
     return fetchConfig()
-      .then((x) => x.enhanced)
-      .catch((e) => {
+      .then((x: Required<IFetchConfig>) => x.enhanced)
+      .catch((e: unknown) => {
         LoggedError.isTurtlesAllTheWayDownBaby(e, {
           source: 'fetch:enhanced-enabled-fail',
           log: true,

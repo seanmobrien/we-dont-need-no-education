@@ -109,7 +109,8 @@ export const wrapRouteRequest = <
             },
           ); */
 
-          if (appStartupState === 'done') {
+          // Commented out - app startup check removed pending site-util extraction
+          /* if (appStartupState === 'done') {
             const res = Response.json(buildFallback ?? globalBuildFallback, {
               status: 503,
               statusText: 'ERR-APP-SHUTDOWN',
@@ -121,7 +122,7 @@ export const wrapRouteRequest = <
             span.setAttribute('http.status_code', res.status);
             span.setStatus({ code: SpanStatusCode.ERROR });
             return res;
-          }
+          } */
 
           if (shouldLog) {
             const extractedParams = await (!!context?.params
