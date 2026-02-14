@@ -8,7 +8,7 @@ jest.mock('@mui/material/styles', () => {
   };
 });
 
-import { ThemeProvider as MuiThemeProvider } from '@mui/material/';
+import { ThemeProvider as MuiThemeProvider } from '@mui/material';
 import '@testing-library/jest-dom';
 import {
   render,
