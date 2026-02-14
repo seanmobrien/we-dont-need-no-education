@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/redis-client';
+import { createClient } from '@compliance-theater/redis';
 import { globalRequiredSingletonAsync } from '@compliance-theater/typescript/singleton-provider';
 import { CacheHandler } from '@fortedigital/nextjs-cache-handler';
 import createRedisHandler from '@fortedigital/nextjs-cache-handler/redis-strings';

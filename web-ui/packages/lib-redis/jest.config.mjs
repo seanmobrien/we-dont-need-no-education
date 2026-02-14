@@ -9,8 +9,6 @@ const config = {
   rootDir: ".",
   moduleNameMapper: {
     ...baseConfig.moduleNameMapper,
-    "^@compliance-theater/redis/(.*)$": "<rootDir>/src/$1",
-    "^@compliance-theater/redis$": "<rootDir>/src",
   },
 };
 

@@ -18,7 +18,7 @@ const mockRedisClient = {
   on: jest.fn(),
 };
 
-jest.mock('@/lib/redis-client', () => ({
+jest.mock('@compliance-theater/redis', () => ({
   getRedisClient: jest.fn().mockResolvedValue(mockRedisClient),
   closeRedisClient: jest.fn().mockResolvedValue(undefined),
 }));
