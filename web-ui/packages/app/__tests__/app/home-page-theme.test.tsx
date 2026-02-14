@@ -1,5 +1,5 @@
 import { render, screen } from '@/__tests__/test-utils';
-import { ThemeProvider } from '@/lib/themes/provider';
+import { ThemeProvider } from '@compliance-theater/themes';
 import HomePage from '@/app/page';
 
 // Mock next-auth/react

@@ -10,7 +10,6 @@ import React, {
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import type { ThemeType, ThemeContextType } from './types';
 import { themes } from './definitions';
-import { Loading } from '@/components/general/loading';
 import { log } from '@compliance-theater/logger';
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -35,7 +34,6 @@ export const ThemeProvider = ({
       const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) as ThemeType;
       if (
         savedTheme &&
-        savedTheme !== currentTheme &&
         (savedTheme === 'dark' || savedTheme === 'light')
       ) {
         setCurrentTheme((ct) => {
@@ -88,7 +86,7 @@ export const ThemeProvider = ({
     <>
       <ThemeContext.Provider value={contextValue}>
         <MuiThemeProvider theme={themes[currentTheme]} defaultMode="dark">
-          {hasMounted ? children : <Loading />}
+          {hasMounted ? children : null}
         </MuiThemeProvider>
       </ThemeContext.Provider>
     </>

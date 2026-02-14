@@ -357,5 +357,5 @@ export const themes: Record<ThemeType, Theme> = {
 
 export const themeDisplayNames: Record<ThemeType, string> = {
   dark: 'Dark Theme',
-  light: 'Colourful Theme',
+  light: 'Colorful Theme',
 };
