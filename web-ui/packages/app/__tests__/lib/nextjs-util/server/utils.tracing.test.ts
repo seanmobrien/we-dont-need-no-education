@@ -1,6 +1,6 @@
 jest.unmock('@opentelemetry/api');
 jest.unmock('@opentelemetry/sdk-trace-base');
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { trace } from '@opentelemetry/api';
 
 // Provide a minimal Response/Headers polyfill for Node test runtime

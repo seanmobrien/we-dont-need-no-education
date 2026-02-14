@@ -4,12 +4,12 @@ import { NextRequest } from 'next/server';
 import {
   wrapRouteRequest,
   extractParams,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
-import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 export const dynamic = 'force-dynamic';
 

@@ -5,10 +5,10 @@ import {
   buildFallbackGrid,
   wrapRouteRequest,
   extractParams,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 import { CaseFileScope } from '@/lib/auth/resources/case-file/case-file-resource';
 import { checkCaseFileAuthorization } from '@/lib/auth/resources/case-file/case-file-middleware';
-import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 export const dynamic = 'force-dynamic';
 

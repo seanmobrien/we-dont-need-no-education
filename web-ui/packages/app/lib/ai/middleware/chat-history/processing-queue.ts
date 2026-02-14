@@ -3,7 +3,7 @@ import type {
   LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
 import { log } from '@compliance-theater/logger';
-import { Semaphore } from '@/lib/nextjs-util/semaphore-manager';
+import { Semaphore } from '@compliance-theater/nextjs/semaphore-manager';
 import { ensureCreateResult } from './stream-handler-result';
 import { processStreamChunk } from './stream-handlers';
 import type {

@@ -7,7 +7,7 @@ import {
   selectForGrid,
 } from '@/lib/components/mui/data-grid/queryHelpers';
 import type { PgColumn } from 'drizzle-orm/pg-core';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { SQL, lte, inArray } from 'drizzle-orm/sql';
 import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
 

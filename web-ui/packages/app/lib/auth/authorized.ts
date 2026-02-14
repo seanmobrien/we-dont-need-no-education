@@ -1,7 +1,7 @@
 import { Session } from '@auth/core/types';
 import { NextRequest } from 'next/server';
 import { extractToken, KnownScopeValues, KnownScopeIndex } from './utilities';
-import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 import { log } from '@compliance-theater/logger';
 

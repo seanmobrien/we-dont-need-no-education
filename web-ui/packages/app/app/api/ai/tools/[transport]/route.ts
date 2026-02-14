@@ -1,10 +1,10 @@
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes for SSE connections
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { createMcpHandler } from 'mcp-handler';
 import { KnownScopeIndex, KnownScopeValues } from '@/lib/auth/utilities';
-import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
 import { ApiRequestError } from '@compliance-theater/send-api-request';
 import type { NextRequest } from 'next/server';
 // tool imports

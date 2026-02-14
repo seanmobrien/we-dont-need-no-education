@@ -1,7 +1,7 @@
 /* @jest-environment node */
 
 import { AuthorizationService } from '@/lib/auth/resources/authorization-service';
-import { fetch } from '@/lib/nextjs-util/server';
+import { fetch } from '@compliance-theater/nextjs/server';
 import { decodeToken } from '@/lib/auth/utilities';
 
 jest.mock('@/lib/nextjs-util/server');

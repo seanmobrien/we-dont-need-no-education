@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GridLogicOperator } from '@mui/x-data-grid-pro';
 import { useDataSource } from '@/lib/components/mui/data-grid/useDataSource';
 import React, { useEffect } from 'react';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 
 const TEST_URL = 'http://localhost:9999/api/test';
 

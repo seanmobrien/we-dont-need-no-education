@@ -2,16 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 import { log, LoggedError } from '@compliance-theater/logger';
-import { extractParams } from '@/lib/nextjs-util/server/utils';
+import { extractParams } from '@compliance-theater/nextjs/server/utils';
 import { eq } from 'drizzle-orm';
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
-import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 /**
  * Extracts the emailId out of the route parameters, with some magic to support document IDs if that's what we were given.

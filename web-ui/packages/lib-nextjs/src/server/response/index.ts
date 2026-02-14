@@ -1,5 +1,5 @@
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
-import { isAbortError } from '@/lib/react-util';
+import { isAbortError } from '../../utilities/is-abort-error';
 import { isRunningOnServer } from '@compliance-theater/env';
 import type { Readable as ReadableType } from 'node:stream';
 

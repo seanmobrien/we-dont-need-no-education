@@ -12,7 +12,7 @@ import {
   DEBUG_MODE,
 } from '../ai/mcp/instrumented-sse-transport/metrics/otel-metrics';
 import { isError, LoggedError, log } from '@compliance-theater/logger';
-import { withTimeoutAsError } from '@/lib/nextjs-util/with-timeout';
+import { withTimeoutAsError } from './with-timeout';
 
 // Timeout constants
 export const CONNECTION_TIMEOUT_MS = 30 * 1000; // 30 seconds for connection

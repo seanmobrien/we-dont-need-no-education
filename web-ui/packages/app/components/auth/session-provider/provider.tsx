@@ -24,7 +24,7 @@ import {
   generateUserKeyPair,
   getUserPublicKeyForServer,
 } from '@/lib/site-util/auth/user-keys';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 import { Session } from '@auth/core/types';
 import { useNotifications } from '@toolpad/core';
 import { LoggedError } from '@compliance-theater/logger';

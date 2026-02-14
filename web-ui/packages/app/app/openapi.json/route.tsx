@@ -1,4 +1,4 @@
-import { wrapRouteRequest, fetch } from '@/lib/nextjs-util/server';
+import { wrapRouteRequest, fetch } from '@compliance-theater/nextjs/server';
 import { env } from '@compliance-theater/env';
 import { NextResponse } from 'next/dist/server/web/spec-extension/response';
 

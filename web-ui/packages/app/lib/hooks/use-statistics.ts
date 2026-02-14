@@ -5,7 +5,7 @@ import type {
   QueueInfo,
   QueueSummary,
 } from '@/types/statistics';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 import { LoggedError } from '@compliance-theater/logger';
 
 const STATISTICS_STALE_TIME = 30 * 1000; // 30 seconds

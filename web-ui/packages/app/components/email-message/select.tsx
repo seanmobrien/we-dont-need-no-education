@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { debounce } from 'lodash';
 import { EmailMessageSummary } from '@/data-models/api/email-message';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 import { LoggedError } from '@compliance-theater/logger';
 
 // Simple replacement for removed classnames function

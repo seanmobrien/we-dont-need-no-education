@@ -8,8 +8,8 @@ import { Transport as MCPTransport } from '@modelcontextprotocol/sdk/shared/tran
 import { MCPError } from '../mcp-error';
 import { JSONRPCMessage, JSONRPCMessageSchema } from './json-rpc-message';
 import { log, safeSerialize, LoggedError, isAbortError } from '@compliance-theater/logger';
-import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
-import { fetch } from '@/lib/nextjs-util/server/fetch';
+import { createInstrumentedSpan } from '@compliance-theater/nextjs/server/utils';
+import { fetch } from '@compliance-theater/nextjs/server/fetch';
 import type { Span } from '@opentelemetry/api';
 
 const MCP_CONNECTION_TIMEOUT = {

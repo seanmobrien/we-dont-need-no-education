@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Todo, TodoList, TodoListSummary } from '@/data-models/api/todo';
-import { fetch } from '@/lib/nextjs-util';
+import { fetch } from '@compliance-theater/nextjs';
 import { LoggedError } from '@compliance-theater/logger';
 
 // Query keys for todo-related queries

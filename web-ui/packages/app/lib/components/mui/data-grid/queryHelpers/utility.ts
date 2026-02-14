@@ -1,10 +1,10 @@
-import type { LikeNextRequest } from '@/lib/nextjs-util/types';
+import type { LikeNextRequest } from '@compliance-theater/nextjs/types';
 import type {
   GridFilterModel,
   GridSortModel,
   GridFilterItem,
 } from '@mui/x-data-grid-pro';
-import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
+import { isLikeNextRequest } from '@compliance-theater/nextjs/guards';
 import { isGridSortModel, isString, isURL } from './postgres/guards';
 import { isGridFilterModel } from '../guards';
 import type { ArrayElement } from '@compliance-theater/typescript/types';

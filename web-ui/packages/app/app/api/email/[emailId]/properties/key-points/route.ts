@@ -3,7 +3,7 @@ import {
   buildFallbackGrid,
   wrapRouteRequest,
   extractParams,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 import { KeyPointsDetails } from '@/data-models/api/email-properties/extended-properties';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { schema } from '@compliance-theater/database/orm';
@@ -14,7 +14,7 @@ import {
   checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
-import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 export const GET = wrapRouteRequest(
   async (req: NextRequest, args: { params: Promise<{ emailId: string }> }) => {

@@ -5,7 +5,7 @@ import { schema } from '@compliance-theater/database/orm';
 import { eq, and } from 'drizzle-orm';
 import { LoggedError } from '@compliance-theater/logger';
 import type { ChatDetails, ChatTurn } from '@/lib/ai/chat';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 
 export const dynamic = 'force-dynamic';
 

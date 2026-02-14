@@ -27,7 +27,7 @@ jest.mock('@/lib/nextjs-util/fetch', () => ({
   fetch: (...args: unknown[]) => mockFetch(...args),
 }));
 */
-import { fetch as mockFetch } from '@/lib/nextjs-util/server/fetch';
+import { fetch as mockFetch } from '@compliance-theater/nextjs/server/fetch';
 
 describe('openapi route', () => {
   beforeEach(() => {

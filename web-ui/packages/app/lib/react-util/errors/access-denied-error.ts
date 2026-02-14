@@ -1,4 +1,4 @@
-import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
+import { getStackTrace } from '@compliance-theater/nextjs/get-stack-trace';
 
 export class AccessDeniedError extends Error {
   constructor(message?: string) {

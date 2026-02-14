@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import { auth } from '@/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 import { ChatHistory } from '@/components/ai/chat/history';
-import { extractParams } from '@/lib/nextjs-util/server/utils';
+import { extractParams } from '@compliance-theater/nextjs/server/utils';
 import { getChatDetails } from '@/lib/ai/chat/history';
 import { notFound, unauthorized } from 'next/navigation';
 

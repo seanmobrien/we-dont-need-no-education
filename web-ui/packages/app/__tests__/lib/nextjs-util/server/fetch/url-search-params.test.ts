@@ -1,6 +1,6 @@
 /* @jest-environment node */
 
-import { normalizeRequestInit } from '@/lib/nextjs-util/server/fetch/fetch-server';
+import { normalizeRequestInit } from '@compliance-theater/nextjs/server/fetch/fetch-server';
 
 describe('normalizeRequestInit', () => {
   it('should convert URLSearchParams body to string and set Content-Type', () => {

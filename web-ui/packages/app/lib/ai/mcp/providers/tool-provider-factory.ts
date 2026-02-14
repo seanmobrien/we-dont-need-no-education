@@ -15,7 +15,7 @@ import {
   getResolvedPromises,
 } from '@/lib/react-util/utility-methods';
 import { isAbortError, isError } from '@compliance-theater/logger';
-import { withEmittingDispose } from '@/lib/nextjs-util/utils';
+import { withEmittingDispose } from '@compliance-theater/nextjs/utils';
 import { SingletonProvider } from '@compliance-theater/typescript';
 
 import type {

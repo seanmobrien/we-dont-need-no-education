@@ -9,7 +9,7 @@
  * @since 2025-07-27
  */
 
-import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
+import { isLikeNextRequest } from '@compliance-theater/nextjs/guards';
 import type { GridFilterModel } from '@mui/x-data-grid-pro';
 import {
   and,

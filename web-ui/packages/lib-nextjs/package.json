@@ -1,0 +1,92 @@
+{
+  "name": "@compliance-theater/nextjs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Next.js server and client utilities for the Title IX Victim Advocacy Platform",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "workspace-source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "workspace-source": "./src/server/index.ts",
+      "default": "./dist/server/index.js"
+    },
+    "./server/utils": {
+      "types": "./dist/server/utils.d.ts",
+      "workspace-source": "./src/server/utils.ts",
+      "default": "./dist/server/utils.js"
+    },
+    "./server/error-response": {
+      "types": "./dist/server/error-response/index.d.ts",
+      "workspace-source": "./src/server/error-response/index.ts",
+      "default": "./dist/server/error-response/index.js"
+    },
+    "./server/response": {
+      "types": "./dist/server/response/index.d.ts",
+      "workspace-source": "./src/server/response/index.ts",
+      "default": "./dist/server/response/index.js"
+    },
+    "./server/fetch": {
+      "types": "./dist/server/fetch/index.d.ts",
+      "workspace-source": "./src/server/fetch/index.ts",
+      "default": "./dist/server/fetch/index.js"
+    },
+    "./client-navigate": {
+      "types": "./dist/client-navigate.d.ts",
+      "workspace-source": "./src/client-navigate.ts",
+      "default": "./dist/client-navigate.js"
+    },
+    "./with-timeout": {
+      "types": "./dist/with-timeout.d.ts",
+      "workspace-source": "./src/with-timeout.ts",
+      "default": "./dist/with-timeout.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "yarn workspace @compliance-theater/nextjs run build:typescript",
+    "build:typescript": "echo 'Building lib-nextjs typescript...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/nextjs.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/nextjs.\u001b[0m\n' >&2; exit 1)",
+    "build:publish": "yarn workspace @compliance-theater/nextjs run build:clean && yarn workspace @compliance-theater/nextjs run build && yarn workspace @compliance-theater/nextjs pack --out ./dist/@compliance-theater-nextjs.tgz",
+    "test": "jest",
+    "lint": "echo 'Linting lib-nextjs...'",
+    "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    "@compliance-theater/env": "workspace:*",
+    "@compliance-theater/logger": "workspace:*",
+    "@compliance-theater/redis": "workspace:*",
+    "@compliance-theater/typescript": "workspace:*",
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/api-logs": "0.57.2",
+    "@protobufjs/eventemitter": "^1.1.0",
+    "lru-cache": "^11.0.2",
+    "readable-web-to-node-stream": "^3.0.2"
+  },
+  "peerDependencies": {
+    "next": "^15.1.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "jest": "^30.0.5",
+    "next": "^15.1.4",
+    "rimraf": "^6.1.2",
+    "ts-jest": "^29.3.4",
+    "typescript": "^5"
+  }
+}

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { TelemetryClient, TelemetryOptions } from './telemetry.types';
 import { log } from '@compliance-theater/logger/core';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 import { cryptoRandomBytes } from '@/lib/react-util/crypto-random-bytes';
 
 let version = '2.1.26';

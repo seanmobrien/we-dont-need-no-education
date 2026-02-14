@@ -8,8 +8,8 @@ import {
   buildFallbackGrid,
   createInstrumentedSpan,
   reportEvent,
-} from '@/lib/nextjs-util/server/utils';
-import { errorResponseFactory } from '@/lib/nextjs-util/server/error-response';
+} from '@compliance-theater/nextjs/server/utils';
+import { errorResponseFactory } from '@compliance-theater/nextjs/server/error-response';
 import { trace, context as otelContext, propagation } from '@opentelemetry/api';
 import { SpanStatusCode } from '@opentelemetry/api';
 import { log, LoggedError } from '@compliance-theater/logger';

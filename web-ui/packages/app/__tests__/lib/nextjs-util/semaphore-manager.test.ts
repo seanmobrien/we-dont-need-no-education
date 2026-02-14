@@ -11,7 +11,7 @@
  * - Dynamic resizing
  */
 
-import { Semaphore, SemaphoreManager } from '@/lib/nextjs-util/semaphore-manager';
+import { Semaphore, SemaphoreManager } from '@compliance-theater/nextjs/semaphore-manager';
 
 // Helper to sleep for a given duration
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

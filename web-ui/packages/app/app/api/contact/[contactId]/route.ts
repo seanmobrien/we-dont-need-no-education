@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   wrapRouteRequest,
   extractParams,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 import { query, queryExt } from '@compliance-theater/database/driver';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { globalContactCache } from '@/data-models/api';

@@ -4,7 +4,7 @@ import {
   determineHealthStatus,
 } from '@/lib/api/health/memory';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import { NextRequest, NextResponse } from 'next/server';
 import type { Span } from '@opentelemetry/api';

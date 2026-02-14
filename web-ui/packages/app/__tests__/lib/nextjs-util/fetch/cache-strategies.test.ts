@@ -9,11 +9,11 @@
 
 import { LRUCache } from 'lru-cache';
 import { PassThrough } from 'stream';
-import { CacheStrategies } from '@/lib/nextjs-util/server/fetch/cache-strategies';
+import { CacheStrategies } from '@compliance-theater/nextjs/server/fetch/cache-strategies';
 import type {
   CachedValue,
   CacheStrategyDeps,
-} from '@/lib/nextjs-util/server/fetch/fetch-types';
+} from '@compliance-theater/nextjs/server/fetch/fetch-types';
 import { type RedisClientType } from '@compliance-theater/redis';
 import { createClient } from 'redis';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';

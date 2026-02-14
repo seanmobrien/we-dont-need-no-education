@@ -17,7 +17,7 @@ import { tracer, MetricsRecorder, DEBUG_MODE } from './metrics/otel-metrics';
 import { CounterManager } from './metrics/counter-manager';
 import { SessionManager } from './session/session-manager';
 import { TraceContextManager } from './tracing/trace-context';
-import { SafetyUtils } from '../../../nextjs-util/safety-utils';
+import { SafetyUtils } from '@/lib/nextjs-util/safety-utils';
 import { MessageProcessor } from './message/message-processor';
 import { ImpersonationService } from '@/lib/auth/impersonation';
 

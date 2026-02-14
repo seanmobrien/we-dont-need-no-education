@@ -37,7 +37,7 @@ jest.mock('@/lib/nextjs-util/client-navigate', () => ({
 import {
   clientReload,
   clientNavigateSignIn,
-} from '@/lib/nextjs-util/client-navigate';
+} from '@compliance-theater/nextjs/client-navigate';
 
 // Now import the module after setting up mocks
 import {

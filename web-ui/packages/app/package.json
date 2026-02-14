@@ -60,6 +60,7 @@
     "@compliance-theater/database": "workspace:*",
     "@compliance-theater/env": "workspace:*",
     "@compliance-theater/logger": "workspace:*",
+    "@compliance-theater/nextjs": "workspace:*",
     "@compliance-theater/redis": "workspace:*",
     "@compliance-theater/send-api-request": "workspace:*",
     "@compliance-theater/themes": "workspace:*",

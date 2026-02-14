@@ -19,7 +19,7 @@ import { env } from '@compliance-theater/env';
 import { LoggedError, log } from '@compliance-theater/logger';
 import { extractFlagValue } from './util';
 
-import { fetch as serverFetch } from '@/lib/nextjs-util/server/fetch';
+import { fetch as serverFetch } from '@compliance-theater/nextjs/server/fetch';
 import { FlagsmithRedisCache } from './flagsmith-cache';
 
 /**

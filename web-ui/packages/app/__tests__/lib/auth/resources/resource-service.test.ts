@@ -5,7 +5,7 @@
 
 import { resourceService } from '@/lib/auth/resources/resource-service';
 import { authorizationService } from '@/lib/auth/resources/authorization-service';
-import { fetch } from '@/lib/nextjs-util/server';
+import { fetch } from '@compliance-theater/nextjs/server';
 import { decodeToken } from '@/lib/auth/utilities';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 

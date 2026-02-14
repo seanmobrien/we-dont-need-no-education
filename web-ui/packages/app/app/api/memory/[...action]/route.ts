@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { isSessionActive } from '@/lib/site-util/auth';
 import { memoryClientFactory } from '@/lib/ai/mem0';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server';
 
 type RouteContext = {
   // Next's generated types sometimes make params a Promise (see .next types), so

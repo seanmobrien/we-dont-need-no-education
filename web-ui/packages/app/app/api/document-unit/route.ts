@@ -9,7 +9,7 @@ import {
 } from '@/lib/ai/tools';
 import z from 'zod';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { checkCaseFileAuthorization } from '@/lib/auth/resources/case-file/case-file-middleware';
 import { CaseFileScope } from '@/lib/auth/resources/case-file/case-file-resource';
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 import {
   mapRecordToSummary,
   mapRecordToThreadSummary,

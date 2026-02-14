@@ -9,7 +9,7 @@ jest.unmock('@opentelemetry/sdk-trace-base');
  * @file utils.wrapRouteRequest.test.ts
  * @description Unit tests for wrapRouteRequest utility
  */
-import { wrapRouteRequest } from '@/lib/nextjs-util/server';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server';
 import { ILogger, logger } from '@compliance-theater/logger';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 import { NextRequest } from 'next/dist/server/web/spec-extension/request';

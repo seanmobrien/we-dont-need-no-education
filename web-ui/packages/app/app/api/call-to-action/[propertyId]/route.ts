@@ -3,7 +3,7 @@ import {
   buildFallbackGrid,
   wrapRouteRequest,
   extractParams
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
 

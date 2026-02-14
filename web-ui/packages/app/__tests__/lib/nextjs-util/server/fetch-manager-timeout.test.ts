@@ -1,6 +1,6 @@
 /* @jest-environment node */
 
-import { FetchManager } from '@/lib/nextjs-util/server/fetch/fetch-server';
+import { FetchManager } from '@compliance-theater/nextjs/server/fetch/fetch-server';
 import got from 'got';
 
 describe('FetchManager Timeout Normalization', () => {

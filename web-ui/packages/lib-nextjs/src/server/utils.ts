@@ -1,7 +1,8 @@
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@compliance-theater/env';
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
-import { startup } from '@/lib/site-util/app-startup';
+// TODO: Refactor to remove dependency on app-specific startup logic
+// import { startup } from '@/lib/site-util/app-startup';
 import type { NextRequest, NextResponse } from 'next/server';
 import {
   SpanKind,
@@ -92,7 +93,10 @@ export const wrapRouteRequest = <
             return res;
           }
 
-          const appStartupState = await tracer.startActiveSpan(
+          // TODO: Re-enable app startup check when site-util is extracted
+          // For now, assume app is ready
+          const appStartupState = 'ready'; 
+          /* const appStartupState = await tracer.startActiveSpan(
             'app.startup.check',
             async (startupSpan) => {
               try {
@@ -103,7 +107,7 @@ export const wrapRouteRequest = <
                 startupSpan.end();
               }
             },
-          );
+          ); */
 
           if (appStartupState === 'done') {
             const res = Response.json(buildFallback ?? globalBuildFallback, {

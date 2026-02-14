@@ -59,7 +59,7 @@
  */
 import { type ChatDetails } from '@/lib/ai/chat/types';
 import { LoggedError } from '@compliance-theater/logger';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
 
 /**

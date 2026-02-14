@@ -10,7 +10,7 @@ import { LRUCache } from 'lru-cache';
 import {
   SemaphoreManager,
   Semaphore,
-} from '@/lib/nextjs-util/semaphore-manager';
+} from '../../semaphore-manager';
 type Handler = (...args: unknown[]) => void;
 import { getRedisClient } from '@compliance-theater/redis';
 import { makeResponse, webStreamToReadable } from '../response';
@@ -31,10 +31,9 @@ import type {
   RequestInit,
   ServerFetchManager,
 } from './fetch-types';
-import { EnhancedFetchConfig } from '@/lib/site-util/feature-flags/types';
-import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
+import { EnhancedFetchConfig, DEFAULT_ENHANCED_FETCH_CONFIG } from './enhanced-fetch-config';
 import { withTimeout } from '../../with-timeout';
-import { TimeoutError } from '@/lib/react-util/errors/timeout-error';
+import { TimeoutError } from '../utilities/timeout-error';
 
 const DEFAULT_CONCURRENCY = 8;
 const DEFAULT_CACHE_SIZE = 500;

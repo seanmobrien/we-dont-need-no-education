@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BaseDrizzleRepository } from './_baseDrizzleRepository';
 import { PickField } from '@compliance-theater/typescript';
-import { LikeNextRequest } from '@/lib/nextjs-util/types';
-import { isRequestOrApiRequest } from '@/lib/nextjs-util/guards';
+import { LikeNextRequest } from '@compliance-theater/nextjs/types';
+import { isRequestOrApiRequest } from '@compliance-theater/nextjs/guards';
 import { LoggedError } from '@compliance-theater/logger';
 import { PaginatedResultset } from '@/data-models/_types';
 import type { PaginationStats } from '@/data-models/_types';

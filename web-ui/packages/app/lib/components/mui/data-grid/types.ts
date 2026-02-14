@@ -1,5 +1,5 @@
 import { PaginationStats } from '@/data-models/_types';
-import type { LikeNextRequest } from '@/lib/nextjs-util/types';
+import type { LikeNextRequest } from '@compliance-theater/nextjs/types';
 export type { LikeNextRequest };
 import type { FirstParameter } from '@compliance-theater/typescript';
 import type {

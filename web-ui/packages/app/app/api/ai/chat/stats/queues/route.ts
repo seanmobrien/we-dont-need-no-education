@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
 import { getRedisClient } from '@compliance-theater/redis';
 import type {

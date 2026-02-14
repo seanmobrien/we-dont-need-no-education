@@ -3,7 +3,7 @@ import { getEmail } from '@/lib/api/email/client';
 import { LoggedError } from '@compliance-theater/logger';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { UseEmailApiQueryResult, TResponseMap, EmailAttachment } from './types';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 
 export const emailMessageQuery = async ({
   queryKey,
