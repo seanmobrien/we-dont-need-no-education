@@ -9,7 +9,7 @@
  */
 
 import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
-import { drizDb } from '@compliance-theater/database';
+import { drizDb } from '@compliance-theater/database/orm';
 import type { DbDatabaseType, DbTransactionType } from '@compliance-theater/database';
 
 let mockDb: jest.Mocked<DbDatabaseType>;

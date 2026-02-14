@@ -15,7 +15,7 @@ import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();
 
 import { importIncomingMessage } from '@/lib/ai/middleware/chat-history/import-incoming-message';
-import { schema } from '@compliance-theater/database';
+import { schema } from '@compliance-theater/database/orm';
 import {
   getNextSequence,
   getNewMessages,

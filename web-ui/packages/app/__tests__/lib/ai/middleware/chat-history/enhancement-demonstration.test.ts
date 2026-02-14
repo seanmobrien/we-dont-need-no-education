@@ -9,8 +9,8 @@
 
 import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
 import { LanguageModelV2Message } from '@ai-sdk/provider';
-//import { schema } from '@compliance-theater/database';
-import { schema } from '@compliance-theater/database';
+//import { schema } from '@compliance-theater/database/orm';
+import { schema } from '@compliance-theater/database/orm';
 // Mock database schema
 /*
 jest.mock('@compliance-theater/database', () => ({

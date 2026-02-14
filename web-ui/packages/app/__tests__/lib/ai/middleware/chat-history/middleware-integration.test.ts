@@ -151,7 +151,7 @@ describe('Chat History Middleware Integration', () => {
     it('should gracefully handle database errors in wrapGenerate', async () => {
       // Arrange - Mock transaction to fail
       mockConsole.setup();
-      const mockDb = await import('@compliance-theater/database');
+      const mockDb = await import('@compliance-theater/database/orm');
       (mockDb.drizDb as jest.Mock).mockImplementationOnce(() => ({
         transaction: jest.fn(() => Promise.reject(new Error('DB Error'))),
       }));

@@ -31,7 +31,8 @@ import {
 } from '@/lib/ai/middleware/chat-history';
 import { ProcessingQueue } from '@/lib/ai/middleware/chat-history/processing-queue';
 import { generateChatId } from '@/lib/ai/core';
-import { DbDatabaseType, drizDb } from '@compliance-theater/database';
+import { type DbDatabaseType } from '@compliance-theater/database';
+import { drizDb } from '@compliance-theater/database/orm';
 import { LoggedError } from '@compliance-theater/logger';
 import type {
   LanguageModelV2CallOptions,

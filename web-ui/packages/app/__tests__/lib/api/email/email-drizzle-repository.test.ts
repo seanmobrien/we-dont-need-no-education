@@ -6,7 +6,7 @@ import {
 } from '@/lib/api/email/email-drizzle-repository';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 
-import { drizDb, drizDbWithInit } from '@compliance-theater/database';
+import { drizDb, drizDbWithInit } from '@compliance-theater/database/orm';
 /*
 jest.mock('@compliance-theater/database', () => {
   const { mockDeep } = require('jest-mock-extended');

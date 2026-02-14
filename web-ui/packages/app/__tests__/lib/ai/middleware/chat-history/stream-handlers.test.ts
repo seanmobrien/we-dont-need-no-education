@@ -13,7 +13,8 @@ import {
   handleFinish,
   processStreamChunk,
 } from '@/lib/ai/middleware/chat-history/stream-handlers';
-import { DbDatabaseType, drizDb } from '@compliance-theater/database';
+import { type DbDatabaseType } from '@compliance-theater/database';
+import { drizDb } from '@compliance-theater/database/orm';
 import { chatMessages, tokenUsage } from '@compliance-theater/database/schema';
 import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
 import { log } from '@compliance-theater/logger';

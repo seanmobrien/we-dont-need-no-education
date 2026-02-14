@@ -23,7 +23,7 @@ import type {
   LanguageModelV2FunctionTool,
 } from '@ai-sdk/provider';
 import type { UIMessage } from 'ai';
-import { drizDbWithInit } from '@compliance-theater/database';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
 
 // Mock dependencies
 jest.mock('@/lib/ai/services/model-stats/tool-map');
