@@ -8,26 +8,32 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./themes": {
       "types": "./dist/themes/index.d.ts",
+      "workspace-source": "./src/themes/index.ts",
       "default": "./dist/themes/index.js"
     },
     "./styles": {
       "types": "./dist/styles/index.d.ts",
+      "workspace-source": "./src/styles/index.ts",
       "default": "./dist/styles/index.js"
     },
     "./provider": {
       "types": "./dist/themes/provider.d.ts",
+      "workspace-source": "./src/themes/provider.ts",
       "default": "./dist/themes/provider.js"
     },
     "./components/theme-selector": {
-      "types": "./dist/components/theme-selector.d.ts",
-      "default": "./dist/components/theme-selector.js"
+      "types": "./dist/themes/theme-selector.d.ts",
+      "workspace-source": "./src/themes/theme-selector.tsx",
+      "default": "./dist/themes/theme-selector.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },
@@ -39,11 +45,12 @@
     "yarn": ">=1.22.0"
   },
   "scripts": {
-    "build": "tsc -b tsconfig.json",
-    "build:typescript": "echo 'Building lib/themes typescript...' && tsc -b tsconfig.json && echo 'TypeScript build complete.' || (echo 'Typescript compile did not succeed' >&2; exit 1)",
+    "build": "yarn workspace @compliance-theater/themes run build:typescript",
+    "build:typescript": "echo 'Building lib/themes...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/themes.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/themes.\u001b[0m\n' >&2; exit 1)",
+    "build:publish": "yarn workspace @compliance-theater/themes run build:clean && yarn workspace @compliance-theater/themes run build && yarn workspace @compliance-theater/themes pack --out ./dist/@compliance-theater-themes.tgz",
     "test": "jest",
     "lint": "echo 'Linting lib-themes...'",
-    "clean:build": "rimraf .next dist tsconfig.tsbuildinfo"
+    "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@compliance-theater/logger": "workspace:*"

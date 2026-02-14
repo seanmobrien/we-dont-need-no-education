@@ -273,7 +273,7 @@ describe('sendApiRequest', () => {
 
       promise.cancel();
 
-      await expect(promise).rejects.toThrow();
+      await expect(promise.awaitable).rejects.toThrow('Promise was cancelled');
     });
   });
 });

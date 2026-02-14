@@ -376,10 +376,15 @@ describe('Server Utils', () => {
     });
 
     describe('build fallback scenarios', () => {
-      test('handles build fallback when IS_BUILDING is set', async () => {
-        // Use Object.defineProperty to ensure it can't be overwritten
-        process.env.IS_BUILDING = '1';
+      let ORIGINAL_PHASE = process.env.NEXT_PHASE;
+      beforeEach(() => {        // Clear environment variables before each test
+        process.env.NEXT_PHASE = 'phase-production-build';        
+      });
+      afterEach(() => {
+        process.env.NEXT_PHASE = ORIGINAL_PHASE; // Restore original environment variable after tests
+      });
 
+      test('handles build fallback when IS_BUILDING is set', async () => {        
         // Mock startActiveSpan to add debug logging
         mockTracer.startActiveSpan.mockImplementation(
           async (name, options, parentCtx, fn) => {
@@ -411,7 +416,6 @@ describe('Server Utils', () => {
       });
 
       test('handles build fallback when NEXT_PHASE is production-build', async () => {
-        process.env.NEXT_PHASE = 'phase-production-build';
 
         const handler = wrapRouteRequest(async (_req: Request) => {
           throw new Error('Handler should not execute during build');
@@ -432,8 +436,6 @@ describe('Server Utils', () => {
     });
 
     test('allows execution during build when EnableOnBuild is passed', async () => {
-      process.env.IS_BUILDING = '1';
-
       const handler = wrapRouteRequest(
         async (_req: Request) => {
           return new Response('executed during build');

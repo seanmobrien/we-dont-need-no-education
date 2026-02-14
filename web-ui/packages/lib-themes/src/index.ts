@@ -7,7 +7,7 @@ export {
   themeDisplayNames,
 } from './themes/definitions';
 export { ThemeProvider, useTheme } from './themes/provider';
-export { ThemeSelector } from './components/theme-selector';
+export { ThemeSelector } from './themes/theme-selector';
 
 // Style exports
 export { cn, styles } from './styles/utility-classes';

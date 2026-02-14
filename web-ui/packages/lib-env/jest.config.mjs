@@ -2,6 +2,9 @@ export default {
   displayName: '@compliance-theater/env',
   preset: 'ts-jest',
   testEnvironment: 'node',
+  testEnvironmentOptions: {
+    customExportConditions: ['workspace-source'],
+  },
   roots: ['<rootDir>'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/*.test.ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
@@ -16,9 +19,6 @@ export default {
   transformIgnorePatterns: [
     'node_modules/(?!(@compliance-theater)/)',
   ],
-  moduleNameMapper: {
-    '^@compliance-theater/logger$': '<rootDir>/../lib-logger/src/index.ts',
-  },
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',

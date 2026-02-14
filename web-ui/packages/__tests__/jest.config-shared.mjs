@@ -75,6 +75,7 @@ const config = {
       FetchExternalResources: false,
       ProcessExternalResources: false,
     },
+    customExportConditions: ['workspace-source'],
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled  
   setupFilesAfterEnv: [

@@ -5,6 +5,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
+    "sourceMap": true,
     "incremental": true,
     "noEmit": false,
     "removeComments": true,

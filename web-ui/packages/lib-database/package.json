@@ -8,22 +8,27 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./driver": {
       "types": "./dist/driver/index.d.ts",
+      "workspace-source": "./src/driver/index.ts",
       "default": "./dist/driver/index.js"
     },
     "./orm": {
       "types": "./dist/orm/index.d.ts",
+      "workspace-source": "./src/orm/index.ts",
       "default": "./dist/orm/index.js"
     },
     "./schema": {
       "types": "./dist/drizzle/schema.d.ts",
+      "workspace-source": "./src/drizzle/schema.ts",
       "default": "./dist/drizzle/schema.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },
@@ -35,14 +40,15 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -b tsconfig.json",
-    "build:typescript": "echo 'Building lib-database typescript...' && tsc -b tsconfig.json && echo 'TypeScript build complete.' || (echo 'Typescript compile did not succeed' >&2; exit 1)",
+    "build": "yarn workspace @compliance-theater/database run build:typescript",
+    "build:typescript": "echo 'Building @compliance-theater/database...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/database.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/database.\u001b[0m\n' >&2; exit 1)",
+    "build:publish": "yarn workspace @compliance-theater/database run build:clean && yarn workspace @compliance-theater/database run build && yarn workspace @compliance-theater/database pack --out ./dist/@compliance-theater-database.tgz",
     "drizzle-generate": "drizzle-kit generate --config=drizzle.config.ts",
     "drizzle-migrate": "drizzle-kit migrate --config=drizzle.config.ts",
     "drizzle-studio": "drizzle-kit studio --config=drizzle.config.ts",
     "test": "jest",
     "lint": "echo 'Linting lib-database...'",
-    "clean:build": "rimraf .next dist tsconfig.tsbuildinfo"
+    "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@compliance-theater/after": "workspace:*",
