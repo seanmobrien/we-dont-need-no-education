@@ -45,8 +45,8 @@ jest.mock('@compliance-theater/logger/core', () => {
     get logger() {
       if (!internalLogger) {        
         internalLogger = jest.fn(() => Promise.resolve(getLogger()));
-        return internalLogger;
-      } 
+      }
+      return internalLogger;
     },
     get log() { 
       internalLog = internalLog ?? jest.fn((cb: (l: LoggerInstance) => void) => {
@@ -76,8 +76,8 @@ jest.mock('@compliance-theater/logger', () => {
     get logger() {
       if (!internalLogger) {        
         internalLogger = jest.fn(() => Promise.resolve(getLogger()));
-        return internalLogger;
-      } 
+      }
+      return internalLogger;
     },
     get log() { 
       internalLog = internalLog ?? jest.fn((cb: (l: LoggerInstance) => void) => {
