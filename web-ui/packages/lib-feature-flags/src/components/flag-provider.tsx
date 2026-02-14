@@ -6,9 +6,9 @@ import {
   AllFeatureFlagsDefault,
   KnownFeatureType,
   KnownFeatureValueType,
-} from '@/lib/site-util/feature-flags';
-import { getAllFeatureFlags } from '@/lib/site-util/feature-flags/client';
-import FeatureFlagsContext from '@/lib/site-util/feature-flags/context';
+} from '../index';
+import { getAllFeatureFlags } from '../client';
+import FeatureFlagsContext from '../context';
 import { useFlagsmithLoading } from 'flagsmith/react';
 import { useSession } from '@/components/auth/session-provider';
 import type { Session } from '@auth/core/types';

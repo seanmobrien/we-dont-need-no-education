@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, waitFor, screen } from '@/__tests__/test-utils';
-import { FlagProvider } from '@/components/general/flags/flag-provider';
+import { FlagProvider } from '@compliance-theater/feature-flags/components/flag-provider';
 
 // Import mocked modules after jest.mock calls
 import { createFlagsmithInstance } from 'flagsmith/isomorphic';
@@ -9,7 +9,7 @@ import { useFlagsmithLoading } from 'flagsmith/react';
 import {
   FeatureFlagsApi,
   useFeatureFlagsContext,
-} from '@/lib/site-util/feature-flags/context';
+} from '@compliance-theater/feature-flags/context';
 
 describe('FlagProvider', () => {
   let currentContext: FeatureFlagsApi | undefined = undefined;

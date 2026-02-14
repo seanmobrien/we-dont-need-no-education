@@ -42,7 +42,7 @@
 import type { KnownFeatureType } from './known-feature';
 import type { KnownFeatureValueType } from './types';
 
-declare module '@/lib/site-util/feature-flags/feature-flag-with-refresh' {
+declare module '@compliance-theater/feature-flags/feature-flag-with-refresh' {
   /**
    * Auto-refreshing feature flag that stays synchronized with Flagsmith.
    *

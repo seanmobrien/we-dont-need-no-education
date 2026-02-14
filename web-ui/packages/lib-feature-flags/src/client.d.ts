@@ -40,10 +40,10 @@ import type { AllFeatureFlagsDefault } from './known-feature-defaults';
  * - User identification triggers a Flagsmith API call
  *
  * @see components/general/flags/flag-provider.tsx - Primary consumer
- * @see lib/site-util/feature-flags/server.ts - Server-side equivalent
- * @see lib/site-util/feature-flags/context.ts - React Context integration
+ * @see @compliance-theater/feature-flags/server - Server-side equivalent
+ * @see @compliance-theater/feature-flags/context - React Context integration
  */
-declare module '@/lib/site-util/feature-flags/client' {
+declare module '@compliance-theater/feature-flags/client' {
   /**
    * Creates and initializes a Flagsmith client instance for browser environments.
    *
@@ -169,7 +169,7 @@ declare module '@/lib/site-util/feature-flags/client' {
    *
    * // In a client component
    * 'use client';
-   * import { getFeatureFlag } from '@/lib/site-util/feature-flags/client';
+   * import { getFeatureFlag } from '@compliance-theater/feature-flags/client';
    *
    * function MyComponent() {
    *   const [azureEnabled, setAzureEnabled] = useState(false);

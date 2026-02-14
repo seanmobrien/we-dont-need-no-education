@@ -1,4 +1,4 @@
-import { FlagsmithRedisCache } from '@/lib/site-util/feature-flags/flagsmith-cache';
+import { FlagsmithRedisCache } from '@compliance-theater/feature-flags/flagsmith-cache';
 import { getRedisClient } from '@compliance-theater/redis';
 import { Flags } from 'flagsmith-nodejs';
 import type { RedisClientType } from 'redis';

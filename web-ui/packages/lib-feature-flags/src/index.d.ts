@@ -11,9 +11,9 @@ import type {
 
 import type { FeatureFlagsApi, defaultFlags } from './context';
 
-declare module '@/lib/site-util/feature-flags' {
+declare module '@compliance-theater/feature-flags' {
   /**
-   * @module lib/site-util/feature-flags
+   * @module @compliance-theater/feature-flags
    *
    * Client-side feature flag helpers (hooks) plus re-exports of server
    * helpers implemented in `./server` so callers can import from a

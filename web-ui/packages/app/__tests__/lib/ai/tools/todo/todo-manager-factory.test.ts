@@ -9,7 +9,7 @@ jest.mock('next/server', () => ({
 import { resetLastStrategy } from '@/lib/ai/tools/todo/todo-manager-factory';
 // factory is dynamically imported in each test so module-level state can be
 // reset between tests (LastStrategy). See each test for the dynamic import.
-import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import { wellKnownFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 
 type FlagValue = {
   value: unknown;
@@ -26,7 +26,7 @@ type FlagValue = {
 // note: the factory now returns config+metadata rather than creating live
 // storage. We only need to mock flags below.
 
-jest.mock('@/lib/site-util/feature-flags/feature-flag-with-refresh', () => ({
+jest.mock('@compliance-theater/feature-flags/feature-flag-with-refresh', () => ({
   wellKnownFlag: jest.fn(),
 }));
 

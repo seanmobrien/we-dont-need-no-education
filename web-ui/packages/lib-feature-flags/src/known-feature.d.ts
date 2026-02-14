@@ -1,4 +1,4 @@
-declare module '@/lib/site-util/feature-flags/known-feature' {
+declare module '@compliance-theater/feature-flags/known-feature' {
   /**
    * @module lib/site-util/feature-flags/known-feature
    *
@@ -17,9 +17,9 @@ declare module '@/lib/site-util/feature-flags/known-feature' {
    * (MCP cache tools, MCP cache client).
    *
    * Usage Patterns:
-   * - Server-side: Import via `@/lib/site-util/feature-flags/server` for SSR/API routes
-   * - Client-side: Import via `@/lib/site-util/feature-flags/client` or React hooks
-   * - Type definitions: Import types from `@/lib/site-util/feature-flags/known-feature`
+   * - Server-side: Import via `@compliance-theater/feature-flags/server` for SSR/API routes
+   * - Client-side: Import via `@compliance-theater/feature-flags/client` or React hooks
+   * - Type definitions: Import types from `@compliance-theater/feature-flags/known-feature`
    *
    * Integration:
    * - Works with Flagsmith feature flag service for remote configuration

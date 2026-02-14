@@ -3,7 +3,7 @@ import { sql } from '@compliance-theater/database/orm';
 import { LoggedError } from '@compliance-theater/logger';
 import InMemoryCache from '@/lib/api/health/base-cache';
 import { globalRequiredSingleton } from '@compliance-theater/typescript/singleton-provider';
-import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
+import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 
 export class DatabaseHealthCache extends InMemoryCache<{

@@ -19,7 +19,7 @@ import type { FeatureFlagStatus } from './types';
  * - `getAllFeatureFlags` returns a map of all known feature flags and their
  *   resolved statuses for a user.
  */
-declare module '@/lib/site-util/feature-flags/server' {
+declare module '@compliance-theater/feature-flags/server' {
   /**
    * Create or return a singleton Flagsmith server client.
    *
