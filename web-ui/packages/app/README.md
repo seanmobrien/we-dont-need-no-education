@@ -112,19 +112,15 @@ web-ui/packages/app/
 │   ├── api/                     # Repository pattern implementations
 │   │   ├── email/               # Email data repositories
 │   │   └── _baseDrizzleRepository.ts # Base repository class
-│   ├── drizzle-db/              # Database schema and connections
-│   │   ├── schema.ts            # Unified database schema
-│   │   └── index.ts             # Database connection
 │   ├── components/              # Component utilities
 │   │   └── mui/data-grid/       # Data grid query helpers
 │   ├── react-util/              # React utilities and hooks
 │   └── site-util/               # Site-wide utilities
 ├── data-models/                 # TypeScript data model definitions
 ├── __tests__/                   # Test files (Jest + React Testing Library)
-├── drizzle/                     # Database schema definitions
-│   ├── schema.ts                # Table definitions
-│   └── custom-relations.ts      # Database relations
 └── public/                      # Static assets
+
+Database schema and migrations are maintained in `packages/lib-database/drizzle`.
 ```
 
 ## Getting Started
@@ -190,17 +186,17 @@ GOOGLE_CLIENT_SECRET="your-google-client-secret"
 ### Database Setup
 
 ```bash
-# From the app directory
-cd web-ui/packages/app
+# From the lib-database directory
+cd web-ui/packages/lib-database
 
 # Generate database schema
 yarn drizzle-generate
 
 # Run database migrations
-npx drizzle-kit migrate
+yarn drizzle-migrate
 
 # Open Drizzle Studio (database viewer)
-npx drizzle-kit studio
+yarn drizzle-studio
 ```
 
 ### Development Server
@@ -519,9 +515,9 @@ yarn test:concurrency-stress # Run tests with high concurrency
 yarn lint                   # Run ESLint checks
 
 # Database
-yarn drizzle-generate       # Generate Drizzle schema
-npx drizzle-kit migrate     # Run database migrations
-npx drizzle-kit studio      # Open Drizzle Studio
+yarn workspace @compliance-theater/database drizzle-generate  # Generate Drizzle schema
+yarn workspace @compliance-theater/database drizzle-migrate   # Run database migrations
+yarn workspace @compliance-theater/database drizzle-studio    # Open Drizzle Studio
 
 # Build Analysis
 ANALYZE=true yarn build     # Build with bundle analyzer
@@ -726,7 +722,7 @@ yarn debug
 ANALYZE=true yarn build
 
 # Database debugging
-npx drizzle-kit studio
+yarn workspace @compliance-theater/database drizzle-studio
 
 # Test environment debugging
 yarn test --verbose

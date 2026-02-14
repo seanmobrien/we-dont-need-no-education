@@ -4,7 +4,7 @@ import {
 } from './email-drizzle-repository';
 import { EmailMessage } from '@/data-models/api/email-message';
 import { ContactSummary } from '@/data-models/api/contact';
-import { query } from '@/lib/neondb';
+import { query } from '@compliance-theater/database/driver';
 import { log } from '@compliance-theater/logger';
 import { auth } from '@/auth';
 /**

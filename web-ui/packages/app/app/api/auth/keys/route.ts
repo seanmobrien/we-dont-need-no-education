@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { auth } from '@/auth';
-import { drizDb, schema } from '@/lib/drizzle-db';
+import { drizDb, schema } from '@compliance-theater/database/orm';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { z } from 'zod';
 

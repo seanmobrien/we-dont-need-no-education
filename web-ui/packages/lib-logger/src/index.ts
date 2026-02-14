@@ -24,23 +24,35 @@ export { logger, log, logEvent } from './core';
 export { simpleScopedLogger } from './simple-scoped-logger';
 export { safeSerialize } from './safe-serialize';
 
-// Error handling
-export {
+export { 
   LoggedError,
   dumpError,
-  ProgressEventError,
+} from './errors/logged-error/logged-error-class';
+
+export {
   isError,
   isAbortError,
   isProgressEvent,
   isXmlHttpRequest,
   getStackTrace as getStackTraceFromErrors,
-} from './errors';
+
+} from './errors/utilities/error-guards';
+
+// Error handling
+export {
+  ProgressEventError,
+} from './errors/progress-event-error';
+
+export type {
+  ErrorContext,
+  IContextEnricher,
+} from './errors/types';
+
 export type {
   LoggedErrorOptions,
   ErrorLogFactory,
   TurtleRecursionParams,
   ErrorReportArgs,
-  ErrorContext,
-  IContextEnricher,
-  SafeProgressEvent,
-} from './errors';
+} from './errors/logged-error/types';
+
+export type { SafeProgressEvent } from './errors/utilities/error-guards';

@@ -7,8 +7,8 @@ import {
 import { extractParams } from '@/lib/nextjs-util/server/utils';
 import { CallToActionResponseDetails } from '@/data-models/api/email-properties/extended-properties';
 import { eq, and, sql } from 'drizzle-orm';
-import { drizDbWithInit } from '@/lib/drizzle-db';
-import { schema } from '@/lib/drizzle-db/schema';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
+import { schema } from '@compliance-theater/database/orm';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,

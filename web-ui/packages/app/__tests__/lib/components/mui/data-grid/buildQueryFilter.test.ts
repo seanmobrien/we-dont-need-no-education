@@ -4,7 +4,7 @@ import {
   buildQueryFilter,
 } from '@/lib/components/mui/data-grid/queryHelpers/postgres';
 import { GridFilterModel } from '@mui/x-data-grid-pro';
-import { sqlNeonAdapter } from '@/lib/neondb/index-postgres';
+import { sqlNeonAdapter } from '@compliance-theater/database/driver';
 
 // Minimal mock for Sql<any> to satisfy sqlNeonAdapter
 function sqlMock(...args: unknown[]) {

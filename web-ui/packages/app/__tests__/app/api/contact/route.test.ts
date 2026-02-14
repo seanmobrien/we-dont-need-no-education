@@ -2,13 +2,13 @@
  * @jest-environment node
  */
 
-jest.mock('@/lib/neondb');
+jest.mock('@compliance-theater/database/driver');
 jest.mock('@compliance-theater/logger');
 jest.mock('@/data-models/api');
 
 import { NextRequest } from 'next/server';
 import { POST, GET } from '@/app/api/contact/route';
-import { query, queryExt } from '@/lib/neondb';
+import { query, queryExt } from '@compliance-theater/database/driver';
 import { globalContactCache } from '@/data-models/api';
 
 describe('Contact API Routes', () => {

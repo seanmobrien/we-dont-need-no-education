@@ -46,7 +46,7 @@
  * @since 1.0.0
  */
 
-import { drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
 import {
   resolveCaseFileIdBatch,
   toolCallbackArrayResultSchemaFactory,

@@ -1,5 +1,5 @@
 import { GridSortModel } from '@mui/x-data-grid';
-import { isSqlNeonAdapter, unwrapAdapter, SqlDb } from '@/lib/neondb';
+import { isSqlNeonAdapter, unwrapAdapter, SqlDb } from '@compliance-theater/database/driver';
 import { isGridSortModel } from './guards';
 import { BuildOrderByProps } from './types';
 import { columnMapFactory, parseSortOptions } from '../utility';

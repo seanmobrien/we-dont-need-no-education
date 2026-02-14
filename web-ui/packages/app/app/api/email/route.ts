@@ -12,7 +12,7 @@ import {
   buildFallbackGrid,
   wrapRouteRequest,
 } from '@/lib/nextjs-util/server/utils';
-import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
 import { eq, and, inArray } from 'drizzle-orm';
 // count_kpi import removed; not used in this route currently
 import {

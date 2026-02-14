@@ -1,6 +1,6 @@
 import { BaseDrizzleRepository } from '../_baseDrizzleRepository';
-import { emails } from '@/drizzle/schema';
-import { drizDbWithInit } from '@/lib/drizzle-db';
+import { emails } from '@compliance-theater/database/schema';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { eq } from 'drizzle-orm';
 import { auth } from '@/auth';

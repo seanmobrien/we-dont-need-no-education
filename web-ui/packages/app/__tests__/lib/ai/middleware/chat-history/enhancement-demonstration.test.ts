@@ -9,11 +9,11 @@
 
 import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
 import { LanguageModelV2Message } from '@ai-sdk/provider';
-//import { schema } from '@/lib/drizzle-db';
-import { schema } from '@/lib/drizzle-db/schema';
+//import { schema } from '@compliance-theater/database/orm';
+import { schema } from '@compliance-theater/database/orm';
 // Mock database schema
 /*
-jest.mock('@/lib/drizzle-db', () => ({
+jest.mock('@compliance-theater/database', () => ({
   schema: {
     chatMessages: {
       role: 'mocked-role-column',

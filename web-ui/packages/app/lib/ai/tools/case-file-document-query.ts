@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import type {
   DocumentPropertyQueryShape,
   DocumentUnitQueryShape,
-} from '@/lib/drizzle-db';
+} from '@compliance-theater/database';
 
 export const documentPropertyShape: DocumentPropertyQueryShape = {
   columns: {

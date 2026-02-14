@@ -13,14 +13,20 @@ const config = {
     '<rootDir>/__tests__/setup/jest.mock-ai.ts',
     '<rootDir>/__tests__/shared/setup/jest.error-monitoring.error-reporter.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-drizzledb.ts',
+    '<rootDir>/__tests__/shared/setup/jest.core-drizzle.ts',
     '<rootDir>/__tests__/setup/jest.setup.ts',
   ], // Setup file for global imports
   moduleNameMapper: {
     ...(baseConfig.moduleNameMapper ?? {}),
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports    
+    '^@compliance-theater/database/driver(.*)$': '<rootDir>/../lib-database/src/driver$1',
+    '^@compliance-theater/database/orm(.*)$': '<rootDir>/../lib-database/src/orm$1',
+    '^@compliance-theater/database/schema(.*)$': '<rootDir>/../lib-database/src/drizzle/schema$1',
+    '^@compliance-theater/database(.*)$': '<rootDir>/../lib-database/src$1',
     '^@compliance-theater/logger(.*)$': '<rootDir>/../lib-logger/src$1', // Resolve workspace logger package for tests
     '^@compliance-theater/typescript(.*)$': '<rootDir>/../lib-typescript/src$1', // Resolve workspace TS utils package for tests
     '^@compliance-theater/env(.*)$': '<rootDir>/../lib-env/src$1', // Resolve workspace TS utils package for tests
+    '^@compliance-theater/after(.*)$': '<rootDir>/../lib-after/src$1',
     '^@compliance-theater/send-api-request(.*)$': '<rootDir>/../lib-send-api-request/src$1', // Resolve workspace send-api-request package for tests
     '^@compliance-theater/themes(.*)$': '<rootDir>/../lib-themes/src$1', // Resolve workspace themes package for tests
   },

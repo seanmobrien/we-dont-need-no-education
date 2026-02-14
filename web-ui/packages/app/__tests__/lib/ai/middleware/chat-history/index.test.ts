@@ -31,7 +31,8 @@ import {
 } from '@/lib/ai/middleware/chat-history';
 import { ProcessingQueue } from '@/lib/ai/middleware/chat-history/processing-queue';
 import { generateChatId } from '@/lib/ai/core';
-import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
+import { type DbDatabaseType } from '@compliance-theater/database';
+import { drizDb } from '@compliance-theater/database/orm';
 import { LoggedError } from '@compliance-theater/logger';
 import type {
   LanguageModelV2CallOptions,
@@ -46,7 +47,7 @@ import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
 // Mock dependencies
 //jest.mock('@/lib/ai/middleware/chat-history/processing-queue');
 jest.mock('@/lib/ai/core');
-// jest.mock('@/lib/drizzle-db');
+// jest.mock('@compliance-theater/database');
 
 jest.mock('@/lib/react-util', () => {
   const original = jest.requireActual('/lib/react-util');

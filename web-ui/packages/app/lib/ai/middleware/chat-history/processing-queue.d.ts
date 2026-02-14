@@ -10,7 +10,7 @@ import type {
   LanguageModelV2CallOptions,
   LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
-import { ChatMessagesType } from '../../../drizzle-db/drizzle-types';
+import { ChatMessagesType } from '@compliance-theater/database/orm';
 import type {
   ChatHistoryContext,
   QueuedTask,

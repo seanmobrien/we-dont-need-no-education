@@ -2,8 +2,8 @@ import type {
   LanguageModelV2CallOptions,
   LanguageModelV2ToolResultPart,
 } from '@ai-sdk/provider';
-import { schema } from '@/lib/drizzle-db/schema';
-import { type DbTransactionType, drizDbWithInit } from '@/lib/drizzle-db';
+import { schema } from '@compliance-theater/database/orm';
+import { type DbTransactionType, drizDbWithInit } from '@compliance-theater/database/orm';
 import { eq, desc } from 'drizzle-orm';
 import { ToolStatus } from './types';
 

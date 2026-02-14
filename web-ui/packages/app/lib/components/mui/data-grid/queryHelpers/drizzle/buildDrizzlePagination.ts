@@ -80,7 +80,7 @@ export const parsePaginationStats = deprecate(
  *
  * @example
  * ```typescript
- * import { db, users } from '@/drizzle/schema';
+ * import { db, users } from '@compliance-theater/database/schema';
  *
  * const query = db.select().from(users);
  * const paginatedQuery = buildDrizzlePagination({

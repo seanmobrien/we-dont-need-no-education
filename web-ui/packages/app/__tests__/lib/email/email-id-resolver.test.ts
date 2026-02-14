@@ -15,7 +15,7 @@ jest.mock('next/navigation', () => ({
   notFound: jest.fn(),
 }));
 
-import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDb, drizDbWithInit } from '@compliance-theater/database/orm';
 import { isValidUuid } from '@compliance-theater/typescript';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 

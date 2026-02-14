@@ -317,22 +317,31 @@ export class LoggedError extends Error {
     Object.entries(this[INNER_ERROR]).forEach(([key, value]) => {
       if (!(key in this) && typeof value !== 'function') {
         if (typeof key === 'string' || typeof key === 'symbol') {
-          this[key as string | symbol] = value;
+          try{
+            this[key as string | symbol] = value;
+          }catch{
+            // supress error on error
+          }
         }
       }
     });
     if (
       isError(this[INNER_ERROR].cause) &&
-      this[INNER_ERROR].cause.name === 'PostgresError'
+      (this[INNER_ERROR].cause.name === 'PostgresError'
+        || this[INNER_ERROR].cause.name === 'DrizzleError')
     ) {
       Object.entries(this[INNER_ERROR]).forEach(([key, value]) => {
-        if (!(key in this) && !!value && typeof value !== 'function') {
-          if (typeof key === 'string' || typeof key === 'symbol') {
-            if (!this[key as string | symbol]) {
-              this[key as string | symbol] = value;
+        try{
+          if (!(key in this) && !!value && typeof value !== 'function') {
+            if (typeof key === 'string' || typeof key === 'symbol') {
+              if (!this[key as string | symbol]) {
+                this[key as string | symbol] = value;
+              }
             }
           }
-        }
+        } catch {
+          // supress error on error
+        }        
       });
     }
     this[brandLoggedError] = true;
@@ -361,7 +370,7 @@ export class LoggedError extends Error {
       ret === 'Error' &&
       this[INNER_ERROR]?.cause &&
       isError(this[INNER_ERROR].cause) &&
-      this[INNER_ERROR].cause.name === 'PostgresError'
+      this[INNER_ERROR].cause.name === 'IPostgresError'
     ) {
       return this[INNER_ERROR].cause.name;
     }

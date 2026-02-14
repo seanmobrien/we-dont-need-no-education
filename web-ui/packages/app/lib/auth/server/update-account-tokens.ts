@@ -1,4 +1,4 @@
-import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
 import { eq, and } from 'drizzle-orm';
 import { log } from '@compliance-theater/logger';
 import { decodeToken } from '../utilities';

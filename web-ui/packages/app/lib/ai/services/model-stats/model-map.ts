@@ -11,8 +11,8 @@ import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-no
  * @since 2025-08-23
  */
 
-import { drizDbWithInit, type DbDatabaseType } from '@/lib/drizzle-db';
-import { schema } from '@/lib/drizzle-db/schema';
+import { drizDbWithInit, type DbDatabaseType } from '@compliance-theater/database/orm';
+import { schema } from '@compliance-theater/database/orm';
 import { eq, and } from 'drizzle-orm';
 import { LoggedError, log } from '@compliance-theater/logger';
 import {

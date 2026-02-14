@@ -2,11 +2,11 @@
 /**
  * @jest-environment node
  */
-jest.mock('@/lib/neondb');
+jest.mock('@compliance-theater/database/driver');
 
 import { ComplianceScoresDetailsRepository } from '@/lib/api/email/properties/compliance-scores/compliance-scores-details-repository';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { query, queryExt } from '@/lib/neondb';
+import { query, queryExt } from '@compliance-theater/database/driver';
 import { ComplianceScoresDetails } from '@/data-models/api';
 
 describe('ComplianceScoresDetailsRepository', () => {

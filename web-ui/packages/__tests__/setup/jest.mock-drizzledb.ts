@@ -1,25 +1,22 @@
 import dotenv from 'dotenv';
 import { mockDeep } from 'jest-mock-extended';
-import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
-//import type { DbDatabaseType } from '../../../lib/drizzle-db/schema';
+import type { DbDatabaseType } from '@compliance-theater/database/orm';
+import postgres from 'postgres';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import { schema } from '@compliance-theater/database/orm';
+import { sql } from 'drizzle-orm';
+import { withJestTestExtensions } from '../jest.test-extensions';
 import {
-  IMockInsertBuilder,
   IMockQueryBuilder,
   MockDbQueryCallback,
   MockDbQueryCallbackResult,
   MockDbQueryRecord,
-  QueryBuilderMethodValues,
   DatabaseMockType,
 } from '../jest.mock-drizzle';
 import {
-  FirstParameter,
   isKeyOf,
   isPromise,
-  SingletonProvider,
 } from '@compliance-theater/typescript';
-
-const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
-const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
 
 export class MockQueryBuilder implements IMockQueryBuilder {
   readonly from: jest.Mock;
@@ -117,6 +114,7 @@ const mockDbFactory = (): DatabaseMockType => {
     values: jest.fn(),
     execute: jest.fn(() => qb.execute()),
     onConflictDoUpdate: jest.fn(),
+    returning: jest.fn(() => Promise.resolve(qb.__getRecords())),
     __setCurrentTable: (table: unknown) => {
       (qb as unknown as { [CurrentTable]: unknown })[CurrentTable] = table;
       return insertBuilder;
@@ -278,11 +276,22 @@ const mockDbFactory = (): DatabaseMockType => {
       }
     });
     Array.from(
-      Object.keys(actualSchema.schema) as (keyof typeof actualSchema.schema)[]
+      Object.keys(schema) as (keyof typeof schema)[]
     ).forEach((sc) => {
-      if (!actualSchema.schema[sc]?.modelName) {
+      if (
+        !isKeyOf(sc, schema) || 
+        (typeof schema[sc] !== 'object' || !schema[sc])
+      ) {
         return;
       }
+      const schemaEntry = schema[sc];
+      if (typeof schemaEntry !== 'object' || !schemaEntry || !('modelName' in schemaEntry)) {
+        return;
+      }
+      if (!schemaEntry.modelName) {
+        return;
+      }      
+
       const tableKey = sc as keyof typeof db.query;
       let tbl = db.query[tableKey];
       if (!tbl) {
@@ -418,28 +427,17 @@ type TransactionFn<TRet = any> = (tx: DatabaseType) => Promise<TRet> | TRet;
 const makeRecursiveMock = jest
   .fn()
   .mockImplementation(() => jest.fn(() => jest.fn(makeRecursiveMock)));
-jest.mock('drizzle-orm/postgres-js', () => {
+
+jest.mock('@compliance-theater/database/orm', () => {
+  let actualSchema: Record<string, unknown> = {};
+  try {
+    actualSchema = jest.requireActual('@compliance-theater/database/orm');
+  } catch {
+    actualSchema = {};
+  }
   return {
-    ...actualDrizzle,
-    drizzle: jest.fn(() => mockDb),
-    sql: jest.fn(() => jest.fn().mockImplementation(() => makeRecursiveMock())),
-    transaction: jest.fn(async (callback: TransactionFn) => {
-      const txRawRet = callback(mockDb);
-      const txRet = isPromise(txRawRet) ? await txRawRet : txRawRet;
-      return txRet;
-    }),
-  };
-});
-jest.mock('@/lib/neondb/connection', () => {
-  const pgDb = jest.fn(() => makeRecursiveMock());
-  return {
-    pgDbWithInit: jest.fn(() => Promise.resolve(makeRecursiveMock())),
-    pgDb,
-    sql: jest.fn(() => pgDb()),
-  };
-});
-jest.mock('@/lib/drizzle-db/connection', () => {
-  return {
+    ...actualSchema,
+    schema: (actualSchema as { schema?: unknown }).schema ?? {},
     drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
       const mockDbInstance = makeMockDb();
       if (fn) {
@@ -455,11 +453,17 @@ jest.mock('@/lib/drizzle-db/connection', () => {
         return Promise.resolve(normalCallback(db));
       }
     ),
-    schema: actualSchema.schema ? actualSchema.schema : actualSchema,
   };
 });
-jest.mock('@/lib/drizzle-db', () => {
+jest.mock('@compliance-theater/database', () => {
+  let actualModule: Record<string, unknown> = {};
+  try {
+    actualModule = jest.requireActual('@compliance-theater/database');
+  } catch {
+    actualModule = {};
+  }
   return {
+    ...actualModule,
     drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
       const mockDbInstance = makeMockDb();
       if (fn) {
@@ -475,18 +479,9 @@ jest.mock('@/lib/drizzle-db', () => {
         return Promise.resolve(normalCallback(db));
       }
     ),
-    schema: actualSchema.schema ? actualSchema.schema : actualSchema,
     sql: jest.fn(() => makeRecursiveMock()),
   };
 });
-
-// Make mocks sticky
-import postgres from 'postgres';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { drizDb } from '@/lib/drizzle-db';
-import { sql } from 'drizzle-orm';
-import { withJestTestExtensions } from '../jest.test-extensions';
-
 beforeAll(() => {
   withJestTestExtensions().makeMockDb = makeMockDb as () => DatabaseMockType;
 });

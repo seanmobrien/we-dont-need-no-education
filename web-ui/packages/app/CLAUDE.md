@@ -22,9 +22,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Database Operations
 
-- `npx drizzle-kit migrate` - Run database migrations
-- `npx drizzle-kit generate:pg` - Generate PostgreSQL schema types
-- `npx drizzle-kit studio` - Open Drizzle Studio database viewer
+- `yarn workspace @compliance-theater/database drizzle-migrate` - Run database migrations
+- `yarn workspace @compliance-theater/database drizzle-generate` - Generate Drizzle artifacts
+- `yarn workspace @compliance-theater/database drizzle-studio` - Open Drizzle Studio database viewer
 
 ## Project Architecture
 
@@ -97,7 +97,7 @@ Advanced tool system for AI interactions:
 
 - `/ai` - AI model management, tools, and middleware
 - `/api` - Repository patterns and data access
-- `/drizzle-db` - Database schema and connection management
+- `@compliance-theater/database/orm` - Database schema and connection management
 - `/react-util` - React hooks and utilities
 - `/site-util` - Environment configuration and site utilities
 
@@ -180,7 +180,7 @@ Add a short section in your PR describing:
 
 ```
 Test Env Review:
-  Global mocks used: auth, drizzle-db, next/navigation (router hooks)
+  Global mocks used: auth, @compliance-theater/database/orm, next/navigation (router hooks)
   Additional local mocks: isUserAuthorized, ChatHistory
   Branches covered: unauthorized, notFound (absent), notFound (unauthorized), success(title), success(undefined title)
   Import ordering enforced: mocks declared before dynamic import of page module

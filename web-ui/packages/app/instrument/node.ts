@@ -19,7 +19,7 @@ import { ChunkingLogExporter } from './chunking/chunking-log-exporter';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import { config } from './common';
-import AfterManager from '@/lib/site-util/after';
+import AfterManager from '@compliance-theater/after';
 import UrlFilteredSpanExporter from './url-filter/url-filter-trace-exporter';
 import UrlFilteredLogExporter from './url-filter/url-filtered-log-exporter';
 import { GlobalWithMyGlobal } from '@compliance-theater/typescript/singleton-provider';

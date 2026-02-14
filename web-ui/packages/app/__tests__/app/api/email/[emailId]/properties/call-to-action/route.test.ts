@@ -15,7 +15,7 @@ import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 // Mock external dependencies
-jest.mock('@/lib/neondb');
+jest.mock('@compliance-theater/database/driver');
 jest.mock('@/lib/components/mui/data-grid/queryHelpers/postgres');
 
 // Mock the API modules

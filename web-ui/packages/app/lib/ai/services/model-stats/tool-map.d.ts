@@ -11,8 +11,7 @@
  * @since v1.0.0
  */
 
-import { type DbDatabaseType } from '../../../drizzle-db';
-import type { ChatToolType } from '../../../drizzle-db/drizzle-types';
+import { type DbDatabaseType, type ChatToolType } from '@compliance-theater/database/orm';
 import type {
   LanguageModelV2ProviderDefinedTool,
   LanguageModelV2FunctionTool,

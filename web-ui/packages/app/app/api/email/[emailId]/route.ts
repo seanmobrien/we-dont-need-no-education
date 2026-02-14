@@ -6,7 +6,7 @@ import {
 import { log, LoggedError } from '@compliance-theater/logger';
 import { extractParams } from '@/lib/nextjs-util/server/utils';
 import { eq } from 'drizzle-orm';
-import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,

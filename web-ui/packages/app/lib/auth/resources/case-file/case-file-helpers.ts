@@ -1,5 +1,5 @@
 import { resolveCaseFileId } from '@/lib/api/document-unit/resolve-case-file-id';
-import { drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { deprecate } from '@/lib/nextjs-util/utils';
 import { authorizationService } from '../authorization-service';

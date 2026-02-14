@@ -34,17 +34,10 @@ const setSession = (userId: number | null) => {
   }
 };
 
-const drizDbWithInitMock = jest.fn();
-jest.mock('@/lib/drizzle-db', () => ({
-  drizDbWithInit: (
-    cb?: (db: {
-      query: { chats: { findFirst: typeof drizDbWithInitMock } };
-    }) => unknown,
-  ) =>
-    cb
-      ? cb({ query: { chats: { findFirst: drizDbWithInitMock } } })
-      : drizDbWithInitMock(),
-}));
+const setChatFindFirst = (value: unknown) => {
+  const db = withJestTestExtensions().makeMockDb();
+  (db.query.chats.findFirst as jest.Mock).mockResolvedValueOnce(value);
+};
 
 const isUserAuthorizedMock = jest.fn();
 jest.mock('@/lib/site-util/auth', () => ({
@@ -161,7 +154,7 @@ describe('ChatDetailPage', () => {
 
   test('notFound when chat absent', async () => {
     setSession(42);
-    drizDbWithInitMock.mockResolvedValueOnce(undefined); // no chat
+    setChatFindFirst(undefined); // no chat
     await expect(
       ChatDetailPage({
         params: Promise.resolve({ chatId: 'abc123' }),
@@ -173,7 +166,7 @@ describe('ChatDetailPage', () => {
 
   test('notFound when user unauthorized', async () => {
     setSession(42);
-    drizDbWithInitMock.mockResolvedValueOnce({
+    setChatFindFirst({
       id: 'abc123',
       userId: 99,
       title: 'Secret',
@@ -189,7 +182,7 @@ describe('ChatDetailPage', () => {
 
   test('success passes title', async () => {
     setSession(42);
-    drizDbWithInitMock.mockResolvedValueOnce({
+    setChatFindFirst({
       id: 'abc123',
       userId: 42,
       title: 'My Chat',
@@ -205,7 +198,7 @@ describe('ChatDetailPage', () => {
 
   test('success with null title passes undefined', async () => {
     setSession(7);
-    drizDbWithInitMock.mockResolvedValueOnce({
+    setChatFindFirst({
       id: 'zzz999',
       userId: 7,
       title: null,
@@ -223,18 +216,17 @@ describe('ChatDetailPage', () => {
 
 describe('getChatDetails', () => {
   beforeEach(() => {
-    drizDbWithInitMock.mockReset();
     isUserAuthorizedMock.mockReset();
   });
 
   test('returns ok false when chat missing', async () => {
-    drizDbWithInitMock.mockResolvedValueOnce(undefined);
+    setChatFindFirst(undefined);
     const res = await getChatDetails({ chatId: 'missing', userId: 1 });
     expect(res).toEqual({ ok: false });
   });
 
   test('returns ok false when unauthorized', async () => {
-    drizDbWithInitMock.mockResolvedValueOnce({
+    setChatFindFirst({
       id: 'c1',
       userId: 2,
       title: 'T',
@@ -245,7 +237,7 @@ describe('getChatDetails', () => {
   });
 
   test('returns ok true with title', async () => {
-    drizDbWithInitMock.mockResolvedValueOnce({
+    setChatFindFirst({
       id: 'c1',
       userId: 5,
       title: 'T',
@@ -256,7 +248,7 @@ describe('getChatDetails', () => {
   });
 
   test('returns ok true with undefined title when null', async () => {
-    drizDbWithInitMock.mockResolvedValueOnce({
+    setChatFindFirst({
       id: 'c2',
       userId: 5,
       title: null,

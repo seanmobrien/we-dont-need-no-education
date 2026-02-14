@@ -1,7 +1,7 @@
 import { BlobServiceClient } from '@azure/storage-blob';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { googleProviderFactory } from '@/app/api/email/import/[provider]/_googleProviderFactory';
-import { query } from '@/lib/neondb';
+import { query } from '@compliance-theater/database/driver';
 import type { StagedAttachment } from '@/lib/api/email/import/staged-attachment';
 import { NextApiRequest } from 'next/types';
 import { NextRequest } from 'next/server';

@@ -32,7 +32,7 @@ jest.mock('@/lib/ai/aiModelFactory', () => ({
 // Import AFTER mocks
 import { GET } from '@/app/api/ai/chat/stats/models/route';
 // Import as namespace so we can spy on drizDbWithInit (it's not a jest.fn in global setup)
-import * as drizzleDb from '@/lib/drizzle-db';
+import * as drizzleDb from '@compliance-theater/database/orm';
 
 type BaseModelRecord = {
   id: string;

@@ -11,8 +11,8 @@ import {
   ErrorReportResult,
 } from './types';
 import { isRunningOnEdge } from '@compliance-theater/env';
-import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
-import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
+import { isDrizzleError, errorFromCode } from '@compliance-theater/logger/errors/postgres-error';
+import type { IPostgresError } from '@compliance-theater/logger/errors';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import { shouldSuppressError } from './utility';
 import { LRUCache } from 'lru-cache';
@@ -504,7 +504,7 @@ export class ErrorReporter implements ErrorReporterInterface {
 
       for (const c of candidates) {
         if (isDrizzleError(c)) {
-          const pg = c as PostgresError;
+          const pg = c as IPostgresError;
           const dbFailure = {
             sqlstate: pg.code,
             codeDescription: errorFromCode(pg.code),

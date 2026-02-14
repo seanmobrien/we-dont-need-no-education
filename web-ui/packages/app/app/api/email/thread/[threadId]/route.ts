@@ -7,7 +7,7 @@ import {
   mapRecordToSummary,
   mapRecordToThreadSummary,
 } from '@/lib/api/email/util';
-import { query, queryExt } from '@/lib/neondb';
+import { query, queryExt } from '@compliance-theater/database/driver';
 import { LoggedError } from '@compliance-theater/logger';
 import { getAccessibleUserIds } from '@/lib/auth/resources/case-file/case-file-helpers';
 

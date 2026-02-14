@@ -6,10 +6,9 @@ import {
 } from '@/lib/api/email/email-drizzle-repository';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 
-import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDb, drizDbWithInit } from '@compliance-theater/database/orm';
 /*
-// Mock drizzle-db
-jest.mock('@/lib/drizzle-db', () => {
+jest.mock('@compliance-theater/database', () => {
   const { mockDeep } = require('jest-mock-extended');
   
   const makeMockDb = () => mockDeep();
@@ -23,7 +22,7 @@ jest.mock('@/lib/drizzle-db', () => {
 */
 
 // Mock drizzle schema
-jest.mock('@/drizzle/schema', () => {
+jest.mock('@compliance-theater/database/schema', () => {
   const { Table } = require('drizzle-orm');
   const { PgTable } = require('drizzle-orm/pg-core');
 
@@ -81,7 +80,6 @@ describe('EmailDrizzleRepository', () => {
     repository = new EmailDrizzleRepository();
 
     // Get the mock database instance
-    //const { drizDb } = require('/lib/drizzle-db');
     mockDb = drizDb();
   });
 

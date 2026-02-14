@@ -1,11 +1,15 @@
-export { LoggedError, dumpError } from './logged-error/index';
+export { LoggedError, dumpError,  } from './logged-error/logged-error-class';
 export { ProgressEventError } from './progress-event-error';
-export type { ErrorContext, IContextEnricher } from './types';
+export type { 
+  IPostgresError,
+  ErrorContext,
+  IContextEnricher
+} from './types';
 export type {
   LoggedErrorOptions,
   ErrorLogFactory,
-  TurtleRecursionParams,
   ErrorReportArgs,
+  TurtleRecursionParams
 } from './logged-error/types';
 export {
   isError,
@@ -15,3 +19,4 @@ export {
   getStackTrace,
 } from './utilities/error-guards';
 export type { SafeProgressEvent } from './utilities/error-guards';
+export { PostgresError, isDrizzleError, errorFromCode } from './postgres-error';

@@ -206,7 +206,7 @@ export const buildDrizzleOrderBy = ({
  *
  * @example
  * ```typescript
- * import { users } from '@/drizzle/schema';
+ * import { users } from '@compliance-theater/database/schema';
  *
  * const getColumn = createColumnGetter({
  *   name: users.name,
@@ -241,7 +241,7 @@ export const createColumnGetter = (
  *
  * @example
  * ```typescript
- * import { users } from '@/drizzle/schema';
+ * import { users } from '@compliance-theater/database/schema';
  *
  * const getColumn = createTableColumnGetter(users, {
  *   // Map custom field names to table columns

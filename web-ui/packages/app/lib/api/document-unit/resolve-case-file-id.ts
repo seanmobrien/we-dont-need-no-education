@@ -1,4 +1,4 @@
-import { drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { LoggedError } from '@compliance-theater/logger';
 import {
   ArrayElement,

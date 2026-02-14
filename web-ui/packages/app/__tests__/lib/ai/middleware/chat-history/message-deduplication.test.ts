@@ -8,12 +8,12 @@
  */
 
 import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
-import type { DbTransactionType } from '@/lib/drizzle-db';
+import type { DbTransactionType } from '@compliance-theater/database';
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 
 /*
 // Mock database schema
-jest.mock('@/lib/drizzle-db', () => ({
+jest.mock('@compliance-theater/database', () => ({
   schema: {
     chatMessages: {
       role: 'mocked-role-column',

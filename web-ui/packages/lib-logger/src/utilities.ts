@@ -66,7 +66,7 @@ const isErrorLike = (val: unknown): val is ErrorLike => {
 const extractDbError = (val: unknown): DbError | undefined => {
   if (!val || typeof val !== 'object') return undefined;
   const e = val as MaybeWrappedError & { name?: string };
-  if (e.name === 'PostgresError') return val as DbError;
+  if (e.name === 'IPostgresError') return val as DbError;
 
   // Walk standard wrapping locations
   const fromCause = extractDbError(e.cause);

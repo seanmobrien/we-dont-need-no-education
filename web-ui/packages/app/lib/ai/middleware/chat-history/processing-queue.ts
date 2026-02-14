@@ -13,7 +13,7 @@ import type {
   StreamHandlerResult,
 } from './types';
 import { recordQueueOperation } from './instrumentation';
-import { ChatMessagesType } from '@/lib/drizzle-db/drizzle-types';
+import { ChatMessagesType } from '@compliance-theater/database';
 import {
   safeCompleteMessagePersistence,
   safeInitializeMessagePersistence,

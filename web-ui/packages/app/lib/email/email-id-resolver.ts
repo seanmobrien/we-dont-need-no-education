@@ -1,4 +1,4 @@
-import { drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { isValidUuid } from '@compliance-theater/typescript';
 import { redirect, notFound } from 'next/navigation';
 import { LoggedError } from '@compliance-theater/logger';

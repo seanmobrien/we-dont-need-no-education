@@ -1,6 +1,6 @@
 import { BaseDrizzleRepository } from '../_baseDrizzleRepository';
 import { EmailAttachment } from '@/data-models/api/attachment';
-import { emailAttachments } from '@/drizzle/schema';
+import { emailAttachments } from '@compliance-theater/database/schema';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 
 /**

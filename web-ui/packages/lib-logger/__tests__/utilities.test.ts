@@ -1,7 +1,7 @@
 import { errorLogFactory, getDbError } from '../src/utilities';
 
 interface TestDbError extends Error {
-  name: 'PostgresError';
+  name: 'IPostgresError';
   code: number;
   detail: string;
   severity: string | number;
@@ -17,7 +17,7 @@ describe('logger/utilities', () => {
   describe('getDbError', () => {
     const makePgError = (overrides: Partial<TestDbError> = {}): TestDbError =>
       ({
-        name: 'PostgresError',
+        name: 'IPostgresError',
         message: 'db failed',
         code: 23505,
         detail: 'duplicate key',
@@ -37,28 +37,28 @@ describe('logger/utilities', () => {
       expect(getDbError({ name: 'Error' })).toBeUndefined();
     });
 
-    test('detects top-level PostgresError', () => {
+    test('detects top-level IPostgresError', () => {
       const err = makePgError();
       const found = getDbError(err);
       // Identity check without using `any`
       expect(found).toBe(err as unknown as object);
     });
 
-    test('detects PostgresError via error.cause', () => {
+    test('detects IPostgresError via error.cause', () => {
       const pg = makePgError();
       const wrapped = new Error('outer', { cause: pg });
       const found = getDbError(wrapped);
       expect(found).toBe(pg as unknown as object);
     });
 
-    test('detects PostgresError via error.cause.error', () => {
+    test('detects IPostgresError via error.cause.error', () => {
       const pg = makePgError();
       const wrapped = { cause: { error: pg } } as unknown as Error;
       const found = getDbError(wrapped);
       expect(found).toBe(pg as unknown as object);
     });
 
-    test('detects PostgresError via error.error', () => {
+    test('detects IPostgresError via error.error', () => {
       const pg = makePgError();
       const wrapped = { error: pg } as unknown as Error;
       const found = getDbError(wrapped);
@@ -111,9 +111,9 @@ describe('logger/utilities', () => {
       }
     });
 
-    test('augments with DB fields when PostgresError is present', () => {
+    test('augments with DB fields when IPostgresError is present', () => {
       const dbErr: TestDbError = {
-        name: 'PostgresError',
+        name: 'IPostgresError',
         message: 'db fail',
         code: 23505,
         detail: 'dup',
@@ -138,7 +138,7 @@ describe('logger/utilities', () => {
           table?: string;
           column?: string;
         };
-        expect(e.name).toBe('PostgresError');
+        expect(e.name).toBe('IPostgresError');
         expect(e.code).toBe(23505);
         expect(e.detail).toBe('dup');
         expect(e.severity).toBe('ERROR');

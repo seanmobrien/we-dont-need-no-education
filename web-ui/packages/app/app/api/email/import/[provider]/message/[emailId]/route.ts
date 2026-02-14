@@ -3,7 +3,7 @@ import {
   defaultGmailErrorFilter,
   getImportMessageSource,
 } from '../../_utilitites';
-import { query, queryExt } from '@/lib/neondb';
+import { query, queryExt } from '@compliance-theater/database/driver';
 import { newUuid } from '@compliance-theater/typescript';
 import {
   DefaultImportManager,

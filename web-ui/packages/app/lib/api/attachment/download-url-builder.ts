@@ -1,5 +1,5 @@
 import { EmailAttachment } from '@/data-models/api/attachment';
-import { EmailAttachmentType } from '@/lib/drizzle-db';
+import { EmailAttachmentType } from '@compliance-theater/database';
 import { env } from '@compliance-theater/env';
 import {
   AccountSASPermissions,

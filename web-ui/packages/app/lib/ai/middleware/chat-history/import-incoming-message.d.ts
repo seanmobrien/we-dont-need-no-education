@@ -6,7 +6,7 @@
  * from chat session management to message sequencing and database persistence.
  */
 
-import type { DbTransactionType } from '../../../drizzle-db';
+import type { DbTransactionType } from '@compliance-theater/database/orm';
 import { ChatHistoryContext } from './types';
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 

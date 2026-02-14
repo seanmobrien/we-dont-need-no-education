@@ -1,5 +1,5 @@
 import { getRedisClient } from '@/lib/redis-client';
-import { drizDbWithInit, schema, sql } from '@/lib/drizzle-db';
+import { drizDbWithInit, schema, sql } from '@compliance-theater/database/orm';
 import { log, LoggedError } from '@compliance-theater/logger';
 import {
   ModelQuota,

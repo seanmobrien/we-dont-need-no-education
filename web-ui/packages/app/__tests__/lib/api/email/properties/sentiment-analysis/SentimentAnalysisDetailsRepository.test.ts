@@ -2,11 +2,11 @@
 /**
  * @jest-environment node
  */
-jest.mock('@/lib/neondb');
+jest.mock('@compliance-theater/database/driver');
 
 import { SentimentAnalysisDetailsRepository } from '@/lib/api/email/properties/sentiment-analysis/sentiment-analysis-details-repository';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { query, queryExt } from '@/lib/neondb';
+import { query, queryExt } from '@compliance-theater/database/driver';
 import { EmailSentimentAnalysisDetails } from '@/data-models/api';
 
 describe('SentimentAnalysisDetailsRepository', () => {

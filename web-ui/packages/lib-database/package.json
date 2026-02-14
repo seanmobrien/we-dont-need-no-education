@@ -1,0 +1,63 @@
+{
+  "name": "@compliance-theater/database",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Database layer with Drizzle ORM and PostgreSQL driver for the Title IX Victim Advocacy Platform",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./driver": {
+      "types": "./dist/driver/index.d.ts",
+      "default": "./dist/driver/index.js"
+    },
+    "./orm": {
+      "types": "./dist/orm/index.d.ts",
+      "default": "./dist/orm/index.js"
+    },
+    "./schema": {
+      "types": "./dist/drizzle/schema.d.ts",
+      "default": "./dist/drizzle/schema.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b tsconfig.json",
+    "build:typescript": "echo 'Building lib-database typescript...' && tsc -b tsconfig.json && echo 'TypeScript build complete.' || (echo 'Typescript compile did not succeed' >&2; exit 1)",
+    "drizzle-generate": "drizzle-kit generate --config=drizzle.config.ts",
+    "drizzle-migrate": "drizzle-kit migrate --config=drizzle.config.ts",
+    "drizzle-studio": "drizzle-kit studio --config=drizzle.config.ts",
+    "test": "jest",
+    "lint": "echo 'Linting lib-database...'",
+    "clean:build": "rimraf .next dist tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    "@compliance-theater/after": "workspace:*",
+    "@compliance-theater/env": "workspace:*",
+    "@compliance-theater/logger": "workspace:*",
+    "@compliance-theater/typescript": "workspace:*",
+    "drizzle-orm": "^0.44.1",
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "drizzle-kit": "^0.31.1",
+    "jest": "^30.0.5",
+    "rimraf": "^6.1.2",
+    "ts-jest": "^29.3.4",
+    "typescript": "^5"
+  }
+}

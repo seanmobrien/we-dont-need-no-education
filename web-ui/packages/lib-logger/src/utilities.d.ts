@@ -32,7 +32,7 @@ declare module '@compliance-theater/logger/utilities' {
    * Attempts to extract a Postgres/DB error from an unknown thrown value.
    *
    * Recursively searches through error wrappers including:
-   * - Direct PostgresError objects
+   * - Direct IPostgresError objects
    * - Errors with .cause property
    * - Errors with .error property
    *

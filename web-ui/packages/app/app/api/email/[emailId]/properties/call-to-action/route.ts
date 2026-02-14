@@ -6,7 +6,7 @@ import {
 import { extractParams } from '@/lib/nextjs-util/server/utils';
 
 import { eq, and, sql } from 'drizzle-orm';
-import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,

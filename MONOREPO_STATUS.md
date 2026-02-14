@@ -42,7 +42,7 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
 
 ## What Still Needs to Be Done
 
-### 🔧 Phase 2: Extract Core Library Packages (36% Complete)
+### 🔧 Phase 2: Extract Core Library Packages (50% Complete)
 
 **Priority Order** (extract in this sequence to respect dependencies):
 
@@ -68,12 +68,27 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
    - All 11 imports updated to use `@compliance-theater/send-api-request`
    - Tests passing, lint clean
 
+4a. **`web-ui/packages/lib-after`** ← `web-ui/packages/app/lib/site-util/after`
+   - Extracted AfterManager singleton for cleanup/teardown hooks
+   - Depends on logger, typescript, prexit
+   - ✅ **COMPLETED**
+   - 27 comprehensive unit tests added
+   - Process-global singleton with webpack-safe Symbol-based registration
+   - 1 import updated in instrument/node.ts
+
 5. **`web-ui/packages/lib-database`** ← merge:
    - `web-ui/packages/app/drizzle/`
    - `web-ui/packages/app/lib/drizzle-db/`
    - `web-ui/packages/app/lib/neondb/`
-   - Depends on logger, typescript
-   - Estimated: 4-6 hours (merge complexity)
+   - Depends on logger, typescript, env, after
+   - ✅ **COMPLETED**
+   - Organized into driver/orm/schema architecture
+   - 48 comprehensive unit tests added
+   - Implemented late binding for edge/browser compatibility
+   - Three-tier export strategy (main, /orm, /driver)
+   - 188+ imports updated across app package
+   - Webpack compilation successful (no Node.js module errors)
+   - Original directories remain in app for cleanup in future PR
 
 6. **`web-ui/packages/lib-redis-client`** ← `web-ui/packages/app/lib/redis-client`
    - Depends on logger

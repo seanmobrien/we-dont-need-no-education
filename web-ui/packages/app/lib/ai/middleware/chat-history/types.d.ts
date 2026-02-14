@@ -13,7 +13,7 @@
  * - **Configuration Types**: System behavior and feature control settings
  */
 
-import type { DbTransactionType, ChatMessagesType } from '../../../drizzle-db';
+import type { DbTransactionType, ChatMessagesType } from '@compliance-theater/database/orm';
 import { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 import { Span } from '@opentelemetry/api';
 

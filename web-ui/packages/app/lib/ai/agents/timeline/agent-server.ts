@@ -11,7 +11,7 @@ import {
   SerializedTimelineAgent,
 } from './types';
 import { type AiLanguageModelType, generateChatId } from '@/lib/ai/core';
-import { drizDb } from '@/lib/drizzle-db';
+import { drizDb } from '@compliance-theater/database/orm';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { NextRequest } from 'next/server';
 import {

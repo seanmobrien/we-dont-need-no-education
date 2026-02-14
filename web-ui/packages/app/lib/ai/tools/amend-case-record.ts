@@ -18,7 +18,7 @@ import {
   documentUnits,
   keyPointsDetails,
   violationDetails,
-} from '@/drizzle/schema';
+} from '@compliance-theater/database/schema';
 import { eq } from 'drizzle-orm';
 import { toolCallbackResultFactory } from './utility';
 import { newUuid } from '@compliance-theater/typescript';
@@ -29,7 +29,7 @@ import {
   DbTransactionType,
   addDocumentRelations,
   addNotesToDocument,
-} from '@/lib/drizzle-db';
+} from '@compliance-theater/database/orm';
 import { appMeters } from '@/lib/site-util/metrics';
 import { CaseFileAmendmentShape } from './schemas/caseFileAmendmentShape';
 import { AmendmentResultShape } from './schemas/amendment-result-schema';
