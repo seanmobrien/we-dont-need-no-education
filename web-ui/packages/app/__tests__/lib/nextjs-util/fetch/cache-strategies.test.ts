@@ -14,7 +14,8 @@ import type {
   CachedValue,
   CacheStrategyDeps,
 } from '@/lib/nextjs-util/server/fetch/fetch-types';
-import { type RedisClientType, createClient } from 'redis';
+import { type RedisClientType } from '@compliance-theater/redis';
+import { createClient } from 'redis';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 /*
@@ -30,7 +31,7 @@ const mockRedisClient = {
   rPush: jest.fn(),
   expire: jest.fn(),
 };
-jest.mock('@/lib/redis-client', () => ({
+jest.mock('@compliance-theater/redis', () => ({
   getRedisClient: jest.fn().mockResolvedValue(mockRedisClient),
 }));
 */
@@ -110,7 +111,7 @@ describe('CacheStrategies', () => {
     mockRedisClient.del.mockResolvedValue(1);
     mockRedisClient.set.mockResolvedValue('OK');
     mockRedisClient.rPush.mockResolvedValue(1);
-    mockRedisClient.expire.mockResolvedValue(1000);
+    (mockRedisClient.expire as any).mockResolvedValue(1);
   });
 
   afterEach(() => {

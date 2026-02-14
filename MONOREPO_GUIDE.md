@@ -379,13 +379,6 @@ Create `web-ui/packages/[package-name]/tsconfig.json`:
     "composite": true,
     "declaration": true,
     "declarationMap": true,
-    "baseUrl": ".",
-    "paths": {
-      // Add path mappings for dependencies on other local packages
-      // Example for depending on logger:
-      // "@compliance-theater/logger": ["../lib-logger/dist"],
-      // "@compliance-theater/logger/*": ["../lib-logger/dist/*"]
-    },
     "noEmit": false,
     "types": [
       "node",
@@ -412,8 +405,8 @@ Create `web-ui/packages/[package-name]/tsconfig.json`:
 **Key points:**
 - **extends**: Always extend `../../tsconfig.base.json` for consistent base configuration
 - **composite**: Must be `true` to enable TypeScript project references
-- **paths**: Map workspace packages to their `dist` folders for proper resolution during build
-- **references**: List all workspace packages this package depends on (must also be in `paths` and `package.json`)
+- **No local path mappings**: Do not add `compilerOptions.paths` for workspace packages
+- **references**: List all workspace packages this package depends on (must also be in `package.json`)
 
 ##### Step 4: Access Shared Jest Configuration
 
@@ -620,23 +613,19 @@ yarn install
 - **workspace:* protocol**: Always use this for local package references
 - **Run yarn install**: This creates symlinks in node_modules pointing to your package
 
-##### Step 10: Update App TypeScript Configuration (if needed)
+##### Step 10: Update App Package Configuration (if needed)
 
-If the app needs to import your package, you may need to add path mappings to `web-ui/packages/app/tsconfig.json`:
+If the app needs to import your package, add it as a workspace dependency in `web-ui/packages/app/package.json`:
 
 ```json
 {
-  "compilerOptions": {
-    "paths": {
-      "@compliance-theater/[package-name]": ["../ [package-name]/dist"],
-      "@compliance-theater/[package-name]/*": ["../[package-name]/dist/*"]
-    }
-  },
-  "references": [
-    { "path": "../[package-name]" }
-  ]
+  "dependencies": {
+    "@compliance-theater/[package-name]": "workspace:*"
+  }
 }
 ```
+
+Then ensure the package exposes both `default` and `workspace-source` conditions in its `exports` map so app builds can resolve the right target by environment.
 
 ##### Step 11: Build and Test Your Package
 
@@ -690,22 +679,29 @@ Always reference local packages using the workspace protocol:
 
 This ensures Yarn creates symlinks to local packages rather than trying to fetch them from a registry.
 
-##### TypeScript Path Mapping
+##### Exports-Based Workspace Resolution
 
-In `tsconfig.json`, map workspace packages to their compiled `dist` directories:
+Do not use per-package `tsconfig.json` path mapping for local workspace packages. Resolution is controlled by package `exports` conditions:
 
 ```json
 {
-  "compilerOptions": {
-    "paths": {
-      "@compliance-theater/logger": ["../lib-logger/dist"],
-      "@compliance-theater/logger/*": ["../lib-logger/dist/*"]
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "workspace-source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*.ts",
+      "default": "./dist/*.js"
     }
   }
 }
 ```
 
-This allows TypeScript to resolve imports correctly during builds.
+`WORKSPACE_SOURCE_IMPORTS=1` enables source-first resolution for local development/debug builds (via the `workspace-source` condition).  
+`WORKSPACE_SOURCE_IMPORTS=0` uses published-style `default` exports (dist) for publish builds.
 
 ##### Jest Module Mapping
 
@@ -834,7 +830,7 @@ Always extract packages in this order during refactoring.
 1. Verify package is listed in `package.json` dependencies with `workspace:*`
 2. Run `yarn install` from workspace root
 3. Check that `node_modules/@compliance-theater/[package-name]` exists as a symlink
-4. Verify TypeScript `paths` configuration includes the package
+4. Verify the package `exports` map includes `default` and `workspace-source` entries
 5. Rebuild the package: `yarn workspace @compliance-theater/[package-name] build`
 
 ##### "Module not found" in tests
@@ -849,7 +845,7 @@ Always extract packages in this order during refactoring.
 1. Verify `tsconfig.json` has `composite: true`
 2. Check `declaration: true` and `declarationMap: true` are set
 3. Build the package to generate `.d.ts` files
-4. Verify `paths` points to `dist` folder
+4. Verify `package.json` `types` and `exports` declarations point to generated declaration files
 5. Check consuming package has project reference to your package
 
 ##### Circular dependency errors
@@ -865,13 +861,13 @@ When creating a new package, verify:
 
 - [ ] Package directory created under `web-ui/packages/[package-name]/`
 - [ ] `package.json` with proper name, version, exports, and workspace dependencies
-- [ ] `tsconfig.json` extending base config with proper paths and references
+- [ ] `tsconfig.json` extending base config with proper references
 - [ ] `jest.config.mjs` and shared config created
 - [ ] `src/index.ts` with organized exports
 - [ ] Implementation files in `src/`
 - [ ] Tests in `__tests__/`
 - [ ] Package added to app dependencies (if needed)
-- [ ] App tsconfig updated with paths and references (if needed)
+- [ ] App dependency added and exports conditions verified (if needed)
 - [ ] Package builds successfully: `yarn build`
 - [ ] Tests pass: `yarn test`
 - [ ] Can be imported in application code

@@ -12,7 +12,7 @@ import {
   Semaphore,
 } from '@/lib/nextjs-util/semaphore-manager';
 type Handler = (...args: unknown[]) => void;
-import { getRedisClient } from '@/lib/redis-client';
+import { getRedisClient } from '@compliance-theater/redis';
 import { makeResponse, webStreamToReadable } from '../response';
 import {
   fetchConfig,

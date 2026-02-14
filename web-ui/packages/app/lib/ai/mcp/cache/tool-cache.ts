@@ -9,7 +9,7 @@
 
 import { createHash } from 'crypto';
 import { ToolSet } from 'ai';
-import { getRedisClient, RedisClientType } from '@/lib/redis-client';
+import { getRedisClient, RedisClientType } from '@compliance-theater/redis';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import type { ToolProviderFactoryOptions } from '../types';

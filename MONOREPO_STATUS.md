@@ -42,7 +42,7 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
 
 ## What Still Needs to Be Done
 
-### 🔧 Phase 2: Extract Core Library Packages (50% Complete)
+### 🔧 Phase 2: Extract Core Library Packages (55% Complete)
 
 **Priority Order** (extract in this sequence to respect dependencies):
 
@@ -90,9 +90,17 @@ Phase 1 of the monorepo refactoring has been successfully completed. The infrast
    - Webpack compilation successful (no Node.js module errors)
    - Original directories remain in app for cleanup in future PR
 
-6. **`web-ui/packages/lib-redis-client`** ← `web-ui/packages/app/lib/redis-client`
-   - Depends on logger
-   - Estimated: 2 hours
+6. **`web-ui/packages/lib-redis`** ← `web-ui/packages/app/lib/redis-client`
+   - Depends on logger, typescript, env, after
+   - ✅ **COMPLETED**
+   - Extracted Redis client singleton with proper cleanup
+   - 13 comprehensive unit tests (all passing)
+   - Removed duplicate redis dependency from app (now uses ^4.7.0 via lib-redis)
+   - Updated 28 import locations across app package
+   - Integrated with AfterManager for automatic cleanup on process exit
+   - Support for multiple databases and subscribe mode
+   - Full TypeScript support with exported RedisClientType
+   - Original directory remains in app for cleanup in future PR
 
 7. **`web-ui/packages/lib-site-util`** ← `web-ui/packages/app/lib/site-util`
    - Depends on logger, typescript

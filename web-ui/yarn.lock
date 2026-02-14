@@ -893,6 +893,7 @@ __metadata:
     "@compliance-theater/database": "workspace:*"
     "@compliance-theater/env": "workspace:*"
     "@compliance-theater/logger": "workspace:*"
+    "@compliance-theater/redis": "workspace:*"
     "@compliance-theater/send-api-request": "workspace:*"
     "@compliance-theater/themes": "workspace:*"
     "@compliance-theater/typescript": "workspace:*"
@@ -1000,7 +1001,6 @@ __metadata:
     react-json-tree: "npm:^0.20.0"
     react-resizable: "npm:^3.0.5"
     readable-web-to-node-stream: "npm:^5.0.0"
-    redis: "npm:>=5.5.6"
     rimraf: "npm:^6.1.2"
     semanticencoding: "npm:^0.0.2"
     tough-cookie: "npm:^6.0.0"
@@ -1062,6 +1062,23 @@ __metadata:
     mitt: "npm:^3.0.1"
     pino: "npm:^9.6.0"
     pino-pretty: "npm:^13.0.0"
+    rimraf: "npm:^6.1.2"
+    ts-jest: "npm:^29.3.4"
+    typescript: "npm:^5"
+  languageName: unknown
+  linkType: soft
+
+"@compliance-theater/redis@workspace:*, @compliance-theater/redis@workspace:packages/lib-redis":
+  version: 0.0.0-use.local
+  resolution: "@compliance-theater/redis@workspace:packages/lib-redis"
+  dependencies:
+    "@compliance-theater/after": "workspace:*"
+    "@compliance-theater/env": "workspace:*"
+    "@compliance-theater/logger": "workspace:*"
+    "@compliance-theater/typescript": "workspace:*"
+    "@types/node": "npm:^24.0.0"
+    jest: "npm:^30.0.5"
+    redis: "npm:>=5.5.6"
     rimraf: "npm:^6.1.2"
     ts-jest: "npm:^29.3.4"
     typescript: "npm:^5"

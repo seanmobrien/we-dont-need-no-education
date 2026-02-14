@@ -4,7 +4,7 @@
  */
 
 import type { CacheableResponse } from './types';
-import type { getRedisClient } from '../../../redis-client';
+import type { getRedisClient } from '@compliance-theater/redis';
 
 declare module '@/lib/ai/middleware/cacheWithRedis/cacheStrategy' {
   /**

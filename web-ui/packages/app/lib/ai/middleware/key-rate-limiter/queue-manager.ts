@@ -1,4 +1,4 @@
-import { getRedisClient } from '@/lib/redis-client';
+import { getRedisClient } from '@compliance-theater/redis';
 import type { RateLimitedRequest, ProcessedResponse } from './types';
 import { SingletonProvider } from '@compliance-theater/typescript';
 

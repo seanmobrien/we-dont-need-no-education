@@ -1,5 +1,5 @@
 export { cacheWithRedis } from './cacheWithRedis';
-export { getRedisClient, closeRedisClient } from '@/lib/redis-client';
+export { getRedisClient, closeRedisClient } from '@compliance-theater/redis';
 export {
   getCacheConfig,
   validateCacheConfig,

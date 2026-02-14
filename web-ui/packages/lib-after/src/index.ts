@@ -223,6 +223,7 @@ export default class AfterManager {
    */
   public async signal(signalName: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
+      let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
       try {
         const queueHandlers = this.#queues.get(signalName);
         if (!queueHandlers) {
@@ -231,15 +232,19 @@ export default class AfterManager {
         const promises = queueHandlers.map((handler) => handler());
         const completed = await Promise.race([
           Promise.all(promises),
-          new Promise((resolve) =>
-            setTimeout(() => {
+          new Promise((resolve) => {
+            timeoutHandle = setTimeout(() => {
               const timedOut = { __brand: AfterManager.#brand } as unknown as {
                 __brand: symbol;
               };
               resolve(timedOut);
-            }, AfterManager.#TIMEOUT),
-          ), // Timeout after
+            }, AfterManager.#TIMEOUT);
+            timeoutHandle.unref?.();
+          }), // Timeout after
         ]);
+        if (timeoutHandle) {
+          clearTimeout(timeoutHandle);
+        }
         // Completed can be either the result array from Promise.all or our timeout sentinel.
         const maybeBranded = completed as unknown;
         let isBrandedObj = false;

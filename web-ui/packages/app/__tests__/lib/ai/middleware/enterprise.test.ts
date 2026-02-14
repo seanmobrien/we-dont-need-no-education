@@ -7,7 +7,7 @@
  * Comprehensive test suite for configuration, metrics, and advanced behaviors
  */
 
-jest.mock('@/lib/site-util/after', () => {
+jest.mock('@compliance-theater/after', () => {
   const afterManager = {
     getInstance: () => ({
       add: jest.fn(),
@@ -40,7 +40,7 @@ import {
   setupConsoleMetrics,
   getPrometheusMetrics,
 } from '@/lib/ai/middleware/cacheWithRedis/metrics';
-import { getRedisClient, closeRedisClient } from '@/lib/redis-client';
+import { getRedisClient, closeRedisClient } from '@compliance-theater/redis';
 import type { RedisClientType } from 'redis';
 
 describe('Enterprise Cache Features', () => {

@@ -84,7 +84,7 @@ const redisClient = {
   get: jest.fn(),
   setEx: jest.fn(),
 };
-jest.mock('@/lib/redis-client', () => ({
+jest.mock('@compliance-theater/redis', () => ({
   getRedisClient: jest.fn(async () => redisClient),
 }));
 

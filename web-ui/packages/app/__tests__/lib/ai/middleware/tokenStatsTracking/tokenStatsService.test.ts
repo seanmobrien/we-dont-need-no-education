@@ -1,7 +1,7 @@
 // Mock ProviderMap before other imports
 
 // Mock Redis and database before other imports
-jest.mock('@/lib/redis-client');
+jest.mock('@compliance-theater/redis');
 
 // Fix the schema mock to have the correct structure
 jest.mock('@compliance-theater/database', () => {
@@ -20,7 +20,7 @@ import {
   TokenUsageData,
 } from '@/lib/ai/middleware/tokenStatsTracking';
 import { reset } from '@/lib/ai/services/model-stats/token-stats-service';
-import { getRedisClient } from '@/lib/redis-client';
+import { getRedisClient } from '@compliance-theater/redis';
 //import { drizDbWithInit, schema } from '@compliance-theater/database';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 import {
