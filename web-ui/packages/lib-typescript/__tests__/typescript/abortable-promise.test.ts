@@ -12,7 +12,7 @@ import {
   type OperationCancelledError,
 } from "../../src/abortable-promise";
 
-describe.skip("AbortablePromise", () => {
+describe("Promise with built-in cancel support.", () => {
   describe("Static Methods", () => {
     describe("isOperationCancelledError", () => {
       it("should return true for operation cancelled errors", () => {
@@ -249,7 +249,8 @@ describe.skip("AbortablePromise", () => {
       });
 
       const chained = promise.then((value) => value * 2);
-      expect(chained).toBe(promise); // Returns same instance
+      expect(chained).not.toBe(promise);
+      expect(AbortablePromise.isAbortablePromise(chained)).toBe(true);
     });
   });
 
@@ -297,7 +298,8 @@ describe.skip("AbortablePromise", () => {
       });
 
       const caught = promise.catch(() => -1);
-      expect(caught).toBe(promise); // Returns same instance
+      expect(caught).not.toBe(promise);
+      expect(AbortablePromise.isAbortablePromise(caught)).toBe(true);
     });
   });
 
@@ -346,7 +348,8 @@ describe.skip("AbortablePromise", () => {
       });
 
       const finalized = promise.finally(() => {});
-      expect(finalized).toBe(promise); // Returns same instance
+      expect(finalized).not.toBe(promise);
+      expect(AbortablePromise.isAbortablePromise(finalized)).toBe(true);
     });
   });
 
@@ -413,7 +416,8 @@ describe.skip("AbortablePromise", () => {
       });
 
       const handled = promise.cancelled(() => "cancelled");
-      expect(handled).toBe(promise); // Returns same instance
+      expect(handled).not.toBe(promise);
+      expect(AbortablePromise.isAbortablePromise(handled)).toBe(true);
     });
   });
 
@@ -492,7 +496,7 @@ describe.skip("AbortablePromise", () => {
       expect(result).toBe(42);
     });
 
-    it("should handle multiple cancellations safely", () => {
+    it("should handle multiple cancellations safely", async () => {
       const promise = new AbortablePromise<void>((resolve) => {
         setTimeout(() => resolve(), 100);
       });
@@ -502,6 +506,8 @@ describe.skip("AbortablePromise", () => {
         promise.cancel();
         promise.cancel();
       }).not.toThrow();
+
+      await expect(promise.awaitable).rejects.toThrow("Promise was cancelled");
     });
 
     it("should cleanup event listeners on completion", async () => {
@@ -524,4 +530,80 @@ describe.skip("AbortablePromise", () => {
       expect(Object.prototype.toString.call(promise)).toContain("Symbol");
     });
   });
+
+  describe('Legacy Tests', () => {
+    it("should resolve the promise", async () => {
+      const promise = new AbortablePromise<string>((resolve) => {
+        setTimeout(() => resolve("resolved"), 100);
+      });
+  
+      await expect(promise.awaitable).resolves.toBe("resolved");
+    });
+  
+    it("should reject the promise", async () => {
+      const promise = new AbortablePromise<string>((_, reject) => {
+        setTimeout(() => reject("rejected"), 100);
+      });
+  
+      await expect(promise.awaitable).rejects.toBe("rejected");
+    });
+  
+    it("should cancel the promise", async () => {
+      const promise = new AbortablePromise<string>((resolve) => {
+        setTimeout(() => resolve("resolved"), 100);
+      });
+  
+      promise.cancel();
+  
+      await expect(promise.awaitable).rejects.toThrow("Promise was cancelled");
+    });
+  
+    it("should call onrejected when cancelled", async () => {
+      const promise = new AbortablePromise<string>((resolve) => {
+        setTimeout(() => resolve("resolved"), 100);
+      });
+  
+      const cancelledPromise = promise.cancelled((reason) => {
+        expect(reason).toEqual(new Error("Promise was cancelled"));
+        throw "cancelled";
+      });
+  
+      promise.cancel();
+  
+      await expect(cancelledPromise.awaitable).rejects.toBe("cancelled");
+    });
+  
+    it("should call onfulfilled when completed", async () => {
+      const promise = new AbortablePromise<string>((resolve) => {
+        setTimeout(() => resolve("resolved"), 100);
+      });
+  
+      const completedPromise = promise.then((value) => {
+        expect(value).toBe("resolved");
+        return "completed";
+      });
+  
+      await expect(completedPromise.awaitable).resolves.toBe("completed");
+    });
+  
+    it("should call onfulfilled when handled in chain", async () => {
+      const promise = new AbortablePromise<string>((resolve) => {
+        setTimeout(() => resolve("resolved"), 100);
+      });
+  
+      const completedPromise = promise
+        .cancelled((e) => {
+          expect(e).toEqual(new Error("Promise was cancelled"));
+          return "cancelled";
+        })
+        .then((value) => {
+          expect(value).toBe("cancelled");
+          return "completed";
+        });
+  
+      promise.cancel();
+  
+      await expect(completedPromise.awaitable).resolves.toBe("completed");
+    });
+  });  
 });

@@ -90,7 +90,6 @@ ARG MEM0_USERNAME
 ARG BUILD_CACHE
 
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-ENV FOR_STANDALONE=1
 
 WORKDIR /repo
 
@@ -230,7 +229,7 @@ RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
   set -a; [ -f "$TMP_ENV" ] && . "$TMP_ENV"; set +a; \
   cp "$TMP_ENV" ./packages/app/.env.local; \
   cp "$TMP_ENV" ./packages/app/.env.production.local; \
-  node .yarn/releases/yarn-4.12.0.cjs build; \
+  node .yarn/releases/yarn-4.12.0.cjs run build:publish; \
   rm -f "$TMP_ENV" ./packages/app/.env.local ./packages/app/.env.production.local; \
   if [ ! -d "./packages/app/.next/standalone" ]; then echo "Error: standalone build output missing" >&2; exit 1; fi
 

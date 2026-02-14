@@ -8,10 +8,12 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },
@@ -23,11 +25,12 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -b tsconfig.json",
-    "build:typescript": "echo 'Building lib-env typescript...' && tsc -b tsconfig.json && echo 'TypeScript build complete.' || (echo 'Typescript compile did not succeed' >&2; exit 1)",
+    "build": "yarn workspace @compliance-theater/env run build:typescript",
+    "build:typescript": "echo 'Building @compliance-theater/env...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/env.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/env.\u001b[0m\n' >&2; exit 1)",
+    "build:publish": "yarn workspace @compliance-theater/env run build:clean && yarn workspace @compliance-theater/env run build && yarn workspace @compliance-theater/env pack --out ./dist/@compliance-theater-env.tgz",
     "test": "jest",
     "lint": "echo 'Linting lib-env...'",
-    "clean:build": "rimraf .next dist tsconfig.tsbuildinfo"
+    "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@compliance-theater/logger": "workspace:*",

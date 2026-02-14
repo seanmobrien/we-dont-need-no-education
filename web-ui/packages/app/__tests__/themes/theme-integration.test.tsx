@@ -1,5 +1,5 @@
 import { render, screen } from '@/__tests__/test-utils';
-import { ThemeSelector } from '@compliance-theater/themes/components/theme-selector';
+import { ThemeSelector } from '@compliance-theater/themes';
 
 // Mock Next.js navigation
 jest.mock('next/navigation', () => ({

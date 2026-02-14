@@ -34,8 +34,8 @@
       ]
     },
     "build:typescript": {
-      "dependsOn": ["^build"],
-      "outputs": [],
+      "dependsOn": ["^build:typescript"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
         "AUTH_*",
         "AZURE_*",
@@ -53,7 +53,28 @@
         "IS_BUILDING"
       ]
     },
-    "clean:build": {
+    "build:publish": {
+      "dependsOn": ["^build:publish"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",        
+        "DATABASE_URL",
+        "FOR_STANDALONE",
+        "IS_BUILDING"
+      ]
+    },
+    "build:clean": {
+      "dependsOn": ["^build:clean"],
       "cache": false,
       "persistent": false,
       "outputs": []

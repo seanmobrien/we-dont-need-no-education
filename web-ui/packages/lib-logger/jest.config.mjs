@@ -9,8 +9,6 @@ const config = {
   rootDir: ".",
   moduleNameMapper: {
     ...baseConfig.moduleNameMapper,
-    "^@compliance-theater/logger/core$": "<rootDir>/src/core",
-    "^@compliance-theater/logger(.*)$": "<rootDir>/src$1",
   },
 };
 

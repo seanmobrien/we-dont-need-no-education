@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "packageManager": "yarn@1.22.22",
+  "x-workspace-source-imports": "WORKSPACE_SOURCE_IMPORTS=1 resolves internal @compliance-theater packages via workspace-source (src) for dev/debug builds; WORKSPACE_SOURCE_IMPORTS=0 uses default exports (dist) for publish builds.",
   "packageManagerConfig": {
     "ignore-peerdeps": [
       "@textea/json-viewer@4.0.1:@mui/material",
@@ -17,13 +18,14 @@
   },
   "scripts": {
     "preinstall": "node -e \"if(process.env.npm_execpath.indexOf('yarn') === -1) throw new Error('Please use yarn instead of npm')\"",
-    "dev": "next dev",
-    "build": "cross-env NODE_OPTIONS='--max-old-space-size=4096' FOR_STANDALONE='1' IS_BUILDING='1' next build --profile",
-    "build:typescript": "echo 'Building app folder typescript...' && cross-env NODE_OPTIONS='--max-old-space-size=4096' FOR_STANDALONE='1' IS_BUILDING='1' tsc -p tsconfig.json --noEmit && echo 'TypeScript build complete.' || (echo 'Typescript compile did not succeed' >&2; exit 1)",
-    "build:slow": "cross-env NODE_OPTIONS='--max-old-space-size=2048' FOR_STANDALONE='1' IS_BUILDING='1' timeout 1800 next build",
-    "debug:build": "cross-env NODE_OPTIONS='--max-old-space-size=4096' FOR_STANDALONE='1' IS_BUILDING='1' next build --profile --debug --debug-prerender",
-    "clean:build": "rimraf .next dist tsconfig.tsbuildinfo",
-    "debug": "cross-env NODE_OPTIONS='--inspect' FOR_STANDALONE='1' next dev",
+    "dev": "cross-env WORKSPACE_SOURCE_IMPORTS='1' next dev",
+    "build": "yarn workspace @compliance-theater/app run build:typescript",
+    "build:typescript": "echo 'Building Web Application...' && cross-env NODE_OPTIONS='--max-old-space-size=4096' WORKSPACE_SOURCE_IMPORTS='1' tsc -p tsconfig.json --noEmit && printf '\u001b[1;32mBuild complete: Web Application.\u001b[0m\n' || (printf '\u001b[31mBuild failed: Web Application.\u001b[0m\n' >&2; exit 1)",
+    "build:publish": "yarn workspace @compliance-theater/app run build:clean && yarn workspace @compliance-theater/app run build:publish:next-build",
+    "build:publish:next-build": "cross-env NODE_OPTIONS='--max-old-space-size=4096' WORKSPACE_SOURCE_IMPORTS='0' next build",
+    "build:debug": "cross-env NODE_OPTIONS='--max-old-space-size=4096' WORKSPACE_SOURCE_IMPORTS='1' next build --profile --debug",
+    "build:clean": "rimraf .next dist tsconfig.tsbuildinfo",
+    "debug": "cross-env NODE_OPTIONS='--inspect' WORKSPACE_SOURCE_IMPORTS='1' next dev",
     "test": "jest",
     "test:serial": "jest --runInBand",
     "test:concurrency-stress": "jest --maxWorkers=8 --maxConcurrency=10",
@@ -39,7 +41,7 @@
     "test:e2e:webkit": "playwright test --project=webkit-safe",
     "test:e2e:report": "playwright show-report",
     "lint": "next lint",
-    "vercel-build": "cross-env NODE_OPTIONS='--max-old-space-size=4096' FOR_STANDALONE='1' IS_BUILDING='1' next build",
+    "vercel-build": "yarn workspace @compliance-theater/app run build:publish",
     "test:timeout": "timeout 600 jest",
     "test:long": "jest --testTimeout=60000"
   },
@@ -99,7 +101,7 @@
     "@toolpad/core": "^0.15.0",
     "@types/react-resizable": "^3.0.8",
     "ai": "^5.0.23",
-    "axios": ">=1.12.0",
+    "axios": "^1.13.5",
     "babel-plugin-react-compiler": "^1.0.0",
     "drizzle-orm": "^0.44.1",
     "esbuild": ">=0.25.0",
@@ -202,7 +204,6 @@
     }
   },
   "resolutions": {
-    "axios": ">=1.8.2",
     "jsx-ast-utils": "^4.4.2"
   }
 }

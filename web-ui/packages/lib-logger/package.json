@@ -8,18 +8,22 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./errors": {
       "types": "./dist/errors/index.d.ts",
+      "workspace-source": "./src/errors/index.ts",
       "default": "./dist/errors/index.js"
     },
     "./errors/logged-error": {
       "types": "./dist/errors/logged-error/index.d.ts",
+      "workspace-source": "./src/errors/logged-error/index.ts",
       "default": "./dist/errors/logged-error/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },
@@ -31,11 +35,12 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -b tsconfig.json",
-    "build:typescript": "echo 'Building lib/logger typescript...' && tsc -b tsconfig.json && echo 'TypeScript build complete.' || (echo 'Typescript compile did not succeed' >&2; exit 1)",
+    "build": "yarn workspace @compliance-theater/logger run build:typescript",
+    "build:typescript": "echo 'Building lib/logger typescript...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/logger.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/logger.\u001b[0m\n' >&2; exit 1)",
+    "build:publish": "yarn workspace @compliance-theater/logger run build:clean && yarn workspace @compliance-theater/logger run build && yarn workspace @compliance-theater/logger pack --out ./dist/@compliance-theater-logger.tgz",
     "test": "jest",
     "lint": "echo 'Linting lib-logger...'",
-    "clean:build": "rimraf .next dist tsconfig.tsbuildinfo"
+    "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@opentelemetry/api": "1.9.0",
