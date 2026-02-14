@@ -27,6 +27,6 @@
   },
   "resolutions": {
     "lodash-es@npm:^4.17.21": "npm:4.17.22",
-    "esbuild@npm:<0.25.0": "npm:0.25.0"
+    "@esbuild-kit/core-utils/esbuild": "0.25.0"
   }
 }
