@@ -45,7 +45,7 @@ export const FlagProvider = ({ children }: { children: React.ReactNode }) => {
           timeoutId = setTimeout(loadFlags, 3 * 60 * 1000); // 3 minutes
         }
       } catch (error) {
-        errorReporter((r) => r.reportError(error));
+        errorReporter((r: { reportError: (error: unknown) => void }) => r.reportError(error));
         if (isSubscribed && !timeoutId) {
           timeoutId = setTimeout(loadFlags, 30 * 1000); // 30 seconds
         }

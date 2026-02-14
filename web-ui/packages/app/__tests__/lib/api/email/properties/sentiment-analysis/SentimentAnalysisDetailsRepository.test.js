@@ -1,0 +1,97 @@
+jest.mock('@compliance-theater/database/driver');
+import { SentimentAnalysisDetailsRepository } from '@/lib/api/email/properties/sentiment-analysis/sentiment-analysis-details-repository';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { query, queryExt } from '@compliance-theater/database/driver';
+describe('SentimentAnalysisDetailsRepository', () => {
+    let repository;
+    beforeEach(() => {
+        repository = new SentimentAnalysisDetailsRepository();
+        queryExt.mockImplementation(() => []);
+        query.mockImplementation(() => []);
+    });
+    afterEach(() => {
+    });
+    describe('validate', () => {
+        it('should generate a new UUID for create method if propertyId is missing', () => {
+            const obj = {};
+            repository.validate('create', obj);
+            expect(obj.propertyId).toBeDefined();
+        });
+        it('should throw ValidationError for update method if propertyId is missing', () => {
+            const obj = {};
+            expect(() => repository.validate('update', obj)).toThrow(ValidationError);
+        });
+        it('should not modify the object for other methods', () => {
+            const obj = { propertyId: 'test-id' };
+            query.mockReturnValue({
+                propertyId: 'test-id',
+                sentimentScore: 0.8,
+                detectedHostility: false,
+                flaggedPhrases: 'test phrase',
+                detectedOn: new Date(),
+            });
+            repository.validate('update', obj);
+            expect(obj.propertyId).toBe('test-id');
+        });
+    });
+    describe('getListQueryProperties', () => {
+        it('should return the correct SQL query and parameters', () => {
+            const [sqlQuery, values, sqlCountQuery] = repository.getListQueryProperties();
+            expect(sqlQuery).toContain('SELECT * FROM email_sentiment_analysis_details');
+            expect(values).toEqual([]);
+            expect(sqlCountQuery).toContain('SELECT COUNT(*) as records FROM email_sentiment_analysis_details');
+        });
+    });
+    describe('getQueryProperties', () => {
+        it('should return the correct SQL query and parameters for a given recordId', () => {
+            const recordId = 'test-id';
+            const [sqlQuery, values] = repository.getQueryProperties(recordId);
+            expect(sqlQuery).toContain('SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,');
+            expect(values).toEqual([recordId]);
+        });
+    });
+    describe('getCreateQueryProperties', () => {
+        it('should return the correct SQL query and parameters for a given EmailSentimentAnalysisDetails object', () => {
+            const obj = {
+                propertyId: 'test-id',
+                sentimentScore: 0.8,
+                detectedHostility: false,
+                flaggedPhrases: 'test phrase',
+                detectedOn: new Date(),
+            };
+            const [sqlQuery, values] = repository.getCreateQueryProperties(obj);
+            expect(sqlQuery).toContain('INSERT INTO email_sentiment_analysis_details');
+            expect(values).toEqual([
+                undefined,
+                obj.propertyId,
+                undefined,
+                values[3],
+                obj.sentimentScore,
+                obj.detectedHostility,
+                obj.flaggedPhrases,
+                obj.detectedOn,
+                null,
+                null,
+            ]);
+        });
+    });
+    describe('updateQueryProperties', () => {
+        it('should return the correct SQL query and parameters for a given EmailSentimentAnalysisDetails object', () => {
+            const obj = {
+                propertyId: 'test-id',
+                sentimentScore: 0.8,
+                detectedHostility: false,
+                flaggedPhrases: 'test phrase',
+                detectedOn: new Date(),
+            };
+            const [fieldMap] = repository.getUpdateQueryProperties(obj);
+            expect(fieldMap).toEqual({
+                sentiment_score: obj.sentimentScore,
+                detected_hostility: obj.detectedHostility,
+                flagged_phrases: obj.flaggedPhrases,
+                detected_on: obj.detectedOn,
+            });
+        });
+    });
+});
+//# sourceMappingURL=SentimentAnalysisDetailsRepository.test.js.map

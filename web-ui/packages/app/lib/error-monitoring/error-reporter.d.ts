@@ -1,77 +1,36 @@
-import type {
-  ErrorSeverity,
-  ErrorContext,
-  ErrorReport,
-  ErrorReporterConfig,
-  ErrorReporterInterface,
-  ErrorReportResult,
-} from './types';
-
-/**
- * Centralized error reporting system interface and class declaration.
- *
- * Use `ErrorReporter.getInstance()` or the exported `errorReporter` singleton
- * to report errors, wire up global handlers, and access stored reports.
- */
-export declare class ErrorReporter implements ErrorReporterInterface {
-  private constructor(config: ErrorReporterConfig);
-
-  /** Create a configured instance (factory) */
-  public static createInstance(
-    config: Partial<ErrorReporterConfig>,
-  ): ErrorReporterInterface;
-
-  /** Get or create the global singleton instance */
-  public static getInstance(
-    config?: ErrorReporterConfig,
-  ): ErrorReporterInterface;
-
-  /** Report an arbitrary error with optional severity and context */
-  public reportError(
-    error: Error | unknown,
-    severity?: ErrorSeverity,
-    context?: Partial<ErrorContext>,
-  ): Promise<ErrorReportResult>;
-
-  /** Report an error captured by a React error boundary */
-  public reportBoundaryError(
-    error: Error,
-    errorInfo: { componentStack?: string; errorBoundary?: string },
-    severity?: ErrorSeverity,
-  ): Promise<ErrorReportResult>;
-
-  /** Report an unhandled promise rejection */
-  public reportUnhandledRejection(
-    reason: unknown,
-    promise: Promise<unknown>,
-  ): Promise<ErrorReportResult>;
-
-  /** Install global window error and rejection handlers (no-op on server) */
-  public setupGlobalHandlers(): void;
-
-  /** Retrieve errors previously stored in localStorage (client only) */
-  public getStoredErrors(): ErrorReport[];
-
-  /** Clear stored error reports from localStorage (client only) */
-  public clearStoredErrors(): void;
-  createErrorReport(
-    error: Error | unknown,
-    severity?: ErrorSeverity,
-    context?: Partial<ErrorContext>,
-  ): Promise<ErrorReport>;
-  generateFingerprint(error: Error, context: ErrorContext): string;
-}
-
-/**
- * Singleton instance of the ErrorReporter (convenience export).
- * Use this for application-level reporting.
- */
-export declare const errorReporter: ErrorReporterInterface;
-
+import { ErrorSeverity, KnownEnvironmentType, ErrorContext, ErrorReport, ErrorReporterConfig, ErrorReporterInterface, ErrorReportResult } from './types';
 export { ErrorSeverity };
-export type {
-  ErrorContext,
-  ErrorReport,
-  ErrorReporterConfig,
-  ErrorReporterInterface,
-};
+export type { KnownEnvironmentType, ErrorContext, ErrorReport, ErrorReporterConfig, ErrorReporterInterface, };
+export declare class ErrorReporter implements ErrorReporterInterface {
+    #private;
+    private config;
+    private debounceCache;
+    private circuitBreaker;
+    private constructor();
+    static createInstance: (config: Partial<ErrorReporterConfig>) => ErrorReporterInterface;
+    static getInstance: (config?: Partial<ErrorReporterConfig>) => ErrorReporterInterface;
+    private shouldDebounce;
+    createErrorReport(error: Error | unknown, severity?: ErrorSeverity, context?: Partial<ErrorContext>): Promise<ErrorReport>;
+    reportError(error: Error | unknown, severity?: ErrorSeverity, context?: Partial<ErrorContext>): Promise<ErrorReportResult>;
+    reportBoundaryError(error: Error, errorInfo: {
+        componentStack?: string;
+        errorBoundary?: string;
+    }, severity?: ErrorSeverity): Promise<ErrorReportResult>;
+    reportUnhandledRejection(reason: unknown, promise: Promise<unknown>): Promise<ErrorReportResult>;
+    setupGlobalHandlers(): void;
+    removeGlobalHandlers(): void;
+    private normalizeError;
+    private enrichContext;
+    generateFingerprint(error: Error, context: ErrorContext): string;
+    subscribeToErrorReports(): void;
+    unsubscribeFromErrorReports(): void;
+    private generateTags;
+    getStoredErrors(): ErrorReport[];
+    clearStoredErrors(): void;
+}
+interface ErrorReporterInstanceOverloads {
+    (): ErrorReporterInterface;
+    <TCallback extends (reporter: ErrorReporterInterface) => any extends infer TResult ? TResult : never>(cb: TCallback): ReturnType<TCallback>;
+}
+export declare const errorReporter: ErrorReporterInstanceOverloads;
+//# sourceMappingURL=error-reporter.d.ts.map

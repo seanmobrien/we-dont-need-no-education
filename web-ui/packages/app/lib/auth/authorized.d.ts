@@ -1,18 +1,10 @@
-/**
- * Authorization utilities
- * @module @/lib/auth/authorized
- */
-
 import { Session } from '@auth/core/types';
 import { NextRequest } from 'next/server';
-
-declare module '@/lib/auth/authorized' {
-  /**
-   * Evaluates whether the provided auth session authorizes access.
-   * @param props Standard auth-js authorized argument model
-   */
-  export function authorized(props: {
+export declare const authorized: ({ auth, request, }: {
     auth: Session | null;
     request?: NextRequest;
-  }): Promise<boolean>;
-}
+}) => Promise<boolean | import("next/server").NextResponse<{
+    error: string;
+    message: string;
+}>>;
+//# sourceMappingURL=authorized.d.ts.map

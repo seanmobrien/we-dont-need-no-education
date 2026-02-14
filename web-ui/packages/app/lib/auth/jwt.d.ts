@@ -1,12 +1,10 @@
-/**
- * JWT utilities
- * @module @/lib/auth/jwt
- */
-
-declare module '@/lib/auth/jwt' {
-  /**
-   * JWT encoding and decoding utilities.
-   */
-  export function encode(payload: unknown): Promise<string>;
-  export function decode(token: string): Promise<unknown>;
-}
+import type { JWT } from '@auth/core/jwt';
+import type { Account } from '@auth/core/types';
+import type { AdapterUser } from '@auth/core/adapters';
+import type { NextAuthUserWithAccountId } from './types';
+export declare const jwt: ({ token, user, account, }: {
+    token: JWT;
+    user?: NextAuthUserWithAccountId | AdapterUser | null;
+    account?: Account | null;
+}) => Promise<JWT>;
+//# sourceMappingURL=jwt.d.ts.map

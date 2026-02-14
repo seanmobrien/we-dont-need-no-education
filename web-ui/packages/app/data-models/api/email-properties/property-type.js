@@ -59,3 +59,4 @@ export const EmailPropertyTypeTypeIdValues = [
     EmailPropertyTypeTypeId.SentimentAnalysis,
     EmailPropertyTypeTypeId.KeyPoints,
 ];
+//# sourceMappingURL=property-type.js.map

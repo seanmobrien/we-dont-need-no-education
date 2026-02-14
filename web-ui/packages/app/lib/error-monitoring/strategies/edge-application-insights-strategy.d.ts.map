@@ -1,0 +1,1 @@
+{"version":3,"file":"edge-application-insights-strategy.d.ts","sourceRoot":"","sources":["edge-application-insights-strategy.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,WAAW,EAAE,iBAAiB,EAAE,MAAM,UAAU,CAAC;AAC1D,OAAO,EAAE,oBAAoB,EAAE,MAAM,0BAA0B,CAAC;AAEhE,qBAAa,+BAAgC,YAAW,oBAAoB;IACpE,OAAO,CAAC,MAAM,EAAE,WAAW,GAAG,OAAO,CAAC,OAAO,CAAC,iBAAiB,CAAC,CAAC;CAIxE"}

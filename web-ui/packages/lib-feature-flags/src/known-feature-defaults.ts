@@ -1,5 +1,5 @@
-import type { AiProvider } from '@/components/ai/chat-panel/types';
-import type { StorageStrategyConfig } from '@/lib/ai/tools/todo/storage/types';
+import type { AiProvider } from './external-types';
+import type { StorageStrategyConfig } from './external-types';
 import { env } from '@compliance-theater/env';
 
 import type {
