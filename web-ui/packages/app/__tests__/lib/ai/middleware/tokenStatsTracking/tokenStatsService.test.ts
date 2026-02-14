@@ -1,7 +1,7 @@
 // Mock ProviderMap before other imports
 
 // Mock Redis and database before other imports
-jest.mock('@/lib/redis-client');
+jest.mock('@compliance-theater/redis');
 
 // Fix the schema mock to have the correct structure
 jest.mock('@compliance-theater/database', () => {

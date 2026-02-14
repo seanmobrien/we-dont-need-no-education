@@ -11,7 +11,7 @@ import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/abor
 import { setupMaps } from '@/__tests__/setup/jest.mock-provider-model-maps';
 
 // Mock dependencies
-jest.mock('@/lib/redis-client');
+jest.mock('@compliance-theater/redis');
 jest.mock('@/lib/ai/core/count-tokens');
 jest.mock('@compliance-theater/logger');
 

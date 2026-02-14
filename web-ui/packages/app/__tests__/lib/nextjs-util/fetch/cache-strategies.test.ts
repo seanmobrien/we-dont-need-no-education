@@ -111,7 +111,7 @@ describe('CacheStrategies', () => {
     mockRedisClient.del.mockResolvedValue(1);
     mockRedisClient.set.mockResolvedValue('OK');
     mockRedisClient.rPush.mockResolvedValue(1);
-    mockRedisClient.expire.mockResolvedValue(1);
+    (mockRedisClient.expire as any).mockResolvedValue(1);
   });
 
   afterEach(() => {

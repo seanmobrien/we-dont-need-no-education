@@ -15,7 +15,7 @@ import {
 } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 
 // Mock Redis and logger
-jest.mock('@/lib/redis-client');
+jest.mock('@compliance-theater/redis');
 jest.mock('@compliance-theater/logger', () => ({
   ...jest.requireActual('@compliance-theater/logger'),
 }));

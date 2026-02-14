@@ -7,7 +7,7 @@ import { getMem0EnabledFlag } from '@/lib/ai/mcp/tool-flags';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 // Mock dependencies
-jest.mock('@/lib/redis-client');
+jest.mock('@compliance-theater/redis');
 jest.mock('@/lib/ai/mcp/providers');
 jest.mock('@/lib/ai/mcp/tool-flags');
 
