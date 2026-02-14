@@ -31,6 +31,9 @@ jest.mock('next/navigation', () => ({
 // Mock theme provider
 jest.mock('@compliance-theater/themes', () => ({
   __esModule: true,
+  ThemeProvider: ({ children }: { children: React.ReactNode; defaultTheme?: string }) => (
+    <div data-testid="theme-provider">{children}</div>
+  ),
   useTheme: () => ({
     theme: {
       palette: {
