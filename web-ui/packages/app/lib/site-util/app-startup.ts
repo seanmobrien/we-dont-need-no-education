@@ -5,7 +5,7 @@ import {
 } from '@/lib/react-util/errors/logged-error-reporter';
 import { initializeProviderConfig } from '../ai/aiModelFactory/util';
 import { globalRequiredSingleton } from '@compliance-theater/typescript';
-import AfterManager from './after';
+import AfterManager from '@compliance-theater/after';
 
 /**
  * The state of the application startup process.
