@@ -14,8 +14,7 @@
       "dom",
       "dom.iterable",
       "es6",
-      "esnext",
-      "ES2020",
+      "esnext"
     ],
     "module": "esnext",
     "moduleResolution": "bundler",
