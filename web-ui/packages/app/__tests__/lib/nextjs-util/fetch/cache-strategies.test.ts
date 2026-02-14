@@ -14,7 +14,8 @@ import type {
   CachedValue,
   CacheStrategyDeps,
 } from '@/lib/nextjs-util/server/fetch/fetch-types';
-import { type RedisClientType, createClient } from 'redis';
+import { type RedisClientType } from '@compliance-theater/redis';
+import { createClient } from 'redis';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 /*
@@ -110,7 +111,7 @@ describe('CacheStrategies', () => {
     mockRedisClient.del.mockResolvedValue(1);
     mockRedisClient.set.mockResolvedValue('OK');
     mockRedisClient.rPush.mockResolvedValue(1);
-    mockRedisClient.expire.mockResolvedValue(1000);
+    mockRedisClient.expire.mockResolvedValue(1);
   });
 
   afterEach(() => {

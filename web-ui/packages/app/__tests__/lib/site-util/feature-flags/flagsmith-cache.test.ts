@@ -1,5 +1,5 @@
 import { FlagsmithRedisCache } from '@/lib/site-util/feature-flags/flagsmith-cache';
-import { getRedisClient } from '@/lib/redis-client';
+import { getRedisClient } from '@compliance-theater/redis';
 import { Flags } from 'flagsmith-nodejs';
 import type { RedisClientType } from 'redis';
 import { hideConsoleOutput } from '@/__tests__/test-utils';

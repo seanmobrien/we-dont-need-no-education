@@ -20,7 +20,7 @@ jest.mock('@compliance-theater/logger', () => ({
   ...jest.requireActual('@compliance-theater/logger'),
 }));
 
-import { getRedisClient, type RedisClientType } from '@/lib/redis-client';
+import { getRedisClient, type RedisClientType } from '@compliance-theater/redis';
 import {
   AllFeatureFlagsDefault,
   KnownFeatureType,

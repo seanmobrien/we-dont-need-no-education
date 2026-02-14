@@ -1,7 +1,7 @@
 /* @jest-environment node */
 
 import { checkChatHealth } from '../../../../lib/api/health/chat';
-import { getRedisClient } from '@/lib/redis-client';
+import { getRedisClient } from '@compliance-theater/redis';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getMem0EnabledFlag } from '@/lib/ai/mcp/tool-flags';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';

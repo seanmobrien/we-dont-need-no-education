@@ -6,7 +6,7 @@ import {
   type FlagsmithCache,
 } from 'flagsmith-nodejs';
 import { LRUCache } from 'lru-cache';
-import { getRedisClient } from '@/lib/redis-client';
+import { getRedisClient } from '@compliance-theater/redis';
 import { LoggedError, log } from '@compliance-theater/logger';
 import type { LruCacheConfig, RedisCacheConfig } from '@/lib/react-util/types';
 

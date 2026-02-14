@@ -40,7 +40,7 @@ import {
   setupConsoleMetrics,
   getPrometheusMetrics,
 } from '@/lib/ai/middleware/cacheWithRedis/metrics';
-import { getRedisClient, closeRedisClient } from '@/lib/redis-client';
+import { getRedisClient, closeRedisClient } from '@compliance-theater/redis';
 import type { RedisClientType } from 'redis';
 
 describe('Enterprise Cache Features', () => {

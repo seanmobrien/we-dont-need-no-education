@@ -20,7 +20,7 @@ import {
   TokenUsageData,
 } from '@/lib/ai/middleware/tokenStatsTracking';
 import { reset } from '@/lib/ai/services/model-stats/token-stats-service';
-import { getRedisClient } from '@/lib/redis-client';
+import { getRedisClient } from '@compliance-theater/redis';
 //import { drizDbWithInit, schema } from '@compliance-theater/database';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 import {

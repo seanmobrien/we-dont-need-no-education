@@ -1,4 +1,4 @@
-import { getRedisClient } from '@/lib/redis-client';
+import { getRedisClient } from '@compliance-theater/redis';
 import { drizDbWithInit, schema, sql } from '@compliance-theater/database/orm';
 import { log, LoggedError } from '@compliance-theater/logger';
 import {

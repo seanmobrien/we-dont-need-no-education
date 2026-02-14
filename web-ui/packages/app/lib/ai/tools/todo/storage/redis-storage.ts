@@ -1,5 +1,5 @@
 import type { RedisClientType } from 'redis';
-import { getRedisClient } from '@/lib/redis-client';
+import { getRedisClient } from '@compliance-theater/redis';
 import type { Todo, TodoList } from '../types';
 import type { TodoStorageStrategy, StorageStrategyConfig } from './types';
 import { log, LoggedError } from '@compliance-theater/logger';
