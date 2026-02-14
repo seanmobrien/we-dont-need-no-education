@@ -29,21 +29,18 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock theme provider
-jest.mock('@compliance-theater/themes', () => {
-  const origModule = jest.requireActual('@compliance-theater/themes');
-  return {
-    ...origModule,
-    useTheme: () => ({
-        theme: {
-          palette: {
-            mode: 'light',
-            primary: { main: '#1976d2' },
-            secondary: { main: '#dc004e' },
-          },
-        },
-      }),
-    };
-});
+jest.mock('@compliance-theater/themes', () => ({
+  __esModule: true,
+  useTheme: () => ({
+    theme: {
+      palette: {
+        mode: 'light',
+        primary: { main: '#1976d2' },
+        secondary: { main: '#dc004e' },
+      },
+    },
+  }),
+}));
 
 // Mock EmailContextProvider
 jest.mock('@/components/email-message/email-context', () => ({
