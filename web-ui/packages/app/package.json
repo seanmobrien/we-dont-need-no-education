@@ -206,6 +206,8 @@
     }
   },
   "resolutions": {
-    "jsx-ast-utils": "^4.4.2"
+    "jsx-ast-utils": "^4.4.2",
+    "lodash-es@npm:^4.17.21": "npm:4.17.22",
+    "@esbuild-kit/core-utils/esbuild": "0.25.0"
   }
 }
