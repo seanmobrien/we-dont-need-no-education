@@ -1,7 +1,7 @@
 import {
   wellKnownFlag,
   wellKnownFlagSync,
-} from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+} from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 
 export const getCacheEnabledFlag = () => wellKnownFlag('mcp_cache_tools');
 export const getCacheEnabledFlagSync = () =>

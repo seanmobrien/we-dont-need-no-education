@@ -12,7 +12,7 @@ import z from 'zod';
 import {
   wellKnownFlag,
   wellKnownFlagSync,
-} from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+} from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 
 // Mock Redis and logger
 jest.mock('@compliance-theater/redis');
@@ -24,7 +24,7 @@ import { getRedisClient, type RedisClientType } from '@compliance-theater/redis'
 import {
   AllFeatureFlagsDefault,
   KnownFeatureType,
-} from '@/lib/site-util/feature-flags';
+} from '@compliance-theater/feature-flags';
 
 const mockRedisClient = {
   get: jest.fn(),

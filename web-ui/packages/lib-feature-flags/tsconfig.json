@@ -1,0 +1,39 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": false,
+    "declaration": true,
+    "declarationMap": true,
+    "baseUrl": ".",
+    "paths": {},
+    "types": [
+      "node",
+      "jest"
+    ],
+    "noEmit": false,
+    "jsx": "react-jsx",
+    "skipLibCheck": true
+  },
+  "files": [
+    "src/app-stubs.d.ts"
+  ],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/app-stubs.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/**/*.d.ts"
+  ],
+  "references": [
+    { "path": "../lib-logger" },
+    { "path": "../lib-env" },
+    { "path": "../lib-typescript" },
+    { "path": "../lib-redis" },
+    { "path": "../lib-react" }
+  ]
+}

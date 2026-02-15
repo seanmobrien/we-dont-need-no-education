@@ -39,7 +39,7 @@ import type {
   HealthCheckResponse,
   ChatHealthData,
 } from '@/lib/hooks/types';
-import { useFlagState } from '../site-util/feature-flags';
+import { useFlagState } from '@compliance-theater/feature-flags';
 import { useCallback } from 'react';
 
 /**

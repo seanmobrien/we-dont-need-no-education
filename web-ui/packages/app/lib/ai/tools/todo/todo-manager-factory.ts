@@ -1,6 +1,6 @@
 import type { StorageStrategyConfig, StorageStrategyType } from './storage';
 import { log, LoggedError } from '@compliance-theater/logger';
-import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import { wellKnownFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 
 type StorageConfigFlagKey =
   | 'todo_storage_in_memory_config'

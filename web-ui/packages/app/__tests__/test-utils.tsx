@@ -23,7 +23,7 @@ import React, { act, PropsWithChildren } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
 import { SessionProvider } from '@/components/auth/session-provider';   
-import { FlagProvider } from '@/components/general/flags/flag-provider';
+import { FlagProvider } from '@compliance-theater/feature-flags/components/flag-provider';
 import { ThemeProvider, type ThemeType } from '@compliance-theater/themes';
 
 type CustomRenderOptions = RenderOptions & {

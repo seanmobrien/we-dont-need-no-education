@@ -23,7 +23,7 @@ import {
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
-import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
+import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
 import type { User } from '@auth/core/types';
 import { wrapMemoryMiddleware } from '@/lib/ai/middleware/memory-middleware';
 import { streamingMessageResponse } from '@/lib/ai/chat/streamed-result';

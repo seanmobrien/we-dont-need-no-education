@@ -27,7 +27,7 @@ jest.mock('@/lib/ai/middleware/chat-history/create-chat-history-context', () => 
 jest.mock('@/lib/ai/mcp/providers', () => ({
   setupDefaultTools: jest.fn().mockResolvedValue({ tools: {} }),
 }));
-jest.mock('@/lib/site-util/feature-flags/server', () => ({
+jest.mock('@compliance-theater/feature-flags/server', () => ({
   getFeatureFlag: jest.fn().mockResolvedValue(false),
 }));
 

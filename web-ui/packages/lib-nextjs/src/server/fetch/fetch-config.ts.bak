@@ -18,16 +18,16 @@
  * - No breaking changes
  */
 
-import { wellKnownFlagSync } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
-//import { isFlagsmithServerReady } from '@/lib/site-util/feature-flags/known-feature-defaults';
+import { wellKnownFlagSync } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
+//import { isFlagsmithServerReady } from '@compliance-theater/feature-flags/known-feature-defaults';
 
 import type {
   AutoRefreshFeatureFlag,
   MinimalNodeFlagsmith,
-} from '@/lib/site-util/feature-flags/types';
+} from '@compliance-theater/feature-flags/types';
 import type { FetchConfig } from './fetch-types';
-import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
-import { flagsmithServerFactory } from '@/lib/site-util/feature-flags/server';
+import { AllFeatureFlagsDefault } from '@compliance-theater/feature-flags/known-feature-defaults';
+import { flagsmithServerFactory } from '@compliance-theater/feature-flags/server';
 import { LoggedError } from '@compliance-theater/logger';
 
 const FETCH_CONFIG_SALT = 'fetch-config-v1' as const;

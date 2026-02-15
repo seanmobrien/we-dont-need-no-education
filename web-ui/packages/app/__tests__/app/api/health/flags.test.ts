@@ -4,11 +4,11 @@
 
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 
-jest.mock('@/lib/site-util/feature-flags/server', () => ({
+jest.mock('@compliance-theater/feature-flags/server', () => ({
   getFeatureFlag: jest.fn(),
 }));
 
-import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
+import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
 
 describe('health feature-flag driven behavior', () => {
   beforeEach(() => {

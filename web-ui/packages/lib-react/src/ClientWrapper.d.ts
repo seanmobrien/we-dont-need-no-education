@@ -40,7 +40,7 @@ declare module '@/lib/react-util/ClientWrapper' {
    *
    * Usage example:
    * ```tsx
-   * import { ClientWrapper } from '@/lib/react-util/ClientWrapper';
+   * import { ClientWrapper } from '@compliance-theater/react/ClientWrapper';
    *
    * export default function MyPage() {
    *   return (

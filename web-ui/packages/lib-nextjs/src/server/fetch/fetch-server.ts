@@ -32,7 +32,8 @@ import type {
   RequestInit,
   ServerFetchManager,
 } from './fetch-types';
-import { EnhancedFetchConfig, DEFAULT_ENHANCED_FETCH_CONFIG } from './enhanced-fetch-config';
+import { EnhancedFetchConfig } from '@compliance-theater/feature-flags/types';
+import { AllFeatureFlagsDefault } from '@compliance-theater/feature-flags/known-feature-defaults';
 import { withTimeout } from '../../with-timeout';
 import { TimeoutError } from '../../utilities/timeout-error';
 

@@ -13,7 +13,7 @@ import { KeyRefreshNotify } from '@/components/auth/key-refresh-notify';
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 import { Suspense} from 'react';
 // import { cookies } from 'next/headers';
-import { FlagProvider } from '@/components/general/flags/flag-provider';
+import { FlagProvider } from '@compliance-theater/feature-flags/components/flag-provider';
 import { state } from '@/lib/site-util/app-startup';
 
 const geistSans = Geist({

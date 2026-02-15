@@ -3,13 +3,13 @@ import {
   getMemoryHealthCache,
   determineHealthStatus,
 } from '@/lib/api/health/memory';
-import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
+import { getFeatureFlag } from '@compliance-theater/feature-flags/server';;
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import { NextRequest, NextResponse } from 'next/server';
 import type { Span } from '@opentelemetry/api';
-import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
-import { KnownFeatureType } from '@/lib/site-util/feature-flags/known-feature';
+import { wellKnownFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
+import { KnownFeatureType } from '@compliance-theater/feature-flags/known-feature';
 
 const DEFAULT_STARTUP_FAILURE_THRESHOLD = 10;
 const STARTUP_FAILURE_COUNTER_KEY = 'startup-failure-counter';
