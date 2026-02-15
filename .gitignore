@@ -60,12 +60,16 @@ next-env.d.ts
 # Configure TypeScript with "declarationDir" to output them to dist/ instead.
 web-ui/packages/app/**/*.js
 web-ui/packages/app/**/*.js.map
+web-ui/packages/app/**/*.jsx
 web-ui/packages/app/**/*.jsx.map
 web-ui/packages/app/**/*.d.ts.map
 web-ui/packages/__tests__/**/*.js
 web-ui/packages/__tests__/**/*.js.map
+web-ui/packages/__tests__/**/*.jsx
+web-ui/packages/__tests__/**/*.jsx.map
 web-ui/packages/__mocks__/**/*.js
 web-ui/packages/__mocks__/**/*.js.map
+web-ui/packages/__mocks__/**/*.jsx
 web-ui/packages/__mocks__/**/*.jsx.map
 # But keep intentional .js files
 !web-ui/packages/app/eslint-rules/**/*.js
