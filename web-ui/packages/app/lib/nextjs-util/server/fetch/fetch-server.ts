@@ -34,7 +34,7 @@ import type {
 import { EnhancedFetchConfig } from '@/lib/site-util/feature-flags/types';
 import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
 import { withTimeout } from '../../with-timeout';
-import { TimeoutError } from '@/lib/react-util/errors/timeout-error';
+import { TimeoutError } from '@compliance-theater/react/errors/timeout-error';
 
 const DEFAULT_CONCURRENCY = 8;
 const DEFAULT_CACHE_SIZE = 500;

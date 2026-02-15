@@ -1,6 +1,6 @@
 import { BaseObjectRepository } from '../../../_baseObjectRepository';
 import { ObjectRepository } from '../../../_types';
-import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 import { FirstParameter, newUuid } from '@compliance-theater/typescript';
 import { EmailSentimentAnalysisDetails } from '@/data-models/api';
 import {

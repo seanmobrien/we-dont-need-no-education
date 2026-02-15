@@ -16,7 +16,7 @@ import { ContactRepository } from '@/lib/api/contacts/database';
 import { EmailRepository } from '@/lib/api/email/database';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
 import { ThreadRepository } from '@/lib/api/thread/database';
-import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
+import { DataIntegrityError } from '@compliance-theater/react/errors/data-integrity-error';
 import { ParsedHeaderMap } from '../../parsedHeaderMap';
 import { query } from '@compliance-theater/database/driver';
 import { ContactSummary } from '@/data-models/api/contact';

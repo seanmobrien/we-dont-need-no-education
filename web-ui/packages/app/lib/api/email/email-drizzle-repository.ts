@@ -1,7 +1,7 @@
 import { BaseDrizzleRepository } from '../_baseDrizzleRepository';
 import { emails } from '@compliance-theater/database/schema';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
-import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 import { eq } from 'drizzle-orm';
 import { auth } from '@/auth';
 import {
@@ -9,7 +9,7 @@ import {
   checkCaseFileAccess,
 } from '@/lib/auth/resources/case-file';
 import { checkCaseFileAuthorization } from '@/lib/auth/resources/case-file/case-file-middleware';
-import { AccessDeniedError } from '@/lib/react-util/errors/access-denied-error';
+import { AccessDeniedError } from '@compliance-theater/react/errors/access-denied-error';
 import { unwrapPromise } from '@compliance-theater/typescript';
 
 /**

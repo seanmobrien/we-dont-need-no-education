@@ -1,7 +1,7 @@
 /* @jest-environment node */
 
 import { DocumentUnitRepository } from '@/lib/api/document-unit';
-import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 
 jest.mock('@azure/storage-blob', () => ({
   AccountSASPermissions: { parse: jest.fn(() => ({ toString: () => 'r' })) },

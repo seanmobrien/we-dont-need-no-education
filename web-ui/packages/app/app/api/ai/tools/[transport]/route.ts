@@ -37,7 +37,7 @@ import {
   pingPongToolCallback,
   pingPongToolConfig,
 } from '@/lib/ai/tools/ping-pong';
-import { isAbortError } from '@/lib/react-util';
+import { isAbortError } from '@compliance-theater/react';
 // Todo tool imports
 import {
   createTodoCallback,

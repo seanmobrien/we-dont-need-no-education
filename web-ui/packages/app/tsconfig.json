@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.next.json",
   "compilerOptions": {
+    "noEmit": true,
     "baseUrl": ".",
     "customConditions": [
       "workspace-source"

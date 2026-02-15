@@ -5,7 +5,7 @@
 jest.mock('@compliance-theater/database/driver');
 
 import { EmailHeaderDetailsRepository } from '@/lib/api/email/properties/email-headers/email-header-details-repository';
-import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 import { query, queryExt } from '@compliance-theater/database/driver';
 import { EmailProperty } from '@/data-models/api';
 

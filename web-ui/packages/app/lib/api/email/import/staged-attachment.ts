@@ -2,7 +2,7 @@ import { BaseObjectRepository } from '@/lib/api/_baseObjectRepository';
 import { ObjectRepository } from '@/lib/api/_types';
 import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 import { query } from '@compliance-theater/database/driver';
-import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 import { FirstParameter } from '@compliance-theater/typescript';
 import { GridSortModel } from '@mui/x-data-grid-pro';
 

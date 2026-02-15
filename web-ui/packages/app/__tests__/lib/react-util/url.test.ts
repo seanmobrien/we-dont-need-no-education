@@ -1,4 +1,4 @@
-import { getLastPathSegment, normalizePath } from '@/lib/react-util/url';
+import { getLastPathSegment, normalizePath } from '@compliance-theater/react/url';
 
 describe('react-util/url', () => {
   describe('normalizePath', () => {

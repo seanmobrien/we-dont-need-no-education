@@ -1,1 +1,1 @@
-export { normalizePath, getLastPathSegment } from '@/lib/react-util/url';
+export { normalizePath, getLastPathSegment } from '@compliance-theater/react/url';

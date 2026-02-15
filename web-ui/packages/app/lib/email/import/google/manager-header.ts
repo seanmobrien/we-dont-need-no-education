@@ -14,7 +14,7 @@ import {
   AdditionalStageOptions,
 } from '../types';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
-import { AggregateError } from '@/lib/react-util/errors/aggregate-error';
+import { AggregateError } from '@compliance-theater/react/errors/aggregate-error';
 import { isError, LoggedError, CustomAppInsightsEvent, log } from '@compliance-theater/logger';
 import { newUuid } from '@compliance-theater/typescript';
 const EmailPropertyTypeMap: Map<string, number> = new Map();

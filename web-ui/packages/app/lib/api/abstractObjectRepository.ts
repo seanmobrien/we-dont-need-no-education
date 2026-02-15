@@ -1,5 +1,5 @@
 import { PaginationStats, PaginatedResultset } from '@/data-models/_types';
-import { isTemplateStringsArray } from '@/lib/react-util/utility-methods';
+import { isTemplateStringsArray } from '@compliance-theater/react/utility-methods';
 import { isError, log } from '@compliance-theater/logger';
 import type {
   TransformedFullQueryResults,

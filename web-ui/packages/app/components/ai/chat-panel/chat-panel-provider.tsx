@@ -5,7 +5,7 @@ import React, {
   SetStateAction,
   PropsWithChildren,
 } from 'react';
-import { debounce } from '@/lib/react-util/debounce';
+import { debounce } from '@compliance-theater/react/debounce';
 import { ChatPanelConfig, ChatPanelContextValue, DockPosition } from './types';
 import { ChatPanelContext } from './chat-panel-context';
 import { isKeyOf } from '@compliance-theater/typescript';
