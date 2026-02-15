@@ -127,7 +127,7 @@ const config = {
   },
   transformIgnorePatterns: [
     // Allow transpiling certain ESM packages (zodex, zod) which ship ESM-only
-    '<rootDir>/node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client))',
+    '<rootDir>/node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client|jose))',
     '<rootDir>/.next',
     '<rootDir>/.upstream',
     '.upstream',

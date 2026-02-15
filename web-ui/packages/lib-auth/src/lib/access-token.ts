@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { auth } from '../../auth';
+import { auth } from '../auth';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { log } from '@compliance-theater/logger';
 import type {
@@ -16,6 +16,12 @@ const accessTokenOnRequest: unique symbol = Symbol();
 type RequestWithAccessToken = NextRequest & {
   [accessTokenOnRequest]?: RequestWithAccessTokenCache;
 };
+
+type AuthSessionLike = {
+  user?: {
+    id?: string | number | null;
+  } | null;
+} | null;
 
 export const withRequestTokens = (
   req: NextRequest | undefined,
@@ -69,8 +75,13 @@ export const getRequestTokens = async (req: NextRequest | undefined) => {
   if (!!ret) {
     return ret;
   }
-  const session = await auth();
-  const sessionUserId = parseInt(session?.user?.id ?? '0', 10);
+  let session: AuthSessionLike = null;
+  try {
+    session = (await auth()) as AuthSessionLike;
+  } catch {
+    session = null;
+  }
+  const sessionUserId = parseInt(String(session?.user?.id ?? '0'), 10);
   let token: RequestWithAccessTokenCache | undefined;
   if (!isNaN(sessionUserId) && sessionUserId > 0) {
     const data = await drizDbWithInit(async (db) => {
@@ -151,14 +162,21 @@ export const normalizedAccessToken: AccessTokenOrRequestOverloadsExt = async (
         if (skipUserId === true) {
           thisUserId = 0;
         } else {
-          const { user: { id: userIdFromSession } = { id: null } } =
-            (await auth()) ?? { user: { id: null } };
-          const parsedUserId = parseInt(userIdFromSession ?? '', 10);
-          if (!isNaN(parsedUserId) && isFinite(parsedUserId)) {
-            thisUserId = parsedUserId;
-          } else {
-            thisUserId = 0;
+          let userIdFromSession: string | null = null;
+          try {
+            const fromSession = (await auth()) as AuthSessionLike;
+            const idFromSession = fromSession?.user?.id;
+            userIdFromSession =
+              typeof idFromSession === 'number'
+                ? String(idFromSession)
+                : idFromSession ?? null;
+          } catch {
+            userIdFromSession = null;
           }
+          const parsedUserId = parseInt(userIdFromSession ?? '', 10);
+          thisUserId = !isNaN(parsedUserId) && isFinite(parsedUserId)
+            ? parsedUserId
+            : 0;
         }
         return {
           accessToken: userAccessToken,

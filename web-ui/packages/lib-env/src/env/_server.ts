@@ -95,6 +95,7 @@ const buildRawInstance = () => {
     MEM0_API_KEY: process.env.MEM0_API_KEY,
     NODE_ENV: process.env.NODE_ENV,
     NEXTAUTH_TRUST_HOST: process.env.NEXTAUTH_TRUST_HOST,
+    NEXTAUTH_URL: process.env.NEXTAUTH_URL,
     /** OpenAI API key for direct OpenAI service access. Example: 'sk-1234567890abcdef...' */
     OPENAI_API_KEY: process.env.OPENAI_API_KEY,
     /** OpenAI high-fidelity model name for complex tasks. Example: 'gpt-4-turbo' */
@@ -459,7 +460,12 @@ const serverEnvSchema = z
       .describe(
         'Mem0 API key for service authentication. Example: mem0_sk_1234567890abcdef...',
       ),
-    NEXTAUTH_TRUST_HOST: ZodProcessors.truthy(false),
+    NEXTAUTH_URL: ZodProcessors.url().default(process.env.NEXT_PUBLIC_HOSTNAME ?? 'http://localhost:3000').describe(
+      'Base URL of the application used by NextAuth for redirects. Example: https://myapp.com',
+    ),
+    NEXTAUTH_TRUST_HOST: ZodProcessors.truthy(false).describe(
+      'Whether NextAuth should trust the host header for redirects (set to true if behind a proxy that terminates SSL). Default: false. Example: true',
+    ),
     NODE_ENV: z
       .string()
       .describe(

@@ -23,6 +23,22 @@ export { errorLogFactory, getStackTrace } from './utilities';
 export { logger, log, logEvent } from './core';
 export { simpleScopedLogger } from './simple-scoped-logger';
 export { safeSerialize } from './safe-serialize';
+export { TimeoutError } from './timeout-error';
+export {
+  withTimeout,
+  withTimeoutAsError,
+  type AwaitedWithTimeout,
+} from './with-timeout';
+export {
+  CONNECTION_TIMEOUT_MS,
+  SEND_TIMEOUT_MS,
+  SafeOperation,
+  createSafeErrorHandler,
+  createSafeAsyncWrapper,
+  type OperationMetrics,
+} from './safe-operation';
+export { tracer, OTEL_MODE, DEBUG_MODE} from './otel/trace';
+export { MetricsRecorder, errorCounter, operationDurationHistogram } from './otel/metrics-recorder';
 
 export { 
   LoggedError,

@@ -14,7 +14,7 @@ import { PgColumn } from 'drizzle-orm/pg-core';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,
-} from '@compliance-theater/auth/lib/resources/case-file';
+} from '@compliance-theater/auth/lib/resources/case-file/index';
 
 const columnMap = {
   ...DefaultDrizzleEmailColumnMap,

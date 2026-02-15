@@ -431,13 +431,17 @@ const makeRecursiveMock = jest
 jest.mock('@compliance-theater/database/orm', () => {
   let actualSchema: Record<string, unknown> = {};
   try {
-    actualSchema = jest.requireActual('@compliance-theater/database/orm');
+    actualSchema = jest.requireActual('@compliance-theater/database/schema');
   } catch {
     actualSchema = {};
   }
+  const schemaExport =
+    (actualSchema as { schema?: unknown }).schema ??
+    (actualSchema as { default?: unknown }).default ??
+    actualSchema;
   return {
     ...actualSchema,
-    schema: (actualSchema as { schema?: unknown }).schema ?? {},
+    schema: schemaExport,
     drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
       const mockDbInstance = makeMockDb();
       if (fn) {

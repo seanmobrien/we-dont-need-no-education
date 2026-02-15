@@ -88,7 +88,7 @@ export const decodeToken = async (props: {
   const {
     token,
     verify = false,
-    issuer = env('AUTH_KEYCLOAK_ISSUER'),
+    issuer = process.env.AUTH_KEYCLOAK_ISSUER || env('AUTH_KEYCLOAK_ISSUER'),
   } = props;
   // Simple decode without verification
   if (!verify) {

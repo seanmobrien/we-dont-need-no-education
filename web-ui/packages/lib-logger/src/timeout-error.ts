@@ -1,12 +1,12 @@
 /**
- * TimeoutError class for timeout-related errors
- * Copied from react-util to avoid circular dependency
+ * Timeout-related error type.
+ *
+ * Use this error for operations that exceed an allowed duration.
  */
 export class TimeoutError extends Error {
   constructor(message?: string) {
     super(message ?? 'A timeout has occurred');
     this.name = 'TimeoutError';
-    // Don't use getStackTrace to avoid circular dependency
     Error.captureStackTrace?.(this, TimeoutError);
   }
 

@@ -142,11 +142,25 @@ export class ImpersonationThirdParty implements ImpersonationService {
   }
 
   static #getConfig(): ThirdPartyConfig | undefined {
+    type ImpersonationEnvKey =
+      | 'AUTH_KEYCLOAK_ISSUER'
+      | 'AUTH_KEYCLOAK_CLIENT_ID'
+      | 'AUTH_KEYCLOAK_CLIENT_SECRET'
+      | 'AUTH_KEYCLOAK_REDIRECT_URI';
+    const fromEnv = (key: ImpersonationEnvKey): string => {
+      const valueFromProcess = process.env[key];
+      if (typeof valueFromProcess === 'string') {
+        return valueFromProcess;
+      }
+      const valueFromEnv = env(key);
+      return typeof valueFromEnv === 'string' ? valueFromEnv : '';
+    };
+
     const config: ThirdPartyConfig = {
-      issuer: env('AUTH_KEYCLOAK_ISSUER') || '',
-      clientId: env('AUTH_KEYCLOAK_CLIENT_ID') || '',
-      clientSecret: env('AUTH_KEYCLOAK_CLIENT_SECRET') || '',
-      redirectUri: env('AUTH_KEYCLOAK_REDIRECT_URI') || '',
+      issuer: fromEnv('AUTH_KEYCLOAK_ISSUER'),
+      clientId: fromEnv('AUTH_KEYCLOAK_CLIENT_ID'),
+      clientSecret: fromEnv('AUTH_KEYCLOAK_CLIENT_SECRET'),
+      redirectUri: fromEnv('AUTH_KEYCLOAK_REDIRECT_URI'),
     };
 
     if (

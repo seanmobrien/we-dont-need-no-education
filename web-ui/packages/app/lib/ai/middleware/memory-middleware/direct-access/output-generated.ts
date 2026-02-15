@@ -1,7 +1,7 @@
 import { memoryClientFactory } from '@/lib/ai/mem0/memoryclient-factory';
 import type { MemoryMiddlewareAugmentationStrategy } from '../types';
 import { LoggedError, log, safeSerialize } from '@compliance-theater/logger';
-import { fromRequest } from '@compliance-theater/auth/lib/impersonation';
+import { fromRequest } from '@compliance-theater/auth/lib/impersonation/index';
 import { Messages } from '@/lib/ai/mem0/lib/client/types';
 
 export const onOutputGenerated: MemoryMiddlewareAugmentationStrategy['onOutputGenerated'] =

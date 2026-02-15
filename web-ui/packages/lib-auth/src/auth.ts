@@ -8,7 +8,7 @@ import type {
   AuthConfig,
 } from '@auth/core/types';
 
-import NextAuth from 'next-auth'; // Added NextAuthConfig
+import NextAuth, { type NextAuthResult } from 'next-auth'; // Added NextAuthConfig
 import type { Adapter, AdapterSession, AdapterUser } from '@auth/core/adapters';
 import type { CredentialInput, Provider } from '@auth/core/providers';
 import { isRunningOnEdge, env } from '@compliance-theater/env';
@@ -143,7 +143,7 @@ export const providerMap = providers.map((provider) => {
   return { id: provider.id, name: provider.name };
 });
 
-export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
+const nextAuthResult: NextAuthResult = NextAuth(async () => {
   // Added NextAuthConfig return type
   let adapter: Adapter | undefined;
 
@@ -244,3 +244,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
     trustHost: env('NEXTAUTH_TRUST_HOST'),
   } satisfies AuthConfig;
 });
+
+export const handlers = nextAuthResult.handlers;
+export const auth: NextAuthResult['auth'] = nextAuthResult.auth;
+export const signIn: NextAuthResult['signIn'] = nextAuthResult.signIn;
+export const signOut: NextAuthResult['signOut'] = nextAuthResult.signOut;

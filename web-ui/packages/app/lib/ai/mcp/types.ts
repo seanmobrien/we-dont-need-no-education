@@ -1,7 +1,7 @@
 import type {
   ToolSet,
 } from 'ai';
-import type { ImpersonationService } from '@compliance-theater/auth/lib/impersonation';
+import type { ImpersonationService } from '@compliance-theater/auth/lib/impersonation/index';
 import type { Request } from '@modelcontextprotocol/sdk/types.js';
 import type {
   experimental_MCPClient as MCPClient,

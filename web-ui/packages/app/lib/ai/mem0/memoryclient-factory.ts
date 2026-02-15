@@ -4,7 +4,7 @@ import type {
   MemoryHealthCheckResponse,
   HealthCheckParams,
 } from './types/health-check';
-import { fromRequest, ImpersonationService } from '@compliance-theater/auth/lib/impersonation';
+import { fromRequest, ImpersonationService } from '@compliance-theater/auth/lib/impersonation/index';
 import { env } from '@compliance-theater/env';
 import { log } from '@compliance-theater/logger';
 

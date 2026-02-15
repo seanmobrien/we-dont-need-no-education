@@ -1,17 +1,19 @@
-import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
+import { withJestTestExtensions } from './shared/jest.test-extensions';
 import { LoggedError } from '@compliance-theater/logger';
-import { DatabaseMockType } from '../../../../../__tests__/jest.mock-drizzle';
+import { DatabaseMockType } from './shared/jest.mock-drizzle';
 
-// Mock the database connection
-import type { DbDatabaseType } from '@compliance-theater/database';
+jest.mock('../src/orm/connection', () => ({
+  drizDbWithInit: jest.fn((cb?: (db: unknown) => unknown): Promise<unknown> => {
+    const db = withJestTestExtensions().makeMockDb();
+    const normalCallback = cb ?? ((x) => x);
+    return Promise.resolve(normalCallback(db));
+  }),
+}));
 
 const validUuid = '12345678-1234-4567-8901-123456789012';
 
-
-// HACK: This hack is a little ugly, but OK because beforeEach will initialize before each test
 let mockDb = withJestTestExtensions().makeMockDb();
 
-// Mock LoggedError
 jest.mock('@compliance-theater/logger', () => ({
   ...jest.requireActual('@compliance-theater/logger'),
   LoggedError: {
@@ -19,26 +21,45 @@ jest.mock('@compliance-theater/logger', () => ({
   },
 }));
 
-import {
+const {
   resolveCaseFileId,
-} from '@/lib/api/document-unit/resolve-case-file-id';
-import {
-  resolveCaseFileIdBatch
-} from '@/lib/ai/tools/utility';
-import { documentProperty } from '@compliance-theater/database/schema';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+  resolveCaseFileIdBatch,
+}: {
+  resolveCaseFileId: (
+    documentId: number | string | undefined,
+  ) => Promise<number | undefined>;
+  resolveCaseFileIdBatch: <T extends Array<unknown>>(
+    requests: T,
+    options?: {
+      getValue: (input: T[number]) => string | number;
+      setValue: (input: T[number], value: number | string) => T[number];
+    },
+  ) => Promise<Array<T[number]>>;
+} = require('../src/orm/resolve-case-file-id');
 
 const mockLoggedError = LoggedError as jest.Mocked<typeof LoggedError>;
 
+type CaseFileRequest = {
+  caseFileId: number | string;
+};
+
+const resolveBatch = async (requests: Array<CaseFileRequest>) =>
+  (await resolveCaseFileIdBatch(requests, {
+    getValue: (input) => input.caseFileId,
+    setValue: (input, value) => ({
+      ...input,
+      caseFileId: value,
+    }),
+  })) as Array<{ caseFileId: number }>;
+
 describe('resolveCaseFileId', () => {
   beforeEach(async () => {
-    // jest.clearAllMocks();
     mockDb = withJestTestExtensions().makeMockDb() as jest.Mocked<DatabaseMockType>;
     (mockDb.query.documentUnits.findFirst as jest.Mock).mockImplementation(
       () => {
         return Promise.resolve({
           unitId: 1,
-          documentPropertyId: validUuid
+          documentPropertyId: validUuid,
         });
       },
     );
@@ -63,7 +84,6 @@ describe('resolveCaseFileId', () => {
   });
 
   describe('when documentId is a valid UUID string', () => {
-
     it('should query database and return unitId when found by emailId', async () => {
       const mockResult = { unitId: 456 };
       (mockDb.query.documentUnits.findFirst as jest.Mock).mockResolvedValue(
@@ -101,7 +121,9 @@ describe('resolveCaseFileId', () => {
     });
 
     it('should handle database errors gracefully', async () => {
-      hideConsoleOutput().setup();
+      const consoleError = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
       const dbError = new Error('Database connection failed');
       (mockDb.query.documentUnits.findFirst as jest.Mock).mockRejectedValue(
         dbError,
@@ -120,6 +142,7 @@ describe('resolveCaseFileId', () => {
           include: { documentId: validUuid },
         },
       );
+      consoleError.mockRestore();
     });
   });
 
@@ -127,9 +150,7 @@ describe('resolveCaseFileId', () => {
     it('should parse valid numeric string', async () => {
       const result = await resolveCaseFileId('123');
       expect(result).toBe(123);
-      expect(
-        mockDb.query.documentUnits.findFirst as jest.Mock,
-      ).not.toHaveBeenCalled();
+      expect(mockDb.query.documentUnits.findFirst as jest.Mock).not.toHaveBeenCalled();
     });
 
     it('should handle string with leading zeros', async () => {
@@ -177,9 +198,8 @@ describe('resolveCaseFileId', () => {
 
   describe('UUID validation edge cases', () => {
     it('should handle invalid UUID format', async () => {
-      const invalidUuid = '12345678-1234-5678-9012-123456789012'; // version 5, not 4
+      const invalidUuid = '12345678-1234-5678-9012-123456789012';
       const result = await resolveCaseFileId(invalidUuid);
-      // Since it's not a valid UUID, it will try parseInt which returns 12345678
       expect(result).toBe(12345678);
       expect(mockDb.query.documentUnits.findFirst).not.toHaveBeenCalled();
     });
@@ -187,14 +207,12 @@ describe('resolveCaseFileId', () => {
     it('should handle UUID with wrong length', async () => {
       const shortUuid = '12345678-1234-4567-8901-12345678901';
       const result = await resolveCaseFileId(shortUuid);
-      // Since it's not a valid UUID, it will try parseInt which returns 12345678
       expect(result).toBe(12345678);
     });
 
     it('should handle UUID with invalid characters', async () => {
       const invalidUuid = '12345678-1234-4567-8901-12345678901G';
       const result = await resolveCaseFileId(invalidUuid);
-      // Since it's not a valid UUID, it will try parseInt which returns 12345678
       expect(result).toBe(12345678);
     });
   });
@@ -202,21 +220,19 @@ describe('resolveCaseFileId', () => {
 
 describe('resolveCaseFileIdBatch', () => {
   beforeEach(() => {
-    // mockDb.query.documentUnits.findMany.mockClear();
     mockLoggedError.isTurtlesAllTheWayDownBaby.mockClear();
     mockDb = withJestTestExtensions().makeMockDb();
   });
 
   describe('with empty input', () => {
     it('should return empty array for empty input', async () => {
-      const result = await resolveCaseFileIdBatch([]);
+      const result = await resolveBatch([]);
       expect(result).toEqual([]);
       expect(mockDb.query.documentUnits.findMany).not.toHaveBeenCalled();
     });
   });
 
   describe('with only numeric inputs', () => {
-
     it('should return all numeric IDs as-is', async () => {
       const requests = [
         { caseFileId: 123 },
@@ -224,7 +240,7 @@ describe('resolveCaseFileIdBatch', () => {
         { caseFileId: 789 },
       ];
 
-      const result = await resolveCaseFileIdBatch(requests);
+      const result = await resolveBatch(requests);
 
       expect(result).toEqual([
         { caseFileId: 123 },
@@ -236,7 +252,6 @@ describe('resolveCaseFileIdBatch', () => {
   });
 
   describe('with only string numeric inputs', () => {
-
     it('should parse and return numeric values', async () => {
       const requests = [
         { caseFileId: '123' },
@@ -244,7 +259,7 @@ describe('resolveCaseFileIdBatch', () => {
         { caseFileId: '789' },
       ];
 
-      const result = await resolveCaseFileIdBatch(requests);
+      const result = await resolveBatch(requests);
 
       expect(result).toEqual([
         { caseFileId: 123 },
@@ -259,7 +274,7 @@ describe('resolveCaseFileIdBatch', () => {
     const uuid1 = '12345678-1234-4567-8901-123456789012';
     const uuid2 = '87654321-4321-4321-8901-210987654321';
 
-    const setupMockRecords = async (
+    const setupMockRecords = (
       source: Array<{
         unitId: number;
         documentPropertyId?: string | null;
@@ -268,9 +283,9 @@ describe('resolveCaseFileIdBatch', () => {
     ) => {
       const mockRecords = [...source];
 
-      // Note: drizDbWithInit is already globally mocked, so we just need to set up
-      // the findMany mock to return the expected records
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockImplementation(() => Promise.resolve(mockRecords));
+      (mockDb.query.documentUnits.findMany as jest.Mock).mockImplementation(
+        () => Promise.resolve(mockRecords),
+      );
 
       return mockRecords;
     };
@@ -282,7 +297,7 @@ describe('resolveCaseFileIdBatch', () => {
         { unitId: 100, documentPropertyId: uuid1, emailId: null },
         { unitId: 200, documentPropertyId: null, emailId: uuid2 },
       ]);
-      const result = await resolveCaseFileIdBatch(requests);
+      const result = await resolveBatch(requests);
 
       expect(result).toEqual([{ caseFileId: 100 }, { caseFileId: 200 }]);
 
@@ -301,7 +316,7 @@ describe('resolveCaseFileIdBatch', () => {
 
       setupMockRecords([]);
 
-      const result = await resolveCaseFileIdBatch(requests);
+      const result = await resolveBatch(requests);
 
       expect(result).toEqual([]);
     });
@@ -312,7 +327,7 @@ describe('resolveCaseFileIdBatch', () => {
         { unitId: 100, documentPropertyId: uuid1, emailId: null },
       ]);
 
-      const result = await resolveCaseFileIdBatch(requests);
+      const result = await resolveBatch(requests);
 
       expect(result).toEqual([{ caseFileId: 100 }]);
     });
@@ -322,14 +337,13 @@ describe('resolveCaseFileIdBatch', () => {
     it('should handle combination of numbers, numeric strings, and UUIDs', async () => {
       const uuid = '12345678-1234-4567-8901-123456789012';
       const requests = [
-        { caseFileId: 123 }, // number
-        { caseFileId: '456' }, // numeric string
-        { caseFileId: uuid }, // UUID
-        { caseFileId: 789 }, // number
-        { caseFileId: 999 }, // number
+        { caseFileId: 123 },
+        { caseFileId: '456' },
+        { caseFileId: uuid },
+        { caseFileId: 789 },
+        { caseFileId: 999 },
       ];
 
-      // Note: drizDbWithInit is already globally mocked
       const mockRecords = [
         { unitId: 999, documentPropertyId: uuid, emailId: null },
       ];
@@ -338,27 +352,27 @@ describe('resolveCaseFileIdBatch', () => {
         mockRecords,
       );
 
-      const result = await resolveCaseFileIdBatch(requests);
+      const result = await resolveBatch(requests);
 
       expect(result).toEqual([
         { caseFileId: 123 },
         { caseFileId: 456 },
         { caseFileId: 789 },
-        { caseFileId: 999 }, // Last 999 is original number, UUID resolves to 999 too
-        { caseFileId: 999 }, // UUID resolved to 999
+        { caseFileId: 999 },
+        { caseFileId: 999 },
       ]);
     });
 
     it('should filter out invalid inputs', async () => {
       const requests = [
-        { caseFileId: 123 }, // valid number
-        { caseFileId: 'invalid' }, // invalid string
-        { caseFileId: null as unknown as string }, // invalid type
-        { caseFileId: {} as unknown as string }, // invalid type
-        { caseFileId: '456' }, // valid numeric string
+        { caseFileId: 123 },
+        { caseFileId: 'invalid' },
+        { caseFileId: null as unknown as string },
+        { caseFileId: {} as unknown as string },
+        { caseFileId: '456' },
       ];
 
-      const result = await resolveCaseFileIdBatch(requests);
+      const result = await resolveBatch(requests as Array<CaseFileRequest>);
 
       expect(result).toEqual([{ caseFileId: 123 }, { caseFileId: 456 }]);
     });
@@ -369,13 +383,11 @@ describe('resolveCaseFileIdBatch', () => {
       const uuid = '12345678-1234-4567-8901-123456789012';
       const requests = [{ caseFileId: uuid }];
 
-      // Mock the database query to reject with the error
       (mockDb.query.documentUnits.findMany as jest.Mock).mockRejectedValue(
         new Error('Database connection failed'),
       );
 
-      // Should throw the error since there's no error handling in the batch function
-      await expect(resolveCaseFileIdBatch(requests)).rejects.toThrow(
+      await expect(resolveBatch(requests)).rejects.toThrow(
         'Database connection failed',
       );
     });
@@ -384,11 +396,11 @@ describe('resolveCaseFileIdBatch', () => {
   describe('edge cases', () => {
     it('should handle requests with only invalid UUIDs', async () => {
       const requests = [
-        { caseFileId: '12345678-1234-5678-9012-123456789012' }, // version 5, not 4
+        { caseFileId: '12345678-1234-5678-9012-123456789012' },
         { caseFileId: 'not-a-uuid' },
       ];
 
-      const result = await resolveCaseFileIdBatch(requests);
+      const result = await resolveBatch(requests);
 
       expect(result).toEqual([]);
       expect(mockDb.query.documentUnits.findMany).not.toHaveBeenCalled();
@@ -401,7 +413,7 @@ describe('resolveCaseFileIdBatch', () => {
         { caseFileId: '-5' },
       ];
 
-      const result = await resolveCaseFileIdBatch(requests);
+      const result = await resolveBatch(requests);
 
       expect(result).toEqual([
         { caseFileId: 0 },
@@ -417,7 +429,7 @@ describe('resolveCaseFileIdBatch', () => {
         { caseFileId: largeNumber.toString() },
       ];
 
-      const result = await resolveCaseFileIdBatch(requests);
+      const result = await resolveBatch(requests);
 
       expect(result).toEqual([
         { caseFileId: largeNumber },

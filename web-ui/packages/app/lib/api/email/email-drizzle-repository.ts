@@ -7,8 +7,9 @@ import { auth } from '@compliance-theater/auth';
 import {
   CaseFileScope,
   checkCaseFileAccess,
-} from '@compliance-theater/auth/lib/resources/case-file';
+} from '@compliance-theater/auth/lib/resources/case-file/index';
 import { checkCaseFileAuthorization } from '@compliance-theater/auth/lib/resources/case-file/case-file-middleware';
+
 import { AccessDeniedError } from '@compliance-theater/react/errors/access-denied-error';
 import { unwrapPromise } from '@compliance-theater/typescript';
 

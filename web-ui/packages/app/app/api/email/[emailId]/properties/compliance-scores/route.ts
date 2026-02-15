@@ -11,7 +11,7 @@ import { schema } from '@compliance-theater/database/orm';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,
-} from '@compliance-theater/auth/lib/resources/case-file';
+} from '@compliance-theater/auth/lib/resources/case-file/index';
 import {
   getEmailColumn,
   selectForGrid,

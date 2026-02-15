@@ -49,12 +49,25 @@ export class KeycloakTokenExchange {
   private readonly tokenEndpoint: string;
 
   constructor(config?: Partial<KeycloakConfig>) {
+    type KeycloakConfigEnvKey =
+      | 'AUTH_KEYCLOAK_ISSUER'
+      | 'AUTH_KEYCLOAK_CLIENT_ID'
+      | 'AUTH_KEYCLOAK_CLIENT_SECRET';
+    const fromEnv = (key: KeycloakConfigEnvKey): string => {
+      const valueFromProcess = process.env[key];
+      if (typeof valueFromProcess === 'string') {
+        return valueFromProcess;
+      }
+      const valueFromEnv = env(key);
+      return typeof valueFromEnv === 'string' ? valueFromEnv : '';
+    };
+
     // Load configuration from environment with optional overrides
     this.config = {
-      issuer: config?.issuer ?? env('AUTH_KEYCLOAK_ISSUER') ?? '',
-      clientId: config?.clientId ?? env('AUTH_KEYCLOAK_CLIENT_ID') ?? '',
+      issuer: config?.issuer ?? fromEnv('AUTH_KEYCLOAK_ISSUER'),
+      clientId: config?.clientId ?? fromEnv('AUTH_KEYCLOAK_CLIENT_ID'),
       clientSecret:
-        config?.clientSecret ?? env('AUTH_KEYCLOAK_CLIENT_SECRET') ?? '',
+        config?.clientSecret ?? fromEnv('AUTH_KEYCLOAK_CLIENT_SECRET'),
     };
 
     this.validateConfig();

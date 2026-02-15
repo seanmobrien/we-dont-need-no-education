@@ -99,6 +99,14 @@ const MockKcAdminCtor = jest.fn().mockImplementation(() => {
   };
   return lastKcAdminInstance;
 });
+jest.mock('@/lib/auth/keycloak-factories', () => ({
+  keycloakAdminClientFactory: jest.fn().mockImplementation(async () => {
+    if (!lastKcAdminInstance) {
+      lastKcAdminInstance = MockKcAdminCtor();
+    }
+    return lastKcAdminInstance;
+  }),
+}));
 jest.mock('@keycloak/keycloak-admin-client', () => ({
   __esModule: true,
   default: MockKcAdminCtor,

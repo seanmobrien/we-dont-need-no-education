@@ -15,22 +15,40 @@ jest.mock('@auth/core/jwt', () => {
   };
 });
 
-jest.mock('next-auth', () => jest.fn);
+jest.mock('next-auth', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({
+    handlers: { GET: jest.fn(), POST: jest.fn() },
+    auth: jest.fn(),
+    signIn: jest.fn(),
+    signOut: jest.fn(),
+  })),
+}));
 jest.mock('next-auth/jwt', () => {
   return {
     __esModule: true,
     getToken: jest.fn(),
   };
 });
-jest.mock('@/auth', () => {
-  const originalModule = jest.requireActual('@/auth');
+jest.mock('@compliance-theater/auth', () => {
   const withJestTestExtensions =
     require('@/__tests__/shared/jest.test-extensions').withJestTestExtensions;
   return {
     __esModule: true,
-    ...originalModule,
     auth: jest.fn(() => withJestTestExtensions().session),
-    handlers: jest.fn(),
+    handlers: { GET: jest.fn(), POST: jest.fn() },
+    signIn: jest.fn(),
+    signOut: jest.fn(),
+  };
+});
+
+jest.mock('@/auth', () => {
+  const withJestTestExtensions =
+    require('@/__tests__/shared/jest.test-extensions').withJestTestExtensions;
+  return {
+    __esModule: true,
+    auth: jest.fn(() => withJestTestExtensions().session),
+    handlers: { GET: jest.fn(), POST: jest.fn() },
     signIn: jest.fn(),
     signOut: jest.fn(),
   };

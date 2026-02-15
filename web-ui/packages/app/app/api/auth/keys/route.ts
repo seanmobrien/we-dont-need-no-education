@@ -148,11 +148,7 @@ export const POST = wrapRouteRequest(
           effectiveDate: new Date().toISOString(),
           expirationDate: expirationDate.toISOString(),
         })
-        .returning({
-          id: schema.userPublicKeys.id,
-          effectiveDate: schema.userPublicKeys.effectiveDate,
-          expirationDate: schema.userPublicKeys.expirationDate,
-        });
+        .returning();
 
       log((l) =>
         l.info('New public key registered', {

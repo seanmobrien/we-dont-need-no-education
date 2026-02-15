@@ -18,6 +18,12 @@ import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
 import { isPromise } from '@compliance-theater/typescript';
 import { getAppStartupState } from './app-startup-accessor';
+export {
+  createSafeAsyncWrapper,
+  createSafeErrorHandler,
+  SafeOperation,
+  type OperationMetrics,
+} from '@compliance-theater/logger/safe-operation';
 
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');
 

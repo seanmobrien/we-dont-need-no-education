@@ -16,9 +16,13 @@ export const refreshAccessToken = async (token: JWT): Promise<JWT> => {
       throw new Error('No refresh_token available');
     }
 
-    const clientId = env('AUTH_KEYCLOAK_CLIENT_ID');
-    const clientSecret = env('AUTH_KEYCLOAK_CLIENT_SECRET');
-    const issuer = env('AUTH_KEYCLOAK_ISSUER');
+    const clientId =
+      process.env.AUTH_KEYCLOAK_CLIENT_ID || env('AUTH_KEYCLOAK_CLIENT_ID');
+    const clientSecret =
+      process.env.AUTH_KEYCLOAK_CLIENT_SECRET ||
+      env('AUTH_KEYCLOAK_CLIENT_SECRET');
+    const issuer =
+      process.env.AUTH_KEYCLOAK_ISSUER || env('AUTH_KEYCLOAK_ISSUER');
     if (!issuer) {
       throw new Error('AUTH_KEYCLOAK_ISSUER not defined');
     }
@@ -49,14 +53,12 @@ export const refreshAccessToken = async (token: JWT): Promise<JWT> => {
     return {
       ...token,
       access_token: refreshedTokens.access_token ?? token.access_token,
-      expires_at: Math.floor(Date.now() / 1000) + (refreshedTokens.expires_in ?? 0),
-      // Fall back to old refresh token if new one is not returned
+      expires_at:
+        Math.floor(Date.now() / 1000) + (refreshedTokens.expires_in ?? 0),
       refresh_token: refreshedTokens.refresh_token ?? token.refresh_token,
     };
   } catch (error) {
     console.error('Error refreshing access token', error);
-
-    // Identify if error is due to invalid grant (e.g. refresh token expired/revoked)
     // We propagate 'RefreshAccessTokenError' which causes the client-side useSession hook
     // to detect the error and force a sign-out, effectively clearing the session.
     if (

@@ -1,7 +1,7 @@
 'use client';
 
 import { getAppInsights } from '@/instrument/browser';
-import { useSession } from '@compliance-theater/auth/components/session-provider';
+import { useSession } from '@compliance-theater/auth/components/session-provider/index';
 import type { Session } from '@auth/core/types';
 import {
   usePathname,

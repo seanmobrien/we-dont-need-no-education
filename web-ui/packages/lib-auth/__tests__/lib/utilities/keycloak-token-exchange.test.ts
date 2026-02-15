@@ -13,7 +13,7 @@ process.env.NEXTAUTH_SECRET = 'test-nextauth-secret';
 import {
   KeycloakTokenExchange,
   TokenExchangeError,
-} from '../../../../lib/site-util/auth/keycloak-token-exchange';
+} from '@/lib/site-util/auth/keycloak-token-exchange';
 import axios from 'axios';
 import { getToken } from '@auth/core/jwt';
 

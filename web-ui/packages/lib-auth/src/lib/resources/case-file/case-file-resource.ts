@@ -1,10 +1,9 @@
 import { env } from '@compliance-theater/env';
-import { log, LoggedError } from '@compliance-theater/logger';
+import { log, LoggedError, createSafeAsyncWrapper } from '@compliance-theater/logger';
 import type { NextRequest } from 'next/server';
 import { getRequestTokens } from '../../access-token';
 import { resourceService } from '../resource-service';
-import { authorizationService } from '../authorization-service';
-import { createSafeAsyncWrapper } from '@compliance-theater/nextjs/server/utils';
+import { authorizationService } from '../authorization-service'; 
 
 export interface CaseFileResource {
   _id: string;

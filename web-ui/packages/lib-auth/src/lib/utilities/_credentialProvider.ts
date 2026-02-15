@@ -95,7 +95,7 @@ const getGoogleAuthCredential = async (
     'userId' in ops && ops.userId
       ? await getTokensFromUser(ops.req, ops.userId)
       : await getTokensFromSession(ops.req);
-  const appUrl = env('NEXTAUTH_URL') || 'http://localhost:3000';
+  const appUrl = env('NEXTAUTH_URL') || env('NEXT_PUBLIC_HOSTNAME');
   const redirectUrl = new URL('/api/auth/callback/google', appUrl);
   const ret = new OAuth2Client(
     env('AUTH_GOOGLE_ID'),

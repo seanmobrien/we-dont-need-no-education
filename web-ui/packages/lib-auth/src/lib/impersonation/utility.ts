@@ -31,17 +31,34 @@ export const adminBaseFromIssuer = (
 };
 
 export const defaultConfigFromEnv = (): AdminTokenConfig => {
+  type AdminEnvKey =
+    | 'AUTH_KEYCLOAK_ISSUER'
+    | 'AUTH_KEYCLOAK_CLIENT_ID'
+    | 'AUTH_KEYCLOAK_CLIENT_SECRET'
+    | 'AUTH_KEYCLOAK_REDIRECT_URI'
+    | 'AUTH_KEYCLOAK_IMPERSONATOR_USERNAME'
+    | 'AUTH_KEYCLOAK_IMPERSONATOR_PASSWORD'
+    | 'AUTH_KEYCLOAK_IMPERSONATOR_OFFLINE_TOKEN';
+  const fromEnv = (key: AdminEnvKey): string => {
+    const valueFromProcess = process.env[key];
+    if (typeof valueFromProcess === 'string') {
+      return valueFromProcess;
+    }
+    const valueFromEnv = env(key);
+    return typeof valueFromEnv === 'string' ? valueFromEnv : '';
+  };
+
   const config = {
-    issuer: env('AUTH_KEYCLOAK_ISSUER') || '',
-    clientId: env('AUTH_KEYCLOAK_CLIENT_ID') || '',
-    clientSecret: env('AUTH_KEYCLOAK_CLIENT_SECRET') || '',
-    redirectUri: env('AUTH_KEYCLOAK_REDIRECT_URI') || '',
+    issuer: fromEnv('AUTH_KEYCLOAK_ISSUER'),
+    clientId: fromEnv('AUTH_KEYCLOAK_CLIENT_ID'),
+    clientSecret: fromEnv('AUTH_KEYCLOAK_CLIENT_SECRET'),
+    redirectUri: fromEnv('AUTH_KEYCLOAK_REDIRECT_URI'),
     impersonatorUsername:
-      env('AUTH_KEYCLOAK_IMPERSONATOR_USERNAME') || undefined,
+      fromEnv('AUTH_KEYCLOAK_IMPERSONATOR_USERNAME') || undefined,
     impersonatorPassword:
-      env('AUTH_KEYCLOAK_IMPERSONATOR_PASSWORD') || undefined,
+      fromEnv('AUTH_KEYCLOAK_IMPERSONATOR_PASSWORD') || undefined,
     impersonatorOfflineToken:
-      env('AUTH_KEYCLOAK_IMPERSONATOR_OFFLINE_TOKEN') || undefined,
+      fromEnv('AUTH_KEYCLOAK_IMPERSONATOR_OFFLINE_TOKEN') || undefined,
   };
 
   // Basic validation - detailed validation happens in constructor

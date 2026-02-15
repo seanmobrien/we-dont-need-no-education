@@ -18,7 +18,7 @@ import {
 import { generateHash } from './telemetry';
 import { getMem0ApiUrl } from '../pollyfills';
 import { LoggedError, log } from '@compliance-theater/logger';
-import type { ImpersonationService } from '@compliance-theater/auth/lib/impersonation';
+import type { ImpersonationService } from '@compliance-theater/auth/lib/impersonation/index';
 import { env } from '@compliance-theater/env';
 import {
   createInstrumentedSpan,

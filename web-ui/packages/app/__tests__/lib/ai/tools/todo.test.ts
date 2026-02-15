@@ -5,7 +5,7 @@
  * Tests for the Todo Manager and Todo Tools
  */
 
-import { Session } from '@auth/core/types';
+import { Session } from '@compliance-theater/auth';
 import { TodoManager, getTodoManager } from '@/lib/ai/tools/todo/todo-manager';
 import {
   createTodoCallback,
@@ -60,10 +60,9 @@ describe('TodoManager', () => {
         name: 'Test User',
         email: 'test@example.com',
         image: '',
-        subject: 'test-subject',
       },
       expires: new Date(Date.now() + 3600000).toISOString(),
-    };
+    } as unknown as Session;
   });
 
   afterEach(() => {

@@ -8,7 +8,7 @@ import { getMemoryHealthCache } from '@/lib/api/health/memory';
 import { checkDatabaseHealth } from '@/lib/api/health/database';
 import { env } from '@compliance-theater/env';
 import { LoggedError } from '@compliance-theater/logger';
-import { fromRequest } from '@compliance-theater/auth/lib/impersonation';
+import { fromRequest } from '@compliance-theater/auth/lib/impersonation/index';
 import { MemoryHealthCheckResponse } from '@/lib/ai/mem0/types/health-check';
 import { determineHealthStatus } from '@/lib/ai/mem0/lib/health-check';
 import { checkChatHealth } from '@/lib/api/health/chat';

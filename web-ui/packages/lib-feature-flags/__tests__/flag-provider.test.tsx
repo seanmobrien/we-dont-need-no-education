@@ -9,7 +9,7 @@ jest.mock('flagsmith/react', () => ({
   useFlagsmithLoading: jest.fn(),
 }));
 
-jest.mock('@/components/auth/session-provider', () => ({
+jest.mock('@compliance-theater/auth/components/session-provider/index', () => ({
   useSession: jest.fn(() => ({ userHash: 'test-user', status: 'unauthenticated' })),
 }));
 

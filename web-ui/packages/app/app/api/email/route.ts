@@ -21,7 +21,7 @@ import {
   selectForGrid,
 } from '@/lib/components/mui/data-grid/queryHelpers';
 import { ContactSummary, EmailMessageSummary } from '@/data-models';
-import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file';
+import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file/index';
 import { getAccessToken } from '@compliance-theater/auth/lib/access-token';
 
 export const dynamic = 'force-dynamic';
