@@ -70,6 +70,12 @@
         "WORKSPACE_SOURCE_IMPORTS"
       ]
     },
+    "@compliance-theater/app#build": {
+      "outputs": []
+    },
+    "@compliance-theater/app#build:typescript": {
+      "outputs": []
+    },
     "build:clean": {
       "dependsOn": ["^build:clean"],
       "cache": false,
