@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import { ChatPageClient } from './chat-page-client';
 
 const Page = async () => {

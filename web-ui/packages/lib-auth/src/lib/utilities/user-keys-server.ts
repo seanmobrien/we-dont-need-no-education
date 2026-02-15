@@ -5,7 +5,7 @@ import {
   type UserPublicKeysType,
   drizDbWithInit,
 } from '@compliance-theater/database/orm';
-import { auth } from '@/auth';
+import { auth } from '../../auth';
 
 export const getActiveUserPublicKeys = async ({
   db: database,

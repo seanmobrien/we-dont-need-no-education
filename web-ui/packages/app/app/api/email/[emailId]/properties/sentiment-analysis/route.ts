@@ -11,7 +11,7 @@ import { schema } from '@compliance-theater/database/orm';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,
-} from '@/lib/auth/resources/case-file';
+} from '@compliance-theater/auth/lib/resources/case-file';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { DefaultEmailColumnMap } from '@/lib/components/mui/data-grid/server';
 import { PgColumn } from 'drizzle-orm/pg-core';

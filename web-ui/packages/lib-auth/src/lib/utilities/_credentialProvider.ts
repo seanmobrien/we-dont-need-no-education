@@ -1,10 +1,9 @@
 import { OAuth2Client } from 'google-auth-library';
 import { ICredential, CredentialOptions } from './_types';
 import { env } from '@compliance-theater/env';
-import { UrlBuilder } from '../url-builder/_impl';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
-import { auth } from '@/auth';
+import { auth } from '../../auth';
 import {
   keycloakTokenExchange,
   TokenExchangeError,
@@ -96,7 +95,8 @@ const getGoogleAuthCredential = async (
     'userId' in ops && ops.userId
       ? await getTokensFromUser(ops.req, ops.userId)
       : await getTokensFromSession(ops.req);
-  const redirectUrl = new URL('/api/auth/callback/google', UrlBuilder.root);
+  const appUrl = env('NEXTAUTH_URL') || 'http://localhost:3000';
+  const redirectUrl = new URL('/api/auth/callback/google', appUrl);
   const ret = new OAuth2Client(
     env('AUTH_GOOGLE_ID'),
     env('AUTH_GOOGLE_SECRET'),

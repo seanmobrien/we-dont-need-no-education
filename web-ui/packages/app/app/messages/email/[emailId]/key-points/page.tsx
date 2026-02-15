@@ -1,4 +1,4 @@
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
 import Box from '@mui/material/Box';
 import KpiGrid from './grid';

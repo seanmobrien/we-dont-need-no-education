@@ -6,7 +6,7 @@ import Typography from '@mui/material/Typography';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import { useTheme } from '@mui/material/styles';
-import { useSession } from '@/components/auth/session-provider';
+import { useSession } from '@compliance-theater/auth/components/session-provider';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import EmailIcon from '@mui/icons-material/Email';

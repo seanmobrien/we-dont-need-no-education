@@ -19,7 +19,7 @@ import { SessionManager } from './session/session-manager';
 import { TraceContextManager } from './tracing/trace-context';
 import { SafetyUtils } from '@/lib/nextjs-util/safety-utils';
 import { MessageProcessor } from './message/message-processor';
-import { ImpersonationService } from '@/lib/auth/impersonation';
+import { ImpersonationService } from '@compliance-theater/auth/lib/impersonation';
 
 type InstrumentedSseTransportOptions = {
   url: string;

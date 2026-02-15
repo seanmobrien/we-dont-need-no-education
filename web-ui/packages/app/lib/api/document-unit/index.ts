@@ -16,7 +16,7 @@ import {
   StorageSharedKeyCredential,
 } from '@azure/storage-blob';
 import { env } from '@compliance-theater/env';
-import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
+import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file';
 import { pgDbWithInit } from '@compliance-theater/database/driver';
 
 /**

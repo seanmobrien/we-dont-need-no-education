@@ -10,11 +10,11 @@ import { got } from 'got';
 import { CookieJar } from 'tough-cookie';
 import { env } from '@compliance-theater/env';
 import { log, LoggedError } from '@compliance-theater/logger';
-import CryptoService from '@/lib/site-util/auth/crypto-service';
+import CryptoService from '../utilities/crypto-service';
 import type {
   ImpersonationService,
   UserContext,
-} from '@/lib/auth/impersonation/impersonation.types';
+} from './impersonation.types';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { SystemTokenStore } from './system-token-store';
 import type { Session, User } from '@auth/core/types';

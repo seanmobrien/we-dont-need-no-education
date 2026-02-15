@@ -1,7 +1,7 @@
 import type { JWT } from '@auth/core/jwt';
 import { env } from '@compliance-theater/env';
 import { fetch } from '@compliance-theater/nextjs/dynamic-fetch';
-import { InvalidGrantError } from '@/lib/auth/errors';
+import { InvalidGrantError } from './errors';
 
 /**
  * Refreshes the Keycloak access token using the refresh token.

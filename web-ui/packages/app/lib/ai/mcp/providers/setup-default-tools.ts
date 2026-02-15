@@ -36,7 +36,7 @@ import { NextRequest } from 'next/server';
 import {
   forAdmin,
   fromUserId as fromUser,
-} from '@/lib/auth/impersonation/impersonation-factory';
+} from '@compliance-theater/auth/lib/impersonation/impersonation-factory';
 import type { User } from '@auth/core/types';
 import { encode, getToken } from '@auth/core/jwt';
 import { getMem0EnabledFlag, getStreamingTransportFlag } from '../tool-flags';

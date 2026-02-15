@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Case file authorization middleware
+ * 
+ * NOTE: This module has a dependency on @/lib/api/document-unit/resolve-case-file-id
+ * which is application-specific. This should be refactored to accept a resolver function
+ * as a parameter rather than importing it directly.
+ */
 import { NextRequest, NextResponse } from 'next/server';
 import { checkCaseFileAccess, CaseFileScope } from './case-file-resource';
 import { getUserIdFromUnitId } from './case-file-helpers';

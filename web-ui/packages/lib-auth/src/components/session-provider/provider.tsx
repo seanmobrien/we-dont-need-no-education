@@ -18,17 +18,17 @@ import {
   isKeyValidationDue,
   performKeyValidationWorkflow,
   updateKeyValidationTimestamp,
-} from '@/lib/site-util/auth/key-validation';
+} from '../../lib/utilities/key-validation';
 import {
   getUserPublicKey,
   generateUserKeyPair,
   getUserPublicKeyForServer,
-} from '@/lib/site-util/auth/user-keys';
+} from '../../lib/utilities/user-keys';
 import { fetch } from '@compliance-theater/nextjs/fetch';
 import { Session } from '@auth/core/types';
 import { useNotifications } from '@toolpad/core';
 import { LoggedError } from '@compliance-theater/logger';
-import { InvalidGrantError } from '@/lib/auth/errors';
+import { InvalidGrantError } from '../../lib/errors';
 
 export const SessionContext = createContext<SessionContextType<object> | null>(
   null,

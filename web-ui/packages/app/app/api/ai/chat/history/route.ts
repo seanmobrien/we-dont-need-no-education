@@ -9,7 +9,7 @@ import {
 import type { PgColumn } from 'drizzle-orm/pg-core';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { SQL, lte, inArray } from 'drizzle-orm/sql';
-import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
+import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file';
 
 const NEVER_USE_USER_ID = -942370932 as const;
 

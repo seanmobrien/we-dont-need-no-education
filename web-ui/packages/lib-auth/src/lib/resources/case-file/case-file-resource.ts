@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 import { getRequestTokens } from '../../access-token';
 import { resourceService } from '../resource-service';
 import { authorizationService } from '../authorization-service';
-import { createSafeAsyncWrapper } from '@/lib/nextjs-util/safety-utils';
+import { createSafeAsyncWrapper } from '@compliance-theater/nextjs/server/utils';
 
 export interface CaseFileResource {
   _id: string;

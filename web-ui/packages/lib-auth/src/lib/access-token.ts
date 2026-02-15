@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
+import { auth } from '../../auth';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { log } from '@compliance-theater/logger';
 import type {

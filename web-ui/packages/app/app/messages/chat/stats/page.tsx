@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import { StatisticsOverview } from '@/components/statistics/statistics-overview';
 
 const StatisticsPage = async () => {

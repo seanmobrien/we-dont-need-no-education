@@ -6,7 +6,7 @@ import { EmailMessage } from '@/data-models/api/email-message';
 import { ContactSummary } from '@/data-models/api/contact';
 import { query } from '@compliance-theater/database/driver';
 import { log } from '@compliance-theater/logger';
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 /**
  * Request model for creating emails via the service
  */

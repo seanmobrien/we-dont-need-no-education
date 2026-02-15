@@ -1,4 +1,4 @@
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import type { User } from '@auth/core/types';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server';

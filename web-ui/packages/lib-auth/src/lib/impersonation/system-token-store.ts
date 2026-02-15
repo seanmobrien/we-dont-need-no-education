@@ -34,7 +34,7 @@ import { log, LoggedError } from '@compliance-theater/logger';
 import { got } from 'got';
 import { parse as parseHtml } from 'node-html-parser';
 import { createInstrumentedSpan } from '@compliance-theater/nextjs/server/utils';
-import { CryptoService } from '@/lib/site-util/auth/crypto-service';
+import { CryptoService } from '../utilities/crypto-service';
 import { getRedisClient } from '@compliance-theater/redis';
 import { env } from '@compliance-theater/env';
 import { SimpleRateLimiter } from '@compliance-theater/react/simple-rate-limiter';

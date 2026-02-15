@@ -1,4 +1,4 @@
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
 import EmailViewer from '@/components/email-message/email-viewer';
 import { extractParams } from '@compliance-theater/nextjs/server/utils';

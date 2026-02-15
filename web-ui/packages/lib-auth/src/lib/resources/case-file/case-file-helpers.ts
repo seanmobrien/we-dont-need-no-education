@@ -1,3 +1,10 @@
+/**
+ * @fileoverview Case file helper functions
+ * 
+ * NOTE: This module has a dependency on @/lib/api/document-unit/resolve-case-file-id
+ * which is application-specific. This should be refactored to accept a resolver function
+ * as a parameter rather than importing it directly.
+ */
 import { resolveCaseFileId } from '@/lib/api/document-unit/resolve-case-file-id';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { log, LoggedError } from '@compliance-theater/logger';

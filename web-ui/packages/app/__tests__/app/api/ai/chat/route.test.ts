@@ -3,7 +3,7 @@
  */
 import { POST } from '@/app/api/ai/chat/route';
 import { NextRequest } from 'next/server';
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import { streamText } from 'ai';
 
 // Mock dependencies

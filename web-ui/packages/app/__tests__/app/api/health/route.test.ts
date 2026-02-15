@@ -29,11 +29,11 @@ jest.mock('@/lib/ai/mcp/providers', () => ({
     [Symbol.dispose]: jest.fn(),
   }),
 }));
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 import { GET } from '@/app/api/health/route';
 import { NextRequest } from 'next/server';
-import { fromUserId } from '@/lib/auth/impersonation/impersonation-factory';
+import { fromUserId } from '@compliance-theater/auth/lib/impersonation/impersonation-factory';
 
 // Mock the memory client factory
 jest.mock('@/lib/ai/mem0/memoryclient-factory', () => ({

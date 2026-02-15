@@ -1,4 +1,4 @@
-import type { ImpersonationService } from '@/lib/auth/impersonation';
+import type { ImpersonationService } from '@compliance-theater/auth/lib/impersonation';
 
 // Mock ImpersonationService implementation
 export const mockImpersonationServiceFactory = (): ImpersonationService => {

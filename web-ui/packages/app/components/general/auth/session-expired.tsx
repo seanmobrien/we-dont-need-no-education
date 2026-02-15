@@ -8,7 +8,7 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import DialogContentText from '@mui/material/DialogContentText';
-import { useSession } from '@/components/auth/session-provider';
+import { useSession } from '@compliance-theater/auth/components/session-provider';
 import { signIn } from 'next-auth/react'; // only needed if you're using next-auth v4-style login helpers
 import { useTheme } from '@mui/material/styles';
 

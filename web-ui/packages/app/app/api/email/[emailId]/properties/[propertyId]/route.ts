@@ -9,7 +9,7 @@ import { extractParams } from '@compliance-theater/nextjs/server/utils';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,
-} from '@/lib/auth/resources/case-file';
+} from '@compliance-theater/auth/lib/resources/case-file';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 export const dynamic = 'force-dynamic';

@@ -21,7 +21,7 @@ import {
 } from '@/lib/ai/middleware/chat-history';
 import { LoggedError, log } from '@compliance-theater/logger';
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import { generateTextWithRetry } from '@/lib/ai/core/generate-text-with-retry';
 
 type InitializeProps = { req: NextRequest };

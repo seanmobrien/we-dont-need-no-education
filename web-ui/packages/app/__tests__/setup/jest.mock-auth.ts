@@ -39,4 +39,4 @@ jest.mock('@/auth', () => {
 // import modules to pin the mocks above
 import { getToken } from '@auth/core/jwt';
 import NextAuth from 'next-auth';
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';

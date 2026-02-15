@@ -10,7 +10,7 @@ import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,
-} from '@/lib/auth/resources/case-file';
+} from '@compliance-theater/auth/lib/resources/case-file';
 import {
   DrizzleSelectQuery,
   buildDrizzleAttachmentOrEmailFilter,
