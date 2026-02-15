@@ -1,4 +1,5 @@
 import { createStartupAccessors } from '@compliance-theater/after';
+import { configureAppStartupAccessor } from '@compliance-theater/nextjs/server/app-startup-accessor';
 
 /**
  * Application-specific startup configuration.
@@ -12,6 +13,7 @@ const { startup, state } = createStartupAccessors({
   ],
   singletonKey: '@noeducation/site-util/appstartup',
 });
+configureAppStartupAccessor(startup);
 
 /**
  * Performs any necessary startup initialization.

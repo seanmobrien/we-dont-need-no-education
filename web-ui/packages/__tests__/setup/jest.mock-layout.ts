@@ -1,4 +1,7 @@
-const originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+const hasDomElement = typeof Element !== 'undefined';
+const originalGetBoundingClientRect = hasDomElement
+  ? Element.prototype.getBoundingClientRect
+  : undefined;
 
 const isZeroRect = (rect: DOMRect | DOMRectReadOnly) =>
   rect.width === 0 &&
@@ -8,7 +11,7 @@ const isZeroRect = (rect: DOMRect | DOMRectReadOnly) =>
   rect.bottom === 0 &&
   rect.right === 0;
 
-if (typeof window !== 'undefined' && typeof Element !== 'undefined') {
+if (typeof window !== 'undefined' && hasDomElement && originalGetBoundingClientRect) {
   Object.defineProperty(Element.prototype, 'getBoundingClientRect', {
     configurable: true,
     value: function mockLayoutAwareRect(this: Element) {
@@ -35,5 +38,7 @@ if (typeof window !== 'undefined' && typeof Element !== 'undefined') {
 }
 
 afterAll(() => {
-  Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+  if (hasDomElement && originalGetBoundingClientRect) {
+    Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+  }
 });

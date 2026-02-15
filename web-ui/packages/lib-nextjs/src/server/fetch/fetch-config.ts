@@ -173,16 +173,16 @@ class FetchConfigManager {
       this.#models_fetch_stream_buffer.value ??
       AllFeatureFlagsDefault.models_fetch_stream_buffer;
     const enhancedConfig = this.#models_fetch_enhanced.value;
+    const effectiveEnhancedConfig =
+      enhancedConfig ?? AllFeatureFlagsDefault.models_fetch_enhanced;
     return {
       fetch_concurrency: this.#models_fetch_concurrency.value,
       stream_enabled: !!streamBuffer,
       fetch_stream_buffer_max: streamBuffer?.max ?? 0,
       fetch_stream_detect_buffer: streamBuffer?.detect ?? false,
       fetch_cache_ttl: this.#fetch_cache_ttl.value,
-      enhanced: !!enhancedConfig,
-      timeout: enhancedConfig
-        ? enhancedConfig.timeout
-        : AllFeatureFlagsDefault.models_fetch_enhanced.timeout,
+      enhanced: !!effectiveEnhancedConfig,
+      timeout: effectiveEnhancedConfig.timeout,
       trace_level: this.#models_fetch_trace_level.value,
       fetch_stream_max_chunks: this.#fetch_stream_max_chunks.value,
       fetch_stream_max_total_bytes: this.#fetch_stream_max_total_bytes.value,

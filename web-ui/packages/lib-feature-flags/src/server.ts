@@ -1,5 +1,4 @@
 import { Flags, Flagsmith, FlagsmithConfig } from 'flagsmith-nodejs';
-import { auth } from '@/auth';
 import type {
   NativeFlag,
   KnownFeatureValueType,
@@ -140,11 +139,7 @@ const identify = async ({
 }): Promise<Flags> => {
   try {
     if (!userId) {
-      const session = await auth();
-      userId = session?.user?.hash ?? session?.user?.id?.toString();
-      if (!userId) {
-        userId = 'server';
-      }
+      userId = 'server';
     }
     const flagsmith = (flagsmithFactory ?? flagsmithServer)();
     if (flagsmith) {
