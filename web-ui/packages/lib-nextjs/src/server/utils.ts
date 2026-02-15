@@ -1,8 +1,6 @@
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@compliance-theater/env';
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
-// TODO: Refactor to remove dependency on app-specific startup logic
-// import { startup } from '@/lib/site-util/app-startup';
 import type { NextRequest, NextResponse } from 'next/server';
 import {
   SpanKind,

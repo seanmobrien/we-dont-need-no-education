@@ -1073,6 +1073,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@compliance-theater/nextjs@workspace:packages/lib-nextjs"
   dependencies:
+    "@compliance-theater/after": "workspace:*"
     "@compliance-theater/env": "workspace:*"
     "@compliance-theater/logger": "workspace:*"
     "@compliance-theater/redis": "workspace:*"

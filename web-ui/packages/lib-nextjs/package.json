@@ -73,6 +73,7 @@
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
+    "@compliance-theater/after": "workspace:*",
     "@compliance-theater/env": "workspace:*",
     "@compliance-theater/logger": "workspace:*",
     "@compliance-theater/redis": "workspace:*",

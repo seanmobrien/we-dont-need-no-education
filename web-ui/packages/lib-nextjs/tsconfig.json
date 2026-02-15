@@ -27,6 +27,7 @@
     { "path": "../lib-logger" },
     { "path": "../lib-env" },
     { "path": "../lib-typescript" },
-    { "path": "../lib-redis" }
+    { "path": "../lib-redis" },
+    { "path": "../lib-after" }
   ]
 }
