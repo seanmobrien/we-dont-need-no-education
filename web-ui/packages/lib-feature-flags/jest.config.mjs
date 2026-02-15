@@ -15,6 +15,7 @@ const config = {
     '^@compliance-theater/env(.*)$': '<rootDir>/../lib-env/src$1',
     '^@compliance-theater/typescript(.*)$': '<rootDir>/../lib-typescript/src$1',
     '^@compliance-theater/redis(.*)$': '<rootDir>/../lib-redis/src$1',
+    '^@/(.*)$': '<rootDir>/../app/$1',
   },
 };
 

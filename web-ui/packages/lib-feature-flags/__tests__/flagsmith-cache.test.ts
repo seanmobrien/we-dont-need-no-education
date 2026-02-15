@@ -1,8 +1,8 @@
-import { FlagsmithRedisCache } from '@compliance-theater/feature-flags/flagsmith-cache';
+import { FlagsmithRedisCache } from '../src/flagsmith-cache';
 import { getRedisClient } from '@compliance-theater/redis';
 import { Flags } from 'flagsmith-nodejs';
 import type { RedisClientType } from 'redis';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from './test-utils';
 
 const defaultFlagsOptions = { flags: {}, traits: {} };
 
