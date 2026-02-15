@@ -59,69 +59,31 @@ jobs:
         run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
         shell: bash
         working-directory: ./web-ui
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '25.x'
-          check-latest: true
-          always-auth: true
 
       - name: Enable Corepack and Yarn 4.12.0
         run: |
           corepack enable
           corepack prepare yarn@4.12.0 --activate
         shell: bash
-
-      # - name: Set yarn config
-      #   run: |
-      #     if [ -n "${FOLIO_NPM_REGISTRY:-}" ]; then
-      #       yarn config set @folio:registry "$FOLIO_NPM_REGISTRY"
-      #     fi
-      #   shell: bash
-      #   working-directory: ./web-ui
-
-      # - name: Set FOLIO NPM snapshot version
-      #   working-directory: ./web-ui
-      #   run: |
-      #     git clone https://github.com/folio-org/folio-tools.git
-      #     NEW_VERSION="$(folio-tools/github-actions-scripts/folioci_npmver.sh)"
-      #     export NEW_VERSION
-      #     node -e "const fs=require('fs'); const path=require('path'); const root=process.cwd(); const version=process.env.NEW_VERSION; const targets=[path.join(root,'package.json')]; const packagesDir=path.join(root,'packages'); if (fs.existsSync(packagesDir)) { for (const entry of fs.readdirSync(packagesDir)) { const file=path.join(packagesDir, entry, 'package.json'); if (fs.existsSync(file)) targets.push(file); } } for (const file of targets) { const data=JSON.parse(fs.readFileSync(file,'utf8')); data.version=version; fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n'); }"
-      #     rm -rf folio-tools
-      #   env:
-      #     JOB_ID: ${{ github.run_number }}
-      #   shell: bash
+        working-directory: ./web-ui
 
       - name: Run yarn install
         working-directory: ./web-ui
         run: |
           set -euo pipefail
-          # If this runner is using Yarn v1, use legacy flags. Otherwise use Yarn 4+ flags.
-          YV=$(yarn -v 2>/dev/null || true)
-          if printf "%s" "$YV" | grep -qE '^1\.'; then
-            yarn install --ignore-scripts --frozen-lockfile
-          else
-            corepack enable || true
-            corepack prepare yarn@4.12.0 --activate || true
-            yarn install --immutable
-          fi
+          node .yarn/releases/yarn-4.12.0.cjs install --immutable
         shell: bash
-
-      # - name: Run yarn list
-      #   working-directory: ./web-ui
-      #   run: yarn list --pattern @folio
-      #   shell: bash
 
       # NOTE: Turbo lint tool depends on typescript build, so this will do both lint and typescript validation.
       - name: Run typescript compile and yarn lint
         working-directory: ./web-ui
-        run: yarn lint
+        run: node .yarn/releases/yarn-4.12.0.cjs lint
         # continue-on-error: true
         shell: bash
 
       - name: Run yarn test
         working-directory: ./web-ui
-        run: xvfb-run --server-args="-screen 0 1024x768x24" yarn test $YARN_TEST_OPTIONS
+        run: xvfb-run --server-args="-screen 0 1024x768x24" node .yarn/releases/yarn-4.12.0.cjs test $YARN_TEST_OPTIONS
         shell: bash      
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     # - name: Update dependency graph
