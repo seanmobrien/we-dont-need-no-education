@@ -30,7 +30,7 @@
  *  the guard so unauthorized requests still receive only `{ ok: false }`.
  */
 import { drizDbWithInit } from '@compliance-theater/database/orm';
-import { isUserAuthorized } from '@/lib/site-util/auth';
+import { isUserAuthorized } from '@compliance-theater/auth/lib/utilities';
 
 /**
  * Fetch chat metadata (currently title) if the requesting user owns the chat.

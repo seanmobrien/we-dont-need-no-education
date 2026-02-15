@@ -119,6 +119,29 @@ function transformMemoryResponse(
   };
 }
 
+const withTimeoutFallback = async <TResult>(
+  work: Promise<TResult>,
+  timeoutMs: number,
+  fallbackFactory: () => TResult,
+): Promise<TResult> => {
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<TResult>((resolve) => {
+    timeoutHandle = setTimeout(() => resolve(fallbackFactory()), timeoutMs);
+    if (typeof timeoutHandle === 'object' && timeoutHandle !== null) {
+      const maybeHandle = timeoutHandle as { unref?: () => void };
+      maybeHandle.unref?.();
+    }
+  });
+
+  try {
+    return await Promise.race([work, timeoutPromise]);
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }
+};
+
 /**
  * Checks memory system health by calling the Mem0 health check endpoint
  * Returns granular subsystem health information
@@ -215,70 +238,62 @@ async function checkMemoryHealth(): Promise<MemoryHealthCheckResponse> {
  */
 export const GET = wrapRouteRequest(async () => {
   // Get memory health asynchronously with timeout; checkMemoryHealth caches raw mem0 response
-  const memoryHealth = await Promise.race([
+  const memoryHealth = await withTimeoutFallback(
     checkMemoryHealth(),
-    new Promise<MemoryHealthCheckResponse>((resolve) =>
-      setTimeout(
-        () =>
-          resolve({
-            status: 'error',
-            message: 'timeout',
-            timestamp: new Date().toISOString(),
-            service: 'mem0',
-            mem0: {
-              version: '0',
-              build_type: 'unknown',
-              build_info: '',
-              verbose: {
-                mem0_version: '0',
-                build_details: { type: '', info: '', path: '' },
-                build_stamp: '',
-              },
-            },
-            details: {
-              client_active: false,
-              system_db_available: false,
-              vector_enabled: false,
-              vector_store_available: false,
-              graph_enabled: false,
-              graph_store_available: false,
-              history_store_available: false,
-              auth_service: {
-                healthy: false,
-                enabled: false,
-                server_url: '',
-                realm: '',
-                client_id: '',
-                auth_url: '',
-                token_url: '',
-                jwks_url: '',
-              },
-              errors: [],
-            },
-          }),
-        15000,
-      ),
-    ),
-  ]);
+    15000,
+    () => ({
+      status: 'error',
+      message: 'timeout',
+      timestamp: new Date().toISOString(),
+      service: 'mem0',
+      mem0: {
+        version: '0',
+        build_type: 'unknown',
+        build_info: '',
+        verbose: {
+          mem0_version: '0',
+          build_details: { type: '', info: '', path: '' },
+          build_stamp: '',
+        },
+      },
+      details: {
+        client_active: false,
+        system_db_available: false,
+        vector_enabled: false,
+        vector_store_available: false,
+        graph_enabled: false,
+        graph_store_available: false,
+        history_store_available: false,
+        auth_service: {
+          healthy: false,
+          enabled: false,
+          server_url: '',
+          realm: '',
+          client_id: '',
+          auth_url: '',
+          token_url: '',
+          jwks_url: '',
+        },
+        errors: [],
+      },
+    }),
+  );
 
   const databaseStatus = await checkDatabaseHealth();
 
-  const chatHealth = await Promise.race([
+  const chatTimeoutFallback: HealthCheckStatusEntry<'cache' | 'queue' | 'tools'>
+    = {
+      status: 'error',
+      tools: { status: 'error' },
+      cache: { status: 'error' },
+      queue: { status: 'error' },
+    };
+
+  const chatHealth = await withTimeoutFallback(
     checkChatHealth(),
-    new Promise<HealthCheckStatusEntry<'cache' | 'queue' | 'tools'>>(
-      (resolve) =>
-        setTimeout(
-          () =>
-            resolve({
-              status: 'error',
-              tools: { status: 'error' },
-              cache: { status: 'error' },
-              queue: { status: 'error' },
-            }),
-          180 * 1000,
-        ),
-    ),
-  ]);
+    180 * 1000,
+    () => chatTimeoutFallback,
+  );
 
   const healthCheckResponse: HealthCheckResponse = {
     server: env('NEXT_PUBLIC_HOSTNAME') ?? 'unknown',
