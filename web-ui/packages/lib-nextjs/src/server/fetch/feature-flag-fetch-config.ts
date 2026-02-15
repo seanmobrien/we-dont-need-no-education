@@ -27,7 +27,7 @@ let fetchConfigFlagsmith: MinimalNodeFlagsmith | undefined = undefined;
  * @internal
  */
 const fetchConfigFlagsmithFactory = (): MinimalNodeFlagsmith => {
-  // If a fetchmanager-specific server already exists, reuse it
+  // If a fetch manager-specific server already exists, reuse it
   if (fetchConfigFlagsmith) {
     return fetchConfigFlagsmith;
   }
