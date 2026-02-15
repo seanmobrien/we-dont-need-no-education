@@ -45,6 +45,9 @@
     },
     {
       "path": "../lib-after"
+    },
+    {
+      "path": "../lib-feature-flags"
     }
   ]
 }

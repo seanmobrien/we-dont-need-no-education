@@ -69,7 +69,7 @@ const DEFAULT_CONFIG: FetchManagerConfig = {
   streamDetectBuffer: DEFAULT_STREAM_DETECT_BUFFER,
   streamBufferMax: DEFAULT_STREAM_BUFFER_MAX,
   maxResponseSize: DEFAULT_MAX_RESPONSE_SIZE,
-  timeout: DEFAULT_ENHANCED_FETCH_CONFIG.timeout,
+  timeout: AllFeatureFlagsDefault.models_fetch_enhanced.timeout,
 };
 
 const mergeHeaders = (

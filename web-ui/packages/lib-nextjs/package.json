@@ -75,6 +75,7 @@
   "dependencies": {
     "@compliance-theater/after": "workspace:*",
     "@compliance-theater/env": "workspace:*",
+    "@compliance-theater/feature-flags": "workspace:*",
     "@compliance-theater/logger": "workspace:*",
     "@compliance-theater/redis": "workspace:*",
     "@compliance-theater/typescript": "workspace:*",
