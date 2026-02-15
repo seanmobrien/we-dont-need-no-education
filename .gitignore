@@ -56,6 +56,8 @@ next-env.d.ts
 
 # TypeScript compilation outputs (exclude from source directories)
 # Ignore .js, .jsx, and .map files in main source directories where we have .ts/.tsx files
+# Note: Generated .d.ts files should not be in source directories. 
+# Configure TypeScript with "declarationDir" to output them to dist/ instead.
 web-ui/packages/app/**/*.js
 web-ui/packages/app/**/*.js.map
 web-ui/packages/app/**/*.jsx.map
