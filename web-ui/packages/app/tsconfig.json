@@ -9,6 +9,12 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "next": [
+        "../../node_modules/next"
+      ],
+      "next/*": [
+        "../../node_modules/next/*"
       ]
     },
     // Explicit types prevent accidental inclusion of @types packages (for
@@ -19,11 +25,6 @@
       "node",
       "jest"
     ],
-    // Look for ambient types in both local and repo-level node_modules.
-    "typeRoots": [
-      "./node_modules/@types",
-      "../../node_modules/@types"
-    ]
   },
   "include": [
     "**/*.d.ts",
@@ -39,5 +40,37 @@
     "**/.upstream/**/*.*",
     "submodules/**/*.*",
     ".next"
+  ],
+  "references": [
+    {
+      "path": "../lib-logger"
+    },
+    {
+      "path": "../lib-env"
+    },
+    {
+      "path": "../lib-typescript"
+    },
+    {
+      "path": "../lib-redis"
+    },
+    {
+      "path": "../lib-after"
+    },
+    {
+      "path": "../lib-database"
+    },
+    {
+      "path": "../lib-nextjs"
+    },
+    {
+      "path": "../lib-react"
+    },
+    {
+      "path": "../lib-send-api-request"
+    },
+    {
+      "path": "../lib-themes"
+    }
   ]
 }

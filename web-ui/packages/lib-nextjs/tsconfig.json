@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../tsconfig.next.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
@@ -7,7 +7,14 @@
     "declaration": true,
     "declarationMap": true,
     "baseUrl": ".",
-    "paths": {},
+    "paths": {
+      "next": [
+        "../../node_modules/next"
+      ],
+      "next/*": [
+        "../../node_modules/next/*"
+      ]
+    },
     "types": [
       "node",
       "jest"
@@ -24,10 +31,20 @@
     "dist"
   ],
   "references": [
-    { "path": "../lib-logger" },
-    { "path": "../lib-env" },
-    { "path": "../lib-typescript" },
-    { "path": "../lib-redis" },
-    { "path": "../lib-after" }
+    {
+      "path": "../lib-logger"
+    },
+    {
+      "path": "../lib-env"
+    },
+    {
+      "path": "../lib-typescript"
+    },
+    {
+      "path": "../lib-redis"
+    },
+    {
+      "path": "../lib-after"
+    }
   ]
 }
