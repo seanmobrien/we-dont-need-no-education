@@ -31,7 +31,7 @@
   },
   "scripts": {
     "build": "yarn workspace @compliance-theater/typescript run build:typescript",
-    "build:publish": "yarn workspace @compliance-theater/typescript run build:clean && yarn workspace @compliance-theater/typescript run build && yarn workspace @compliance-theater/typescript pack --out ./dist/@compliance-theater-typescript.tgz",
+    "build:publish": "yarn workspace @compliance-theater/typescript run build && yarn workspace @compliance-theater/typescript pack --out ./dist/@compliance-theater-typescript.tgz",
     "build:typescript": "echo 'Building lib/typescript typescript...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/typescript.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/typescript.\u001b[0m\n' >&2; exit 1)",
     "test": "jest",
     "lint": "echo 'Linting lib-typescript...'",

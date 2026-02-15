@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { auth } from '@/auth';
 import { drizDb, schema } from '@compliance-theater/database/orm';
 import { log, LoggedError } from '@compliance-theater/logger';

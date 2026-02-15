@@ -1,4 +1,4 @@
-import { wrapRouteRequest } from '@/lib/nextjs-util/server';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server';
 import { onOutputGenerated } from '@/lib/ai/middleware/memory-middleware/direct-access/output-generated';
 import { memoryClientFactory } from '@/lib/ai/mem0';
 import { fromRequest } from '@/lib/auth/impersonation/impersonation-factory';

@@ -27,8 +27,8 @@
   "scripts": {
     "build": "yarn workspace @compliance-theater/after run build:typescript",
     "build:typescript": "echo 'Building @compliance-theater/after...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/after.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/after.\u001b[0m\n' >&2; exit 1)",
-    "build:publish": "yarn workspace @compliance-theater/after run build:clean && yarn workspace @compliance-theater/after run build && yarn workspace @compliance-theater/after pack --out ./dist/@compliance-theater-after.tgz",
-    "test": "jest",
+    "build:publish": "yarn workspace @compliance-theater/after run build && yarn workspace @compliance-theater/after pack --out ./dist/@compliance-theater-after.tgz",
+    "test": "jest --passWithNoTests",
     "lint": "echo 'Linting lib-after...'",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },

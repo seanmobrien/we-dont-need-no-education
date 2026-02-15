@@ -1,0 +1,53 @@
+{
+  "extends": "../../tsconfig.next.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "next": [
+        "../../node_modules/next"
+      ],
+      "next/*": [
+        "../../node_modules/next/*"
+      ]
+    },
+    "types": [
+      "node",
+      "jest"
+    ],
+    "noEmit": false
+  },
+  "include": [
+    "src/**/*.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
+  "references": [
+    {
+      "path": "../lib-logger"
+    },
+    {
+      "path": "../lib-env"
+    },
+    {
+      "path": "../lib-typescript"
+    },
+    {
+      "path": "../lib-redis"
+    },
+    {
+      "path": "../lib-after"
+    },
+    {
+      "path": "../lib-feature-flags"
+    }
+  ]
+}

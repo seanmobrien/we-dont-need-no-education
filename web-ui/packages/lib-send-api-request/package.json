@@ -26,7 +26,7 @@
   ],
   "scripts": {
     "build": "yarn workspace @compliance-theater/send-api-request run build:typescript",
-    "build:publish": "yarn workspace @compliance-theater/send-api-request run build:clean && yarn workspace @compliance-theater/send-api-request run build && yarn workspace @compliance-theater/send-api-request pack --out ./dist/@compliance-theater-send-api-request.tgz",
+    "build:publish": "yarn workspace @compliance-theater/send-api-request run build && yarn workspace @compliance-theater/send-api-request pack --out ./dist/@compliance-theater-send-api-request.tgz",
     "build:typescript": "echo 'Building lib/send-api-request...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/send-api-request.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/send-api-request.\u001b[0m\n' >&2; exit 1)",
     "test": "jest",
     "lint": "echo 'Linting lib-send-api-request...'",

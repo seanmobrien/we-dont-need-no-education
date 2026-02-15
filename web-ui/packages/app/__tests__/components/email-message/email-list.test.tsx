@@ -7,7 +7,7 @@ import {
 } from '@/__tests__/test-utils';
 import EmailList from '@/components/email-message/list';
 import { mockEmailSummary } from '../email.mock-data';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 const TIMEOUT = 30000;
 
 // Mock the router

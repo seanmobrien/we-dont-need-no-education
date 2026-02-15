@@ -11,7 +11,7 @@
     "debug": "turbo run debug",
     "build": "turbo run build",
     "build:typescript": "turbo run build:typescript",
-    "build:publish": "yarn install --immutable && turbo run build:publish",
+    "build:publish": "yarn workspace compliance-theater install --immutable && turbo run build:publish",
     "build:clean": "turbo run build:clean",
     "test": "turbo run test --force",
     "test:fast": "turbo run test",

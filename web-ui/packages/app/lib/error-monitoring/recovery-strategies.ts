@@ -4,7 +4,7 @@
  */
 
 import { log } from '@compliance-theater/logger';
-import { clientNavigateSignIn, clientReload } from '../nextjs-util';
+import { clientNavigateSignIn, clientReload } from '@compliance-theater/nextjs';
 import { isRunningOnEdge } from '@compliance-theater/env';
 
 /**

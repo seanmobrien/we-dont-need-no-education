@@ -1,6 +1,6 @@
 import { refreshAccessToken } from '@/lib/auth/refresh-token';
 import { JWT } from 'next-auth/jwt';
-import { fetch } from '@/lib/nextjs-util/dynamic-fetch';
+import { fetch } from '@compliance-theater/nextjs/dynamic-fetch';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 const DefaultTokenValues: JWT = {

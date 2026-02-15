@@ -11,7 +11,7 @@ import type { DataSourceProps, ExtendedGridDataSource } from './types';
 import { isTruthy } from '@compliance-theater/react/utility-methods';
 import { isError, LoggedError, log } from '@compliance-theater/logger';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 import {
   useQuery,
   useMutation,

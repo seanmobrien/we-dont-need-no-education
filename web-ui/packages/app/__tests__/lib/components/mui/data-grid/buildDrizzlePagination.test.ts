@@ -25,8 +25,8 @@ jest.mock('@/lib/components/mui/data-grid/queryHelpers/utility', () => {
   };
 });
 
-jest.mock('@/lib/nextjs-util/utils', () => {
-  const nextJsUtils = jest.requireActual('/lib/nextjs-util/utils');
+jest.mock('@compliance-theater/nextjs/utils', () => {
+  const nextJsUtils = jest.requireActual('@compliance-theater/nextjs/utils');
    
   const deprecate = <T extends (...args: any[]) => any>(fn: T) => {
     const deprecatedFn = function (

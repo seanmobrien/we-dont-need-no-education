@@ -67,7 +67,7 @@
   "scripts": {
     "build": "yarn workspace @compliance-theater/feature-flags run build:typescript",
     "build:typescript": "echo 'Building lib/feature-flags typescript...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/feature-flags.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/feature-flags.\u001b[0m\n' >&2; exit 1)",
-    "build:publish": "yarn workspace @compliance-theater/feature-flags run build:clean && yarn workspace @compliance-theater/feature-flags run build && yarn workspace @compliance-theater/feature-flags pack --out ./dist/@compliance-theater-feature-flags.tgz",
+    "build:publish": "yarn workspace @compliance-theater/feature-flags run build && yarn workspace @compliance-theater/feature-flags pack --out ./dist/@compliance-theater-feature-flags.tgz",
     "test": "jest",
     "lint": "echo 'Linting lib-feature-flags...'",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
@@ -82,9 +82,13 @@
     "fast-deep-equal": "^3.1.3",
     "flagsmith": "^9.3.2",
     "flagsmith-nodejs": "^6.2.0",
-    "lru-cache": "^11.0.2"
+    "lru-cache": "^11.0.2",
+    "next": "15.5.10",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.1.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.0.0",
@@ -95,6 +99,7 @@
   },
   "peerDependencies": {
     "@auth/core": "^0.41.0",
+    "next": "^15.5.10",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   }

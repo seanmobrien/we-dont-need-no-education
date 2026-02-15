@@ -21,8 +21,7 @@
     "dev": "cross-env WORKSPACE_SOURCE_IMPORTS='1' next dev",
     "build": "yarn workspace @compliance-theater/app run build:typescript",
     "build:typescript": "echo 'Building Web Application...' && cross-env NODE_OPTIONS='--max-old-space-size=4096' WORKSPACE_SOURCE_IMPORTS='1' tsc -p tsconfig.json --noEmit && printf '\u001b[1;32mBuild complete: Web Application.\u001b[0m\n' || (printf '\u001b[31mBuild failed: Web Application.\u001b[0m\n' >&2; exit 1)",
-    "build:publish": "yarn workspace @compliance-theater/app run build:clean && yarn workspace @compliance-theater/app run build:publish:next-build",
-    "build:publish:next-build": "cross-env NODE_OPTIONS='--max-old-space-size=4096' WORKSPACE_SOURCE_IMPORTS='0' next build",
+    "build:publish": "cross-env NODE_OPTIONS='--max-old-space-size=4096' WORKSPACE_SOURCE_IMPORTS='0' next build",
     "build:debug": "cross-env NODE_OPTIONS='--max-old-space-size=4096' WORKSPACE_SOURCE_IMPORTS='1' next build --profile --debug",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo",
     "debug": "cross-env NODE_OPTIONS='--inspect' WORKSPACE_SOURCE_IMPORTS='1' next dev",
@@ -61,6 +60,7 @@
     "@compliance-theater/env": "workspace:*",
     "@compliance-theater/feature-flags": "workspace:*",
     "@compliance-theater/logger": "workspace:*",
+    "@compliance-theater/nextjs": "workspace:*",
     "@compliance-theater/react": "workspace:*",
     "@compliance-theater/redis": "workspace:*",
     "@compliance-theater/send-api-request": "workspace:*",
@@ -206,6 +206,8 @@
     }
   },
   "resolutions": {
-    "jsx-ast-utils": "^4.4.2"
+    "jsx-ast-utils": "^4.4.2",
+    "lodash-es@npm:^4.17.21": "npm:4.17.22",
+    "@esbuild-kit/core-utils/esbuild": "0.25.0"
   }
 }

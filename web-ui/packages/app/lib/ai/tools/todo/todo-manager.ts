@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { Session } from '@auth/core/types';
 import { log, logEvent } from '@compliance-theater/logger';
-import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
 import { ApiRequestError } from '@compliance-theater/send-api-request';
 import {
   globalRequiredSingletonAsync,

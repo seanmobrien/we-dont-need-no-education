@@ -2,9 +2,9 @@ import { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 
-import { extractParams } from '@/lib/nextjs-util/server/utils';
+import { extractParams } from '@compliance-theater/nextjs/server/utils';
 import { CallToActionResponseDetails } from '@/data-models/api/email-properties/extended-properties';
 import { eq, and, sql } from 'drizzle-orm';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
@@ -20,7 +20,7 @@ import {
 import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
 import { DefaultEmailColumnMap } from '@/lib/components/mui/data-grid/server';
 import { PgColumn } from 'drizzle-orm/pg-core';
-import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 const columnMap = {
   ...DefaultEmailColumnMap,

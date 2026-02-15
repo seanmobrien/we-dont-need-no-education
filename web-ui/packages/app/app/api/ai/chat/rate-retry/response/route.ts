@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { auth } from '@/auth';
 import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
 import { LoggedError, log } from '@compliance-theater/logger';
-import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
 // import { authOptions } from '@/auth';
 
 export const dynamic = 'force-dynamic';

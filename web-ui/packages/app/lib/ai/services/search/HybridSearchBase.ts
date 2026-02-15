@@ -8,7 +8,7 @@ import type {
   AiSearchResultEnvelope,
 } from './types';
 import { LoggedError, log, logEvent } from '@compliance-theater/logger';
-import { fetch } from '@/lib/nextjs-util/server/fetch';
+import { fetch } from '@compliance-theater/nextjs/server/fetch';
 import { performance } from 'perf_hooks';
 
 type SearchMeta = {

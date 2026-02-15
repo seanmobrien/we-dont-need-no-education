@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { fetch } from '@/lib/nextjs-util/server/fetch';
+import { fetch } from '@compliance-theater/nextjs/server/fetch';
 import {
   AllUsers,
   ProjectOptions,
@@ -23,7 +23,7 @@ import { env } from '@compliance-theater/env';
 import {
   createInstrumentedSpan,
   reportEvent,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 import type { Span } from '@opentelemetry/api';
 import { ProcessedMemoryAdd } from './types';
 

@@ -13,7 +13,7 @@ import {
   resolveCaseFileId as resolveCaseFileIdImpl,
   resolveCaseFileIdBatch as resolveCaseFileIdBatchImpl,
 } from '@/lib/api/document-unit/resolve-case-file-id';
-import { deprecate } from '@/lib/nextjs-util';
+import { deprecate } from '@compliance-theater/nextjs';
 
 interface ToolCallbackResultOverloads {
   <T>(result: T): ToolCallbackResult<T>;

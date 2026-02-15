@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@compliance-theater/database/driver';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { globalContactCache } from '@/data-models/api';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 
 const mapRecordToSummary = (
   record: Record<string, unknown>,

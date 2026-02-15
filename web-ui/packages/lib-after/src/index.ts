@@ -1,6 +1,16 @@
 import { log, LoggedError } from '@compliance-theater/logger';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 
+// Re-export AppStartup functionality
+export {
+  AppStartup,
+  createStartupAccessors,
+  type AppStartupState,
+  type AppStartupConfig,
+  type InitializerFunction,
+  type TeardownFunction,
+} from './app-startup';
+
 /**
  * Handler invoked by AfterManager queued operations.
  * The handler returns a promise which resolves when the cleanup work is complete.

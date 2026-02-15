@@ -16,7 +16,7 @@ import {
   QueryClientProvider,
   useQueryClient,
 } from '@tanstack/react-query';
-import { fetch } from '@/lib/nextjs-util';
+import { fetch } from '@compliance-theater/nextjs';
 
 // Load the real hooks inside isolated modules after unmocking the global mock
 const loadHooks = () => {

@@ -13,7 +13,7 @@ setupImpersonationMock();
 
 // Mock fetch module BEFORE importing SUTs so the implementation is captured.
 const fetchMock = jest.fn();
-jest.mock('@/lib/nextjs-util/server/fetch', () => ({
+jest.mock('@compliance-theater/nextjs/server/fetch', () => ({
   fetch: (...args: unknown[]) => fetchMock(...args),
 }));
 

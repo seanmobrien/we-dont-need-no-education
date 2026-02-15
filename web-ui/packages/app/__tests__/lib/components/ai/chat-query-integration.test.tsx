@@ -6,7 +6,7 @@ import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import React from 'react';
 import { renderHook } from '@/__tests__/test-utils';
 import { useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 
 // Polyfill ReadableStream for Node.js test environment
 if (!globalThis.ReadableStream) {

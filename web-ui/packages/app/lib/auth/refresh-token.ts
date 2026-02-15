@@ -1,6 +1,6 @@
 import type { JWT } from '@auth/core/jwt';
 import { env } from '@compliance-theater/env';
-import { fetch } from '@/lib/nextjs-util/dynamic-fetch';
+import { fetch } from '@compliance-theater/nextjs/dynamic-fetch';
 import { InvalidGrantError } from '@/lib/auth/errors';
 
 /**

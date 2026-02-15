@@ -6,12 +6,12 @@ import {
   PartialExceptFor,
   PickField,
 } from '@compliance-theater/typescript';
-import { LikeNextRequest } from '@/lib/nextjs-util/types';
-import { extractParams } from '@/lib/nextjs-util/server/utils';
+import { LikeNextRequest } from '@compliance-theater/nextjs/types';
+import { extractParams } from '@compliance-theater/nextjs/server/utils';
 import {
   isRequestOrApiRequest,
   isNextResponse,
-} from '@/lib/nextjs-util/guards';
+} from '@compliance-theater/nextjs/guards';
 import { LoggedError } from '@compliance-theater/logger';
 import { ObjectRepository } from './_types';
 import { isPaginationStats } from '@/data-models/_utilities';

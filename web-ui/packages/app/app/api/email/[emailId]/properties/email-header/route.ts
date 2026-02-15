@@ -3,7 +3,7 @@ import {
   buildFallbackGrid,
   wrapRouteRequest,
   extractParams,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 import { EmailProperty } from '@/data-models/api/email-properties/property-type';
 import {
   getEmailColumn,
@@ -16,7 +16,7 @@ import {
   checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
-import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 export const dynamic = 'force-dynamic';
 

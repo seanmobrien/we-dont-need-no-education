@@ -1,4 +1,4 @@
-import { wrapRouteRequest } from '@/lib/nextjs-util/server';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server';
 import { NextResponse } from 'next/server';
 import {
   ExtendedMemoryClient,

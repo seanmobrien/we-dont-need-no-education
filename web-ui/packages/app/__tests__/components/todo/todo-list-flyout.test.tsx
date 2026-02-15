@@ -32,6 +32,7 @@ describe('TodoListFlyout', () => {
         mutations: { retry: false },
       },
     });
+
     jest.clearAllMocks();
   });
 

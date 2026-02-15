@@ -36,7 +36,7 @@
   },
   "scripts": {
     "build": "yarn workspace @compliance-theater/react run build:typescript",
-    "build:publish": "yarn workspace @compliance-theater/react run build:clean && yarn workspace @compliance-theater/react run build && yarn workspace @compliance-theater/react pack --out ./dist/@compliance-theater-react.tgz",
+    "build:publish": "yarn workspace @compliance-theater/react run build && yarn workspace @compliance-theater/react pack --out ./dist/@compliance-theater-react.tgz",
     "build:typescript": "echo 'Building lib/react typescript...' && tsc -b tsconfig.json && printf '\\u001b[1;32mBuild complete: @compliance-theater/react.\\u001b[0m\\n' || (printf '\\u001b[31mBuild failed: @compliance-theater/react.\\u001b[0m\\n' >&2; exit 1)",
     "test": "jest",
     "lint": "echo 'Linting lib-react...'",

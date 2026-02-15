@@ -33,7 +33,7 @@ import { CookieJar } from 'tough-cookie';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { got } from 'got';
 import { parse as parseHtml } from 'node-html-parser';
-import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
+import { createInstrumentedSpan } from '@compliance-theater/nextjs/server/utils';
 import { CryptoService } from '@/lib/site-util/auth/crypto-service';
 import { getRedisClient } from '@compliance-theater/redis';
 import { env } from '@compliance-theater/env';

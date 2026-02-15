@@ -32,7 +32,7 @@ jest.mock('@compliance-theater/feature-flags/server', () => ({
 }));
 
 // Use real wrapRouteRequest
-jest.unmock('@/lib/nextjs-util/server');
+jest.unmock('@compliance-theater/nextjs/server');
 
 jest.mock('@/lib/react-util/utility-methods', () => {
   const originalModule = jest.requireActual('@/lib/react-util/utility-methods');

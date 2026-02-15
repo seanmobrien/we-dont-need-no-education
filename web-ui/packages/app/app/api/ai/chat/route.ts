@@ -19,7 +19,7 @@ import { isTruthy } from '@compliance-theater/react/utility-methods';
 import {
   unauthorizedServiceResponse,
   wrapRouteRequest,
-} from '@/lib/nextjs-util/server';
+} from '@compliance-theater/nextjs/server';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';

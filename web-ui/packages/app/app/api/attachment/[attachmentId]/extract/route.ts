@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import {
   wrapRouteRequest,
   extractParams,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 import { BlobServiceClient } from '@azure/storage-blob';
 import { env } from '@compliance-theater/env';
 import { log } from '@compliance-theater/logger';

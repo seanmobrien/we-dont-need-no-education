@@ -9,7 +9,7 @@
  */
 
 import { env } from '@compliance-theater/env';
-import { fetch } from '@/lib/nextjs-util/server';
+import { fetch } from '@compliance-theater/nextjs/server';
 import { LoggedError, log } from '@compliance-theater/logger';
 import { decodeToken } from '../utilities';
 import {

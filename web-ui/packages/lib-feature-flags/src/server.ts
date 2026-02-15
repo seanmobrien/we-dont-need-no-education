@@ -1,5 +1,4 @@
 import { Flags, Flagsmith, FlagsmithConfig } from 'flagsmith-nodejs';
-import { auth } from '@/auth';
 import type {
   NativeFlag,
   KnownFeatureValueType,
@@ -19,7 +18,6 @@ import { env } from '@compliance-theater/env';
 import { LoggedError, log } from '@compliance-theater/logger';
 import { extractFlagValue } from './util';
 
-import { fetch as serverFetch } from '@/lib/nextjs-util/server/fetch';
 import { FlagsmithRedisCache } from './flagsmith-cache';
 
 /**
@@ -101,7 +99,7 @@ export const flagsmithServerFactory = (
     requestTimeoutSeconds: 60,
     retries: 2,
     defaultFlagHandler: theDefaultFlagHandler,
-    fetch: definesFetch ? thisFetch : serverFetch,
+    fetch: definesFetch ? thisFetch : globalThis.fetch,
     cache: new FlagsmithRedisCache({
       lru: { max: 20, ttl: 20 * 60 },
       redis: { ttl: 60 * 60, keyPrefix: 'flagsmith_edge_cache:' },
@@ -141,11 +139,7 @@ const identify = async ({
 }): Promise<Flags> => {
   try {
     if (!userId) {
-      const session = await auth();
-      userId = session?.user?.hash ?? session?.user?.id?.toString();
-      if (!userId) {
-        userId = 'server';
-      }
+      userId = 'server';
     }
     const flagsmith = (flagsmithFactory ?? flagsmithServer)();
     if (flagsmith) {

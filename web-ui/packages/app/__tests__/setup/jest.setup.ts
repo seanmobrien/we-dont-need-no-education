@@ -1,6 +1,6 @@
 process.env.MEM0_API_BASE_PATH = process.env.MEM0_API_BASE_PATH ?? 'api/v1';
 
-jest.mock('@/lib/nextjs-util/client-navigate', () => ({
+jest.mock('@compliance-theater/nextjs/client-navigate', () => ({
   clientReload: jest.fn().mockImplementation(() => {}),
   clientNavigate: jest.fn().mockImplementation(() => {}),
   clientNavigateSignIn: jest.fn().mockImplementation(() => {}),

@@ -9,7 +9,7 @@ import {
   useQueueStatistics,
 } from '@/lib/hooks/use-statistics';
 import type { ModelStat, QueueInfo } from '@/types/statistics';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 import { act, renderHook, waitFor } from '@/__tests__/test-utils';
 import { RefObject } from 'react';
 import { assert } from 'console';

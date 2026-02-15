@@ -27,7 +27,7 @@
   "scripts": {
     "build": "yarn workspace @compliance-theater/redis run build:typescript",
     "build:typescript": "echo 'Building lib/redis typescript...' && tsc -b tsconfig.json && printf '\\u001b[1;32mBuild complete: @compliance-theater/redis.\\u001b[0m\\n' || (printf '\\u001b[31mBuild failed: @compliance-theater/redis.\\u001b[0m\\n' >&2; exit 1)",
-    "build:publish": "yarn workspace @compliance-theater/redis run build:clean && yarn workspace @compliance-theater/redis run build && yarn workspace @compliance-theater/redis pack --out ./dist/@compliance-theater-redis.tgz",
+    "build:publish": "yarn workspace @compliance-theater/redis run build && yarn workspace @compliance-theater/redis pack --out ./dist/@compliance-theater-redis.tgz",
     "test": "jest",
     "lint": "echo 'Linting lib-redis...'",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"

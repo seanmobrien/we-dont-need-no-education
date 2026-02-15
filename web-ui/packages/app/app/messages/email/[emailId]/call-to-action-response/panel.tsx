@@ -22,7 +22,7 @@ import {
 } from '@/data-models/api';
 import { useParams } from 'next/navigation';
 import { EmailMasterPanel } from '@/components/mui/data-grid';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 
 const formatDate = (date: Date | null): string => {
   if (typeof date === 'string') {

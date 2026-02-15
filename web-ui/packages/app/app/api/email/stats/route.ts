@@ -4,7 +4,7 @@ import { LoggedError } from '@compliance-theater/logger';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 
 export const dynamic = 'force-dynamic';
 

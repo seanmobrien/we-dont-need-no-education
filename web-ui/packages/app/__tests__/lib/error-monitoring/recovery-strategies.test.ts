@@ -28,7 +28,7 @@ Object.defineProperty(navigator, 'onLine', {
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock client-navigate
-jest.mock('@/lib/nextjs-util/client-navigate', () => ({
+jest.mock('@compliance-theater/nextjs/client-navigate', () => ({
   clientReload: jest.fn(),
   clientNavigateSignIn: jest.fn(),
   clientNavigate: jest.fn(),
@@ -37,7 +37,7 @@ jest.mock('@/lib/nextjs-util/client-navigate', () => ({
 import {
   clientReload,
   clientNavigateSignIn,
-} from '@/lib/nextjs-util/client-navigate';
+} from '@compliance-theater/nextjs/client-navigate';
 
 // Now import the module after setting up mocks
 import {

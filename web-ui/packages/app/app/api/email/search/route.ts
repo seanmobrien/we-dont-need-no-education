@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { mapRecordToSummary } from '../../../../lib/api/email/util';
 import { query } from '@compliance-theater/database/driver';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';

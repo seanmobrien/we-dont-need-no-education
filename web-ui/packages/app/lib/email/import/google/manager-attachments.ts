@@ -5,7 +5,7 @@ import { TransactionalStateManagerBase } from '../default/transactional-stateman
 import {
   Semaphore,
   SemaphoreManager,
-} from '@/lib/nextjs-util/semaphore-manager';
+} from '@compliance-theater/nextjs/semaphore-manager';
 
 import { getQueuedAttachment } from './attachment-download';
 import {

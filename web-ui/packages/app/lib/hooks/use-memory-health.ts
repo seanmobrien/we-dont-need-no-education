@@ -32,7 +32,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 import { LoggedError } from '@compliance-theater/logger';
 import type {
   MemoryStatusHookResult,

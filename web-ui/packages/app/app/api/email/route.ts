@@ -11,7 +11,7 @@ import {
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
 import { eq, and, inArray } from 'drizzle-orm';
 // count_kpi import removed; not used in this route currently

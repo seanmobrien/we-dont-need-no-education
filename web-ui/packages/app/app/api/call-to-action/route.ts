@@ -3,7 +3,7 @@ import { CallToActionDetails } from '@/data-models/api/email-properties/extended
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 import { eq, and, sql, SQL } from 'drizzle-orm';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { schema } from '@compliance-theater/database/orm';

@@ -6,7 +6,7 @@ import {
   hideConsoleOutput,
 } from '@/__tests__/test-utils';
 import EmailViewer from '@/components/email-message/email-viewer';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 const TIMEOUT = 30000;
 
 // Mock Promise.withResolvers if not available

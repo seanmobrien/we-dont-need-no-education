@@ -16,7 +16,7 @@ import { log, LoggedError } from '@compliance-theater/logger';
 import React from 'react';
 import ContactRecipients from '@/components/contact/contact-recipients';
 import EmailSelect from '../select';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '@compliance-theater/nextjs/fetch';
 
 // Define stable style objects outside component to avoid re-renders
 const stableStyles = {

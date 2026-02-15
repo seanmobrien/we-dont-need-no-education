@@ -42,7 +42,7 @@ jest.mock('got', () => {
 });
 
 try{
-  jest.mock('@/lib/nextjs-util/fetch', () => {
+  jest.mock('@compliance-theater/nextjs/fetch', () => {
     let mockFetch = jest.fn().mockImplementation(() => {
       return makeResponse();
     });
@@ -55,7 +55,7 @@ try{
 }
 
 try{
-  jest.mock('@/lib/nextjs-util/server/fetch', () => {
+  jest.mock('@compliance-theater/nextjs/server/fetch', () => {
     let mockFetch = jest.fn().mockImplementation(() => {
       return makeResponse();
     });
@@ -68,7 +68,7 @@ try{
 }
 
 try{
-  jest.mock('@/lib/nextjs-util/dynamic-fetch', () => {
+  jest.mock('@compliance-theater/nextjs/dynamic-fetch', () => {
     let mockFetch = jest.fn().mockImplementation(() => {
       return makeResponse();
     });
@@ -80,10 +80,8 @@ try{
 
 }
 
-
-
-import { fetch as clientFetch } from '@/lib/nextjs-util/fetch';
-import { fetch as serverFetch } from '@/lib/nextjs-util/server/fetch';
+import { fetch as clientFetch } from '@compliance-theater/nextjs/fetch';
+import { fetch as serverFetch } from '@compliance-theater/nextjs/server/fetch';
 import got from 'got'; 
 
 let originalFetch: typeof globalThis.fetch | undefined;

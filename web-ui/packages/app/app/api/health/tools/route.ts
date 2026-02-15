@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import type { User } from '@auth/core/types';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getMem0EnabledFlag } from '@/lib/ai/mcp/tool-flags';

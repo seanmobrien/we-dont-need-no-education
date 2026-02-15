@@ -5,8 +5,8 @@ import {
   SqlDb,
   unwrapAdapter,
 } from '@compliance-theater/database/driver';
-import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
-import { LikeNextRequest } from '@/lib/nextjs-util/types';
+import { isLikeNextRequest } from '@compliance-theater/nextjs/guards';
+import { LikeNextRequest } from '@compliance-theater/nextjs/types';
 import { columnMapFactory } from '../utility';
 import { BuildQueryFilterProps, BuildItemFilterProps } from './types';
 import { isGridFilterModel } from './guards';

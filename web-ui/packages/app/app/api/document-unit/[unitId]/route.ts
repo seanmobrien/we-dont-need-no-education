@@ -9,7 +9,7 @@ import { DocumentUnitRepository } from '@/lib/api/document-unit';
 import {
   wrapRouteRequest,
   extractParams,
-} from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
 import { NextRequest, NextResponse } from 'next/server';
 import { isError, log } from '@compliance-theater/logger';
 import { amendCaseRecord } from '@/lib/ai/tools/amend-case-record';
@@ -18,7 +18,7 @@ import {
   checkCaseFileAuthorization,
   CaseFileScope,
 } from '@/lib/auth/resources/case-file';
-import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
 export const dynamic = 'force-dynamic';
 export const GET = wrapRouteRequest(
   async (

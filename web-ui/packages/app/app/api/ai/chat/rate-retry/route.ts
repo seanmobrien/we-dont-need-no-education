@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
 import { rateLimitMetrics } from '@/lib/ai/middleware/key-rate-limiter/metrics';
 import { isModelAvailable } from '@/lib/ai/aiModelFactory';

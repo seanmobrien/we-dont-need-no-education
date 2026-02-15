@@ -2,8 +2,8 @@ import { NextRequest } from 'next/server';
 import {
   wrapRouteRequest,
   buildFallbackGrid,
-} from '@/lib/nextjs-util/server/utils';
-import { extractParams } from '@/lib/nextjs-util/server/utils';
+} from '@compliance-theater/nextjs/server/utils';
+import { extractParams } from '@compliance-theater/nextjs/server/utils';
 
 import { eq, and, sql } from 'drizzle-orm';
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
@@ -18,7 +18,7 @@ import {
   selectForGrid,
 } from '@/lib/components/mui/data-grid/queryHelpers';
 import { CallToActionDetails } from '@/data-models/api/email-properties/extended-properties';
-import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server/unauthorized-service-response';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 export const dynamic = 'force-dynamic';
 

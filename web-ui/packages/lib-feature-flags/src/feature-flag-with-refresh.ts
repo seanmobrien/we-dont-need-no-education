@@ -1,7 +1,6 @@
 import { LoggedError } from '@compliance-theater/logger';
 import { getFeatureFlag } from './server';
 import { log } from '@compliance-theater/logger/core';
-import { auth } from '@/auth';
 import { isKnownFeatureType } from './known-feature';
 import { AllFeatureFlagsDefault, type GetFeatureFlagDefault } from './known-feature-defaults';
 import type {
@@ -92,7 +91,7 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
     load?: boolean;
     flagsmith?: () => MinimalNodeFlagsmith;
   }): Promise<AutoRefreshFeatureFlag<T>> {
-    const resolvedUserId = userId ?? (await auth())?.user?.hash ?? 'server';
+    const resolvedUserId = userId ?? 'server';
     const instance = new AutoRefreshFeatureFlagImpl<T>(
       key,
       resolvedUserId,

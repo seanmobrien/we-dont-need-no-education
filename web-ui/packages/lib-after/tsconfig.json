@@ -21,5 +21,9 @@
   "exclude": [
     "node_modules",
     "dist"
+  ],
+  "references": [
+    { "path": "../lib-logger" },
+    { "path": "../lib-typescript" }
   ]
 }

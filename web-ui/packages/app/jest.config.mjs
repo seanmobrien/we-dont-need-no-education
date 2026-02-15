@@ -14,6 +14,7 @@ const config = {
     '<rootDir>/__tests__/shared/setup/jest.error-monitoring.error-reporter.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-drizzledb.ts',
     '<rootDir>/__tests__/shared/setup/jest.core-drizzle.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-layout.ts',
     '<rootDir>/__tests__/setup/jest.setup.ts',
   ], // Setup file for global imports
   moduleNameMapper: {
