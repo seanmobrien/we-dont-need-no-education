@@ -54,8 +54,8 @@ jest.mock('@/lib/auth/resources/case-file', () => {
 const mockExtractParams = jest.fn();
 
 // Mock modules
-jest.mock('@/lib/nextjs-util/server/utils', () => {
-  const orig = jest.requireActual('@/lib/nextjs-util/server/utils');
+jest.mock('@compliance-theater/nextjs/server/utils', () => {
+  const orig = jest.requireActual('@compliance-theater/nextjs/server/utils');
   return {
     ...orig,
     extractParams: mockExtractParams,

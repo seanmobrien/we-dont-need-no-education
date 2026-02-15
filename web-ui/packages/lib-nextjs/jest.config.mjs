@@ -8,9 +8,7 @@ const config = {
   testEnvironment: "node",
   rootDir: ".",
   moduleNameMapper: {
-    ...baseConfig.moduleNameMapper,
-    "^@compliance-theater/nextjs/(.*)$": "<rootDir>/src/$1",
-    "^@compliance-theater/nextjs$": "<rootDir>/src",
+    ...baseConfig.moduleNameMapper
   },
 };
 

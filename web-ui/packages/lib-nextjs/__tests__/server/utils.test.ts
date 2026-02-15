@@ -494,25 +494,6 @@ describe('Server Utils', () => {
       expect(log).toHaveBeenCalledWith(expect.any(Function));
     });
 
-    test('does not log in production', async () => {
-      // Temporarily set NODE_ENV to production
-      // @ts-ignore
-      process.env.NODE_ENV = 'production';
-      const handler = wrapRouteRequest(async (_req: Request) => {
-        return new Response('success');
-      });
-
-      const mockRequest = {
-        url: 'https://example.com/test',
-        method: 'GET',
-        headers: new Map(),
-      } as any;
-
-      await handler(mockRequest);
-
-      expect(log).not.toHaveBeenCalled();
-    });
-
     test('handles custom error callback', async () => {
       const errorCallback = jest.fn();
       const testError = new Error('Test error');

@@ -45,7 +45,7 @@ jest.mock('@/lib/site-util/auth', () => ({
     isUserAuthorizedMock(args),
 }));
 
-jest.mock('@/lib/nextjs-util', () => ({
+jest.mock('@compliance-theater/nextjs/server/utils', () => ({
   extractParams: async (req: { params: Promise<{ chatId: string }> }) => ({
     chatId: (await req.params).chatId,
   }),

@@ -29,12 +29,12 @@ export type EnhancedFetchConfig = {
  */
 export const DEFAULT_ENHANCED_FETCH_CONFIG: EnhancedFetchConfig = {
   timeout: {
-    lookup: 5000,      // 5 seconds
-    connect: 10000,    // 10 seconds
-    secureConnect: 10000, // 10 seconds
-    socket: 30000,     // 30 seconds
-    send: 30000,       // 30 seconds
-    response: 30000,   // 30 seconds
-    request: 60000,    // 60 seconds
+    lookup: 200,
+    connect: 1000,
+    secureConnect: 1000,
+    socket: 60000,
+    send: 10000,
+    response: 30000,
+    request: 60000,
   },
 };
