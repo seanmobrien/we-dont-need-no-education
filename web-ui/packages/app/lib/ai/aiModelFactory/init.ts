@@ -5,7 +5,7 @@
 export const initAppStartup = async (): Promise<void> => {
   // Dynamically load the util module to avoid circular dependencies
   const { getModelFlag, AutoRefreshProviderFlagKeyMap } = await import('./util');
-  const { wellKnownFlag } = await import('@/lib/site-util/feature-flags/feature-flag-with-refresh');
+  const { wellKnownFlag } = await import('@compliance-theater/feature-flags/feature-flag-with-refresh');
   const { LoggedError } = await import('@compliance-theater/logger');
   
   type KnownFeatureType = 
