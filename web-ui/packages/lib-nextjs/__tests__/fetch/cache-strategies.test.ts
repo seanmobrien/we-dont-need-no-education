@@ -9,14 +9,14 @@
 
 import { LRUCache } from 'lru-cache';
 import { PassThrough } from 'stream';
-import { CacheStrategies } from '@compliance-theater/nextjs/server/fetch/cache-strategies';
+import { CacheStrategies } from '../../src/server/fetch/cache-strategies';
 import type {
   CachedValue,
   CacheStrategyDeps,
-} from '@compliance-theater/nextjs/server/fetch/fetch-types';
+} from '../../src/server/fetch/fetch-types';
 import { type RedisClientType } from '@compliance-theater/redis';
 import { createClient } from 'redis';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { hideConsoleOutput } from '../../../app/__tests__/test-utils-server';
 
 /*
 

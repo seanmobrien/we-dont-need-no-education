@@ -9,7 +9,7 @@ import {
   makeResponse,
   makeJsonResponse,
   makeStreamResponse,
-} from '@compliance-theater/nextjs/server/response';
+} from '../src/server/response';
 
 // Force MockBlob to ensure text() method exists, as some environments have partial Blob implementations
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

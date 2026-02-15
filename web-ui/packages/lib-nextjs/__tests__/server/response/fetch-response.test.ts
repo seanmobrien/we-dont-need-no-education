@@ -1,6 +1,6 @@
 /* @jest-environment node */
 
-import { FetchResponse } from '@compliance-theater/nextjs/server/response/index';
+import { FetchResponse } from '../src/server/response/index';
 
 // Polyfill Headers/Response/ReadableStream if needed for Jest environment
 if (!global.Headers) {

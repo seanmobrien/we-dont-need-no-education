@@ -1,6 +1,6 @@
 /* @jest-environment node */
 
-import { normalizeRequestInit } from '@compliance-theater/nextjs/server/fetch/fetch-server';
+import { normalizeRequestInit } from '../../src/server/fetch/fetch-server';
 
 // Mock Headers if not globally available in test environment
 if (!global.Headers) {

@@ -5,7 +5,7 @@
  * @file error-response.test.ts
  * @description Unit tests for errorResponseFactory
  */
-import { errorResponseFactory } from '@compliance-theater/nextjs/server/error-response';
+import { errorResponseFactory } from '../src/server/error-response';
 
 describe('errorResponseFactory', () => {
   it('should default to status 500 and generic message', async () => {

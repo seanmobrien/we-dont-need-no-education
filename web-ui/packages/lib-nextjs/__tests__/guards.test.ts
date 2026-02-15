@@ -1,4 +1,4 @@
-import { isRequestOrApiRequest } from '@compliance-theater/nextjs/guards';
+import { isRequestOrApiRequest } from '../src/guards';
 import { NextApiRequest } from 'next';
 
 // filepath: /c:/Users/seanm/source/repos/NoEducation/web-ui/__tests__/lib/nextjs-util/guards.test.ts
