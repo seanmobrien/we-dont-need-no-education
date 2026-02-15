@@ -76,7 +76,7 @@
     "@microsoft/applicationinsights-clickanalytics-js": "^3.3.9",
     "@microsoft/applicationinsights-react-js": "^19.3.6",
     "@microsoft/applicationinsights-web": "^3.3.9",
-    "@modelcontextprotocol/sdk": "^1.24.0",
+    "@modelcontextprotocol/sdk": "1.25.2",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
     "@mui/material-nextjs": "^7.3.6",
@@ -205,10 +205,5 @@
       "react": "npm:react@19.2.0",
       "react-dom": "npm:react-dom@19.2.0"
     }
-  },
-  "resolutions": {
-    "jsx-ast-utils": "^4.4.2",
-    "lodash-es@npm:^4.17.21": "npm:4.17.22",
-    "@esbuild-kit/core-utils/esbuild": "0.25.0"
   }
 }

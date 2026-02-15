@@ -439,9 +439,11 @@ jest.mock('@compliance-theater/database/orm', () => {
     (actualSchema as { schema?: unknown }).schema ??
     (actualSchema as { default?: unknown }).default ??
     actualSchema;
+  const maybeSql = (actualSchema as { sql?: unknown }).sql;
   return {
     ...actualSchema,
     schema: schemaExport,
+    sql: typeof maybeSql === 'function' ? maybeSql : jest.fn(() => makeRecursiveMock()),
     drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
       const mockDbInstance = makeMockDb();
       if (fn) {
