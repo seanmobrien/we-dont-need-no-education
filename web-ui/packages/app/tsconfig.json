@@ -61,6 +61,9 @@
       "path": "../lib-database"
     },
     {
+      "path": "../lib-auth"
+    },
+    {
       "path": "../lib-nextjs"
     },
     {

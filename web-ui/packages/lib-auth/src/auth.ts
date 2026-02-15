@@ -14,8 +14,8 @@ import type { CredentialInput, Provider } from '@auth/core/providers';
 import { isRunningOnEdge, env } from '@compliance-theater/env';
 import { logEvent } from '@compliance-theater/logger';
 
-import { setupKeyCloakProvider } from './lib/auth/keycloak-provider';
-import { authorized } from './lib/auth/authorized';
+import { setupKeyCloakProvider } from './lib/keycloak-provider';
+import { authorized } from './lib/authorized';
 import type { JWT } from '@auth/core/jwt';
 
 type DynamicImports = {
@@ -159,11 +159,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
   ) {
     if (!dynamicImports.drizzleAdapter) {
       dynamicImports.drizzleAdapter = await import(
-        '@/lib/auth/drizzle-adapter'
+        './lib/drizzle-adapter'
       );
     }
     if (!dynamicImports.auth.signIn) {
-      dynamicImports.auth.signIn = await import('@/lib/auth/sign-in');
+      dynamicImports.auth.signIn = await import('./lib/sign-in');
     }
     const {
       auth: {
@@ -187,14 +187,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
       process.env.NEXT_RUNTIME !== 'nodejs'
     ) {
       dynamicImports.auth.session = await import(
-        '@/lib/auth/session/session-edge'
+        './lib/session/session-edge'
       );
     } else if (
       typeof window === 'undefined' &&
       process.env.NEXT_RUNTIME === 'nodejs'
     ) {
       dynamicImports.auth.session = await import(
-        '@/lib/auth/session/session-nodejs'
+        './lib/session/session-nodejs'
       );
     }
     if (!dynamicImports.auth.session.session) {
@@ -205,14 +205,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
   }
   const session = dynamicImports.auth.session.session;
   if (!dynamicImports.auth.jwt) {
-    dynamicImports.auth.jwt = await import('@/lib/auth/jwt');
+    dynamicImports.auth.jwt = await import('./lib/jwt');
     if (!dynamicImports.auth.jwt.jwt) {
       throw new Error('Failed to load jwt callback');
     }
   }
   const jwt = dynamicImports.auth.jwt.jwt;
   if (!dynamicImports.auth.redirect) {
-    dynamicImports.auth.redirect = await import('@/lib/auth/redirect');
+    dynamicImports.auth.redirect = await import('./lib/redirect');
     if (!dynamicImports.auth.redirect.redirect) {
       throw new Error('Failed to load redirect callback');
     }

@@ -6,3 +6,4 @@ export * from './_credentialProvider';
 export * from './_guards';
 export * from './_types';
 export * from './crypto-service';
+export * from './keycloak-token-exchange';

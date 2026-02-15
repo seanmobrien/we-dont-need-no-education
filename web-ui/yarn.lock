@@ -890,6 +890,7 @@ __metadata:
     "@azure/storage-blob": "npm:^12.27.0"
     "@badgateway/oauth2-client": "npm:^3.3.1"
     "@compliance-theater/after": "workspace:*"
+    "@compliance-theater/auth": "workspace:*"
     "@compliance-theater/database": "workspace:*"
     "@compliance-theater/env": "workspace:*"
     "@compliance-theater/feature-flags": "workspace:*"
@@ -1018,6 +1019,41 @@ __metadata:
     web-streams-polyfill: "npm:^4.2.0"
     zod: "npm:^3.25.76"
     zodex: "npm:^3.0.0"
+  languageName: unknown
+  linkType: soft
+
+"@compliance-theater/auth@workspace:*, @compliance-theater/auth@workspace:packages/lib-auth":
+  version: 0.0.0-use.local
+  resolution: "@compliance-theater/auth@workspace:packages/lib-auth"
+  dependencies:
+    "@auth/core": "npm:0.41.1"
+    "@auth/drizzle-adapter": "npm:^1.4.1"
+    "@badgateway/oauth2-client": "npm:^3.3.1"
+    "@compliance-theater/database": "workspace:*"
+    "@compliance-theater/env": "workspace:*"
+    "@compliance-theater/logger": "workspace:*"
+    "@compliance-theater/nextjs": "workspace:*"
+    "@compliance-theater/react": "workspace:*"
+    "@compliance-theater/typescript": "workspace:*"
+    "@keycloak/keycloak-admin-client": "npm:^26.3.4"
+    "@opentelemetry/api": "npm:1.9.0"
+    "@tanstack/react-query": "npm:^5.67.2"
+    "@toolpad/core": "npm:^0.15.0"
+    "@types/node": "npm:^24.0.0"
+    "@types/react": "npm:^19"
+    "@types/react-dom": "npm:^19"
+    got: "npm:^14.4.5"
+    jest: "npm:^30.0.5"
+    lru-cache: "npm:^11.0.2"
+    next-auth: "npm:^5.0.0-beta.30"
+    rimraf: "npm:^6.1.2"
+    tough-cookie: "npm:^5.0.0"
+    ts-jest: "npm:^29.3.4"
+    typescript: "npm:^5"
+  peerDependencies:
+    next: ">=15.1.4"
+    react: ^19.0.0
+    react-dom: ^19.0.0
   languageName: unknown
   linkType: soft
 
@@ -4957,7 +4993,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:^5.80.10":
+"@tanstack/react-query@npm:^5.67.2, @tanstack/react-query@npm:^5.80.10":
   version: 5.90.21
   resolution: "@tanstack/react-query@npm:5.90.21"
   dependencies:
@@ -10080,7 +10116,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"got@npm:^14.4.9":
+"got@npm:^14.4.5, got@npm:^14.4.9":
   version: 14.6.6
   resolution: "got@npm:14.6.6"
   dependencies:
@@ -15733,7 +15769,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tough-cookie@npm:^5.1.1":
+"tough-cookie@npm:^5.0.0, tough-cookie@npm:^5.1.1":
   version: 5.1.2
   resolution: "tough-cookie@npm:5.1.2"
   dependencies:
