@@ -17,6 +17,7 @@ import {
 import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
 import { isPromise } from '@compliance-theater/typescript';
+import { getAppStartupState } from './app-startup-accessor';
 
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');
 
@@ -91,24 +92,22 @@ export const wrapRouteRequest = <
             return res;
           }
 
-          // TODO: Re-enable app startup check when site-util is extracted
-          // For now, assume app is ready
-          const appStartupState = 'ready'; 
-          /* const appStartupState = await tracer.startActiveSpan(
+          // Check app startup state
+          const appStartupState = await tracer.startActiveSpan(
             'app.startup.check',
             async (startupSpan) => {
               try {
-                const state = await startup();
+                const state = await getAppStartupState();
                 startupSpan.setAttribute('app.startup_state', state);
                 return state;
               } finally {
                 startupSpan.end();
               }
             },
-          ); */
+          );
 
-          // Commented out - app startup check removed pending site-util extraction
-          /* if (appStartupState === 'done') {
+          // Return 503 if app is shutting down
+          if (appStartupState === 'done') {
             const res = Response.json(buildFallback ?? globalBuildFallback, {
               status: 503,
               statusText: 'ERR-APP-SHUTDOWN',
@@ -120,7 +119,7 @@ export const wrapRouteRequest = <
             span.setAttribute('http.status_code', res.status);
             span.setStatus({ code: SpanStatusCode.ERROR });
             return res;
-          } */
+          }
 
           if (shouldLog) {
             const extractedParams = await (!!context?.params
