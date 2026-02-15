@@ -1,1 +1,0 @@
-{"version":3,"file":"strategy-collection-factory.d.ts","sourceRoot":"","sources":["strategy-collection-factory.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,mBAAmB,EAAE,iBAAiB,EAAE,MAAM,UAAU,CAAC;AAClE,OAAO,EAAE,oBAAoB,EAAE,MAAM,0BAA0B,CAAC;AAShE,qBAAa,yBAAyB;IACpC,MAAM,CAAC,gBAAgB,CACrB,MAAM,EAAE,mBAAmB,EAC3B,WAAW,GAAE,OAAO,CAAC,iBAAiB,CAAM,GAC3C,oBAAoB,EAAE;CA6C1B"}

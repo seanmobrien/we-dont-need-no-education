@@ -1,1 +1,0 @@
-{"version":3,"file":"standard-logging-strategy.d.ts","sourceRoot":"","sources":["standard-logging-strategy.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,WAAW,EAAE,mBAAmB,EAAE,iBAAiB,EAAE,MAAM,UAAU,CAAC;AAC/E,OAAO,EAAE,oBAAoB,EAAE,MAAM,0BAA0B,CAAC;AAEhE,qBAAa,uBAAwB,YAAW,oBAAoB;IAC5D,OAAO,CACX,MAAM,EAAE,WAAW,EACnB,MAAM,EAAE,mBAAmB,GAC1B,OAAO,CAAC,OAAO,CAAC,iBAAiB,CAAC,CAAC;CAoBvC"}

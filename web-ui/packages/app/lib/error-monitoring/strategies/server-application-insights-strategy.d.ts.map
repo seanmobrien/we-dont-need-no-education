@@ -1,1 +1,0 @@
-{"version":3,"file":"server-application-insights-strategy.d.ts","sourceRoot":"","sources":["server-application-insights-strategy.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,WAAW,EAAE,iBAAiB,EAAE,MAAM,UAAU,CAAC;AAC1D,OAAO,EAAE,oBAAoB,EAAE,MAAM,0BAA0B,CAAC;AAEhE,qBAAa,iCAAkC,YAAW,oBAAoB;IACtE,OAAO,CAAC,MAAM,EAAE,WAAW,GAAG,OAAO,CAAC,OAAO,CAAC,iBAAiB,CAAC,CAAC;CAsExE"}

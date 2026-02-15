@@ -1,1 +1,0 @@
-{"version":3,"file":"google-analytics-strategy.d.ts","sourceRoot":"","sources":["google-analytics-strategy.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,WAAW,EAAE,iBAAiB,EAAiB,MAAM,UAAU,CAAC;AACzE,OAAO,EAAE,oBAAoB,EAAE,MAAM,0BAA0B,CAAC;AAgBhE,qBAAa,uBAAwB,YAAW,oBAAoB;IAC5D,OAAO,CACX,MAAM,EAAE,WAAW,GAClB,OAAO,CAAC,OAAO,CAAC,iBAAiB,CAAC,CAAC;CAYvC"}
