@@ -29,7 +29,6 @@ const config = {
     '^@/lib/site-util/auth$': '<rootDir>/../lib-auth/src/lib/utilities/index.ts',
     '^@compliance-theater/auth/components/session-provider/(.*)$': '<rootDir>/../lib-auth/src/components/session-provider/$1',
     '^@compliance-theater/auth/components/key-refresh-notify/(.*)$': '<rootDir>/../lib-auth/src/components/key-refresh-notify/$1',
-    '^@compliance-theater/auth/components/key-refresh-notify/wrapper$': '<rootDir>/../lib-auth/src/components/key-refresh-notify/wrapper.tsx',
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports    
   },
 };
