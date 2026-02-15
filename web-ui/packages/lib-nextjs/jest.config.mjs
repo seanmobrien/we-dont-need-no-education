@@ -8,7 +8,8 @@ const config = {
   testEnvironment: "node",
   rootDir: ".",
   moduleNameMapper: {
-    ...baseConfig.moduleNameMapper
+    ...baseConfig.moduleNameMapper,
+    "^@compliance-theater/fetch(.*)$": "<rootDir>/../lib-fetch/src$1",
   },
 };
 

@@ -1,0 +1,51 @@
+{
+  "name": "@compliance-theater/fetch",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fetch utilities with configurable behavior for the Title IX Victim Advocacy Platform",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "workspace-source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types.d.ts",
+      "workspace-source": "./src/types.ts",
+      "default": "./dist/types.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "scripts": {
+    "build": "yarn workspace @compliance-theater/fetch run build:typescript",
+    "build:publish": "yarn workspace @compliance-theater/fetch run build && yarn workspace @compliance-theater/fetch pack --out ./dist/@compliance-theater-fetch.tgz",
+    "build:typescript": "echo 'Building lib/fetch typescript...' && tsc -b tsconfig.json && printf '\\u001b[1;32mBuild complete: @compliance-theater/fetch.\\u001b[0m\\n' || (printf '\\u001b[31mBuild failed: @compliance-theater/fetch.\\u001b[0m\\n' >&2; exit 1)",
+    "test": "jest",
+    "lint": "echo 'Linting lib-fetch...'",
+    "build:clean": "rimraf dist tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    "@compliance-theater/logger": "workspace:*",
+    "@compliance-theater/typescript": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "jest": "^30.0.5",
+    "rimraf": "^6.1.2",
+    "ts-jest": "^29.3.4",
+    "typescript": "^5"
+  }
+}

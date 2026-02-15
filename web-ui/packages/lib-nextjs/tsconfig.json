@@ -47,6 +47,9 @@
       "path": "../lib-after"
     },
     {
+      "path": "../lib-fetch"
+    },
+    {
       "path": "../lib-feature-flags"
     }
   ]
