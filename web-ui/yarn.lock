@@ -1059,6 +1059,7 @@ __metadata:
   dependencies:
     "@compliance-theater/env": "workspace:*"
     "@compliance-theater/logger": "workspace:*"
+    "@compliance-theater/react": "workspace:*"
     "@compliance-theater/redis": "workspace:*"
     "@compliance-theater/typescript": "workspace:*"
     "@protobufjs/eventemitter": "npm:^1.1.0"
