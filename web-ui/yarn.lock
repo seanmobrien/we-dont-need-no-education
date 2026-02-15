@@ -1087,7 +1087,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@compliance-theater/fetch@workspace:packages/lib-fetch":
+"@compliance-theater/fetch@workspace:*, @compliance-theater/fetch@workspace:packages/lib-fetch":
   version: 0.0.0-use.local
   resolution: "@compliance-theater/fetch@workspace:packages/lib-fetch"
   dependencies:
@@ -1125,6 +1125,7 @@ __metadata:
     "@compliance-theater/after": "workspace:*"
     "@compliance-theater/env": "workspace:*"
     "@compliance-theater/feature-flags": "workspace:*"
+    "@compliance-theater/fetch": "workspace:*"
     "@compliance-theater/logger": "workspace:*"
     "@compliance-theater/redis": "workspace:*"
     "@compliance-theater/typescript": "workspace:*"
