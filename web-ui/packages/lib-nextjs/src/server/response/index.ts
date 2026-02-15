@@ -1,9 +1,5 @@
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
-<<<<<<< HEAD:web-ui/packages/lib-nextjs/src/server/response/index.ts
 import { isAbortError } from '../../utilities/is-abort-error';
-=======
-import { isAbortError } from '@compliance-theater/react';
->>>>>>> origin/main:web-ui/packages/app/lib/nextjs-util/server/response/index.ts
 import { isRunningOnServer } from '@compliance-theater/env';
 import type { Readable as ReadableType } from 'node:stream';
 
