@@ -9,6 +9,7 @@ const config = {
   rootDir: '.',
   moduleNameMapper: {
     ...baseConfig.moduleNameMapper,
+    '^next-auth/providers/keycloak$': '<rootDir>/__mocks__/shared/keycloak-provider.js',
     '^@compliance-theater/feature-flags/(.*)$': '<rootDir>/src/$1',
     '^@compliance-theater/feature-flags$': '<rootDir>/src',
     '^@compliance-theater/logger(.*)$': '<rootDir>/../lib-logger/src$1',

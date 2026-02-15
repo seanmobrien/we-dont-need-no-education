@@ -1,0 +1,17 @@
+diff --git a/node_modules/@textea/json-viewer/package.json b/node_modules/@textea/json-viewer/package.json
+index 87f575a..01ad4bb 100644
+--- a/node_modules/@textea/json-viewer/package.json
++++ b/node_modules/@textea/json-viewer/package.json
+@@ -48,9 +48,9 @@
+   "peerDependencies": {
+     "@emotion/react": "^11",
+     "@emotion/styled": "^11",
+-    "@mui/material": "^6",
+-    "react": "^17 || ^18",
+-    "react-dom": "^17 || ^18"
++    "@mui/material": "^6 || ^7",
++    "react": "^17 || ^18 || ^19",
++    "react-dom": "^17 || ^18 || ^19"
+   },
+   "devDependencies": {
+     "@commitlint/cli": "^19.6.0",

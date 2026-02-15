@@ -10,8 +10,8 @@ import {
 import z from 'zod';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
-import { checkCaseFileAuthorization } from '@/lib/auth/resources/case-file/case-file-middleware';
-import { CaseFileScope } from '@/lib/auth/resources/case-file/case-file-resource';
+import { checkCaseFileAuthorization } from '@compliance-theater/auth/lib/resources/case-file/case-file-middleware';
+import { CaseFileScope } from '@compliance-theater/auth/lib/resources/case-file/case-file-resource';
 
 export const dynamic = 'force-dynamic';
 

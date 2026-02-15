@@ -23,7 +23,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Use the globally mocked auth (from jest.setup.ts) and override implementation per test via helper
-// import { auth as authMockOriginal } from '@/auth';
+// import { auth as authMockOriginal } from '@compliance-theater/auth';
 // const authMock = authMockOriginal as unknown as jest.Mock;
 
 const setSession = (userId: number | null) => {

@@ -21,6 +21,27 @@ export const dynamic = 'force-dynamic';
 const MAX_PROCESSING_TIME_MS = 10 * 60 * 1000; // 10 minutes
 const REQUEST_TIMEOUT_MS = 720 * 1000; // 720 seconds per request
 
+function withTimeoutError<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  message: string
+): Promise<T> {
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(() => reject(new Error(message)), timeoutMs);
+    if (typeof timeoutHandle.unref === 'function') {
+      timeoutHandle.unref();
+    }
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  });
+}
+
 export const GET = wrapRouteRequest(async () => {
   const startTime = Date.now();
   let processedCount = 0;
@@ -110,13 +131,6 @@ export const GET = wrapRouteRequest(async () => {
           });
 
           // Process the request (simplified - in real implementation would handle streaming)
-          const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(
-              () => reject(new Error('Request timeout')),
-              REQUEST_TIMEOUT_MS
-            );
-          });
-
           const generatePromise = generateText({
             model,
             messages: convertToModelMessages(
@@ -126,7 +140,11 @@ export const GET = wrapRouteRequest(async () => {
           });
           chatHistoryContext.iteration++;
 
-          const result = await Promise.race([generatePromise, timeoutPromise]);
+          const result = await withTimeoutError(
+            generatePromise,
+            REQUEST_TIMEOUT_MS,
+            'Request timeout'
+          );
 
           // Store successful response
           const response: ProcessedResponse = {
@@ -247,13 +265,6 @@ export const GET = wrapRouteRequest(async () => {
             chatHistoryContext,
           });
 
-          const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(
-              () => reject(new Error('Request timeout')),
-              REQUEST_TIMEOUT_MS
-            );
-          });
-
           const generatePromise = generateText({
             model,
             messages:
@@ -261,7 +272,11 @@ export const GET = wrapRouteRequest(async () => {
               [],
           });
 
-          const result = await Promise.race([generatePromise, timeoutPromise]);
+          const result = await withTimeoutError(
+            generatePromise,
+            REQUEST_TIMEOUT_MS,
+            'Request timeout'
+          );
 
           const response: ProcessedResponse = {
             id: request.id,

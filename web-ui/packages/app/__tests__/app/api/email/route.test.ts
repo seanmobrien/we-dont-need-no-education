@@ -69,7 +69,7 @@ import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 
 import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
-import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
+import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file/index';
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 
 let mockDb = withJestTestExtensions().makeMockDb();

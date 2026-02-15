@@ -1,4 +1,4 @@
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import { Session } from '@auth/core/types';
 import { log, logEvent } from '@compliance-theater/logger';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';

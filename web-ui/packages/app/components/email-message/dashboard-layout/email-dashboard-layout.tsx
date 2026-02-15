@@ -29,7 +29,7 @@ import { CustomEmailPageItem } from './custom-email-page-item';
 import { EmailDashboardToolbarAction } from './email-dashboard-toolbar-action';
 import { Branding } from './branding';
 import { NotificationsProvider } from '@toolpad/core';
-import { KeyRefreshNotifyWrapper } from '@/components/auth/key-refresh-notify/wrapper';
+import { KeyRefreshNotifyWrapper } from '@compliance-theater/auth/components/key-refresh-notify/wrapper';
 import ServerSafeErrorManager from '@/components/error-boundaries/ServerSafeErrorManager';
 import { SiteRoute } from '@/lib/site-util/url-builder/_types';
 

@@ -12,7 +12,7 @@ import { getRetryErrorInfo } from '@/lib/ai/chat/error-helpers';
 import { getUserToolProviderCache } from '@/lib/ai/mcp/cache';
 import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
 import { env } from '@compliance-theater/env';
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import { type NextRequest, NextResponse } from 'next/server';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { isTruthy } from '@compliance-theater/react/utility-methods';

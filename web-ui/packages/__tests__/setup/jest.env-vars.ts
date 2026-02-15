@@ -4,6 +4,9 @@ type NextPublicEnvVariables<TSource> = {
   : never]: TSource[K];
 };
 
+import { __clearEnvCacheForTests } from '@compliance-theater/env';
+import { SingletonProvider } from '@compliance-theater/typescript';
+
 export class MockEnvVarProvider<
   TSource extends Record<string, string | undefined>,
 > {
@@ -135,10 +138,13 @@ if (!originalEnv) {
 let mockEnv: MockEnvVarProvider<EnvVarType> | undefined;
 
 beforeEach(() => {
+  __clearEnvCacheForTests();
+  SingletonProvider.Instance.clear();
   mockEnv = MockEnvVarProvider.create(DefaultEnvVariables);
 });
 
 afterEach(() => {
+  __clearEnvCacheForTests();
   if (mockEnv) {
     mockEnv[Symbol.dispose]();
     mockEnv = undefined;

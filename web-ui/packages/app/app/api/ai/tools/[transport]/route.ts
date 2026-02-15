@@ -3,7 +3,7 @@ export const maxDuration = 300; // 5 minutes for SSE connections
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { createMcpHandler } from 'mcp-handler';
-import { KnownScopeIndex, KnownScopeValues } from '@/lib/auth/utilities';
+import { KnownScopeIndex, KnownScopeValues } from '@compliance-theater/auth/lib/utilities';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
 import { ApiRequestError } from '@compliance-theater/send-api-request';
 import type { NextRequest } from 'next/server';
@@ -56,9 +56,9 @@ import { env } from '@compliance-theater/env';
 import {
   type BasicResourceRecord,
   resourceService,
-} from '@/lib/auth/resources/resource-service';
-import { authorizationService } from '@/lib/auth/resources/authorization-service';
-import { getAccessToken } from '@/lib/auth/access-token';
+} from '@compliance-theater/auth/lib/resources/resource-service';
+import { authorizationService } from '@compliance-theater/auth/lib/resources/authorization-service';
+import { getAccessToken } from '@compliance-theater/auth/lib/access-token';
 
 type McpConfig = Exclude<Parameters<typeof createMcpHandler>[2], undefined>;
 type OnEventHandler = Exclude<McpConfig['onEvent'], undefined>;

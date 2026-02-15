@@ -17,7 +17,7 @@ import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-
 import {
   checkCaseFileAuthorization,
   CaseFileScope,
-} from '@/lib/auth/resources/case-file';
+} from '@compliance-theater/auth/lib/resources/case-file/index';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
 export const dynamic = 'force-dynamic';
 export const GET = wrapRouteRequest(

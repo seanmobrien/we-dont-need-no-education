@@ -34,8 +34,8 @@ import type {
 } from './fetch-types';
 import { EnhancedFetchConfig } from '@compliance-theater/feature-flags/types';
 import { AllFeatureFlagsDefault } from '@compliance-theater/feature-flags/known-feature-defaults';
-import { withTimeout } from '../../with-timeout';
-import { TimeoutError } from '../../utilities/timeout-error';
+import { withTimeout } from '@compliance-theater/logger/with-timeout';
+import { TimeoutError } from '@compliance-theater/logger/timeout-error';
 
 const DEFAULT_CONCURRENCY = 8;
 const DEFAULT_CACHE_SIZE = 500;

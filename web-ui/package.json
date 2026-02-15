@@ -13,7 +13,7 @@
     "build:typescript": "turbo run build:typescript",
     "build:publish": "yarn workspace compliance-theater install --immutable && turbo run build:publish",
     "build:clean": "turbo run build:clean",
-    "test": "turbo run test --force",
+    "test": "turbo run test --coverage",
     "test:fast": "turbo run test",
     "test:unit": "turbo run test:unit",
     "test:e2e": "turbo run test:e2e",
@@ -26,7 +26,7 @@
     "turbo": "^2.8.3"
   },
   "resolutions": {
-    "lodash-es@npm:^4.17.21": "npm:4.17.22",
+    "lodash-es@npm:^4.17.21": "npm:4.17.23",
     "@esbuild-kit/core-utils/esbuild": "0.25.0"
   }
 }

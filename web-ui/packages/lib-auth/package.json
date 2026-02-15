@@ -1,0 +1,94 @@
+{
+  "name": "@compliance-theater/auth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Authentication and authorization library for the Title IX Victim Advocacy Platform",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "workspace-source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./lib": {
+      "types": "./dist/lib/index.d.ts",
+      "workspace-source": "./src/lib/index.ts",
+      "default": "./dist/lib/index.js"
+    },
+    "./lib/utilities": {
+      "types": "./dist/lib/utilities/index.d.ts",
+      "workspace-source": "./src/lib/utilities/index.ts",
+      "default": "./dist/lib/utilities/index.js"
+    },
+    "./components": {
+      "types": "./dist/components/index.d.ts",
+      "workspace-source": "./src/components/index.ts",
+      "default": "./dist/components/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "yarn workspace @compliance-theater/auth run build:typescript",
+    "build:typescript": "echo 'Building @compliance-theater/auth...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/auth.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/auth.\u001b[0m\n' >&2; exit 1)",
+    "build:publish": "yarn workspace @compliance-theater/auth run build && yarn workspace @compliance-theater/auth pack --out ./dist/@compliance-theater-auth.tgz",
+    "test": "jest",
+    "lint": "echo 'Linting lib-auth...'",
+    "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    "@auth/core": "0.41.1",
+    "@auth/drizzle-adapter": "^1.4.1",
+    "@badgateway/oauth2-client": "^3.3.1",
+    "@compliance-theater/database": "workspace:*",
+    "@compliance-theater/env": "workspace:*",
+    "@compliance-theater/logger": "workspace:*",
+    "@compliance-theater/nextjs": "workspace:*",
+    "@compliance-theater/react": "workspace:*",
+    "@compliance-theater/typescript": "workspace:*",
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@keycloak/keycloak-admin-client": "^26.3.4",
+    "@mui/icons-material": "^7.3.6",
+    "@mui/material": "^7.3.6",
+    "@opentelemetry/api": "1.9.0",
+    "@tanstack/react-query": "^5.67.2",
+    "@toolpad/core": "^0.15.0",
+    "got": "^14.4.5",
+    "lru-cache": "^11.0.2",
+    "next": "^15.5.10",
+    "next-auth": "^5.0.0-beta.30",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tough-cookie": "^5.0.0"
+  },
+  "peerDependencies": {
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@mui/icons-material": "^7.3.6",
+    "@mui/material": "^7.3.6",
+    "next": ">=15.1.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "jest": "^30.0.5",
+    "rimraf": "^6.1.2",
+    "ts-jest": "^29.3.4",
+    "typescript": "^5"
+  }
+}

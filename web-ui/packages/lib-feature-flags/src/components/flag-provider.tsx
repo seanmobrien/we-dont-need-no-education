@@ -10,7 +10,7 @@ import {
 import { getAllFeatureFlags } from '../client';
 import FeatureFlagsContext from '../context';
 import { useFlagsmithLoading } from 'flagsmith/react';
-import { useSession } from '@/components/auth/session-provider';
+import { useSession } from '@compliance-theater/auth/components/session-provider/index';
 import type { Session } from '@auth/core/types';
 import { errorReporter } from '@/lib/error-monitoring/error-reporter';
 

@@ -73,6 +73,7 @@
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
+    "@auth/core": "0.41.1",
     "@compliance-theater/env": "workspace:*",
     "@compliance-theater/logger": "workspace:*",
     "@compliance-theater/react": "workspace:*",
@@ -98,7 +99,6 @@
     "typescript": "^5"
   },
   "peerDependencies": {
-    "@auth/core": "^0.41.0",
     "next": "^15.5.10",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

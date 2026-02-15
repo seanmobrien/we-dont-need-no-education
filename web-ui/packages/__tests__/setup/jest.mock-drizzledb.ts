@@ -4,7 +4,6 @@ import type { DbDatabaseType } from '@compliance-theater/database/orm';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { schema } from '@compliance-theater/database/orm';
-import { sql } from 'drizzle-orm';
 import { withJestTestExtensions } from '../jest.test-extensions';
 import {
   IMockQueryBuilder,
@@ -431,13 +430,29 @@ const makeRecursiveMock = jest
 jest.mock('@compliance-theater/database/orm', () => {
   let actualSchema: Record<string, unknown> = {};
   try {
-    actualSchema = jest.requireActual('@compliance-theater/database/orm');
+    actualSchema = jest.requireActual('@compliance-theater/database/schema');
   } catch {
     actualSchema = {};
   }
+  const schemaExport =
+    (actualSchema as { schema?: unknown }).schema ??
+    (actualSchema as { default?: unknown }).default ??
+    actualSchema;
+  const maybeSql = (actualSchema as { sql?: unknown }).sql;
+  let fallbackSql: unknown;
+  try {
+    fallbackSql = (jest.requireActual('drizzle-orm') as { sql?: unknown }).sql;
+  } catch {
+    fallbackSql = undefined;
+  }
+  const sqlExport = typeof maybeSql === 'function' ? maybeSql : fallbackSql;
   return {
     ...actualSchema,
-    schema: (actualSchema as { schema?: unknown }).schema ?? {},
+    schema: schemaExport,
+    sql:
+      typeof sqlExport === 'function'
+        ? sqlExport
+        : jest.fn(() => makeRecursiveMock()),
     drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
       const mockDbInstance = makeMockDb();
       if (fn) {

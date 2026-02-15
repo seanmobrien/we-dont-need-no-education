@@ -46,11 +46,6 @@
       "workspace-source": "./src/client-navigate.ts",
       "default": "./dist/client-navigate.js"
     },
-    "./with-timeout": {
-      "types": "./dist/with-timeout.d.ts",
-      "workspace-source": "./src/with-timeout.ts",
-      "default": "./dist/with-timeout.js"
-    },
     "./*": {
       "types": "./dist/*.d.ts",
       "workspace-source": "./src/*.ts",

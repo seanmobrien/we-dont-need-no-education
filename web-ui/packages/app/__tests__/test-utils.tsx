@@ -22,7 +22,7 @@ import Queries from '@testing-library/dom/types/queries';
 import React, { act, PropsWithChildren } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
-import { SessionProvider } from '@/components/auth/session-provider';   
+import { SessionProvider } from '@compliance-theater/auth/components/session-provider/index';
 import { FlagProvider } from '@compliance-theater/feature-flags/components/flag-provider';
 import { ThemeProvider, type ThemeType } from '@compliance-theater/themes';
 

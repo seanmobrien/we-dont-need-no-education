@@ -3,12 +3,13 @@ import { emails } from '@compliance-theater/database/schema';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 import { eq } from 'drizzle-orm';
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import {
   CaseFileScope,
   checkCaseFileAccess,
-} from '@/lib/auth/resources/case-file';
-import { checkCaseFileAuthorization } from '@/lib/auth/resources/case-file/case-file-middleware';
+} from '@compliance-theater/auth/lib/resources/case-file/index';
+import { checkCaseFileAuthorization } from '@compliance-theater/auth/lib/resources/case-file/case-file-middleware';
+
 import { AccessDeniedError } from '@compliance-theater/react/errors/access-denied-error';
 import { unwrapPromise } from '@compliance-theater/typescript';
 

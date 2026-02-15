@@ -9,7 +9,7 @@ import {
 } from '@/lib/api/email/util';
 import { query, queryExt } from '@compliance-theater/database/driver';
 import { LoggedError } from '@compliance-theater/logger';
-import { getAccessibleUserIds } from '@/lib/auth/resources/case-file/case-file-helpers';
+import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file/case-file-helpers';
 
 const NEVER_USE_USER_ID = -942370932 as const;
 export const dynamic = 'force-dynamic';

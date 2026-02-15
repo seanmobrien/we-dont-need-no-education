@@ -1,3 +1,13 @@
+const KeyCloak = (providerArgs = {}) => {
+  return {
+    id: 'keycloak',
+    name: 'Keycloak',
+    type: 'oidc',
+    style: { brandColor: '#428bca' },
+    options: providerArgs,
+  };
+};
+
 const setupKeyCloakProvider = () => {
   const providerArgs = {
     clientId: process.env.AUTH_KEYCLOAK_CLIENT_ID,
@@ -13,14 +23,10 @@ const setupKeyCloakProvider = () => {
     },
     allowDangerousEmailAccountLinking: true,
   };
-  const keycloak = {
-    id: 'keycloak',
-    name: 'Keycloak',
-    type: 'oidc',
-    style: { brandColor: '#428bca' },
-    options: providerArgs,
-  };
-  return [keycloak];
+
+  return [KeyCloak(providerArgs)];
 };
 
-module.exports = { setupKeyCloakProvider };
+module.exports = KeyCloak;
+module.exports.default = KeyCloak;
+module.exports.setupKeyCloakProvider = setupKeyCloakProvider;
