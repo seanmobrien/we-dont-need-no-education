@@ -62,7 +62,7 @@ exports[`KeyRefreshWrapper renders with default state snapshot 1`] = `
         </div>
       </div>
       <span
-        class="MuiBadge-badge MuiBadge-standard MuiBadge-invisible MuiBadge-anchorOriginTopRight MuiBadge-anchorOriginTopRightRectangular MuiBadge-overlapRectangular MuiBadge-colorPrimary css-aikwdp-MuiBadge-badge"
+        class="MuiBadge-badge MuiBadge-standard MuiBadge-invisible MuiBadge-anchorOriginTopRight MuiBadge-anchorOriginTopRightRectangular MuiBadge-overlapRectangular MuiBadge-colorPrimary css-utacyy-MuiBadge-badge"
       />
     </span>
   </div>

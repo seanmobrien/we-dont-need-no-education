@@ -24,6 +24,11 @@ import { useTodoLists } from '@/lib/hooks/use-todo';
 describe('TodoListFlyout', () => {
   const mockOnSelectList = jest.fn();
   let queryClient: QueryClient;
+  let originalGetBoundingClientRect: typeof Element.prototype.getBoundingClientRect;
+
+  beforeAll(() => {
+    originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+  });
 
   beforeEach(() => {
     queryClient = new QueryClient({
@@ -32,7 +37,24 @@ describe('TodoListFlyout', () => {
         mutations: { retry: false },
       },
     });
+
+    Element.prototype.getBoundingClientRect = jest.fn(() => ({
+      width: 240,
+      height: 40,
+      top: 100,
+      left: 100,
+      bottom: 140,
+      right: 340,
+      x: 100,
+      y: 100,
+      toJSON: jest.fn(),
+    }));
+
     jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
   });
 
   const TestWrapper = () => {
