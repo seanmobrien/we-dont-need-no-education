@@ -79,6 +79,7 @@ const config = {
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled  
   setupFilesAfterEnv: [
+    '<rootDir>/__tests__/shared/setup/jest.mock-text-encoding.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-log.ts',
     '<rootDir>/__tests__/shared/setup/jest.env-vars.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-redis.ts',

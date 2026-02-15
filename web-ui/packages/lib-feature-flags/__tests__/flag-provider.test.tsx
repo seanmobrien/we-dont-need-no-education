@@ -1,9 +1,23 @@
+// @jest-environment jsdom
+
 import React from 'react';
 import { render, waitFor, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { FlagProvider } from '../src/components/flag-provider';
 
+jest.mock('flagsmith/react', () => ({
+  useFlagsmithLoading: jest.fn(),
+}));
+
+jest.mock('@/components/auth/session-provider', () => ({
+  useSession: jest.fn(() => ({ userHash: 'test-user', status: 'unauthenticated' })),
+}));
+
+jest.mock('../src/client', () => ({
+  getAllFeatureFlags: jest.fn().mockResolvedValue({}),
+}));
+
 // Import mocked modules after jest.mock calls
-import { createFlagsmithInstance } from 'flagsmith/isomorphic';
 import { useFlagsmithLoading } from 'flagsmith/react';
 //import { mockFlagsmithInstanceFactory } from '../../app/__tests__/jest.setup';
 import {
@@ -28,13 +42,10 @@ describe('FlagProvider', () => {
     const renderedUi = (
       <FlagProvider>
         <CaptureFlagsmithContext />
-        <div data-testid="wait-for-it"></div>
       </FlagProvider>
     );
     const renderResult = render(renderedUi);
-    await waitFor(() =>
-      expect(screen.getByTestId('wait-for-it')).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(currentContext).toBeDefined());
     return {
       ...renderResult,
       renderedUi,
