@@ -101,6 +101,12 @@ const ChatPanelTestWrapper: React.FC<{
 );
 
 describe('ChatPanel Comprehensive Docking Tests', () => {
+  let originalGetBoundingClientRect: typeof Element.prototype.getBoundingClientRect;
+
+  beforeAll(() => {
+    originalGetBoundingClientRect = Element.prototype.getBoundingClientRect;
+  });
+
   beforeEach(() => {
     // Clear localStorage before each test
     localStorage.clear();
@@ -116,6 +122,22 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
       configurable: true,
       value: 800,
     });
+
+    Element.prototype.getBoundingClientRect = jest.fn(() => ({
+      width: 240,
+      height: 40,
+      top: 100,
+      left: 100,
+      bottom: 140,
+      right: 340,
+      x: 100,
+      y: 100,
+      toJSON: jest.fn(),
+    }));
+  });
+
+  afterEach(() => {
+    Element.prototype.getBoundingClientRect = originalGetBoundingClientRect;
   });
 
   describe('Float Mode', () => {
