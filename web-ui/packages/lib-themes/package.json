@@ -47,7 +47,7 @@
   "scripts": {
     "build": "yarn workspace @compliance-theater/themes run build:typescript",
     "build:typescript": "echo 'Building lib/themes...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/themes.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/themes.\u001b[0m\n' >&2; exit 1)",
-    "build:publish": "yarn workspace @compliance-theater/themes run build:clean && yarn workspace @compliance-theater/themes run build && yarn workspace @compliance-theater/themes pack --out ./dist/@compliance-theater-themes.tgz",
+    "build:publish": "yarn workspace @compliance-theater/themes run build && yarn workspace @compliance-theater/themes pack --out ./dist/@compliance-theater-themes.tgz",
     "test": "jest",
     "lint": "echo 'Linting lib-themes...'",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"

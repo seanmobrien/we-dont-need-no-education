@@ -37,7 +37,7 @@
   "scripts": {
     "build": "yarn workspace @compliance-theater/logger run build:typescript",
     "build:typescript": "echo 'Building lib/logger typescript...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/logger.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/logger.\u001b[0m\n' >&2; exit 1)",
-    "build:publish": "yarn workspace @compliance-theater/logger run build:clean && yarn workspace @compliance-theater/logger run build && yarn workspace @compliance-theater/logger pack --out ./dist/@compliance-theater-logger.tgz",
+    "build:publish": "yarn workspace @compliance-theater/logger run build && yarn workspace @compliance-theater/logger pack --out ./dist/@compliance-theater-logger.tgz",
     "test": "jest",
     "lint": "echo 'Linting lib-logger...'",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"

@@ -67,7 +67,7 @@
   "scripts": {
     "build": "yarn workspace @compliance-theater/nextjs run build:typescript",
     "build:typescript": "echo 'Building lib-nextjs typescript...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/nextjs.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/nextjs.\u001b[0m\n' >&2; exit 1)",
-    "build:publish": "yarn workspace @compliance-theater/nextjs run build:clean && yarn workspace @compliance-theater/nextjs run build && yarn workspace @compliance-theater/nextjs pack --out ./dist/@compliance-theater-nextjs.tgz",
+    "build:publish": "yarn workspace @compliance-theater/nextjs run build && yarn workspace @compliance-theater/nextjs pack --out ./dist/@compliance-theater-nextjs.tgz",
     "test": "jest --passWithNoTests",
     "lint": "echo 'Linting lib-nextjs...'",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"

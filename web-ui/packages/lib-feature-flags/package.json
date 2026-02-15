@@ -67,7 +67,7 @@
   "scripts": {
     "build": "yarn workspace @compliance-theater/feature-flags run build:typescript",
     "build:typescript": "echo 'Building lib/feature-flags typescript...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/feature-flags.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/feature-flags.\u001b[0m\n' >&2; exit 1)",
-    "build:publish": "yarn workspace @compliance-theater/feature-flags run build:clean && yarn workspace @compliance-theater/feature-flags run build && yarn workspace @compliance-theater/feature-flags pack --out ./dist/@compliance-theater-feature-flags.tgz",
+    "build:publish": "yarn workspace @compliance-theater/feature-flags run build && yarn workspace @compliance-theater/feature-flags pack --out ./dist/@compliance-theater-feature-flags.tgz",
     "test": "jest",
     "lint": "echo 'Linting lib-feature-flags...'",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"

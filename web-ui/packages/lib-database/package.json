@@ -42,7 +42,7 @@
   "scripts": {
     "build": "yarn workspace @compliance-theater/database run build:typescript",
     "build:typescript": "echo 'Building @compliance-theater/database...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/database.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/database.\u001b[0m\n' >&2; exit 1)",
-    "build:publish": "yarn workspace @compliance-theater/database run build:clean && yarn workspace @compliance-theater/database run build && yarn workspace @compliance-theater/database pack --out ./dist/@compliance-theater-database.tgz",
+    "build:publish": "yarn workspace @compliance-theater/database run build && yarn workspace @compliance-theater/database pack --out ./dist/@compliance-theater-database.tgz",
     "drizzle-generate": "drizzle-kit generate --config=drizzle.config.ts",
     "drizzle-migrate": "drizzle-kit migrate --config=drizzle.config.ts",
     "drizzle-studio": "drizzle-kit studio --config=drizzle.config.ts",
