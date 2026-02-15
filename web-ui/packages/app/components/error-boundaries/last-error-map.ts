@@ -1,7 +1,7 @@
 import {
   isErrorLike,
   StringOrErrorLike,
-} from '@/lib/react-util/errors/error-like';
+} from '@compliance-theater/react/errors/error-like';
 import { normalizeDebounceKey, normalizeErrorMessage } from './utility';
 
 export class LastErrorMap {

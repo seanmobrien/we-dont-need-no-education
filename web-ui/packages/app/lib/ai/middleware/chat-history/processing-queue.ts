@@ -18,7 +18,7 @@ import {
   safeCompleteMessagePersistence,
   safeInitializeMessagePersistence,
 } from './message-persistence';
-import { isError } from '@/lib/react-util/core';
+import { isError } from '@compliance-theater/react/utility-methods';
 
 export class ProcessingQueue {
   private queue: QueuedTask[] = [];

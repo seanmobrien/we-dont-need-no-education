@@ -1,4 +1,4 @@
-import type { ErrorLike } from '@/lib/react-util/errors/error-like';
+import type { ErrorLike } from '@compliance-theater/react/errors/error-like';
 import type { ErrorSuppressionRule, SuppressionResult } from './types';
 import { DEFAULT_SUPPRESSION_RULES } from './default-suppression-rules';
 

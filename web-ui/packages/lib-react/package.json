@@ -1,0 +1,62 @@
+{
+  "name": "@compliance-theater/react",
+  "version": "0.1.0",
+  "private": true,
+  "description": "React utilities and hooks for the Title IX Victim Advocacy Platform",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "workspace-source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./errors": {
+      "types": "./dist/errors/index.d.ts",
+      "workspace-source": "./src/errors/index.ts",
+      "default": "./dist/errors/index.js"
+    },
+    "./hooks": {
+      "types": "./dist/hooks/index.d.ts",
+      "workspace-source": "./src/hooks/index.ts",
+      "default": "./dist/hooks/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "scripts": {
+    "build": "yarn workspace @compliance-theater/react run build:typescript",
+    "build:publish": "yarn workspace @compliance-theater/react run build:clean && yarn workspace @compliance-theater/react run build && yarn workspace @compliance-theater/react pack --out ./dist/@compliance-theater-react.tgz",
+    "build:typescript": "echo 'Building lib/react typescript...' && tsc -b tsconfig.json && printf '\\u001b[1;32mBuild complete: @compliance-theater/react.\\u001b[0m\\n' || (printf '\\u001b[31mBuild failed: @compliance-theater/react.\\u001b[0m\\n' >&2; exit 1)",
+    "test": "jest",
+    "lint": "echo 'Linting lib-react...'",
+    "build:clean": "rimraf dist tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    "@compliance-theater/env": "workspace:*",
+    "@compliance-theater/logger": "workspace:*",
+    "@compliance-theater/typescript": "workspace:*"
+  },
+  "peerDependencies": {
+    "next": "^15.0.0",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "jest": "^30.0.5",
+    "rimraf": "^6.1.2",
+    "ts-jest": "^29.3.4",
+    "typescript": "^5"
+  }
+}

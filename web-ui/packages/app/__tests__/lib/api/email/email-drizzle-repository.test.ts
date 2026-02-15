@@ -4,7 +4,7 @@ import {
   EmailDrizzleRepository,
   EmailDomain,
 } from '@/lib/api/email/email-drizzle-repository';
-import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 
 import { drizDb, drizDbWithInit } from '@compliance-theater/database/orm';
 /*

@@ -8,7 +8,7 @@ import {
   getAvailableModel,
   CHAT_RETRY_DELAY_MS,
 } from './model-availability';
-import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
+import { RateRetryError } from '@compliance-theater/react/errors/rate-retry-error';
 
 export function disableModelFromRateLimit(
   modelKey: string,

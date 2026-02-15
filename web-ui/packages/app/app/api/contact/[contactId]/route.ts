@@ -6,7 +6,7 @@ import {
 import { query, queryExt } from '@compliance-theater/database/driver';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { globalContactCache } from '@/data-models/api';
-import { isTruthy } from '@/lib/react-util/utility-methods';
+import { isTruthy } from '@compliance-theater/react/utility-methods';
 
 export const dynamic = 'force-dynamic';
 

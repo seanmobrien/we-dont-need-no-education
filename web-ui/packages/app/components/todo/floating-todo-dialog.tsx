@@ -18,7 +18,7 @@ import { ResizableBox } from 'react-resizable';
 import { useTodoList, useToggleTodo } from '@/lib/hooks/use-todo';
 import type { Todo } from '@/data-models/api/todo';
 import 'react-resizable/css/styles.css';
-import { ClientWrapper } from '@/lib/react-util';
+import { ClientWrapper } from '@compliance-theater/react';
 import { useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
 
 export interface FloatingTodoDialogProps {

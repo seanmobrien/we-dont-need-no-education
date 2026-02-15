@@ -3,7 +3,7 @@ import {
   isStringOrErrorLike,
   asErrorLike,
   ErrorLike,
-} from '@/lib/react-util/errors/error-like';
+} from '@compliance-theater/react/errors/error-like';
 
 describe('isErrorLike', () => {
   it('returns true for a valid ErrorLike object', () => {

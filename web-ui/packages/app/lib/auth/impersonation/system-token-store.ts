@@ -37,8 +37,8 @@ import { createInstrumentedSpan } from '@compliance-theater/nextjs/server/utils'
 import { CryptoService } from '@/lib/site-util/auth/crypto-service';
 import { getRedisClient } from '@compliance-theater/redis';
 import { env } from '@compliance-theater/env';
-import { SimpleRateLimiter } from '@/lib/react-util/simple-rate-limiter';
-import { SimpleCircuitBreaker } from '@/lib/react-util/simple-circuit-breaker';
+import { SimpleRateLimiter } from '@compliance-theater/react/simple-rate-limiter';
+import { SimpleCircuitBreaker } from '@compliance-theater/react/simple-circuit-breaker';
 import type {
   AdminTokenConfig,
   TokenResponse,

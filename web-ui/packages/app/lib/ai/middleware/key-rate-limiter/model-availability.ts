@@ -8,7 +8,7 @@ import type {
   RateLimitedRequest,
 } from './types';
 import { v4 as uuidv4 } from 'uuid';
-import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
+import { RateRetryError } from '@compliance-theater/react/errors/rate-retry-error';
 
 export function getAvailableModel(
   provider: 'azure' | 'google',
