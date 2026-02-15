@@ -8,9 +8,9 @@ import {
   type AiModelType,
   type AiProviderType,
 } from '@/lib/ai/core';
-import type { AutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/types';
-import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
-import { KnownFeatureType } from '@/lib/site-util/feature-flags';
+import type { AutoRefreshFeatureFlag } from '@compliance-theater/feature-flags/types';
+import { wellKnownFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
+import { KnownFeatureType } from '@compliance-theater/feature-flags';
 import { LoggedError } from '@compliance-theater/logger';
 import { log } from '@compliance-theater/logger';
 

@@ -5,9 +5,9 @@ import type {
   MemoryHealthCheckResponse,
 } from '@/lib/ai/mem0/types/health-check';
 import { globalRequiredSingletonAsync } from '@compliance-theater/typescript/singleton-provider';
-import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
-import type { AutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/types';
-import type { KnownFeatureType } from '@/lib/site-util/feature-flags/known-feature';
+import { wellKnownFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
+import type { AutoRefreshFeatureFlag } from '@compliance-theater/feature-flags/types';
+import type { KnownFeatureType } from '@compliance-theater/feature-flags/known-feature';
 
 // Helper functions to get auto-refresh feature flags for health cache TTLs
 export const getHealthMemoryCacheTtlFlag = () =>

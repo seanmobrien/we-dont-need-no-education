@@ -59,6 +59,7 @@
     "@compliance-theater/after": "workspace:*",
     "@compliance-theater/database": "workspace:*",
     "@compliance-theater/env": "workspace:*",
+    "@compliance-theater/feature-flags": "workspace:*",
     "@compliance-theater/logger": "workspace:*",
     "@compliance-theater/react": "workspace:*",
     "@compliance-theater/redis": "workspace:*",

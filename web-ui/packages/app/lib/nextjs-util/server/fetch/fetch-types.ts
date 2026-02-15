@@ -8,7 +8,7 @@
  * - fetch.ts (FetchManager)
  */
 
-import { EnhancedFetchConfig } from '@/lib/site-util/feature-flags/types';
+import { EnhancedFetchConfig } from '@compliance-theater/feature-flags/types';
 import type { LRUCache } from 'lru-cache';
 import type { RedisClientType } from 'redis';
 

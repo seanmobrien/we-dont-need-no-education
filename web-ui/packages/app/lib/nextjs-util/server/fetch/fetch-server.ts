@@ -31,8 +31,8 @@ import type {
   RequestInit,
   ServerFetchManager,
 } from './fetch-types';
-import { EnhancedFetchConfig } from '@/lib/site-util/feature-flags/types';
-import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
+import { EnhancedFetchConfig } from '@compliance-theater/feature-flags/types';
+import { AllFeatureFlagsDefault } from '@compliance-theater/feature-flags/known-feature-defaults';
 import { withTimeout } from '../../with-timeout';
 import { TimeoutError } from '@compliance-theater/react/errors/timeout-error';
 

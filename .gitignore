@@ -54,6 +54,30 @@ yarn-error.log*
 next-env.d.ts
 .buildinfo
 
+# TypeScript compilation outputs (exclude from source directories)
+# Ignore .js, .jsx, and .map files in main source directories where we have .ts/.tsx files
+# Note: Generated .d.ts files should not be in source directories. 
+# Configure TypeScript with "declarationDir" to output them to dist/ instead.
+web-ui/packages/app/**/*.js
+web-ui/packages/app/**/*.js.map
+web-ui/packages/app/**/*.jsx
+web-ui/packages/app/**/*.jsx.map
+web-ui/packages/app/**/*.d.ts.map
+web-ui/packages/__tests__/**/*.js
+web-ui/packages/__tests__/**/*.js.map
+web-ui/packages/__tests__/**/*.jsx
+web-ui/packages/__tests__/**/*.jsx.map
+web-ui/packages/__mocks__/**/*.js
+web-ui/packages/__mocks__/**/*.js.map
+web-ui/packages/__mocks__/**/*.jsx
+web-ui/packages/__mocks__/**/*.jsx.map
+# But keep intentional .js files
+!web-ui/packages/app/eslint-rules/**/*.js
+!web-ui/packages/app/scripts/**/*.js
+!web-ui/packages/app/data-models/api/email-properties/property-type.js
+!web-ui/packages/__mocks__/keycloak-provider.js
+!web-ui/packages/__mocks__/zodex.js
+
 # vs code
 #.vscode
 #**/.vscode

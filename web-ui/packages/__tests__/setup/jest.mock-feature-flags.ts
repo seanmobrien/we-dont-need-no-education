@@ -1,5 +1,5 @@
 import { SingletonProvider } from '@compliance-theater/typescript';
-import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
+import { AllFeatureFlagsDefault } from '@compliance-theater/feature-flags/known-feature-defaults';
 
 const NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID = 'test-environment-id';
 const NEXT_PUBLIC_FLAGSMITH_API_URL =
@@ -305,8 +305,8 @@ const createAutoRefreshFlagImpl = (options: AutoRefreshFeatureFlagOptions) => {
   };
 };
 
-jest.mock('@/lib/site-util/feature-flags', () => {
-  const originalModule = jest.requireActual('@/lib/site-util/feature-flags');
+jest.mock('@compliance-theater/feature-flags', () => {
+  const originalModule = jest.requireActual('@compliance-theater/feature-flags');
   return {
     __esModule: true,
     ...originalModule,
@@ -322,9 +322,9 @@ jest.mock('@/lib/site-util/feature-flags', () => {
     ),
   };
 });
-jest.mock('@/lib/site-util/feature-flags/feature-flag-with-refresh', () => {
+jest.mock('@compliance-theater/feature-flags/feature-flag-with-refresh', () => {
   const originalModule = jest.requireActual(
-    '@/lib/site-util/feature-flags/feature-flag-with-refresh'
+    '@compliance-theater/feature-flags/feature-flag-with-refresh'
   );
   return {
     __esModule: true,
@@ -355,7 +355,7 @@ import {
   createAutoRefreshFeatureFlagSync,
   wellKnownFlag,
   wellKnownFlagSync,
-} from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+} from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 import { en } from 'zod/v4/locales';
 
 afterEach(() => {

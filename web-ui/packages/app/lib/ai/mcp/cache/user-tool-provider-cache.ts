@@ -14,7 +14,7 @@ import type {
   UserToolProviderCacheConfig,
 } from '../types';
 import { log, LoggedError } from '@compliance-theater/logger';
-import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
+import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
 import { globalRequiredSingleton } from '@compliance-theater/typescript';
 
 /**

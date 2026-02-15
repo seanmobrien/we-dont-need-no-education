@@ -32,9 +32,9 @@ import { DockedPanel } from './docked-panel';
 import { onClientToolRequest } from '@/lib/ai/client';
 import { FirstParameter } from '@compliance-theater/typescript';
 import { panelStableStyles } from './styles';
-import { AllFeatureFlagsDefault } from '@/lib/site-util/feature-flags/known-feature-defaults';
-import type { KnownFeatureValueType } from '@/lib/site-util/feature-flags/types';
-import { useFeatureFlags } from '@/lib/site-util/feature-flags';
+import { AllFeatureFlagsDefault } from '@compliance-theater/feature-flags/known-feature-defaults';
+import type { KnownFeatureValueType } from '@compliance-theater/feature-flags/types';
+import { useFeatureFlags } from '@compliance-theater/feature-flags';
 import { useRouter } from 'next/navigation';
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>

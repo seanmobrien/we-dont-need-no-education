@@ -51,7 +51,7 @@ import {
 } from '@/lib/ai/tools/todo';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { FirstParameter } from '@compliance-theater/typescript';
-import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import { wellKnownFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 import { env } from '@compliance-theater/env';
 import {
   type BasicResourceRecord,

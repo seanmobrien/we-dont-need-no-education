@@ -5,8 +5,8 @@ import type {
   UserToolProviderCache as UserToolProviderCacheType,
 } from '@/lib/ai/mcp/types';
 
-import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
-jest.mock('@/lib/site-util/feature-flags/server', () => ({
+import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
+jest.mock('@compliance-theater/feature-flags/server', () => ({
   getFeatureFlag: jest.fn(),
   getAllFeatureFlags: jest.fn(),
 }));

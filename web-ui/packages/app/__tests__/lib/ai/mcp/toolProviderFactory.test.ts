@@ -94,7 +94,7 @@ import type {
 import { LoggedError as mockLoggedError } from '@compliance-theater/logger'
 import { ToolSet } from 'ai';
 import z from 'zod';
-import { createAutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import { createAutoRefreshFeatureFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 import EventEmitter from '@protobufjs/eventemitter';
 
 type DisposedEmitter = {

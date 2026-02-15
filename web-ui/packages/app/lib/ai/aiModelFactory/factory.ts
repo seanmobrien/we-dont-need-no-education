@@ -29,13 +29,13 @@ import {
   isNotNull,
   SingletonProvider,
 } from '@compliance-theater/typescript';
-import { isAutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import { isAutoRefreshFeatureFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 import type {
   AutoRefreshFeatureFlag,
   KnownFeatureType,
   ModelProviderFactoryConfig,
   ModelServerConfig,
-} from '@/lib/site-util/feature-flags/types';
+} from '@compliance-theater/feature-flags/types';
 import { isPromise } from 'util/types';
 import {
   type ModelFromDeploymentId,
