@@ -1051,6 +1051,10 @@ __metadata:
     ts-jest: "npm:^29.3.4"
     typescript: "npm:^5"
   peerDependencies:
+    "@emotion/cache": ^11.14.0
+    "@emotion/react": ^11.14.0
+    "@mui/icons-material": ^7.3.6
+    "@mui/material": ^7.3.6
     next: ">=15.1.4"
     react: ^19.0.0
     react-dom: ^19.0.0

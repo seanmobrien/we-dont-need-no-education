@@ -67,6 +67,10 @@
     "tough-cookie": "^5.0.0"
   },
   "peerDependencies": {
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@mui/icons-material": "^7.3.6",
+    "@mui/material": "^7.3.6",
     "next": ">=15.1.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
