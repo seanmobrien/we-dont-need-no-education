@@ -61,6 +61,7 @@
     "@compliance-theater/env": "workspace:*",
     "@compliance-theater/feature-flags": "workspace:*",
     "@compliance-theater/logger": "workspace:*",
+    "@compliance-theater/react": "workspace:*",
     "@compliance-theater/redis": "workspace:*",
     "@compliance-theater/send-api-request": "workspace:*",
     "@compliance-theater/themes": "workspace:*",

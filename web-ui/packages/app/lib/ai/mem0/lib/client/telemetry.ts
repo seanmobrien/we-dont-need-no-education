@@ -2,7 +2,7 @@
 import type { TelemetryClient, TelemetryOptions } from './telemetry.types';
 import { log } from '@compliance-theater/logger/core';
 import { fetch } from '@/lib/nextjs-util/fetch';
-import { cryptoRandomBytes } from '@/lib/react-util/crypto-random-bytes';
+import { cryptoRandomBytes } from '@compliance-theater/react/crypto-random-bytes';
 
 let version = '2.1.26';
 

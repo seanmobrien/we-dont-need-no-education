@@ -8,7 +8,7 @@ import {
   useSearchParams,
 } from 'next/dist/client/components/navigation';
 import { useEffect, useMemo } from 'react';
-import { makeAbsoluteUrl } from '@/lib/react-util/url';
+import { makeAbsoluteUrl } from '@compliance-theater/react/url';
 
 export const TrackWithAppInsight = () => {
   const { status, data: session } = useSession<Session>();

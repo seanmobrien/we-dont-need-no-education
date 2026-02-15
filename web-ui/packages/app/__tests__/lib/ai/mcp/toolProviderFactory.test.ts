@@ -17,8 +17,8 @@ const mockGetCachedTools = jest.fn() as unknown as jest.MockedFunction<
 >;
 mockGetCachedTools.mockResolvedValue(null as Record<string, unknown> | null);
 
-jest.mock('@/lib/react-util/utility-methods', () => {
-  const originalReactUtil = jest.requireActual('/lib/react-util/utility-methods');
+jest.mock('@compliance-theater/react/utility-methods', () => {
+  const originalReactUtil = jest.requireActual('@compliance-theater/react/utility-methods');
   return {
     ...originalReactUtil,
     getResolvedPromises: mockGetResolvedPromises,

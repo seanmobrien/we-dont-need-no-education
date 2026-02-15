@@ -19,7 +19,7 @@
  */
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useDynamicWidth } from '@/lib/react-util/hooks/use-dynamic-width';
+import { useDynamicWidth } from '@compliance-theater/react/hooks/use-dynamic-width';
 
 /**
  * Creates a canvas-based text measurement utility for accurate text dimensions.

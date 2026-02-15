@@ -32,29 +32,3 @@ export interface StorageStrategyConfig {
   enableFallback?: boolean;
 }
 
-/**
- * Base configuration settings for cached data - from @/lib/react-util/types
- */
-export type CacheConfig = {
-  /**
-   * Time-to-live for cached entries, in seconds
-   */
-  ttl?: number;
-};
-
-/**
- * Redis cache configuration - from @/lib/react-util/types
- */
-export type RedisCacheConfig = CacheConfig & {
-  /**
-   * Key prefix for storage keys (Redis only)
-   */
-  keyPrefix?: string;
-};
-
-/**
- * LRU cache configuration - from @/lib/react-util/types
- */
-export type LruCacheConfig = CacheConfig & {
-  max?: number;
-};

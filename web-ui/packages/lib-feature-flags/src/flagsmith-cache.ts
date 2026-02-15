@@ -8,7 +8,7 @@ import {
 import { LRUCache } from 'lru-cache';
 import { getRedisClient } from '@compliance-theater/redis';
 import { LoggedError, log } from '@compliance-theater/logger';
-import type { LruCacheConfig, RedisCacheConfig } from './external-types';
+import type { LruCacheConfig, RedisCacheConfig } from '@compliance-theater/react/types';
 
 type Flag = Flags['flags'][string];
 

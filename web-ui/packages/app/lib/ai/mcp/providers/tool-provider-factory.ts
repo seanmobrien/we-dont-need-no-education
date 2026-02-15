@@ -13,7 +13,7 @@ import EventEmitter from '@protobufjs/eventemitter';
 import type { Tool, ToolSet } from 'ai';
 import {
   getResolvedPromises,
-} from '@/lib/react-util/utility-methods';
+} from '@compliance-theater/react/utility-methods';
 import { isAbortError, isError } from '@compliance-theater/logger';
 import { withEmittingDispose } from '@/lib/nextjs-util/utils';
 import { SingletonProvider } from '@compliance-theater/typescript';
