@@ -59,7 +59,7 @@ const mockFetchConfig = jest.fn(() => ({
   },
 }));
 
-jest.mock('@/lib/nextjs-util/server/fetch/fetch-config', () => ({
+jest.mock('@compliance-theater/nextjs/server/fetch/fetch-config', () => ({
   fetchConfigSync: jest.fn(() => mockFetchConfig()),
 }));
 

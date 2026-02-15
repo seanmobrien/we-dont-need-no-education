@@ -65,7 +65,7 @@ jest.mock('@compliance-theater/logger', () => ({
   },
 }));
 
-jest.mock('@/lib/nextjs-util/server/error-response', () => ({
+jest.mock('@compliance-theater/nextjs/server/error-response', () => ({
   errorResponseFactory: (
     message: string,
     options: { cause?: unknown } = {}

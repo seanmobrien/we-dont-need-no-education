@@ -4,7 +4,7 @@ import { AuthorizationService } from '@/lib/auth/resources/authorization-service
 import { fetch } from '@compliance-theater/nextjs/server';
 import { decodeToken } from '@/lib/auth/utilities';
 
-jest.mock('@/lib/nextjs-util/server');
+jest.mock('@compliance-theater/nextjs/server');
 jest.mock('@/lib/auth/utilities');
 jest.mock('@compliance-theater/env', () => ({
   env: jest.fn((key) => {

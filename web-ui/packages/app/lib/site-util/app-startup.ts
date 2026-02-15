@@ -5,7 +5,7 @@ import { createStartupAccessors } from '@compliance-theater/after';
  * The AppStartup class will discover and call initAppStartup exports
  * from the configured modules during initialization.
  */
-const { startup, state, getInstance } = createStartupAccessors({
+const { startup, state } = createStartupAccessors({
   initializerModules: [
     '@/lib/react-util/errors/logged-error-reporter/init',
     '@/lib/ai/aiModelFactory/init',

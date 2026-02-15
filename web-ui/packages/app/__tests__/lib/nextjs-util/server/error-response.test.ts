@@ -25,7 +25,7 @@ beforeAll(async () => {
   } catch {
     // ignore if undici cannot be loaded; tests may provide their own env
   }
-  const mod = await import('@/lib/nextjs-util/server/error-response');
+  const mod = await import('@compliance-theater/nextjs/server/error-response');
   parseResponseOptions = mod.parseResponseOptions;
   errorResponseFactory = mod.errorResponseFactory as any;
 });

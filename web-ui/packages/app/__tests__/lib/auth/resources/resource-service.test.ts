@@ -10,7 +10,7 @@ import { decodeToken } from '@/lib/auth/utilities';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 
 // Mock dependencies
-jest.mock('@/lib/nextjs-util/server', () => ({
+jest.mock('@compliance-theater/nextjs/server', () => ({
   fetch: jest.fn(),
 }));
 

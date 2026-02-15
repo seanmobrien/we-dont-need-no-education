@@ -26,6 +26,7 @@ export const initAppStartup = async (): Promise<void> => {
 
   const refreshFlag = async <FeatureType extends KnownFeatureType>(
     key: FeatureType,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     flag: Promise<any | undefined>
   ) => {
     try {
