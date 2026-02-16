@@ -13,12 +13,6 @@
       ],
       "@compliance-theater/logger/*": [
         "../lib-logger/dist/*"
-      ],
-      "@compliance-theater/react": [
-        "../lib-react/dist"
-      ],
-      "@compliance-theater/react/*": [
-        "../lib-react/dist/*"
       ]
     },
     "noEmit": false,
@@ -39,9 +33,6 @@
   "references": [
     {
       "path": "../lib-logger"
-    },
-    {
-      "path": "../lib-react"
     }
   ]
 }

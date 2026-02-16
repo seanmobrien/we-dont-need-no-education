@@ -6,8 +6,6 @@ import {
   isAiModelType,
   isAiLanguageModelType,
   isAiProviderType,
-  generateChatId,
-  splitIds,
 } from '@compliance-theater/types/ai/core';
 
 describe('AI Core Types', () => {
@@ -44,33 +42,6 @@ describe('AI Core Types', () => {
       expect(isAiProviderType('google')).toBe(true);
       expect(isAiProviderType('openai')).toBe(true);
       expect(isAiProviderType('invalid')).toBe(false);
-    });
-  });
-
-  describe('Chat ID Utilities', () => {
-    it('should generate chat IDs', () => {
-      const { id, seed } = generateChatId();
-      expect(typeof id).toBe('string');
-      expect(id.length).toBe(8);
-      expect(typeof seed).toBe('number');
-    });
-
-    it('should generate deterministic IDs from seeds', () => {
-      const { id: id1 } = generateChatId(12345);
-      const { id: id2 } = generateChatId(12345);
-      expect(id1).toBe(id2);
-    });
-
-    it('should split compound IDs', () => {
-      const [primary, secondary] = splitIds('chat123:msg456');
-      expect(primary).toBe('chat123');
-      expect(secondary).toBe('msg456');
-    });
-
-    it('should handle IDs without delimiter', () => {
-      const [primary, secondary] = splitIds('chat123');
-      expect(primary).toBe('chat123');
-      expect(secondary).toBeUndefined();
     });
   });
 });

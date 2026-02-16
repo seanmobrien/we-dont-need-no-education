@@ -15,8 +15,7 @@ lib-types/
 │   │   ├── core/           # Core AI types, unions, and guards
 │   │   │   ├── types.ts    # Annotated message types
 │   │   │   ├── unions.ts   # AI model and provider type unions
-│   │   │   ├── guards.ts   # Type guard functions
-│   │   │   └── chat-ids.ts # Chat ID generation utilities
+│   │   │   └── guards.ts   # Type guard functions
 │   │   └── chat/           # Chat-specific types
 │   │       └── types.ts    # Chat history types (turns, messages)
 │   └── index.ts            # Main package exports
@@ -55,15 +54,6 @@ import {
 } from '@compliance-theater/types/ai/core';
 ```
 
-### Generating Chat IDs
-
-```typescript
-import { generateChatId, splitIds } from '@compliance-theater/types/ai/core';
-
-const { id, seed } = generateChatId();
-const [chatId, messageId] = splitIds('chat123:msg456');
-```
-
 ## Development
 
 ### Building
@@ -87,6 +77,5 @@ yarn lint
 ## Dependencies
 
 - `@compliance-theater/logger` - Logging utilities
-- `@compliance-theater/react` - React utility functions (for crypto-random-bytes)
 - `ai` - Vercel AI SDK types
 - `ts-pattern` - Pattern matching for type guards

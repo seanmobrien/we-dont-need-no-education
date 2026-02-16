@@ -3,3 +3,4 @@
  * This file maintains backward compatibility with existing imports.
  */
 export * from '@compliance-theater/types/ai/core';
+export * from './chat-ids';

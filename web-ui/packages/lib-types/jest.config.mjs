@@ -12,7 +12,6 @@ const config = {
     "^@/(.*)$": "<rootDir>/../app/$1",
     "^@compliance-theater/types/(.*)$": "<rootDir>/src/$1",
     "^@compliance-theater/logger$": "<rootDir>/../lib-logger/src/index.ts",
-    "^@compliance-theater/react/(.*)$": "<rootDir>/../lib-react/src/$1",
   },
   transform: {
     "^.+\\.tsx?$": [

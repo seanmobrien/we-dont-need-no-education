@@ -1,11 +1,10 @@
 /**
- * AI Core Types and Utilities
+ * AI Core Types
  * 
- * This module exports type definitions, unions, guards, and utilities
+ * This module exports type definitions, unions, and guards
  * for core AI functionality.
  */
 
 export * from './types';
 export * from './unions';
 export * from './guards';
-export * from './chat-ids';
