@@ -51,7 +51,6 @@ export {
   isProgressEvent,
   isXmlHttpRequest,
   getStackTrace as getStackTraceFromErrors,
-
 } from './errors/utilities/error-guards';
 
 // Error handling
@@ -71,4 +70,7 @@ export type {
   ErrorReportArgs,
 } from './errors/logged-error/types';
 
-export type { SafeProgressEvent } from './errors/utilities/error-guards';
+export type { SafeProgressEvent } from './errors/utilities/safe-progress-event';
+
+export type { ISingletonProvider } from './singleton-provider';
+export { singletonProviderFactory } from './singleton-provider';

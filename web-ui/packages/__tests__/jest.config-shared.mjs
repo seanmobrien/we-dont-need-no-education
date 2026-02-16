@@ -143,7 +143,7 @@ const config = {
     '!dist/**/*.*', // Exclude dist build files
   ],
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
-  coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats
+  coverageReporters: ['json', 'lcov', 'text-summary', 'text', 'clover'], // Coverage report formats
   // detectLeaks: true,
   // detectOpenHandles: true, // Enable detection of async operations that prevent Jest from exiting
   // logHeapUsage: true,

@@ -4,7 +4,7 @@
  */
 import type { AdminTokenConfig } from './impersonation.types';
 
-declare module '@/lib/auth/impersonation/utility' {
+declare module '@compliance-theater/auth/lib/impersonation/utility' {
   /**
    * Checks if the current request is an impersonation request.
    *

@@ -25,11 +25,23 @@
     "dist"
   ],
   "references": [
-    { "path": "../lib-logger" },
-    { "path": "../lib-env" },
-    { "path": "../lib-typescript" },
-    { "path": "../lib-database" },
-    { "path": "../lib-nextjs" },
-    { "path": "../lib-react" }
+    {
+      "path": "../lib-logger"
+    },
+    {
+      "path": "../lib-env"
+    },
+    {
+      "path": "../lib-typescript"
+    },
+    {
+      "path": "../lib-database"
+    },
+    {
+      "path": "../lib-nextjs"
+    },
+    {
+      "path": "../lib-react"
+    }
   ]
 }

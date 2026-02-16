@@ -5,7 +5,7 @@ import type { ServiceInstanceOverloads } from '@compliance-theater/typescript';
  * @module @/lib/auth/resources/resource-service
  */
 
-declare module '@/lib/auth/resources/resource-service' {
+declare module '@compliance-theater/auth/lib/resources/resource-service' {
   /**
    * Service for managing Keycloak resources
    */

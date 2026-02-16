@@ -9,7 +9,7 @@
  * @version 1.0.0
  */
 
-declare module '@/lib/auth/resources/case-file/case-file-helpers' {
+declare module '@compliance-theater/auth/lib/resources/case-file/case-file-helpers' {
   /**
    * Extracts the user_id (case file ID) associated with a given email ID
    *

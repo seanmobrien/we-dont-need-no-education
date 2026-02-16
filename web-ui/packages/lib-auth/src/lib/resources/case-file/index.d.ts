@@ -22,7 +22,7 @@ import type {
  *
  * @module lib/auth/resources/case-file
  */
-declare module '@/lib/auth/resources/case-file' {
+declare module '@compliance-theater/auth/lib/resources/case-file' {
   export {
     ensureCaseFileResource,
     checkCaseFileAccess,

@@ -3,7 +3,7 @@ const config = {
   projects: ['<rootDir>/packages/*/jest.config.mjs'],
   coverageDirectory: '<rootDir>/coverage',
   collectCoverageFrom: [
-    'packages/**/*.{ts,tsx}',
+    'packages/**/*.{ts,tsx,mjs}',
     '!**/*.d.ts',
     '!**/node_modules/**',
     '!**/__tests__/**',

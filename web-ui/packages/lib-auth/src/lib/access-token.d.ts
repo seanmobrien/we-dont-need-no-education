@@ -5,7 +5,7 @@
 import type { NextRequest, NextResponse } from 'next/server';
 import type { NormalizedAccessToken, NormalizeAccessTokenOptions } from './types';
 
-declare module '@/lib/auth/access-token' {
+declare module '@compliance-theater/auth/lib/access-token' {
   /**
    * Overloaded interface for `withRequestAccessToken` function.
    */

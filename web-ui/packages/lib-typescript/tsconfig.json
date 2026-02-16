@@ -7,14 +7,7 @@
     "declaration": true,
     "declarationMap": true,
     "baseUrl": ".",
-    "paths": {
-      "@compliance-theater/logger": [
-        "../lib-logger/dist"
-      ],
-      "@compliance-theater/logger/*": [
-        "../lib-logger/dist/*"
-      ]
-    },
+    "paths": {},
     "noEmit": false,
     "types": [
       "node",
@@ -33,6 +26,9 @@
   "references": [
     {
       "path": "../lib-logger"
+    },
+    {
+      "path": "../lib-env"
     }
   ]
 }

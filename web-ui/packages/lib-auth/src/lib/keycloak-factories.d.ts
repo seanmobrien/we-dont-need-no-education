@@ -8,7 +8,7 @@
  * the codebase so callers can rely on a small, well-documented subset of APIs.
  */
 
-declare module '@/lib/auth/keycloak-factories' {
+declare module '@compliance-theater/auth/lib/keycloak-factories' {
   /**
    * Supported HTTP methods used when constructing Keycloak API requests.
    */

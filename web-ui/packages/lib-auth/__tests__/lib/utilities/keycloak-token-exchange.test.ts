@@ -13,15 +13,18 @@ process.env.NEXTAUTH_SECRET = 'test-nextauth-secret';
 import {
   KeycloakTokenExchange,
   TokenExchangeError,
-} from '@/lib/site-util/auth/keycloak-token-exchange';
-import axios from 'axios';
+} from '../../../../src/lib/utilities/keycloak-token-exchange';
+//@/lib/site-util/auth/keycloak-token-exchange'; 
+import got from 'got';
 import { getToken } from '@auth/core/jwt';
 
 // Mock dependencies
-jest.mock('axios');
+jest.mock('got');
 // jest.mock('@auth/core/jwt');
 
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+const mockedGot = got as unknown as {
+  post: jest.Mock;
+};
 const mockedGetToken = getToken as jest.MockedFunction<typeof getToken>;
 
 describe('KeycloakTokenExchange', () => {
@@ -107,14 +110,14 @@ describe('KeycloakTokenExchange', () => {
   describe('exchangeForGoogleTokens', () => {
     it('should successfully exchange tokens', async () => {
       const mockResponse = {
-        data: {
-          access_token: 'google-access-token',
-          refresh_token: 'google-refresh-token',
-          token_type: 'Bearer',
-        },
+        access_token: 'google-access-token',
+        refresh_token: 'google-refresh-token',
+        token_type: 'Bearer',
       };
 
-      mockedAxios.post.mockResolvedValue(mockResponse);
+      mockedGot.post.mockReturnValue({
+        json: jest.fn().mockResolvedValue(mockResponse),
+      });
 
       const result = await tokenExchange.exchangeForGoogleTokens({
         subjectToken: 'keycloak-token',
@@ -125,28 +128,33 @@ describe('KeycloakTokenExchange', () => {
         refresh_token: 'google-refresh-token',
       });
 
-      expect(mockedAxios.post).toHaveBeenCalledWith(
+      expect(mockedGot.post).toHaveBeenCalledWith(
         'https://keycloak.example.com/realms/test/protocol/openid-connect/token',
-        expect.stringContaining(
-          'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange',
-        ),
         expect.objectContaining({
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          timeout: 10000,
-        }),
+          form: expect.objectContaining({
+            grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+            subject_token: 'keycloak-token',
+          }),
+          timeout: {
+            request: 10000,
+          },
+        ),
       );
     });
 
     it('should throw error when exchange fails', async () => {
-      mockedAxios.post.mockRejectedValue({
-        isAxiosError: true,
-        response: {
-          status: 400,
-          data: {
-            error: 'invalid_grant',
-            error_description: 'Token exchange failed',
+      mockedGot.post.mockReturnValue({
+        json: jest.fn().mockRejectedValue({
+          message: 'Request failed with status code 400',
+          response: {
+            statusCode: 400,
+            body: JSON.stringify({
+              error: 'invalid_grant',
+              error_description: 'Token exchange failed',
+            }),
           },
-        },
+        }),
       });
 
       await expect(
@@ -157,8 +165,10 @@ describe('KeycloakTokenExchange', () => {
     });
 
     it('should throw error when response is missing tokens', async () => {
-      mockedAxios.post.mockResolvedValue({
-        data: { token_type: 'Bearer' }, // Missing access_token and refresh_token
+      mockedGot.post.mockReturnValue({
+        json: jest.fn().mockResolvedValue({
+          token_type: 'Bearer', // Missing access_token and refresh_token
+        }),
       });
 
       await expect(
@@ -166,6 +176,26 @@ describe('KeycloakTokenExchange', () => {
           subjectToken: 'keycloak-token',
         }),
       ).rejects.toThrow('Invalid token response from Keycloak');
+    });
+
+    it('should handle got-style object error payloads', async () => {
+      mockedGot.post.mockReturnValue({
+        json: jest.fn().mockRejectedValue({
+          message: 'Request failed with status code 400',
+        response: {
+            statusCode: 400,
+            body: {
+              error_description: 'Token exchange failed',
+            },
+          },
+        }),
+      });
+
+      await expect(
+        tokenExchange.exchangeForGoogleTokens({
+          subjectToken: 'invalid-token',
+        }),
+      ).rejects.toThrow(TokenExchangeError);
     });
   });
 
@@ -177,12 +207,12 @@ describe('KeycloakTokenExchange', () => {
         access_token: 'keycloak-access-token',
       } as any);
 
-      mockedAxios.post.mockResolvedValue({
-        data: {
+      mockedGot.post.mockReturnValue({
+        json: jest.fn().mockResolvedValue({
           access_token: 'google-access-token',
           refresh_token: 'google-refresh-token',
           token_type: 'Bearer',
-        },
+        }),
       });
 
       const result =

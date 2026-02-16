@@ -1,4 +1,4 @@
-import type { IPostgresError } from '@compliance-theater/logger/errors/types';
+import type { IPostgresError } from '@compliance-theater/logger/errors';
 import type { RowList } from 'postgres';
 import type { IResultset } from './types';
 import { Resultset } from './index-postgres';

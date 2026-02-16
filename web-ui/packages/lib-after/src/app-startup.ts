@@ -1,5 +1,4 @@
-import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
-import { globalRequiredSingleton } from '@compliance-theater/typescript';
+import { log, safeSerialize, LoggedError, singletonProviderFactory } from '@compliance-theater/logger';
 import AfterManager from './index';
 
 /**
@@ -221,8 +220,9 @@ export class AppStartup {
    */
   static createInstance(config: AppStartupConfig = {}): AppStartup {
     const singletonKey = config.singletonKey || '@noeducation/app-startup';
-    
-    return globalRequiredSingleton(singletonKey, () => {
+    const singletonProvider = singletonProviderFactory();
+    if (!singletonProvider) { throw new Error('Singleton provider is not available'); }
+    return singletonProvider.getOrCreate(singletonKey, () => {
       const instance = new AppStartup(config);
       
       // Initialize app startup
@@ -241,7 +241,7 @@ export class AppStartup {
       );
 
       return instance;
-    });
+    })! satisfies AppStartup;
   }
 }
 
@@ -252,7 +252,7 @@ export class AppStartup {
  * @returns Functions to access the startup state
  */
 export const createStartupAccessors = (config: AppStartupConfig = {}) => {
-  const getInstance = () => AppStartup.createInstance(config);
+  const getInstance = () => singletonProviderFactory()?.getOrCreate(config.singletonKey || '@noeducation/app-startup', () => AppStartup.createInstance(config))!;
   
   return {
     /**

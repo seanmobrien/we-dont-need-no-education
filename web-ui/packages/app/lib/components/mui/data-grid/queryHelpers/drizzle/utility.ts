@@ -28,29 +28,29 @@ export const getEmailColumn = <
 }): PgColumn | undefined => {
   switch (columnName) {
     case 'email_id':
-      return schema.documentUnits.emailId;
+      return schema.documentUnits.emailId as unknown as PgColumn;
     case 'property_id':
-      return schema.documentProperty.propertyId;
+      return schema.documentProperty.propertyId as unknown as PgColumn;
     case 'property_value':
     case 'value':
-      return schema.documentProperty.propertyValue;
+      return schema.documentProperty.propertyValue as unknown as PgColumn;
     case 'document_property_type_id':
     case 'typeId':
-      return schema.documentProperty.documentPropertyTypeId;
+      return schema.documentProperty.documentPropertyTypeId as unknown as PgColumn;
     case 'document_id':
-      return schema.documentProperty.documentId;
+      return schema.documentProperty.documentId as unknown as PgColumn;
     case 'created_on':
-      return schema.documentProperty.createdOn;
+      return schema.documentProperty.createdOn as unknown as PgColumn;
     case 'policy_basis':
-      return schema.documentProperty.policyBasis;
+      return schema.documentProperty.policyBasis as unknown as PgColumn;
     case 'tags':
-      return schema.documentProperty.tags;
+      return schema.documentProperty.tags as unknown as PgColumn;
     case 'property_name':
-      return schema.emailPropertyType.propertyName;
+      return schema.emailPropertyType.propertyName as unknown as PgColumn;
     case 'description':
-      return schema.emailPropertyCategory.description;
+      return schema.emailPropertyCategory.description as unknown as PgColumn;
     case 'email_property_category_id':
-      return schema.emailPropertyCategory.emailPropertyCategoryId;
+      return schema.emailPropertyCategory.emailPropertyCategoryId as unknown as PgColumn;
     case 'compliance_chapter_13_reasons':
       return isKeyOf('complianceChapter13Reasons', table)
         ? (table['complianceChapter13Reasons' as keyof TSchema] as PgColumn)

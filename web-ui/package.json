@@ -1,32 +1,31 @@
 {
   "name": "compliance-theater",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "workspaces": [
     "packages/*"
   ],
-  "packageManager": "yarn@4.12.0",
   "scripts": {
-    "dev": "turbo run dev",
-    "debug": "turbo run debug",
-    "build": "turbo run build",
-    "build:typescript": "turbo run build:typescript",
-    "build:publish": "yarn workspace compliance-theater install --immutable && turbo run build:publish",
-    "build:clean": "turbo run build:clean",
-    "test": "turbo run test --coverage",
-    "test:fast": "turbo run test",
-    "test:unit": "turbo run test:unit",
-    "test:e2e": "turbo run test:e2e",
-    "lint": "turbo run lint",
+    "dev": "turbo run dev --filter='@compliance-theater/*'",
+    "debug": "turbo run debug --filter='@compliance-theater/*'",
+    "build": "turbo run build --filter='@compliance-theater/*'",
+    "build:typescript": "turbo run build:typescript --filter='@compliance-theater/*'",
+    "build:publish": "turbo run build:publish --filter='@compliance-theater/*'",
+    "build:clean": "turbo run build:clean --filter='@compliance-theater/*'",
+    "test": "turbo run test --filter='@compliance-theater/*' -- ",
+    "test:coverage": "turbo run test --filter='@compliance-theater/*' -- --coverage",
+    "test:fast": "turbo run test --filter='@compliance-theater/*' --",
+    "test:unit": "turbo run test:unit --filter='@compliance-theater/*' -- --coverage",
+    "test:e2e": "turbo run test:e2e --filter='@compliance-theater/*' --",
+    "lint": "turbo run lint --filter='@compliance-theater/*'",
     "postinstall": "patch-package"
   },
   "devDependencies": {
+    "@jest/globals": "^29.0.0",
+    "@types/node": "25.2.3",
+    "babel-plugin-react-compiler": "^1.0.0",
     "patch-package": "^8.0.0",
     "postinstall-postinstall": "^2.1.0",
     "turbo": "^2.8.3"
-  },
-  "resolutions": {
-    "lodash-es@npm:^4.17.21": "npm:4.17.23",
-    "@esbuild-kit/core-utils/esbuild": "0.25.0"
   }
 }

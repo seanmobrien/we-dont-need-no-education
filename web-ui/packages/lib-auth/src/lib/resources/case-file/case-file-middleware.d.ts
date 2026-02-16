@@ -6,7 +6,7 @@ import { CaseFileScope } from './case-file-resource';
  *
  * @module lib/auth/resources/case-file/case-file-middleware
  */
-declare module '@/lib/auth/resources/case-file/case-file-middleware' {
+declare module '@compliance-theater/auth/lib/resources/case-file/case-file-middleware' {
   /**
    * Options for case file authorization middleware
    */

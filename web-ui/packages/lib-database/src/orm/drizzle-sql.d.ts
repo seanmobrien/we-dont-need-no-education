@@ -3,7 +3,7 @@
  * @module @/lib/drizzle-db/drizzle-sql
  */
 
-declare module '@/lib/drizzle-db/drizzle-sql' {
+declare module '@compliance-theater/database/orm/drizzle-sql' {
   import { SQL } from 'drizzle-orm';
 
   /**

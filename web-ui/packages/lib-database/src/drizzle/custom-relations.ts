@@ -1,3 +1,6 @@
+// eslint-disable @typescript-eslint/no-implicit-any
+
+
 import { relations } from 'drizzle-orm/relations';
 import {
   callToActionDetails,

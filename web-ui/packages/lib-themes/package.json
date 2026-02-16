@@ -45,28 +45,35 @@
     "yarn": ">=1.22.0"
   },
   "scripts": {
-    "build": "yarn workspace @compliance-theater/themes run build:typescript",
+    "build": "yarn run build:typescript",
     "build:typescript": "echo 'Building lib/themes...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/themes.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/themes.\u001b[0m\n' >&2; exit 1)",
-    "build:publish": "yarn workspace @compliance-theater/themes run build && yarn workspace @compliance-theater/themes pack --out ./dist/@compliance-theater-themes.tgz",
+    "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-themes.tgz",
     "test": "jest",
     "lint": "echo 'Linting lib-themes...'",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    "@compliance-theater/logger": "workspace:*"
+    "@compliance-theater/logger": "workspace:*",
+    "@mui/icons-material": "^7.3.6",
+    "@mui/material": "^7.3.6",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
-    "@types/react": "^19.0.0",
+    "@jest/globals": "^29.0.0",
+    "@types/node": "25.2.3",
+    "@types/react": "^19.2.0",
+    "babel-plugin-react-compiler": "^1.0.0",
     "jest": "^30.0.5",
     "rimraf": "^6.1.2",
-    "ts-jest": "^29.3.4",
+    "ts-jest": "^30.0.0",
     "typescript": "^5"
   },
   "peerDependencies": {
-    "@mui/icons-material": "^7.3.6",
-    "@mui/material": "^7.3.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/api-logs": "0.57.2",
+    "mitt": "^3.0.1",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0"
   }
 }

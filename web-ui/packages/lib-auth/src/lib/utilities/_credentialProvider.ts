@@ -58,15 +58,15 @@ const getTokensFromUser = async (
     }
 
     work[tokenSymbol][userId] = {
-      refresh_token: tokens.refresh_token,
+      refresh_token: tokens.refresh_token ?? '',
       access_token: tokens.access_token,
     };
 
     return {
-      refresh_token: tokens.refresh_token,
+      refresh_token: tokens.refresh_token ?? '',
       access_token: tokens.access_token,
       userId: userId,
-    };
+    } satisfies Omit<ICredential, 'client'>;
   } catch (error) {
     if (error instanceof TokenExchangeError) {
       throw new Error(

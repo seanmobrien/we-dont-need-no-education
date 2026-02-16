@@ -1,5 +1,5 @@
 /**
- * @module site-util/env/_server
+ * @module @compliance-theater/env/_server
  * @description Server-side environment variable configuration and validation
  *
  * This module provides type-safe access to server-only environment variables

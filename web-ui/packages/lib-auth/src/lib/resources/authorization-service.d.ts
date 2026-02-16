@@ -5,7 +5,7 @@ import type { ServiceInstanceOverloads } from '@compliance-theater/typescript';
  * @module @/lib/auth/resources/authorization-service
  */
 
-declare module '@/lib/auth/resources/authorization-service' {
+declare module '@compliance-theater/auth/lib/resources/authorization-service' {
   /**
    * Options for checking resource access
    */

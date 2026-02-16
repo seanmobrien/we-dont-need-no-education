@@ -1,5 +1,4 @@
-import { log, LoggedError } from '@compliance-theater/logger';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
+import { log, LoggedError, singletonProviderFactory } from '@compliance-theater/logger';
 
 // Re-export AppStartup functionality
 export {
@@ -38,17 +37,25 @@ export default class AfterManager {
 
   /** Internal singleton accessor stored on SingletonProvider to survive reloads */
   static get #instance(): AfterManager | undefined {
-    return SingletonProvider.Instance.get<
+    const singletonProvider = singletonProviderFactory();
+    if (!singletonProvider) {
+      throw new Error('Singleton provider is not available');
+    }
+    return singletonProvider.get<
       AfterManager,
       typeof AFTER_MANAGER_KEY
     >(AFTER_MANAGER_KEY);
   }
 
   static set #instance(value: AfterManager | undefined) {
+    const singletonProvider = singletonProviderFactory();
+    if (!singletonProvider) {
+      throw new Error('Singleton provider is not available');
+    }
     if (value === undefined) {
-      SingletonProvider.Instance.delete(AFTER_MANAGER_KEY);
+      singletonProvider.delete(AFTER_MANAGER_KEY);
     } else {
-      SingletonProvider.Instance.set(AFTER_MANAGER_KEY, value);
+      singletonProvider.set(AFTER_MANAGER_KEY, value);
     }
   }
 
@@ -121,7 +128,7 @@ export default class AfterManager {
         }
         if (!AfterManager.#prexit) {
           AfterManager.#prexit = instance;
-          AfterManager.#prexit(AfterManager.#teardown);
+          instance(AfterManager.#teardown);
         }
       } catch (error) {
         throw LoggedError.isTurtlesAllTheWayDownBaby(error, {

@@ -122,13 +122,6 @@ export { isXmlHttpRequest } from './utilities/error-guards';
 export { getStackTrace } from './utilities/error-guards';
 
 /**
- * Safe narrowed type used when handling browser progress events in shared code.
- *
- * @see module:@compliance-theater/logger/errors/utilities/error-guards
- */
-export type { SafeProgressEvent } from './utilities/error-guards';
-
-/**
  * Postgres/Drizzle error interface and SQLSTATE helpers.
  *
  * @remarks
@@ -139,3 +132,10 @@ export type { SafeProgressEvent } from './utilities/error-guards';
  * @see module:@compliance-theater/logger/errors/postgres-error
  */
 export { PostgresError, isDrizzleError, errorFromCode } from './postgres-error';
+
+/**
+ * Safe narrowed type used when handling browser progress events in shared code.
+ *
+ * @see module:@compliance-theater/logger/errors/utilities/error-guards
+ */
+export type { SafeProgressEvent } from './utilities/safe-progress-event';

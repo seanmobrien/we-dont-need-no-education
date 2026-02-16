@@ -1,6 +1,6 @@
 import type { DatabaseType } from '@compliance-theater/database/orm';
 
-declare module '@/lib/site-util/auth/user-keys-server' {
+declare module '@compliance-theater/auth/lib/utilities/user-keys-server' {
   /**
    * Returns all public keys for a user that were active at a given date.
    *

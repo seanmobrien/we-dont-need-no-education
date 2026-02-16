@@ -1,6 +1,6 @@
 import type { ICredential, CredentialOptions } from './_types';
 
-declare module '@/lib/site-util/auth/_credentialProvider' {
+declare module '@compliance-theater/auth/lib/utilities/_credentialProvider' {
   /**
    * Credential factory function
    *

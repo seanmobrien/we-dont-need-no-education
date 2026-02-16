@@ -3,7 +3,7 @@
  * @module @/lib/auth/impersonation/impersonation.types
  */
 
-declare module '@/lib/auth/impersonation/impersonation.types' {
+declare module '@compliance-theater/auth/lib/impersonation/impersonation.types' {
   /**
    * Impersonation session types.
    */

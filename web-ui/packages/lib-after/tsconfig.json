@@ -23,7 +23,8 @@
     "dist"
   ],
   "references": [
-    { "path": "../lib-logger" },
-    { "path": "../lib-typescript" }
+    {
+      "path": "../lib-logger"
+    },
   ]
 }

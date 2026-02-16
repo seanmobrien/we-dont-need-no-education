@@ -1,6 +1,6 @@
 import type { SessionExt } from './_types';
 
-declare module '@/lib/site-util/auth/_guards' {
+declare module '@compliance-theater/auth/lib/utilities/_guards' {
   /**
    * Type guard to check if a session object is a SessionExt
    *

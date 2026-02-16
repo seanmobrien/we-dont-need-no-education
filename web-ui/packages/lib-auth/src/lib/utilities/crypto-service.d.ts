@@ -1,4 +1,4 @@
-declare module '@/lib/site-util/auth/crypto-service' {
+declare module '@compliance-theater/auth/lib/utilities/crypto-service' {
   /**
    * Module: CryptoService
    *

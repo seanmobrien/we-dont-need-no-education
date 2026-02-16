@@ -1,6 +1,6 @@
 import type { Session } from '@auth/core/types';
 
-declare module '@/lib/site-util/auth/security' {
+declare module '@compliance-theater/auth/lib/utilities/security' {
   /**
    * Determines whether a signed-in user is authorized to access (read and/or write) another user's resources.
    *

@@ -1,5 +1,5 @@
 /**
- * @module site-util/env/_common
+ * @module @compliance-theater/env/_common
  * @description Common utilities for environment configuration and runtime detection
  *
  * This module provides foundational utilities for determining the current runtime

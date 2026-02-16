@@ -1,5 +1,5 @@
 
-declare module '@compliance-theater/logger/error/types' {
+declare module '@compliance-theater/logger/errors/types' {
 
 
 /**

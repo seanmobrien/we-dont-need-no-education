@@ -1,36 +1,70 @@
-import axios, { AxiosResponse } from 'axios';
-// import { getToken } from 'next-auth/jwt';
+import { got } from 'got';
 import { getToken } from '@auth/core/jwt';
 import { NextRequest } from 'next/server';
-import { NextApiRequest } from 'next';
+import type { NextApiRequest } from 'next';
 import { env } from '@compliance-theater/env';
 import { SingletonProvider } from '@compliance-theater/typescript';
+import type { KeycloakConfig, TokenExchangeParams, TokenExchangeResponse, GoogleTokens } from './token-exchange-types';
 
-export interface KeycloakConfig {
-  issuer: string;
-  clientId: string;
-  clientSecret: string;
-}
+type TokenErrorPayload = {
+  error?: string;
+  error_description?: string;
+};
 
-export interface TokenExchangeParams {
-  subjectToken: string;
-  audience?: string;
-  requestedTokenType?: string;
-  scope?: string;
-}
+type GotLikeError = {
+  message: string;
+  response?: {
+    statusCode?: number;
+    body?: unknown;
+  };
+};
 
-export interface TokenExchangeResponse {
-  access_token: string;
-  refresh_token?: string;
-  token_type: string;
-  expires_in?: number;
-  scope?: string;
-}
+const isObjectRecord = (
+  value: unknown
+): value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null;
+};
 
-export interface GoogleTokens {
-  refresh_token: string;
-  access_token: string;
-}
+const parseTokenErrorPayload = (body: unknown): TokenErrorPayload | undefined => {
+  if (isObjectRecord(body)) {
+    const error =
+      typeof body.error === 'string' ? body.error : undefined;
+    const errorDescription =
+      typeof body.error_description === 'string'
+        ? body.error_description
+        : undefined;
+    return {
+      error,
+      error_description: errorDescription,
+    };
+  }
+
+  if (typeof body === 'string') {
+    try {
+      const parsed: unknown = JSON.parse(body);
+      if (isObjectRecord(parsed)) {
+        return {
+          error: typeof parsed.error === 'string' ? parsed.error : undefined,
+          error_description:
+            typeof parsed.error_description === 'string'
+              ? parsed.error_description
+              : undefined,
+        };
+      }
+    } catch {
+      return undefined;
+    }
+  }
+
+  return undefined;
+};
+
+const isGotLikeError = (error: unknown): error is GotLikeError => {
+  return (
+    isObjectRecord(error) &&
+    typeof error.message === 'string'
+  );
+};
 
 export class TokenExchangeError extends Error {
   constructor(
@@ -132,7 +166,7 @@ export class KeycloakTokenExchange {
   async exchangeForGoogleTokens(
     params: TokenExchangeParams
   ): Promise<GoogleTokens> {
-    const requestParams = new URLSearchParams({
+    const requestParams = {
       grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
       client_id: this.config.clientId,
       client_secret: this.config.clientSecret,
@@ -143,30 +177,32 @@ export class KeycloakTokenExchange {
         'urn:ietf:params:oauth:token-type:refresh_token',
       audience: params.audience ?? 'google',
       ...(params.scope && { scope: params.scope }),
-    });
+    };
 
     try {
-      const response: AxiosResponse<TokenExchangeResponse> = await axios.post(
+      const response: TokenExchangeResponse = await got.post(
         this.tokenEndpoint,
-        requestParams.toString(),
         {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-          timeout: 10000, // 10 second timeout
+          form: requestParams,
+          timeout: {
+            request: 10000,
+          },
         }
-      );
+      ).json<TokenExchangeResponse>();
 
-      return this.extractGoogleTokens(response.data);
+      return this.extractGoogleTokens(response);
     } catch (error) {
       // Re-throw TokenExchangeError instances as-is
       if (error instanceof TokenExchangeError) {
         throw error;
       }
 
-      if (axios.isAxiosError(error)) {
-        const status = error.response?.status;
-        const errorData = error.response?.data;
+      if (isGotLikeError(error)) {
+        const status = error.response?.statusCode;
+        const errorData = parseTokenErrorPayload(error.response?.body);
         const errorMessage =
           errorData?.error_description || errorData?.error || error.message;
 

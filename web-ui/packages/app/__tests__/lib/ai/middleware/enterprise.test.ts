@@ -41,10 +41,9 @@ import {
   getPrometheusMetrics,
 } from '@/lib/ai/middleware/cacheWithRedis/metrics';
 import { getRedisClient, closeRedisClient } from '@compliance-theater/redis';
-import type { RedisClientType } from 'redis';
 
 describe('Enterprise Cache Features', () => {
-  let redis: RedisClientType;
+  let redis: Awaited<ReturnType<typeof getRedisClient>>;
 
   beforeAll(async () => {
     withRedisConnection();

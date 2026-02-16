@@ -515,9 +515,9 @@ yarn test:concurrency-stress # Run tests with high concurrency
 yarn lint                   # Run ESLint checks
 
 # Database
-yarn workspace @compliance-theater/database drizzle-generate  # Generate Drizzle schema
-yarn workspace @compliance-theater/database drizzle-migrate   # Run database migrations
-yarn workspace @compliance-theater/database drizzle-studio    # Open Drizzle Studio
+yarn drizzle-generate  # Generate Drizzle schema
+yarn drizzle-migrate   # Run database migrations
+yarn drizzle-studio    # Open Drizzle Studio
 
 # Build Analysis
 ANALYZE=true yarn build     # Build with bundle analyzer
@@ -722,7 +722,7 @@ yarn debug
 ANALYZE=true yarn build
 
 # Database debugging
-yarn workspace @compliance-theater/database drizzle-studio
+yarn drizzle-studio
 
 # Test environment debugging
 yarn test --verbose

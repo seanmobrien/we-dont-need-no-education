@@ -1,5 +1,5 @@
 /**
- * @module site-util/env/_client
+ * @module @compliance-theater/env/_client
  * @description Client-side environment variable configuration and validation
  *
  * This module provides type-safe access to client-side (NEXT_PUBLIC_*) environment

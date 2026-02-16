@@ -1,5 +1,5 @@
 /**
- * @module site-util/env
+ * @module @compliance-theater/env
  * @description Central environment variable management with type-safe access
  *
  * This module provides a unified interface for accessing environment variables

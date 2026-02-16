@@ -31,6 +31,9 @@
         "DATABASE_URL",
         "WORKSPACE_SOURCE_IMPORTS"
       ]
+    },    
+    "@compliance-theater/app#build": {
+      "outputs": []
     },
     "build:typescript": {
       "dependsOn": ["^build:typescript"],
@@ -51,8 +54,11 @@
         "WORKSPACE_SOURCE_IMPORTS"
       ]
     },
+    "@compliance-theater/app#build:typescript": {
+      "outputs": []
+    },
     "build:publish": {
-      "dependsOn": ["^build:publish", "build:clean"],
+      "dependsOn": ["^build:publish", "build:clean", "install"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
         "AUTH_*",
@@ -70,12 +76,6 @@
         "WORKSPACE_SOURCE_IMPORTS"
       ]
     },
-    "@compliance-theater/app#build": {
-      "outputs": []
-    },
-    "@compliance-theater/app#build:typescript": {
-      "outputs": []
-    },
     "build:clean": {
       "dependsOn": ["^build:clean"],
       "cache": false,
@@ -84,27 +84,29 @@
     },
     "dev": {
       "cache": false,
+      "dependsOn": ["^dev"],
       "persistent": true
     },
     "debug": {
       "cache": false,
+      "dependsOn": ["^debug"],
       "persistent": true
     },
     "test": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^test"],
       "outputs": [],
       "inputs": ["**/*.test.ts", "**/*.test.tsx", "__tests__/**/*", "*.mjs"]
     },
     "test:unit": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^test:unit"],
       "outputs": []
     },
     "test:e2e": {
-      "dependsOn": ["build"],
+      "dependsOn": ["^test:e2e"],
       "cache": false
     },
     "lint": {
-      "dependsOn": ["build:typescript"],
+      "dependsOn": ["^lint"],
       "outputs": []
     }
   }

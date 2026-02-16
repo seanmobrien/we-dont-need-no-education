@@ -7,14 +7,7 @@
     "declaration": true,
     "declarationMap": true,
     "baseUrl": ".",
-    "paths": {
-      "next": [
-        "../../node_modules/next"
-      ],
-      "next/*": [
-        "../../node_modules/next/*"
-      ]
-    },
+    "paths": {},
     "types": [
       "node",
       "jest"

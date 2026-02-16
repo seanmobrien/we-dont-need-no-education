@@ -1,19 +1,91 @@
 {
   "name": "compliance-theater-repo-root",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
+  "packageManager": "yarn@4.12.0",
+  "packageManagerConfig": {
+    "ignore-peerdeps": [
+      "@textea/json-viewer@4.0.1:@mui/material",
+      "@textea/json-viewer@4.0.1:react",
+      "@textea/json-viewer@4.0.1:react-dom"
+    ]
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "yarn": ">=4.12.0"
+  },
   "workspaces": [
+    "web-ui",
     "web-ui/packages/*"
   ],
-  "devDependencies": {
-    "@changesets/cli": "^2.29.8"
-  },
   "scripts": {
-    "preinstall": "node preinstall.js",
-    "dev": "echo noop",
-    "build": "echo noop",
-    "test": "echo noop",
-    "lint": "echo noop"
+    "preinstall": "node scripts/validate-yarn.js",
+    "changeset": "changeset",
+    "changeset:status": "changeset status",
+    "changeset:version": "changeset version",
+    "changeset:publish": "changeset publish",
+    "release:version": "changeset version",
+    "release:publish": "changeset publish",
+    "dev": "yarn workspace compliance-theater dev",
+    "debug": "yarn workspace compliance-theater debug",
+    "build": "yarn workspace compliance-theater build",
+    "build:typescript": "yarn workspace compliance-theater build:typescript",
+    "build:publish": "yarn workspace compliance-theater build:publish",
+    "build:clean": "yarn workspace compliance-theater build:clean",
+    "test": "yarn workspace compliance-theater test",
+    "test:coverage": "yarn workspace compliance-theater test:coverage",
+    "test:fast": "yarn workspace compliance-theater test:fast",
+    "test:unit": "yarn workspace compliance-theater test:unit",
+    "test:e2e": "yarn workspace compliance-theater test:e2e",
+    "lint": "yarn workspace compliance-theater lint",
+    "ci:install": "yarn install",
+    "ci:build": "yarn build",
+    "ci:test": "yarn test",
+    "vercel-build": "yarn run ci:build"
   },
-  "packageManager": "yarn@4.12.0"
+  "devDependencies": {
+    "@changesets/cli": "^2.29.8",
+    "@jest/globals": "^30.0.5",
+    "@types/node": "25.2.3",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
+    "jest-mock-extended": "^4.0.0-beta1",
+    "ts-jest": "^29.4.6",
+    "turbo": "^2.8.3",
+    "typescript": "^5"
+  },
+  "resolutions": {
+    "lodash-es@npm:^4.17.21": "npm:4.17.23",
+    "@textea/json-viewer@4.0.1/@mui/material": "7.3.8",
+    "@textea/json-viewer@4.0.1/react": "19.2.4",
+    "@textea/json-viewer@4.0.1/react-dom": "19.2.4",
+    "@esbuild-kit/core-utils/esbuild": "^0.27.3",
+    "drizzle-kit/esbuild": "^0.27.3",
+    "vite/esbuild": "^0.27.3",
+    "node-html-parser": "^7.0.2",
+    "next": "^15.5.12",
+    "@jest/globals": "^30.0.5",
+    "jest": "^30.0.5",
+    "ts-jest": "^29.4.6",
+    "@types/node": "25.2.3",
+    "tough-cookie": "^6.0.0"
+  },
+  "overrides": {
+    "uri-js": "npm:uri-js-replace",
+    "psl": "npm:@imput/psl@2.0.4",
+    "data-urls@3.*": {
+      "whatwg-url": "12.0.1"
+    },
+    "jest-environment-jsdom": {
+      "jsdom": {
+        "whatwg-url": "12.0.1"
+      }
+    },
+    "@textea-json-viewer@4.0.1": {
+      "@mui/material": "npm:@mui-material-replace@7.3.6",
+      "react": "npm:react@19.2.0",
+      "react-dom": "npm:react-dom@19.2.0"
+    }
+  }
 }

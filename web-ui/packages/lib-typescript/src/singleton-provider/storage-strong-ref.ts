@@ -12,7 +12,7 @@
  * @see {@link SingletonStorageStrategy} for the interface this implements
  */
 
-import { getStackTrace } from "@compliance-theater/logger/utilities";
+import { getStackTrace } from "@compliance-theater/logger";
 import { log } from "@compliance-theater/logger/core";
 import {
   GlobalWithMyGlobal,

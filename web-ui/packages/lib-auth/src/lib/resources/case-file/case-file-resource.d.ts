@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server';
  *
  * @module lib/auth/resources/case-file/case-file-resource
  */
-declare module '@/lib/auth/resources/case-file/case-file-resource' {
+declare module '@compliance-theater/auth/lib/resources/case-file/case-file-resource' {
   /**
    * Represents a case file resource in Keycloak
    */

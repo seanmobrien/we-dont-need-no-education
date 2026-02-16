@@ -1,5 +1,6 @@
-import { SafeProgressEvent, isProgressEvent } from './utilities/error-guards';
-import { ErrorContext, IContextEnricher } from './types';
+import { isProgressEvent } from './utilities/error-guards';
+import type { SafeProgressEvent } from './utilities/safe-progress-event';
+import type { ErrorContext, IContextEnricher } from './types';
 
 export class ProgressEventError<
     TEventTarget extends EventTarget = XMLHttpRequest,

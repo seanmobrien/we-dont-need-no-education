@@ -1,4 +1,5 @@
 import { IsNotNull } from "../types";
+import type { ISingletonProvider } from "@compliance-theater/logger";
 import { StrongReferenceStorage } from "./storage-strong-ref";
 import { WeakReferenceStorage } from "./storage-weak-ref";
 import {
@@ -13,7 +14,7 @@ const globalSymbol = Symbol.for(
   );
 type GlobalSymbolType = typeof globalSymbol;
 
-export class SingletonProvider {
+export class SingletonProvider implements ISingletonProvider {
   #strongStorage = new StrongReferenceStorage();
   #weakStorage = new WeakReferenceStorage();
   #storageByKey: Map<SingletonStorageKey, SingletonStorageStrategy> = new Map();

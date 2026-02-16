@@ -10,45 +10,25 @@ This document describes the monorepo refactoring of the Title IX Victim Advocacy
 
 1. **Workspace Structure**
 
-   - Created `web-ui/packages/` directory for monorepo packages
-   - Moved application code to `web-ui/packages/app/`
-   - Added Turborepo (`turbo@^2.3.3`) for build orchestration
-   - Set explicit `packageManager` to `yarn@1.22.22`
-   - Made web-ui completely self-contained with all config files
+   - Created root `packages.json` package.
+   - Created `web-ui/packages.json` workspace package.
+   - Created `web-ui/packages/app` directory for monorepo web app bundle.
+   - Added Turborepo (`turbo@^2.3.3`) to `web-ui` for build orchestration.
+   - Created base typescript setup
+     - `web-ui/tsconfig.base.json` contains baseline setup
+     - `web-ui/tsconfig.next.json` extends baseline to support next.js
 
 2. **Build Orchestration**
 
    - Created `web-ui/turbo.json` with task pipelines for:
      - `build`: Builds packages with dependency order
+      - `build:typescript`: Fast typescript-only checking
+      - `build:clean`: Cleans project output
+      - `build:package`: Builds for release distribution
      - `dev`: Development mode (no caching)
      - `test`: Unit tests with coverage
      - `test:e2e`: End-to-end tests
      - `lint`: Linting across packages
-
-3. **Testing Infrastructure**
-
-   - Created `web-ui/jest.config.mjs` for coordinating package tests
-   - Configured to collect coverage from all packages in `packages/*`
-   - Set up project references for multi-package testing
-
-4. **Main Application Move**
-
-   - Moved original `web-ui/` → `web-ui/packages/app/` using `git mv` (preserves history)
-   - Updated package name from `compliance-theater` → `@compliance-theater/app`
-   - Created `web-ui/package.json` as workspace root
-
-5. **CI/CD Updates**
-
-   - Updated `.github/workflows/web-ui-docker-deploy.yml` to use `web-ui/packages/app` paths
-   - Updated `.github/workflows/maven.yml` to reference `web-ui/yarn.lock`
-   - All Docker build contexts now point to `./web-ui/packages/app`
-   - Environment file generation updated for new structure
-
-6. **Repository Cleanup**
-   - Removed redundant root-level files (turbo.json, yarn.lock)
-   - All Node.js configuration lives in `web-ui/`
-   - Root package.json simplified to delegate to web-ui
-   - Preserved all existing `.gitignore` rules for monorepo
 
 ## Repository Structure
 
@@ -67,7 +47,7 @@ This document describes the monorepo refactoring of the Title IX Victim Advocacy
 
 ## Remaining Work
 
-### Phase 2: Extract Core Library Packages
+See [MONOREPO_STATUS.md] for more details.
 
 Each package extraction follows this pattern:
 
@@ -76,77 +56,11 @@ Each package extraction follows this pattern:
 3. Create package.json with proper exports
 4. Create tsconfig.json for TypeScript
 5. Set up package-specific jest.config.mjs
+6. Setup `__tests__` and `__mocks__` symlinks
 6. Update imports in app and other packages
 7. Test that package works independently
 
-#### Packages to Extract
-
-**Critical Infrastructure** (extract first, few dependencies):
-
-- `web-ui/packages/lib-logger` ← `web-ui/packages/app/lib/logger`
-- `web-ui/packages/lib-env` ← `web-ui/packages/app/lib/site-util/env` NOTE: This functionality will need to be reworked slightly to become more generic
-- `web-ui/packages/lib-typescript` ← `web-ui/packages/app/lib/typescript`
-- `web-ui/packages/lib-send-api-request` ← `web-ui/packages/app/lib/send-api-request`
-
-**Data Layer** (depends on logger, typescript):
-
-- `web-ui/packages/lib-database` ← merge:
-  - `web-ui/packages/app/drizzle/`
-  - `web-ui/packages/app/lib/drizzle-db/`
-  - `web-ui/packages/app/lib/neondb/`
-- `web-ui/packages/lib-redis-client` ← `web-ui/packages/app/lib/redis-client`
-
-**Utilities** (depends on above):
-
-- `web-ui/packages/lib-site-util` ← `web-ui/packages/app/lib/site-util` NOTE: Extend @compliance-theater/env to include all currently exported variables in env object schemas
-- `web-ui/packages/lib-react-util` ← `web-ui/packages/app/lib/react-util`
-- `web-ui/packages/lib-nextjs-util` ← `web-ui/packages/app/lib/nextjs-util`
-
-**Authentication** (depends on database):
-
-- `web-ui/packages/lib-auth` ← `web-ui/packages/app/lib/auth`
-
-**Error Handling** (depends on logger):
-
-- `web-ui/packages/lib-error-monitoring` ← `web-ui/packages/app/lib/error-monitoring`
-
-### Phase 3: Extract Feature Packages
-
-**Instrumentation** (depends on logger, error-monitoring):
-
-- `web-ui/packages/instrument` ← `web-ui/packages/app/instrument/`
-
-**Data Models** (depends on database):
-
-- `web-ui/packages/data-models` ← `web-ui/packages/app/data-models/`
-
-**Components** (depends on react-util, themes):
-
-- `web-ui/packages/components` ← merge:
-  - `web-ui/packages/app/components/`
-  - `web-ui/packages/app/lib/components/`
-
-**Optional Feature Libraries** (evaluate if worth extracting):
-
-- `web-ui/packages/lib-ai` ← `web-ui/packages/app/lib/ai/`
-- `web-ui/packages/lib-api` ← `web-ui/packages/app/lib/api/`
-- `web-ui/packages/lib-email` ← `web-ui/packages/app/lib/email/`
-- `web-ui/packages/lib-hooks` ← `web-ui/packages/app/lib/hooks/`
-- `web-ui/packages/lib-config` ← `web-ui/packages/app/lib/config/`
-- `web-ui/packages/lib-styles` ← `web-ui/packages/app/lib/styles/`
-- `web-ui/packages/lib-themes` ← `web-ui/packages/app/lib/themes/`
-
-### Phase 4: Test Utilities
-
-**Shared Test Infrastructure**:
-
-- `web-ui/packages/test-utils` ← extract from:
-  - `web-ui/packages/app/__tests__/setup/jest.setup.ts`
-  - `web-ui/packages/app/__tests__/test-utils.tsx`
-  - `web-ui/packages/app/__tests__/mocks/`
-  - Common test helpers and fixtures
-
-### Phase 5: Import Path Updates
+### Import Path Updates
 
 After extracting each package, update all imports:
 
@@ -175,16 +89,22 @@ Each package needs:
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
-    }
+      "workspace-source": "./src/index.ts",       
+      "default": "./dist/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*.ts",
+      "default": "./dist/*.js"
+    },
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsup src/index.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "build": "yarn run build:typescript",
+    "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-react.tgz",
+    "build:typescript": "echo 'Building lib/react typescript...' && tsc -b tsconfig.json && printf '\\u001b[1;32mBuild complete: [project].\\u001b[0m\\n' || (printf '\\u001b[31mBuild failed: [project].\\u001b[0m\\n' >&2; exit 1)",
     "test": "jest",
-    "lint": "eslint src/"
+    "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
     // Package-specific dependencies
@@ -197,13 +117,13 @@ Each package needs:
 }
 ```
 
-### Phase 7: Testing Strategy
+### Phase 2: Testing Strategy
 
 **Per-Package Tests**:
 
 - Each package has `__tests__/` or `src/__tests__/`
 - Each package has `jest.config.mjs` extending root config
-- Tests can be run independently: `yarn workspace @compliance-theater/logger test`
+- Tests can be run independently: `yarn test`
 
 **Integration Tests**:
 
@@ -224,7 +144,7 @@ Each package needs:
 yarn test
 
 # Specific package
-yarn workspace @compliance-theater/logger test
+yarn test
 
 # All unit tests
 yarn test:unit
@@ -233,7 +153,7 @@ yarn test:unit
 yarn test:e2e
 ```
 
-### Phase 8: CI/CD Considerations
+### Phase 3: CI/CD Considerations
 
 **Build Process**:
 
@@ -321,26 +241,24 @@ Create `web-ui/packages/[package-name]/package.json` using this template:
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
-  },
-  "engines": {
-    "node": ">=22.0.0",
-    "yarn": ">=1.22.0"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsc -b tsconfig.json",
-    "build:typescript": "echo 'Building [package-name] typescript...' && tsc -b tsconfig.json && echo 'TypeScript build complete.' || (echo 'Typescript compile did not succeed' >&2; exit 1)",
+    "build": "yarn run build:typescript",
+    "build:publish": "yarn run build && yarn pack --out ./dist/[project].tgz",
+    "build:typescript": "echo 'Building lib/react typescript...' && tsc -b tsconfig.json && printf '\\u001b[1;32mBuild complete: [project].\\u001b[0m\\n' || (printf '\\u001b[31mBuild failed: [project].\\u001b[0m\\n' >&2; exit 1)",
     "test": "jest",
-    "lint": "echo 'Linting [package-name]...'",
-    "clean:build": "rimraf dist tsconfig.tsbuildinfo"
+    "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
     // Add package-specific dependencies here
@@ -376,14 +294,6 @@ Create `web-ui/packages/[package-name]/tsconfig.json`:
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true,
-    "noEmit": false,
-    "types": [
-      "node",
-      "jest"
-    ]
   },
   "include": [
     "src/**/*.d.ts",
@@ -588,7 +498,7 @@ describe('myFunction', () => {
 - **Test files**: Use `*.test.ts` or `*.test.tsx` naming convention
 - **Import from source**: Import directly from `../src/` during development
 - **Comprehensive tests**: Cover happy paths, edge cases, and error conditions
-- **Run tests**: Use `yarn workspace @compliance-theater/[package-name] test`
+- **Run tests**: Use `yarn test`
 
 ##### Step 9: Add Package to App Dependencies
 
@@ -639,8 +549,8 @@ yarn test
 
 # Or from workspace root:
 cd web-ui
-yarn workspace @compliance-theater/[package-name] build
-yarn workspace @compliance-theater/[package-name] test
+yarn build
+yarn test
 ```
 
 ##### Step 12: Import and Use in Application Code
@@ -831,7 +741,7 @@ Always extract packages in this order during refactoring.
 2. Run `yarn install` from workspace root
 3. Check that `node_modules/@compliance-theater/[package-name]` exists as a symlink
 4. Verify the package `exports` map includes `default` and `workspace-source` entries
-5. Rebuild the package: `yarn workspace @compliance-theater/[package-name] build`
+5. Rebuild the package: `yarn build`
 
 ##### "Module not found" in tests
 
@@ -890,59 +800,10 @@ When creating a new package, verify:
 
 ### Debugging
 
-- Use `yarn workspace @compliance-theater/package-name <script>` to run package scripts
+- Use `yarn <script>` to run package scripts
 - Use `turbo run build --filter=@compliance-theater/package-name` to build specific package
 - Check `node_modules/@compliance-theater/` for symlinked packages
 - Use `yarn workspaces info` to see dependency graph
-
-## Migration Checklist
-
-- [x] Phase 1: Infrastructure Setup
-- [ ] Phase 2: Extract Core Libraries
-  - [ ] lib-logger
-  - [ ] lib-env
-  - [ ] lib-typescript
-  - [ ] lib-send-api-request
-  - [ ] lib-database (merge drizzle + drizzle-db + neondb)
-  - [ ] lib-redis-client
-  - [ ] lib-site-util
-  - [ ] lib-react-util
-  - [ ] lib-nextjs-util
-  - [ ] lib-auth
-  - [ ] lib-error-monitoring
-- [ ] Phase 3: Extract Features
-  - [ ] instrument
-  - [ ] data-models
-  - [ ] components (merge components + lib/components)
-  - [ ] Evaluate: lib-ai, lib-api, lib-email, etc.
-- [ ] Phase 4: Test Utilities
-  - [ ] Extract test-utils package
-  - [ ] Update test imports
-- [ ] Phase 5: Import Path Updates
-  - [ ] Update all `@/lib/*` imports
-  - [ ] Update all `@/components/*` imports
-  - [ ] Update all `@/data-models/*` imports
-- [ ] Phase 6: Testing
-  - [ ] All unit tests pass
-  - [ ] All integration tests pass
-  - [ ] All E2E tests pass
-- [ ] Phase 7: Documentation
-  - [ ] Update README.md
-  - [ ] Update copilot-instructions.md
-  - [ ] Add package-specific READMEs
-- [ ] Phase 8: CI/CD
-  - [ ] Verify Docker builds work
-  - [ ] Verify GitHub Actions work
-  - [ ] Add Turbo remote caching (optional)
-
-## Benefits
-
-1. **Modularity**: Clear boundaries between concerns
-2. **Reusability**: Packages can be shared across apps
-3. **Testing**: Independent package testing
-4. **Performance**: Turbo's intelligent caching
-5. **Developer Experience**: Better code organization and IDE support
-6. **Scalability**: Easy to add new apps/packages
 
 ## References
 

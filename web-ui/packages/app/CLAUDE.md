@@ -22,9 +22,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Database Operations
 
-- `yarn workspace @compliance-theater/database drizzle-migrate` - Run database migrations
-- `yarn workspace @compliance-theater/database drizzle-generate` - Generate Drizzle artifacts
-- `yarn workspace @compliance-theater/database drizzle-studio` - Open Drizzle Studio database viewer
+- `yarn drizzle-migrate` - Run database migrations
+- `yarn drizzle-generate` - Generate Drizzle artifacts
+- `yarn drizzle-studio` - Open Drizzle Studio database viewer
 
 ## Project Architecture
 
