@@ -65,6 +65,7 @@
     "@compliance-theater/redis": "workspace:*",
     "@compliance-theater/send-api-request": "workspace:*",
     "@compliance-theater/themes": "workspace:*",
+    "@compliance-theater/types": "workspace:*",
     "@compliance-theater/typescript": "workspace:*",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",

@@ -1,3 +1,5 @@
-export type * from './types';
-export * from './guards';
-export * from './chat-ids';
+/**
+ * Re-export AI core types from @compliance-theater/types package.
+ * This file maintains backward compatibility with existing imports.
+ */
+export * from '@compliance-theater/types/ai/core';

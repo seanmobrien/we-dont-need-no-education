@@ -1,0 +1,65 @@
+{
+  "name": "@compliance-theater/types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared TypeScript type definitions for AI and chat functionality",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "workspace-source": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./ai/core": {
+      "types": "./dist/ai/core/index.d.ts",
+      "workspace-source": "./src/ai/core/index.ts",
+      "default": "./dist/ai/core/index.js"
+    },
+    "./ai/chat": {
+      "types": "./dist/ai/chat/index.d.ts",
+      "workspace-source": "./src/ai/chat/index.ts",
+      "default": "./dist/ai/chat/index.js"
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*.ts",
+      "default": "./dist/*.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "scripts": {
+    "build": "yarn workspace @compliance-theater/types run build:typescript",
+    "build:publish": "yarn workspace @compliance-theater/types run build && yarn workspace @compliance-theater/types pack --out ./dist/@compliance-theater-types.tgz",
+    "build:typescript": "echo 'Building lib/types typescript...' && tsc -b tsconfig.json && printf '\\u001b[1;32mBuild complete: @compliance-theater/types.\\u001b[0m\\n' || (printf '\\u001b[31mBuild failed: @compliance-theater/types.\\u001b[0m\\n' >&2; exit 1)",
+    "test": "jest",
+    "lint": "echo 'Linting lib-types...'",
+    "build:clean": "rimraf dist tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    "@compliance-theater/logger": "workspace:*",
+    "@compliance-theater/react": "workspace:*",
+    "ai": "^4.3.16",
+    "ts-pattern": "^5.5.2"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "zod": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.1",
+    "jest": "^30.0.5",
+    "react": "^19.2.4",
+    "rimraf": "^6.1.2",
+    "ts-jest": "^29.3.4",
+    "typescript": "^5",
+    "zod": "^3.24.1"
+  }
+}
