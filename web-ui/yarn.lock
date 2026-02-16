@@ -1193,6 +1193,7 @@ __metadata:
   peerDependencies:
     next: ^15.0.0
     react: ^19.0.0
+    react-dom: ^19.0.0
   languageName: unknown
   linkType: soft
 
@@ -1226,6 +1227,8 @@ __metadata:
     typescript: "npm:^5"
   peerDependencies:
     next: ^15.0.0
+    react: ^19.0.0
+    react-dom: ^19.0.0
   languageName: unknown
   linkType: soft
 
