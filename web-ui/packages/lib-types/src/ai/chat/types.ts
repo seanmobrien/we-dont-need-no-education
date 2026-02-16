@@ -81,8 +81,6 @@ export type RetryErrorInfo =
       retryAfter?: never;
     };
 
-
-    
 /**
  * A single atomic message within a chat turn. Represents user, assistant,
  * system, or tool/function output.
