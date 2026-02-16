@@ -157,3 +157,133 @@ export interface ChatDetails {
   /** Ordered collection of turns. */
   turns: ChatTurn[];
 }
+
+/**
+ * Runtime helpers
+ * ---------------
+ * Lightweight, pure functions to validate chat type structures at runtime.
+ * These are intended primarily for tests and defensive programming at module
+ * boundaries where untyped data (e.g., JSON) enters the system.
+ */
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isStringOrNull = (value: unknown): value is string | null =>
+  typeof value === 'string' || value === null;
+
+const isNumberOrNull = (value: unknown): value is number | null =>
+  typeof value === 'number' || value === null;
+
+const isStringArrayOrNull = (value: unknown): value is string[] | null =>
+  value === null ||
+  (Array.isArray(value) && value.every((item) => typeof item === 'string'));
+
+/**
+ * Check whether a value conforms to the ChatMessage structure.
+ */
+export const isChatMessage = (value: unknown): value is ChatMessage => {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const { id, turnId, role, content, name, createdAt, metadata } = value;
+
+  if (typeof id !== 'string') return false;
+  if (typeof turnId !== 'number') return false;
+  if (typeof role !== 'string') return false;
+  if (typeof content !== 'string') return false;
+  if (typeof createdAt !== 'string') return false;
+
+  if (name !== undefined && typeof name !== 'string') return false;
+  if (metadata !== undefined && metadata !== null && !isRecord(metadata)) {
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Check whether a value conforms to the ChatTurn structure, including its
+ * embedded ChatMessage items.
+ */
+export const isChatTurn = (value: unknown): value is ChatTurn => {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const {
+    turnId,
+    createdAt,
+    completedAt,
+    modelName,
+    messages,
+    statusId,
+    temperature,
+    topP,
+    latencyMs,
+    warnings,
+    errors,
+    metadata,
+  } = value;
+
+  if (typeof turnId !== 'number') return false;
+  if (typeof createdAt !== 'string') return false;
+  if (!isStringOrNull(completedAt)) return false;
+  if (!isStringOrNull(modelName)) return false;
+  if (!Array.isArray(messages)) return false;
+  if (!messages.every(isChatMessage)) return false;
+  if (typeof statusId !== 'number') return false;
+  if (!isNumberOrNull(temperature)) return false;
+  if (!isNumberOrNull(topP)) return false;
+  if (!isNumberOrNull(latencyMs)) return false;
+  if (!isStringArrayOrNull(warnings)) return false;
+  if (!isStringArrayOrNull(errors)) return false;
+  if (metadata !== null && metadata !== undefined && !isRecord(metadata)) {
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Check whether a value conforms to the ChatDetails structure, including its
+ * ordered collection of ChatTurn items.
+ */
+export const isChatDetails = (value: unknown): value is ChatDetails => {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const { id, title, createdAt, turns } = value;
+
+  if (typeof id !== 'string') return false;
+  if (!isStringOrNull(title)) return false;
+  if (typeof createdAt !== 'string') return false;
+  if (!Array.isArray(turns)) return false;
+  if (!turns.every(isChatTurn)) return false;
+
+  return true;
+};
+
+/**
+ * Helper to classify a RetryErrorInfo instance into a stable kind string.
+ * This makes discriminated-union behavior easy to exercise in tests.
+ */
+export const getRetryErrorInfoKind = (
+  info: RetryErrorInfo,
+): 'none' | 'generic' | 'retryable' | 'nonRetryable' => {
+  if (!info.isError) {
+    return 'none';
+  }
+
+  if (info.isRetry === true) {
+    return 'retryable';
+  }
+
+  if (info.isRetry === false) {
+    return 'nonRetryable';
+  }
+
+  return 'generic';
+};
