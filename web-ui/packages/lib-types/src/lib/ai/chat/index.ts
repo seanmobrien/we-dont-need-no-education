@@ -1,54 +1,10 @@
 /**
- * Represents information about an error that may occur during a retryable operation.
+ * AI Chat Types
  *
- * This type is a discriminated union that describes the state of an operation
- * with respect to errors and retry logic.
- *
- * - If `isError` is `false`, the input was not an error object and no retry or failure information is available.
- * - If `isError` is `true`, additional properties indicate whether a retry is possible,
- *   the error details, and the recommended retry delay.
- *
- * Variants:
- * - No error:
- *   - `isError: false`
- *   - `isRetry: never`
- *   - `error: never`
- *   - `retryAfter: never`
- * - Error with retry:
- *   - `isError: true`
- *   - `isRetry: true`
- *   - `error: APICallError`
- *   - `retryAfter: number` (milliseconds to wait before retrying)
- * - Error without retry:
- *   - `isError: true`
- *   - `isRetry: false`
- *   - `error: Error | APICallError`
- *   - `retryAfter: never`
- * - Generic error state (optional retry):
- *   - `isError: boolean`
- *   - `isRetry?: boolean`
- *   - `error?: APICallError | Error`
- *   - `retryAfter?: number`
+ * This module exports type definitions for chat functionality,
+ * including chat messages, turns, and retry error handling.
  */
-import { APICallError } from 'ai';
-
-/**
- * Chat Type System
- * -----------------
- * Central, reusable domain model for chat history (turns & messages) plus
- * a discriminated union helper for retry-capable error surfaces.
- *
- * Design Goals:
- * - Single source of truth for shape shared by server routes, client hooks, and tests.
- * - Narrow, explicit field types (no 'any').
- * - Preserve raw values delivered by persistence / providers (e.g. modelName, tool/function meta) to retain diagnostic fidelity.
- * - Be forward‑extensible: New optional fields should not break existing consumers.
- *
- * Conventions:
- * - Timestamps are ISO 8601 strings (UTC) to avoid Date serialization ambiguity over the wire.
- * - Nullable fields use `null` instead of `undefined` for easier JSON round‑trips and DB mapping symmetry.
- * - Arrays default to `null` (meaning "not populated / unknown") vs empty array ("known empty") unless we always materialize them.
- */
+import { APICallError } from "ai";
 
 export type RetryErrorInfo =
   | {
@@ -114,7 +70,6 @@ export interface ChatMessage {
   optimizedContent: string | null;
 }
 
-
 /**
  * A logical unit of interaction consisting of one or more related messages
  * (e.g., user prompt + assistant response + tool calls). Turn boundaries often
@@ -167,17 +122,17 @@ export interface ChatDetails {
  */
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
+  typeof value === "object" && value !== null;
 
 const isStringOrNull = (value: unknown): value is string | null =>
-  typeof value === 'string' || value === null;
+  typeof value === "string" || value === null;
 
 const isNumberOrNull = (value: unknown): value is number | null =>
-  typeof value === 'number' || value === null;
+  typeof value === "number" || value === null;
 
 const isStringArrayOrNull = (value: unknown): value is string[] | null =>
   value === null ||
-  (Array.isArray(value) && value.every((item) => typeof item === 'string'));
+  (Array.isArray(value) && value.every((item) => typeof item === "string"));
 
 /**
  * Check whether a value conforms to the ChatMessage structure.
@@ -189,13 +144,13 @@ export const isChatMessage = (value: unknown): value is ChatMessage => {
 
   const { id, turnId, role, content, name, createdAt, metadata } = value;
 
-  if (typeof id !== 'string') return false;
-  if (typeof turnId !== 'number') return false;
-  if (typeof role !== 'string') return false;
-  if (typeof content !== 'string') return false;
-  if (typeof createdAt !== 'string') return false;
+  if (typeof id !== "string") return false;
+  if (typeof turnId !== "number") return false;
+  if (typeof role !== "string") return false;
+  if (typeof content !== "string") return false;
+  if (typeof createdAt !== "string") return false;
 
-  if (name !== undefined && typeof name !== 'string') return false;
+  if (name !== undefined && typeof name !== "string") return false;
   if (metadata !== undefined && metadata !== null && !isRecord(metadata)) {
     return false;
   }
@@ -227,13 +182,13 @@ export const isChatTurn = (value: unknown): value is ChatTurn => {
     metadata,
   } = value;
 
-  if (typeof turnId !== 'number') return false;
-  if (typeof createdAt !== 'string') return false;
+  if (typeof turnId !== "number") return false;
+  if (typeof createdAt !== "string") return false;
   if (!isStringOrNull(completedAt)) return false;
   if (!isStringOrNull(modelName)) return false;
   if (!Array.isArray(messages)) return false;
   if (!messages.every(isChatMessage)) return false;
-  if (typeof statusId !== 'number') return false;
+  if (typeof statusId !== "number") return false;
   if (!isNumberOrNull(temperature)) return false;
   if (!isNumberOrNull(topP)) return false;
   if (!isNumberOrNull(latencyMs)) return false;
@@ -257,9 +212,9 @@ export const isChatDetails = (value: unknown): value is ChatDetails => {
 
   const { id, title, createdAt, turns } = value;
 
-  if (typeof id !== 'string') return false;
+  if (typeof id !== "string") return false;
   if (!isStringOrNull(title)) return false;
-  if (typeof createdAt !== 'string') return false;
+  if (typeof createdAt !== "string") return false;
   if (!Array.isArray(turns)) return false;
   if (!turns.every(isChatTurn)) return false;
 
@@ -272,18 +227,18 @@ export const isChatDetails = (value: unknown): value is ChatDetails => {
  */
 export const getRetryErrorInfoKind = (
   info: RetryErrorInfo,
-): 'none' | 'generic' | 'retryable' | 'nonRetryable' => {
+): "none" | "generic" | "retryable" | "nonRetryable" => {
   if (!info.isError) {
-    return 'none';
+    return "none";
   }
 
   if (info.isRetry === true) {
-    return 'retryable';
+    return "retryable";
   }
 
   if (info.isRetry === false) {
-    return 'nonRetryable';
+    return "nonRetryable";
   }
 
-  return 'generic';
+  return "generic";
 };

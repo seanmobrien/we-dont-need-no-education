@@ -1,3 +1,9 @@
+/**
+ * AI Types Package
+ *
+ * Central exports for AI-related type definitions.
+ */
+
 export type {
   ValueOf,
   AnnotatedErrorMessageBase,
@@ -5,7 +11,7 @@ export type {
   AnnotatedErrorMessage,
   AnnotatedRetryMessage,
   AnnotatedMessage,
-} from "./lib/ai/core/types";
+} from "./core/types";
 
 export {
   isAnnotatedMessageBase,
@@ -14,17 +20,17 @@ export {
   isAiLanguageModelType,
   isAiModelType,
   isAiProviderType,
-} from "./lib/ai/core/guards";
+} from "./core/guards";
 
 export type {
   RetryErrorInfo,
   ChatMessage,
   ChatTurn,
   ChatDetails,
-} from "./lib/ai/chat";
+} from "./chat";
 export {
   isChatMessage,
   isChatTurn,
   isChatDetails,
   getRetryErrorInfoKind,
-} from "./lib/ai/chat";
+} from "./chat";

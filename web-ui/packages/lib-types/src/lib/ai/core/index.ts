@@ -1,3 +1,10 @@
+/**
+ * AI Core Types
+ *
+ * This module exports type definitions, unions, and guards
+ * for core AI functionality.
+ */
+
 export type {
   ValueOf,
   AnnotatedErrorMessageBase,
@@ -5,7 +12,7 @@ export type {
   AnnotatedErrorMessage,
   AnnotatedRetryMessage,
   AnnotatedMessage,
-} from "./lib/ai/core/types";
+} from "./types";
 
 export {
   isAnnotatedMessageBase,
@@ -14,17 +21,4 @@ export {
   isAiLanguageModelType,
   isAiModelType,
   isAiProviderType,
-} from "./lib/ai/core/guards";
-
-export type {
-  RetryErrorInfo,
-  ChatMessage,
-  ChatTurn,
-  ChatDetails,
-} from "./lib/ai/chat";
-export {
-  isChatMessage,
-  isChatTurn,
-  isChatDetails,
-  getRetryErrorInfoKind,
-} from "./lib/ai/chat";
+} from "./guards";
