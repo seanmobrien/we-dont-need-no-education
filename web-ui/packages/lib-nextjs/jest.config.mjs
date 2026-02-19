@@ -9,7 +9,6 @@ const config = {
   rootDir: ".",
   moduleNameMapper: {
     ...baseConfig.moduleNameMapper,
-    '^got$': '<rootDir>/__mocks__/got.ts',
   },
 };
 
