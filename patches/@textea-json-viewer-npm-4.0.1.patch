@@ -1,7 +1,7 @@
-diff --git a/node_modules/@textea/json-viewer/package.json b/node_modules/@textea/json-viewer/package.json
+diff --git a/package.json b/package.json
 index 87f575a..01ad4bb 100644
---- a/node_modules/@textea/json-viewer/package.json
-+++ b/node_modules/@textea/json-viewer/package.json
+--- a/package.json
++++ b/package.json
 @@ -48,9 +48,9 @@
    "peerDependencies": {
      "@emotion/react": "^11",

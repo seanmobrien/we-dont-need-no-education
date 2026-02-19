@@ -6598,6 +6598,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@textea/json-viewer@patch:@textea/json-viewer@npm%3A4.0.1#./patches/@textea-json-viewer-npm-4.0.1.patch::locator=compliance-theater-repo-root%40workspace%3A.":
+  version: 4.0.1
+  resolution: "@textea/json-viewer@patch:@textea/json-viewer@npm%3A4.0.1#./patches/@textea-json-viewer-npm-4.0.1.patch::version=4.0.1&hash=87f6f5&locator=compliance-theater-repo-root%40workspace%3A."
+  dependencies:
+    clsx: "npm:^2.1.1"
+    copy-to-clipboard: "npm:^3.3.3"
+    zustand: "npm:^4.5.5"
+  peerDependencies:
+    "@emotion/react": ^11
+    "@emotion/styled": ^11
+    "@mui/material": ^6
+    react: ^17 || ^18
+    react-dom: ^17 || ^18
+  checksum: 10/d35f569742163dbf9e8f97b6da65941c65cd1f94f7e6ce90972195331d2bf72ead33b0c7a5918999c56a0f7deeeb46a0a83724ec4952f4e0788124a128eb067c
+  languageName: node
+  linkType: hard
+
 "@toolpad/core@npm:^0.15.0":
   version: 0.15.0
   resolution: "@toolpad/core@npm:0.15.0"

@@ -1,7 +1,7 @@
-diff --git a/node_modules/jsx-ast-utils/lib/values/expressions/index.js b/node_modules/jsx-ast-utils/lib/values/expressions/index.js
+diff --git a/lib/values/expressions/index.js b/lib/values/expressions/index.js
 index 2e12a31..5f8577a 100644
---- a/node_modules/jsx-ast-utils/lib/values/expressions/index.js
-+++ b/node_modules/jsx-ast-utils/lib/values/expressions/index.js
+--- a/lib/values/expressions/index.js
++++ b/lib/values/expressions/index.js
 @@ -140,6 +140,7 @@ var TYPES = {
    OptionalCallExpression: _OptionalCallExpression2.default,
    OptionalMemberExpression: _OptionalMemberExpression2.default,
@@ -18,10 +18,10 @@ index 2e12a31..5f8577a 100644
    UnaryExpression: function UnaryExpression(value) {
      var extractedVal = TYPES.UnaryExpression.call(undefined, value);
      return extractedVal === undefined ? null : extractedVal;
-diff --git a/node_modules/jsx-ast-utils/src/values/expressions/index.js b/node_modules/jsx-ast-utils/src/values/expressions/index.js
+diff --git a/src/values/expressions/index.js b/src/values/expressions/index.js
 index d4ebeb5..573d68b 100644
---- a/node_modules/jsx-ast-utils/src/values/expressions/index.js
-+++ b/node_modules/jsx-ast-utils/src/values/expressions/index.js
+--- a/src/values/expressions/index.js
++++ b/src/values/expressions/index.js
 @@ -44,6 +44,7 @@ const TYPES = {
    OptionalCallExpression,
    OptionalMemberExpression,
