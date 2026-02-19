@@ -17,8 +17,7 @@
     "test:fast": "turbo run test --filter='@compliance-theater/app'  -- ",
     "test:unit": "turbo run test:unit --filter='@compliance-theater/app' -- --coverage",
     "test:e2e": "turbo run test:e2e --filter='@compliance-theater/app'  -- ",
-    "lint": "turbo run lint --filter='@compliance-theater/app'",
-    "postinstall": "patch-package"
+    "lint": "turbo run lint --filter='@compliance-theater/app'"
   },
   "devDependencies": {
     "@jest/globals": "^29.0.0",
@@ -29,8 +28,6 @@
     "@testing-library/react": "^16.3.0",
     "@types/node": "25.2.3",
     "babel-plugin-react-compiler": "^1.0.0",
-    "patch-package": "^8.0.0",
-    "postinstall-postinstall": "^2.1.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "turbo": "^2.8.3"
