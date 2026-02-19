@@ -1,4 +1,4 @@
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 import { debounce } from '@compliance-theater/react/debounce';
 
 const mockConsole = hideConsoleOutput();
@@ -22,7 +22,7 @@ describe('debounce', () => {
   });
 
   it('should only call the function once if called multiple times within wait', async () => {
-     
+
     const fn = jest.fn((_x: string) => 'result');
     const debounced = debounce(fn, 200);
     const result1 = debounced('a');

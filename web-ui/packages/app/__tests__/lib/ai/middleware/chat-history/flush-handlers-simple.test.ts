@@ -23,8 +23,7 @@ import type {
   FlushContext,
   FlushConfig,
 } from '@/lib/ai/middleware/chat-history/types';
-import { DbDatabaseType } from '@compliance-theater/database';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
 
 const makeMockDb = () => withJestTestExtensions().makeMockDb();
@@ -59,7 +58,7 @@ jest.mock('@/lib/ai/middleware/chat-history/import-incoming-message', () => ({
   reserveTurnId: jest.fn(() => Promise.resolve(1)),
 }));
 
-let mockDbInstance: DbDatabaseType;
+let mockDbInstance: ReturnType<typeof makeMockDb>;
 
 describe('Flush Handlers - Compilation Fix Test', () => {
   let mockContext: FlushContext;
@@ -92,8 +91,13 @@ describe('Flush Handlers - Compilation Fix Test', () => {
       }),
     });
 
-    mockQuery.chats.findFirst = mockDbInstance.query.chats
-      .findFirst as jest.Mock;
+    mockQuery.chats.findFirst = (mockDbInstance as unknown as {
+      query: {
+        chats: {
+          findFirst: jest.Mock;
+        };
+      };
+    }).query.chats.findFirst;
     mockQuery.chats.findFirst.mockResolvedValue(null);
   });
 

@@ -11,7 +11,7 @@ import {
   type MessageType,
 } from '@/components/ai/chat/chat-message-filters';
 import type { ChatMessage } from '@/lib/ai/chat/types';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 
 /*
 

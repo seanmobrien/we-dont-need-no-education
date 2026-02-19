@@ -30,7 +30,7 @@ import type {
 } from '@ai-sdk/provider';
 import type { UIMessage } from 'ai';
 import { LoggedError } from '@compliance-theater/logger';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 
 // Mock dependencies
 jest.mock('@compliance-theater/logger', () => ({

@@ -1,5 +1,5 @@
 import React from '@compliance-theater/types/react';
-import { render, screen } from '@/__tests__/test-utils';
+import { render, screen } from '@/__tests__/shared/test-utils';
 
 // Mock the virtualized chat display to simplify DOM assertions in tests.
 jest.mock('@/components/ai/chat', () => ({

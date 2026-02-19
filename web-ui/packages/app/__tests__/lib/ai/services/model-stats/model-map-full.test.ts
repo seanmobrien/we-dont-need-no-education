@@ -9,7 +9,7 @@ import {
   PROVIDER_ID_AZURE,
   setupMaps,
 } from '@/__tests__/setup/jest.mock-provider-model-maps';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 const mockConsole = hideConsoleOutput();
 
 describe('ModelMap with Full Mocking', () => {

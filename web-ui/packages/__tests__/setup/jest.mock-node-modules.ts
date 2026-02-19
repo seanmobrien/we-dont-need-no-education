@@ -1,14 +1,13 @@
 import { createElement } from '@compliance-theater/types/react';
 import { withJestTestExtensions } from '../jest.test-extensions';
 
-const safeMock = <T extends object>(moduleName: string, factory: () => T): T => {
+const safeMock = (moduleName: string, factory?: () => unknown): void => {
   try {
-    return jest.mock(moduleName, factory);
-  } catch (error) {
+    jest.mock(moduleName, factory);
+  } catch {
     withJestTestExtensions().addMockWarning(moduleName);
-    return jest.fn(() => ({}) as T)();
   }
-}
+};
 
 
 safeMock('google-auth-library');
@@ -54,7 +53,7 @@ safeMock('@mui/material/ButtonBase/TouchRipple', () => {
 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let ErrorBoundary: any = jest.fn(() => ({}) as T)();
+let ErrorBoundary: any = jest.fn(() => ({}))();
 
 safeMock('react-error-boundary', () => {
   ErrorBoundary = require('./jest.mock-error-boundary').default;

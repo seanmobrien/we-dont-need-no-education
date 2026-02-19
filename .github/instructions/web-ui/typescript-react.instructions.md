@@ -274,7 +274,7 @@ describe('LanguageModelQueue', () => {
 
 ```typescript
 
-import { screen, waitFor, render } from '@/__tests__/test-utils';
+import { screen, waitFor, render } from '@/__tests__/shared/test-utils';
 
 consoleErrorSpy = hideConsoleOutput();
 

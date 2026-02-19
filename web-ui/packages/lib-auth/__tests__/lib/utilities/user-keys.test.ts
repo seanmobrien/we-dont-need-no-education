@@ -1,4 +1,4 @@
- 
+
 /**
  * @fileoverview Tests for UserKeyManager enhancements
  *
@@ -8,7 +8,7 @@
  * @module __tests__/lib/site-util/auth/user-keys.test.ts
  */
 
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 import {
   validateUserKeysAgainstServer,
   hasValidLocalKeys,
@@ -77,7 +77,7 @@ Object.defineProperty(window, 'indexedDB', {
 
 // Define it as a let so that someone -could- reassign it, even though
 // we don't...
- 
+
 let requestIndex = 0;
 const mockConsole = hideConsoleOutput();
 describe('UserKeyManager Enhancements', () => {

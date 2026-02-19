@@ -1,9 +1,9 @@
  
-import { screen, render, renderHook, waitFor, act } from '@/__tests__/test-utils';
+import { screen, render, renderHook, waitFor, act } from '@/__tests__/shared/test-utils';
 import { useEmail, useWriteEmail, emailKeys } from '@/lib/hooks/use-email';
 import { getEmail, writeEmailRecord } from '@/lib/api/client';
 import { UseMutateFunction } from '@tanstack/react-query';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 
 // Mock the API client functions
 jest.mock('@/lib/api/client', () => ({

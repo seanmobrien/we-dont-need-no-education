@@ -4,7 +4,7 @@
  */
 
 import React from '@compliance-theater/types/react';
-import { render, screen } from '@/__tests__/test-utils';
+import { render, screen } from '@/__tests__/shared/test-utils';
 import { ChatStatusIndicator } from '@/components/health/chat-status/chat-status-indicator';
 import { useHealth } from '@/components/health/health-provider/health-context';
 

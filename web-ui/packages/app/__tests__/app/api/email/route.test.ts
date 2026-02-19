@@ -72,8 +72,17 @@ import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions'
 import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file/index';
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 
+type MockDbQuery = {
+  documentUnits: {
+    findFirst: jest.Mock;
+  };
+  emails: {
+    findFirst: jest.Mock;
+  };
+};
+
 let mockDb = withJestTestExtensions().makeMockDb();
-let mockDbQuery = mockDb?.query!;
+let mockDbQuery = mockDb?.query as MockDbQuery;
 let mockDbDelete = mockDb?.delete! as jest.Mock;
 
 describe('Email API', () => {
@@ -84,7 +93,7 @@ describe('Email API', () => {
 
     // Reset drizzle mocks (for [emailId]/route.ts)
     mockDb = withJestTestExtensions().makeMockDb();
-    mockDbQuery = mockDb.query;
+    mockDbQuery = mockDb.query as MockDbQuery;
     mockDbDelete = mockDb.delete as jest.Mock;
 
     // Reset extractParams mock

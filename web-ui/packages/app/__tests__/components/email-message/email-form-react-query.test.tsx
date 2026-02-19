@@ -19,7 +19,7 @@ import EmailForm from '@/components/email-message/form';
 import { useEmail, useWriteEmail } from '@/lib/hooks/use-email';
 import { EmailMessage } from '@/data-models';
 import { asErrorLike } from '@compliance-theater/react';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 
 // Mock the React Query hooks
 jest.mock('@/lib/hooks/use-email', () => ({

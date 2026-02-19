@@ -23,7 +23,7 @@ import {
   TestModel,
 } from './target-repositories';
 import { DatabaseMockType } from '../jest.setup';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 
 const mockConsole = hideConsoleOutput();
 

@@ -9,7 +9,7 @@ import {
   fireEvent,
   waitFor,
   act,
-} from '@/__tests__/test-utils';
+} from '@/__tests__/shared/test-utils';
 import '@testing-library/jest-dom';
 import { TodoListFlyout } from '@/components/todo/todo-list-flyout';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

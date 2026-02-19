@@ -9,7 +9,7 @@
  * @since 2025-07-19
  */
 
-import { render, screen } from '@/__tests__/test-utils';
+import { render, screen } from '@/__tests__/shared/test-utils';
 import React from '@compliance-theater/types/react';
 
 jest.mock('@/components/error-boundaries/ServerSafeErrorManager', () => ({

@@ -3,7 +3,7 @@
  */
 
 import React from '@compliance-theater/types/react';
-import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
+import { render, screen, fireEvent, waitFor } from '@/__tests__/shared/test-utils';
 import '@testing-library/jest-dom';
 import { FloatingTodoDialog } from '@/components/todo/floating-todo-dialog';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';

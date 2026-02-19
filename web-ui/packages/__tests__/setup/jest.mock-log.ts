@@ -43,18 +43,44 @@ let internalLogger: (jest.Mock<Promise<LoggerInstance>, [], any>) | undefined = 
 
 type SymbolKey = string | symbol;
 
+type SingletonProvider = {
+  get: <T = unknown, S extends SymbolKey = string>(
+    symbol: S,
+  ) => T | undefined;
+  getOrCreate: <T, S extends SymbolKey = string>(
+    symbol: S,
+    factory: () => T | undefined,
+  ) => T | undefined;
+  getRequired: <T, S extends SymbolKey = string>(
+    symbol: S,
+    factory: () => T | undefined,
+  ) => T;
+  getOrCreateAsync: <T, S extends SymbolKey = string>(
+    symbol: S,
+    factory: () => Promise<T | undefined>,
+  ) => Promise<T | undefined>;
+  getRequiredAsync: <T, S extends SymbolKey = string>(
+    symbol: S,
+    factory: () => Promise<T | undefined>,
+  ) => Promise<T>;
+  has: <S extends SymbolKey = string>(symbol: S) => boolean;
+  set: <T, S extends SymbolKey = string>(symbol: S, value: T) => void;
+  clear: () => void;
+  delete: <S extends SymbolKey = string>(symbol: S) => void;
+};
+
 const mockSingletonProviderFactory = ({
   withJestTestExtensions
 }: {
   withJestTestExtensions: (() => {
     singletonStore: Map<SymbolKey, unknown>;
   })
-}) => {
+}): SingletonProvider => {
   const globalStore = withJestTestExtensions().singletonStore;
   const PROVIDER_KEY = Symbol.for('@tests/singleton-provider');
   const existingProvider = globalStore.get(PROVIDER_KEY);
   if (existingProvider) {
-    return existingProvider as ReturnType<typeof mockSingletonProviderFactory>;
+    return existingProvider as SingletonProvider;
   }
   const provider = {
     get: <T = unknown, S extends SymbolKey = string>(symbol: S): T | undefined =>

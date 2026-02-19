@@ -25,7 +25,7 @@ Object.defineProperty(navigator, 'onLine', {
   configurable: true,
 });
 
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 
 // Mock client-navigate
 jest.mock('@compliance-theater/nextjs/client-navigate', () => ({

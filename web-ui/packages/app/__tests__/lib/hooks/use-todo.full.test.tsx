@@ -10,7 +10,7 @@ import {
   act,
   jsonResponse,
   hideConsoleOutput,
-} from '@/__tests__/test-utils';
+} from '@/__tests__/shared/test-utils';
 import {
   QueryClient,
   QueryClientProvider,

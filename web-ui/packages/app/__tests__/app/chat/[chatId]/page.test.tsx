@@ -36,7 +36,14 @@ const setSession = (userId: number | null) => {
 
 const setChatFindFirst = (value: unknown) => {
   const db = withJestTestExtensions().makeMockDb();
-  (db.query.chats.findFirst as jest.Mock).mockResolvedValueOnce(value);
+  const query = (db as unknown as {
+    query: {
+      chats: {
+        findFirst: jest.Mock;
+      };
+    };
+  }).query;
+  query.chats.findFirst.mockResolvedValueOnce(value);
 };
 
 const isUserAuthorizedMock = jest.fn();

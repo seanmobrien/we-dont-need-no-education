@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@/__tests__/test-utils';
+import { render, screen, waitFor } from '@/__tests__/shared/test-utils';
 import ChatList from '@/components/ai/chat/list';
 import { fetch } from '@compliance-theater/nextjs/fetch';
 

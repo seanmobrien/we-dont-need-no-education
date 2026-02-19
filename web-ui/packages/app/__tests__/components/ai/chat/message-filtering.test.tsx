@@ -9,7 +9,7 @@ import {
   fireEvent,
   act,
   waitFor,
-} from '@/__tests__/test-utils';
+} from '@/__tests__/shared/test-utils';
 import '@testing-library/jest-dom';
 import { TestVirtualizedChat } from '@/components/ai/chat/test-virtualized-chat';
 

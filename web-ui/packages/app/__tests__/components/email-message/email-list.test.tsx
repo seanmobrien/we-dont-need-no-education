@@ -4,7 +4,7 @@ import {
   waitFor,
   jsonResponse,
   asyncRender,
-} from '@/__tests__/test-utils';
+} from '@/__tests__/shared/test-utils';
 import EmailList from '@/components/email-message/list';
 import { mockEmailSummary } from '../email.mock-data';
 import { fetch } from '@compliance-theater/nextjs/fetch';

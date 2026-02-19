@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@/__tests__/test-utils';
+import { render, screen, waitFor } from '@/__tests__/shared/test-utils';
 
 // Mock the API client
 jest.mock('@/lib/api/email/properties/client');

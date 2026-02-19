@@ -32,7 +32,6 @@ const SessionProviderOrFallback = ({ children }: PropsWithChildren) => {
           lastValidated: undefined,
           error: undefined,
         },
-        update: async () => sessionData as any,
       }}
     >
       {children}

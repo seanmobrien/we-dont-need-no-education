@@ -32,7 +32,7 @@ import {
 import { managerMapFactory } from '@/lib/email/import/google/managermapfactory';
 import { ImportManagerMap } from '@/lib/email/import/types';
 import { TransactionalStateManagerBase } from '@/lib/email/import/default/transactional-statemanager';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 
 const mockManagerMapFactory = managerMapFactory as jest.MockedFunction<
   typeof managerMapFactory

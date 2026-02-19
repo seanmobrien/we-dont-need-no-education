@@ -7,7 +7,7 @@ import {
   fireEvent,
   waitFor,
   act,
-} from '@/__tests__/test-utils';
+} from '@/__tests__/shared/test-utils';
 // import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';

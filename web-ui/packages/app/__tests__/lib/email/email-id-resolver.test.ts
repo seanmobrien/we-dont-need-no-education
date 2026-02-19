@@ -17,7 +17,7 @@ jest.mock('@compliance-theater/types/next/navigation', () => ({
 
 import { drizDb, drizDbWithInit } from '@compliance-theater/database/orm';
 import { isValidUuid } from '@compliance-theater/typescript';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 
 const mockDrizDb = drizDbWithInit as jest.MockedFunction<typeof drizDbWithInit>;
 const mockIsValidUuid = isValidUuid as jest.MockedFunction<typeof isValidUuid>;

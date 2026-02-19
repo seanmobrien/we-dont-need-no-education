@@ -12,7 +12,7 @@ import {
   waitFor,
   act,
   cleanup,
-} from '@/__tests__/test-utils';
+} from '@/__tests__/shared/test-utils';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog/dialog';
 import type { ResizeableDraggableDialogProps } from '@/components/mui/resizeable-draggable-dialog/types';
 

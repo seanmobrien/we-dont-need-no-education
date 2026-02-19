@@ -84,7 +84,7 @@ jest.mock('@/lib/react-util', () => ({
 import { auth } from '@compliance-theater/auth';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { eq, and } from '@compliance-theater/database/drizzle-orm';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 
 const mockConsole = hideConsoleOutput();
 

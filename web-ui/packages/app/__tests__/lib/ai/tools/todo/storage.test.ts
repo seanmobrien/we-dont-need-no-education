@@ -9,7 +9,7 @@ import {
   createFallbackStrategy,
 } from '@/lib/ai/tools/todo/storage/factory';
 import type { Todo, TodoList } from '@/lib/ai/tools/todo/types';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 import { SingletonProvider } from '@compliance-theater/typescript';
 
 const idPrefix = `todo::user-test-user-id::`;

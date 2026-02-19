@@ -15,7 +15,7 @@ import {
   ErrorReporterInterface,
 } from '@/lib/error-monitoring';
 import { useErrorReporter } from '@/lib/error-monitoring/use-error-reporter';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 
 const mockConsole = hideConsoleOutput();
 

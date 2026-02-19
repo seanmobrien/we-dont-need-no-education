@@ -5,7 +5,7 @@
  */
 
 import React from '@compliance-theater/types/react';
-import { render, screen } from '@/__tests__/test-utils';
+import { render, screen } from '@/__tests__/shared/test-utils';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog/dialog';
 import type {
   ResizeableDraggableDialogProps,

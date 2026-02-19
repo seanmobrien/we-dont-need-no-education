@@ -1,4 +1,4 @@
-import { render, screen } from '@/__tests__/test-utils';
+import { render, screen } from '@/__tests__/shared/test-utils';
 import { ThemeSelector } from '@compliance-theater/themes';
 
 // Mock Next.js navigation

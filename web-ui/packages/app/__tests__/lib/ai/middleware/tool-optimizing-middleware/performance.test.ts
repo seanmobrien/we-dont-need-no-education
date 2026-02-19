@@ -19,7 +19,7 @@ import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
 import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
 import type { LanguageModelV2FunctionTool } from '@ai-sdk/provider';
 import type { UIMessage } from 'ai';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 
 // Mock dependencies
 jest.mock('@/lib/ai/services/model-stats/tool-map');

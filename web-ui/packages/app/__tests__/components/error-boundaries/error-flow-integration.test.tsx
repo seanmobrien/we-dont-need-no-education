@@ -14,7 +14,7 @@ import {
   ErrorSeverity,
   ErrorReporterInterface,
 } from '@/lib/error-monitoring';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 import { RenderFallbackFromBoundary } from '@/components/error-boundaries';
 
 // Mock the error reporter and recovery strategies

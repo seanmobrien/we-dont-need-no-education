@@ -63,7 +63,7 @@ jest.mock('@/lib/react-util', () => ({
 import { drizDbWithInit, drizDb } from '@compliance-theater/database/orm';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { schema } from '@compliance-theater/database/orm';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils-server';
 
 const mockConsole = hideConsoleOutput();
 

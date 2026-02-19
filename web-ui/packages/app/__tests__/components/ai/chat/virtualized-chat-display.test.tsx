@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@/__tests__/test-utils';
+import { render, screen, fireEvent } from '@/__tests__/shared/test-utils';
 import { VirtualizedChatDisplay } from '@/components/ai/chat/virtualized-chat-display';
 import { mockChatTurn, mockChatTurnWithTool } from './../chat.mock-data';
 

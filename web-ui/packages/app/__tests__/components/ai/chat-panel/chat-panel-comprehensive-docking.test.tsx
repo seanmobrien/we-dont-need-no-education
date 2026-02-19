@@ -10,7 +10,7 @@ import {
   fireEvent,
   waitFor,
   within,
-} from '@/__tests__/test-utils';
+} from '@/__tests__/shared/test-utils';
 import { ChatPanelProvider } from '@/components/ai/chat-panel/chat-panel-context';
 import ChatPanel from '@/components/ai/chat-panel/chat-panel';
 import { ChatPanelLayout } from '@/components/ai/chat-panel/chat-panel-layout';

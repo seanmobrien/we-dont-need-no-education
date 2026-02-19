@@ -3,7 +3,7 @@
  */
 
 import React from '@compliance-theater/types/react';
-import { render, screen, fireEvent, act } from '@/__tests__/test-utils';
+import { render, screen, fireEvent, act } from '@/__tests__/shared/test-utils';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
 
 describe('ResizableDraggableDialog Background Interaction', () => {

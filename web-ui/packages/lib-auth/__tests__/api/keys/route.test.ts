@@ -14,7 +14,7 @@ import { NextRequest } from '@compliance-theater/types/next/server';
 import { POST, GET } from '@/app/api/auth/keys/route';
 // import { auth } from '@/auth';
 import { drizDb } from '@compliance-theater/database/orm';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
 import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
 
 // Mock dependencies

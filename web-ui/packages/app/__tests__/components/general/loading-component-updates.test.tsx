@@ -1,5 +1,5 @@
 import React from '@compliance-theater/types/react';
-import { asyncRender, screen, waitFor } from '@/__tests__/test-utils';
+import { asyncRender, screen, waitFor } from '@/__tests__/shared/test-utils';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import { Loading } from '@/components/general/loading';

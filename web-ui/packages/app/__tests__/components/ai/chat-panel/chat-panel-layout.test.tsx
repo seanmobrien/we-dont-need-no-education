@@ -1,5 +1,5 @@
 import React from '@compliance-theater/types/react';
-import { render } from '@/__tests__/test-utils';
+import { render } from '@/__tests__/shared/test-utils';
 import { ChatPanelLayout } from '@/components/ai/chat-panel/chat-panel-layout';
 import { ChatPanelProvider } from '@/components/ai/chat-panel/chat-panel-context';
 
