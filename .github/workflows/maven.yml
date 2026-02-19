@@ -53,22 +53,22 @@ jobs:
         with:
           node-version: '25.x'
           cache: yarn
-          cache-dependency-path: 'web-ui/yarn.lock'
+          cache-dependency-path: 'yarn.lock'
 
       - name: Setup kernel for react native, increase watchers
         run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
         shell: bash
-        working-directory: ./web-ui
+        working-directory: ./
 
       - name: Enable Corepack and Yarn 4.12.0
         run: |
           corepack enable
           corepack prepare yarn@4.12.0 --activate
         shell: bash
-        working-directory: ./web-ui
+        working-directory: ./
 
       - name: Run yarn install
-        working-directory: ./web-ui
+        working-directory: ./
         run: |
           set -euo pipefail
           node .yarn/releases/yarn-4.12.0.cjs install --immutable
@@ -76,13 +76,13 @@ jobs:
 
       # NOTE: Turbo lint tool depends on typescript build, so this will do both lint and typescript validation.
       - name: Run typescript compile and yarn lint
-        working-directory: ./web-ui
+        working-directory: ./
         run: node .yarn/releases/yarn-4.12.0.cjs lint
         # continue-on-error: true
         shell: bash
 
       - name: Run yarn test
-        working-directory: ./web-ui
+        working-directory: ./
         run: xvfb-run --server-args="-screen 0 1024x768x24" node .yarn/releases/yarn-4.12.0.cjs test $YARN_TEST_OPTIONS
         shell: bash      
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
