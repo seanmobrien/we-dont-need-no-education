@@ -5,7 +5,7 @@ jest.mock('@compliance-theater/database/driver');
 jest.mock('@compliance-theater/logger');
 jest.mock('@/data-models/api');
 
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import { PUT, GET, DELETE } from '@/app/api/contact/[contactId]/route';
 import { query, queryExt } from '@compliance-theater/database/driver';
 

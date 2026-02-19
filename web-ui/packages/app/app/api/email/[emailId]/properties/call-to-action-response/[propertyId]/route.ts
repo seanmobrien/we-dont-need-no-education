@@ -1,6 +1,6 @@
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { CallToActionResponseDetailsRepository } from '@/lib/api/email/properties/call-to-action-response/call-to-action-response-details-repository';
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import {
   wrapRouteRequest,
   extractParams,

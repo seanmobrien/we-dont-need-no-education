@@ -1,4 +1,4 @@
-import type { NextConfig } from 'next/types';
+import type { NextConfig } from '@compliance-theater/types/next/types';
 import type { NextConfigPlugin } from './types';
 
 export const withIgnorePacks: NextConfigPlugin = <TArg extends NextConfig>(

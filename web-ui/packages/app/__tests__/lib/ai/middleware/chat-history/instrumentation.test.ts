@@ -18,7 +18,7 @@ const mockSpan = {
 };
 
 const mockTracer = {
-  startSpan: jest.fn(() => mockSpan),
+  startSpan: jest.fn((_name?: string, _options?: unknown) => mockSpan),
   startActiveSpan: jest.fn((_name, fn2: any, _ctx, fn: any) => (fn ?? fn2)(mockSpan)),
 };
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { render } from '@/__tests__/test-utils';
 import { KeyRefreshNotifyWrapper as KeyRefreshWrapper } from '@/components/auth/key-refresh-notify/wrapper';
 

@@ -1,5 +1,5 @@
-import { Session } from '@auth/core/types';
-import { NextRequest } from 'next/server';
+import type { Session } from '@compliance-theater/types/next-auth';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import { extractToken, KnownScopeValues, KnownScopeIndex } from './utilities';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 

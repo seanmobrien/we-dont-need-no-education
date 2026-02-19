@@ -1,4 +1,4 @@
-import type { JWT } from '@auth/core/jwt';
+import type { JWT } from '@compliance-theater/types/next-auth/jwt';
 import { env } from '@compliance-theater/env';
 import { fetch } from '@compliance-theater/nextjs/dynamic-fetch';
 import { InvalidGrantError } from './errors';
@@ -70,7 +70,7 @@ export const refreshAccessToken = async (token: JWT): Promise<JWT> => {
 
     return {
       ...token,
-      error,
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }

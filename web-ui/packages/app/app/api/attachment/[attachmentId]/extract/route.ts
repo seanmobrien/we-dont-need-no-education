@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from '@compliance-theater/types/next/server';
 import {
   wrapRouteRequest,
   extractParams,

@@ -1,4 +1,4 @@
-import type { NextConfig } from 'next';
+import type { NextConfig } from '@compliance-theater/types/next';
 import type { NextConfigPlugin } from './types';
 
 export const withWorkspaceSourceImports: NextConfigPlugin = <

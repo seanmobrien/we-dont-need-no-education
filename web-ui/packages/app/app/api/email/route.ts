@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import { log } from '@compliance-theater/logger';
 // (normalizeNullableNumeric no longer needed directly; handled in validation module)
 import { ValidationError } from '@compliance-theater/react/errors/validation-error';
@@ -13,7 +13,7 @@ import {
   wrapRouteRequest,
 } from '@compliance-theater/nextjs/server/utils';
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray } from '@compliance-theater/database/drizzle-orm';
 // count_kpi import removed; not used in this route currently
 import {
   DrizzleSelectQuery,

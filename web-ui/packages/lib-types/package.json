@@ -12,14 +12,29 @@
       "default": "./dist/index.js"
     },
     "./ai/core": {
-      "types": "./dist/ai/core/index.d.ts",
-      "workspace-source": "./src/ai/core/index.ts",
-      "default": "./dist/ai/core/index.js"
+      "types": "./dist/lib/ai/core/index.d.ts",
+      "workspace-source": "./src/lib/ai/core/index.ts",
+      "default": "./dist/lib/ai/core/index.js"
+    },
+    "./ai/core/guards": {
+      "types": "./dist/lib/ai/core/guards.d.ts",
+      "workspace-source": "./src/lib/ai/core/guards.ts",
+      "default": "./dist/lib/ai/core/guards.js"
+    },
+    "./ai/core/types": {
+      "types": "./dist/lib/ai/core/types.d.ts",
+      "workspace-source": "./src/lib/ai/core/types.ts",
+      "default": "./dist/lib/ai/core/types.js"
+    },
+    "./ai/core/unions": {
+      "types": "./dist/lib/ai/core/unions.d.ts",
+      "workspace-source": "./src/lib/ai/core/unions.ts",
+      "default": "./dist/lib/ai/core/unions.js"
     },
     "./ai/chat": {
-      "types": "./dist/ai/chat/index.d.ts",
-      "workspace-source": "./src/ai/chat/index.ts",
-      "default": "./dist/ai/chat/index.js"
+      "types": "./dist/lib/ai/chat/index.d.ts",
+      "workspace-source": "./src/lib/ai/chat/index.ts",
+      "default": "./dist/lib/ai/chat/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
@@ -43,21 +58,22 @@
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    "@compliance-theater/logger": "workspace:*",
+    "@auth/core": "0.41.1",
     "ai": "^4.3.16",
+    "next": "15.5.12",
+    "next-auth": "^5.0.0-beta.30",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "ts-pattern": "^5.5.2",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
-  },
-  "peerDependencies": {
     "zod": "^3.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
     "jest": "^30.0.5",
     "rimraf": "^6.1.2",
     "ts-jest": "^29.3.4",
-    "typescript": "^5",
-    "zod": "^3.24.1"
+    "typescript": "^5"
   }
 }

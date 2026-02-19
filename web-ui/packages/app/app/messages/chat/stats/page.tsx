@@ -1,4 +1,4 @@
-import * as React from 'react';
+import * as React from '@compliance-theater/types/react';
 import Box from '@mui/material/Box';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 import { auth } from '@compliance-theater/auth';

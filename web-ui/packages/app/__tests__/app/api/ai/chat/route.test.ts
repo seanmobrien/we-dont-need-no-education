@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import { POST } from '@/app/api/ai/chat/route';
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import { auth } from '@compliance-theater/auth';
 import { streamText } from 'ai';
 

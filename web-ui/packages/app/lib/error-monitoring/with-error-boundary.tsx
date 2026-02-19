@@ -1,6 +1,6 @@
 'use client';
 
-import React, { ComponentType, ReactNode } from 'react';
+import React, { ComponentType, ReactNode } from '@compliance-theater/types/react';
 import { FallbackProps } from 'react-error-boundary';
 import { ErrorSeverity } from './error-reporter';
 import { DefaultErrorBoundary } from '@/components/error-boundaries/defaultErrorBoundary';

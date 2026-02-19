@@ -14,19 +14,6 @@ declare module '@/auth' {
   export const auth: () => Promise<{ user?: User | null } | null>;
 }
 
-declare module '@/components/auth/session-provider' {
-  import type { ReactNode } from 'react';
-  
-  export interface SessionContext<T = unknown> {
-    userHash?: string;
-    status: 'loading' | 'authenticated' | 'unauthenticated';
-    data?: T | null;
-  }
-  
-  export function useSession<T = unknown>(): SessionContext<T>;
-  export function SessionProvider({ children }: { children: ReactNode }): JSX.Element;
-}
-
 declare module '@/lib/error-monitoring/error-reporter' {
   export interface ErrorReporter {
     reportError: (error: unknown) => void;

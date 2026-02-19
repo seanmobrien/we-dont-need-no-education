@@ -26,8 +26,8 @@ jest.mock('@compliance-theater/database', () => {
 });
 
 jest.mock('@compliance-theater/database/schema', () => {
-  const { Table } = require('drizzle-orm');
-  const { PgTable } = require('drizzle-orm/pg-core');
+  const { Table } = require('@compliance-theater/database/drizzle-orm');
+  const { PgTable } = require('@compliance-theater/database/drizzle-orm/pg-core');
 
   // Create a more complete mock that supports getTableConfig
   const mockAttachmentIdColumn = {

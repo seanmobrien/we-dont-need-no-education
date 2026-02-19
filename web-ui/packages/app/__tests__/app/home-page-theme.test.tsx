@@ -2,8 +2,8 @@ import { render, screen } from '@/__tests__/test-utils';
 import { ThemeProvider } from '@compliance-theater/themes';
 import HomePage from '@/app/page';
 
-// Mock next-auth/react
-jest.mock('next-auth/react', () => ({
+jest.mock('@compliance-theater/auth/components/session-provider/index', () => ({
+  SessionProvider: ({ children }: { children: unknown }) => children,
   useSession: jest.fn(() => ({
     data: null,
     status: 'unauthenticated',
@@ -11,7 +11,7 @@ jest.mock('next-auth/react', () => ({
 }));
 
 // Mock next/navigation
-jest.mock('next/navigation', () => ({
+jest.mock('@compliance-theater/types/next/navigation', () => ({
   useRouter: jest.fn(() => ({
     push: jest.fn(),
     replace: jest.fn(),

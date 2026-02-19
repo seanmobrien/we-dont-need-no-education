@@ -1,5 +1,5 @@
 /** @jsxImportSource @emotion/react */
-import { FunctionComponent, ReactNode } from 'react';
+import { FunctionComponent, ReactNode } from '@compliance-theater/types/react';
 import { css } from '@emotion/react';
 
 const modalStyles = {

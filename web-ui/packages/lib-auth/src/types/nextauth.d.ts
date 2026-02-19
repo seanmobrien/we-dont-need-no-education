@@ -13,8 +13,8 @@
  *
  * @example
  * ```typescript
- * import { getServerSession } from 'next-auth';
- * import type { Session } from 'next-auth';
+ * import { getServerSession } from '@compliance-theater/types/next-auth';
+ * import type { Session } from '@compliance-theater/types/next-auth';
  *
  * // Type-safe session access with custom properties
  * export async function getUserData() {
@@ -37,7 +37,7 @@
  *
  * @example
  * ```typescript
- * import type { JWT, Account } from 'next-auth/jwt';
+ * import type { JWT, Account } from '@compliance-theater/types/next-auth/jwt';
  *
  * // JWT callback with extended token properties
  * export async function jwt({ token, account }: {
@@ -66,7 +66,7 @@
  *
  * @example
  * ```typescript
- * import type { User, Account } from 'next-auth';
+ * import type { User, Account } from '@compliance-theater/types/next-auth';
  *
  * // OAuth profile callback with custom user mapping
  * export async function signIn({ user, account, profile }: {
@@ -108,8 +108,8 @@
  * ```
  */
 
-import { DefaultSession, Account as BaseAccount } from 'next-auth';
-import { JWT as BaseJWT } from 'next-auth/jwt';
+import { DefaultSession, Account as BaseAccount } from '@compliance-theater/types/next-auth';
+import { JWT as BaseJWT } from '@compliance-theater/types/next-auth/jwt';
 
 declare module 'next-auth' {
   /**
@@ -124,13 +124,13 @@ declare module 'next-auth' {
      * Unique identifier for the user.
      * May be undefined during initial OAuth flow before database assignment.
      */
-    id: string | undefined;
+    id?: string;
 
     /**
      * Internal account identifier from the application's database.
      * Maps to the user's account record in the local system.
      */
-    account_id?: number;
+    account_id?: number | string;
 
     /**
      * Timestamp when the user's email was verified.
@@ -142,25 +142,25 @@ declare module 'next-auth' {
      * URL to the user's profile image/avatar.
      * Provided by OAuth providers like Google, GitHub, etc.
      */
-    image: string;
+    image?: string;
 
     /**
      * Full display name of the user.
      * Provided by OAuth providers or user profile data.
      */
-    name: string;
+    name?: string;
 
     /**
      * Primary email address of the user.
      * Used for authentication and communication.
      */
-    email: string;
+    email?: string;
 
     /**
      * Subject identifier from the OAuth provider.
      * Unique identifier within the provider's system (e.g., sub claim in JWT).
      */
-    subject: string;
+    subject?: string;
 
     /**
      * SHA256 hash of the user's email for consistent identification.
@@ -196,7 +196,7 @@ declare module 'next-auth' {
      * Corresponds to the user's primary key in the users table.
      * Essential for database queries and user-specific operations.
      */
-    id: number;
+    id?: number;
 
     /**
      * Error code from the authentication strategy (e.g. "RefreshAccessTokenError").
@@ -208,6 +208,30 @@ declare module 'next-auth' {
      * Map of resource ID to array of allowed scopes.
      */
     permissions?: Record<string, string[]>;
+  }
+}
+
+declare module '@compliance-theater/types/next-auth' {
+  interface User {
+    id?: string;
+    account_id?: number | string;
+    emailVerified?: Date;
+    image?: string;
+    name?: string;
+    email?: string;
+    subject?: string;
+    hash?: string;
+  }
+
+  interface Account extends BaseAccount {
+    provider: string;
+  }
+
+  interface Session extends DefaultSession {
+    id?: number;
+    error?: string;
+    permissions?: Record<string, string[]>;
+    resource_access?: Record<string, unknown>;
   }
 }
 
@@ -284,5 +308,20 @@ declare module 'next-auth/jwt' {
         rsname: string;
       }>;
     }
+  }
+}
+
+declare module '@compliance-theater/types/next-auth/jwt' {
+  interface JWT extends BaseJWT {
+    idToken?: string;
+    refresh_token?: string;
+    access_token?: string;
+    account_id?: number | string;
+    user_id?: number | string;
+    subject?: string;
+    hash?: string;
+    resource_access?: Record<string, unknown>;
+    error?: string;
+    expires_at?: number;
   }
 }

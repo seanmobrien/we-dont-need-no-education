@@ -3,7 +3,7 @@
  * Tests all docking positions: top, left, right, bottom, maximized, and float
  */
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import {
   render,
   screen,
@@ -43,7 +43,7 @@ jest.mock('@/lib/components/ai/chat-fetch-wrapper', () => ({
 }));
 
 // Mock react-dom createPortal to isolate portal content
-jest.mock('react-dom', () => ({
+jest.mock('@compliance-theater/types/react-dom', () => ({
   ...jest.requireActual('react-dom'),
   createPortal: (children: React.ReactNode) => (
     <div data-testid="portal-content">{children}</div>

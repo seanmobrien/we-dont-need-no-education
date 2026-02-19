@@ -9,7 +9,7 @@ import {
   MessageImportStatus,
 } from '@/data-models/api/import/email-message';
 import { query } from '@compliance-theater/database/driver';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import { googleProviderFactory } from './_googleProviderFactory';
 import { isError, LoggedError } from '@compliance-theater/logger';
 import { auth } from '@compliance-theater/auth';
@@ -21,7 +21,7 @@ import {
 } from '@/data-models/api/import/provider-google';
 import { MailQueryBuilder } from './_mailQueryBuilder';
 import { ParsedHeaderMap } from '@/lib/email/parsedHeaderMap';
-import { NextApiRequest } from 'next/types';
+import { NextApiRequest } from '@compliance-theater/types/next/types';
 
 /**
  * Parses pagination statistics from a URL or URLSearchParams object.

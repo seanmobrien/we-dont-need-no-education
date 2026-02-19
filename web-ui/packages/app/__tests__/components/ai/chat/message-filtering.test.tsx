@@ -2,7 +2,7 @@
  * Tests for message filtering functionality in ChatHistory component
  */
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import {
   render,
   screen,

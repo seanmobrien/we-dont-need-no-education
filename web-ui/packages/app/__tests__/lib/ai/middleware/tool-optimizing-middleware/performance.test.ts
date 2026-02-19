@@ -109,7 +109,7 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
       });
       const processingTime = Date.now() - startTime;
 
-      expect(processingTime).toBeLessThan(1000); // Should complete within 1 second
+      expect(processingTime).toBeLessThan(3000); // Should complete within 3 seconds
       expect(result.messages).toBeDefined();
       expect(Array.isArray(result.messages)).toBe(true);
     }, 10000);

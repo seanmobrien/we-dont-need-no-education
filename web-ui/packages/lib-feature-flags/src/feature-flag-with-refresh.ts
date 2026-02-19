@@ -13,10 +13,21 @@ import type {
 } from './types';
 import fastEqual from 'fast-deep-equal/es6';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
-import EventEmitter from '@protobufjs/eventemitter';
+import mitt, { Emitter } from 'mitt';
 import { safeSerialize } from '@compliance-theater/logger/safe-serialize';
 
 const DEFAULT_TTL_MS = 3 * 60 * 1000; // 3 minutes
+
+type FeatureFlagChangeEvent = {
+  sender: unknown;
+  oldValue: unknown;
+  newValue: unknown;
+};
+
+type FeatureFlagRefreshEvents = {
+  change: FeatureFlagChangeEvent;
+  dispose: undefined;
+};
 
 class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
   implements AutoRefreshFeatureFlag<T>
@@ -28,7 +39,7 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
   private _lastError: Error | null = null;
   private _isDisposed = false;
   private _abortController: AbortController | null = null;
-  readonly #eventEmitter = new EventEmitter();
+  readonly #eventEmitter: Emitter<FeatureFlagRefreshEvents> = mitt<FeatureFlagRefreshEvents>();
   readonly #flagsmithFactory: (() => MinimalNodeFlagsmith) | undefined;
 
   private constructor(
@@ -43,10 +54,8 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
     this.ttl = ttl;
     this.userId = userId;
     this.key = key;
-    this.#eventEmitter = new EventEmitter();
     this.#flagsmithFactory = flagsmith;
   }
-
   static createSync<T extends KnownFeatureType>({
     key,
     userId,
@@ -299,8 +308,9 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
       return;
     }
     this._isDisposed = true;
+    this.#eventEmitter.emit('dispose', undefined);
     // Clear all events
-    this.#eventEmitter.off();
+    this.#eventEmitter.all.clear();
     // Cancel any pending refresh
     this._abortController?.abort();
     this._pendingRefresh = null;

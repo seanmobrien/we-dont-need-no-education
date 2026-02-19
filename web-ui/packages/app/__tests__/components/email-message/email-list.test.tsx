@@ -11,7 +11,7 @@ import { fetch } from '@compliance-theater/nextjs/fetch';
 const TIMEOUT = 30000;
 
 // Mock the router
-jest.mock('next/navigation', () => ({
+jest.mock('@compliance-theater/types/next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
     back: jest.fn(),

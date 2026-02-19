@@ -2,7 +2,7 @@
  * Email import manager for orchestrating multi-stage import process
  * @module @/lib/email/import/importmanager
  */
-import type { NextRequest } from 'next/server';
+import type { NextRequest } from '@compliance-theater/types/next/server';
 import type {
   ImportResponse,
   ImportSourceMessage,

@@ -11,7 +11,7 @@ import {
   ForwardRefRenderFunction,
   useId,
   useEffect,
-} from 'react';
+} from '@compliance-theater/types/react';
 
 import { EmailMessage } from '@/data-models/api/email-message';
 import ContactDropdown from '@/components/contact/contact-dropdown';
@@ -23,7 +23,7 @@ import EmailSelect from './select';
 import { SubmitRefCallbackInstance } from './_types';
 import { useEmail, useWriteEmail } from '@/lib/hooks/use-email';
 import siteMap from '@/lib/site-util/url-builder';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@compliance-theater/types/next/navigation';
 
 type EmailFormAfterSaveBehavior = 'none' | 'redirect';
 

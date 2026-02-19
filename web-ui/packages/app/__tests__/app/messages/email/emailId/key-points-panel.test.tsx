@@ -1,5 +1,5 @@
 /* eslint-disable react/display-name */
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { KeyPointsPanel } from '@/app/messages/email/[emailId]/key-points/panel';

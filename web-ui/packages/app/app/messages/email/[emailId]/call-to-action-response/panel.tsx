@@ -1,4 +1,4 @@
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import Box from '@mui/material/Box';
@@ -20,7 +20,7 @@ import {
   CallToActionResponseDetails,
   CallToActionDetails,
 } from '@/data-models/api';
-import { useParams } from 'next/navigation';
+import { useParams } from '@compliance-theater/types/next/navigation';
 import { EmailMasterPanel } from '@/components/mui/data-grid';
 import { fetch } from '@compliance-theater/nextjs/fetch';
 

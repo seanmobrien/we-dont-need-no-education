@@ -9,6 +9,7 @@ const config = {
   rootDir: ".",
   moduleNameMapper: {
     ...baseConfig.moduleNameMapper,
+    '^@compliance-theater/types/react$': 'react',
   },
 };
 

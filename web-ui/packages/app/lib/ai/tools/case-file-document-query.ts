@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { sql } from '@compliance-theater/database/drizzle-orm';
 import type {
   DocumentPropertyQueryShape,
   DocumentUnitQueryShape,

@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
@@ -7,7 +7,7 @@ import {
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
 
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql } from '@compliance-theater/database/drizzle-orm';
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
 import {
   DrizzleSelectQuery,

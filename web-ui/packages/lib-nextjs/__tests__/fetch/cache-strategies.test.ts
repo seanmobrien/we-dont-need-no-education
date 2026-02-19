@@ -16,7 +16,7 @@ import type {
 } from '../../src/server/fetch/fetch-types';
 import { type RedisClientType } from '@compliance-theater/redis';
 import { createClient } from 'redis';
-import { hideConsoleOutput } from '../../../app/__tests__/test-utils-server';
+import { hideConsoleOutput } from '../shared/test-utils-server';
 
 /*
 

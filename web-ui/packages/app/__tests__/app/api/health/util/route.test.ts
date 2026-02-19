@@ -3,7 +3,7 @@
  */
 import { POST } from '@/app/api/health/util/route';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 
 // Mock SingletonProvider
 jest.mock('@compliance-theater/typescript/singleton-provider', () => {

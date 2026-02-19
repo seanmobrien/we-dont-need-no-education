@@ -10,7 +10,7 @@ import {
   wrapRouteRequest,
   extractParams,
 } from '@compliance-theater/nextjs/server/utils';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import { isError, log } from '@compliance-theater/logger';
 import { amendCaseRecord } from '@/lib/ai/tools/amend-case-record';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';

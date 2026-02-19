@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, useCallback, useMemo, useState } from 'react';
+import { ChangeEvent, useCallback, useMemo, useState } from '@compliance-theater/types/react';
 import ImportRecord from './import-record';
 import InputLabel from '@mui/material/InputLabel';
 import InputAdornment from '@mui/material/InputAdornment';

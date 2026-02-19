@@ -1,7 +1,7 @@
 import { schema } from '@compliance-theater/database/orm';
 import { isKeyOf } from '@compliance-theater/typescript';
-import { toCamelCase } from 'drizzle-orm/casing';
-import { PgColumn, PgTable, TableConfig } from 'drizzle-orm/pg-core';
+import { toCamelCase } from '@compliance-theater/database/drizzle-orm/casing';
+import { PgColumn, PgTable, TableConfig } from '@compliance-theater/database/drizzle-orm/pg-core';
 
 export const DefaultDrizzleEmailColumnMap = {
   propertyValue: 'property_value',

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo } from '@compliance-theater/types/react';
 import {
   errorReporter,
   ErrorSeverity,

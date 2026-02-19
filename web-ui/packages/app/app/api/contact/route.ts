@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import { query } from '@compliance-theater/database/driver';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { globalContactCache } from '@/data-models/api';

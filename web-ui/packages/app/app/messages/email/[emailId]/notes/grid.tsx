@@ -4,7 +4,7 @@ import { EmailPropertyDataGrid } from '@/components/mui/data-grid/email-properti
 import { SharedCellDefinitions } from '@/components/mui/data-grid';
 import { NotesPanel } from './panel';
 import { DataGridProProps } from '@mui/x-data-grid-pro';
-import { useCallback } from 'react';
+import { useCallback } from '@compliance-theater/types/react';
 
 const stableColumns: GridColDef[] = [
   { field: 'typeName', headerName: 'Type', editable: false, width: 150 },

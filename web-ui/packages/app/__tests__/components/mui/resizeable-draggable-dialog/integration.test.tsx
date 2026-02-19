@@ -4,7 +4,7 @@
  * Tests the components working together without mocking to ensure full functionality and coverage.
  */
 
-import React, { useState } from 'react';
+import React, { useState } from '@compliance-theater/types/react';
 import {
   render,
   screen,

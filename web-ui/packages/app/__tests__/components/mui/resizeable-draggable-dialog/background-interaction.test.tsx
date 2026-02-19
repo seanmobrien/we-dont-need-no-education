@@ -2,7 +2,7 @@
  * @fileoverview Tests for background interaction when dialog is in non-modal floating mode
  */
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { render, screen, fireEvent, act } from '@/__tests__/test-utils';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
 

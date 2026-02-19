@@ -3,7 +3,7 @@
  */
 let testQueryClient: QueryClient | undefined;
 
-import React, { JSX, PropsWithChildren } from 'react';
+import React, { JSX, PropsWithChildren } from '@compliance-theater/types/react';
 import {
   renderHook,
   waitFor,

@@ -2,7 +2,7 @@
 'use client';
 
 import BulkEmailForm from '@/components/email-message/bulk-form';
-import Image from 'next/image';
+import Image from '@compliance-theater/types/next/image';
 import { css } from '@emotion/react';
 
 const pageStyles = {

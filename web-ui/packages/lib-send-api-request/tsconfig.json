@@ -35,6 +35,9 @@
     },
     {
       "path": "../lib-typescript"
+    },
+    {
+      "path": "../lib-types"
     }
   ]
 }

@@ -1,7 +1,7 @@
 import { got } from 'got';
-import { getToken } from '@auth/core/jwt';
-import { NextRequest } from 'next/server';
-import type { NextApiRequest } from 'next';
+import { getToken } from '@compliance-theater/types/next-auth/jwt';
+import { NextRequest } from '@compliance-theater/types/next/server';
+import type { NextApiRequest } from '@compliance-theater/types/next';
 import { env } from '@compliance-theater/env';
 import { SingletonProvider } from '@compliance-theater/typescript';
 import type { KeycloakConfig, TokenExchangeParams, TokenExchangeResponse, GoogleTokens } from './token-exchange-types';

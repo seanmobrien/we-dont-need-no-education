@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from '@compliance-theater/types/react';
 import Box from '@mui/material/Box';
 import { styled } from '@mui/material/styles';
 import type { DockPosition } from './types';

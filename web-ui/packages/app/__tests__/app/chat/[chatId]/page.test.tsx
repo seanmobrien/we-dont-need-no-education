@@ -1,6 +1,6 @@
 /* @jest-environment node */
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
 
 /**
@@ -17,7 +17,7 @@ const unauthorizedMock = jest.fn(() => {
 const notFoundMock = jest.fn(() => {
   throw new Error('NOT_FOUND');
 });
-jest.mock('next/navigation', () => ({
+jest.mock('@compliance-theater/types/next/navigation', () => ({
   unauthorized: () => unauthorizedMock(),
   notFound: () => notFoundMock(),
 }));

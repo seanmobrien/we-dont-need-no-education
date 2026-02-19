@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import Box from '@mui/material/Box';
 import { styled } from '@mui/material/styles';
 import { useChatPanelContext } from './chat-panel-context';

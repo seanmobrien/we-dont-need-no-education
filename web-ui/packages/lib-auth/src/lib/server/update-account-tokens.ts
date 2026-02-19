@@ -1,8 +1,8 @@
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
-import { eq, and } from 'drizzle-orm';
+import { eq, and } from '@compliance-theater/database/drizzle-orm';
 import { log } from '@compliance-theater/logger';
 import { decodeToken } from '../utilities';
-import type { JWT } from '@auth/core/jwt';
+import type { JWT } from '@compliance-theater/types/auth-core/jwt';
 
 const getExpiresAt = (value: unknown) => {
   const expiresAt = Number(value ?? 0);

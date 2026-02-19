@@ -13,7 +13,7 @@ import {
 import { type AiLanguageModelType, generateChatId } from '@/lib/ai/core';
 import { drizDb } from '@compliance-theater/database/orm';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import {
   type ChatHistoryContext,
   createAgentHistoryContext,

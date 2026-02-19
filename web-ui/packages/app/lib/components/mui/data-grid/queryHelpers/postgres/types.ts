@@ -4,7 +4,7 @@ import type {
   GridFilterItem,
   GridSortModel,
 } from '@mui/x-data-grid-pro';
-import type { Sql } from 'postgres';
+import type { Sql } from '@compliance-theater/database/postgres';
 import type { ISqlNeonAdapter, SqlDb } from '@compliance-theater/database/driver';
 
 /**

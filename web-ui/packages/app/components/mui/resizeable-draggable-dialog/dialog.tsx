@@ -10,12 +10,12 @@
 
 'use client';
 
-import * as React from 'react';
+import * as React from '@compliance-theater/types/react';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import { PaperProps } from '@mui/material/Paper';
 import { styled } from '@mui/material/styles';
-import { useCallback, useId, useState, useRef, useMemo } from 'react';
+import { useCallback, useId, useState, useRef, useMemo } from '@compliance-theater/types/react';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import MinimizeIcon from '@mui/icons-material/Minimize';

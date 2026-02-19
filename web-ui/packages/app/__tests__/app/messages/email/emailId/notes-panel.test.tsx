@@ -1,5 +1,5 @@
  
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { NotesPanel } from '@/app/messages/email/[emailId]/notes/panel';

@@ -1,4 +1,4 @@
-import type { ComponentType, ErrorInfo, PropsWithChildren } from 'react';
+import type { ComponentType, ErrorInfo, PropsWithChildren } from '@compliance-theater/types/react';
 import type { ErrorReporterInterface, ErrorSeverity } from './types';
 
 /**

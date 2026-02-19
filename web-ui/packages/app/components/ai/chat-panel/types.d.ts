@@ -3,7 +3,7 @@
  * @module components/ai/chat-panel/types
  */
 
-import { Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction } from '@compliance-theater/types/react';
 
 declare module '@/components/ai/chat-panel/types' {
   /**

@@ -2,12 +2,12 @@
 
 import { getAppInsights } from '@/instrument/browser';
 import { useSession } from '@compliance-theater/auth/components/session-provider/index';
-import type { Session } from '@auth/core/types';
+import type { Session } from '@compliance-theater/types/auth-core/types';
 import {
   usePathname,
   useSearchParams,
-} from 'next/dist/client/components/navigation';
-import { useEffect, useMemo } from 'react';
+} from '@compliance-theater/types/next/dist/client/components/navigation';
+import { useEffect, useMemo } from '@compliance-theater/types/react';
 import { makeAbsoluteUrl } from '@compliance-theater/react/url';
 
 export const TrackWithAppInsight = () => {

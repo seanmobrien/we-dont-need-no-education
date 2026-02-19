@@ -6,8 +6,8 @@ import { ContactRepository } from '@/lib/api/contacts/database';
 import { EmailRepository } from '@/lib/api/email/database';
 import { StagedAttachmentRepository } from '@/lib/api/email/import/staged-attachment';
 import { ThreadRepository } from '@/lib/api/thread/database';
-import { NextApiRequest } from 'next';
-import { NextRequest } from 'next/server';
+import { NextApiRequest } from '@compliance-theater/types/next';
+import { NextRequest } from '@compliance-theater/types/next/server';
 
 /**
  * Represents the context for processing a specific stage in the import process.

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from '@compliance-theater/types/react';
 import { debounce } from 'lodash';
 import { EmailMessageSummary } from '@/data-models/api/email-message';
 import { fetch } from '@compliance-theater/nextjs/fetch';

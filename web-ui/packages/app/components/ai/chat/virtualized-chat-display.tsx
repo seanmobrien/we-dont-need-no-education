@@ -52,7 +52,7 @@
  *    fallbacks (default heights) ensure resilience if partial data arrives.
  */
 
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback } from '@compliance-theater/types/react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import Box from '@mui/material/Box';
 import Switch from '@mui/material/Switch';

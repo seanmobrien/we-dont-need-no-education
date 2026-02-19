@@ -4,7 +4,7 @@ import { documentProperty, documentUnits } from '@compliance-theater/database/sc
 import { drizDb } from '@compliance-theater/database/orm';
 import { newUuid } from '@compliance-theater/typescript';
 import { log } from '@compliance-theater/logger';
-import { eq } from 'drizzle-orm';
+import { eq } from '@compliance-theater/database/drizzle-orm';
 
 export const mapPropertyTypeToDocumentType = (typeId: number): string => {
   switch (typeId) {

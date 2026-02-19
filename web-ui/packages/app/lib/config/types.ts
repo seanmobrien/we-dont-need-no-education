@@ -1,4 +1,4 @@
-import type { NextConfig } from 'next/types';
+import type { NextConfig } from '@compliance-theater/types/next/types';
 
 export type RawSourceClassProps = {
   source: string | Buffer;

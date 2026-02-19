@@ -5,7 +5,7 @@ import {
   useCallback,
   MouseEvent as ReactMouseEvent,
   ElementType,
-} from 'react';
+} from '@compliance-theater/types/react';
 import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
 import siteMap from '@/lib/site-util/url-builder';
 import Box from '@mui/material/Box';
@@ -23,8 +23,8 @@ import AttachEmailIcon from '@mui/icons-material/AttachEmail';
 import KeyIcon from '@mui/icons-material/Key';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import CallToActionIcon from '@mui/icons-material/CallToAction';
-import { useRouter } from 'next/navigation';
-import NextLink from 'next/link';
+import { useRouter } from '@compliance-theater/types/next/navigation';
+import NextLink from '@compliance-theater/types/next/link';
 import Link from '@mui/material/Link';
 import type { SxProps, Theme } from '@mui/material/styles';
 import EmailDetailPanel from './email-detail-panel';

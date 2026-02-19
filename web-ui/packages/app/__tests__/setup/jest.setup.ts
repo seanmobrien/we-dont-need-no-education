@@ -1,9 +1,9 @@
 process.env.MEM0_API_BASE_PATH = process.env.MEM0_API_BASE_PATH ?? 'api/v1';
 
 jest.mock('@compliance-theater/nextjs/client-navigate', () => ({
-  clientReload: jest.fn().mockImplementation(() => {}),
-  clientNavigate: jest.fn().mockImplementation(() => {}),
-  clientNavigateSignIn: jest.fn().mockImplementation(() => {}),
+  clientReload: jest.fn().mockImplementation(() => { }),
+  clientNavigate: jest.fn().mockImplementation(() => { }),
+  clientNavigateSignIn: jest.fn().mockImplementation(() => { }),
 }));
 
 jest.mock('@/lib/hooks/use-todo', () => ({
@@ -58,14 +58,17 @@ jest.mock('@/instrument/browser', () => ({
   getReactPlugin: jest.fn(() => ({
     trackEvent: jest.fn(),
     trackPageView: jest.fn(),
+    trackMetric: jest.fn(),
   })),
   getClickPlugin: jest.fn(() => ({
     trackEvent: jest.fn(),
     trackPageView: jest.fn(),
+    trackMetric: jest.fn(),
   })),
   getAppInsights: jest.fn(() => ({
     trackEvent: jest.fn(),
     trackPageView: jest.fn(),
+    trackMetric: jest.fn(),
   })),
   instrument: jest.fn(),
 }));
@@ -109,7 +112,7 @@ import '@testing-library/jest-dom';
 import { TextEncoder, TextDecoder } from 'util';
 import { mock } from 'jest-mock-extended';
 import { zerialize } from 'zodex';
-import { createElement } from 'react';
+import { createElement } from '@compliance-theater/types/react';
 import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
 import instrument, { getAppInsights } from '@/instrument/browser';
 import { log } from '@compliance-theater/logger';

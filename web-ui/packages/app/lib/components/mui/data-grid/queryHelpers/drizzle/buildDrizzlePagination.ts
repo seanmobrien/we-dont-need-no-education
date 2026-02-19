@@ -11,7 +11,7 @@
 import type { LikeNextRequest } from '@compliance-theater/nextjs/types';
 import type { PaginatedGridListRequest } from '../../types';
 import type { DrizzleSelectQuery } from './types';
-import type { AnyPgSelect } from 'drizzle-orm/pg-core';
+import type { AnyPgSelect } from '@compliance-theater/database/drizzle-orm/pg-core';
 import { parsePaginationStats as parsePaginationStatsImpl } from '../utility';
 import { deprecate } from '@compliance-theater/nextjs/utils';
 /**

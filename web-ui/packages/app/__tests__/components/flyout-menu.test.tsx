@@ -2,7 +2,7 @@
  * @fileoverview Tests for the FlyoutMenu component
  */
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
 import { FlyoutMenu } from '@/components/flyout-menu';
 import MenuItem from '@mui/material/MenuItem';

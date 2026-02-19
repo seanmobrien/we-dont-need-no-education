@@ -1,8 +1,8 @@
 import { ICancellablePromiseExt } from '@compliance-theater/typescript';
-import { NextRequest } from 'next/server';
-import { NextApiRequest } from 'next';
+import { NextRequest } from '@compliance-theater/types/next/server';
+import { NextApiRequest } from '@compliance-theater/types/next';
 import { UrlObject } from 'url';
-import type { Route } from 'next';
+import type { Route } from '@compliance-theater/types/next';
 
 // Type for Next.js routes
 export type SiteRouteType = string;

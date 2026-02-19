@@ -1,6 +1,6 @@
-import type { JWT } from '@auth/core/jwt';
+import type { JWT } from '@compliance-theater/types/next-auth/jwt';
 import type { SessionWithAccountId } from '../types';
-import type { Session } from '@auth/core/types';
+import type { Session } from '@compliance-theater/types/next-auth';
 
 import { LoggedError } from '@compliance-theater/logger';
 import { decodeToken } from '../utilities';
@@ -34,7 +34,10 @@ export const setupSession = async ({
     }
     if (token.account_id !== undefined) {
       // Store account_id for use in the sesion callback
-      session.user.account_id = token.account_id;
+      session.user.account_id =
+        typeof token.account_id === 'number'
+          ? token.account_id
+          : Number(token.account_id);
     }
 
     if (session.user.email) {

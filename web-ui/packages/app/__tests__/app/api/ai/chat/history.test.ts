@@ -11,7 +11,7 @@
  */
 
 import { GET } from '@/app/api/ai/chat/history/route';
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 // import { mockChatHistoryResponse } from '@/__tests__/components/chat.mock-data';
 const mockChatHistoryResponse = {
   results: [

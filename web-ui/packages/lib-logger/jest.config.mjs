@@ -1,4 +1,4 @@
-import baseConfig from './__tests__/shared/jest.config-shared.mjs';
+import baseConfig, { filter } from './__tests__/shared/jest.config-shared.mjs';
 
 /** @type {import('jest').Config} */
 const config = {
@@ -7,6 +7,7 @@ const config = {
   preset: "ts-jest",
   testEnvironment: "node",
   rootDir: ".",
+  setupFilesAfterEnv: filter(baseConfig, 'setupFilesAfterEnv', (entry) => entry.includes('jest.mock-log.ts')),
   moduleNameMapper: {
     ...baseConfig.moduleNameMapper,
   },

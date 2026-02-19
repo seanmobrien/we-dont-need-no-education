@@ -3,8 +3,8 @@ import { log, LoggedError } from '@compliance-theater/logger';
 import { googleProviderFactory } from '@/app/api/email/import/[provider]/_googleProviderFactory';
 import { query } from '@compliance-theater/database/driver';
 import type { StagedAttachment } from '@/lib/api/email/import/staged-attachment';
-import { NextApiRequest } from 'next/types';
-import { NextRequest } from 'next/server';
+import { NextApiRequest } from '@compliance-theater/types/next/types';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import { env } from '@compliance-theater/env';
 
 export type AttachmentDownloadJob = {

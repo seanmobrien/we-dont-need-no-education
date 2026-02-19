@@ -2,21 +2,21 @@ import type {
   Account,
   Profile,
   User,
-  Awaitable,
   DefaultSession,
   Session,
-  AuthConfig,
-} from '@auth/core/types';
+  NextAuthConfig,
+} from '@compliance-theater/types/next-auth';
+import type { Awaitable } from '@compliance-theater/types/auth-core/types';
 
-import NextAuth, { type NextAuthResult } from 'next-auth'; // Added NextAuthConfig
-import type { Adapter, AdapterSession, AdapterUser } from '@auth/core/adapters';
-import type { CredentialInput, Provider } from '@auth/core/providers';
+import NextAuth, { type NextAuthResult } from '@compliance-theater/types/next-auth'; // Added NextAuthConfig
+import type { Adapter, AdapterSession, AdapterUser } from '@compliance-theater/types/auth-core/adapters';
+import type { CredentialInput, Provider } from '@compliance-theater/types/auth-core/providers';
 import { isRunningOnEdge, env } from '@compliance-theater/env';
 import { logEvent } from '@compliance-theater/logger';
 
 import { setupKeyCloakProvider } from './lib/keycloak-provider';
 import { authorized } from './lib/authorized';
-import type { JWT } from '@auth/core/jwt';
+import type { JWT } from '@compliance-theater/types/next-auth/jwt';
 
 type DynamicImports = {
   drizzleAdapter: {
@@ -242,7 +242,7 @@ const nextAuthResult: NextAuthResult = NextAuth(async () => {
       brandColor: '#1898a8', // Custom brand color
     },
     trustHost: env('NEXTAUTH_TRUST_HOST'),
-  } satisfies AuthConfig;
+  } as NextAuthConfig;
 });
 
 export const handlers = nextAuthResult.handlers;

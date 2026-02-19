@@ -10,7 +10,7 @@
  */
 
 import { render, screen } from '@/__tests__/test-utils';
-import React from 'react';
+import React from '@compliance-theater/types/react';
 
 jest.mock('@/components/error-boundaries/ServerSafeErrorManager', () => ({
   __esModule: true,
@@ -20,7 +20,7 @@ jest.mock('@/components/error-boundaries/ServerSafeErrorManager', () => ({
 const mockPush = jest.fn();
 const mockParams: { emailId?: string } = { emailId: 'test-email-123' };
 
-jest.mock('next/navigation', () => ({
+jest.mock('@compliance-theater/types/next/navigation', () => ({
   useParams: () => mockParams,
   useRouter: () => ({
     push: mockPush,
@@ -155,8 +155,8 @@ jest.mock('@/components/email-message/dashboard-layout/branding', () => ({
 }));
 
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
-import type { Session } from '@auth/core/types';
-import { usePathname } from 'next/navigation';
+import type { Session } from '@compliance-theater/types/auth-core/types';
+import { usePathname } from '@compliance-theater/types/next/navigation';
 import { ThemeSelector } from '@compliance-theater/themes';
 
 describe('EmailDashboardLayout', () => {

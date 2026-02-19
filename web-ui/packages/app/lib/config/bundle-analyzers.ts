@@ -19,7 +19,7 @@
  *
  * EXAMPLE (next.config.ts)
  * ```ts
- * import type { NextConfig } from 'next';
+ * import type { NextConfig } from '@compliance-theater/types/next';
  * import { withBundleAnalyzer } from './lib/config/bundle-analyzers';
  *
  * // const baseConfig: NextConfig = { ... };
@@ -41,7 +41,7 @@
  *    potential ESM interop quirks in certain Node versions).
  */
 
-import { NextConfig } from "next";
+import { NextConfig } from "@compliance-theater/types/next";
 
 /**
  * Internal helper that always applies the analyzer to the provided Next.js

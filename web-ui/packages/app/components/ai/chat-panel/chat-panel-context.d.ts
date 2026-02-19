@@ -2,7 +2,7 @@
  * Type definitions for chat panel context
  * @module components/ai/chat-panel/chat-panel-context
  */
-import { createContext } from 'react';
+import { createContext } from '@compliance-theater/types/react';
 import { ChatPanelContextValue } from './types';
 import { ChatPanelProvider } from './chat-panel-provider';
 declare module '@/components/ai/chat-panel/chat-panel-context' {

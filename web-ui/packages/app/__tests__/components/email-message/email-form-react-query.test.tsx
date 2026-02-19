@@ -28,7 +28,7 @@ jest.mock('@/lib/hooks/use-email', () => ({
 }));
 
 // Mock Next.js router
-jest.mock('next/navigation', () => ({
+jest.mock('@compliance-theater/types/next/navigation', () => ({
   useRouter: () => ({
     replace: jest.fn(),
     back: jest.fn(),

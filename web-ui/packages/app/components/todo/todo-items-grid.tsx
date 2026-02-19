@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useCallback, ElementType } from 'react';
+import { useMemo, useCallback, ElementType } from '@compliance-theater/types/react';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -15,7 +15,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import NextLink from 'next/link';
+import NextLink from '@compliance-theater/types/next/link';
 import {
   useTodoList,
   useCreateTodoItem,

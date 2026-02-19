@@ -11,7 +11,7 @@ import { CallToActionDetails } from '@/data-models/api/email-properties/extended
 import type { GridColDef } from '@mui/x-data-grid/models/colDef';
 import { CallToActionPanel } from './panel';
 import { DataGridProProps } from '@mui/x-data-grid-pro';
-import { useCallback } from 'react';
+import { useCallback } from '@compliance-theater/types/react';
 
 const stableColumns: GridColDef[] = [
   { field: 'value', headerName: 'CTA', flex: 1, editable: false },

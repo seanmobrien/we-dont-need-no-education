@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server';
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest } from '@compliance-theater/types/next/server';
+import { NextApiRequest, NextApiResponse } from '@compliance-theater/types/next';
 import {
   isRequestOrApiRequest,
   isNextApiRequest,

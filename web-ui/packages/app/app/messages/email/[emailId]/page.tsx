@@ -4,9 +4,9 @@ import EmailViewer from '@/components/email-message/email-viewer';
 import { extractParams } from '@compliance-theater/nextjs/server/utils';
 import { resolveEmailIdWithRedirect } from '@/lib/email/email-id-resolver';
 import Box from '@mui/material/Box';
-import React from 'react';
-import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import React from '@compliance-theater/types/react';
+import { Metadata } from '@compliance-theater/types/next';
+import { notFound } from '@compliance-theater/types/next/navigation';
 
 export const generateMetadata = async (): Promise<Metadata> => {
   return {

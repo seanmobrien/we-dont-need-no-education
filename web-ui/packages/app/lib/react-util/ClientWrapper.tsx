@@ -1,6 +1,6 @@
 'use client';
 
-import { JSX, PropsWithChildren } from 'react';
+import { JSX, PropsWithChildren } from '@compliance-theater/types/react';
 
 export const ClientWrapper = ({
   children,

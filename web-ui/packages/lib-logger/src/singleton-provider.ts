@@ -3,8 +3,8 @@ import { log } from "./core";
 type IsNotNull<K> = K extends null
   ? never
   : K extends undefined
-    ? never
-    : K;
+  ? never
+  : K;
 
 export interface ISingletonProvider {
   get<T = unknown, S extends string | symbol = string>(symbol: S): T | undefined;
@@ -48,8 +48,8 @@ export const singletonProviderFactory = (): ISingletonProvider | undefined => {
   const globalWithProvider = globalThis as GlobalWithSingletonGlobal;
   const existing = globalWithProvider[globalSymbol];
   if (!existing) {
-      log(l => l.warn('Request for singleton provider, but none exists yet.'));
-      return undefined;
+    log(l => l.warn('Request for singleton provider, but none exists yet.'));
+    return undefined;
   }
   return existing;
 };

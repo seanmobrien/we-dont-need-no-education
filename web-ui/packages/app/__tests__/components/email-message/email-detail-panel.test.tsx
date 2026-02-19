@@ -3,7 +3,7 @@
  * This includes comprehensive tests for loading states, fully loaded email, and expandable property panels
  */
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import {
   render,
   screen,

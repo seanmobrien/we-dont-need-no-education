@@ -1,9 +1,9 @@
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { act, render, screen, waitFor } from '@/__tests__/test-utils';
 import { CustomEmailPageItem } from '@/components/email-message/dashboard-layout/custom-email-page-item';
 import type { NavigationPageItem } from '@toolpad/core/AppProvider';
 import siteBuilder from '@/lib/site-util/url-builder';
-import { Route } from 'next';
+import { Route } from '@compliance-theater/types/next';
 
 const makeItem = (
   overrides: Partial<NavigationPageItem> = {},

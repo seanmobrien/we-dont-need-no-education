@@ -1,6 +1,6 @@
 // Add to your app root
-import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import type { Metadata } from '@compliance-theater/types/next';
+import { Geist, Geist_Mono } from '@compliance-theater/types/next/font/google';
 import MuiXLicense from '@/components/mui/MuiXLicense';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import { ThemeProvider } from '@compliance-theater/themes';
@@ -11,8 +11,8 @@ import { ChatPanelProvider } from '@/components/ai/chat-panel';
 import { SessionProvider } from '@compliance-theater/auth/components/session-provider/index';
 import { KeyRefreshNotify } from '@compliance-theater/auth/components/key-refresh-notify/index';
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
-import { Suspense} from 'react';
-// import { cookies } from 'next/headers';
+import { Suspense} from '@compliance-theater/types/react';
+// import { cookies } from '@compliance-theater/types/next/headers';
 import { FlagProvider } from '@compliance-theater/feature-flags/components/flag-provider';
 import { state } from '@/lib/site-util/app-startup';
 

@@ -3,7 +3,7 @@
  * @description Unit tests for the MemoryStatusIndicator component
  */
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { render, screen } from '@/__tests__/test-utils';
 import { MemoryStatusIndicator } from '@/components/health/memory-status/memory-status-indicator';
 import { useHealth } from '@/components/health/health-provider/health-context';

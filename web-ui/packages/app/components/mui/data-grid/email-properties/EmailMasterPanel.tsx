@@ -4,7 +4,7 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import Box from '@mui/material/Box';
-import { useMemo } from 'react';
+import { useMemo } from '@compliance-theater/types/react';
 
 const normalDescriptionBody = {
   px: 2,

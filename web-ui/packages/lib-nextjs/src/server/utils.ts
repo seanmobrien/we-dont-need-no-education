@@ -1,7 +1,7 @@
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@compliance-theater/env';
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
-import type { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import {
   SpanKind,
   SpanStatusCode,

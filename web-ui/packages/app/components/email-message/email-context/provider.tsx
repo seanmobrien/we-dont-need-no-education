@@ -7,7 +7,7 @@ import React, {
   ReactNode,
   useRef,
   useCallback,
-} from 'react';
+} from '@compliance-theater/types/react';
 import { EmailContext } from './types';
 import { useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
 

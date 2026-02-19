@@ -15,10 +15,10 @@
  *   provider account object.
  */
 
-import { Account, Awaitable, Profile, User } from '@auth/core/types';
+import { Account, Awaitable, Profile, User } from '@compliance-theater/types/auth-core/types';
 import { log, logEvent, LoggedError } from '@compliance-theater/logger';
-import { CredentialInput } from '@auth/core/providers';
-import { AdapterUser } from '@auth/core/adapters';
+import { CredentialInput } from '@compliance-theater/types/auth-core/providers';
+import { AdapterUser } from '@compliance-theater/types/auth-core/adapters';
 import { updateAccountTokens } from './server/update-account-tokens';
 /**
  * Persist token fields for an external OAuth account to the local `accounts`

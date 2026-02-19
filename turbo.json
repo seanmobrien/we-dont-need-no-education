@@ -58,7 +58,7 @@
       "outputs": []
     },
     "build:publish": {
-      "dependsOn": ["^build:publish", "build:clean", "install"],
+      "dependsOn": ["^build:publish", "build:clean"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
         "AUTH_*",

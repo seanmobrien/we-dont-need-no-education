@@ -9,7 +9,7 @@
  * @since 2025-07-19
  */
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { EmailDashboardToolbarAction } from '@/components/email-message/dashboard-layout/email-dashboard-toolbar-action';

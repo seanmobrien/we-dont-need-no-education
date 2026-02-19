@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from '@compliance-theater/types/react';
 import { isError } from '../utility-methods';
 import { log, LoggedError } from '@compliance-theater/logger';
 

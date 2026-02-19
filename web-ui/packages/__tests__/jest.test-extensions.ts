@@ -1,5 +1,14 @@
 import type { DatabaseMockType } from "./jest.mock-drizzle";
 
+type SymbolKey = string | symbol;
+const testMessages: string[] = [];
+
+const addTestMessage = (message: string) => {
+  if (!testMessages.includes(message)) {
+    testMessages.push(message);
+  }
+};
+
 const testExtensionFactory = () => {
   return {
     session: {
@@ -17,6 +26,11 @@ const testExtensionFactory = () => {
       return undefined as unknown as DatabaseMockType;
     },
     suppressDeprecation: false,
+    singletonStore: new Map<SymbolKey, unknown>(),
+    addTestMessage,
+    addMockWarning: (module: string) => {
+      addTestMessage(`WARNING: Module ${module} is not available for mocking at this time.`)
+    }
   };
 };
 
@@ -34,6 +48,9 @@ type JestTestExtensions = {
   } | null;
   makeMockDb: () => DatabaseMockType;
   suppressDeprecation: boolean;
+  singletonStore: Map<SymbolKey, unknown>;
+  addMockWarning: (message: string) => void;
+  addTestMessage: (message: string) => void;
 };
 
 const TEST_EXTENSIONS = Symbol.for('@noeducation/jest/extensions');
@@ -59,3 +76,12 @@ afterEach(() => {
   const withExtensions = globalThis as GlobalWithJestExtensions;
   delete withExtensions[TEST_EXTENSIONS];
 });
+/* No dependency mock warnings outputed for now
+afterAll(() => {
+if (testMessages.length > 0) {
+  console.log(`Test Messages:\n\t${testMessages.join('\n\t')}`);
+}
+testMessages.length = 0; // Clear messages after logging
+});
+*/
+

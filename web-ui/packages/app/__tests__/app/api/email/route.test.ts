@@ -63,7 +63,7 @@ jest.mock('@compliance-theater/nextjs/server/utils', () => {
 });
 jest.mock('@/lib/components/mui/data-grid/queryHelpers');
 
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import { POST, PUT, GET } from '@/app/api/email/route';
 import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';

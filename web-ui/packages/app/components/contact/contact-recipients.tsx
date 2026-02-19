@@ -1,6 +1,6 @@
 /** @jsxImportSource @emotion/react */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState } from '@compliance-theater/types/react';
 import ContactDropdown from './contact-dropdown';
 import { ContactSummary } from '@/data-models/api/contact';
 import { css } from '@emotion/react';

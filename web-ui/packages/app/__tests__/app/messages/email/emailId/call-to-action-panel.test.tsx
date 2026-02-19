@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@/__tests__/test-utils';
 // Mock the API client
 jest.mock('@/lib/api/email/properties/client');
 // Mock next/navigation
-jest.mock('next/navigation', () => ({
+jest.mock('@compliance-theater/types/next/navigation', () => ({
   useParams: () => ({ emailId: 'test-email-id' }),
 }));
 

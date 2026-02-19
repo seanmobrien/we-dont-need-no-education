@@ -10,8 +10,8 @@ import {
 } from '../types';
 import { query, queryExt } from '@compliance-theater/database/driver';
 import { CustomAppInsightsEvent, log } from '@compliance-theater/logger';
-import { NextRequest } from 'next/server';
-import { NextApiRequest } from 'next';
+import { NextRequest } from '@compliance-theater/types/next/server';
+import { NextApiRequest } from '@compliance-theater/types/next';
 
 /**
  * The `TransactionalStateManagerBase` class provides a base implementation for managing

@@ -1,4 +1,4 @@
-import type { Session } from '@auth/core/types';
+import type { Session } from '@compliance-theater/types/next-auth';
 
 declare module '@compliance-theater/auth/lib/utilities/security' {
   /**

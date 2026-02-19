@@ -9,7 +9,7 @@
  * @since 2025-07-19
  */
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import * as DashboardLayoutModule from '@/components/email-message/dashboard-layout';
 import '@testing-library/jest-dom';
 

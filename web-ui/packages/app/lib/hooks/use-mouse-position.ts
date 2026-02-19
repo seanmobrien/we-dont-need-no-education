@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from '@compliance-theater/types/react';
 
 /**
  * React hook that tracks the current mouse cursor position within the browser window.

@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
 } from '@compliance-theater/nextjs/server/utils';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { extractParams } from '@compliance-theater/nextjs/server/utils';
-import { eq } from 'drizzle-orm';
+import { eq } from '@compliance-theater/database/drizzle-orm';
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
 import {
   checkCaseFileAuthorization,

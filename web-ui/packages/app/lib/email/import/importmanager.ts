@@ -12,7 +12,7 @@ import {
 } from './types';
 import { managerMapFactory } from './google/managermapfactory';
 import { log, LoggedError, isError } from '@compliance-theater/logger';
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import { TransactionalStateManagerBase } from './default/transactional-statemanager';
 import {
   context,

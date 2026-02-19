@@ -1,6 +1,6 @@
  
 import '@testing-library/jest-dom';
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { render, screen } from '@testing-library/react';
 import { EmailHeaderPanel } from '@/app/messages/email/[emailId]/email-header/panel';
 import { EmailProperty } from '@/data-models/api';

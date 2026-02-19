@@ -5,12 +5,20 @@ const makeRecursiveMock = jest
   .fn()
   .mockImplementation(() => jest.fn(() => jest.fn(makeRecursiveMock)));
 
+const safeActual = (moduleName: string) => {
+  try {
+    return jest.requireActual(moduleName);
+  } catch {
+    withJestTestExtensions().addMockWarning(moduleName);
+    return {};
+  }
+};
+
 jest.mock('drizzle-orm/postgres-js', () => {
-  const actualModule = jest.requireActual('drizzle-orm/postgres-js');  
+  const actualModule = safeActual('drizzle-orm/postgres-js');
   return {
     ...actualModule,
     drizzle: jest.fn(() => withJestTestExtensions().makeMockDb()),
-    sql: jest.fn(() => jest.fn().mockImplementation(() => makeRecursiveMock())),
     transaction: jest.fn(async (callback: Function = ((x: unknown) => x)) => {
       const mockDb = withJestTestExtensions().makeMockDb();
       const txRawRet = callback(mockDb);
@@ -18,14 +26,7 @@ jest.mock('drizzle-orm/postgres-js', () => {
       return txRet;
     }),
   };
-});
-jest.mock('drizzle-orm', () => {
-  const actualModule = jest.requireActual('drizzle-orm');
-  return {
-    ...actualModule,
-    sql: jest.fn(() => jest.fn().mockImplementation(() => makeRecursiveMock())),
-  };
-});
+}, { virtual: true });
 
 jest.mock('@compliance-theater/database/driver/connection', () => {
   const pgDb = jest.fn(() => makeRecursiveMock());
@@ -36,6 +37,5 @@ jest.mock('@compliance-theater/database/driver/connection', () => {
   };
 });
 
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { sql } from 'drizzle-orm';
+import { drizzle } from '@compliance-theater/database/drizzle-orm/postgres-js';
 import { pgDb } from '@compliance-theater/database/driver/connection';

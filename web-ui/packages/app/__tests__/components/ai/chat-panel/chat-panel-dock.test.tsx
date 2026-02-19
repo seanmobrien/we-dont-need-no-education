@@ -2,7 +2,7 @@
  * @fileoverview Tests for the chat panel docking functionality
  */
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
 import { ChatPanel } from '@/components/ai/chat-panel';
 

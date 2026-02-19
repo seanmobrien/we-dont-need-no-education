@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { SessionProvider } from '@/components/auth/session-provider/provider';
 import { useQuery } from '@tanstack/react-query';
-import React from 'react';
+import React from '@compliance-theater/types/react';
 
 // Mock dependencies
 jest.mock('@tanstack/react-query', () => ({

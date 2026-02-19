@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import { wrapRouteRequest, extractParams } from '@compliance-theater/nextjs/server/utils';
 import { getTodoManager } from '@/lib/ai/tools/todo/todo-manager';
 import {

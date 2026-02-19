@@ -1,6 +1,6 @@
 import { gmail_v1 } from '@googleapis/gmail';
-import { NextApiRequest } from 'next';
-import { NextRequest } from 'next/server';
+import { NextApiRequest } from '@compliance-theater/types/next';
+import { NextRequest } from '@compliance-theater/types/next/server';
 
 /**
  * Props required for staging an email attachment.

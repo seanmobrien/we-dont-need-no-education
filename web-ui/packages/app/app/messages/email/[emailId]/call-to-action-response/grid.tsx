@@ -7,7 +7,7 @@ import {
 import { EmailPropertyDataGrid } from '@/components/mui/data-grid/email-properties/email-property-grid';
 import { ResponsiveActionPanel } from './panel';
 import { DataGridProProps } from '@mui/x-data-grid-pro';
-import { useCallback } from 'react';
+import { useCallback } from '@compliance-theater/types/react';
 
 import type { GridColDef } from '@mui/x-data-grid/models/colDef';
 

@@ -1,6 +1,6 @@
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { render, screen, fireEvent } from '@/__tests__/test-utils';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@compliance-theater/types/next/navigation';
 import EmailList from '@/components/email-message/list';
 import siteMap from '@/lib/site-util/url-builder';
 

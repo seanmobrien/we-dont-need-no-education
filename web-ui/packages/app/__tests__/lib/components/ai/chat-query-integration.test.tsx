@@ -3,7 +3,7 @@
  */
 
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { renderHook } from '@/__tests__/test-utils';
 import { useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
 import { fetch } from '@compliance-theater/nextjs/fetch';

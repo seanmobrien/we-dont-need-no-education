@@ -1,11 +1,11 @@
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
   extractParams,
 } from '@compliance-theater/nextjs/server/utils';
 import { EmailProperty } from '@/data-models/api/email-properties/property-type';
-import { eq, and, ne } from 'drizzle-orm';
+import { eq, and, ne } from '@compliance-theater/database/drizzle-orm';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { schema } from '@compliance-theater/database/orm';
 import {
@@ -18,7 +18,7 @@ import {
   selectForGrid,
 } from '@/lib/components/mui/data-grid/queryHelpers';
 import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
-import { PgColumn } from 'drizzle-orm/pg-core';
+import { PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 export const GET = wrapRouteRequest(

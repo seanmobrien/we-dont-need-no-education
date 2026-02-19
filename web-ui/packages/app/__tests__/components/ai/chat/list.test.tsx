@@ -4,7 +4,7 @@ import { fetch } from '@compliance-theater/nextjs/fetch';
 
 // Mock the router
 const mockPush = jest.fn();
-jest.mock('next/navigation', () => ({
+jest.mock('@compliance-theater/types/next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     back: jest.fn(),

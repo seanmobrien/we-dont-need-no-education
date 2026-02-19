@@ -36,6 +36,7 @@
     "@compliance-theater/after": "workspace:*",
     "@compliance-theater/env": "workspace:*",
     "@compliance-theater/logger": "workspace:*",
+    "@compliance-theater/types": "workspace:*",
     "@compliance-theater/typescript": "workspace:*",
     "@opentelemetry/api": "1.9.0",
     "@opentelemetry/api-logs": "0.57.2",

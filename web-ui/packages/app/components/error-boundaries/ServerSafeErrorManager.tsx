@@ -1,4 +1,4 @@
-import dynamic from 'next/dynamic';
+import dynamic from '@compliance-theater/types/next/dynamic';
 import type { ClientErrorManagerConfig } from './ClientErrorManager';
 
 /**

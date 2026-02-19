@@ -1,5 +1,5 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
-import type { NextRequest, NextResponse } from 'next/server';
+import type { NextApiRequest, NextApiResponse } from '@compliance-theater/types/next';
+import type { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import type { LikeNextRequest, LikeNextResponse } from './types';
 
 export const isRequestOrApiRequest = (req: unknown): req is LikeNextRequest =>

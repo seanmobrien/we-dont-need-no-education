@@ -1,11 +1,11 @@
-import * as React from 'react';
+import * as React from '@compliance-theater/types/react';
 import Box from '@mui/material/Box';
 import { auth } from '@compliance-theater/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 import { ChatHistory } from '@/components/ai/chat/history';
 import { extractParams } from '@compliance-theater/nextjs/server/utils';
 import { getChatDetails } from '@/lib/ai/chat/history';
-import { notFound, unauthorized } from 'next/navigation';
+import { notFound, unauthorized } from '@compliance-theater/types/next/navigation';
 
 /**
  * Server-rendered inner component that performs async auth/permission checks.

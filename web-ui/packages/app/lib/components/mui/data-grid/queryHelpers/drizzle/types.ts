@@ -4,8 +4,9 @@ import type {
   GridFilterItem,
   GridSortModel,
 } from '@mui/x-data-grid-pro';
-import type { NextRequest } from 'next/server';
-import type { ColumnBaseConfig, DrizzleSqlType ,AnyPgSelect, PgColumn} from '@compliance-theater/database/orm';
+import type { NextRequest } from '@compliance-theater/types/next/server';
+import type { ColumnBaseConfig, AnyPgSelect, PgColumn } from '@compliance-theater/database/orm';
+import type { SQL } from '@compliance-theater/database/drizzle-orm';
 
 // Type for Drizzle select query builder - simplified to match actual usage
 export type DrizzleSelectQueryBase = Pick<
@@ -40,7 +41,7 @@ export type SelectForGridProps<T> = {
    * @param columnName - The database column name (after mapping)
    * @returns The Drizzle column object or SQL expression
    */
-  getColumn: (columnName: string) => PgColumn | DrizzleSqlType | DrizzleSqlType['Aliased'] | undefined;
+  getColumn: (columnName: string) => PgColumn | SQL | SQL.Aliased | undefined;
 
   /**
    * A mapping or function to translate source column names to database column names.
@@ -56,7 +57,7 @@ export type SelectForGridProps<T> = {
   /**
    * The default sort model or column name to use if none is provided.
    */
-  defaultSort?: GridSortModel | string | DrizzleSqlType | PgColumn;
+  defaultSort?: GridSortModel | string | SQL | SQL.Aliased | PgColumn;
 };
 
 /**
@@ -76,7 +77,7 @@ export type BuildDrizzleOrderByProps = {
   /**
    * The default sort model or column name to use if none is provided.
    */
-  defaultSort?: GridSortModel | string | DrizzleSqlType | DrizzleSqlType.Aliased | PgColumn;
+  defaultSort?: GridSortModel | string | SQL | SQL.Aliased | PgColumn;
 
   /**
    * A mapping or function to translate source column names to database column names.
@@ -90,7 +91,7 @@ export type BuildDrizzleOrderByProps = {
    * @param columnName - The database column name (after mapping)
    * @returns The Drizzle column object or SQL expression
    */
-  getColumn: (columnName: string) => PgColumn | DrizzleSqlType | DrizzleSqlType.Aliased | undefined;
+  getColumn: (columnName: string) => PgColumn | SQL | SQL.Aliased | undefined;
 };
 
 type EmailColumnType = PgColumn<
@@ -129,14 +130,14 @@ export type BuildDrizzleAttachmentOrEmailFilterProps = {
    * 
    * 
    */
-  email_id_column: EmailColumnType | DrizzleSqlType.Aliased<EmailColumnType>;
+  email_id_column: EmailColumnType | SQL.Aliased<EmailColumnType>;
 
   /**
    * The Drizzle column object for the document ID field.
    */
   document_id_column:
     | PgColumn<ColumnBaseConfig<'number', 'PgInteger'>, object, object>
-    | DrizzleSqlType.Aliased<number>;
+    | SQL.Aliased<number>;
 
   /**
    * Function that returns a SQL expression for email_to_document_id conversion.
@@ -168,7 +169,7 @@ export type BuildDrizzleItemFilterProps = {
     TConfig extends object = object,
   >(columnName: string) => PgColumn<T, TRuntimeConfig, TConfig> | DrizzleSqlType | undefined;
 */
-  getColumn: (columnName: string) => PgColumn | DrizzleSqlType | DrizzleSqlType.Aliased | undefined;
+  getColumn: (columnName: string) => PgColumn | SQL | SQL.Aliased | undefined;
 
   /**
    * A mapping or function to translate source column names to database column names.
@@ -197,7 +198,7 @@ export type BuildDrizzleQueryFilterProps = {
    * @param columnName - The database column name (after mapping)
    * @returns The Drizzle column object or SQL expression
    */
-  getColumn: (columnName: string) => PgColumn | DrizzleSqlType | DrizzleSqlType.Aliased | undefined;
+  getColumn: (columnName: string) => PgColumn | SQL | SQL.Aliased | undefined;
 
   /**
    * (Optional) A default filter to apply if no specific filter is provided.

@@ -10,7 +10,7 @@
  * - withReactConfig & withReactConfigFactory: React configuration with options
  */
 
-import type { NextConfig } from 'next';
+import type { NextConfig } from '@compliance-theater/types/next';
 import {
   withIgnorePacks,
   withStripRscPrefixPlugin,
@@ -19,7 +19,7 @@ import {
 
 // Import individual modules for more focused testing
 import { StripRscPrefixPlugin } from '@/lib/config/strip-rsc-prefix-plugin';
-import { WebpackConfigContext } from 'next/dist/server/config-shared';
+import { WebpackConfigContext } from '@compliance-theater/types/next/dist/server/config-shared';
 import { withTypescriptConfig } from '@/lib/config/typescript-config';
 import {
   withReactConfig,

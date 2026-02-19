@@ -6,7 +6,7 @@ import {
 import { getFeatureFlag } from '@compliance-theater/feature-flags/server';;
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import type { Span } from '@opentelemetry/api';
 import { wellKnownFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 import { KnownFeatureType } from '@compliance-theater/feature-flags/known-feature';

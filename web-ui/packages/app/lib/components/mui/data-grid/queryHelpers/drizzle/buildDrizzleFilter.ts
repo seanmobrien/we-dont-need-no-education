@@ -29,8 +29,8 @@ import {
   notBetween,
   SQL,
   sql,
-} from 'drizzle-orm';
-import type { AnyPgSelect } from 'drizzle-orm/pg-core';
+} from '@compliance-theater/database/drizzle-orm';
+import type { AnyPgSelect } from '@compliance-theater/database/drizzle-orm/pg-core';
 import { isGridFilterModel } from '../../guards';
 import { columnMapFactory, parseFilterOptions } from '../utility';
 import { isTruthy } from '@compliance-theater/react/utility-methods';

@@ -12,7 +12,7 @@
  */
 
 declare module '@/lib/react-util/ClientWrapper' {
-  import type { PropsWithChildren, ReactElement } from 'react';
+  import type { PropsWithChildren, ReactElement } from '@compliance-theater/types/react';
 
   /**
    * Props for `ClientWrapper`.

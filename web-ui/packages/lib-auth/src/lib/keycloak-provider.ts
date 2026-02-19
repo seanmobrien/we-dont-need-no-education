@@ -1,5 +1,5 @@
-import type { Provider } from '@auth/core/providers';
-import KeyCloak, { KeycloakProfile } from 'next-auth/providers/keycloak';
+import type { Provider } from '@compliance-theater/types/auth-core/providers';
+import KeyCloak, { KeycloakProfile } from '@compliance-theater/types/next-auth/providers/keycloak';
 import { env } from '@compliance-theater/env';
 
 export const setupKeyCloakProvider = (): Provider[] => {

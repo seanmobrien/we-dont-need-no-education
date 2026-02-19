@@ -4,8 +4,8 @@
  */
 
 import { gmail_v1 } from '@googleapis/gmail';
-import { NextApiRequest } from 'next';
-import { NextRequest } from 'next/server';
+import { NextApiRequest } from '@compliance-theater/types/next';
+import { NextRequest } from '@compliance-theater/types/next/server';
 
 declare module '@/lib/email/import/google/types' {
 /**

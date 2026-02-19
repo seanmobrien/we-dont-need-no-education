@@ -7,7 +7,7 @@ import React, {
   useEffect,
   useState,
   useRef,
-} from 'react';
+} from '@compliance-theater/types/react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type {
   SessionContextType,
@@ -25,14 +25,13 @@ import {
   getUserPublicKeyForServer,
 } from '../../lib/utilities/user-keys';
 import { fetch } from '@compliance-theater/nextjs/fetch';
-import { Session } from '@auth/core/types';
+import { AuthSession as Session } from '@compliance-theater/types/lib/auth/session';
 import { useNotifications } from '@toolpad/core';
 import { LoggedError } from '@compliance-theater/logger';
 import { InvalidGrantError } from '../../lib/errors';
 
-export const SessionContext = createContext<SessionContextType<object> | null>(
-  null,
-);
+import { SessionContext } from '@compliance-theater/types/components/auth/session-context';
+
 const SESSION_QUERY_KEY = ['auth-session'] as const;
 const SESSION_WITH_KEYS_QUERY_KEY = [
   ...SESSION_QUERY_KEY,
@@ -118,7 +117,7 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
   });
 
   // Check for fatal session errors
-  if (data?.data?.error === 'RefreshAccessTokenError') {
+  if ((data?.data as { error?: string } | null | undefined)?.error === 'RefreshAccessTokenError') {
     throw new InvalidGrantError('Session refresh failed');
   }
 
@@ -128,7 +127,7 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
       id: 'upload-public-key',
     },
     mutationFn: mutationFn,
-    onError: (error) => {
+    onError: (error: Error) => {
       setKeyValidationStatus('failed');
       setValidationError(
         error instanceof Error ? error.message : 'Failed to upload public key',
@@ -282,7 +281,7 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
         : (dataStatus ?? 'unauthenticated');
 
   // Create context value, only updating if values actually changed
-  const contextValue: SessionContextType<object> = {
+  const contextValue: SessionContextType<Session> = {
     status: currentStatus,
     data: data?.data ?? null,
     isFetching,

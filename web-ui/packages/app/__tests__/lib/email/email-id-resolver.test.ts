@@ -10,7 +10,7 @@ jest.mock('@compliance-theater/typescript', () => {
 
 import { resolveEmailId } from '@/lib/email/email-id-resolver';
 
-jest.mock('next/navigation', () => ({
+jest.mock('@compliance-theater/types/next/navigation', () => ({
   redirect: jest.fn(),
   notFound: jest.fn(),
 }));

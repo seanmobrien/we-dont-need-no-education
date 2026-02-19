@@ -1,5 +1,5 @@
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
-import { eq, and } from 'drizzle-orm';
+import { eq, and } from '@compliance-theater/database/drizzle-orm';
 import { log } from '@compliance-theater/logger';
 
 /**

@@ -96,6 +96,9 @@ const config = {
     '!/(rsc)/**',
   ],
   moduleNameMapper: {
+    '^react$': '<rootDir>/../../node_modules/react/index.js',
+    '^react-dom$': '<rootDir>/../../node_modules/react-dom/index.js',
+    '^@tanstack/react-query$': '<rootDir>/../../node_modules/@tanstack/react-query',
     // All material UI icons are served by a single mock
     '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx', // Mock all MUI icons to a singular mock
     // Instrumentation library mock
@@ -111,8 +114,30 @@ const config = {
     '^prexit$': '<rootDir>/__mocks__/shared/prexit.ts', // Mock prexit module
     // Zodex module mock
     '^zodex$': '<rootDir>/__mocks__/shared/zodex.js',
+    // Redis module mock
+    '^redis$': '<rootDir>/__mocks__/shared/redis.ts',
     // css modules
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
+
+    // Aliases to support internal imports with jest resolver
+    '^@compliance-theater/logger/singleton-provider$': '<rootDir>/../lib-logger/src/singleton-provider.ts',
+    '^@compliance-theater/logger/core$': '<rootDir>/../lib-logger/src/core.ts',
+    '^@compliance-theater/logger$': '<rootDir>/../lib-logger/src/index.ts',
+    '^@compliance-theater/database/schema$': '<rootDir>/../lib-database/src/drizzle/schema.ts',
+    '^@compliance-theater/types/react$': '<rootDir>/../../node_modules/react/index.js',
+    '^@compliance-theater/types/react-dom$': '<rootDir>/../../node_modules/react-dom/index.js',
+    '^@compliance-theater/env(.*)$': '<rootDir>/../lib-env/src$1',
+    '^@compliance-theater/auth(.*)$': '<rootDir>/../lib-auth/src$1',
+      '^@compliance-theater/database(.*)$': '<rootDir>/../lib-database/src$1',
+      '^@compliance-theater/typescript(.*)$': '<rootDir>/../lib-typescript/src$1',
+      '^@compliance-theater/feature-flags(.*)$': '<rootDir>/../lib-feature-flags/src$1',
+      '^@compliance-theater/nextjs(.*)$': '<rootDir>/../lib-nextjs/src$1',
+      '^@compliance-theater/react(.*)$': '<rootDir>/../lib-react/src$1',
+      '^@compliance-theater/redis(.*)$': '<rootDir>/../lib-redis/src$1',
+      '^@compliance-theater/send-api-request(.*)$': '<rootDir>/../lib-send-api-request/src$1',
+      '^@compliance-theater/themes(.*)$': '<rootDir>/../lib-themes/src$1',
+        '^@compliance-theater/types/ai/(.*)$': '<rootDir>/../lib-types/src/lib/ai/$1',
+      '^@compliance-theater/types(.*)$': '<rootDir>/../lib-types/src$1',
   },
   transform: {
     '^.+\\.(ts|tsx)$': [
@@ -150,6 +175,7 @@ const config = {
   // Additional stability configurations for concurrent testing
   testTimeout: 1000, // Increase timeout to 30 seconds for slower tests
   openHandlesTimeout: 1000, // Allow 1 second for open handles cleanup
+  passWithNoTests: true, // Don't fail if no tests are found (useful when running with testPathPattern)
   // forceExit: false, // Don't force exit to allow proper cleanup
   // Mock configuration
   clearMocks: true, // Clear mock calls between tests

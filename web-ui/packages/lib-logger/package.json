@@ -21,6 +21,11 @@
       "workspace-source": "./src/errors/logged-error/index.ts",
       "default": "./dist/errors/logged-error/index.js"
     },
+    "./core": {
+      "types": "./dist/core.d.ts",
+      "workspace-source": "./src/core.ts",
+      "default": "./dist/core.js"
+    },
     "./*": {
       "types": "./dist/*.d.ts",
       "workspace-source": "./src/*.ts",
@@ -52,6 +57,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@compliance-theater/types": "workspace:*",
     "@opentelemetry/api": "1.9.0",
     "@opentelemetry/api-logs": "0.57.2",
     "mitt": "^3.0.1",

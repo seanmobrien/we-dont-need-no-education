@@ -2,7 +2,7 @@
  * Access token management module declaration
  * @module @/lib/auth/access-token
  */
-import type { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import type { NormalizedAccessToken, NormalizeAccessTokenOptions } from './types';
 
 declare module '@compliance-theater/auth/lib/access-token' {

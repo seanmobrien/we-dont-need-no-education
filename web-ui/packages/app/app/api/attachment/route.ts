@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'; // Never statically optimize
 
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,

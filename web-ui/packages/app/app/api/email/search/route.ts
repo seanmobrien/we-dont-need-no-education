@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { mapRecordToSummary } from '../../../../lib/api/email/util';
 import { query } from '@compliance-theater/database/driver';

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import { createContext, useContext } from '@compliance-theater/types/react';
 import { ChatPanelContextValue } from './types';
 
 /**

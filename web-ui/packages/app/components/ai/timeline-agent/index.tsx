@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from '@compliance-theater/types/react';
 import { fetch } from '@compliance-theater/nextjs/fetch';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';

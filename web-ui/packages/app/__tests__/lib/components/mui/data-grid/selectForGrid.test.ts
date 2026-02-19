@@ -9,7 +9,7 @@
  */
 
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid';
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import { CallToActionDetails } from '@/data-models/api/email-properties/extended-properties';
 
 // Mock the dependencies before importing

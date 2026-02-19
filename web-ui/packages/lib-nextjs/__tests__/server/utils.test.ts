@@ -13,7 +13,7 @@ import { errorResponseFactory } from '../../src/server/error-response';
 import { trace, context as otelContext, propagation } from '@opentelemetry/api';
 import { SpanStatusCode } from '@opentelemetry/api';
 import { log, LoggedError } from '@compliance-theater/logger';
-import { NextRequest } from 'next/dist/server/web/spec-extension/request';
+import { NextRequest } from '@compliance-theater/types/next/dist/server/web/spec-extension/request';
 
 // Mock external dependencies
 jest.mock('@opentelemetry/api', () => ({

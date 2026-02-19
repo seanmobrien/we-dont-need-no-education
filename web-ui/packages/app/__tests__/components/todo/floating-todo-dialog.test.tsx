@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
 import '@testing-library/jest-dom';
 import { FloatingTodoDialog } from '@/components/todo/floating-todo-dialog';

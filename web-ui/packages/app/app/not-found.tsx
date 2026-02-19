@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@compliance-theater/types/next/link';
 
 export default function NotFound() {
   return (

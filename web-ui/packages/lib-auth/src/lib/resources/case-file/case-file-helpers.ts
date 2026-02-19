@@ -7,7 +7,7 @@ import { log, LoggedError } from '@compliance-theater/logger';
 import { deprecate } from '@compliance-theater/nextjs/utils';
 import { authorizationService } from '../authorization-service';
 import { normalizedAccessToken } from '../../access-token';
-import type { NextRequest } from 'next/server';
+import type { NextRequest } from '@compliance-theater/types/next/server';
 import { AccessTokenOrRequestOverloads } from '../../types';
 
 export const getUserIdFromEmailId = deprecate(

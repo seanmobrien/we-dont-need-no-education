@@ -9,7 +9,7 @@
 
 'use client';
 
-import * as React from 'react';
+import * as React from '@compliance-theater/types/react';
 import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
 import CircularProgress from '@mui/material/CircularProgress';

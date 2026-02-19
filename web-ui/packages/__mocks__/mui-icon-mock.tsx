@@ -1,11 +1,19 @@
+import { createElement } from '@compliance-theater/types/react';
+
 export const MockIcon = (props: any) => {
-  return (
-    <div>
-      <span>Mock Icon: {props?.['data-icon']}</span>
-      <svg data-testid='mui-icon' data-icon={props?.['data-icon']} 
-        {...props} />
-    </div>
+  const dataIcon = props?.['data-icon'];
+  const svgProps = {
+    'data-testid': 'mui-icon',
+    'data-icon': dataIcon,
+    ...props,
+  };
+
+  return createElement(
+    'div',
+    undefined,
+    createElement('span', undefined, `Mock Icon: ${dataIcon ?? ''}`),
+    createElement('svg', svgProps),
   );
-}
+};
 
 export default MockIcon;

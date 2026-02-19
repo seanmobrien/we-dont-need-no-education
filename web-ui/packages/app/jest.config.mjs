@@ -5,6 +5,7 @@ const config = {
   displayName: "Web UI: app",
   setupFilesAfterEnv: [
     ...(baseConfig.setupFilesAfterEnv ?? []),
+    '@testing-library/jest-dom',
     '<rootDir>/__tests__/setup/jest.mock-appstartup.ts',
     '<rootDir>/__tests__/shared/jest.test-extensions.ts',
     '<rootDir>/__tests__/setup/jest.mock-health.ts',
@@ -18,7 +19,11 @@ const config = {
     '<rootDir>/__tests__/setup/jest.setup.ts',
   ], // Setup file for global imports
   moduleNameMapper: {
+    '^@compliance-theater/auth/lib/utilities$': '<rootDir>/../lib-auth/src/lib/utilities/index.ts',
     ...(baseConfig.moduleNameMapper ?? {}),
+    '^got$': '<rootDir>/__mocks__/got.ts',
+    '^@/__tests__/test-utils$': '<rootDir>/__tests__/shared/test-utils.tsx',
+    '^@/__tests__/test-utils-server$': '<rootDir>/__tests__/shared/test-utils-server.ts',
     '^next-auth/providers/keycloak$': '<rootDir>/__mocks__/shared/keycloak-provider.js',
     '^@/auth$': '<rootDir>/../lib-auth/src/auth.ts',
     '^@/components/auth/session-provider$': '<rootDir>/../lib-auth/src/components/session-provider/index.ts',

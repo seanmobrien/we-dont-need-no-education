@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { render, act } from '@testing-library/react';
 import {
   ClientErrorManager,

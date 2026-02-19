@@ -5,7 +5,7 @@ import { auth } from '@compliance-theater/auth';
 import { ChatPanel, ChatPanelLayout } from '@/components/ai/chat-panel';
 import { extractParams } from '@compliance-theater/nextjs/server/utils';
 import { resolveEmailIdWithRedirect } from '@/lib/email/email-id-resolver';
-import { Metadata } from 'next';
+import { Metadata } from '@compliance-theater/types/next';
 
 export const generateMetadata = async (): Promise<Metadata> => {
   return {

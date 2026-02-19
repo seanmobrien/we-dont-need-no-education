@@ -1,7 +1,7 @@
 /**
  * @fileoverview Case file authorization middleware
  */
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import { checkCaseFileAccess, CaseFileScope } from './case-file-resource';
 import { getUserIdFromUnitId } from './case-file-helpers';
 import { log } from '@compliance-theater/logger';

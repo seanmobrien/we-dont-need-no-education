@@ -1,20 +1,17 @@
-/**
- * Test utilities for feature-flags package tests
- */
-
-export interface MockedConsole {
+export type MockedConsole = {
   error?: jest.SpyInstance;
   log?: jest.SpyInstance;
+  info?: jest.SpyInstance;
   group?: jest.SpyInstance;
   groupEnd?: jest.SpyInstance;
   table?: jest.SpyInstance;
-  info?: jest.SpyInstance;
   warn?: jest.SpyInstance;
   setup: () => void;
   dispose: () => void;
-}
+  [Symbol.dispose]: () => void;
+};
 
-let lastMockedConsole: MockedConsole | undefined;
+let lastMockedConsole: MockedConsole | undefined = undefined;
 
 export const hideConsoleOutput = () => {
   if (lastMockedConsole) {
@@ -40,16 +37,32 @@ export const hideConsoleOutput = () => {
       ret.warn ??= jest.spyOn(console, 'warn').mockImplementation(() => {});
     },
     dispose: () => {
+      ret[Symbol.dispose]();
+    },
+    [Symbol.dispose]: () => {
       ret.error?.mockRestore();
+      delete ret.error;
       ret.log?.mockRestore();
+      delete ret.log;
       ret.group?.mockRestore();
+      delete ret.group;
       ret.groupEnd?.mockRestore();
+      delete ret.groupEnd;
       ret.table?.mockRestore();
+      delete ret.table;
       ret.info?.mockRestore();
+      delete ret.info;
       ret.warn?.mockRestore();
-      lastMockedConsole = undefined;
+      delete ret.warn;
     },
   };
   lastMockedConsole = ret;
   return ret;
 };
+afterEach(() => {
+  // Automatically clean up any console mocking
+  if (lastMockedConsole) {
+    lastMockedConsole.dispose();
+    lastMockedConsole = undefined;
+  }
+});

@@ -21,7 +21,7 @@ import type {
   CheckAccessResult,
   CheckAccessOptions,
 } from './types';
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import { normalizedAccessToken } from '../access-token';
 
 /**

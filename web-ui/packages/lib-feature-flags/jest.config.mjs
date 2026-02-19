@@ -10,10 +10,10 @@ const config = {
   moduleNameMapper: {
     ...baseConfig.moduleNameMapper,
     '^next-auth/providers/keycloak$': '<rootDir>/__mocks__/shared/keycloak-provider.js',
-    '^@compliance-theater/feature-flags/(.*)$': '<rootDir>/src/$1',
-    '^@compliance-theater/feature-flags$': '<rootDir>/src',
-    '^@compliance-theater/logger(.*)$': '<rootDir>/../lib-logger/src$1',
+    '^@compliance-theater/feature-flags(.*)$': '<rootDir>/src$1',
+    '^@compliance-theater/logger$': '<rootDir>/../lib-logger/src',
     '^@compliance-theater/env(.*)$': '<rootDir>/../lib-env/src$1',
+    '^@compliance-theater/types(.*)$': '<rootDir>/../lib-types/src$1',
     '^@compliance-theater/typescript(.*)$': '<rootDir>/../lib-typescript/src$1',
     '^@compliance-theater/redis(.*)$': '<rootDir>/../lib-redis/src$1',
     '^@/(.*)$': '<rootDir>/../app/$1',

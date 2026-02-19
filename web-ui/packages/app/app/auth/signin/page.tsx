@@ -1,16 +1,16 @@
-import * as React from 'react';
+import * as React from '@compliance-theater/types/react';
 import {
   AuthResponse,
   SignInPage,
   type AuthProvider,
 } from '@toolpad/core/SignInPage';
-import { AuthError } from '@auth/core/errors';
-import Image from 'next/image';
+import { AuthError } from '@compliance-theater/types/auth-core/errors';
+import Image from '@compliance-theater/types/next/image';
 import { providerMap, signIn } from '@compliance-theater/auth';
 import { NextAppProvider } from '@toolpad/core/nextjs';
-import { isRedirectError } from 'next/dist/client/components/redirect-error';
+import { isRedirectError } from '@compliance-theater/types/next/dist/client/components/redirect-error';
 import { dumpError, LoggedError } from '@compliance-theater/logger';
-import { cookies } from 'next/headers';
+import { cookies } from '@compliance-theater/types/next/headers';
 
 const sharedImageProps = {
   style: { height: 200, width: 270 },

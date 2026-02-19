@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
+import React, { useState, useEffect, ChangeEvent, useCallback } from '@compliance-theater/types/react';
 import type { Contact } from '@/data-models/api';
 import { createContact, isContact, isContactSummary } from '@/data-models/api';
 import { log, LoggedError } from '@compliance-theater/logger';

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect, useRef } from 'react';
+import type React from 'react';
 import {
   FeatureFlagsApi,
   AllFeatureFlagsDefault,
@@ -10,8 +11,8 @@ import {
 import { getAllFeatureFlags } from '../client';
 import FeatureFlagsContext from '../context';
 import { useFlagsmithLoading } from 'flagsmith/react';
-import { useSession } from '@compliance-theater/auth/components/session-provider/index';
-import type { Session } from '@auth/core/types';
+import { useSession } from '@compliance-theater/types/components/auth/session-context';
+import type { Session } from '@compliance-theater/types';
 import { errorReporter } from '@/lib/error-monitoring/error-reporter';
 
 const defaultFlags = AllFeatureFlagsDefault;

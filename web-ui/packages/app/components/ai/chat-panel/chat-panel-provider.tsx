@@ -4,7 +4,7 @@ import React, {
   useMemo,
   SetStateAction,
   PropsWithChildren,
-} from 'react';
+} from '@compliance-theater/types/react';
 import { debounce } from '@compliance-theater/react/debounce';
 import { ChatPanelConfig, ChatPanelContextValue, DockPosition } from './types';
 import { ChatPanelContext } from './chat-panel-context';

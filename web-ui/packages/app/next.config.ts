@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import type { NextConfig } from 'next';
+import type { NextConfig } from '@compliance-theater/types/next';
 import { withBundleAnalyzer } from './lib/config/bundle-analyzers';
 import { withIgnorePacks } from './lib/config/ignore-unsupported-packs-plugin';
 import { withStripRscPrefixPlugin } from './lib/config/strip-rsc-prefix-plugin';

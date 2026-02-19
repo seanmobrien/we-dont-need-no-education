@@ -1,4 +1,4 @@
-import * as React from 'react';
+import * as React from '@compliance-theater/types/react';
 import { auth } from '@compliance-theater/auth';
 import { ChatPageClient } from './chat-page-client';
 

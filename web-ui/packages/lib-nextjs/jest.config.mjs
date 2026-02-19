@@ -8,7 +8,8 @@ const config = {
   testEnvironment: "node",
   rootDir: ".",
   moduleNameMapper: {
-    ...baseConfig.moduleNameMapper
+    ...baseConfig.moduleNameMapper,
+    '^got$': '<rootDir>/__mocks__/got.ts',
   },
 };
 

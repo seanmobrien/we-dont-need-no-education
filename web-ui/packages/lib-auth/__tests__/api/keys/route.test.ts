@@ -10,7 +10,7 @@
  * @module __tests__/app/api/auth/keys/route.test.ts
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import { POST, GET } from '@/app/api/auth/keys/route';
 // import { auth } from '@/auth';
 import { drizDb } from '@compliance-theater/database/orm';

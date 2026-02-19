@@ -1,6 +1,6 @@
  
  
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import {
   render,
   screen,

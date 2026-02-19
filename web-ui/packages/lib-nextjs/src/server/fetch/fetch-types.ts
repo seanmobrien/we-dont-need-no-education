@@ -10,7 +10,7 @@
 
 import { EnhancedFetchConfig } from '@compliance-theater/feature-flags/types';
 import type { LRUCache } from 'lru-cache';
-import type { RedisClientType } from 'redis';
+import type { RedisClientType } from '@compliance-theater/redis';
 
 export type FetchConfig = {
   fetch_concurrency?: number;

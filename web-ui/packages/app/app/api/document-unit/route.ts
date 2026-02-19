@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { DocumentUnitRepository } from '@/lib/api/document-unit';
 import { isTruthy } from '@compliance-theater/react/utility-methods';

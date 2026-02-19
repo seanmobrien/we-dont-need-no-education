@@ -2,9 +2,9 @@ import type {
   Account as BaseAccount,
   DefaultSession,
   User,
-} from '@auth/core/types';
-import type { JWT } from '@auth/core/jwt';
-import type { AuthConfig as BaseAuthConfig } from '@auth/core';
+} from '@compliance-theater/types/auth-core/types';
+import type { JWT } from '@compliance-theater/types/auth-core/jwt';
+import type { AuthConfig as BaseAuthConfig } from '@compliance-theater/types/auth-core';
 
 declare module '@auth/core/types' {
   /**

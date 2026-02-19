@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';

@@ -1,5 +1,5 @@
 import { auth } from '@compliance-theater/auth';
-import { Session } from '@auth/core/types';
+import { Session } from '@compliance-theater/types/auth-core/types';
 import { log, logEvent } from '@compliance-theater/logger';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
 import { ApiRequestError } from '@compliance-theater/send-api-request';
@@ -7,7 +7,7 @@ import {
   globalRequiredSingletonAsync,
   SingletonProvider,
 } from '@compliance-theater/typescript/singleton-provider';
-import { NextResponse } from 'next/server';
+import { NextResponse } from '@compliance-theater/types/next/server';
 import type { TodoStorageStrategy } from './storage';
 import { InMemoryStorageStrategy } from './storage';
 import { isError, LoggedError } from '@compliance-theater/logger';

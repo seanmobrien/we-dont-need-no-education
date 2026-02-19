@@ -9,7 +9,7 @@ import type {
   DataGridProProps,
   GridGetRowsResponse,
 } from '@mui/x-data-grid-pro';
-import type { Dispatch, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from '@compliance-theater/types/react';
 
 /**
  * Extends the `GridDataSource` type by adding an optional error handler.

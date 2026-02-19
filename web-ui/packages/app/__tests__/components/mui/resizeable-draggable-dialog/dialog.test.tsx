@@ -4,7 +4,7 @@
  * Tests dialog rendering, props passing, and basic integration.
  */
 
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import { render, screen } from '@/__tests__/test-utils';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog/dialog';
 import type {

@@ -1,5 +1,5 @@
  
-import { screen, render, renderHook, waitFor, act } from '../../test-utils';
+import { screen, render, renderHook, waitFor, act } from '@/__tests__/test-utils';
 import { useEmail, useWriteEmail, emailKeys } from '@/lib/hooks/use-email';
 import { getEmail, writeEmailRecord } from '@/lib/api/client';
 import { UseMutateFunction } from '@tanstack/react-query';

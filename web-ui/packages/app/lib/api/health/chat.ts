@@ -8,7 +8,7 @@ import { getRedisClient } from '@compliance-theater/redis';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getMem0EnabledFlag } from '@/lib/ai/mcp/tool-flags';
 import { LoggedError } from '@compliance-theater/logger';
-import type { NextRequest } from 'next/server';
+import type { NextRequest } from '@compliance-theater/types/next/server';
 import { ToolProviderSet } from '@/lib/ai/mcp/types';
 
 type ChatHealthStatus = HealthCheckStatusEntry<'cache' | 'queue' | 'tools'>;

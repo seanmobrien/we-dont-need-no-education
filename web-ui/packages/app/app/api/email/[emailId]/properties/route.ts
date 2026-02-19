@@ -8,7 +8,7 @@ import {
 import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 import { db } from '@compliance-theater/database/driver';
 import { extractParams } from '@compliance-theater/nextjs/server/utils';
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,

@@ -11,8 +11,8 @@
  */
 
 import { NavigationPageItem } from '@toolpad/core/AppProvider';
-import type { Session } from '@auth/core/types';
-import * as React from 'react';
+import type { Session } from '@compliance-theater/types/auth-core/types';
+import * as React from '@compliance-theater/types/react';
 import { SiteRoute, SiteRouteType } from '@/lib/site-util/url-builder/_types';
 import { UrlObject } from 'url';
 

@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { auth } from '@compliance-theater/auth';
 import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';

@@ -12,8 +12,8 @@ import type {
   StageProcessorContext,
   AdditionalStageOptions,
 } from '../types';
-import type { NextRequest } from 'next/server';
-import type { NextApiRequest } from 'next';
+import type { NextRequest } from '@compliance-theater/types/next/server';
+import type { NextApiRequest } from '@compliance-theater/types/next';
 
 declare module '@/lib/email/import/default/transactional-statemanager' {
   /**

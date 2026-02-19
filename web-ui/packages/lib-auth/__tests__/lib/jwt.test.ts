@@ -1,5 +1,5 @@
 import { jwt } from '@/lib/auth/jwt';
-import { JWT } from '@auth/core/jwt';
+import { JWT } from '@compliance-theater/types/auth-core/jwt';
 
 // Mock dependencies
 jest.mock('@/lib/auth/utilities', () => ({

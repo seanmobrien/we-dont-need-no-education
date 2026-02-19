@@ -1,7 +1,7 @@
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server';
 import { isKeyOf } from '@compliance-theater/typescript';
 import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 
 const HealthActionValues = ['reset-globals'] as const;
 

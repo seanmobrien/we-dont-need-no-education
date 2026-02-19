@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import React, { useState } from 'react';
+import React, { useState } from '@compliance-theater/types/react';
 import {
   render,
   screen,

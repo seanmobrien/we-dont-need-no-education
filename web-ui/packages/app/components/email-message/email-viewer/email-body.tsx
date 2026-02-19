@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React from '@compliance-theater/types/react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
@@ -11,7 +11,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import SubjectIcon from '@mui/icons-material/Subject';
 import EmailIcon from '@mui/icons-material/Email';
-import Link from 'next/link';
+import Link from '@compliance-theater/types/next/link';
 import siteBuilder from '@/lib/site-util/url-builder';
 import { EmailViewerProps } from './types';
 import { useEmailMessageQuery } from './hooks';

@@ -1,5 +1,5 @@
-import type { Session, User as NextAuthUser } from '@auth/core/types';
-import type { NextRequest } from 'next/server';
+import type { Session, User as NextAuthUser } from '@compliance-theater/types/next-auth';
+import type { NextRequest } from '@compliance-theater/types/next/server';
 
 type NextAuthUserWithAccountId = NextAuthUser;
 type SessionWithAccountId = Session;

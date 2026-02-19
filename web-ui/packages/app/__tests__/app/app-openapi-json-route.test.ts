@@ -8,7 +8,7 @@
  * - mocks the internal fetch wrapper to return a Response-like object
  */
 
-import type { NextRequest } from 'next/server';
+import type { NextRequest } from '@compliance-theater/types/next/server';
 
 // hoist-safe mocks
 /*

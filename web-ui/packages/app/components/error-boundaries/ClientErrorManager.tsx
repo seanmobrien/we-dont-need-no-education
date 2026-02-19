@@ -7,7 +7,7 @@ import {
   useCallback,
   SetStateAction,
   Dispatch,
-} from 'react';
+} from '@compliance-theater/types/react';
 import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
 import {
   asErrorLike,

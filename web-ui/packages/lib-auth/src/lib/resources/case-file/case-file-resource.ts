@@ -1,6 +1,6 @@
 import { env } from '@compliance-theater/env';
 import { log, LoggedError, createSafeAsyncWrapper } from '@compliance-theater/logger';
-import type { NextRequest } from 'next/server';
+import type { NextRequest } from '@compliance-theater/types/next/server';
 import { getRequestTokens } from '../../access-token';
 import { resourceService } from '../resource-service';
 import { authorizationService } from '../authorization-service'; 

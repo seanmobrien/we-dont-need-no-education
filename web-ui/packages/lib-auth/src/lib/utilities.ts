@@ -1,4 +1,4 @@
-import { getToken, type JWT } from '@auth/core/jwt';
+import { getToken, type JWT } from '@compliance-theater/types/next-auth/jwt';
 import {
   decodeJwt,
   jwtVerify,

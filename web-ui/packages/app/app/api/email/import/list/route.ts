@@ -1,4 +1,4 @@
-import { NextResponse, NextRequest } from 'next/server';
+import { NextResponse, NextRequest } from '@compliance-theater/types/next/server';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { query } from '@compliance-theater/database/driver';

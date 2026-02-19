@@ -19,7 +19,7 @@ import {
   ImportSourceMessage,
   ImportStageValues,
 } from '@/data-models/api/import/email-message';
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import { loadEmail } from '@/lib/api/email/import/google';
 import { LoggedError } from '@compliance-theater/logger';
 import { OAuth2Client } from 'google-auth-library';

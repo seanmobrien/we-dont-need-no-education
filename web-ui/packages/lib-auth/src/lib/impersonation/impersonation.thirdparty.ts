@@ -17,7 +17,7 @@ import type {
 } from './impersonation.types';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { SystemTokenStore } from './system-token-store';
-import type { Session, User } from '@auth/core/types';
+import type { Session, User } from '@compliance-theater/types/next-auth';
 import { keycloakAdminClientFactory } from '../keycloak-factories';
 import type { KeycloakAdminClient } from '../keycloak-factories';
 interface TokenResponse {

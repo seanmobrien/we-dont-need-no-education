@@ -14,7 +14,7 @@
  * base models list returned by the select/from/innerJoin chain used in the route.
  */
 
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 
 // Mock BEFORE importing the route so the route captures our mocks.
 const mockGetUsageReport = jest.fn();

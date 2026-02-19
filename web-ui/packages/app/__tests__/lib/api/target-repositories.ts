@@ -1,6 +1,6 @@
 import { BaseDrizzleRepository } from '@/lib/api/_baseDrizzleRepository';
 import { DrizzleRepositoryConfig } from '@/lib/api/_types';
-import { SQL } from 'drizzle-orm';
+import { SQL } from '@compliance-theater/database/drizzle-orm';
 
 // Test model interface
 

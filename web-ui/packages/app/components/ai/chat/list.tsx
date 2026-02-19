@@ -1,5 +1,5 @@
 'use client';
-import { JSX, useMemo, useCallback } from 'react';
+import { JSX, useMemo, useCallback } from '@compliance-theater/types/react';
 import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
 import siteMap from '@/lib/site-util/url-builder';
 import Box from '@mui/material/Box';
@@ -10,8 +10,8 @@ import type {
   GridColDef,
   GridRowParams,
 } from '@mui/x-data-grid/models';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useRouter } from '@compliance-theater/types/next/navigation';
+import Link from '@compliance-theater/types/next/link';
 import siteBuilder from '@/lib/site-util/url-builder';
 
 /**

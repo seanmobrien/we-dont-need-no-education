@@ -32,7 +32,7 @@ jest.mock('@/lib/ai/mcp/providers', () => ({
 import { auth } from '@compliance-theater/auth';
 import { hideConsoleOutput } from '@/__tests__/test-utils-server';
 import { GET } from '@/app/api/health/route';
-import { NextRequest } from 'next/server';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import { fromUserId } from '@compliance-theater/auth/lib/impersonation/impersonation-factory';
 
 // Mock the memory client factory

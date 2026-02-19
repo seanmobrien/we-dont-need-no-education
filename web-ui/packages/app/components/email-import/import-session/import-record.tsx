@@ -13,7 +13,7 @@ import {
   useRef,
   useCallback,
   ChangeEvent,
-} from 'react';
+} from '@compliance-theater/types/react';
 import { ImportRecordProps, ImportRecordJobState } from './types';
 import {
   queryImportStatus,

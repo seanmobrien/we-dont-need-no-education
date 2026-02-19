@@ -6,7 +6,7 @@ import { createMcpHandler } from 'mcp-handler';
 import { KnownScopeIndex, KnownScopeValues } from '@compliance-theater/auth/lib/utilities';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
 import { ApiRequestError } from '@compliance-theater/send-api-request';
-import type { NextRequest } from 'next/server';
+import type { NextRequest } from '@compliance-theater/types/next/server';
 // tool imports
 import {
   searchCaseFile,

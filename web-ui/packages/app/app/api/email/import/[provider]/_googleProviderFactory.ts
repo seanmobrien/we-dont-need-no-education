@@ -1,7 +1,7 @@
 import { credentialFactory } from '@compliance-theater/auth/lib/utilities';
 import { google } from 'googleapis';
-import { NextApiRequest } from 'next';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextApiRequest } from '@compliance-theater/types/next';
+import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
 
 type CredentialOps = { req: NextRequest | NextApiRequest; userId?: number };
 

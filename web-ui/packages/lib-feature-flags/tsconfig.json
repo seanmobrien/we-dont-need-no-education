@@ -46,7 +46,7 @@
       "path": "../lib-react"
     },
     {
-      "path": "../lib-auth"
+      "path": "../lib-types"
     }
   ]
 }

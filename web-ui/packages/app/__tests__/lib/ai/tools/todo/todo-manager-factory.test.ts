@@ -1,6 +1,6 @@
 // Prevent importing Next's server runtime helpers which reference web globals
 // not present in the Jest/node environment.
-jest.mock('next/server', () => ({
+jest.mock('@compliance-theater/types/next/server', () => ({
   NextResponse: {
     json: jest.fn(),
   },

@@ -11,7 +11,7 @@ import {
 import type { ModelStat, QueueInfo } from '@/types/statistics';
 import { fetch } from '@compliance-theater/nextjs/fetch';
 import { act, renderHook, waitFor } from '@/__tests__/test-utils';
-import { RefObject } from 'react';
+import { RefObject } from '@compliance-theater/types/react';
 import { assert } from 'console';
 
 const createWrapper = () => {

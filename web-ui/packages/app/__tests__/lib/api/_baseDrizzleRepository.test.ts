@@ -16,7 +16,7 @@ jest.mock('@/lib/react-util', () => ({
 
 import { drizDbWithInit, drizDb } from '@compliance-theater/database/orm';
 import { DrizzleRepositoryConfig } from '@/lib/api/_types';
-import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
+import { PgTable, PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 import {
   FilteredTestDrizzleRepository,
   TestDrizzleRepository,

@@ -13,14 +13,14 @@ process.env.NEXTAUTH_SECRET = 'test-nextauth-secret';
 import {
   KeycloakTokenExchange,
   TokenExchangeError,
-} from '../../../../src/lib/utilities/keycloak-token-exchange';
+} from '@/lib/site-util/auth/keycloak-token-exchange';
 //@/lib/site-util/auth/keycloak-token-exchange'; 
 import got from 'got';
-import { getToken } from '@auth/core/jwt';
+import { getToken } from '@compliance-theater/types/next-auth/jwt';
 
 // Mock dependencies
 jest.mock('got');
-// jest.mock('@auth/core/jwt');
+jest.mock('@compliance-theater/types/next-auth/jwt');
 
 const mockedGot = got as unknown as {
   post: jest.Mock;
@@ -139,7 +139,7 @@ describe('KeycloakTokenExchange', () => {
           timeout: {
             request: 10000,
           },
-        ),
+        }),
       );
     });
 
@@ -182,7 +182,7 @@ describe('KeycloakTokenExchange', () => {
       mockedGot.post.mockReturnValue({
         json: jest.fn().mockRejectedValue({
           message: 'Request failed with status code 400',
-        response: {
+          response: {
             statusCode: 400,
             body: {
               error_description: 'Token exchange failed',

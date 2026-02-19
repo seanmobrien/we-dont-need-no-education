@@ -1,6 +1,6 @@
 // Mock next-auth and our auth wrapper to use the test extensions session
 
-jest.mock('@auth/core/jwt', () => {
+jest.mock('@compliance-theater/types/auth-core/jwt', () => {
   // const originalModule = jest.requireActual('@auth/core/jwt');
 
   return {
@@ -15,7 +15,7 @@ jest.mock('@auth/core/jwt', () => {
   };
 });
 
-jest.mock('next-auth', () => ({
+jest.mock('@compliance-theater/types/next-auth', () => ({
   __esModule: true,
   default: jest.fn(() => ({
     handlers: { GET: jest.fn(), POST: jest.fn() },
@@ -24,7 +24,7 @@ jest.mock('next-auth', () => ({
     signOut: jest.fn(),
   })),
 }));
-jest.mock('next-auth/jwt', () => {
+jest.mock('@compliance-theater/types/next-auth/jwt', () => {
   return {
     __esModule: true,
     getToken: jest.fn(),
@@ -55,6 +55,6 @@ jest.mock('@/auth', () => {
 });
 
 // import modules to pin the mocks above
-import { getToken } from '@auth/core/jwt';
-import NextAuth from 'next-auth';
+import { getToken } from '@compliance-theater/types/auth-core/jwt';
+import NextAuth from '@compliance-theater/types/next-auth';
 import { auth } from '@compliance-theater/auth';

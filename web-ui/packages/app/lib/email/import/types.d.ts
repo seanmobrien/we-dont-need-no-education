@@ -3,7 +3,7 @@
  * @module @/lib/email/import/types
  */
 
-import type { NextRequest } from 'next/server';
+import type { NextRequest } from '@compliance-theater/types/next/server';
 import type {
   ImportStage,
   ImportSourceMessage,
