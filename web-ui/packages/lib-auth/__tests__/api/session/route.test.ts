@@ -7,7 +7,8 @@ jest.mock('@/lib/site-util/auth/user-keys-server');
 
 import { GET } from '@/app/api/auth/session/route';
 import { getActiveUserPublicKeys } from '@/lib/site-util/auth/user-keys-server';
-import { NextRequest, NextURL } from '@compliance-theater/types/next/server';
+import { NextURL } from '@compliance-theater/types/next/dist/server/web/next-url';
+import { NextRequest } from '@compliance-theater/types/next/server';
 import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
 
 const mockedGetActiveUserPublicKeys =
