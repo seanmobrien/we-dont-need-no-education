@@ -19,7 +19,7 @@ import {
 
 // Import individual modules for more focused testing
 import { StripRscPrefixPlugin } from '@/lib/config/strip-rsc-prefix-plugin';
-import { WebpackConfigContext } from '@compliance-theater/types/next/dist/server/config-shared';
+import { WebpackConfigContext } from '@compliance-theater/types/next/server';
 import { withTypescriptConfig } from '@/lib/config/typescript-config';
 import {
   withReactConfig,

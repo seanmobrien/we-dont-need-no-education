@@ -1,6 +1,6 @@
 import { wrapRouteRequest, fetch } from '@compliance-theater/nextjs/server';
 import { env } from '@compliance-theater/env';
-import { NextResponse } from '@compliance-theater/types/next/dist/server/web/spec-extension/response';
+import { NextResponse } from '@compliance-theater/types/next/server';
 
 export const GET = wrapRouteRequest(async () => {
   const mem0_api_host = env('MEM0_API_HOST');
