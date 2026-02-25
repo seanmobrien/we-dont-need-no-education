@@ -1,0 +1,5 @@
+packages:
+  - 'web-ui'
+  - 'web-ui/packages/**'
+  - 'submodules/json-viewer'
+  - '!submodules/json-viewer/docs'
