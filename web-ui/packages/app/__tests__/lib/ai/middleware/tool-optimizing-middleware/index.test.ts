@@ -10,7 +10,7 @@
 
 
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+import { setupImpersonationMock } from '../../../../jest.mock-impersonation';
 
 setupImpersonationMock();
 
@@ -19,18 +19,18 @@ import {
   type ToolOptimizingMiddlewareConfig,
   getToolOptimizingMiddlewareMetrics,
   ExtendedCallOptions,
-} from '@/lib/ai/middleware/tool-optimizing-middleware';
-import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
-import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
+} from '../../../../../lib/ai/middleware/tool-optimizing-middleware';
+import { ToolMap } from '../../../../../lib/ai/services/model-stats/tool-map';
+import { optimizeMessagesWithToolSummarization } from '../../../../../lib/ai/chat/message-optimizer-tools';
 import type {
   LanguageModelV2CallOptions,
   LanguageModelV2Middleware,
   LanguageModelV2FunctionTool,
   LanguageModelV2ProviderDefinedTool,
 } from '@ai-sdk/provider';
-import type { UIMessage } from 'ai';
+import type { UIMessage } from '@compliance-theater/types/ai-sdk';
 import { LoggedError } from '@compliance-theater/logger';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
+import { hideConsoleOutput } from '../../../../shared/test-utils';
 
 // Mock dependencies
 jest.mock('@compliance-theater/logger', () => ({
@@ -40,10 +40,10 @@ jest.mock('@compliance-theater/logger', () => ({
   },
 }));
 
-jest.mock('@/lib/ai/services/model-stats/tool-map');
-jest.mock('@/lib/ai/chat/message-optimizer-tools');
+jest.mock('../../../../../lib/ai/services/model-stats/tool-map');
+jest.mock('../../../../../lib/ai/chat/message-optimizer-tools');
 jest.mock('@compliance-theater/logger');
-jest.mock('@/lib/site-util/metrics', () => ({
+jest.mock('../../../../../lib/site-util/metrics', () => ({
   appMeters: {
     createCounter: jest.fn().mockReturnValue({
       add: jest.fn(),
@@ -64,7 +64,7 @@ jest.mock('@/lib/site-util/metrics', () => ({
 
 type MiddlewareType = 'generateText' | 'generate' | 'stream' | 'streamText';
 
-jest.mock('@/lib/react-util', () => {
+jest.mock('../../../../../lib/react-util', () => {
   const original = jest.requireActual('/lib/react-util');
   const mockLoggedErrorImpl: any = jest
     .fn()

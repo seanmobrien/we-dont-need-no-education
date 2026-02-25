@@ -1,6 +1,6 @@
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
-import { NextRequest } from '@compliance-theater/types/next/server';
+import { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,

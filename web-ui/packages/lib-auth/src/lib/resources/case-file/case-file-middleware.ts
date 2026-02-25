@@ -1,7 +1,8 @@
 /**
  * @fileoverview Case file authorization middleware
  */
-import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
+import { NextResponse } from 'next/server';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import { checkCaseFileAccess, CaseFileScope } from './case-file-resource';
 import { getUserIdFromUnitId } from './case-file-helpers';
 import { log } from '@compliance-theater/logger';
@@ -29,7 +30,7 @@ export type AuthCheckResult = {
 );
 
 export const checkCaseFileAuthorization = async (
-  req: NextRequest | undefined,
+  req: LikeNextRequest | undefined,
   caseFileDocumentId: string | number,
   options: CaseFileAuthOptions
 ): Promise<AuthCheckResult> => {

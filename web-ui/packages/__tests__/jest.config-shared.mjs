@@ -1,6 +1,30 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 /**
  * @typedef {import('jest').Config.InitialOptions} ConfigType
  */
+
+const resolveFirstExistingPath = (relativePaths) => {
+  for (const relativePath of relativePaths) {
+    const absolutePath = path.resolve(
+      path.dirname(new URL(import.meta.url).pathname),
+      relativePath,
+    );
+    if (fs.existsSync(absolutePath)) {
+      return absolutePath;
+    }
+  }
+  return '@tanstack/react-query';
+};
+
+const tanstackReactQueryPath = resolveFirstExistingPath([
+  '../../node_modules/@tanstack/react-query',
+  '../app/node_modules/@tanstack/react-query',
+  '../lib-auth/node_modules/@tanstack/react-query',
+  '../lib-feature-flags/node_modules/@tanstack/react-query',
+  '../lib-logger/node_modules/@tanstack/react-query',
+]);
 
 
 /**
@@ -79,6 +103,7 @@ const config = {
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled  
   setupFilesAfterEnv: [
+    '<rootDir>/__tests__/shared/setup/jest.disallow-global-mock-reset.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-text-encoding.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-log.ts',
     '<rootDir>/__tests__/shared/setup/jest.env-vars.ts',
@@ -98,7 +123,7 @@ const config = {
   moduleNameMapper: {
     '^react$': '<rootDir>/../../node_modules/react/index.js',
     '^react-dom$': '<rootDir>/../../node_modules/react-dom/index.js',
-    '^@tanstack/react-query$': '<rootDir>/../../node_modules/@tanstack/react-query',
+    '^@tanstack/react-query$': tanstackReactQueryPath,
     // All material UI icons are served by a single mock
     '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx', // Mock all MUI icons to a singular mock
     // Instrumentation library mock
@@ -120,23 +145,26 @@ const config = {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
 
     // Aliases to support internal imports with jest resolver
-    '^@compliance-theater/logger/singleton-provider$': '<rootDir>/../lib-logger/src/singleton-provider.ts',
+    '^@compliance-theater/logger/singleton-provider$': '<rootDir>/../lib-logger/src/singleton-provider/index.ts',
     '^@compliance-theater/logger/core$': '<rootDir>/../lib-logger/src/core.ts',
     '^@compliance-theater/logger$': '<rootDir>/../lib-logger/src/index.ts',
+    '^@compliance-theater/logger/(.*)$': '<rootDir>/../lib-logger/src/$1',
     '^@compliance-theater/database/schema$': '<rootDir>/../lib-database/src/drizzle/schema.ts',
-      '^@compliance-theater/typescript(.*)$': '<rootDir>/../lib-typescript/src$1',
-    '^@compliance-theater/types/react$': '<rootDir>/../../node_modules/react/index.js',
-    '^@compliance-theater/types/react-dom$': '<rootDir>/../../node_modules/react-dom/index.js',
-      '^@compliance-theater/types(.*)$': '<rootDir>/../lib-types/src$1',
+    '^@compliance-theater/typescript(.*)$': '<rootDir>/../lib-typescript/src$1',
+    '^@compliance-theater/types$': '<rootDir>/../lib-types/src/index.ts',
+    '^@compliance-theater/types/lib/ai/(.*)$': '<rootDir>/../lib-types/src/lib/ai/$1',
+    '^@compliance-theater/types/lib/(.*)$': '<rootDir>/../lib-types/src/lib/$1',
+    '^@compliance-theater/types(/.*)$': '<rootDir>/../lib-types/src$1',
     '^@compliance-theater/env(.*)$': '<rootDir>/../lib-env/src$1',
     '^@compliance-theater/auth(.*)$': '<rootDir>/../lib-auth/src$1',
-      '^@compliance-theater/database(.*)$': '<rootDir>/../lib-database/src$1',
-      '^@compliance-theater/feature-flags(.*)$': '<rootDir>/../lib-feature-flags/src$1',
-      '^@compliance-theater/nextjs(.*)$': '<rootDir>/../lib-nextjs/src$1',
-      '^@compliance-theater/react(.*)$': '<rootDir>/../lib-react/src$1',
-      '^@compliance-theater/redis(.*)$': '<rootDir>/../lib-redis/src$1',
-      '^@compliance-theater/send-api-request(.*)$': '<rootDir>/../lib-send-api-request/src$1',
-      '^@compliance-theater/themes(.*)$': '<rootDir>/../lib-themes/src$1'
+    '^@compliance-theater/database(.*)$': '<rootDir>/../lib-database/src$1',
+    '^@compliance-theater/feature-flags(.*)$': '<rootDir>/../lib-feature-flags/src$1',
+    '^@compliance-theater/nextjs(.*)$': '<rootDir>/../lib-nextjs/src$1',
+    '^@compliance-theater/react(.*)$': '<rootDir>/../lib-react/src$1',
+    '^@compliance-theater/redis(.*)$': '<rootDir>/../lib-redis/src$1',
+    '^@compliance-theater/send-api-request(.*)$': '<rootDir>/../lib-send-api-request/src$1',
+    '^@compliance-theater/themes(.*)$': '<rootDir>/../lib-themes/src$1',
+    '^@compliance-theater/json-viewer(.*)$': '<rootDir>/../../submodules/json-viewer/src$1',
   },
   transform: {
     '^.+\\.(ts|tsx)$': [

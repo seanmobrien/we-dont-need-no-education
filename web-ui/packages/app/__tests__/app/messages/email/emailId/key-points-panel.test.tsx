@@ -1,9 +1,8 @@
 /* eslint-disable react/display-name */
-import React from '@compliance-theater/types/react';
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import { KeyPointsPanel } from '@/app/messages/email/[emailId]/key-points/panel';
-import { KeyPointsDetails } from '@/data-models/api';
+import React from 'react';
+import { render, screen } from '../../../../shared/test-utils';
+import { KeyPointsPanel } from '../../../../../app/messages/email/[emailId]/key-points/panel';
+import { KeyPointsDetails } from '../../../../../data-models/api';
 
 // Mock MUI components that may cause theme issues
 jest.mock(

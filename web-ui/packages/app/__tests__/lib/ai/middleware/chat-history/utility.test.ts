@@ -8,7 +8,7 @@
  * @module __tests__/lib/ai/middleware/chat-history/utility.test.ts
  */
 
-import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
+import { getNextSequence } from '../../../../../lib/ai/middleware/chat-history/utility';
 import { drizDb } from '@compliance-theater/database/orm';
 import type { DbDatabaseType, DbTransactionType } from '@compliance-theater/database';
 

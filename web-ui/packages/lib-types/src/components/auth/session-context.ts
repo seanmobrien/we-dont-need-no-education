@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, useContext } from 'react';
 import { SessionContextType } from './session-context-type';
 import type { AuthSession } from '../../lib/auth/session';

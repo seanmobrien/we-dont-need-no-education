@@ -1,4 +1,4 @@
-import { createElement } from '@compliance-theater/types/react';
+import { createElement } from 'react';
 
 export const MockIcon = (props: any) => {
   const dataIcon = props?.['data-icon'];

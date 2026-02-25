@@ -3,7 +3,7 @@
  * @module tools
  */
 
-import type { Tool } from 'ai';
+import type { Tool } from '@compliance-theater/types/ai-sdk';
 
 /**
  * Create a proxy wrapper for a Tool object that defers binding to the live

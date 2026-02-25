@@ -4,10 +4,10 @@
  */
 jest.mock('@compliance-theater/database/driver');
 
-import { SentimentAnalysisDetailsRepository } from '@/lib/api/email/properties/sentiment-analysis/sentiment-analysis-details-repository';
+import { SentimentAnalysisDetailsRepository } from '../../../../../../lib/api/email/properties/sentiment-analysis/sentiment-analysis-details-repository';
 import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 import { query, queryExt } from '@compliance-theater/database/driver';
-import { EmailSentimentAnalysisDetails } from '@/data-models/api';
+import { EmailSentimentAnalysisDetails } from '../../../../../../data-models/api';
 
 describe('SentimentAnalysisDetailsRepository', () => {
   let repository: SentimentAnalysisDetailsRepository;

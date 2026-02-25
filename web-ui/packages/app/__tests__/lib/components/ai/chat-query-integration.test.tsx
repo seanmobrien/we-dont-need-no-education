@@ -3,9 +3,9 @@
  */
 
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
-import React from '@compliance-theater/types/react';
-import { renderHook } from '@/__tests__/shared/test-utils';
-import { useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
+import React from 'react';
+import { renderHook } from '../../../shared/test-utils';
+import { useChatFetchWrapper } from '../../../../lib/components/ai/chat-fetch-wrapper';
 import { fetch } from '@compliance-theater/nextjs/fetch';
 
 // Polyfill ReadableStream for Node.js test environment
@@ -25,7 +25,7 @@ jest.mock('@compliance-theater/env', () => ({
 }));
 
 // Mock the hash function
-jest.mock('@/lib/ai/core/chat-ids', () => ({
+jest.mock('@compliance-theater/types/lib/ai/core/chat-ids', () => ({
   notCryptoSafeKeyHash: jest.fn(
     (input: string) => `hash-${input.slice(0, 10)}`,
   ),

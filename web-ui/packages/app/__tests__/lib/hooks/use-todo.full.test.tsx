@@ -3,14 +3,14 @@
  */
 let testQueryClient: QueryClient | undefined;
 
-import React, { JSX, PropsWithChildren } from '@compliance-theater/types/react';
+import React, { JSX, PropsWithChildren } from 'react';
 import {
   renderHook,
   waitFor,
   act,
   jsonResponse,
   hideConsoleOutput,
-} from '@/__tests__/shared/test-utils';
+} from '../../shared/test-utils';
 import {
   QueryClient,
   QueryClientProvider,
@@ -22,9 +22,9 @@ import { fetch } from '@compliance-theater/nextjs';
 const loadHooks = () => {
   // Load the real hooks module without isolating modules so it shares
   // the same `@tanstack/react-query` instance used by the test wrapper.
-  jest.unmock('@/lib/hooks/use-todo');
+  jest.unmock('../../../lib/hooks/use-todo');
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const hooks = require('@/lib/hooks/use-todo');
+  const hooks = require('../../../lib/hooks/use-todo');
   return hooks;
 };
 

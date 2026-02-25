@@ -1,7 +1,7 @@
 /**
  * @fileoverview Union type and constant declarations for AI core identifiers.
  *
- * @module @compliance-theater/types/ai/core/unions
+ * @module @compliance-theater/types/lib/ai/core/unions
  *
  * Provides ambient type declarations for AI model and provider identifier union types,
  * along with their corresponding runtime constant arrays. These definitions enable
@@ -26,8 +26,8 @@
  *
  * @example
  * ```typescript
- * import type { AiModelType, AiProviderType } from '@compliance-theater/types/ai/core';
- * import { AiModelTypeValues, AiProviderTypeValues } from '@compliance-theater/types/ai/core';
+ * import type { AiModelType, AiProviderType } from '@compliance-theater/types/lib/ai/core';
+ * import { AiModelTypeValues, AiProviderTypeValues } from '@compliance-theater/types/lib/ai/core';
  *
  * // Build configuration maps
  * const modelConfig: Record<AiModelType, Config> = {

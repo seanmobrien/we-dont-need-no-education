@@ -2,7 +2,7 @@
 
 import { NotificationsProvider } from '@toolpad/core';
 import { KeyRefreshNotify } from './key-refresh-notify';
-import { PropsWithChildren } from '@compliance-theater/types/react';
+import { PropsWithChildren } from 'react';
 
 export const KeyRefreshNotifyWrapper = ({
   children,

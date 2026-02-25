@@ -71,7 +71,7 @@ export const setupSession = async ({
     }
   }
   if (token.error) {
-    session.error = token.error;
+    session.error = String(token.error);
   }
   return session;
 };

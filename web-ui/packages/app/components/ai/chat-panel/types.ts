@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction } from '@compliance-theater/types/react';
+import { Dispatch, SetStateAction } from 'react';
 
 /**
  * Available AI providers

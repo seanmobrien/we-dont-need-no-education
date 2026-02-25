@@ -1,13 +1,15 @@
 import { auth } from '@compliance-theater/auth';
 import { Session } from '@compliance-theater/types/auth-core/types';
-import { log, logEvent } from '@compliance-theater/logger';
-import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
-import { ApiRequestError } from '@compliance-theater/send-api-request';
 import {
+  log,
+  logEvent,
   globalRequiredSingletonAsync,
   SingletonProvider,
-} from '@compliance-theater/typescript/singleton-provider';
-import { NextResponse } from '@compliance-theater/types/next/server';
+} from '@compliance-theater/logger';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
+import { ApiRequestError } from '@compliance-theater/send-api-request';
+
+import { NextResponse } from 'next/server';
 import type { TodoStorageStrategy } from './storage';
 import { InMemoryStorageStrategy } from './storage';
 import { isError, LoggedError } from '@compliance-theater/logger';
@@ -64,8 +66,8 @@ export class TodoManager {
   ): Promise<Todo> {
     const list = await (options?.listId
       ? this.getTodoList(options.listId, {
-          session: options?.session,
-        })
+        session: options?.session,
+      })
       : this.ensureDefaultList({ session: options?.session }));
     if (!list) {
       throw new ApiRequestError(
@@ -772,8 +774,7 @@ export class TodoManager {
       session: options.session,
     });
     return [
-      `${prefix}${Date.now()}${options.salt ? `:${options.salt}` : ''}-${
-        options.suffix ?? Math.random().toString(36).substring(2, 9)
+      `${prefix}${Date.now()}${options.salt ? `:${options.salt}` : ''}-${options.suffix ?? Math.random().toString(36).substring(2, 9)
       }`,
       activeSession,
     ];

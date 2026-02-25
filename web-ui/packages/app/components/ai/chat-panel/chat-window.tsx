@@ -1,12 +1,12 @@
-import React, { useEffect, useRef, useCallback } from '@compliance-theater/types/react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import Box from '@mui/material/Box';
-import { UIMessage } from 'ai';
+import { UIMessage } from '@compliance-theater/types/ai-sdk';
 import { Loading } from '@/components/general/loading';
 import { ChatMessageV2 } from './chat-message';
 import { createElementMeasurer } from '@/lib/components/ai/height-estimators';
 import { log } from '@compliance-theater/logger';
-import { useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
+import { useChatPanelContext } from '@compliance-theater/types/components/ai/chat-panel/chat-panel-context';
 
 const elementMeasurer = createElementMeasurer();
 

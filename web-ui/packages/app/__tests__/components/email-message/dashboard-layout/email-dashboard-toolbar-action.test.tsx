@@ -9,11 +9,10 @@
  * @since 2025-07-19
  */
 
-import React from '@compliance-theater/types/react';
-import { render, screen } from '@testing-library/react';
+import React from 'react';
+import { render, screen } from '../../../shared/test-utils';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { EmailDashboardToolbarAction } from '@/components/email-message/dashboard-layout/email-dashboard-toolbar-action';
-import '@testing-library/jest-dom';
+import { EmailDashboardToolbarAction } from '../../../../components/email-message/dashboard-layout/email-dashboard-toolbar-action';
 // Mock the ThemeSelector component
 jest.mock('@compliance-theater/themes', () => {
   const originalModule = jest.requireActual('@compliance-theater/themes');

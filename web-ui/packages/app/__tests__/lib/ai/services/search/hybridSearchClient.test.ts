@@ -2,8 +2,8 @@
  * @jest-environment node
  */
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
+import { setupImpersonationMock } from '../../../../jest.mock-impersonation';
+import { hideConsoleOutput } from '../../../../shared/test-utils';
 
 setupImpersonationMock();
 
@@ -17,19 +17,19 @@ jest.mock('@compliance-theater/nextjs/server/fetch', () => ({
   fetch: (...args: unknown[]) => fetchMock(...args),
 }));
 
-import { hybridDocumentSearchFactory } from '@/lib/ai/services/search/HybridDocumentSearch';
-import { hybridPolicySearchFactory } from '@/lib/ai/services/search/HybridPolicySearch';
-import { HybridSearchClient } from '@/lib/ai/services/search/HybridSearchBase';
+import { hybridDocumentSearchFactory } from '../../../../../lib/ai/services/search/HybridDocumentSearch';
+import { hybridPolicySearchFactory } from '../../../../../lib/ai/services/search/HybridPolicySearch';
+import { HybridSearchClient } from '../../../../../lib/ai/services/search/HybridSearchBase';
 
 // Minimal option types (avoid deep imports of tool unions if not needed for shapes)
 import type {
   HybridSearchPayload,
   AiSearchResultEnvelope,
-} from '@/lib/ai/services/search/types';
+} from '../../../../../lib/ai/services/search/types';
 import type {
   CaseFileSearchOptions,
   PolicySearchOptions,
-} from '@/lib/ai/tools/types';
+} from '../../../../../lib/ai/tools/types';
 
 // Build a concrete test subclass to expose protected static parsing helpers.
 interface TestOptions {

@@ -20,3 +20,22 @@ export {
 } from './utilities/error-guards';
 export type { SafeProgressEvent } from './utilities/safe-progress-event';
 export { PostgresError, isDrizzleError, errorFromCode } from './postgres-error';
+export { AccessDeniedError } from './access-denied-error';
+export { DataIntegrityError } from './data-integrity-error';
+export { ValidationError } from './validation-error';
+export { AggregateError } from './aggregate-error';
+export { RateRetryError, isRateRetryError } from './rate-retry-error';
+export {
+  isConsoleError,
+  type NextConsoleError,
+  type NextConsoleErrorType,
+} from './next-console-error';
+export {
+  reporter,
+  initializeErrorReporterConfig,
+} from './logged-error-reporter';
+export type {
+  ClientErrorManagerConfig,
+  ErrorSuppressionRule,
+  SuppressionResult,
+} from './boundaries';

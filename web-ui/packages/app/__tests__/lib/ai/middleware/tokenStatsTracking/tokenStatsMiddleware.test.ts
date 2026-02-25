@@ -1,10 +1,10 @@
 
-import { setupMaps } from '@/__tests__/setup/jest.mock-provider-model-maps';
+import { setupMaps } from '../../../../setup/jest.mock-provider-model-maps';
 
 setupMaps();
 
 // Mock the token stats service
-jest.mock('@/lib/ai/services/model-stats/token-stats-service', () => {
+jest.mock('../../../../../lib/ai/services/model-stats/token-stats-service', () => {
   const theInstance = {
     getTokenStats: jest.fn(),
     getQuota: jest.fn(),
@@ -27,13 +27,13 @@ jest.mock('@/lib/ai/services/model-stats/token-stats-service', () => {
 import {
   getInstance,
   reset,
-} from '@/lib/ai/services/model-stats/token-stats-service';
+} from '../../../../../lib/ai/services/model-stats/token-stats-service';
 import {
   tokenStatsMiddleware,
   tokenStatsWithQuotaMiddleware,
   TokenStatsServiceType,
-} from '@/lib/ai/middleware/tokenStatsTracking';
-import { wrapLanguageModel } from 'ai';
+} from '../../../../../lib/ai/middleware/tokenStatsTracking';
+import { wrapLanguageModel } from '@compliance-theater/types/ai-sdk';
 
 type MockTokenStats = {
   [k in keyof TokenStatsServiceType]: k extends 'mockClear'

@@ -14,7 +14,7 @@ import CardContent from '@mui/material/CardContent';
 import LinearProgress from '@mui/material/LinearProgress';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
-import { useEffect, useId, useRef } from '@compliance-theater/types/react';
+import { useEffect, useId, useRef } from 'react';
 import type { SxProps, Theme } from '@mui/material/styles';
 
 /**

@@ -1,6 +1,6 @@
 import { getRedisClient } from '@compliance-theater/redis';
 import { drizDbWithInit, schema, sql } from '@compliance-theater/database/orm';
-import { log, LoggedError } from '@compliance-theater/logger';
+import { log, LoggedError, SingletonProvider } from '@compliance-theater/logger';
 import {
   ModelQuota,
   QuotaCheckResult,
@@ -9,7 +9,6 @@ import {
   TokenUsageData,
 } from '../../middleware/tokenStatsTracking/types';
 import { ModelMap } from './model-map';
-import { SingletonProvider } from '@compliance-theater/typescript';
 
 const REGISTRY_KEY = '@noeducation/model-stats:TokenStatsService';
 
@@ -27,7 +26,7 @@ class TokenStatsService implements TokenStatsServiceType {
 
   private readonly QUOTA_CACHE_TTL = 5 * 60 * 1000;
 
-  private constructor() {}
+  private constructor() { }
 
   static reset(): void {
     this.instance = undefined;
@@ -196,7 +195,7 @@ class TokenStatsService implements TokenStatsServiceType {
       if (
         quota.maxTokensPerMinute &&
         currentStats.currentMinuteTokens + requestedTokens >
-          quota.maxTokensPerMinute
+        quota.maxTokensPerMinute
       ) {
         return {
           allowed: false,

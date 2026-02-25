@@ -36,6 +36,21 @@ const eslintConfig = [
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'jest',
+          property: 'clearAllMocks',
+          message:
+            'Do not use jest.clearAllMocks(); use targeted mockFn.mockClear() for suite-owned mocks.',
+        },
+        {
+          object: 'jest',
+          property: 'resetAllMocks',
+          message:
+            'Do not use jest.resetAllMocks(); use targeted mockFn.mockReset() for suite-owned mocks.',
+        },
+      ],
     },
   },
 ];

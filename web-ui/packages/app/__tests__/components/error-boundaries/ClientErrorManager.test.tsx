@@ -1,16 +1,16 @@
 /**
  * @jest-environment jsdom
  */
-import React from '@compliance-theater/types/react';
-import { render, act } from '@testing-library/react';
+import React from 'react';
+import { render, act } from '../../shared/test-utils';
 import {
   ClientErrorManager,
   createSuppressionRule,
-} from '@/components/error-boundaries/ClientErrorManager';
+} from '../../../components/error-boundaries/ClientErrorManager';
 import {
   type ErrorReporterInterface,
   errorReporter,
-} from '@/lib/error-monitoring';
+} from '@compliance-theater/logger/errors/monitoring';
 
 // Mock window methods that might not be available in test environment
 const mockConsoleError = jest

@@ -7,7 +7,7 @@ import renderProgress from '@/components/mui/data-grid/cellRenderers/progress/re
 import type { GridColDef } from '@mui/x-data-grid/models/colDef';
 import { KeyPointsPanel } from './panel';
 import { DataGridProProps } from '@mui/x-data-grid-pro';
-import { useCallback } from '@compliance-theater/types/react';
+import { useCallback } from 'react';
 
 const stableColumns: GridColDef[] = [
   { field: 'value', headerName: 'Value', flex: 1, editable: false },

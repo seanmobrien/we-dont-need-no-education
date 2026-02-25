@@ -9,8 +9,8 @@
  * @since 2025-07-19
  */
 
-import * as React from '@compliance-theater/types/react';
-import Image from '@compliance-theater/types/next/image';
+import * as React from 'react';
+import Image from 'next/image';
 import { BrandingConfig } from './types';
 
 /**

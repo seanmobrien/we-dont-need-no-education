@@ -1,4 +1,4 @@
-import { APICallError } from 'ai';
+import { APICallError } from '@compliance-theater/types/ai-sdk';
 import { isError } from '@compliance-theater/logger';
 import type { RetryErrorInfo } from './types';
 

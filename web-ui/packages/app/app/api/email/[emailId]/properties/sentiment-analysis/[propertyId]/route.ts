@@ -1,6 +1,6 @@
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { SentimentAnalysisDetailsRepository } from '@/lib/api/email/properties/sentiment-analysis/sentiment-analysis-details-repository';
-import { NextRequest } from '@compliance-theater/types/next/server';
+import { NextRequest } from 'next/server';
 import {
   wrapRouteRequest,
   extractParams,

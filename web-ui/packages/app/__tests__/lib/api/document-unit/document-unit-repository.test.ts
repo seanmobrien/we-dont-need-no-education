@@ -1,6 +1,6 @@
 /* @jest-environment node */
 
-import { DocumentUnitRepository } from '@/lib/api/document-unit';
+import { DocumentUnitRepository } from '../../../../lib/api/document-unit';
 import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 
 jest.mock('@azure/storage-blob', () => ({

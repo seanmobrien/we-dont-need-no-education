@@ -10,7 +10,7 @@
  * @since 2025-07-19
  */
 
-import { memo, useMemo, type ComponentType } from '@compliance-theater/types/react';
+import { memo, useMemo, type ComponentType } from 'react';
 import { DashboardSidebarPageItem } from '@toolpad/core/DashboardLayout';
 import { NavigationPageItem } from '@toolpad/core/AppProvider';
 import siteBuilder from '@/lib/site-util/url-builder';
@@ -18,7 +18,7 @@ import type { CustomEmailPageItemProps } from './types';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Link from '@mui/material/Link';
-import NextLink from '@compliance-theater/types/next/link';
+import NextLink from 'next/link';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';

@@ -1,6 +1,6 @@
-jest.mock('@/lib/error-monitoring/error-reporter', () => {
+jest.mock('@compliance-theater/logger/errors/monitoring/error-reporter', () => {
   const originalModule = jest.requireActual(
-    '@/lib/error-monitoring/error-reporter',
+    '@compliance-theater/logger/errors/monitoring/error-reporter',
   );
 
   const mockReporterInstance = jest.fn(() => ({
@@ -29,4 +29,4 @@ jest.mock('@/lib/error-monitoring/error-reporter', () => {
   };
 });
 
-import { errorReporter } from '@/lib/error-monitoring/error-reporter';
+import { errorReporter } from '@compliance-theater/logger/errors/monitoring/error-reporter';

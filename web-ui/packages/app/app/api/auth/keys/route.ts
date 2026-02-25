@@ -7,7 +7,7 @@
  * @module app/api/auth/keys/route
  */
 
-import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { auth } from '@compliance-theater/auth';
 import { drizDb, schema } from '@compliance-theater/database/orm';

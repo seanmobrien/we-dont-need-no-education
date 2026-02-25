@@ -4,8 +4,8 @@ import {
   waitFor,
   act,
   hideConsoleOutput,
-} from '@/__tests__/shared/test-utils';
-import EmailViewer from '@/components/email-message/email-viewer';
+} from '../../shared/test-utils';
+import EmailViewer from '../../../components/email-message/email-viewer';
 import { fetch } from '@compliance-theater/nextjs/fetch';
 const TIMEOUT = 30000;
 

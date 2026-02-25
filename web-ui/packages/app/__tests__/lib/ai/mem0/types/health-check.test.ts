@@ -8,8 +8,8 @@
 import {
   type HealthDetails,
   type AuthServiceHealth,
-} from '@/lib/ai/mem0/types/health-check';
-import { determineHealthStatus } from '@/lib/api/health/memory';
+} from '../../../../../lib/ai/mem0/types/health-check';
+import { determineHealthStatus } from '../../../../../lib/api/health/memory';
 
 describe('Memory Health Check Types', () => {
   describe('determineHealthStatus', () => {

@@ -1,5 +1,4 @@
-import { log } from '@compliance-theater/logger';
-import { SingletonProvider } from '@compliance-theater/typescript';
+import { log, SingletonProvider } from '@compliance-theater/logger';
 
 const KEY_VALIDATION_STORAGE_KEY = 'lastKeyValidation';
 

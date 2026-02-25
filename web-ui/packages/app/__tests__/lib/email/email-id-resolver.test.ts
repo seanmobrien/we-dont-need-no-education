@@ -8,16 +8,16 @@ jest.mock('@compliance-theater/typescript', () => {
   };
 });
 
-import { resolveEmailId } from '@/lib/email/email-id-resolver';
+import { resolveEmailId } from '../../../lib/email/email-id-resolver';
 
-jest.mock('@compliance-theater/types/next/navigation', () => ({
+jest.mock('next/navigation', () => ({
   redirect: jest.fn(),
   notFound: jest.fn(),
 }));
 
 import { drizDb, drizDbWithInit } from '@compliance-theater/database/orm';
 import { isValidUuid } from '@compliance-theater/typescript';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
+import { hideConsoleOutput } from '../../shared/test-utils';
 
 const mockDrizDb = drizDbWithInit as jest.MockedFunction<typeof drizDbWithInit>;
 const mockIsValidUuid = isValidUuid as jest.MockedFunction<typeof isValidUuid>;

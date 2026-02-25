@@ -1,5 +1,5 @@
 /**
- * Module: @/lib/react-util/ClientWrapper
+ * Module: @compliance-theater/react/ClientWrapper
  * Type declarations for the light-weight client wrapper component.
  *
  * This declaration file provides a small, well-documented API surface for
@@ -11,8 +11,8 @@
  * contexts in Next.js app routes.
  */
 
-declare module '@/lib/react-util/ClientWrapper' {
-  import type { PropsWithChildren, ReactElement } from '@compliance-theater/types/react';
+declare module '@compliance-theater/react/ClientWrapper' {
+  import type { PropsWithChildren, ReactElement } from 'react';
 
   /**
    * Props for `ClientWrapper`.

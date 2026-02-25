@@ -1,4 +1,4 @@
-import { NextResponse } from '@compliance-theater/types/next/server';
+import { NextResponse } from 'next/server';
 import { query } from '@compliance-theater/database/driver';
 import { LoggedError } from '@compliance-theater/logger';
 import {

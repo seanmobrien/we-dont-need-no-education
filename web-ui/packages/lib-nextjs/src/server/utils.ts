@@ -1,7 +1,7 @@
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@compliance-theater/env';
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
-import type { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
+import type { NextRequest, NextResponse } from 'next/server';
 import {
   SpanKind,
   SpanStatusCode,
@@ -18,6 +18,7 @@ import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
 import { isPromise } from '@compliance-theater/typescript';
 import { getAppStartupState } from './app-startup-accessor';
+import { LikeNextResponse } from '@compliance-theater/types/lib/nextjs';
 export {
   createSafeAsyncWrapper,
   createSafeErrorHandler,
@@ -47,13 +48,13 @@ export const extractParams = async <T extends object>(req: {
 
 export const wrapRouteRequest = <
   A extends
-    | []
-    | [NextRequest]
-    | [Request]
-    | [NextRequest, Pick<WrappedResponseContext<TContext>, 'params'>]
-    | [NextRequest, WrappedResponseContext<TContext>]
-    | [Request, Pick<WrappedResponseContext<TContext>, 'params'>]
-    | [Request, WrappedResponseContext<TContext>],
+  | []
+  | [NextRequest]
+  | [Request]
+  | [NextRequest, Pick<WrappedResponseContext<TContext>, 'params'>]
+  | [NextRequest, WrappedResponseContext<TContext>]
+  | [Request, Pick<WrappedResponseContext<TContext>, 'params'>]
+  | [Request, WrappedResponseContext<TContext>],
   TContext extends Record<string, unknown> = Record<string, unknown>,
 >(
   fn: (...args: A) => Promise<Response | NextResponse | undefined>,
@@ -62,13 +63,13 @@ export const wrapRouteRequest = <
     buildFallback?: object | typeof EnableOnBuild;
     errorCallback?: (error: unknown) => void | Promise<void>;
   } = {},
-): ((...args: A) => Promise<Response | NextResponse>) => {
+): ((...args: A) => Promise<LikeNextResponse>) => {
   const {
     log: shouldLog = env('NODE_ENV') !== 'production',
     buildFallback,
     errorCallback,
   } = options ?? {};
-  return async (...args: A): Promise<Response | NextResponse> => {
+  return async (...args: A): Promise<LikeNextResponse> => {
     const req = args[0] as NextRequest;
     const context = args[1] as WrappedResponseContext<TContext>;
 
@@ -414,17 +415,17 @@ export const createInstrumentedSpan = async ({
       ): Promise<TResult> => {
         // No-op span for when OpenTelemetry is not available
         const noOpSpan = {
-          setAttributes: () => {},
-          setStatus: () => {},
-          recordException: () => {},
-          end: () => {},
+          setAttributes: () => { },
+          setStatus: () => { },
+          recordException: () => { },
+          end: () => { },
           spanContext: () => ({}) as SpanContext,
-          setAttribute: () => {},
-          addEvent: () => {},
-          addLink: () => {},
-          addLinks: () => {},
+          setAttribute: () => { },
+          addEvent: () => { },
+          addLink: () => { },
+          addLinks: () => { },
           isRecording: () => false,
-          updateName: () => {},
+          updateName: () => { },
         } as unknown as Span;
         return fn(noOpSpan);
       },

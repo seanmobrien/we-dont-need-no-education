@@ -2,9 +2,8 @@
  * @jest-environment jsdom
  */
 
-import React from '@compliance-theater/types/react';
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@/__tests__/shared/test-utils';
-import '@testing-library/jest-dom';
 import { ChatMenu } from '@/components/ai/chat-panel/chat-menu';
 import { ModelSelection } from '@/components/ai/chat-panel/types';
 

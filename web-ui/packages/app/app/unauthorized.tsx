@@ -1,6 +1,6 @@
 'use client';
 
-import React from '@compliance-theater/types/react';
+import React from 'react';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
@@ -8,7 +8,7 @@ import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { useRouter } from '@compliance-theater/types/next/navigation';
+import { useRouter } from 'next/navigation';
 import HomeIcon from '@mui/icons-material/Home';
 import SearchIcon from '@mui/icons-material/Search';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';

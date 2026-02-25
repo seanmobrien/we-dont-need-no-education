@@ -6,7 +6,7 @@
  * requiring app-startup configuration.
  */
 
-import type { AppStartupState } from '@compliance-theater/after';
+import type { AppStartupState } from '@compliance-theater/after/app-startup';
 
 let startupAccessor: (() => Promise<AppStartupState>) | undefined;
 

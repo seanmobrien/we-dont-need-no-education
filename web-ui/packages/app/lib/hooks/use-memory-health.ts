@@ -40,7 +40,7 @@ import type {
   ChatHealthData,
 } from '@/lib/hooks/types';
 import { useFlagState } from '@compliance-theater/feature-flags';
-import { useCallback } from '@compliance-theater/types/react';
+import { useCallback } from 'react';
 
 /**
  * Fetches memory health status from the API health endpoint

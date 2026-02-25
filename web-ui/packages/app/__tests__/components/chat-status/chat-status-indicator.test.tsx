@@ -3,12 +3,12 @@
  * @description Unit tests for the ChatStatusIndicator component
  */
 
-import React from '@compliance-theater/types/react';
-import { render, screen } from '@/__tests__/shared/test-utils';
-import { ChatStatusIndicator } from '@/components/health/chat-status/chat-status-indicator';
-import { useHealth } from '@/components/health/health-provider/health-context';
+import React from 'react';
+import { render, screen } from '../../shared/test-utils';
+import { ChatStatusIndicator } from '../../../components/health/chat-status/chat-status-indicator';
+import { useHealth } from '../../../components/health/health-provider/health-context';
 
-jest.mock('@/components/health/health-provider/health-context');
+jest.mock('../../../components/health/health-provider/health-context');
 const mockUseHealth = useHealth as jest.Mock;
 
 describe('ChatStatusIndicator', () => {

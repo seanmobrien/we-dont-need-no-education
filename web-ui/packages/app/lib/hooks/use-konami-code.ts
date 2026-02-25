@@ -1,4 +1,4 @@
-import { useEffect, useRef } from '@compliance-theater/types/react';
+import { useEffect, useRef } from 'react';
 
 const KONAMI_CODE = [
   'ArrowUp',

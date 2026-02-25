@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, ReactNode } from '@compliance-theater/types/react';
+import React, { createContext, useContext, ReactNode } from 'react';
 import { useMemoryHealth } from '@/lib/hooks/use-memory-health';
 import { MemoryStatusHookResult } from '@/lib/hooks/types';
 

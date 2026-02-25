@@ -1,11 +1,11 @@
 import { EmbeddingModelV2 } from '@ai-sdk/provider';
 import { createEmbeddingModel } from '../../aiModelFactory';
-import { embed } from 'ai';
+import { embed } from '@compliance-theater/types/ai-sdk';
 import { IEmbeddingService } from './types';
 import {
   globalRequiredSingleton,
   SingletonProvider,
-} from '@compliance-theater/typescript';
+} from '@compliance-theater/logger/singleton-provider';
 
 export class EmbeddingService implements IEmbeddingService {
   private static get globalEmbeddingModel(): Promise<EmbeddingModelV2<string>> {
@@ -35,7 +35,7 @@ export class EmbeddingService implements IEmbeddingService {
   ) {
     this.embeddingClient =
       embeddingClient instanceof Promise ||
-      typeof embeddingClient === 'undefined'
+        typeof embeddingClient === 'undefined'
         ? embeddingClient ?? EmbeddingService.globalEmbeddingModel
         : Promise.resolve(embeddingClient);
   }

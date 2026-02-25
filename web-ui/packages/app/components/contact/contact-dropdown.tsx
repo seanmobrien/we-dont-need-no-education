@@ -1,5 +1,5 @@
 /** @jsxImportSource @emotion/react */
-import React, { useEffect, useState } from '@compliance-theater/types/react';
+import React, { useEffect, useState } from 'react';
 import ContactForm from './contact-form';
 import { Contact, ContactSummary } from '@/data-models/api/contact';
 import { createContactSummary } from '@/data-models/api';

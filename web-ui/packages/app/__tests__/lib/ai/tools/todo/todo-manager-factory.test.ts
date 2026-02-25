@@ -1,12 +1,12 @@
 // Prevent importing Next's server runtime helpers which reference web globals
 // not present in the Jest/node environment.
-jest.mock('@compliance-theater/types/next/server', () => ({
+jest.mock('next/server', () => ({
   NextResponse: {
     json: jest.fn(),
   },
 }));
 
-import { resetLastStrategy } from '@/lib/ai/tools/todo/todo-manager-factory';
+import { resetLastStrategy } from '../../../../../lib/ai/tools/todo/todo-manager-factory';
 // factory is dynamically imported in each test so module-level state can be
 // reset between tests (LastStrategy). See each test for the dynamic import.
 import { wellKnownFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
@@ -66,7 +66,7 @@ describe('createTodoManagerFromFeatureFlag', () => {
     });
 
     const { createStorageStrategyFromFlags } = jest.requireActual(
-      '@/lib/ai/tools/todo/todo-manager-factory',
+      '../../../../../lib/ai/tools/todo/todo-manager-factory',
     );
     const result = await createStorageStrategyFromFlags();
 

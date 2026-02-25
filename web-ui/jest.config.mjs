@@ -1,6 +1,9 @@
 /** @type {import('jest').Config} */
 const config = {
-  projects: ['<rootDir>/packages/*/jest.config.mjs'],
+ roots: ['<rootDir>'],
+  testPathIgnorePatterns: ['<rootDir>/packages/', '<rootDir>/submodules/'],
+  modulePathIgnorePatterns: ['<rootDir>/packages/', '<rootDir>/submodules/'],
+  watchPathIgnorePatterns: ['<rootDir>/packages/', '<rootDir>/submodules/'],
   coverageDirectory: '<rootDir>/coverage',
   collectCoverageFrom: [
     'packages/**/*.{ts,tsx,mjs}',

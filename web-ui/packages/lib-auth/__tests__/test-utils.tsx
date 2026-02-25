@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom';
-import React, { PropsWithChildren } from '@compliance-theater/types/react';
+import React, { PropsWithChildren } from 'react';
 import { render as testingLibraryRender } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from '@/components/auth/session-provider/provider';

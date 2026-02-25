@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getImportMessageStatus } from '../../../_utilitites';
 import { LoggedError } from '@compliance-theater/logger';
 

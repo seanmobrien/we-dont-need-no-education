@@ -24,10 +24,10 @@ jest.mock('@compliance-theater/redis', () => ({
 }));
 
 import { openai } from '@ai-sdk/openai';
-import { generateText, wrapLanguageModel } from 'ai';
-import { cacheWithRedis } from '@/lib/ai/middleware/cacheWithRedis/cacheWithRedis';
-import { metricsCollector } from '@/lib/ai/middleware/cacheWithRedis/metrics';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
+import { generateText, wrapLanguageModel } from '@compliance-theater/types/ai-sdk';
+import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
+import { metricsCollector } from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
+import { hideConsoleOutput } from '../../../shared/test-utils';
 
 // Mock the openai model to return consistent responses for testing
 jest.mock('@ai-sdk/openai', () => ({

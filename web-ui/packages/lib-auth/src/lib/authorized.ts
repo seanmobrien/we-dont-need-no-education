@@ -1,16 +1,19 @@
-import type { Session } from '@compliance-theater/types/next-auth';
-import { NextRequest } from '@compliance-theater/types/next/server';
+import type { NextAuthConfig, Session } from '@compliance-theater/types/next-auth';
 import { extractToken, KnownScopeValues, KnownScopeIndex } from './utilities';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 import { log } from '@compliance-theater/logger';
 
+type AuthorizedCallback = NonNullable<
+  NonNullable<NextAuthConfig['callbacks']>['authorized']
+>;
+type AuthorizedParams = Parameters<AuthorizedCallback>[0];
+
 export const authorized = async ({
   auth,
   request,
-}: {
+}: AuthorizedParams & {
   auth: Session | null;
-  request?: NextRequest;
 }) => {
   if (request) {
     const { nextUrl } = request;

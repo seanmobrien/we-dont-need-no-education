@@ -8,10 +8,9 @@
  */
 
 import { createHash } from 'crypto';
-import { ToolSet } from 'ai';
+import { ToolSet } from '@compliance-theater/types/ai-sdk';
 import { getRedisClient, RedisClientType } from '@compliance-theater/redis';
-import { log, LoggedError } from '@compliance-theater/logger';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
+import { log, LoggedError, SingletonProvider } from '@compliance-theater/logger';
 import type { ToolProviderFactoryOptions } from '../types';
 import type {
   ToolCacheConfig,
@@ -111,7 +110,7 @@ export class MCPToolCache {
             const remainingTtl = Math.max(
               0,
               this.config.defaultTtl -
-                Math.floor((Date.now() - entry.timestamp) / 1000),
+              Math.floor((Date.now() - entry.timestamp) / 1000),
             );
             this.memoryCache.set(cacheKey, entry, remainingTtl);
             log((l) => l.debug(`MCP tools cache hit (Redis): ${cacheKey}`));
@@ -370,9 +369,9 @@ export const isSchema = (value: unknown): value is z.ZodTypeAny =>
 let zodex:
   | undefined
   | {
-      zerialize: (schema: z.ZodTypeAny) => { type: unknown };
-      dezerialize: (data: unknown) => z.ZodTypeAny;
-    } = undefined;
+    zerialize: (schema: z.ZodTypeAny) => { type: unknown };
+    dezerialize: (data: unknown) => z.ZodTypeAny;
+  } = undefined;
 
 /**
  * Serializes an object, converting any Zod schemas to their serializable forms.

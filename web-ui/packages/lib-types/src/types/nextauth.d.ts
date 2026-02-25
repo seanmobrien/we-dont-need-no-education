@@ -13,8 +13,8 @@
  *
  * @example
  * ```typescript
- * import { getServerSession } from 'next-auth';
- * import type { Session } from 'next-auth';
+ * import { getServerSession } from '@compliance-theater/types/next-auth';
+ * import type { Session } from '@compliance-theater/types/next-auth';
  *
  * // Type-safe session access with custom properties
  * export async function getUserData() {
@@ -37,7 +37,7 @@
  *
  * @example
  * ```typescript
- * import type { JWT, Account } from 'next-auth/jwt';
+ * import type { JWT, Account } from '@compliance-theater/types/next-auth/jwt';
  *
  * // JWT callback with extended token properties
  * export async function jwt({ token, account }: {
@@ -66,7 +66,7 @@
  *
  * @example
  * ```typescript
- * import type { User, Account } from 'next-auth';
+ * import type { User, Account } from '@compliance-theater/types/next-auth';
  *
  * // OAuth profile callback with custom user mapping
  * export async function signIn({ user, account, profile }: {
@@ -111,7 +111,7 @@
 import { DefaultSession, Account as BaseAccount } from 'next-auth';
 import { JWT as BaseJWT } from 'next-auth/jwt';
 
-declare module 'next-auth' {
+declare module '@compliance-theater/types/next-auth' {
   /**
    * Extended user object with application-specific properties.
    *
@@ -213,7 +213,7 @@ declare module 'next-auth' {
 
 // The `JWT` interface can be found in the `next-auth/jwt` submodule
 
-declare module 'next-auth/jwt' {
+declare module '@compliance-theater/types/next-auth/jwt' {
   /**
    * Extended JWT token object with OAuth and application-specific data.
    *

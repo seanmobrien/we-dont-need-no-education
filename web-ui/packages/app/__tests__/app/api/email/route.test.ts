@@ -29,7 +29,7 @@ const mockEmailService = {
   findEmailIdByGlobalMessageId: jest.fn(),
 };
 
-jest.mock('@/lib/api/email/email-service', () => ({
+jest.mock('../../../../lib/api/email/email-service', () => ({
   EmailService: jest.fn().mockImplementation(() => mockEmailService),
 }));
 
@@ -61,14 +61,14 @@ jest.mock('@compliance-theater/nextjs/server/utils', () => {
     extractParams: mockExtractParams,
   };
 });
-jest.mock('@/lib/components/mui/data-grid/queryHelpers');
+jest.mock('../../../../lib/components/mui/data-grid/queryHelpers');
 
-import { NextRequest } from '@compliance-theater/types/next/server';
-import { POST, PUT, GET } from '@/app/api/email/route';
-import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
-import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { NextRequest } from 'next/server';
+import { POST, PUT, GET } from '../../../../app/api/email/route';
+import { GET as GetWithId, DELETE } from '../../../../app/api/email/[emailId]/route';
+import { selectForGrid } from '../../../../lib/components/mui/data-grid/queryHelpers';
 
-import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
+import { withJestTestExtensions } from '../../../shared/jest.test-extensions';
 import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file/index';
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 

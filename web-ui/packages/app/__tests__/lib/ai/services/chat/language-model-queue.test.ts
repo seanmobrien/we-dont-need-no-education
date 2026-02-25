@@ -5,14 +5,14 @@
  */
 
 import { LanguageModelV2 } from '@ai-sdk/provider';
-import { LanguageModelQueue } from '@/lib/ai/services/chat';
-import { MessageTooLargeForQueueError } from '@/lib/ai/services/chat/errors/message-too-large-for-queue-error';
-import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/abort-chat-message-request-error';
-import { setupMaps } from '@/__tests__/setup/jest.mock-provider-model-maps';
+import { LanguageModelQueue } from '../../../../../lib/ai/services/chat';
+import { MessageTooLargeForQueueError } from '../../../../../lib/ai/services/chat/errors/message-too-large-for-queue-error';
+import { AbortChatMessageRequestError } from '../../../../../lib/ai/services/chat/errors/abort-chat-message-request-error';
+import { setupMaps } from '../../../../setup/jest.mock-provider-model-maps';
 
 // Mock dependencies
 jest.mock('@compliance-theater/redis');
-jest.mock('@/lib/ai/core/count-tokens');
+jest.mock('../../../../../lib/ai/core/count-tokens');
 jest.mock('@compliance-theater/logger');
 
 describe('LanguageModelQueue', () => {

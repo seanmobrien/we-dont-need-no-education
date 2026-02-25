@@ -7,9 +7,9 @@ import React, {
   ReactNode,
   useRef,
   useCallback,
-} from '@compliance-theater/types/react';
+} from 'react';
 import { EmailContext } from './types';
-import { useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
+import { useChatPanelContext } from '@compliance-theater/types/components/ai/chat-panel/chat-panel-context';
 
 const EmailContextInstance = createContext<EmailContext | undefined>(undefined);
 

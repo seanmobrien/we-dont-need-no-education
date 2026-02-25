@@ -30,7 +30,7 @@ import AttachEmailIcon from '@mui/icons-material/AttachEmail';
 import SearchIcon from '@mui/icons-material/Search';
 import CancelIcon from '@mui/icons-material/Cancel';
 
-import React, { useMemo, useRef, useState } from '@compliance-theater/types/react';
+import React, { useMemo, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import { ChatStatusIndicator } from '@/components/health/chat-status';
 import { MemoryStatusIndicator } from '@/components/health/memory-status';

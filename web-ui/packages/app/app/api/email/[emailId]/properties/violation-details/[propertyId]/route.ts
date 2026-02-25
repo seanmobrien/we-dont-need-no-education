@@ -1,6 +1,6 @@
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { ViolationDetailsRepository } from '@/lib/api/email/properties/violation-details/violation-details-repository';
-import { NextRequest } from '@compliance-theater/types/next/server';
+import { NextRequest } from 'next/server';
 import {
   wrapRouteRequest,
   extractParams,

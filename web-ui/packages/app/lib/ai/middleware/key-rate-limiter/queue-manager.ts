@@ -1,6 +1,6 @@
 import { getRedisClient } from '@compliance-theater/redis';
 import type { RateLimitedRequest, ProcessedResponse } from './types';
-import { SingletonProvider } from '@compliance-theater/typescript';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 
 const REDIS_PREFIX = 'rate-limit';
 const EXPIRATION_HOURS = 6;

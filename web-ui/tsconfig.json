@@ -1,0 +1,64 @@
+{
+    "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+        "include": [
+            "!packages/**/*.ts",
+            "!packages/**/*.tsx",
+        ],
+        "exclude": [
+            "tests/**/*.*",
+            "__tests__/**/*.*",
+            "__mocks__/**/*.*",
+            "dist/**/*.*",
+            "packages/**/*.*",
+            "submodules/**/*.*",
+        ],
+        "jsx": "react-jsx",
+        "noEmit": false,
+        "baseUrl": "../",
+        "customConditions": [
+            "workspace-source"
+        ]
+    },
+    "references": [
+        {
+            "path": "packages/lib-logger"
+        },
+        {
+            "path": "packages/lib-env"
+        },
+        {
+            "path": "packages/lib-typescript"
+        },
+        {
+            "path": "packages/lib-redis"
+        },
+        {
+            "path": "packages/lib-after"
+        },
+        {
+            "path": "packages/lib-database"
+        },
+        {
+            "path": "packages/lib-auth"
+        },
+        {
+            "path": "packages/lib-nextjs"
+        },
+        {
+            "path": "packages/lib-react"
+        },
+        {
+            "path": "packages/lib-send-api-request"
+        },
+        {
+            "path": "packages/lib-themes"
+        },
+        {
+            "path": "packages/lib-types"
+        },
+        {
+            "path": "submodules/json-viewer"
+        }
+    ]
+}

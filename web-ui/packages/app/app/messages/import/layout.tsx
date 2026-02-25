@@ -1,4 +1,4 @@
-import * as React from '@compliance-theater/types/react';
+import * as React from 'react';
 import { PageContainer } from '@toolpad/core/PageContainer';
 import { SessionProvider } from '@compliance-theater/types/next-auth/react';
 import { auth } from '@compliance-theater/auth';

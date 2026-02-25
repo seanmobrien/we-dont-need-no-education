@@ -20,7 +20,7 @@ import {
   type GridValidRowModel,
 } from '@mui/x-data-grid-pro';
 
-import { useCallback, useMemo } from '@compliance-theater/types/react';
+import { useCallback, useMemo } from 'react';
 import type { ServerBoundDataGridProps } from './types';
 import { useNotifications } from '@toolpad/core/useNotifications';
 

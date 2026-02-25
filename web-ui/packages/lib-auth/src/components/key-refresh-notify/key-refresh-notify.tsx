@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from '@compliance-theater/types/react';
+import { useEffect, useState } from 'react';
 import { useNotifications } from '@toolpad/core';
 import { useSession } from '../session-provider';
 

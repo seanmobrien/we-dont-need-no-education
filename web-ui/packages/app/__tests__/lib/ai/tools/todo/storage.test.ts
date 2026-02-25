@@ -2,15 +2,15 @@
  * Tests for storage strategies
  */
 
-import { InMemoryStorageStrategy } from '@/lib/ai/tools/todo/storage/in-memory-storage';
-import { RedisStorageStrategy } from '@/lib/ai/tools/todo/storage/redis-storage';
+import { InMemoryStorageStrategy } from '../../../../../lib/ai/tools/todo/storage/in-memory-storage';
+import { RedisStorageStrategy } from '../../../../../lib/ai/tools/todo/storage/redis-storage';
 import {
   createStorageStrategy,
   createFallbackStrategy,
-} from '@/lib/ai/tools/todo/storage/factory';
-import type { Todo, TodoList } from '@/lib/ai/tools/todo/types';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
-import { SingletonProvider } from '@compliance-theater/typescript';
+} from '../../../../../lib/ai/tools/todo/storage/factory';
+import type { Todo, TodoList } from '../../../../../lib/ai/tools/todo/types';
+import { hideConsoleOutput } from '../../../../shared/test-utils';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 
 const idPrefix = `todo::user-test-user-id::`;
 const consoleSpy = hideConsoleOutput();

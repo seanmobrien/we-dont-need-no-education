@@ -9,7 +9,7 @@ import { BasicTracerProvider, InMemorySpanExporter } from '@opentelemetry/sdk-tr
 import type { ReadableSpan, SpanExporter } from '@opentelemetry/sdk-trace-base';
 import type { ExportResult } from '@opentelemetry/core';
 import { LRUCache } from 'lru-cache';
-import { UrlFilteredSpanExporter } from '@/instrument/url-filter/url-filter-trace-exporter';
+import { UrlFilteredSpanExporter } from '../../../instrument/url-filter/url-filter-trace-exporter';
 import type { SpanContext } from '@opentelemetry/api';
 
 describe('UrlFilteredSpanExporter', () => {

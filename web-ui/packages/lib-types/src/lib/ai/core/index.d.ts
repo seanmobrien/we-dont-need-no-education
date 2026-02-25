@@ -1,7 +1,7 @@
 /**
  * @fileoverview Main type and guard exports for AI core functionality.
  *
- * @module @compliance-theater/types/ai/core
+ * @module @compliance-theater/types/lib/ai/core
  *
  * Central hub for AI model identification, provider routing, and error/retry handling.
  * This module aggregates and re-exports type definitions, runtime constants, and
@@ -19,15 +19,15 @@
  *
  * ```typescript
  * // Default: import everything
- * import { AiModelType, isAiModelType } from '@compliance-theater/types/ai/core';
+ * import { AiModelType, isAiModelType } from '@compliance-theater/types/lib/ai/core';
  *
  * // Specialized: import only model types
- * import type { AiModelType } from '@compliance-theater/types/ai/core/types';
- * import { AiModelTypeValues } from '@compliance-theater/types/ai/core/unions';
+ * import type { AiModelType } from '@compliance-theater/types/lib/ai/core/types';
+ * import { AiModelTypeValues } from '@compliance-theater/types/lib/ai/core/unions';
  *
  * // Specialized: import only error types
- * import type { AnnotatedRetryMessage } from '@compliance-theater/types/ai/core/types';
- * import { isAnnotatedRetryMessage } from '@compliance-theater/types/ai/core/guards';
+ * import type { AnnotatedRetryMessage } from '@compliance-theater/types/lib/ai/core/types';
+ * import { isAnnotatedRetryMessage } from '@compliance-theater/types/lib/ai/core/guards';
  * ```
  *
  * @example
@@ -36,12 +36,12 @@
  *   AiModelType,
  *   AiLanguageModelType,
  *   AnnotatedRetryMessage,
- * } from '@compliance-theater/types/ai/core';
+ * } from '@compliance-theater/types/lib/ai/core';
  * import {
  *   isAiLanguageModelType,
  *   isAnnotatedRetryMessage,
  *   AiModelTypeValues,
- * } from '@compliance-theater/types/ai/core';
+ * } from '@compliance-theater/types/lib/ai/core';
  *
  * // Exhaustive model configuration
  * const modelConfig = Object.fromEntries(
@@ -74,7 +74,7 @@
  * @see {@link https://github.com/seanmobrien/we-dont-need-no-education|Repository}
  */
 
-declare module "@compliance-theater/types/ai/core" {
+declare module "@compliance-theater/types/lib/ai/core" {
   // ============================================================================
   // Type Definitions
   // ============================================================================
@@ -341,7 +341,7 @@ declare module "@compliance-theater/types/ai/core" {
    * }
    * ```
    */
-  export type AiProviderType = any;
+  export type AiProviderType = 'azure' | 'google' | 'openai';
 
   // ============================================================================
   // Runtime Constants

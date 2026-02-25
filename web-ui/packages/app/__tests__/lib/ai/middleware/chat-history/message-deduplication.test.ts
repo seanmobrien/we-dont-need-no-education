@@ -7,7 +7,7 @@
  * @module __tests__/lib/ai/middleware/chat-history/message-deduplication.test.ts
  */
 
-import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
+import { getNewMessages } from '../../../../../lib/ai/middleware/chat-history/utility';
 import type { DbTransactionType } from '@compliance-theater/database';
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 

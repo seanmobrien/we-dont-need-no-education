@@ -1,6 +1,6 @@
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { KeyPointsDetailsRepository } from '@/lib/api/email/properties/key-points/key-points-details-repository';
-import { NextRequest } from '@compliance-theater/types/next/server';
+import { NextRequest } from 'next/server';
 import {
   wrapRouteRequest,
   extractParams,

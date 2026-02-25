@@ -3,7 +3,7 @@
 import {
   EmailDrizzleRepository,
   EmailDomain,
-} from '@/lib/api/email/email-drizzle-repository';
+} from '../../../../lib/api/email/email-drizzle-repository';
 import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 
 import { drizDb, drizDbWithInit } from '@compliance-theater/database/orm';

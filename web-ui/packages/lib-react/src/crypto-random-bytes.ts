@@ -1,59 +1,10 @@
-type NodeCryptoModule = {
-  randomBytes: (size: number) => Uint8Array;
-};
+import { deprecate } from '@compliance-theater/types/deprecate';
+import { cryptoRandomBytes as baseCryptoRandomBytes } from '@compliance-theater/types/lib/nextjs/crypto-random-bytes';
 
-let cachedNodeCryptoRandomBytes: NodeCryptoModule['randomBytes'] | undefined;
+const cryptoRandomBytes = deprecate(
+    baseCryptoRandomBytes,
+    'cryptoRandomBytes is deprecated; import directly from types instead of react.',
+    'DEP003'
+);
 
-const loadNodeCryptoRandomBytes = (): NodeCryptoModule['randomBytes'] | undefined => {
-  if (cachedNodeCryptoRandomBytes) {
-    return cachedNodeCryptoRandomBytes;
-  }
-
-  try {
-    if (typeof process?.getBuiltinModule !== 'function') {
-      return undefined;
-    }
-
-    const nodeCrypto = process.getBuiltinModule('node:crypto') as
-      | NodeCryptoModule
-      | undefined;
-    if (nodeCrypto?.randomBytes) {
-      cachedNodeCryptoRandomBytes = nodeCrypto.randomBytes;
-      return cachedNodeCryptoRandomBytes;
-    }
-  } catch {
-    return undefined;
-  }
-
-  return undefined;
-};
-
-/**
- * Runtime-safe cryptographic random bytes for both browser and server.
- * - Browser: uses window.crypto.getRandomValues
- * - Server: lazily loads node:crypto at runtime
- * - Fallback: uses globalThis.crypto.getRandomValues when available (e.g. edge runtimes)
- */
-export const cryptoRandomBytes = (size: number): Uint8Array => {
-  if (!Number.isInteger(size) || size <= 0) {
-    throw new RangeError('cryptoRandomBytes size must be a positive integer');
-  }
-
-  if (
-    typeof window !== 'undefined' &&
-    typeof window.crypto?.getRandomValues === 'function'
-  ) {
-    return window.crypto.getRandomValues(new Uint8Array(size));
-  }
-
-  const nodeCryptoRandomBytes = loadNodeCryptoRandomBytes();
-  if (nodeCryptoRandomBytes) {
-    return nodeCryptoRandomBytes(size);
-  }
-
-  if (typeof globalThis.crypto?.getRandomValues === 'function') {
-    return globalThis.crypto.getRandomValues(new Uint8Array(size));
-  }
-
-  throw new Error('No cryptographically secure random source available');
-};
+export { cryptoRandomBytes };

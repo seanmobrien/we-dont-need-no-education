@@ -286,7 +286,7 @@ declare module '@compliance-theater/logger/safe-serialize' {
    * @example
    * ```typescript
    * // Use in OpenTelemetry span attributes
-   * import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
+   * import { createInstrumentedSpan } from '@compliance-theater/logger';
    *
    * const instrumented = await createInstrumentedSpan({
    *   spanName: 'process-request',

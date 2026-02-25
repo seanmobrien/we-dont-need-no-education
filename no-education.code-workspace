@@ -1,0 +1,64 @@
+{
+	"folders": [
+		{
+			"path": "web-ui"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "web-ui/packages/app"
+		},
+		{
+			"path": "web-ui/packages/lib-after"
+		},
+		{
+			"path": "web-ui/packages/lib-auth"
+		},
+		{
+			"path": "web-ui/packages/lib-database"
+		},
+		{
+			"path": "web-ui/packages/lib-env"
+		},
+		{
+			"path": "web-ui/packages/lib-feature-flags"
+		},
+		{
+			"path": "web-ui/packages/lib-logger"
+		},
+		{
+			"path": "web-ui/packages/lib-nextjs"
+		},
+		{
+			"path": "web-ui/packages/lib-react"
+		},
+		{
+			"path": "web-ui/packages/lib-redis"
+		},
+		{
+			"path": "web-ui/packages/lib-send-api-request"
+		},
+		{
+			"path": "web-ui/packages/lib-themes"
+		},
+		{
+			"path": "web-ui/packages/lib-types"
+		},
+		{
+			"path": "web-ui/packages/lib-typescript"
+		},
+		{
+			"path": "web-ui/submodules/json-viewer"
+		}
+	],
+	"settings": {
+		"testing.automaticallyOpenTestResults": "neverOpen",
+		"jest.runMode": "on-demand",
+		"jest.outputConfig": {
+			"revealOn": "run",
+			"revealWithFocus": "none",
+			"clearOnRun": "none"
+		}
+	}
+}

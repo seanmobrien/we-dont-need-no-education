@@ -12,19 +12,19 @@
  * @since 2025-07-17
  */
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+import { setupImpersonationMock } from '../../../../jest.mock-impersonation';
 
 setupImpersonationMock();
 
-import { ProcessingQueue } from '@/lib/ai/middleware/chat-history/processing-queue';
-import { processStreamChunk } from '@/lib/ai/middleware/chat-history/stream-handlers';
+import { ProcessingQueue } from '../../../../../lib/ai/middleware/chat-history/processing-queue';
+import { processStreamChunk } from '../../../../../lib/ai/middleware/chat-history/stream-handlers';
 import { log } from '@compliance-theater/logger';
 import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
-import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
-import { ensureCreateResult } from '@/lib/ai/middleware/chat-history/stream-handler-result';
+import type { StreamHandlerContext } from '../../../../../lib/ai/middleware/chat-history/types';
+import { ensureCreateResult } from '../../../../../lib/ai/middleware/chat-history/stream-handler-result';
 
 // Mock dependencies
-jest.mock('@/lib/ai/middleware/chat-history/stream-handlers', () => ({
+jest.mock('../../../../../lib/ai/middleware/chat-history/stream-handlers', () => ({
   processStreamChunk: jest.fn(),
 }));
 

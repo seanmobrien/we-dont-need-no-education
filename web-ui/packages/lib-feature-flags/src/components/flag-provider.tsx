@@ -13,7 +13,7 @@ import FeatureFlagsContext from '../context';
 import { useFlagsmithLoading } from 'flagsmith/react';
 import { useSession } from '@compliance-theater/types/components/auth/session-context';
 import type { Session } from '@compliance-theater/types';
-import { errorReporter } from '@/lib/error-monitoring/error-reporter';
+import { errorReporter } from '@compliance-theater/logger/errors/monitoring/error-reporter';
 
 const defaultFlags = AllFeatureFlagsDefault;
 

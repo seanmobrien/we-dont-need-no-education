@@ -1,12 +1,12 @@
 'use client';
 
-import { useMemo, useCallback, ElementType } from '@compliance-theater/types/react';
+import { useMemo, useCallback, ElementType } from 'react';
 import { GridColDef } from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Chip from '@mui/material/Chip';
-import NextLink from '@compliance-theater/types/next/link';
+import NextLink from 'next/link';
 import Link from '@mui/material/Link';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';

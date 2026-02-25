@@ -8,15 +8,15 @@
  * including pagination, filtering, and repository integration.
  */
 
-import { NextRequest } from '@compliance-theater/types/next/server';
-import { GET } from '@/app/api/email/[emailId]/properties/call-to-action/route';
-import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
-import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
+import { NextRequest } from 'next/server';
+import { GET } from '../../../../../../../app/api/email/[emailId]/properties/call-to-action/route';
+import { CallToActionDetailsRepository } from '../../../../../../../lib/api/email/properties/call-to-action/cta-details-repository';
+import { RepositoryCrudController } from '../../../../../../../lib/api/repository-crud-controller';
+import { hideConsoleOutput } from '../../../../../../shared/test-utils';
 
 // Mock external dependencies
 jest.mock('@compliance-theater/database/driver');
-jest.mock('@/lib/components/mui/data-grid/queryHelpers/postgres');
+jest.mock('../../../../../../../lib/components/mui/data-grid/queryHelpers/postgres');
 
 // Mock the API modules
 jest.mock(
@@ -28,7 +28,7 @@ jest.mock(
     })),
   }),
 );
-jest.mock('@/lib/api/repository-crud-controller', () => ({
+jest.mock('../../../../../../../lib/api/repository-crud-controller', () => ({
   RepositoryCrudController: jest.fn().mockImplementation(() => ({
     listFromRepository: jest.fn(),
     create: jest.fn(),

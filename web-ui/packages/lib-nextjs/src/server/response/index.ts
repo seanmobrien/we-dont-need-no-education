@@ -404,7 +404,7 @@ export const makeJsonResponse = (
     if (isRunningOnServer()) {
       // In Node.js environment, use NextResponse
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { NextResponse } = require('@compliance-theater/types/next/server');
+      const { NextResponse } = require('next/server');
       return NextResponse.json(data, responseInit);
     }
   } catch (_error) {

@@ -1,8 +1,8 @@
-import { render, screen } from '@/__tests__/shared/test-utils';
+import { render, screen } from '../shared/test-utils';
 import { ThemeSelector } from '@compliance-theater/themes';
 
 // Mock Next.js navigation
-jest.mock('@compliance-theater/types/next/navigation', () => ({
+jest.mock('next/navigation', () => ({
   useParams: () => ({}),
 }));
 

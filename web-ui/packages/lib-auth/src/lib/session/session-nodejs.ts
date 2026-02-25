@@ -58,7 +58,7 @@ export const session = async ({
         const refreshed = await refreshAccessToken(tempToken);
 
         if (refreshed.error) {
-          session.error = refreshed.error;
+          session.error = String(refreshed.error);
         } else {
           // Save new tokens to DB
           await updateAccountTokens(session.user.id, {

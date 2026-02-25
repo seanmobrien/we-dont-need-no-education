@@ -2,7 +2,7 @@ import type {
   LanguageModelV2CallOptions,
   SharedV2ProviderOptions,
 } from '@ai-sdk/provider';
-import { JSONValue } from 'ai';
+import { JSONValue } from '@compliance-theater/types/ai-sdk';
 import { drizDb } from '@compliance-theater/database/orm';
 import { log, LoggedError } from '@compliance-theater/logger';
 import type {

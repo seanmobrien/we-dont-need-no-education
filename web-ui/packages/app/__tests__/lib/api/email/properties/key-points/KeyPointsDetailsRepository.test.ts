@@ -4,10 +4,10 @@
  */
 jest.mock('@compliance-theater/database/driver');
 
-import { KeyPointsDetailsRepository } from '@/lib/api/email/properties/key-points/key-points-details-repository';
+import { KeyPointsDetailsRepository } from '../../../../../../lib/api/email/properties/key-points/key-points-details-repository';
 import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 import { query, queryExt } from '@compliance-theater/database/driver';
-import { KeyPointsDetails } from '@/data-models/api';
+import { KeyPointsDetails } from '../../../../../../data-models/api';
 
 describe('KeyPointsDetailsRepository', () => {
   let repository: KeyPointsDetailsRepository;

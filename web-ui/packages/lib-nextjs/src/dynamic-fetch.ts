@@ -1,4 +1,4 @@
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 
 const LOCAL_FETCH: unique symbol = Symbol(
   '@no-education/nextjs-util/dynamic-fetch/fetch'

@@ -4,10 +4,10 @@
 /**
  * Tests for EmbeddingService
  */
-import { EmbeddingService } from '@/lib/ai/services/embedding/EmbeddingService';
-import { createEmbeddingModel } from '@/lib/ai/aiModelFactory';
+import { EmbeddingService } from '../../../../../lib/ai/services/embedding/EmbeddingService';
+import { createEmbeddingModel } from '../../../../../lib/ai/aiModelFactory';
 
-jest.mock('@/lib/ai/aiModelFactory', () => ({
+jest.mock('../../../../../lib/ai/aiModelFactory', () => ({
   createEmbeddingModel: jest.fn(() =>
     Promise.resolve({
       provider: 'test-provider',
@@ -17,13 +17,13 @@ jest.mock('@/lib/ai/aiModelFactory', () => ({
 }));
 
 // Mock the external 'ai' embed call
-jest.mock('ai', () => ({
+jest.mock('@compliance-theater/types/ai-sdk', () => ({
   embed: jest.fn(async ({ value }: { value: string }) => ({
     embedding: Array.from({ length: 5 }, (_, i) => i + value.length),
   })),
 }));
 
-import { embed } from 'ai';
+import { embed } from '@compliance-theater/types/ai-sdk';
 
 describe('EmbeddingService', () => {
   beforeEach(() => {

@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.next.json",
   "compilerOptions": {
     "noEmit": true,
+    "rootDir": "./",
     "baseUrl": ".",
     "customConditions": [
       "workspace-source"
@@ -32,14 +33,15 @@
     "**/*.tsx",
     "./*.ts",
     "next-env.d.ts",
-    ".next/types/**/*.ts",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
     ".upstream/**/*.*",
     "**/.upstream/**/*.*",
     "submodules/**/*.*",
-    ".next"
+    ".next",
+    "dist"
   ],
   "references": [
     {
@@ -77,6 +79,12 @@
     },
     {
       "path": "../lib-types"
+    },
+    {
+      "path": "../lib-feature-flags"
+    },
+    {
+      "path": "../../submodules/json-viewer"
     }
   ]
 }

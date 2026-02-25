@@ -8,7 +8,7 @@ import type {
   ToolProviderSet,
   ConnectableToolProvider,
 } from '../types';
-import type { NextRequest } from '@compliance-theater/types/next/server';
+import type { NextRequest } from 'next/server';
 
 /**
  * Creates a single Model Context Protocol (MCP) client connection.

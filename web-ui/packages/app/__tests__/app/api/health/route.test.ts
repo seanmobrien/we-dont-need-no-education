@@ -21,7 +21,7 @@ jest.mock('@/lib/auth/impersonation/impersonation-factory', () => {
   };
 });
 
-jest.mock('@/lib/ai/mcp/providers', () => ({
+jest.mock('../../../../lib/ai/mcp/providers', () => ({
   setupDefaultTools: jest.fn().mockResolvedValue({
     isHealthy: true,
     providers: [{}, {}], // 2 providers
@@ -30,13 +30,13 @@ jest.mock('@/lib/ai/mcp/providers', () => ({
   }),
 }));
 import { auth } from '@compliance-theater/auth';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
-import { GET } from '@/app/api/health/route';
-import { NextRequest } from '@compliance-theater/types/next/server';
+import { hideConsoleOutput } from '../../../shared/test-utils';
+import { GET } from '../../../../app/api/health/route';
+import { NextRequest } from 'next/server';
 import { fromUserId } from '@compliance-theater/auth/lib/impersonation/impersonation-factory';
 
 // Mock the memory client factory
-jest.mock('@/lib/ai/mem0/memoryclient-factory', () => ({
+jest.mock('../../../../lib/ai/mem0/memoryclient-factory', () => ({
   memoryClientFactory: jest.fn(() =>
     Promise.resolve({
       healthCheck: jest.fn(),

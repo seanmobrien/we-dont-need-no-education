@@ -3,13 +3,13 @@
  * @description Unit tests for the MemoryStatusIndicator component
  */
 
-import React from '@compliance-theater/types/react';
-import { render, screen } from '@/__tests__/shared/test-utils';
-import { MemoryStatusIndicator } from '@/components/health/memory-status/memory-status-indicator';
-import { useHealth } from '@/components/health/health-provider/health-context';
-import { HealthStatus } from '@/lib/hooks/types';
+import React from 'react';
+import { render, screen } from '../../shared/test-utils';
+import { MemoryStatusIndicator } from '../../../components/health/memory-status/memory-status-indicator';
+import { useHealth } from '../../../components/health/health-provider/health-context';
+import { HealthStatus } from '../../../lib/hooks/types';
 
-jest.mock('@/components/health/health-provider/health-context');
+jest.mock('../../../components/health/health-provider/health-context');
 const mockUseHealth = useHealth as jest.Mock;
 const mockMemorySubsystems = (status: HealthStatus) => ({
   db: status,

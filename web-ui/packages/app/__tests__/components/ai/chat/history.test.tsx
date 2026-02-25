@@ -1,8 +1,8 @@
-import React from '@compliance-theater/types/react';
-import { render, screen } from '@/__tests__/shared/test-utils';
+import React from 'react';
+import { render, screen } from '../../../shared/test-utils';
 
 // Mock the virtualized chat display to simplify DOM assertions in tests.
-jest.mock('@/components/ai/chat', () => ({
+jest.mock('../../../../components/ai/chat', () => ({
   VirtualizedChatDisplay: ({
     turns,
   }: {
@@ -28,7 +28,7 @@ jest.mock('@/components/ai/chat', () => ({
 const mockUseChatDetails = jest.fn();
 
 // Import the real ChatHistory before mocking
-import { ChatHistory as OriginalChatHistory } from '@/components/ai/chat/history';
+import { ChatHistory as OriginalChatHistory } from '../../../../components/ai/chat/history';
 
 // Create a wrapped version that uses our mocked hook
 const ChatHistory = ({ chatId }: { chatId: string; title?: string }) => {

@@ -9,7 +9,7 @@
  * @since 2025-07-26
  */
 
-import { isLikeNextRequest } from '@compliance-theater/nextjs/guards';
+import { isLikeNextRequest } from '@compliance-theater/types/lib/nextjs/guards';
 import { log } from '@compliance-theater/logger';
 import type { GridSortModel } from '@mui/x-data-grid-pro';
 import { asc, desc, SQL } from '@compliance-theater/database/drizzle-orm';
@@ -171,19 +171,19 @@ export const buildDrizzleOrderBy = ({
   const sortBy = isGridSortModel(source)
     ? source
     : parseSortOptions(
-        typeof source === 'string'
-          ? (() => {
-              try {
-                return new URL(source);
-              } catch {
-                // If string is not a valid URL, return undefined to use default sort
-                return undefined;
-              }
-            })()
-          : isLikeNextRequest(source)
+      typeof source === 'string'
+        ? (() => {
+          try {
+            return new URL(source);
+          } catch {
+            // If string is not a valid URL, return undefined to use default sort
+            return undefined;
+          }
+        })()
+        : isLikeNextRequest(source)
           ? new URL(source.url!)
           : source
-      );
+    );
 
   // Apply sorting logic
   if (!sortBy) {

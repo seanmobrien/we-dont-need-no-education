@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from '@compliance-theater/types/react';
+import { useState, useEffect } from 'react';
 
 /**
  * React hook that returns the current width of a referenced container element.

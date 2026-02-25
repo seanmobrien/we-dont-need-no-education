@@ -4,7 +4,7 @@ import type {
   SiteRouteType,
 } from './_types';
 import { UrlBuilder } from './_impl';
-import { Route } from '@compliance-theater/types/next';
+import { Route } from 'next';
 
 /**
  * Factory function to create a MappedPageOverloads function.

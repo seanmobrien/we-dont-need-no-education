@@ -1,4 +1,4 @@
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider/provider';
 import { createClient, type RedisClientType } from 'redis';
 import { env } from '@compliance-theater/env';
 import { LoggedError, log } from '@compliance-theater/logger';

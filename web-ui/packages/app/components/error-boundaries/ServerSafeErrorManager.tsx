@@ -1,5 +1,5 @@
-import dynamic from '@compliance-theater/types/next/dynamic';
-import type { ClientErrorManagerConfig } from './ClientErrorManager';
+import dynamic from 'next/dynamic';
+import type { ClientErrorManagerConfig } from '@compliance-theater/logger/errors/boundaries/types';
 
 /**
  * Server-safe error manager that can be imported into server components

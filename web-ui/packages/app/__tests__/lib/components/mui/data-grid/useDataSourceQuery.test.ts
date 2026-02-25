@@ -1,8 +1,8 @@
-import { act, renderHook, waitFor } from '@/__tests__/shared/test-utils';
+import { act, renderHook, waitFor } from '../../../../shared/test-utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GridLogicOperator } from '@mui/x-data-grid-pro';
-import { useDataSource } from '@/lib/components/mui/data-grid/useDataSource';
-import React, { useEffect } from '@compliance-theater/types/react';
+import { useDataSource } from '../../../../../lib/components/mui/data-grid/useDataSource';
+import React, { useEffect } from 'react';
 import { fetch } from '@compliance-theater/nextjs/fetch';
 
 const TEST_URL = 'http://localhost:9999/api/test';

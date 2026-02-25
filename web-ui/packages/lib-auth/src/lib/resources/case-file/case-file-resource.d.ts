@@ -1,4 +1,4 @@
-import type { NextRequest } from '@compliance-theater/types/next/server';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 
 /**
  * Case File Resource Management Module
@@ -81,7 +81,7 @@ declare module '@compliance-theater/auth/lib/resources/case-file/case-file-resou
    * ```
    */
   export function checkCaseFileAccess(
-    req: NextRequest,
+    req: LikeNextRequest,
     userId: number,
     scope: CaseFileScope
   ): Promise<boolean>;

@@ -1,11 +1,11 @@
-import { notCryptoSafeKeyHash } from '@/lib/ai/core/chat-ids';
+import { notCryptoSafeKeyHash } from '@compliance-theater/types/lib/ai/core/chat-ids';
 import {
   QueryClient,
   useQueryClient,
   experimental_streamedQuery as streamedQuery,
 } from '@tanstack/react-query';
 import { log } from '@compliance-theater/logger';
-import { useCallback } from '@compliance-theater/types/react';
+import { useCallback } from 'react';
 import { env } from '@compliance-theater/env';
 import { fetch } from '@compliance-theater/nextjs/fetch';
 

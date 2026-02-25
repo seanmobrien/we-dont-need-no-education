@@ -3,7 +3,7 @@
  * @module components/ai/chat-panel/chat-panel-layout
  */
 
-import React from '@compliance-theater/types/react';
+import React from 'react';
 
 declare module '@/components/ai/chat-panel/chat-panel-layout' {
   /**

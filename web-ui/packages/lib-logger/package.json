@@ -21,10 +21,45 @@
       "workspace-source": "./src/errors/logged-error/index.ts",
       "default": "./dist/errors/logged-error/index.js"
     },
+    "./errors/monitoring": {
+      "types": "./dist/errors/monitoring/index.d.ts",
+      "workspace-source": "./src/errors/monitoring/index.ts",
+      "default": "./dist/errors/monitoring/index.js"
+    },
+    "./errors/monitoring/*": {
+      "types": "./dist/errors/monitoring/*.d.ts",
+      "workspace-source": "./src/errors/monitoring/*",
+      "default": "./dist/errors/monitoring/*.js"
+    },
+    "./errors/*": {
+      "types": "./dist/errors/*.d.ts",
+      "workspace-source": "./src/errors/*",
+      "default": "./dist/errors/*.js"
+    },
+    "./errors/boundaries": {
+      "types": "./dist/errors/boundaries/index.d.ts",
+      "workspace-source": "./src/errors/boundaries/index.ts",
+      "default": "./dist/errors/boundaries/index.js"
+    },
+    "./errors/boundaries/*": {
+      "types": "./dist/errors/boundaries/*.d.ts",
+      "workspace-source": "./src/errors/boundaries/*",
+      "default": "./dist/errors/boundaries/*.js"
+    },
     "./core": {
       "types": "./dist/core.d.ts",
       "workspace-source": "./src/core.ts",
       "default": "./dist/core.js"
+    },
+    "./singleton-provider": {
+      "types": "./dist/singleton-provider/index.d.ts",
+      "workspace-source": "./src/singleton-provider/index.ts",
+      "default": "./dist/singleton-provider/index.js"
+    },
+    "./singleton-provider/*": {
+      "types": "./dist/singleton-provider/*.d.ts",
+      "workspace-source": "./src/singleton-provider/*.ts",
+      "default": "./dist/singleton-provider/*.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
@@ -40,28 +75,44 @@
     "dist"
   ],
   "scripts": {
+    "add": "yarn workspace @compliance-theater/logger add ",
     "build": "yarn run build:typescript",
-    "build:typescript": "echo 'Building lib/logger typescript...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/logger.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/logger.\u001b[0m\n' >&2; exit 1)",
+    "build:typescript": "echo 'Building @compliance-theater/logger...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/logger.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/logger.\u001b[0m\n' >&2; exit 1)",
     "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-logger.tgz",
     "test": "jest",
-    "lint": "echo 'Linting lib-logger...'",
+    "lint": "echo 'Linting @compliance-theater/logger...'",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "devDependencies": {
-    "@jest/globals": "^29.0.0",
+    "@jest/globals": "^30.0.0",
+    "@jest/transform": "^30.0.0",
+    "@jest/types": "^30.0.0",
+    "@types/jest": "^30.0.0",
     "@types/node": "25.2.3",
+    "@types/react": "19.2.4",
+    "@types/react-dom": "19.2.3",
     "babel-plugin-react-compiler": "^1.0.0",
     "jest": "^30.0.5",
+    "jest-util": "^30.0.0",
+    "react-native": "^0.84.0",
     "rimraf": "^6.1.2",
     "ts-jest": "^30.0.0",
     "typescript": "^5"
   },
   "dependencies": {
+    "@auth/core": "0.41.1",
     "@compliance-theater/types": "workspace:*",
     "@opentelemetry/api": "1.9.0",
     "@opentelemetry/api-logs": "0.57.2",
+    "@react-native/virtualized-lists": "npm:0.84.0",
+    "got": "^14.4.9",
     "mitt": "^3.0.1",
     "pino": "^9.6.0",
-    "pino-pretty": "^13.0.0"
+    "pino-pretty": "^13.0.0",
+    "postgres": "^3.4.5",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zod": "^3.25.76",
+    "zodex": "^3.0.0"
   }
 }

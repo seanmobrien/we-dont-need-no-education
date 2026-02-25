@@ -2,7 +2,7 @@
 
 Lightweight helpers for consistent JSON error responses in Next.js server code.
 
-- Module: `@/lib/nextjs-util/server/error-response`
+- Module: `@compliance-theater/nextjs/server/error-response`
 - Exports: `errorResponseFactory`, `parseResponseOptions`, `ErrorResponseOptions`
 
 ## ErrorResponse
@@ -32,7 +32,7 @@ Behavior highlights:
 ### Examples
 
 ```ts
-import { errorResponseFactory } from '@/lib/nextjs-util/server/error-response';
+import { errorResponseFactory } from '@compliance-theater/nextjs/server/error-response';
 
 // Status only
 return errorResponseFactory(404); // body: { error: 'An error occurred', status: 404 }
@@ -60,7 +60,7 @@ return errorResponseFactory({ status: 503 }, err); // { error: 'oops', status: 5
 Normalizes two unknown inputs into `{ status: number; message: string; cause?: string; source?: string }`.
 
 ```ts
-import { parseResponseOptions } from '@/lib/nextjs-util/server/error-response';
+import { parseResponseOptions } from '@compliance-theater/nextjs/server/error-response';
 
 const opts = parseResponseOptions('Auth failed', {
   status: 401,

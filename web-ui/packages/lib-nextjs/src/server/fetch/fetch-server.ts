@@ -20,9 +20,8 @@ import {
   FETCH_MANAGER_SINGLETON_KEY,
 } from './fetch-config';
 import type { FetchConfig as IFetchConfig } from './fetch-types';
-import { LoggedError, log, safeSerialize } from '@compliance-theater/logger';
+import { LoggedError, log, safeSerialize, SingletonProvider } from '@compliance-theater/logger';
 import { createInstrumentedSpan } from '../utils';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import { CacheStrategies } from './cache-strategies';
 import { StreamingStrategy } from './streaming-strategy';
 import { BufferingStrategy } from './buffering-strategy';
@@ -200,9 +199,9 @@ export const normalizeRequestInit = ({
     init.timeout =
       typeof initTimeout === 'number'
         ? {
-            connect: initTimeout,
-            socket: initTimeout,
-          }
+          connect: initTimeout,
+          socket: initTimeout,
+        }
         : initTimeout;
   }
   if (typeof requestInfo === 'string') {
@@ -553,7 +552,7 @@ export class FetchManager implements ServerFetchManager {
       const releaseOnce = () => {
         try {
           this.semManager.sem.release();
-        } catch {}
+        } catch { }
       };
       stream.on('end', releaseOnce);
       stream.on('error', releaseOnce);
@@ -593,12 +592,12 @@ export class FetchManager implements ServerFetchManager {
       // the only timeout we handle here is request timeout
       return normalInit.timeout?.request
         ? withTimeout(domReq, normalInit.timeout.request).then((x) => {
-            if (x.timedOut) {
-              controller.abort();
-              throw new TimeoutError();
-            }
-            return x.value;
-          })
+          if (x.timedOut) {
+            controller.abort();
+            throw new TimeoutError();
+          }
+          return x.value;
+        })
         : domReq;
     }
     throw new Error('No fetch implementation found');

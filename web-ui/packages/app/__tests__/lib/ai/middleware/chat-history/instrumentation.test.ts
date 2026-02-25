@@ -59,14 +59,14 @@ jest.mock('@opentelemetry/api', () => ({
 import type {
   FlushResult,
   FlushContext,
-} from '@/lib/ai/middleware/chat-history/types';
+} from '../../../../../lib/ai/middleware/chat-history/types';
 import {
   instrumentFlushOperation,
   instrumentStreamChunk,
   recordQueueOperation,
   createChatHistoryError,
-} from '@/lib/ai/middleware/chat-history/instrumentation';
-import { getStackTrace } from '@compliance-theater/nextjs/get-stack-trace';
+} from '../../../../../lib/ai/middleware/chat-history/instrumentation';
+import { getStackTrace } from '@compliance-theater/types/get-stack-trace';
 import { isError } from '@compliance-theater/logger';
 
 describe('Chat History Instrumentation', () => {

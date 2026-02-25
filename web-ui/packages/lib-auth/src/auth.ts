@@ -17,6 +17,7 @@ import { logEvent } from '@compliance-theater/logger';
 import { setupKeyCloakProvider } from './lib/keycloak-provider';
 import { authorized } from './lib/authorized';
 import type { JWT } from '@compliance-theater/types/next-auth/jwt';
+import { LikeNextRequest } from '../../lib-nextjs/src/types';
 
 type DynamicImports = {
   drizzleAdapter: {
@@ -245,7 +246,16 @@ const nextAuthResult: NextAuthResult = NextAuth(async () => {
   } as NextAuthConfig;
 });
 
-export const handlers = nextAuthResult.handlers;
-export const auth: NextAuthResult['auth'] = nextAuthResult.auth;
-export const signIn: NextAuthResult['signIn'] = nextAuthResult.signIn;
-export const signOut: NextAuthResult['signOut'] = nextAuthResult.signOut;
+export type NextAuthHandlers = {
+  GET: (req: LikeNextRequest) => Promise<Response>;
+  POST: (req: LikeNextRequest) => Promise<Response>;
+}
+
+export type NextAuthAuth = NextAuthResult['auth'];
+export type NextAuthSignIn = NextAuthResult['signIn'];
+export type NextAuthSignOut = NextAuthResult['signOut'];
+
+export const handlers: NextAuthHandlers = nextAuthResult.handlers as NextAuthHandlers;
+export const auth: NextAuthAuth = nextAuthResult.auth;
+export const signIn: NextAuthSignIn = nextAuthResult.signIn;
+export const signOut: NextAuthSignOut = nextAuthResult.signOut;

@@ -1,10 +1,13 @@
 'use client';
 import { ErrorBoundary, type FallbackProps, type ErrorBoundaryProps } from 'react-error-boundary';
-import { type ErrorInfo, type PropsWithChildren, type ReactNode, useCallback } from '@compliance-theater/types/react';
+import { type ErrorInfo, type PropsWithChildren, type ReactNode, useCallback } from 'react';
 import { RenderErrorBoundaryFallback } from './render-fallback';
-import { useProcessedError } from '@/lib/error-monitoring/use-processed-error';
+import { useProcessedError } from '@compliance-theater/logger/errors/monitoring/use-processed-error';
 import { safeSerialize, LoggedError } from '@compliance-theater/logger';
-import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring/error-reporter';
+import {
+  errorReporter,
+  ErrorSeverity,
+} from '@compliance-theater/logger/errors/monitoring/error-reporter';
 
 export const DefaultErrorFallbackRender = ({
   error,

@@ -16,7 +16,7 @@
  * - Designed for tests; not intended for production usage.
  * - Uses private class fields to keep test state isolated.
  */
-import { Component, createElement  } from '@compliance-theater/types/react';
+import { Component, createElement  } from 'react';
 
 /**
  * Minimal, test-focused Error Boundary.

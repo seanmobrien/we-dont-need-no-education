@@ -1,8 +1,8 @@
-import MemoryClient from '@/lib/ai/mem0/lib/client/mem0';
+import MemoryClient from '../../../../lib/ai/mem0/lib/client/mem0';
 import {
   memoryClientFactory,
   type ExtendedMemoryClient,
-} from '@/lib/ai/mem0/memoryclient-factory';
+} from '../../../../lib/ai/mem0/memoryclient-factory';
 import { fetch as mockedFetch } from '@compliance-theater/nextjs/server/fetch';
 
 jest.mock('@compliance-theater/nextjs/server/utils', () => ({

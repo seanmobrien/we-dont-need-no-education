@@ -1,4 +1,5 @@
-import { createStartupAccessors } from '@compliance-theater/after';
+import { createStartupAccessors } from '@compliance-theater/after/app-startup';
+import { state } from '@compliance-theater/after/app-startup-state';
 import { configureAppStartupAccessor } from '@compliance-theater/nextjs/server/app-startup-accessor';
 
 /**
@@ -6,9 +7,9 @@ import { configureAppStartupAccessor } from '@compliance-theater/nextjs/server/a
  * The AppStartup class will discover and call initAppStartup exports
  * from the configured modules during initialization.
  */
-const { startup, state } = createStartupAccessors({
+const { startup } = createStartupAccessors({
   initializerModules: [
-    '@/lib/react-util/errors/logged-error-reporter/init',
+    '@compliance-theater/logger/errors/logged-error-reporter/init',
     '@/lib/ai/aiModelFactory/init',
   ],
   singletonKey: '@noeducation/site-util/appstartup',
@@ -24,4 +25,4 @@ export { startup, state };
 /**
  * Re-export types for compatibility
  */
-export type { AppStartupState } from '@compliance-theater/after';
+export type { AppStartupState } from '@compliance-theater/after/app-startup-state';

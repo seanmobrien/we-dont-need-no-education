@@ -4,10 +4,10 @@
 import { resolveCaseFileId } from '@compliance-theater/database/orm/resolve-case-file-id';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { log, LoggedError } from '@compliance-theater/logger';
-import { deprecate } from '@compliance-theater/nextjs/utils';
+import { deprecate } from '@compliance-theater/types/deprecate';
 import { authorizationService } from '../authorization-service';
 import { normalizedAccessToken } from '../../access-token';
-import type { NextRequest } from '@compliance-theater/types/next/server';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import { AccessTokenOrRequestOverloads } from '../../types';
 
 export const getUserIdFromEmailId = deprecate(
@@ -110,41 +110,41 @@ export const getKeycloakUserIdFromUserId = async (
 export const getAccessibleUserIds: AccessTokenOrRequestOverloads<
   number[]
 > = async (
-  userAccessToken?: string | NextRequest | undefined
+  userAccessToken?: string | LikeNextRequest | undefined
 ): Promise<number[]> => {
-  try {
-    const normalizedInput = await normalizedAccessToken(userAccessToken);
-    if (!normalizedInput) {
-      log((l) => l.warn('No credentials available for entitlement check.'));
-      return [];
-    }
-    const { accessToken: bearerToken, userId } = normalizedInput;
-    const entitlements = await authorizationService((s) =>
-      s.getUserEntitlements(bearerToken)
-    );
+    try {
+      const normalizedInput = await normalizedAccessToken(userAccessToken);
+      if (!normalizedInput) {
+        log((l) => l.warn('No credentials available for entitlement check.'));
+        return [];
+      }
+      const { accessToken: bearerToken, userId } = normalizedInput;
+      const entitlements = await authorizationService((s) =>
+        s.getUserEntitlements(bearerToken)
+      );
 
-    const accessibleUserIds = new Set<number>();
-    let foundThisId = false;
-    for (const entitlement of entitlements) {
-      if (entitlement.rsname && entitlement.rsname.startsWith('case-file:')) {
-        const idPart = entitlement.rsname.split(':')[1];
-        const parsedUserId = parseInt(idPart, 10);
-        if (!isNaN(parsedUserId)) {
-          accessibleUserIds.add(parsedUserId);
-          foundThisId = foundThisId || parsedUserId === userId;
+      const accessibleUserIds = new Set<number>();
+      let foundThisId = false;
+      for (const entitlement of entitlements) {
+        if (entitlement.rsname && entitlement.rsname.startsWith('case-file:')) {
+          const idPart = entitlement.rsname.split(':')[1];
+          const parsedUserId = parseInt(idPart, 10);
+          if (!isNaN(parsedUserId)) {
+            accessibleUserIds.add(parsedUserId);
+            foundThisId = foundThisId || parsedUserId === userId;
+          }
         }
       }
+      // Always include the current user even if the resource hasn't been set up yet
+      if (!foundThisId && userId) {
+        accessibleUserIds.add(userId);
+      }
+      return Array.from(accessibleUserIds);
+    } catch (error) {
+      throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'getAccessibleUserIds',
+        msg: 'Failed to get accessible user IDs',
+      });
     }
-    // Always include the current user even if the resource hasn't been set up yet
-    if (!foundThisId && userId) {
-      accessibleUserIds.add(userId);
-    }
-    return Array.from(accessibleUserIds);
-  } catch (error) {
-    throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      source: 'getAccessibleUserIds',
-      msg: 'Failed to get accessible user IDs',
-    });
-  }
-};
+  };

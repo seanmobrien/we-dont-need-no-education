@@ -1,6 +1,6 @@
-import React from '@compliance-theater/types/react';
-import { render } from '@/__tests__/shared/test-utils';
-import EnhancedTableHead from '@/components/general/enhanced-table-head';
+import React from 'react';
+import { render } from '../../shared/test-utils';
+import EnhancedTableHead from '../../../components/general/enhanced-table-head';
 
 const mockHeadCells = [
   { id: 'name', label: 'Name', numeric: false, disablePadding: false },

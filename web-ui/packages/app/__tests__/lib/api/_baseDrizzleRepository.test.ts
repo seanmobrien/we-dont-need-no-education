@@ -5,7 +5,7 @@
 // @ts-nocheck
 // it's not worth the effort to try and fix types for all these mocks
 
-jest.mock('@/lib/react-util', () => ({
+jest.mock('../../../lib/react-util', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn().mockImplementation((error) => {
       // Return a LoggedError that extends Error and can be thrown
@@ -15,7 +15,7 @@ jest.mock('@/lib/react-util', () => ({
 }));
 
 import { drizDbWithInit, drizDb } from '@compliance-theater/database/orm';
-import { DrizzleRepositoryConfig } from '@/lib/api/_types';
+import { DrizzleRepositoryConfig } from '../../../lib/api/_types';
 import { PgTable, PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 import {
   FilteredTestDrizzleRepository,
@@ -23,7 +23,7 @@ import {
   TestModel,
 } from './target-repositories';
 import { DatabaseMockType } from '../jest.setup';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
+import { hideConsoleOutput } from '../../shared/test-utils';
 
 const mockConsole = hideConsoleOutput();
 

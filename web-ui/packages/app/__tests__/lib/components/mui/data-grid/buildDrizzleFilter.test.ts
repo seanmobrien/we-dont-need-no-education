@@ -45,9 +45,9 @@ import {
   buildDrizzleAttachmentOrEmailFilter,
   buildDrizzleItemFilter,
   buildDrizzleQueryFilter,
-} from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleFilter';
-import { NextRequest } from '@compliance-theater/types/next/server';
-import { LikeNextRequest } from '@compliance-theater/nextjs/types';
+} from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleFilter';
+import { NextRequest } from 'next/server';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 
 import { ILogger, log } from '@compliance-theater/logger';
 

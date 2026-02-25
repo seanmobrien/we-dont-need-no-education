@@ -10,13 +10,12 @@
 import { log, LoggedError } from '@compliance-theater/logger';
 import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import EventEmitter from '@protobufjs/eventemitter';
-import type { Tool, ToolSet } from 'ai';
+import type { Tool, ToolSet } from '@compliance-theater/types/ai-sdk';
 import {
   getResolvedPromises,
 } from '@compliance-theater/react/utility-methods';
-import { isAbortError, isError } from '@compliance-theater/logger';
-import { withEmittingDispose } from '@compliance-theater/nextjs/utils';
-import { SingletonProvider } from '@compliance-theater/typescript';
+import { isAbortError, isError, SingletonProvider } from '@compliance-theater/logger';
+import { withEmittingDispose } from '@compliance-theater/types/with-emitting-dispose';
 
 import type {
   ConnectableToolProvider,
@@ -88,13 +87,13 @@ const createTransport = async ({
     const headerCb:
       | (() => Promise<Record<string, string>>)
       | Record<string, string> = () => {
-      if (!deezHeaders) {
-        return Promise.resolve({} as Record<string, string>);
-      }
-      return typeof deezHeaders === 'function'
-        ? deezHeaders()
-        : Promise.resolve(deezHeaders);
-    };
+        if (!deezHeaders) {
+          return Promise.resolve({} as Record<string, string>);
+        }
+        return typeof deezHeaders === 'function'
+          ? deezHeaders()
+          : Promise.resolve(deezHeaders);
+      };
     return new InstrumentedSseTransport({
       onerror,
       ...sseTransportConfig,
@@ -161,9 +160,8 @@ const createClient = async ({
           content: [
             {
               type: 'text',
-              text: `An error occurred while processing your request: ${
-                isError(error) ? error.message : String(error)
-              }. Please try again later.`,
+              text: `An error occurred while processing your request: ${isError(error) ? error.message : String(error)
+                }. Please try again later.`,
             },
           ],
         };
@@ -243,12 +241,12 @@ export const toolProviderFactory = async ({
       const filteredTools: ToolSet = options.allowWrite
         ? (allTools as ToolSet)
         : Object.entries(allTools).reduce((acc, [toolName, tool]) => {
-            // Filter out tools that require write access when in read-only mode
-            if ((tool.description?.indexOf('Write access') ?? -1) === -1) {
-              (acc as { [key: string]: typeof tool })[toolName] = tool;
-            }
-            return acc;
-          }, {} as ToolSet);
+          // Filter out tools that require write access when in read-only mode
+          if ((tool.description?.indexOf('Write access') ?? -1) === -1) {
+            (acc as { [key: string]: typeof tool })[toolName] = tool;
+          }
+          return acc;
+        }, {} as ToolSet);
 
       // Cache the filtered tools for future requests
       await toolCache.setCachedTools(options, filteredTools);

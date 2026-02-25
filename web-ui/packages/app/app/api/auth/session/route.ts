@@ -10,7 +10,7 @@
  */
 
 import { auth } from '@compliance-theater/auth';
-import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getActiveUserPublicKeys } from '@compliance-theater/auth/lib/utilities/user-keys-server';
 import { isSessionActive } from '@compliance-theater/auth/lib/utilities';
 

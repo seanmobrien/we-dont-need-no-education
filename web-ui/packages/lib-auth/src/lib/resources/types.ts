@@ -1,4 +1,4 @@
-import type { NextRequest } from "@compliance-theater/types/next/server";
+import type { NextRequest } from "next/server";
 
 /**
  * Resource entitlement

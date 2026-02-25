@@ -2,7 +2,7 @@
  * Type definitions for docking overlay
  * @module components/ai/chat-panel/docking-overlay
  */
-import React from '@compliance-theater/types/react';
+import React from 'react';
 import type { DockPosition } from './types';
 
 declare module '@/components/ai/chat-panel/docking-overlay' {

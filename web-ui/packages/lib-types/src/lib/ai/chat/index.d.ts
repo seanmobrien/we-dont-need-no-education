@@ -1,7 +1,7 @@
 /**
  * @fileoverview Main type and guard exports for AI chat functionality.
  *
- * @module @compliance-theater/types/ai/chat
+ * @module @compliance-theater/types/lib/ai/chat
  *
  * Central hub for chat session management, including message structures, turn
  * organization, and error handling with optional retry semantics. This module
@@ -18,14 +18,14 @@
  *
  * ```typescript
  * // Default: import everything
- * import { ChatDetails, isChatDetails } from '@compliance-theater/types/ai/chat';
+ * import { ChatDetails, isChatDetails } from '@compliance-theater/types/lib/ai/chat';
  *
  * // Specialized: import only chat types
- * import type { ChatMessage, ChatTurn } from '@compliance-theater/types/ai/chat/types';
+ * import type { ChatMessage, ChatTurn } from '@compliance-theater/types/lib/ai/chat/types';
  *
  * // Specialized: import only error types
- * import type { RetryErrorInfo } from '@compliance-theater/types/ai/chat/types';
- * import { getRetryErrorInfoKind } from '@compliance-theater/types/ai/chat/guards';
+ * import type { RetryErrorInfo } from '@compliance-theater/types/lib/ai/chat/types';
+ * import { getRetryErrorInfoKind } from '@compliance-theater/types/lib/ai/chat/guards';
  * ```
  *
  * **Design Philosophy**:
@@ -42,13 +42,13 @@
  *   ChatTurn,
  *   ChatMessage,
  *   RetryErrorInfo,
- * } from '@compliance-theater/types/ai/chat';
+ * } from '@compliance-theater/types/lib/ai/chat';
  * import {
  *   isChatDetails,
  *   isChatTurn,
  *   isChatMessage,
  *   getRetryErrorInfoKind,
- * } from '@compliance-theater/types/ai/chat';
+ * } from '@compliance-theater/types/lib/ai/chat';
  *
  * // Load and validate complete chat session
  * async function loadChat(sessionId: string) {
@@ -104,9 +104,9 @@
  * @see {@link https://github.com/seanmobrien/we-dont-need-no-education|Repository}
  */
 
-import type { APICallError } from "ai";
+import type { APICallError } from 'ai';
 
-declare module "@compliance-theater/types/ai/chat" {
+declare module "@compliance-theater/types/lib/ai/chat" {
   // ============================================================================
   // Error And Retry Types
   // ============================================================================
@@ -149,34 +149,34 @@ declare module "@compliance-theater/types/ai/chat" {
    */
   export type RetryErrorInfo =
     | {
-        /** Operation produced no error. */
-        isError: false;
-        isRetry: never;
-        error?: never;
-        retryAfter?: never;
-      }
+      /** Operation produced no error. */
+      isError: false;
+      isRetry: never;
+      error?: never;
+      retryAfter?: never;
+    }
     | {
-        /** Generic branch (legacy / transitional) when caller pre-classifies. */
-        isError: boolean;
-        isRetry?: boolean;
-        error?: APICallError | Error;
-        /** Milliseconds until retry is recommended (if present). */
-        retryAfter?: number;
-      }
+      /** Generic branch (legacy / transitional) when caller pre-classifies. */
+      isError: boolean;
+      isRetry?: boolean;
+      error?: APICallError | Error;
+      /** Milliseconds until retry is recommended (if present). */
+      retryAfter?: number;
+    }
     | {
-        /** Error and the platform indicates safe retry. */
-        isError: true;
-        isRetry: true;
-        error: APICallError;
-        retryAfter: number;
-      }
+      /** Error and the platform indicates safe retry. */
+      isError: true;
+      isRetry: true;
+      error: APICallError;
+      retryAfter: number;
+    }
     | {
-        /** Error but retry is not advised (validation, fatal, etc.). */
-        isError: true;
-        isRetry: false;
-        error?: Error | APICallError;
-        retryAfter?: never;
-      };
+      /** Error but retry is not advised (validation, fatal, etc.). */
+      isError: true;
+      isRetry: false;
+      error?: Error | APICallError;
+      retryAfter?: never;
+    };
 
   // ============================================================================
   // Message Types

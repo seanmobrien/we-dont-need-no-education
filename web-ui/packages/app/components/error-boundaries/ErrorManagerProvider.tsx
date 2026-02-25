@@ -1,7 +1,7 @@
 'use client';
 
-import dynamic from '@compliance-theater/types/next/dynamic';
-import type { ClientErrorManagerConfig } from './ClientErrorManager';
+import dynamic from 'next/dynamic';
+import type { ClientErrorManagerConfig } from '@compliance-theater/logger/errors/boundaries/types';
 
 // Dynamically import ClientErrorManager with SSR disabled
 const ClientErrorManager = dynamic(

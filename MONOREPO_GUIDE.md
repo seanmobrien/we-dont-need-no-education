@@ -327,25 +327,70 @@ The shared Jest configuration is accessed via the symbolic link you created in S
 For reference, the shared configuration for packages without React dependencies (pure utilities) looks like this:
 
 ```javascript
+
 const config = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  testEnvironmentOptions: {},
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  preset: 'ts-jest', // Use ts-jest preset for TypeScript support
+  testEnvironment: 'jsdom', // Set the test environment to jsdom
+  testEnvironmentOptions: {
+    // Configure jsdom for React 19 concurrent features
+    features: {
+      FetchExternalResources: false,
+      ProcessExternalResources: false,
+    },
+    customExportConditions: ['workspace-source'],
+  },
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled  
   setupFilesAfterEnv: [
+    '<rootDir>/__tests__/shared/setup/jest.mock-text-encoding.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-log.ts',
     '<rootDir>/__tests__/shared/setup/jest.env-vars.ts',
-    // Add other setup files as needed
+    '<rootDir>/__tests__/shared/setup/jest.mock-redis.ts',
+    '<rootDir>/__tests__/shared/setup/jest.localStorage.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-opentelemetry.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-got.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-node-modules.ts',
   ],
   testMatch: [
     '**/__tests__/**/*.test.(ts|tsx)',
     '!/.next/**',
     '!/dist/**',
+    '!/.upstream/**',
+    '!/(rsc)/**',
   ],
   moduleNameMapper: {
-    // Add mappings for mocks and workspace packages
-    // Point to source files, not dist, during testing:
-    // "^@compliance-theater/logger(.*)$": "<rootDir>/../lib-logger/src$1",
+    // make react-query visible even when not referenced
+    '^@tanstack/react-query$': '<rootDir>/../../node_modules/@tanstack/react-query',
+    // Mocked libraries
+    '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx',
+    '@/instrumentation(.*)$':
+      '<rootDir>/__mocks__/shared/setup/instrumentation.ts', // Mock instrumentation module
+    '^(@|\\.)/lib/auth/keycloak-provider$':
+      '<rootDir>/__mocks__/shared/keycloak-provider.js', // Mock static file imports,
+    '^@/lib/site-util/metrics.*$':
+      '<rootDir>/__mocks__/shared/metrics.ts', // Alias for lib imports
+    '^prexit$': '<rootDir>/__mocks__/shared/prexit.ts', // Mock prexit module
+    '^zodex$': '<rootDir>/__mocks__/shared/zodex.js',    
+    '^redis$': '<rootDir>/__mocks__/shared/redis.ts',    
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy', 
+    // Aliases to support internal imports with jest resolver
+    '^@compliance-theater/logger/singleton-provider$': '<rootDir>/../lib-logger/src/singleton-provider.ts',
+    '^@compliance-theater/logger/core$': '<rootDir>/../lib-logger/src/core.ts',
+    '^@compliance-theater/logger$': '<rootDir>/../lib-logger/src/index.ts',
+    '^@compliance-theater/database/schema$': '<rootDir>/../lib-database/src/drizzle/schema.ts',
+    '^@compliance-theater/typescript(.*)$': '<rootDir>/../lib-typescript/src$1',
+    '^@compliance-theater/types/react$': '<rootDir>/../../node_modules/react/index.js',
+    '^@compliance-theater/types/react-dom$': '<rootDir>/../../node_modules/react-dom/index.js',
+    '^@compliance-theater/types$': '<rootDir>/../lib-types/src/index.ts',
+    '^@compliance-theater/types(/.*)$': '<rootDir>/../lib-types/src$1',
+    '^@compliance-theater/env(.*)$': '<rootDir>/../lib-env/src$1',
+    '^@compliance-theater/auth(.*)$': '<rootDir>/../lib-auth/src$1',
+    '^@compliance-theater/database(.*)$': '<rootDir>/../lib-database/src$1',
+    '^@compliance-theater/feature-flags(.*)$': '<rootDir>/../lib-feature-flags/src$1',
+    '^@compliance-theater/nextjs(.*)$': '<rootDir>/../lib-nextjs/src$1',
+    '^@compliance-theater/react(.*)$': '<rootDir>/../lib-react/src$1',
+    '^@compliance-theater/redis(.*)$': '<rootDir>/../lib-redis/src$1',
+    '^@compliance-theater/send-api-request(.*)$': '<rootDir>/../lib-send-api-request/src$1',
+    '^@compliance-theater/themes(.*)$': '<rootDir>/../lib-themes/src$1'
   },
   transform: {
     '^.+\\.(ts|tsx)$': [
@@ -355,50 +400,31 @@ const config = {
           jsx: 'react-jsx',
         },
       },
-    ],
+    ], 
   },
   transformIgnorePatterns: [
-    '<rootDir>/node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client))',
+    '<rootDir>/node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client|jose))',
+    '<rootDir>/.next',
+    '<rootDir>/.upstream',
+    '.upstream',
   ],
   collectCoverageFrom: [
     '**/*.{ts,tsx}',
-    '!**/*.d.ts',
+    '!**/*.d.ts', 
     '!__(tests|mocks)__/**/*.*',
-    '!dist/**/*.*',
+    '!tests/**/*.*', 
+    '!.next/**/*.*', 
+    '!.upstream/**/*.*', 
+    '!(rsc)/**/*.*',
+    '!dist/**/*.*', 
   ],
   coverageDirectory: '<rootDir>/coverage',
-  coverageReporters: ['json', 'lcov', 'text', 'clover'],
+  coverageReporters: ['json', 'lcov', 'text-summary', 'text', 'clover'],
   testTimeout: 1000,
   openHandlesTimeout: 1000,
+  passWithNoTests: true,
   clearMocks: true,
   resetMocks: false,
-};
-
-export default config;
-```
-
-For packages with React dependencies:
-
-```javascript
-const config = {
-  preset: 'ts-jest',
-  testEnvironment: 'jsdom',  // Changed from 'node'
-  testEnvironmentOptions: {
-    // Configure jsdom for React 19 concurrent features
-    features: {
-      FetchExternalResources: false,
-      ProcessExternalResources: false,
-    },
-  },
-  // ... rest same as above, but add React-specific mocks
-  moduleNameMapper: {
-    // CSS modules
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    // MUI icons mock
-    '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx',
-    // ... other mappings
-  },
-  // ... rest of config
 };
 
 export default config;
@@ -772,7 +798,8 @@ When creating a new package, verify:
 - [ ] Package directory created under `web-ui/packages/[package-name]/`
 - [ ] `package.json` with proper name, version, exports, and workspace dependencies
 - [ ] `tsconfig.json` extending base config with proper references
-- [ ] `jest.config.mjs` and shared config created
+- [ ] `__tests__/shared` and `__mocks__/shared` symlinks created
+- [ ] `jest.config.mjs` created and inheriting from shared symlinked base.
 - [ ] `src/index.ts` with organized exports
 - [ ] Implementation files in `src/`
 - [ ] Tests in `__tests__/`

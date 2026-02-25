@@ -9,9 +9,11 @@
   },
   "workspaces": [
     "web-ui",
-    "web-ui/packages/*"
+    "web-ui/packages/*",
+    "web-ui/submodules/json-viewer"
   ],
   "scripts": {
+    "add": "yarn workspace compliance-theater add ",
     "preinstall": "node scripts/validate-yarn.js",
     "changeset": "changeset",
     "changeset:status": "changeset status",
@@ -19,8 +21,8 @@
     "changeset:publish": "changeset publish",
     "release:version": "changeset version",
     "release:publish": "changeset publish",
-    "dev": "yarn workspace compliance-theater dev",
-    "debug": "yarn workspace compliance-theater debug",
+    "dev": "yarn workspace @compliance-theater/app dev",
+    "debug": "yarn workspace @compliance-theater/app debug",
     "build": "yarn workspace compliance-theater build",
     "build:typescript": "yarn workspace compliance-theater build:typescript",
     "build:publish": "yarn workspace compliance-theater build:publish",
@@ -49,7 +51,7 @@
     "typescript": "^5"
   },
   "resolutions": {
-    "@textea/json-viewer@npm:4.0.1": "patch:@textea/json-viewer@npm%3A4.0.1#./patches/@textea-json-viewer-npm-4.0.1.patch",
+    "@compliance-theater/json-viewer": "portal:./web-ui/submodules/json-viewer/dist/out",
     "jsx-ast-utils@npm:3.3.5": "patch:jsx-ast-utils@npm%3A3.3.5#./patches/jsx-ast-utils-npm-3.3.5.patch",
     "lodash-es@npm:^4.17.21": "npm:4.17.23",
     "@esbuild-kit/core-utils/esbuild": "^0.27.3",
@@ -61,7 +63,12 @@
     "jest": "^30.0.5",
     "ts-jest": "^29.4.6",
     "@types/node": "25.2.3",
-    "tough-cookie": "^6.0.0"
+    "tough-cookie": "^6.0.0",
+    "@tanstack/react-query": "5.90.21",
+    "@tanstack/react-query-devtools": "5.91.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-native": "0.84.0"
   },
   "overrides": {
     "uri-js": "npm:uri-js-replace",
@@ -74,10 +81,6 @@
         "whatwg-url": "12.0.1"
       }
     },
-    "@textea-json-viewer@4.0.1": {
-      "@mui/material": "npm:@mui-material-replace@7.3.6",
-      "react": "npm:react@19.2.0",
-      "react-dom": "npm:react-dom@19.2.0"
-    }
+    "@compliance-theater/json-viewer": "portal:./web-ui/submodules/json-viewer/dist/out"
   }
 }

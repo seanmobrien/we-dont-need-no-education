@@ -26,11 +26,11 @@
 
 'use client';
 
-import * as React from '@compliance-theater/types/react';
+import * as React from 'react';
 import Paper from '@mui/material/Paper';
 import Draggable from 'react-draggable';
 import { ResizableBox, ResizeHandle } from 'react-resizable';
-import { useCallback } from '@compliance-theater/types/react';
+import { useCallback } from 'react';
 import type {
   ResizeableDraggablePaperProps,
 } from './types';

@@ -1,5 +1,5 @@
 import type { Session, User as NextAuthUser } from '@compliance-theater/types/next-auth';
-import type { NextRequest } from '@compliance-theater/types/next/server';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 
 type NextAuthUserWithAccountId = NextAuthUser;
 type SessionWithAccountId = Session;
@@ -31,11 +31,11 @@ export interface AccessTokenOrRequestOverloads<TRet> {
   /**
    * Accepts a request.
    */
-  (request: NextRequest | undefined): Promise<TRet | undefined>;
+  (request: LikeNextRequest | undefined): Promise<TRet | undefined>;
   /**
    * Accepts a request or access token.
    */
-  (requestOrBearerToken: NextRequest | string | undefined): Promise<TRet | undefined>;
+  (requestOrBearerToken: LikeNextRequest | string | undefined): Promise<TRet | undefined>;
 }
 
 /**
@@ -49,11 +49,11 @@ export interface AccessTokenOrRequestOverloadsExt extends AccessTokenOrRequestOv
   /**
    * Accepts a request and options for normalizing an access token and user id.
    */
-  (request: NextRequest | undefined, options?: NormalizeAccessTokenOptions): Promise<NormalizedAccessToken | undefined>;
+  (request: LikeNextRequest | undefined, options?: NormalizeAccessTokenOptions): Promise<NormalizedAccessToken | undefined>;
   /**
    * Accepts a request or access token and options for normalizing an access token and user id.
    */
-  (requestOrBearerToken: NextRequest | string | undefined, options?: NormalizeAccessTokenOptions): Promise<NormalizedAccessToken | undefined>;
+  (requestOrBearerToken: LikeNextRequest | string | undefined, options?: NormalizeAccessTokenOptions): Promise<NormalizedAccessToken | undefined>;
 }
 
 
@@ -68,8 +68,8 @@ export type RequestWithAccessTokenCache = {
 };
 
 export interface RequestWithAccessTokenOverloads {
-  (req: NextRequest): string | undefined;
-  (req: NextRequest, value: RequestWithAccessTokenCache): NextRequest;
+  (req: LikeNextRequest): string | undefined;
+  (req: LikeNextRequest, value: RequestWithAccessTokenCache): LikeNextRequest;
 }
 
 

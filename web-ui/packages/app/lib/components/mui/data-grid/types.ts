@@ -1,5 +1,5 @@
 import { PaginationStats } from '@/data-models/_types';
-import type { LikeNextRequest } from '@compliance-theater/nextjs/types';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 export type { LikeNextRequest };
 import type { FirstParameter } from '@compliance-theater/typescript';
 import type {
@@ -9,7 +9,7 @@ import type {
   DataGridProProps,
   GridGetRowsResponse,
 } from '@mui/x-data-grid-pro';
-import type { Dispatch, SetStateAction } from '@compliance-theater/types/react';
+import type { Dispatch, SetStateAction } from 'react';
 
 /**
  * Extends the `GridDataSource` type by adding an optional error handler.
@@ -246,10 +246,10 @@ export type CancelledFetchGridRowsResponse = GridGetRowsResponse & {
   cancelled?: true;
   rowCount?: never;
   pageInfo?:
-    | {
-        hasNextPage: true;
-      }
-    | undefined;
+  | {
+    hasNextPage: true;
+  }
+  | undefined;
 };
 
 /**
@@ -263,6 +263,6 @@ export type CancelledFetchGridRowsResponse = GridGetRowsResponse & {
  */
 export type FetchGridRowsResponse =
   | (GridGetRowsResponse & {
-      cancelled?: never;
-    })
+    cancelled?: never;
+  })
   | CancelledFetchGridRowsResponse;

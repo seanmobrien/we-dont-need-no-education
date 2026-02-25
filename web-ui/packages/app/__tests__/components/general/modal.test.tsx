@@ -1,10 +1,10 @@
  
-import React from '@compliance-theater/types/react';
-import { render } from '@/__tests__/shared/test-utils';
-import Modal from '@/components/general/modal';
+import React from 'react';
+import { render } from '../../shared/test-utils';
+import Modal from '../../../components/general/modal';
 
 // Mock portal rendering
-jest.mock('@compliance-theater/types/react-dom', () => ({
+jest.mock('react-dom', () => ({
   ...jest.requireActual('react-dom'),
   createPortal: (children: React.ReactNode) => children,
 }));

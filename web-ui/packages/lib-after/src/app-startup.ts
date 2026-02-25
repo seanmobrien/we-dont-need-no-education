@@ -1,5 +1,10 @@
 import { log, safeSerialize, LoggedError, singletonProviderFactory } from '@compliance-theater/logger';
 import AfterManager from './index';
+import {
+  setState as setAppStartupState,
+  state as getAppStartupState,
+} from './app-startup-state';
+import type { AppStartupState } from './app-startup-state';
 
 /**
  * The state of the application startup process.
@@ -10,12 +15,7 @@ import AfterManager from './index';
  * - 'teardown': The application startup process is in the process of being torn down.
  * - 'done': The application startup process has completed and is no longer active.
  */
-export type AppStartupState =
-  | 'pending'
-  | 'initializing'
-  | 'ready'
-  | 'teardown'
-  | 'done';
+export type { AppStartupState } from './app-startup-state';
 
 /**
  * Type for an initialization function that can be registered with AppStartup.
@@ -37,20 +37,20 @@ export interface AppStartupConfig {
    * Array of module paths to check for initAppStartup exports.
    * Each module should export an `initAppStartup` function that returns Promise<void>.
    * 
-   * Example: ['@/lib/error-monitoring', '@/lib/ai']
+  * Example: ['@compliance-theater/logger/errors/monitoring', '@/lib/ai']
    */
   initializerModules?: string[];
-  
+
   /**
    * Direct initializer functions to run (in addition to discovered ones).
    */
   initializers?: InitializerFunction[];
-  
+
   /**
    * Direct teardown functions to run.
    */
   teardownHandlers?: TeardownFunction[];
-  
+
   /**
    * Singleton key for the AppStartup instance.
    * Defaults to '@noeducation/app-startup'
@@ -63,21 +63,20 @@ export interface AppStartupConfig {
  * Supports late-bound initializer loading to avoid circular dependencies.
  */
 export class AppStartup {
-  #state: AppStartupState;
   #pending: Promise<void> | undefined;
   #config: AppStartupConfig;
   #initializers: InitializerFunction[] = [];
   #teardownHandlers: TeardownFunction[] = [];
 
   constructor(config: AppStartupConfig = {}) {
-    this.#state = 'pending';
     this.#config = config;
-    
+    setAppStartupState('pending');
+
     // Add direct initializers if provided
     if (config.initializers) {
       this.#initializers.push(...config.initializers);
     }
-    
+
     // Add direct teardown handlers if provided
     if (config.teardownHandlers) {
       this.#teardownHandlers.push(...config.teardownHandlers);
@@ -85,13 +84,13 @@ export class AppStartup {
   }
 
   get state(): AppStartupState {
-    return this.#state;
+    return getAppStartupState();
   }
 
   getStateAsync(): Promise<AppStartupState> {
     return this.#pending
-      ? this.#pending.then(() => this.#state)
-      : Promise.resolve(this.#state);
+      ? this.#pending.then(() => getAppStartupState())
+      : Promise.resolve(getAppStartupState());
   }
 
   /**
@@ -107,7 +106,7 @@ export class AppStartup {
       try {
         // Use dynamic import with require to avoid circular dependencies
         const module = await import(modulePath);
-        
+
         if (module && typeof module.initAppStartup === 'function') {
           this.#initializers.push(module.initAppStartup);
         }
@@ -126,19 +125,19 @@ export class AppStartup {
    */
   initialize(): Promise<void> {
     // Guard against multiple initializations
-    if (this.#state !== 'pending') {
+    if (getAppStartupState() !== 'pending') {
       return this.#pending ?? Promise.resolve();
     }
 
     this.#pending = (async () => {
-      this.#state = 'initializing';
+      setAppStartupState('initializing');
       try {
         // First, discover any late-bound initializers
         await this.#discoverInitializers();
 
         // Determine environment-specific initializers
         const isNodeEnv = typeof window === 'undefined' && process.env.NEXT_RUNTIME === 'nodejs';
-        
+
         // Run all initializers in parallel
         const allPendingInitializers = await Promise.allSettled(
           this.#initializers.map((init) => init())
@@ -157,9 +156,9 @@ export class AppStartup {
           );
         }
 
-        this.#state = 'ready';
+        setAppStartupState('ready');
       } catch (e) {
-        this.#state = 'done';
+        setAppStartupState('done');
         throw LoggedError.isTurtlesAllTheWayDownBaby(e, {
           source: 'app-startup',
           log: true,
@@ -176,24 +175,24 @@ export class AppStartup {
    * Tear down the application by running all registered teardown handlers.
    */
   teardown(): Promise<void> {
-    switch (this.#state) {
+    switch (getAppStartupState()) {
       case 'pending':
       case 'initializing':
         throw new Error('App startup is not ready to be torn down.');
       case 'ready':
         this.#pending = (async () => {
-          this.#state = 'teardown';
+          setAppStartupState('teardown');
           try {
             // Run all teardown handlers in parallel
             await Promise.allSettled(
               this.#teardownHandlers.map((handler) => handler())
             );
-            this.#state = 'done';
+            setAppStartupState('done');
           } catch (e) {
             log((l) =>
               l.error(`Failed to teardown app startup ${safeSerialize(e)}`)
             );
-            this.#state = 'done';
+            setAppStartupState('done');
             throw e;
           } finally {
             this.#pending = undefined;
@@ -224,7 +223,7 @@ export class AppStartup {
     if (!singletonProvider) { throw new Error('Singleton provider is not available'); }
     return singletonProvider.getOrCreate(singletonKey, () => {
       const instance = new AppStartup(config);
-      
+
       // Initialize app startup
       instance.initialize().then(() => {
         log((l) => l.info('App startup successfully completed.'));
@@ -253,20 +252,14 @@ export class AppStartup {
  */
 export const createStartupAccessors = (config: AppStartupConfig = {}) => {
   const getInstance = () => singletonProviderFactory()?.getOrCreate(config.singletonKey || '@noeducation/app-startup', () => AppStartup.createInstance(config))!;
-  
+
   return {
     /**
      * Get the current application startup state asynchronously.
      * @returns Promise that resolves to the current state
      */
     startup: (): Promise<AppStartupState> => getInstance().getStateAsync(),
-    
-    /**
-     * Get the current application startup state synchronously.
-     * @returns The current state
-     */
-    state: () => getInstance().state,
-    
+
     /**
      * Get the AppStartup instance.
      * @returns The singleton instance

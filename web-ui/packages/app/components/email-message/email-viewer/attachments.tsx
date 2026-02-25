@@ -15,7 +15,7 @@ import { useEmailAttachmentsQuery } from "./hooks";
 import { LoadingAttachments } from "./loading";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
-import React from "@compliance-theater/types/react";
+import React from "react";
 import { RenderFallbackFromBoundary } from "../../error-boundaries/render-fallback-from-boundary";
 import { EmailAttachment } from "./types";
 

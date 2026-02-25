@@ -1,7 +1,7 @@
 /**
  * @fileoverview Type guard declarations for AI core types.
  *
- * @module @compliance-theater/types/ai/core/guards
+ * @module @compliance-theater/types/lib/ai/core/guards
  *
  * Provides ambient type declarations for runtime type guard functions that validate
  * and narrow types for AI core message types, model identifiers, and provider types.
@@ -25,7 +25,7 @@
  * import {
  *   isAnnotatedRetryMessage,
  *   isAiLanguageModelType,
- * } from '@compliance-theater/types/ai/core';
+ * } from '@compliance-theater/types/lib/ai/core';
  *
  * // Validate and narrow message type
  * if (isAnnotatedRetryMessage(response)) {
@@ -54,7 +54,7 @@ import type {
   AiProviderType,
 } from "./types";
 
-declare module "@compliance-theater/types/ai/core" {
+declare module "@compliance-theater/types/lib/ai/core" {
   /**
    * Type guard to validate that a value is an `AnnotatedErrorMessageBase`.
    *

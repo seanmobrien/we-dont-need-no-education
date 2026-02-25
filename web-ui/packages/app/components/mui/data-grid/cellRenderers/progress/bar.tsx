@@ -1,5 +1,5 @@
 import { styled } from '@mui/material/styles';
-import { PropsWithChildren, HTMLAttributes } from '@compliance-theater/types/react';
+import { PropsWithChildren, HTMLAttributes } from 'react';
 
 const Bar = ({
   children,

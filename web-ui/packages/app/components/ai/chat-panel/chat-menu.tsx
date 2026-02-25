@@ -11,7 +11,7 @@ import {
   useCallback,
   useState,
   useMemo,
-} from '@compliance-theater/types/react';
+} from 'react';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import DockIcon from '@mui/icons-material/Dock';

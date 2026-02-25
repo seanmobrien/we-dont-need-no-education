@@ -1,4 +1,4 @@
-import type { NextConfig } from '@compliance-theater/types/next';
+import type { NextConfig } from 'next';
 import type { NextConfigPlugin } from './types';
 
 export const withWorkspaceSourceImports: NextConfigPlugin = <
@@ -21,6 +21,6 @@ export const withWorkspaceSourceImports: NextConfigPlugin = <
         ...(config.resolve.conditionNames ?? ['...']),
       ];
       return config;
-    }) as NextConfig['webpack'],
+    }) satisfies NextConfig['webpack'],
   } as TArg;
 };

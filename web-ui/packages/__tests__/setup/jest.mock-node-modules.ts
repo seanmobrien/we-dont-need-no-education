@@ -1,4 +1,4 @@
-import { createElement } from '@compliance-theater/types/react';
+import { createElement } from 'react';
 import { withJestTestExtensions } from '../jest.test-extensions';
 
 const safeMock = (moduleName: string, factory?: () => unknown): void => {
@@ -23,7 +23,7 @@ safeMock('postgres', () => {
 });
 
 // Mock Next.js router
-safeMock('@compliance-theater/types/next/navigation', () => ({
+safeMock('next/navigation', () => ({
   useRouter: jest.fn(() => ({
     push: jest.fn(),
     replace: jest.fn(),

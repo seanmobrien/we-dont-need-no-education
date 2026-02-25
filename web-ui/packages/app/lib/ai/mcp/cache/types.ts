@@ -1,4 +1,4 @@
-import { ToolSet } from 'ai';
+import { ToolSet } from '@compliance-theater/types/ai-sdk';
 
 /**
  * Cache entry structure for MCP tools

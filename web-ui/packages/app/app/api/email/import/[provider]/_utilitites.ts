@@ -9,10 +9,11 @@ import {
   MessageImportStatus,
 } from '@/data-models/api/import/email-message';
 import { query } from '@compliance-theater/database/driver';
-import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { googleProviderFactory } from './_googleProviderFactory';
 import { isError, LoggedError } from '@compliance-theater/logger';
 import { auth } from '@compliance-theater/auth';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import {
   GmailEmailMessageHeader,
   GmailEmailMessagePart,
@@ -21,7 +22,7 @@ import {
 } from '@/data-models/api/import/provider-google';
 import { MailQueryBuilder } from './_mailQueryBuilder';
 import { ParsedHeaderMap } from '@/lib/email/parsedHeaderMap';
-import { NextApiRequest } from '@compliance-theater/types/next/types';
+import { NextApiRequest } from 'next/types';
 
 /**
  * Parses pagination statistics from a URL or URLSearchParams object.
@@ -357,14 +358,14 @@ const getCurrentState = async ({
 
 interface GetImportMessageSourceOverloads {
   (params: {
-    req: NextRequest | NextApiRequest;
+    req: LikeNextRequest | NextApiRequest;
     provider?: string;
     emailId?: string;
     refresh?: boolean;
     errorFilter: ErrorFilter;
   }): Promise<NextResponse | ImportSourceMessage | null>;
   (params: {
-    req: NextRequest | NextApiRequest;
+    req: LikeNextRequest | NextApiRequest;
     provider?: string;
     emailId?: string;
     refresh?: boolean;
@@ -393,7 +394,7 @@ export const getImportMessageSource: GetImportMessageSourceOverloads = async ({
   refresh = false,
   errorFilter,
 }: {
-  req: NextRequest | NextApiRequest;
+  req: LikeNextRequest | NextApiRequest;
   provider?: string;
   emailId?: string;
   refresh?: boolean;

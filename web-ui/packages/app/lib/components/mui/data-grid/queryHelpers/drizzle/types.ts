@@ -1,10 +1,10 @@
-import type { LikeNextRequest } from '@compliance-theater/nextjs/types';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import type {
   GridFilterModel,
   GridFilterItem,
   GridSortModel,
 } from '@mui/x-data-grid-pro';
-import type { NextRequest } from '@compliance-theater/types/next/server';
+import type { NextRequest } from 'next/server';
 import type { ColumnBaseConfig, AnyPgSelect, PgColumn } from '@compliance-theater/database/orm';
 import type { SQL } from '@compliance-theater/database/drizzle-orm';
 
@@ -136,8 +136,8 @@ export type BuildDrizzleAttachmentOrEmailFilterProps = {
    * The Drizzle column object for the document ID field.
    */
   document_id_column:
-    | PgColumn<ColumnBaseConfig<'number', 'PgInteger'>, object, object>
-    | SQL.Aliased<number>;
+  | PgColumn<ColumnBaseConfig<'number', 'PgInteger'>, object, object>
+  | SQL.Aliased<number>;
 
   /**
    * Function that returns a SQL expression for email_to_document_id conversion.

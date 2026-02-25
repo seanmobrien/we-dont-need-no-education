@@ -5,11 +5,11 @@ import IconButton from '@mui/material/IconButton';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
-import { useCallback, useState } from '@compliance-theater/types/react';
+import { useCallback, useState } from 'react';
 import { signResponse } from '@/lib/ai/client/confirmation';
 import { LoggedError } from '@compliance-theater/logger';
 import { useNotifications } from '@toolpad/core/useNotifications';
-import { DynamicToolUIPart, ToolUIPart, UITools } from 'ai';
+import { DynamicToolUIPart, ToolUIPart, UITools } from '@compliance-theater/types/ai-sdk';
 
 const ShowToolCall = ({
   toolName,

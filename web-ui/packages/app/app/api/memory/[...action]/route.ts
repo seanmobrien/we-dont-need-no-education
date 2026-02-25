@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@compliance-theater/auth';
 import { isSessionActive } from '@compliance-theater/auth/lib/utilities';
 import { memoryClientFactory } from '@/lib/ai/mem0';

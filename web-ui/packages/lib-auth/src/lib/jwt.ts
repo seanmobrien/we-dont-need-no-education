@@ -77,7 +77,10 @@ export const jwt = async ({
     //
     // Note: `account_id` is treated as non-sensitive application metadata.
     if ('account_id' in user && !!user.account_id) {
-      token.account_id = user.account_id;
+      token.account_id =
+        typeof user.account_id === 'number'
+          ? user.account_id
+          : Number(user.account_id);
     }
 
     if (account?.access_token) {

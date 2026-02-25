@@ -2,9 +2,10 @@
  * @fileoverview Tests for the chat panel floating functionality
  */
 
-import React from '@compliance-theater/types/react';
-import { render, screen, fireEvent, waitFor } from '@/__tests__/shared/test-utils';
-import { ChatPanel } from '@/components/ai/chat-panel';
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '../../../shared/test-utils';
+import { ChatPanel } from '../../../../components/ai/chat-panel';
+import ChatPanelProvider from '../../../../components/ai/chat-panel/chat-panel-provider';
 
 // Mock the dependencies
 jest.mock('@ai-sdk/react', () => ({
@@ -20,12 +21,12 @@ jest.mock('@ai-sdk/react', () => ({
   }),
 }));
 
-jest.mock('@/lib/ai/core', () => ({
+jest.mock('@compliance-theater/types/lib/ai/core', () => ({
   generateChatId: () => ({ id: 'test-id' }),
   isAnnotatedRetryMessage: () => false,
 }));
 
-jest.mock('@/lib/components/ai/chat-fetch-wrapper', () => ({
+jest.mock('../../../../lib/components/ai/chat-fetch-wrapper', () => ({
   useChatFetchWrapper: jest.fn(() => ({ chatFetch: jest.fn() })),
 }));
 
@@ -61,7 +62,7 @@ describe('ChatPanel Float Functionality', () => {
 
   it('switches to floating mode when Float is clicked', async () => {
     render(<ChatPanel page="test" />, {
-      chatPanel: true,
+      chatPanel: ChatPanelProvider,
     });
 
     // Find and click the menu button

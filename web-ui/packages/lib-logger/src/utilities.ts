@@ -1,35 +1,11 @@
+import { deprecate } from "@compliance-theater/types/deprecate";
+import { getStackTrace as getStackTraceBase } from "@compliance-theater/types/get-stack-trace";
+
 // Simple stack trace helper to avoid external dependencies
-export const getStackTrace = ({
-  skip = 1,
-  max,
-  myCodeOnly = true,
-}: { skip?: number; max?: number; myCodeOnly?: boolean } = {}): string => {
-  const originalStackFrames = new Error().stack?.split('\n') ?? [];
-  let stackFrames = [...originalStackFrames];
-  if (myCodeOnly && stackFrames) {
-    const mustNotInclude = [
-      'node_modules',
-      'internal/',
-      'bootstrap_node.js',
-      'webpack-runtime',
-    ];
-    stackFrames = stackFrames
-      .filter(
-        (frame, idx, arr) =>
-          frame.trim().length > 0 &&
-          (idx === arr.length - 1 ||
-            idx === 0 ||
-            mustNotInclude.every((x) => !frame.includes(x))),
-      )
-      .map((f) => f.trim());
-    if (!stackFrames.length && originalStackFrames.length) {
-      stackFrames = originalStackFrames;
-    }
-  }
-  return stackFrames?.length
-    ? stackFrames.slice(skip ?? 1, max).join('\n')
-    : '';
-};
+export const getStackTrace = deprecate(getStackTraceBase,
+  'Use getStackTrace from @compliance-theater/types instead',
+  'DEP004'
+);
 
 export type DbError = Error & {
   code: number;
@@ -108,7 +84,7 @@ export const errorLogFactory: (props: {
     if (isErrorLike(error)) {
       const stack =
         typeof error['stack'] === 'string'
-          ? (error['stack']?.toString() ?? getStackTrace({ skip: 2 }))
+          ? (error['stack']?.toString() ?? getStackTraceBase({ skip: 2 }))
           : '';
       const message = messageFromProps
         ? `${messageFromProps}: ${error['message']?.toString() ?? defaultError}`

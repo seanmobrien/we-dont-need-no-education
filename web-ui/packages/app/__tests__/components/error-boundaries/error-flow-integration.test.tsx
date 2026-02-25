@@ -2,25 +2,24 @@
  * @jest-environment jsdom
  */
 
-import React from '@compliance-theater/types/react';
-import { render, waitFor, act } from '@testing-library/react';
+import React from 'react';
+import { render, waitFor, act,hideConsoleOutput } from '../../shared/test-utils';
 // import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
-import { ClientErrorManager } from '@/components/error-boundaries/ClientErrorManager';
-import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/render-fallback';
+import { ClientErrorManager } from '../../../components/error-boundaries/ClientErrorManager';
+import { RenderErrorBoundaryFallback } from '../../../components/error-boundaries/render-fallback';
 import {
   errorReporter,
   ErrorSeverity,
   ErrorReporterInterface,
-} from '@/lib/error-monitoring';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
-import { RenderFallbackFromBoundary } from '@/components/error-boundaries';
+} from '@compliance-theater/logger/errors/monitoring';
+import { RenderFallbackFromBoundary } from '../../../components/error-boundaries';
 
 // Mock the error reporter and recovery strategies
 /*
-jest.mock('@/lib/error-monitoring', () => {
-  const originalModule = jest.requireActual('@/lib/error-monitoring');
+jest.mock('@compliance-theater/logger/errors/monitoring', () => {
+  const originalModule = jest.requireActual('@compliance-theater/logger/errors/monitoring');
   const mockErrorReporter = jest.fn();
   return {
     ...originalModule,
@@ -32,18 +31,18 @@ jest.mock('@/lib/error-monitoring', () => {
 
 const mockReload = jest.fn();
 
-jest.mock('@/lib/error-monitoring/recovery-strategies', () => ({
+jest.mock('@compliance-theater/logger/errors/monitoring/recovery-strategies', () => ({
   getRecoveryActions: jest.fn(),
   getDefaultRecoveryAction: jest.fn(),
   classifyError: jest.fn(),
 }));
 
 const mockGetRecoveryActions =
-  require('/lib/error-monitoring/recovery-strategies').getRecoveryActions;
+  require('@compliance-theater/logger/errors/monitoring/recovery-strategies').getRecoveryActions;
 const mockGetDefaultRecoveryAction =
-  require('/lib/error-monitoring/recovery-strategies').getDefaultRecoveryAction;
+  require('@compliance-theater/logger/errors/monitoring/recovery-strategies').getDefaultRecoveryAction;
 const mockClassifyError =
-  require('/lib/error-monitoring/recovery-strategies').classifyError;
+  require('@compliance-theater/logger/errors/monitoring/recovery-strategies').classifyError;
 
 // Mock window methods
 const mockAlert = jest.fn();
@@ -108,7 +107,13 @@ describe('Error Flow Integration Tests', () => {
   let mockErrorReporter: jest.Mocked<ErrorReporterInterface>;
   beforeEach(() => {
     mockErrorReporter = errorReporter() as jest.Mocked<ErrorReporterInterface>;
-    // jest.clearAllMocks();
+    mockReload.mockClear();
+    mockAlert.mockClear();
+    mockClassifyError.mockClear();
+    mockGetRecoveryActions.mockClear();
+    mockGetDefaultRecoveryAction.mockClear();
+    mockErrorReporter.reportError.mockClear();
+    mockErrorReporter.reportBoundaryError.mockClear();
     // Default mock implementations
     mockClassifyError.mockReturnValue('network');
     mockGetRecoveryActions.mockReturnValue([
@@ -207,6 +212,30 @@ describe('Error Flow Integration Tests', () => {
 });
 
 describe('Performance and Memory Management', () => {
+  type EventListenerState = {
+    'addEventListener'?: typeof window.addEventListener;
+    'removeEventListener'?: typeof window.removeEventListener;
+  };
+  let eventListenerState: EventListenerState = {};
+
+  beforeEach(() => {
+    eventListenerState.addEventListener = window.addEventListener;
+    eventListenerState.removeEventListener = window.removeEventListener;
+    window.addEventListener = jest.fn();
+    window.removeEventListener = jest.fn();
+  });
+  
+  afterEach(() => {
+    const restoreIt = (method: 'addEventListener' | 'removeEventListener') => {
+      if (jest.isMockFunction(window[method])) {
+        window[method].mockRestore();
+      }      
+      window[method] = eventListenerState[method] ?? window[method];
+    }
+    restoreIt('addEventListener');
+    restoreIt('removeEventListener');
+  });
+
   it('should clean up event listeners on unmount', () => {
     consoleSpy.setup();
     const { unmount } = render(
@@ -255,13 +284,14 @@ describe('Performance and Memory Management', () => {
       );
     }
 
-    // Should only have one set of listeners
-    const addCalls = (window.addEventListener as jest.Mock).mock.calls;
-    const errorHandlerCalls = addCalls.filter((call) => call[0] === 'error');
-
-    // Due to the initialization check, should only add listeners once
-    expect(errorHandlerCalls.length).toBeLessThanOrEqual(5);
-
     unmount();
+
+    const addCalls = (window.addEventListener as jest.Mock).mock.calls;
+    const removeCalls = (window.removeEventListener as jest.Mock).mock.calls;
+    const errorAddCalls = addCalls.filter((call) => call[0] === 'error');
+    const errorRemoveCalls = removeCalls.filter((call) => call[0] === 'error');
+
+    // Ensure all registered listeners are cleaned up
+    expect(errorRemoveCalls.length).toBe(errorAddCalls.length);
   });
 });

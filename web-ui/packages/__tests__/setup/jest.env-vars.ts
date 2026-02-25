@@ -5,7 +5,7 @@ type NextPublicEnvVariables<TSource> = {
 };
 
 import { __clearEnvCacheForTests } from '@compliance-theater/env';
-import { SingletonProvider } from '@compliance-theater/typescript';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 
 export class MockEnvVarProvider<
   TSource extends Record<string, string | undefined>,

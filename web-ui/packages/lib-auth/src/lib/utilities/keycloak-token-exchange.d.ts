@@ -1,5 +1,5 @@
-import type { NextApiRequest } from '@compliance-theater/types/next';
-import type { NextRequest } from '@compliance-theater/types/next/server';
+import type { NextApiRequest } from 'next';
+import type { NextRequest } from 'next/server';
 import type { KeycloakConfig, TokenExchangeParams, TokenExchangeResponse, GoogleTokens } from './token-exchange-types';
 
 declare module '@compliance-theater/auth/lib/utilities/keycloak-token-exchange' {

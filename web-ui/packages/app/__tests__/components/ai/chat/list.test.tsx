@@ -1,10 +1,10 @@
-import { render, screen, waitFor } from '@/__tests__/shared/test-utils';
-import ChatList from '@/components/ai/chat/list';
+import { render, screen, waitFor } from '../../../shared/test-utils';
+import ChatList from '../../../../components/ai/chat/list';
 import { fetch } from '@compliance-theater/nextjs/fetch';
 
 // Mock the router
 const mockPush = jest.fn();
-jest.mock('@compliance-theater/types/next/navigation', () => ({
+jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
     back: jest.fn(),
@@ -16,7 +16,7 @@ jest.mock('@compliance-theater/types/next/navigation', () => ({
 }));
 
 // Mock the ServerBoundDataGrid component to avoid validation issues
-jest.mock('@/components/mui/data-grid/server-bound-data-grid', () => ({
+jest.mock('../../../../components/mui/data-grid/server-bound-data-grid', () => ({
   ServerBoundDataGrid: ({ url, columns, onRowDoubleClick, ...props }: any) => (
     <div data-testid="server-bound-data-grid" data-url={url} role="grid">
       <div>Mock Data Grid</div>
@@ -30,7 +30,7 @@ jest.mock('@/components/mui/data-grid/server-bound-data-grid', () => ({
 }));
 
 // Mock the siteMap
-jest.mock('@/lib/site-util/url-builder', () => ({
+jest.mock('../../../../lib/site-util/url-builder', () => ({
   __esModule: true,
   default: {
     api: {

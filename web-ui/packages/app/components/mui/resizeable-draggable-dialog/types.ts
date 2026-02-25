@@ -16,7 +16,7 @@
 
 import { DialogProps } from '@mui/material/Dialog';
 import { PaperProps } from '@mui/material/Paper';
-import React, { JSX, PropsWithChildren } from '@compliance-theater/types/react';
+import React, { JSX, PropsWithChildren } from 'react';
 import DialogAction from '@mui/material/DialogActions';
 import { FirstParameter } from '@compliance-theater/typescript';
 type DialogActionProps = FirstParameter<typeof DialogAction>;

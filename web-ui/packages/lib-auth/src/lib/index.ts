@@ -1,7 +1,7 @@
 // Auth library exports
 export { setupKeyCloakProvider } from './keycloak-provider';
 export { authorized } from './authorized';
-export { setupDrizzleAdapter } from './drizzle-adapter';
+// export { setupDrizzleAdapter } from './drizzle-adapter';
 
 // JWT and session
 export { jwt } from './jwt';
@@ -18,14 +18,6 @@ export { redirect as redirectCallback } from './redirect';
 // Token management
 export * from './access-token';
 export * from './refresh-token';
-
-// Impersonation
-export * from './impersonation';
-
-// Resources and authorization
-export * from './resources/authorization-service';
-export * from './resources/resource-service';
-export * from './resources/case-file';
 
 // Utilities
 export * from './utilities';

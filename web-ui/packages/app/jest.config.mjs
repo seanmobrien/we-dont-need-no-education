@@ -20,6 +20,9 @@ const config = {
   ], // Setup file for global imports
   moduleNameMapper: {
     '^@compliance-theater/auth/lib/utilities$': '<rootDir>/../lib-auth/src/lib/utilities/index.ts',
+    '^@compliance-theater/typescript-viewer(.*)$': '<rootDir>/__mocks__/shared/typescript-viewer.tsx',
+    '^@compliance-theater/types/ai-sdk$': '<rootDir>/../lib-types/src/ai-sdk/index.ts',
+    '^@compliance-theater/types/ai-sdk/(.*)$': '<rootDir>/../lib-types/src/ai-sdk/$1',
     ...(baseConfig.moduleNameMapper ?? {}),
     '^got$': '<rootDir>/__mocks__/got.ts',
     '^@/__tests__/test-utils$': '<rootDir>/__tests__/shared/test-utils.tsx',
@@ -34,6 +37,7 @@ const config = {
     '^@/lib/site-util/auth$': '<rootDir>/../lib-auth/src/lib/utilities/index.ts',
     '^@compliance-theater/auth/components/session-provider/(.*)$': '<rootDir>/../lib-auth/src/components/session-provider/$1',
     '^@compliance-theater/auth/components/key-refresh-notify/(.*)$': '<rootDir>/../lib-auth/src/components/key-refresh-notify/$1',
+    '^next/navigation$': '<rootDir>/__mocks__/next-navigation.ts',
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports    
   },
 };

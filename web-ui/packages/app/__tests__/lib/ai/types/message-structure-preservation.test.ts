@@ -1,22 +1,23 @@
- 
+
 /**
  * @fileoverview Tests for message structure preservation interface and utilities
  */
 
-import { UIMessage } from 'ai';
+import { UIMessage } from '@compliance-theater/types/ai-sdk';
 import {
   MessageStructureOptions,
   createMessageStructureOptions,
   isPreservationEnabled,
   hasMessageStructureOptions,
-} from '@/lib/ai/types/message-structure-preservation';
+} from '@compliance-theater/types/lib/ai/message-structure-preservation';
+
 import {
   preserveMessageStructure,
   validateMessageStructureOptions,
   createPresetConfiguration,
   clearPreservationCache,
   getPreservationCacheStats,
-} from '@/lib/ai/utils/message-structure-preservation';
+} from '@compliance-theater/types/lib/ai/message-structure-preservation';
 
 describe('Message Structure Preservation Interface', () => {
   describe('MessageStructureOptions Interface', () => {

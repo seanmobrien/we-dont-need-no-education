@@ -1,4 +1,4 @@
-import type { LikeNextRequest } from '@compliance-theater/nextjs/types';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import type {
   GridFilterModel,
   GridFilterItem,

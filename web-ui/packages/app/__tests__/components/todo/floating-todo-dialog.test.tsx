@@ -2,11 +2,10 @@
  * @jest-environment jsdom
  */
 
-import React from '@compliance-theater/types/react';
-import { render, screen, fireEvent, waitFor } from '@/__tests__/shared/test-utils';
-import '@testing-library/jest-dom';
-import { FloatingTodoDialog } from '@/components/todo/floating-todo-dialog';
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '../../shared/test-utils'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { FloatingTodoDialog } from '../../../components/todo/floating-todo-dialog';
 
 // Mock Draggable and ResizableBox components
 jest.mock('react-draggable', () => ({
@@ -23,12 +22,12 @@ jest.mock('react-resizable', () => ({
 }));
 
 // Mock the hooks
-jest.mock('@/lib/hooks/use-todo', () => ({
+jest.mock('../../../lib/hooks/use-todo', () => ({
   useTodoList: jest.fn(),
   useToggleTodo: jest.fn(),
 }));
 
-import { useTodoList, useToggleTodo } from '@/lib/hooks/use-todo';
+import { useTodoList, useToggleTodo } from '../../../lib/hooks/use-todo';
 
 describe('FloatingTodoDialog', () => {
   const mockOnClose = jest.fn();

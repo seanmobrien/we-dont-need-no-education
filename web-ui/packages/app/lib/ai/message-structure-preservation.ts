@@ -29,7 +29,7 @@ export type {
   ContextualPreservationOptions,
   PerformanceOptions,
   PartialMessageStructureOptions,
-} from './types/message-structure-preservation';
+} from '@compliance-theater/types/lib/ai/message-structure-preservation';
 
 // Type guards and factory functions
 export {
@@ -37,15 +37,15 @@ export {
   isPreservationEnabled,
   hasMessageStructureOptions,
   DEFAULT_MESSAGE_STRUCTURE_OPTIONS,
-} from './types/message-structure-preservation';
-
-// Utility functions
-export {
   preserveMessageStructure,
   validateMessageStructureOptions,
   createPresetConfiguration,
   clearPreservationCache,
   getPreservationCacheStats,
+} from '@compliance-theater/types/lib/ai/message-structure-preservation';
+
+// Utility functions
+export {
 } from './utils/message-structure-preservation';
 
 /**

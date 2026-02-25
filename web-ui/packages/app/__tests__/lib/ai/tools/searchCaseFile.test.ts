@@ -1,6 +1,6 @@
 /* @jest-environment node */
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+import { setupImpersonationMock } from '../../../jest.mock-impersonation';
 
 setupImpersonationMock();
 
@@ -11,13 +11,13 @@ jest.mock('@compliance-theater/logger', () => ({
   },
   isError: jest.fn((error: any) => error instanceof Error),
 }));
-jest.mock('@/lib/ai/services/search');
+jest.mock('../../../../lib/ai/services/search');
 
-import { localSearchCaseFile } from '@/lib/ai/tools/searchCaseFile';
+import { localSearchCaseFile } from '../../../../lib/ai/tools/searchCaseFile';
 import {
   HybridDocumentSearch,
   hybridDocumentSearchFactory,
-} from '@/lib/ai/services/search';
+} from '../../../../lib/ai/services/search';
 
 import { log, LoggedError } from '@compliance-theater/logger';
 

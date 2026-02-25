@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+import { setupImpersonationMock } from '../../../jest.mock-impersonation';
 
 setupImpersonationMock();
 
@@ -26,7 +26,7 @@ jest.mock('@compliance-theater/react/utility-methods', () => {
   };
 });
 
-jest.mock('@/lib/ai/mcp/cache', () => {
+jest.mock('../../../../lib/ai/mcp/cache', () => {
   const mock = {
     getCachedTools: mockGetCachedTools,
     setCachedTools: async () => Promise.resolve(),
@@ -53,10 +53,10 @@ jest.mock('@ai-sdk/mcp', () => {
   };
 });
 
-jest.mock('@/lib/ai/mcp/instrumented-sse-transport', () => ({
+jest.mock('../../../../lib/ai/mcp/instrumented-sse-transport', () => ({
   InstrumentedSseTransport: mockInstrumentedSseTransport,
 }));
-jest.mock('@/lib/ai/mcp/providers/client-tool-provider', () => ({
+jest.mock('../../../../lib/ai/mcp/providers/client-tool-provider', () => ({
   clientToolProviderFactory: jest.fn(() => {
     const emitter = new EventEmitter();
     const dispose = jest.fn(() => emitter.emit('dispose'));
@@ -85,14 +85,14 @@ jest.mock('@/lib/ai/mcp/providers/client-tool-provider', () => ({
 import {
   toolProviderFactory,
   toolProviderSetFactory,
-} from '@/lib/ai/mcp/providers';
+} from '../../../../lib/ai/mcp/providers';
 import type {
   ConnectableToolProvider,
   MCPClientConfig,
   ToolProviderFactoryOptions, 
-} from '@/lib/ai/mcp/types';
+} from '../../../../lib/ai/mcp/types';
 import { LoggedError as mockLoggedError } from '@compliance-theater/logger'
-import { ToolSet } from 'ai';
+import { ToolSet } from '@compliance-theater/types/ai-sdk';
 import z from 'zod';
 import { createAutoRefreshFeatureFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 import EventEmitter from '@protobufjs/eventemitter';

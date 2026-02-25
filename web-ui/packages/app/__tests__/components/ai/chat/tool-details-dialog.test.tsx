@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from '@/__tests__/shared/test-utils';
-import { ToolDetailsDialog } from '@/components/ai/chat/tool-details-dialog';
+import { render, screen, fireEvent } from '../../../shared/test-utils';
+import { ToolDetailsDialog } from '../../../../components/ai/chat/tool-details-dialog';
 import { mockToolMessage } from '../chat.mock-data';
 
 describe('ToolDetailsDialog', () => {

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { googleProviderFactory } from '../_googleProviderFactory';
 import { parsePaginationStats } from '../_utilitites';
 import { MailQueryBuilder } from '../_mailQueryBuilder';

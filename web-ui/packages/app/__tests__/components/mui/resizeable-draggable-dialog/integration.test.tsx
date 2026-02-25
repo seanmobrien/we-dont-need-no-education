@@ -4,7 +4,7 @@
  * Tests the components working together without mocking to ensure full functionality and coverage.
  */
 
-import React, { useState } from '@compliance-theater/types/react';
+import React, { useState } from 'react';
 import {
   render,
   screen,
@@ -12,9 +12,9 @@ import {
   waitFor,
   act,
   cleanup,
-} from '@/__tests__/shared/test-utils';
-import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog/dialog';
-import type { ResizeableDraggableDialogProps } from '@/components/mui/resizeable-draggable-dialog/types';
+} from '../../../shared/test-utils';
+import ResizableDraggableDialog from '../../../../components/mui/resizeable-draggable-dialog/dialog';
+import type { ResizeableDraggableDialogProps } from '../../../../components/mui/resizeable-draggable-dialog/types';
 
 // Test wrapper component to manage state
 const TestDialogWrapper = ({

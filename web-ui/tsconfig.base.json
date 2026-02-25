@@ -22,10 +22,30 @@
     "noImplicitAny": true,
     "noImplicitThis": true,
     "noFallthroughCasesInSwitch": true,
+    "outDir": "./dist",
     "resolveJsonModule": true,
-    "skipLibCheck": true,
     "strict": true,
     "strictNullChecks": true,
-    "target": "ESNext"
-  }
+    "target": "ESNext",
+    "rootDir": "./src",
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "baseUrl": ".",
+    "types": [
+      "node",
+      "jest"
+    ],
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/**/*.d.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.mjs"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ],
 }

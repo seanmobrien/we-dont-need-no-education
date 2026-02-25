@@ -12,7 +12,7 @@ import {
 } from './types';
 import { managerMapFactory } from './google/managermapfactory';
 import { log, LoggedError, isError } from '@compliance-theater/logger';
-import { NextRequest } from '@compliance-theater/types/next/server';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import { TransactionalStateManagerBase } from './default/transactional-statemanager';
 import {
   context,
@@ -66,12 +66,12 @@ export class DefaultImportManager {
    * @async
    * @param {string | ImportSourceMessage} emailId - The email ID or import source message.
    * @param {Object} options - The options object.
-   * @param {NextRequest} options.req - The request object.
+   * @param {LikeNextRequest} options.req - The request object.
    * @returns {Promise<ImportSourceMessage>} - The import source message.
    */
   async runImportStage(
     target: ImportSourceMessage,
-    { req }: { req: NextRequest }
+    { req }: { req: LikeNextRequest }
   ): Promise<ImportSourceMessage> {
     const typedRunStage = async (stage: ImportStage) => {
       const providerEmailId = target?.providerId ?? 'No ID';
@@ -138,7 +138,7 @@ export class DefaultImportManager {
    */
   async importEmail(
     emailId: string,
-    { req }: { req: NextRequest }
+    { req }: { req: LikeNextRequest }
   ): Promise<ImportResponse> {
     const activeContext = context.active();
 

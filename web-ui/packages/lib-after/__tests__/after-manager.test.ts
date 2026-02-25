@@ -1,6 +1,6 @@
 
 import AfterManager from '../src/index';
-import { singletonProviderFactory } from '@compliance-theater/logger';
+import { singletonProviderFactory } from '@compliance-theater/logger/singleton-provider';
 
 const AFTER_MANAGER_KEY = Symbol.for('@noeducation/after-manager-instance');
 

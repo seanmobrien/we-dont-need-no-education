@@ -1,14 +1,14 @@
-import React from '@compliance-theater/types/react';
-import { render, screen, fireEvent } from '@/__tests__/shared/test-utils';
-import { useRouter } from '@compliance-theater/types/next/navigation';
-import EmailList from '@/components/email-message/list';
-import siteMap from '@/lib/site-util/url-builder';
+import React from 'react';
+import { render, screen, fireEvent } from '../../../shared/test-utils';
+import { useRouter } from 'next/navigation';
+import EmailList from '../../../../components/email-message/list';
+import siteMap from '../../../../lib/site-util/url-builder';
 
 jest.mock('@toolpad/core/useNotifications', () => ({
   useNotifications: () => ({ show: jest.fn() }),
 }));
 
-jest.mock('@/components/mui/data-grid/server-bound-data-grid', () => ({
+jest.mock('../../../../components/mui/data-grid/server-bound-data-grid', () => ({
   ServerBoundDataGrid: ({
     columns,
     onRowDoubleClick,
@@ -40,7 +40,7 @@ jest.mock('@/components/mui/data-grid/server-bound-data-grid', () => ({
   },
 }));
 
-jest.mock('@/lib/site-util/url-builder', () => ({
+jest.mock('../../../../lib/site-util/url-builder', () => ({
   __esModule: true,
   default: {
     api: { email: { url: '/api/email' } },

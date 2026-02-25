@@ -27,7 +27,7 @@
  *   AiModelType,
  *   AiLanguageModelType,
  *   AnnotatedRetryMessage,
- * } from '@compliance-theater/types/ai/core';
+ * } from '@compliance-theater/types/lib/ai/core';
  *
  * // Use model types for configuration
  * const config: Record<AiLanguageModelType, ModelConfig> = {
@@ -87,19 +87,19 @@ declare module "@compliance-theater/types/lib/ai/core/types" {
    */
   export type AnnotatedErrorMessageBase =
     | {
-        type: "data-error-retry";
-        data: {
-          retryAfter: number;
-          reason: string;
-        };
-      }
-    | {
-        type: "data-error-notify-retry";
-        data: {
-          retryAt: string;
-          model: AiModelType;
-        };
+      type: "data-error-retry";
+      data: {
+        retryAfter: number;
+        reason: string;
       };
+    }
+    | {
+      type: "data-error-notify-retry";
+      data: {
+        retryAt: string;
+        model: AiModelType;
+      };
+    };
 
   /**
    * Discriminated part of the annotated error message union.
@@ -123,21 +123,21 @@ declare module "@compliance-theater/types/lib/ai/core/types" {
     },
   > = TError extends "error-retry"
     ? {
-        type: "data-error-retry";
-        data: {
-          retryAfter: number;
-          reason: string;
-        };
-      }
+      type: "data-error-retry";
+      data: {
+        retryAfter: number;
+        reason: string;
+      };
+    }
     : TError extends "error-notify-retry"
-      ? {
-          type: "data-error-notify-retry";
-          data: {
-            retryAt: string;
-            model: AiModelType;
-          };
-        }
-      : never;
+    ? {
+      type: "data-error-notify-retry";
+      data: {
+        retryAt: string;
+        model: AiModelType;
+      };
+    }
+    : never;
 
   /**
    * Annotated error message with retry-after delay in seconds.

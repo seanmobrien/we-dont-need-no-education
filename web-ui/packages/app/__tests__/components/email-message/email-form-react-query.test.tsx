@@ -1,6 +1,6 @@
  
 
-jest.mock('@/components/contact/contact-dropdown', () => {
+jest.mock('../../../components/contact/contact-dropdown', () => {
   return {
     __esModule: true,
     default: () => {
@@ -14,21 +14,20 @@ jest.mock('@/components/contact/contact-dropdown', () => {
   };
 });
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import EmailForm from '@/components/email-message/form';
-import { useEmail, useWriteEmail } from '@/lib/hooks/use-email';
-import { EmailMessage } from '@/data-models';
+import EmailForm from '../../../components/email-message/form';
+import { useEmail, useWriteEmail } from '../../../lib/hooks/use-email';
+import { EmailMessage } from '../../../data-models';
 import { asErrorLike } from '@compliance-theater/react';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
+import { render, screen, fireEvent, waitFor, hideConsoleOutput } from '../../shared/test-utils';
 
 // Mock the React Query hooks
-jest.mock('@/lib/hooks/use-email', () => ({
+jest.mock('../../../lib/hooks/use-email', () => ({
   useEmail: jest.fn(),
   useWriteEmail: jest.fn(),
 }));
 
 // Mock Next.js router
-jest.mock('@compliance-theater/types/next/navigation', () => ({
+jest.mock('next/navigation', () => ({
   useRouter: () => ({
     replace: jest.fn(),
     back: jest.fn(),

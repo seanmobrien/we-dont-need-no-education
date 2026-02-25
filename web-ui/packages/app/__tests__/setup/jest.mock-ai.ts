@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { LanguageModel, EmbeddingModel, Provider } from 'ai';
+import { LanguageModel, EmbeddingModel, Provider } from '@compliance-theater/types/ai-sdk';
 
 // Mock Azure SDK
 jest.mock('@ai-sdk/azure', () => ({

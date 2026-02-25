@@ -1,6 +1,6 @@
 import type {
   ToolSet,
-} from 'ai';
+} from '@compliance-theater/types/ai-sdk';
 import type { ImpersonationService } from '@compliance-theater/auth/lib/impersonation/index';
 import type { Request } from '@modelcontextprotocol/sdk/types.js';
 import type {

@@ -4,13 +4,13 @@
  * Tests dialog rendering, props passing, and basic integration.
  */
 
-import React from '@compliance-theater/types/react';
-import { render, screen } from '@/__tests__/shared/test-utils';
-import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog/dialog';
+import React from 'react';
+import { render, screen } from '../../../shared/test-utils';
+import ResizableDraggableDialog from '../../../../components/mui/resizeable-draggable-dialog/dialog';
 import type {
   ResizeableDraggableDialogProps,
   ResizeableDraggablePaperProps,
-} from '@/components/mui/resizeable-draggable-dialog/types';
+} from '../../../../components/mui/resizeable-draggable-dialog/types';
 
 // Mock the ResizeableDraggablePaper component to render children properly
 jest.mock(

@@ -1,8 +1,8 @@
 import { OAuth2Client } from 'google-auth-library';
 import { ICredential, CredentialOptions } from './_types';
 import { env } from '@compliance-theater/env';
-import { NextRequest } from '@compliance-theater/types/next/server';
-import { NextApiRequest } from '@compliance-theater/types/next';
+import { NextRequest } from 'next/server';
+import { NextApiRequest } from 'next';
 import { auth } from '../../auth';
 import {
   keycloakTokenExchange,

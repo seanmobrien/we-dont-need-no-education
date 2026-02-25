@@ -37,10 +37,10 @@ export {
   createSafeAsyncWrapper,
   type OperationMetrics,
 } from './safe-operation';
-export { tracer, OTEL_MODE, DEBUG_MODE} from './otel/trace';
+export { tracer, OTEL_MODE, DEBUG_MODE } from './otel/trace';
 export { MetricsRecorder, errorCounter, operationDurationHistogram } from './otel/metrics-recorder';
 
-export { 
+export {
   LoggedError,
   dumpError,
 } from './errors/logged-error/logged-error-class';
@@ -72,5 +72,15 @@ export type {
 
 export type { SafeProgressEvent } from './errors/utilities/safe-progress-event';
 
-export type { ISingletonProvider } from './singleton-provider';
-export { singletonProviderFactory } from './singleton-provider';
+export type { ISingletonProvider, GlobalWithMyGlobal, SingletonConfig, SingletonStorageStrategy, SingletonStorageKey } from './singleton-provider/index';
+export {
+  singletonProviderFactory,
+  SingletonProvider,
+  globalSingleton,
+  globalRequiredSingleton,
+  globalSingletonAsync,
+  globalRequiredSingletonAsync,
+} from './singleton-provider/index';
+
+export { PostgresError, isDrizzleError, errorFromCode } from './errors';
+export { ErrorReporter } from './errors/monitoring/error-reporter';

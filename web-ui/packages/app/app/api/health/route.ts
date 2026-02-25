@@ -1,5 +1,5 @@
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server';
-import { NextResponse } from '@compliance-theater/types/next/server';
+import { NextResponse } from 'next/server';
 import {
   ExtendedMemoryClient,
   memoryClientFactory,

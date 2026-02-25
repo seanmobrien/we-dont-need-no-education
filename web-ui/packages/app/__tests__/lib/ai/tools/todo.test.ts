@@ -6,14 +6,14 @@
  */
 
 import { Session } from '@compliance-theater/auth';
-import { TodoManager, getTodoManager } from '@/lib/ai/tools/todo/todo-manager';
+import { TodoManager, getTodoManager } from '../../../../lib/ai/tools/todo/todo-manager';
 import {
   createTodoCallback,
   getTodosCallback,
   updateTodoCallback,
   deleteTodoCallback,
   toggleTodoCallback,
-} from '@/lib/ai/tools/todo/tool-callback';
+} from '../../../../lib/ai/tools/todo/tool-callback';
 import { isError } from '@compliance-theater/react';
 
 type SerializedTodo = {

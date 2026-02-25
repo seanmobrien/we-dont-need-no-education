@@ -2,7 +2,8 @@
  * Access token management module declaration
  * @module @/lib/auth/access-token
  */
-import type { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
+import type { NextResponse } from 'next/server';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import type { NormalizedAccessToken, NormalizeAccessTokenOptions } from './types';
 
 declare module '@compliance-theater/auth/lib/access-token' {
@@ -15,7 +16,7 @@ declare module '@compliance-theater/auth/lib/access-token' {
      * @param req - The request to check for an access token.
      * @returns The access token string if present, otherwise undefined.
      */
-    (req: NextRequest): string | undefined;
+    (req: LikeNextRequest): string | undefined;
 
     /**
      * Attaches an access token to the request.
@@ -23,7 +24,7 @@ declare module '@compliance-theater/auth/lib/access-token' {
      * @param value - The access token string to attach.
      * @returns The modified request object.
      */
-    (req: NextRequest, value: string): NextRequest | undefined;
+    (req: LikeNextRequest, value: string): LikeNextRequest | undefined;
   }
 
   /**
@@ -56,7 +57,7 @@ declare module '@compliance-theater/auth/lib/access-token' {
    * @param {NextRequest} req - The current request object.
    * @returns {Promise<string | undefined>} The access token if available, otherwise undefined.
    */
-  export function getAccessToken(req: NextRequest): Promise<string | undefined>;
+  export function getAccessToken(req: LikeNextRequest): Promise<string | undefined>;
 
   /**
    * Retrieves and validates an access token, returning an error response if missing.
@@ -72,7 +73,7 @@ declare module '@compliance-theater/auth/lib/access-token' {
    *          An object containing either the valid token string or an error response.
    */
   export function getValidatedAccessToken(params: {
-    req: NextRequest;
+    req: LikeNextRequest;
     source?: string;
   }): Promise<{ token: string } | { error: NextResponse }>;
 
@@ -106,7 +107,7 @@ declare module '@compliance-theater/auth/lib/access-token' {
    * @returns {Promise<NormalizedAccessToken | undefined>} The normalized access token object if successful, otherwise undefined.
    */
   export function normalizedAccessToken(
-    req: NextRequest | undefined,
+    req: LikeNextRequest | undefined,
     options?: NormalizeAccessTokenOptions
   ): Promise<NormalizedAccessToken | undefined>;
   /**
@@ -122,7 +123,7 @@ declare module '@compliance-theater/auth/lib/access-token' {
    * @returns {Promise<NormalizedAccessToken | undefined>} The normalized access token object if successful, otherwise undefined.
    */
   export function normalizedAccessToken(
-    userAccessTokenOrRequest: NextRequest | undefined | string,
+    userAccessTokenOrRequest: LikeNextRequest | undefined | string,
     options?: NormalizeAccessTokenOptions
   ): Promise<NormalizedAccessToken | undefined>;
 }

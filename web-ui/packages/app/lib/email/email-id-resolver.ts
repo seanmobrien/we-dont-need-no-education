@@ -1,6 +1,6 @@
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { isValidUuid } from '@compliance-theater/typescript';
-import { redirect, notFound } from '@compliance-theater/types/next/navigation';
+import { redirect, notFound } from 'next/navigation';
 import { LoggedError } from '@compliance-theater/logger';
 import { SiteRoute } from '../site-util/url-builder/_types';
 

@@ -43,6 +43,7 @@ let internalLogger: (jest.Mock<Promise<LoggerInstance>, [], any>) | undefined = 
 
 type SymbolKey = string | symbol;
 
+/*
 type SingletonProvider = {
   get: <T = unknown, S extends SymbolKey = string>(
     symbol: S,
@@ -171,13 +172,7 @@ jest.mock('@compliance-theater/logger/core', () => {
     logEvent: jest.fn(() => Promise.resolve()),
   };
 });
-
-jest.mock('@compliance-theater/logger/singleton-provider', () => {
-  return {
-    singletonProviderFactory: jest.fn(() => mockSingletonProviderFactory({ withJestTestExtensions })),
-  }
-});
-
+*/
 jest.mock('@compliance-theater/logger', () => {
   const originalModule = jest.requireActual('@compliance-theater/logger');
   // Spy on static methods instead of replacing the class to preserve instanceof behavior
@@ -191,7 +186,6 @@ jest.mock('@compliance-theater/logger', () => {
 
   return {
     ...originalModule,
-    singletonProviderFactory: jest.fn(() => mockSingletonProviderFactory({ withJestTestExtensions })),
     logEvent: jest.fn(() => Promise.resolve()),
     get logger() {
       if (!internalLogger) {

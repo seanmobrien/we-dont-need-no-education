@@ -7,7 +7,7 @@
 
 'use client';
 
-import React, { useRef, useState, useMemo } from '@compliance-theater/types/react';
+import React, { useRef, useState, useMemo } from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
@@ -19,7 +19,7 @@ import {
   type SelectedChatItem,
 } from '@/lib/ai/chat/export';
 import type { ChatTurn } from '@/lib/ai/chat/types';
-import { errorReporter } from '@/lib/error-monitoring/error-reporter';
+import { errorReporter } from '@compliance-theater/logger/errors/monitoring/error-reporter';
 
 interface ChatExportMenuProps {
   turns: ChatTurn[];

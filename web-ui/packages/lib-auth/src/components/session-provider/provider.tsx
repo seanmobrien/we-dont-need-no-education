@@ -1,13 +1,12 @@
 'use client';
 
 import React, {
-  createContext,
   PropsWithChildren,
   useCallback,
   useEffect,
   useState,
   useRef,
-} from '@compliance-theater/types/react';
+} from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import type {
   SessionContextType,
@@ -82,6 +81,20 @@ const queryFn = async ({ queryKey }: { queryKey: SessionQueryKey }) => {
 const NOTIFICATION_KEY_USERHASH_COMPUTE = 'userhash-compute';
 const errorMessage = 'Error computing user hash';
 
+const isBuilding = (): boolean => {
+  if (typeof process === 'undefined' || typeof process.env !== 'object') {
+    return false;
+  }
+  return !!process.env.NEXT_PHASE && process.env.NEXT_PHASE.indexOf('-build') > 0;
+};
+
+const isMissingQueryClientError = (error: unknown): boolean => {
+  return (
+    error instanceof Error &&
+    error.message.includes('No QueryClient set')
+  );
+};
+
 export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
   children,
 }) => {
@@ -102,43 +115,68 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
   // Session query - fetch with keys when validation is due
   const shouldGetKeys = isKeyValidationDue();
 
-  const { data, isLoading, isFetching, refetch } = useQuery<
-    SessionResponse<Session>,
-    Error,
-    SessionResponse<Session>,
-    SessionQueryKey
-  >({
-    queryKey: shouldGetKeys ? SESSION_WITH_KEYS_QUERY_KEY : SESSION_QUERY_KEY,
-    queryFn,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: 5 * 60 * 1000, // SWR-style refresh every 5 min
-    refetchOnWindowFocus: true,
-    refetchOnMount: false,
-  });
+  let data: SessionResponse<Session> | undefined = undefined;
+  let isLoading = false;
+  let isFetching = false;
+  let refetch: () => unknown = () => undefined;
+
+  try {
+    const queryResult = useQuery<
+      SessionResponse<Session>,
+      Error,
+      SessionResponse<Session>,
+      SessionQueryKey
+    >({
+      queryKey: shouldGetKeys ? SESSION_WITH_KEYS_QUERY_KEY : SESSION_QUERY_KEY,
+      queryFn,
+      staleTime: 5 * 60 * 1000,
+      refetchInterval: 5 * 60 * 1000,
+      refetchOnWindowFocus: true,
+      refetchOnMount: false,
+    });
+    data = queryResult.data;
+    isLoading = queryResult.isLoading;
+    isFetching = queryResult.isFetching;
+    refetch = queryResult.refetch;
+  } catch (error) {
+    if (!(isBuilding() && isMissingQueryClientError(error))) {
+      throw error;
+    }
+  }
 
   // Check for fatal session errors
   if ((data?.data as { error?: string } | null | undefined)?.error === 'RefreshAccessTokenError') {
     throw new InvalidGrantError('Session refresh failed');
   }
 
-  const { mutateAsync } = useMutation({
-    mutationKey: ['upload-public-key'],
-    scope: {
-      id: 'upload-public-key',
-    },
-    mutationFn: mutationFn,
-    onError: (error: Error) => {
-      setKeyValidationStatus('failed');
-      setValidationError(
-        error instanceof Error ? error.message : 'Failed to upload public key',
-      );
-    },
-    onSuccess: () => {
-      setKeyValidationStatus('synchronized');
-      setLastValidated(new Date());
-      updateKeyValidationTimestamp();
-    },
-  });
+  let mutateAsync: (args: { publicKey: string }) => Promise<unknown> =
+    async () => undefined;
+
+  try {
+    const mutation = useMutation({
+      mutationKey: ['upload-public-key'],
+      scope: {
+        id: 'upload-public-key',
+      },
+      mutationFn: mutationFn,
+      onError: (error: Error) => {
+        setKeyValidationStatus('failed');
+        setValidationError(
+          error instanceof Error ? error.message : 'Failed to upload public key',
+        );
+      },
+      onSuccess: () => {
+        setKeyValidationStatus('synchronized');
+        setLastValidated(new Date());
+        updateKeyValidationTimestamp();
+      },
+    });
+    mutateAsync = mutation.mutateAsync;
+  } catch (error) {
+    if (!(isBuilding() && isMissingQueryClientError(error))) {
+      throw error;
+    }
+  }
   useEffect(() => {
     let cancelled = false;
     const unmountedEffect = () => {

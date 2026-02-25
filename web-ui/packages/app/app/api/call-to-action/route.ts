@@ -1,4 +1,4 @@
-import { NextRequest } from '@compliance-theater/types/next/server';
+import { NextRequest } from 'next/server';
 import { CallToActionDetails } from '@/data-models/api/email-properties/extended-properties';
 import {
   buildFallbackGrid,

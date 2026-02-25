@@ -10,8 +10,7 @@ import {
 } from '../types';
 import { query, queryExt } from '@compliance-theater/database/driver';
 import { CustomAppInsightsEvent, log } from '@compliance-theater/logger';
-import { NextRequest } from '@compliance-theater/types/next/server';
-import { NextApiRequest } from '@compliance-theater/types/next';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 
 /**
  * The `TransactionalStateManagerBase` class provides a base implementation for managing
@@ -21,8 +20,7 @@ import { NextApiRequest } from '@compliance-theater/types/next';
  *
  */
 export class TransactionalStateManagerBase
-  implements TransactionalImportStageManager
-{
+  implements TransactionalImportStageManager {
   static readonly NullId = 'null-id' as const;
   static readonly calculateNextStage = (stage: ImportStage) => {
     if (stage === 'completed') {
@@ -38,7 +36,7 @@ export class TransactionalStateManagerBase
   readonly #stage: ImportStage;
   readonly #nextStage: ImportStage;
   #activeTransaction: ImportSourceMessage | undefined;
-  #request: NextRequest | NextApiRequest;
+  #request: LikeNextRequest;
   #skipStageBump = false;
   protected importEvent: CustomAppInsightsEvent | undefined;
 
@@ -53,10 +51,10 @@ export class TransactionalStateManagerBase
     this.#transactionId = TransactionalStateManagerBase.NullId;
     this.#request = req;
   }
-  get request(): NextRequest | NextApiRequest {
+  get request(): LikeNextRequest {
     return this.#request;
   }
-  get requireRequest(): NextRequest | NextApiRequest {
+  get requireRequest(): LikeNextRequest {
     if (!this.#request) {
       throw new Error('Request is required');
     }
@@ -249,9 +247,8 @@ export class TransactionalStateManagerBase
     }
     const result = await query(
       (sql) =>
-        sql`UPDATE staging_message SET stage = ${
-          this.#stage
-        } WHERE id = ${id} RETURNING id`
+        sql`UPDATE staging_message SET stage = ${this.#stage
+          } WHERE id = ${id} RETURNING id`
     );
 
     if (!result.length) {

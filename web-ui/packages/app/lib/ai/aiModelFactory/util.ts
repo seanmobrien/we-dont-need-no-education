@@ -7,7 +7,7 @@ import {
   isAiProviderType,
   type AiModelType,
   type AiProviderType,
-} from '@/lib/ai/core';
+} from '@compliance-theater/types/lib/ai/core';
 import type { AutoRefreshFeatureFlag } from '@compliance-theater/feature-flags/types';
 import { wellKnownFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 import { KnownFeatureType } from '@compliance-theater/feature-flags';
@@ -47,12 +47,12 @@ export const getModelFlag = async <P extends AiProviderType>(
  */
 export type ModelFromDeploymentId<T extends string | undefined> =
   T extends undefined
-    ? ProviderV2 & {
-        chat: (model: string) => LanguageModelV2;
-      }
-    : T extends 'embedding'
-    ? EmbeddingModelV2<string>
-    : LanguageModelV2;
+  ? ProviderV2 & {
+    chat: (model: string) => LanguageModelV2;
+  }
+  : T extends 'embedding'
+  ? EmbeddingModelV2<string>
+  : LanguageModelV2;
 
 /**
  * Overloaded function signature for normalizing model keys based on the provider and model type.

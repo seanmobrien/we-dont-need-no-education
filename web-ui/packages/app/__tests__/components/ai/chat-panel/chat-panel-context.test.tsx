@@ -1,9 +1,10 @@
-import React from '@compliance-theater/types/react';
-import { render } from '@/__tests__/shared/test-utils';
+import React from 'react';
+import { render } from '../../../shared/test-utils';
 import {
-  ChatPanelProvider,
   useChatPanelContext,
-} from '@/components/ai/chat-panel/chat-panel-context';
+} from '@compliance-theater/types/components/ai/chat-panel/chat-panel-context';
+
+import { ChatPanelProvider } from '../../../../components/ai/chat-panel/chat-panel-context';
 
 // Test component to access context
 const TestComponent = () => {

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from '@compliance-theater/types/react';
+import React, { useCallback, useMemo } from 'react';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
@@ -10,7 +10,7 @@ import {
   UIMessage,
   UIMessagePart,
   UITools,
-} from 'ai';
+} from '@compliance-theater/types/ai-sdk';
 import { VirtualItem } from '@tanstack/react-virtual';
 import MuiMarkdown from 'mui-markdown';
 import ToolInovocation from './tool-invocation';

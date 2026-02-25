@@ -13,7 +13,7 @@ import {
   resolveCaseFileId as resolveCaseFileIdImpl,
   resolveCaseFileIdBatch as resolveCaseFileIdBatchImpl,
 } from '@compliance-theater/database/orm/resolve-case-file-id';
-import { deprecate } from '@compliance-theater/nextjs';
+import { deprecate } from '@compliance-theater/types/deprecate';
 
 interface ToolCallbackResultOverloads {
   <T>(result: T): ToolCallbackResult<T>;
@@ -39,24 +39,24 @@ export const toolCallbackResultFactory: ToolCallbackResultOverloads = <T>(
   }
   return Array.isArray(result)
     ? {
-        content: [{ type: 'text', text: 'tool success' }],
-        structuredContent: {
-          result: {
-            isError: false,
-            items: result as T extends Array<infer U> ? Array<U> : never,
-          },
+      content: [{ type: 'text', text: 'tool success' }],
+      structuredContent: {
+        result: {
+          isError: false,
+          items: result as T extends Array<infer U> ? Array<U> : never,
         },
-      }
+      },
+    }
     : {
-        content: [{ type: 'text', text: 'tool success' }],
-        structuredContent: {
-          result: {
-            isError: false,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            value: result as T extends Array<any> ? never : T,
-          },
+      content: [{ type: 'text', text: 'tool success' }],
+      structuredContent: {
+        result: {
+          isError: false,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          value: result as T extends Array<any> ? never : T,
         },
-      };
+      },
+    };
 };
 
 export const toolCallbackResultSchemaFactory = <T extends ZodRawShape>(

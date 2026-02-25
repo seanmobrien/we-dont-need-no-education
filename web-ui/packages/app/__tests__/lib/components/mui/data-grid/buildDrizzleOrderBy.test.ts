@@ -23,9 +23,9 @@ import {
   buildDrizzleOrderBy,
   createColumnGetter,
   createTableColumnGetter,
-} from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
-import type { DrizzleSelectQuery } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/types';
-import { NextRequest } from '@compliance-theater/types/next/server';
+} from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
+import type { DrizzleSelectQuery } from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/types';
+import { NextRequest } from 'next/server';
 import { log } from '@compliance-theater/logger';
 
 // Mock logger

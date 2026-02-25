@@ -1,6 +1,6 @@
 import { DrizzleCrudRepositoryController } from '@/lib/api/drizzle-crud-controller';
 import { EmailAttachmentDrizzleRepository } from '@/lib/api/attachment/drizzle-repository';
-import { NextRequest } from '@compliance-theater/types/next/server';
+import { NextRequest } from 'next/server';
 import { wrapRouteRequest, extractParams } from '@compliance-theater/nextjs/server/utils';
 
 export const dynamic = 'force-dynamic';

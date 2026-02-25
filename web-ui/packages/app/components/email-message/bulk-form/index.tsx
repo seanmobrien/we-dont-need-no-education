@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, ChangeEvent, useCallback } from '@compliance-theater/types/react';
+import { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import { EmailMessage } from '@/data-models/api/email-message';
 import { normalizeDateAndTime } from '@/data-models/_utilities';
 import { PaginationStats } from '@/data-models/_types';
@@ -13,7 +13,7 @@ import {
 } from '@compliance-theater/typescript';
 import ContactDropdown from '@/components/contact/contact-dropdown';
 import { log, LoggedError } from '@compliance-theater/logger';
-import React from '@compliance-theater/types/react';
+import React from 'react';
 import ContactRecipients from '@/components/contact/contact-recipients';
 import EmailSelect from '../select';
 import { fetch } from '@compliance-theater/nextjs/fetch';

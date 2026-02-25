@@ -8,12 +8,12 @@
  * @version 1.0.0
  * @since 2025-07-27
  */
-import type { LikeNextRequest } from '@compliance-theater/nextjs/types';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import type { PaginatedGridListRequest } from '../../types';
 import type { DrizzleSelectQuery } from './types';
 import type { AnyPgSelect } from '@compliance-theater/database/drizzle-orm/pg-core';
 import { parsePaginationStats as parsePaginationStatsImpl } from '../utility';
-import { deprecate } from '@compliance-theater/nextjs/utils';
+import { deprecate } from '@compliance-theater/types/deprecate';
 /**
  * Props for configuring Drizzle pagination functionality.
  */
@@ -30,10 +30,10 @@ export type BuildDrizzlePaginationProps = {
    * The request object containing pagination parameters.
    */
   req:
-    | URL
-    | URLSearchParams
-    | (PaginatedGridListRequest | undefined)
-    | LikeNextRequest;
+  | URL
+  | URLSearchParams
+  | (PaginatedGridListRequest | undefined)
+  | LikeNextRequest;
 };
 
 /**

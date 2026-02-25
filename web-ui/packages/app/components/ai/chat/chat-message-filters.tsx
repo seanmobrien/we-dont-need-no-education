@@ -11,7 +11,7 @@
  */
 'use client';
 
-import * as React from '@compliance-theater/types/react';
+import * as React from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import FormControlLabel from '@mui/material/FormControlLabel';

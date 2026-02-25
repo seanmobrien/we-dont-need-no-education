@@ -4,10 +4,10 @@ import { type KnownFeatureType, isKnownFeatureType } from './known-feature';
 import { AllFeatureFlagsDefault } from './known-feature-defaults';
 
 import { env } from '@compliance-theater/env';
-import { LoggedError } from '@compliance-theater/logger';
+import { LoggedError } from '@compliance-theater/logger/errors/logged-error';
 import type { FeatureFlagValueType } from './types';
 import { extractFlagValue } from './util';
-import { globalSingletonAsync } from '@compliance-theater/typescript';
+import { globalSingletonAsync } from '@compliance-theater/logger/singleton-provider';
 
 // Client-bound Flagsmith instance used for client-side flag evaluation.
 export const flagsmithClient = async () => {

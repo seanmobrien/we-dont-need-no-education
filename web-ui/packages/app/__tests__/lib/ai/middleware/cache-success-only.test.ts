@@ -25,10 +25,10 @@ jest.mock('@compliance-theater/redis', () => ({
 }));
 
 import { openai } from '@ai-sdk/openai';
-import { generateText, LanguageModelMiddleware, wrapLanguageModel } from 'ai';
+import { generateText, LanguageModelMiddleware, wrapLanguageModel } from '@compliance-theater/types/ai-sdk';
 import { LanguageModelV2, LanguageModelV2CallOptions } from '@ai-sdk/provider';
 import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
+import { hideConsoleOutput } from '../../../shared/test-utils';
 import { metricsCollector } from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
 
 // Mock function to simulate different response types

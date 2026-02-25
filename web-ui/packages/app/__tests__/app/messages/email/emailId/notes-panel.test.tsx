@@ -1,9 +1,8 @@
  
-import React from '@compliance-theater/types/react';
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import { NotesPanel } from '@/app/messages/email/[emailId]/notes/panel';
-import { EmailProperty } from '@/data-models/api';
+import React from 'react';
+import { render, screen } from '../../../../shared/test-utils';
+import { NotesPanel } from '../../../../../app/messages/email/[emailId]/notes/panel';
+import { EmailProperty } from '../../../../../data-models/api';
 
 const mockNoteProperty: EmailProperty = {
   propertyId: 'note-test-id',

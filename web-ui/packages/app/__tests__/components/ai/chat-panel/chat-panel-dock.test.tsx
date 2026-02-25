@@ -2,13 +2,11 @@
  * @fileoverview Tests for the chat panel docking functionality
  */
 
-import React from '@compliance-theater/types/react';
-import { render, screen, fireEvent, waitFor } from '@/__tests__/shared/test-utils';
-import { ChatPanel } from '@/components/ai/chat-panel';
+
 
 // Mock the dependencies
-jest.mock('@ai-sdk/react', () => ({
-  useChat: () => ({
+jest.mock('@ai-sdk/react', () => {
+  const useChatContext = {
     messages: [],
     input: '',
     handleInputChange: jest.fn(),
@@ -17,19 +15,55 @@ jest.mock('@ai-sdk/react', () => ({
     data: undefined,
     setData: jest.fn(),
     reload: jest.fn(),
-  }),
-}));
-
-jest.mock('@/lib/ai/core', () => ({
+  };
+  return {
+    ...jest.requireActual('@ai-sdk/react'),
+    useChat: jest.fn(() => useChatContext),
+  };
+});
+jest.mock('@compliance-theater/types/ai-sdk', () => {
+  const { useChat } = jest.requireMock('@ai-sdk/react');
+  return {
+    ...jest.requireActual('@compliance-theater/types/ai-sdk'),
+    useChat,
+  };
+});
+jest.mock('@compliance-theater/types/lib/ai/core', () => ({
+  ...jest.requireActual('@compliance-theater/types/lib/ai/core'),
   generateChatId: () => ({ id: 'test-id' }),
   isAnnotatedRetryMessage: () => false,
 }));
+jest.mock('@compliance-theater/types/lib/ai', () => ({
+  ...jest.requireActual('@compliance-theater/types/lib/ai'),
+  ...jest.requireMock('@compliance-theater/types/lib/ai/core'),
+}));
 
-jest.mock('@/lib/components/ai/chat-fetch-wrapper', () => ({
+jest.mock('../../../../lib/components/ai/chat-fetch-wrapper', () => ({
+  ... jest.requireActual('../../../../lib/components/ai/chat-fetch-wrapper'),
   useChatFetchWrapper: jest.fn(() => ({ chatFetch: jest.fn() })),
 }));
 
+import { useChat } from '@ai-sdk/react';
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '../../../shared/test-utils';
+import { ChatPanel } from '../../../../components/ai/chat-panel';
+import ChatPanelProvider from '../../../../components/ai/chat-panel/chat-panel-provider';
+
 describe('ChatPanel Docking Functionality', () => {
+  let useChatContext: ReturnType<typeof useChat>;
+  beforeEach(() => {
+    useChatContext = useChat();
+  });
+  
+  /*
+  afterEach(() => {
+    useChatContext.handleInputChange.mockReset();
+    useChatContext.handleSubmit.mockReset();
+    useChatContext.setData.mockReset();
+    useChatContext.reload.mockReset();
+  });
+  */
+  
   it('shows docking options in menu', async () => {
     render(<ChatPanel page="test" />, {
       chatPanel: true,
@@ -53,7 +87,7 @@ describe('ChatPanel Docking Functionality', () => {
 
   it('shows placeholder when docked to left', async () => {
     render(<ChatPanel page="test" />, {
-      chatPanel: true,
+      chatPanel: ChatPanelProvider,
     });
 
     // Open menu and click dock left
@@ -115,7 +149,7 @@ describe('ChatPanel Docking Functionality', () => {
 
   it('can undock from docked state', async () => {
     render(<ChatPanel page="test" />, {
-      chatPanel: true,
+      chatPanel: ChatPanelProvider,
     });
 
     // First dock the panel

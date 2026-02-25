@@ -2,24 +2,23 @@
  * @jest-environment jsdom
  */
 
-import React, { useState } from '@compliance-theater/types/react';
+import React, { useState } from 'react';
 import {
   render,
   screen,
   fireEvent,
   waitFor,
   act,
-} from '@/__tests__/shared/test-utils';
-import '@testing-library/jest-dom';
-import { TodoListFlyout } from '@/components/todo/todo-list-flyout';
+} from '../../shared/test-utils';
+import { TodoListFlyout } from '../../../components/todo/todo-list-flyout';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Mock the useTodoLists hook
-jest.mock('@/lib/hooks/use-todo', () => ({
+jest.mock('../../../lib/hooks/use-todo', () => ({
   useTodoLists: jest.fn(),
 }));
 
-import { useTodoLists } from '@/lib/hooks/use-todo';
+import { useTodoLists } from '../../../lib/hooks/use-todo';
 
 describe('TodoListFlyout', () => {
   const mockOnSelectList = jest.fn();

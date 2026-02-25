@@ -32,7 +32,7 @@
 import { toolProviderSetFactory } from './tool-provider-factory';
 import { env } from '@compliance-theater/env';
 import { ToolProviderFactoryOptions, ToolProviderSet } from '../types';
-import { NextRequest } from '@compliance-theater/types/next/server';
+import { NextRequest } from 'next/server';
 import {
   forAdmin,
   fromUserId as fromUser,

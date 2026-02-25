@@ -1,5 +1,5 @@
 import { styled } from '@mui/material/styles';
-import { PropsWithChildren } from '@compliance-theater/types/react';
+import { PropsWithChildren } from 'react';
 
 const Center = ({
   children,

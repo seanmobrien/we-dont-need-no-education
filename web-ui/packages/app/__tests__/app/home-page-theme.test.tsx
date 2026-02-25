@@ -1,6 +1,6 @@
-import { render, screen } from '@/__tests__/shared/test-utils';
+import { render, screen } from '../shared/test-utils';
 import { ThemeProvider } from '@compliance-theater/themes';
-import HomePage from '@/app/page';
+import HomePage from '../../app/page';
 
 jest.mock('@compliance-theater/auth/components/session-provider/index', () => ({
   SessionProvider: ({ children }: { children: unknown }) => children,
@@ -11,7 +11,7 @@ jest.mock('@compliance-theater/auth/components/session-provider/index', () => ({
 }));
 
 // Mock next/navigation
-jest.mock('@compliance-theater/types/next/navigation', () => ({
+jest.mock('next/navigation', () => ({
   useRouter: jest.fn(() => ({
     push: jest.fn(),
     replace: jest.fn(),

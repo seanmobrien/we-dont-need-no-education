@@ -1,4 +1,4 @@
-import { generateObject, UIMessage } from 'ai';
+import { generateObject, UIMessage } from '@compliance-theater/types/ai-sdk';
 import {
   LanguageModelV2Prompt,
   LanguageModelV2Message,

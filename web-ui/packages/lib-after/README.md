@@ -129,8 +129,8 @@ Executes all handlers for the named queue in registration order. Waits for all h
 
 ## Dependencies
 
-- `@compliance-theater/logger` - For error logging
-- `@compliance-theater/typescript` - For SingletonProvider utility
+- `@compliance-theater/logger` - For error logging and Singleton support
+- `@compliance-theater/types` - For global type definition
 - `prexit` - For process exit handler registration
 
 ## Implementation Details

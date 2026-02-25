@@ -1,10 +1,10 @@
-import { log } from '@compliance-theater/logger';
-import type { Todo, TodoList } from '../types';
-import type { TodoStorageStrategy, StorageStrategyConfig } from './types';
 import {
+  log,
   globalRequiredSingleton,
   SingletonProvider,
-} from '@compliance-theater/typescript';
+} from '@compliance-theater/logger';
+import type { Todo, TodoList } from '../types';
+import type { TodoStorageStrategy, StorageStrategyConfig } from './types';
 
 const GLOBAL_INSTANCE: symbol = Symbol.for(
   '@noeducation/ai/InMemoryStorageStrategy'
@@ -31,7 +31,7 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
     SingletonProvider.Instance.delete(GLOBAL_INSTANCE);
   }
 
-  constructor({}: StorageStrategyConfig = {}) {
+  constructor({ }: StorageStrategyConfig = {}) {
     log((l) =>
       l.warn('InMemoryStorageStrategy initialized with empty storage.')
     );
@@ -136,10 +136,9 @@ export class InMemoryStorageStrategy implements TodoStorageStrategy {
     if (!list) {
       log((l) =>
         l.warn(
-          `Adding todo ${todo.id} to non-existent list ${
-            (typeof listFromProps === 'string'
-              ? listFromProps
-              : listFromProps.id) ?? '[none]'
+          `Adding todo ${todo.id} to non-existent list ${(typeof listFromProps === 'string'
+            ? listFromProps
+            : listFromProps.id) ?? '[none]'
           }.`
         )
       );

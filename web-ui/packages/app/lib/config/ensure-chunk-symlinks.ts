@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import type { NextConfig } from '@compliance-theater/types/next';
+import type { NextConfig } from 'next';
 import type { NextConfigPlugin } from './types';
 
 class EnsureChunkSymlinksPlugin {

@@ -9,13 +9,12 @@
  * @since 2025-07-19
  */
 
-import React from '@compliance-theater/types/react';
-import { render, screen } from '@testing-library/react';
-import { Branding } from '@/components/email-message/dashboard-layout/branding';
-import '@testing-library/jest-dom';
+import React from 'react';
+import { render, screen } from '../../../shared/test-utils';
+import { Branding } from '../../../../components/email-message/dashboard-layout/branding';
 
 // Mock Next.js Image component
-jest.mock('@compliance-theater/types/next/image', () => {
+jest.mock('next/image', () => {
   const MockImage = ({
     src,
     alt,

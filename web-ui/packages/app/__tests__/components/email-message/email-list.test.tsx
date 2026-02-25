@@ -4,14 +4,14 @@ import {
   waitFor,
   jsonResponse,
   asyncRender,
-} from '@/__tests__/shared/test-utils';
-import EmailList from '@/components/email-message/list';
+} from '../../shared/test-utils';
+import EmailList from '../../../components/email-message/list';
 import { mockEmailSummary } from '../email.mock-data';
 import { fetch } from '@compliance-theater/nextjs/fetch';
 const TIMEOUT = 30000;
 
 // Mock the router
-jest.mock('@compliance-theater/types/next/navigation', () => ({
+jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
     back: jest.fn(),

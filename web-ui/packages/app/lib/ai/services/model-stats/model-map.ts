@@ -20,7 +20,7 @@ import {
   ProviderPrimaryNameType,
   ProviderPrimaryNameTypeValues,
 } from './provider-map';
-import { LanguageModel } from 'ai';
+import { LanguageModel } from '@compliance-theater/types/ai-sdk';
 import { ModelClassification } from '../../middleware/key-rate-limiter/types';
 import { isKeyOf, newUuid } from '@compliance-theater/typescript';
 

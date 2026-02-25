@@ -63,7 +63,7 @@
  *   - Add a Jest snapshot test that feeds a small fabricated source map object
  *     through the `normalize` logic (extracted if you want stronger tests).
  */
-import type { NextConfig } from '@compliance-theater/types/next';
+import type { NextConfig } from 'next';
 import type {
   WebpackCompilation,
   WebpackPlugin,

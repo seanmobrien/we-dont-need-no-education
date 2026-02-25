@@ -1,9 +1,9 @@
-import { render, screen, fireEvent, act } from '@/__tests__/shared/test-utils';
-import { ChatTurnDisplay } from '@/components/ai/chat/chat-turn-display';
+import { render, screen, fireEvent, act } from '../../../shared/test-utils';
+import { ChatTurnDisplay } from '../../../../components/ai/chat/chat-turn-display';
 import { mockChatTurn, mockChatTurnWithTool } from '../chat.mock-data';
 
 // Mock ChatMessageDisplay component
-jest.mock('@/components/ai/chat/chat-message-display', () => ({
+jest.mock('../../../../components/ai/chat/chat-message-display', () => ({
   ChatMessageDisplay: ({ message, showMetadata }: any) => (
     <div
       data-testid={`message-${message.messageId}`}

@@ -3,11 +3,7 @@ import { WrappedLogger } from './wrapped-logger';
 import type { ILogger, EventSeverity, LogEventOverloads } from './types';
 import { CustomAppInsightsEvent } from './event';
 import { emitSendCustomEvent } from './log-emitter';
-
-// Inline environment check to avoid external dependencies
-const isRunningOnServer = (): boolean => {
-  return typeof window === 'undefined';
-};
+import { isRunningOnServer } from '@compliance-theater/types/is-running-on';
 
 // Inline environment variable access to avoid external dependencies
 const env = (key: string): string | undefined => {
@@ -48,11 +44,11 @@ export const logger = (): Promise<ILogger> =>
         const transport = isJest
           ? undefined
           : {
-              target: 'pino-pretty',
-              options: {
-                colorize: true,
-              },
-            };
+            target: 'pino-pretty',
+            options: {
+              colorize: true,
+            },
+          };
 
         _logger = pino<'verbose' | 'silly', false>({
           level: normalizeLogLevel(env('NEXT_PUBLIC_LOG_LEVEL_CLIENT')),

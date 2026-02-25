@@ -3,7 +3,7 @@ import { EmailDashboardLayout } from '@/components/email-message/dashboard-layou
 import { TimelineAgentInterface } from '@/components/ai/timeline-agent';
 import { resolveEmailIdWithRedirect } from '@/lib/email/email-id-resolver';
 import { Box } from '@mui/system';
-import { notFound } from '@compliance-theater/types/next/navigation';
+import { notFound } from 'next/navigation';
 
 interface PageProps {
   params: Promise<{

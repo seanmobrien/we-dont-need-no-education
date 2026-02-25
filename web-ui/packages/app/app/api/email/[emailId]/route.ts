@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from '@compliance-theater/types/next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
@@ -180,7 +180,7 @@ export const DELETE = wrapRouteRequest(
     withParams: {
       params: Promise<{ emailId: string }>;
     }
-  ): Promise<NextResponse> => {
+  ): Promise<Response> => {
     const { emailId } = await extractEmailId(withParams);
     if (!emailId) {
       return NextResponse.json(
@@ -195,7 +195,7 @@ export const DELETE = wrapRouteRequest(
     });
     if (!authCheck.authorized) {
       return (
-        authCheck.response ??
+        (authCheck.response as Response | undefined) ??
         unauthorizedServiceResponse({ req, scopes: ['case-file:write'] })
       );
     }

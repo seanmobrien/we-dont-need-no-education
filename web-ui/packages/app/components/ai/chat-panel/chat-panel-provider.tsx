@@ -1,16 +1,17 @@
+'use client';
 import React, {
   useState,
   useEffect,
   useMemo,
   SetStateAction,
   PropsWithChildren,
-} from '@compliance-theater/types/react';
+} from 'react';
 import { debounce } from '@compliance-theater/react/debounce';
-import { ChatPanelConfig, ChatPanelContextValue, DockPosition } from './types';
-import { ChatPanelContext } from './chat-panel-context';
+import type { ChatPanelConfig, ChatPanelContextValue } from '@compliance-theater/types/components/ai/chat-panel/types';
+import { DockPosition } from '@compliance-theater/types/components/ai/chat-panel/types';
+import { ChatPanelContext } from '@compliance-theater/types/components/ai/chat-panel/chat-panel-context';
 import { isKeyOf } from '@compliance-theater/typescript';
-//import { isKeyOf } from '@compliance-theater/typescript';
-import { errorReporter } from '@/lib/error-monitoring/error-reporter';
+import { errorReporter } from '@compliance-theater/logger/errors/monitoring/error-reporter';
 
 const STORAGE_KEYS = {
   POSITION: 'chatPanelPosition',
@@ -70,9 +71,7 @@ const saveConfig = (config: ChatPanelConfig): void => {
   }
 };
 
-export interface ChatPanelProviderProps {
-  children: React.ReactNode;
-}
+export type ChatPanelProviderProps = object;
 
 export const ChatPanelProvider: React.FC<
   PropsWithChildren<ChatPanelProviderProps>

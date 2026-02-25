@@ -12,8 +12,8 @@ import type {
   MinimalNodeFlagsmith,
 } from './types';
 import fastEqual from 'fast-deep-equal/es6';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import mitt, { Emitter } from 'mitt';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider/provider';
 import { safeSerialize } from '@compliance-theater/logger/safe-serialize';
 
 const DEFAULT_TTL_MS = 3 * 60 * 1000; // 3 minutes
@@ -30,8 +30,7 @@ type FeatureFlagRefreshEvents = {
 };
 
 class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
-  implements AutoRefreshFeatureFlag<T>
-{
+  implements AutoRefreshFeatureFlag<T> {
   private _value: KnownFeatureValueType<T>;
   private _refreshAt: number;
   private _lastRefreshedAt: number = 0;
@@ -235,8 +234,7 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
           valueUpdated = true;
           log((l) =>
             l.verbose(
-              `Feature flag "${this.key}" ${
-                firstRefresh ? 'initial value loaded' : 'refreshed'
+              `Feature flag "${this.key}" ${firstRefresh ? 'initial value loaded' : 'refreshed'
               } for user ${this.userId}. New value: ${safeSerialize(newValue)}`
             )
           );
@@ -358,9 +356,8 @@ const makeKey = <T extends KnownFeatureType>(
   salt: string | undefined,
   userId: string | undefined
 ): symbol => {
-  const fullSalt = `${salt ? salt + ':' : ''}${
-    userId ?? (salt ? '' : '--none--')
-  }`;
+  const fullSalt = `${salt ? salt + ':' : ''}${userId ?? (salt ? '' : '--none--')
+    }`;
   return Symbol.for(
     `@no-education/features-flags/auto-refresh/${key}::${fullSalt}`
   );
@@ -451,10 +448,10 @@ export const isAutoRefreshFeatureFlag = <
   'key' in value &&
   'addOnChangedListener' in value &&
   typeof (value as Record<string, unknown>).addOnChangedListener ===
-    'function' &&
+  'function' &&
   'removeOnChangedListener' in value &&
   typeof (value as Record<string, unknown>).removeOnChangedListener ===
-    'function' &&
+  'function' &&
   'forceRefresh' in value &&
   typeof (value as Record<string, unknown>).forceRefresh === 'function' &&
   'value' in value &&

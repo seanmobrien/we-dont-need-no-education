@@ -1,9 +1,9 @@
 'use client';
 
-import React from '@compliance-theater/types/react';
+import React from 'react';
 import Box from '@mui/material/Box';
 import { styled } from '@mui/material/styles';
-import { useChatPanelContext } from './chat-panel-context';
+import { useChatPanelContext } from '@compliance-theater/types/components/ai/chat-panel/chat-panel-context';
 
 /**
  * Props for the ChatPanelLayout component

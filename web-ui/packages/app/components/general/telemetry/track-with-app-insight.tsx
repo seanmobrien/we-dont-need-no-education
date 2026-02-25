@@ -6,8 +6,8 @@ import type { Session } from '@compliance-theater/types/auth-core/types';
 import {
   usePathname,
   useSearchParams,
-} from '@compliance-theater/types/next/dist/client/components/navigation';
-import { useEffect, useMemo } from '@compliance-theater/types/react';
+} from 'next/dist/client/components/navigation';
+import { useEffect, useMemo } from 'react';
 import { makeAbsoluteUrl } from '@compliance-theater/react/url';
 
 export const TrackWithAppInsight = () => {

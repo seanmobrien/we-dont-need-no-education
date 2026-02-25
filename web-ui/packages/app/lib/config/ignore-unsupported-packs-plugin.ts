@@ -1,4 +1,4 @@
-import type { NextConfig } from '@compliance-theater/types/next/types';
+import type { NextConfig } from 'next/types';
 import type { NextConfigPlugin } from './types';
 
 export const withIgnorePacks: NextConfigPlugin = <TArg extends NextConfig>(
@@ -43,7 +43,7 @@ export const withIgnorePacks: NextConfigPlugin = <TArg extends NextConfig>(
         'js-tiktoken',
         '@auth/core',
         '@auth/drizzle-adapter',
-        'next-auth',
+        '@compliance-theater/types/next-auth',
         'ai',
         '@compliance-theater/*',
       ],

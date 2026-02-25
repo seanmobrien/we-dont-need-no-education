@@ -1,4 +1,4 @@
-import * as React from '@compliance-theater/types/react';
+import * as React from 'react';
 import clsx from 'clsx';
 import {
   GridRenderEditCellParams,

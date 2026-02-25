@@ -111,7 +111,7 @@
 import { DefaultSession, Account as BaseAccount } from '@compliance-theater/types/next-auth';
 import { JWT as BaseJWT } from '@compliance-theater/types/next-auth/jwt';
 
-declare module 'next-auth' {
+declare module '@compliance-theater/types/next-auth' {
   /**
    * Extended user object with application-specific properties.
    *
@@ -237,7 +237,7 @@ declare module '@compliance-theater/types/next-auth' {
 
 // The `JWT` interface can be found in the `next-auth/jwt` submodule
 
-declare module 'next-auth/jwt' {
+declare module '@compliance-theater/types/next-auth/jwt' {
   /**
    * Extended JWT token object with OAuth and application-specific data.
    *

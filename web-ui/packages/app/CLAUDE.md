@@ -155,6 +155,10 @@ Checklist (all required):
    - Any global side‑effects or polyfills
 4. Note existing utilities/helpers you should reuse instead of recreating.
 
+Hard rule for mock resets:
+- Do not use `jest.clearAllMocks()` or `jest.resetAllMocks()` as a broad reset strategy in suites.
+- Use targeted resets only (`mockFn.mockClear()` / `mockFn.mockReset()`) for mocks owned by the suite.
+
 Do NOT write a local `jest.mock(...)` for something already mocked globally unless you have a documented reason and you restore the original afterward.
 
 #### 2. Define the Test Contract Before Importing the SUT

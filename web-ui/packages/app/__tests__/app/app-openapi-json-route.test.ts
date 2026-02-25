@@ -8,7 +8,7 @@
  * - mocks the internal fetch wrapper to return a Response-like object
  */
 
-import type { NextRequest } from '@compliance-theater/types/next/server';
+import type { NextRequest } from 'next/server';
 
 // hoist-safe mocks
 /*
@@ -23,7 +23,7 @@ jest.mock('@compliance-theater/env', () => ({
 }));
 */
 /*
-jest.mock('@/lib/nextjs-util/fetch', () => ({
+jest.mock('../../lib/nextjs-util/fetch', () => ({
   fetch: (...args: unknown[]) => mockFetch(...args),
 }));
 */
@@ -54,7 +54,7 @@ describe('openapi route', () => {
     });
 
     // import fresh GET (module imports env and fetch lazily via aliases)
-    const { GET: handler } = await import('@/app/openapi.json/route');
+    const { GET: handler } = await import('../../app/openapi.json/route');
 
     const req = new Request(
       'http://localhost/openapi',
@@ -84,7 +84,7 @@ describe('openapi route', () => {
       text: async () => JSON.stringify(original),
     });
 
-    const { GET: handler } = await import('@/app/openapi.json/route');
+    const { GET: handler } = await import('../../app/openapi.json/route');
     const req = new Request(
       'http://localhost/openapi',
     ) as unknown as NextRequest;

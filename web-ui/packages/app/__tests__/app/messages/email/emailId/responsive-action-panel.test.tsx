@@ -1,12 +1,11 @@
-import React from '@compliance-theater/types/react';
-import { waitFor, act } from '@testing-library/react';
-import { render, screen } from '@/__tests__/shared/test-utils';
-import { ResponsiveActionPanel } from '@/app/messages/email/[emailId]/call-to-action-response/panel';
-import { CallToActionResponseDetails } from '@/data-models/api';
+import React from 'react';
+import { waitFor, act, render, screen  } from '../../../../shared/test-utils';
+import { ResponsiveActionPanel } from '../../../../../app/messages/email/[emailId]/call-to-action-response/panel';
+import { CallToActionResponseDetails } from '../../../../../data-models/api';
 import { fetch } from '@compliance-theater/nextjs/fetch';
 
 // Mock next/navigation
-jest.mock('@compliance-theater/types/next/navigation', () => ({
+jest.mock('next/navigation', () => ({
   useParams: () => ({ emailId: 'test-email-id' }),
 }));
 

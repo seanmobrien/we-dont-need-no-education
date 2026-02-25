@@ -1,7 +1,7 @@
-import React from '@compliance-theater/types/react';
-import { render } from '@/__tests__/shared/test-utils';
-import { ChatPanelLayout } from '@/components/ai/chat-panel/chat-panel-layout';
-import { ChatPanelProvider } from '@/components/ai/chat-panel/chat-panel-context';
+import React from 'react';
+import { render } from '../../../shared/test-utils';
+import { ChatPanelLayout } from '../../../../components/ai/chat-panel/chat-panel-layout';
+import { ChatPanelProvider } from '../../../../components/ai/chat-panel/chat-panel-context';
 
 describe('ChatPanelLayout', () => {
   it('renders with default props snapshot', () => {

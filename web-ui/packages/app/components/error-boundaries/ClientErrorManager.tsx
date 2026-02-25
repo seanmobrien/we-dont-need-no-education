@@ -7,31 +7,20 @@ import {
   useCallback,
   SetStateAction,
   Dispatch,
-} from '@compliance-theater/types/react';
-import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
+} from 'react';
+import { errorReporter, ErrorSeverity } from '@compliance-theater/logger/errors/monitoring';
 import {
   asErrorLike,
   ErrorLike,
   isErrorLike,
   StringOrErrorLike,
 } from '@compliance-theater/react/errors/error-like';
-import { DEFAULT_SUPPRESSION_RULES } from '@/lib/error-monitoring/default-suppression-rules';
-import { shouldSuppressError } from '@/lib/error-monitoring/utility';
-import type { ErrorSuppressionRule } from '@/lib/error-monitoring/types';
-
-/**
- * Configuration for ClientErrorManager
- */
-export interface ClientErrorManagerConfig {
-  /** Array of error suppression rules */
-  suppressionRules?: ErrorSuppressionRule[];
-  /** Whether to surface non-suppressed errors to React error boundaries */
-  surfaceToErrorBoundary?: boolean;
-  /** Whether to report suppressed errors (with low severity) */
-  reportSuppressedErrors?: boolean;
-  /** Debounce time for duplicate errors (ms) */
-  debounceMs?: number;
-}
+import { DEFAULT_SUPPRESSION_RULES } from '@compliance-theater/logger/errors/monitoring/default-suppression-rules';
+import { shouldSuppressError } from '@compliance-theater/logger/errors/monitoring/utility';
+import type {
+  ClientErrorManagerConfig,
+  ErrorSuppressionRule,
+} from '@compliance-theater/logger/errors/boundaries/types';
 
 /**
  * Normalize error messages by removing repeating 'Uncaught ' prefixes

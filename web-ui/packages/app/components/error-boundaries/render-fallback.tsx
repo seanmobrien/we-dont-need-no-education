@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from '@compliance-theater/types/react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -22,8 +22,8 @@ import {
   getRecoveryActions,
   getDefaultRecoveryAction,
   classifyError,
-} from '@/lib/error-monitoring/recovery-strategies';
-import type { RecoveryAction } from '@/lib/error-monitoring/recovery-strategies';
+} from '@compliance-theater/logger/errors/monitoring/recovery-strategies';
+import type { RecoveryAction } from '@compliance-theater/logger/errors/monitoring/recovery-strategies';
 import { dumpError, LoggedError } from '@compliance-theater/logger';
 
 const fnNoOp = () => {};

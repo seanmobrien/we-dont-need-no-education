@@ -2,7 +2,7 @@
  * Type definitions for docked panel
  * @module components/ai/chat-panel/docked-panel
  */
-import React from '@compliance-theater/types/react';
+import React from 'react';
 import type { DockPosition } from './types';
 
 declare module '@/components/ai/chat-panel/docked-panel' {

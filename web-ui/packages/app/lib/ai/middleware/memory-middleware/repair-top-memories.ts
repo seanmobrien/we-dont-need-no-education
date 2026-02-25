@@ -1,4 +1,4 @@
-import { NoSuchToolError, ToolCallRepairFunction, ToolSet } from "ai";
+import { NoSuchToolError, ToolCallRepairFunction, ToolSet } from "@compliance-theater/types/ai-sdk";
 
 
 export const repairTopMemoriesToolCall: ToolCallRepairFunction<ToolSet> = async (options) => {

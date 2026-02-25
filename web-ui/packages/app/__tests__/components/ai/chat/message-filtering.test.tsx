@@ -2,19 +2,18 @@
  * Tests for message filtering functionality in ChatHistory component
  */
 
-import React from '@compliance-theater/types/react';
+import React from 'react';
 import {
   render,
   screen,
   fireEvent,
   act,
   waitFor,
-} from '@/__tests__/shared/test-utils';
-import '@testing-library/jest-dom';
-import { TestVirtualizedChat } from '@/components/ai/chat/test-virtualized-chat';
+} from '../../../shared/test-utils';
+import { TestVirtualizedChat } from '../../../../components/ai/chat/test-virtualized-chat';
 
 // Mock the virtualized display to avoid canvas issues in tests
-jest.mock('@/components/ai/chat/virtualized-chat-display', () => ({
+jest.mock('../../../../components/ai/chat/virtualized-chat-display', () => ({
   VirtualizedChatDisplay: ({ turns }: { turns: any[] }) => (
     <div data-testid="virtualized-chat">
       {turns.map((turn, i) => (

@@ -1,8 +1,8 @@
 import { ICancellablePromiseExt } from '@compliance-theater/typescript';
-import { NextRequest } from '@compliance-theater/types/next/server';
-import { NextApiRequest } from '@compliance-theater/types/next';
+import { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
+import { NextApiRequest } from 'next';
 import { UrlObject } from 'url';
-import type { Route } from '@compliance-theater/types/next';
+import type { Route } from 'next';
 
 // Type for Next.js routes
 export type SiteRouteType = string;
@@ -16,7 +16,7 @@ export type SiteRoute<T extends SiteRouteType = SiteRouteType> = Route<T>;
  * @property {string} action - The specific action or endpoint being called.
  * @property {'GET' | 'POST' | 'PUT' | 'DELETE'} method - The HTTP method used for the request.
  * @property {string | Record<string, unknown>} [input] - Optional input data to be sent with the request, can be a string or an object.
- * @preperty {NextRequest | NextApiRequest} req - The active request object
+ * @preperty {LikeNextRequest} req - The active request object
  * @property {boolean} [forwardCredentials] - Whether to forward credentials to the endpoint.  True by default when the request property is provided.
  */
 export type ApiRequestParams = {
@@ -25,7 +25,7 @@ export type ApiRequestParams = {
   action: string;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   input?: string | Record<string, unknown>;
-  req?: NextRequest | NextApiRequest;
+  req?: LikeNextRequest;
   forwardCredentials?: boolean;
 };
 

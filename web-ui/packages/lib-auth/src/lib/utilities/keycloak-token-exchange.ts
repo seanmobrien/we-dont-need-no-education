@@ -1,9 +1,9 @@
 import { got } from 'got';
 import { getToken } from '@compliance-theater/types/next-auth/jwt';
-import { NextRequest } from '@compliance-theater/types/next/server';
-import type { NextApiRequest } from '@compliance-theater/types/next';
+import { NextRequest } from 'next/server';
+import type { NextApiRequest } from 'next';
 import { env } from '@compliance-theater/env';
-import { SingletonProvider } from '@compliance-theater/typescript';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 import type { KeycloakConfig, TokenExchangeParams, TokenExchangeResponse, GoogleTokens } from './token-exchange-types';
 
 type TokenErrorPayload = {

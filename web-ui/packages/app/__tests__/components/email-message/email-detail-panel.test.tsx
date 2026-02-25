@@ -3,15 +3,14 @@
  * This includes comprehensive tests for loading states, fully loaded email, and expandable property panels
  */
 
-import React from '@compliance-theater/types/react';
+import React from 'react';
 import {
   render,
   screen,
   waitFor,
   fireEvent,
   act,
-} from '@testing-library/react';
-import '@testing-library/jest-dom';
+} from '../../shared/test-utils';
 import EmailDetailPanel from '../../../components/email-message/list/email-detail-panel';
 import { EmailMessageSummary } from '../../../data-models/api/email-message';
 import { getEmail } from '../../../lib/api/client';
@@ -23,9 +22,9 @@ import {
   getNotes,
 } from '../../../lib/api/email/properties/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { KeyPointsDetails } from '@/data-models/api';
+import { KeyPointsDetails } from '../../../data-models/api';
 
-jest.mock('@/lib/components/mui/data-grid/query-client', () => {
+jest.mock('../../../lib/components/mui/data-grid/query-client', () => {
   const { QueryClient } = jest.requireActual('@tanstack/react-query');
   return {
     dataGridQueryClient: new QueryClient({
