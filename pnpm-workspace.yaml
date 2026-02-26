@@ -3,3 +3,4 @@ packages:
   - 'web-ui/packages/**'
   - 'submodules/json-viewer'
   - '!submodules/json-viewer/docs'
+  - 'web-ui/submodules/sce/packages/**/ts'

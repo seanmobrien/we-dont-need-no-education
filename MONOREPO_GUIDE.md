@@ -112,7 +112,7 @@ Each package needs:
   "devDependencies": {
     "@types/node": "^24.0.0",
     "tsup": "^8.0.0",
-    "typescript": "^5"
+    "typescript":  "^5.9.3"
   }
 }
 ```
@@ -273,7 +273,7 @@ Create `web-ui/packages/[package-name]/package.json` using this template:
     "jest": "^30.0.5",
     "rimraf": "^6.1.2",
     "ts-jest": "^29.3.4",
-    "typescript": "^5"
+    "typescript":  "^5.9.3"
   }
 }
 ```

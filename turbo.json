@@ -2,11 +2,7 @@
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": [
     "**/*.local",
-    "**/.env",
-    "**/tsconfig.*",
-    "tsconfig.*",
-    ".yarn/**",
-    "patches/**"
+    "**/.env"    
   ],
   "tasks": {
     "build": {

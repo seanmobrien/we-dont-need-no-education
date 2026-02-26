@@ -19,7 +19,7 @@
   },
   "engines": {
     "node": ">=22.0.0",
-    "yarn": ">=1.22.0"
+    "yarn": ">=4.12.0"
   },
   "files": [
     "dist"
@@ -30,7 +30,7 @@
     "build:typescript": "echo 'Building @compliance-theater/env...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/env.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/env.\u001b[0m\n' >&2; exit 1)",
     "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-env.tgz",
     "test": "jest",
-    "lint": "echo 'Linting lib-env...'",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
@@ -64,7 +64,7 @@
     "react-native": "^0.84.0",
     "rimraf": "^6.1.2",
     "ts-jest": "^30.0.0",
-    "typescript": "^5",
+    "typescript": "^5.9.3",
     "zod": "^3.25.76"
   }
 }

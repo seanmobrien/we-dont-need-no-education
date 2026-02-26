@@ -59,6 +59,12 @@
         },
         {
             "path": "submodules/json-viewer"
+        },
+        {
+            "path": "submodules/sce/packages/core/ts"
+        },
+        {
+            "path": "submodules/sce/packages/semanticencoding/ts"
         }
     ]
 }

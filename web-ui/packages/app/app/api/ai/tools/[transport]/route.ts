@@ -347,51 +347,52 @@ const handler = wrapRouteRequest(
 
     const mcpHandler = createMcpHandler(
       (server) => {
+        const registerTool = (server as any).registerTool.bind(server);
         log((l) =>
           l.info('=== MCP Handler: Server callback called ===', {
             serverInfo: safeSerialize.serverDescriptor(server),
           })
         );
         log((l) => l.info('=== Registering MCP tools ==='));
-        server.registerTool(
+        registerTool(
           'playPingPong',
           pingPongToolConfig,
           pingPongToolCallback
         );
-        server.registerTool(
+        registerTool(
           'searchPolicyStore',
           searchPolicyStoreConfig,
           searchPolicyStore
         );
-        server.registerTool(
+        registerTool(
           'searchCaseFile',
           searchCaseFileConfig,
           searchCaseFile
         );
-        server.registerTool(
+        registerTool(
           'getMultipleCaseFileDocuments',
           getMultipleCaseFileDocumentsConfig,
           getMultipleCaseFileDocuments
         );
-        server.registerTool(
+        registerTool(
           'getCaseFileDocumentIndex',
           getCaseFileDocumentIndexConfig,
           getCaseFileDocumentIndex
         );
-        server.registerTool(
+        registerTool(
           'amendCaseFileDocument',
           amendCaseRecordConfig,
           amendCaseRecord
         );
-        server.registerTool(
+        registerTool(
           SEQUENTIAL_THINKING_TOOL_NAME,
           sequentialThinkingCallbackConfig,
           sequentialThinkingCallback
         );
-        server.registerTool('createTodo', createTodoConfig, createTodoCallback);
-        server.registerTool('getTodos', getTodosConfig, getTodosCallback);
-        server.registerTool('updateTodo', updateTodoConfig, updateTodoCallback);
-        server.registerTool('toggleTodo', toggleTodoConfig, toggleTodoCallback);
+        registerTool('createTodo', createTodoConfig, createTodoCallback);
+        registerTool('getTodos', getTodosConfig, getTodosCallback);
+        registerTool('updateTodo', updateTodoConfig, updateTodoCallback);
+        registerTool('toggleTodo', toggleTodoConfig, toggleTodoCallback);
         server.server.onerror = makeErrorHandler(server, 'server');
       },
       {},

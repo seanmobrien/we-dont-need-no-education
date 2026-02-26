@@ -50,6 +50,9 @@
 		},
 		{
 			"path": "web-ui/submodules/json-viewer"
+		},
+		{
+			"path": "web-ui/submodules/sce"
 		}
 	],
 	"settings": {
