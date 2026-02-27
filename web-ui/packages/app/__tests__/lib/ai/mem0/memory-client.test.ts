@@ -3,7 +3,12 @@ import {
   memoryClientFactory,
   type ExtendedMemoryClient,
 } from '../../../../lib/ai/mem0/memoryclient-factory';
-import { fetch as mockedFetch } from '@compliance-theater/nextjs/server/fetch';
+
+const fetchMock = jest.fn();
+
+jest.mock('../../../../lib/fetch-service', () => ({
+  resolveFetchService: jest.fn(() => fetchMock),
+}));
 
 jest.mock('@compliance-theater/nextjs/server/utils', () => ({
   createInstrumentedSpan: jest.fn(async () => ({
@@ -40,9 +45,9 @@ type FetchResponse = {
   text: () => Promise<string>;
 };
 
-const fetchMock = mockedFetch as unknown as jest.Mock<
+const typedFetchMock = fetchMock as unknown as jest.Mock<
   Promise<FetchResponse>,
-  Parameters<typeof mockedFetch>
+  Parameters<typeof fetchMock>
 >;
 
 const createJsonResponse = (data: unknown): FetchResponse => ({
@@ -59,8 +64,7 @@ const createTextResponse = (payload: string): FetchResponse => ({
 
 describe('MemoryClient configurable base path', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    fetchMock.mockReset();
+    typedFetchMock.mockReset();
     mockFromRequest.mockReset();
     process.env.MEM0_API_HOST = 'https://mem0.test';
     process.env.MEM0_API_BASE_PATH = 'api/v1';
@@ -68,7 +72,7 @@ describe('MemoryClient configurable base path', () => {
   });
 
   const queuePingAndReturn = (response: FetchResponse) => {
-    fetchMock.mockResolvedValueOnce(
+    typedFetchMock.mockResolvedValueOnce(
       createJsonResponse({
         status: 'ok',
         email: 'user@example.com',
@@ -76,7 +80,7 @@ describe('MemoryClient configurable base path', () => {
         projectId: 'proj',
       }),
     );
-    fetchMock.mockResolvedValueOnce(response);
+    typedFetchMock.mockResolvedValueOnce(response);
   };
 
   it('prefixes the configured base path for relative endpoints', async () => {
@@ -91,8 +95,8 @@ describe('MemoryClient configurable base path', () => {
       headers: {},
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    const [url, options] = fetchMock.mock.calls[1];
+    expect(typedFetchMock).toHaveBeenCalledTimes(2);
+    const [url, options] = typedFetchMock.mock.calls[1];
     expect(String(url)).toEqual('https://mem0.test/api/v1/memories/');
     expect(options).toEqual(
       expect.objectContaining({
@@ -117,7 +121,7 @@ describe('MemoryClient configurable base path', () => {
     });
 
     expect(result).toBe('{}');
-    const [url] = fetchMock.mock.calls[1];
+    const [url] = typedFetchMock.mock.calls[1];
     expect(String(url)).toEqual('https://mem0.test/docs');
   });
 
@@ -133,7 +137,7 @@ describe('MemoryClient configurable base path', () => {
       headers: {},
     });
 
-    const [url] = fetchMock.mock.calls[1];
+    const [url] = typedFetchMock.mock.calls[1];
     expect(String(url)).toEqual('https://mem0.test/v2/memories/');
   });
 
@@ -150,7 +154,7 @@ describe('MemoryClient configurable base path', () => {
       headers: {},
     });
 
-    const [url] = fetchMock.mock.calls[1];
+    const [url] = typedFetchMock.mock.calls[1];
     expect(String(url)).toEqual('https://mem0.test/api/v9/memories/');
   });
 
@@ -162,15 +166,15 @@ describe('MemoryClient configurable base path', () => {
       projectId: 'proj',
     });
     const health = createJsonResponse({ status: 'ok' });
-    fetchMock.mockResolvedValueOnce(ping);
-    fetchMock.mockResolvedValueOnce(health);
+    typedFetchMock.mockResolvedValueOnce(ping);
+    typedFetchMock.mockResolvedValueOnce(health);
     mockFromRequest.mockResolvedValueOnce(new MockImpersonationService());
 
     const client = await memoryClientFactory<ExtendedMemoryClient>({});
     await client.healthCheck();
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    const [url] = fetchMock.mock.calls[1];
+    expect(typedFetchMock).toHaveBeenCalledTimes(2);
+    const [url] = typedFetchMock.mock.calls[1];
     expect(String(url)).toEqual(
       'https://mem0.test/api/v1/stats/health-check?strict=false&verbose=1',
     );

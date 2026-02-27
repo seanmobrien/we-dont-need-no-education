@@ -22,7 +22,9 @@ import {
 } from '@/data-models/api';
 import { useParams } from 'next/navigation';
 import { EmailMasterPanel } from '@/components/mui/data-grid';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+import { resolveFetchService } from '@/lib/fetch-service';
+
+const fetch = resolveFetchService();
 
 const formatDate = (date: Date | null): string => {
   if (typeof date === 'string') {
@@ -83,14 +85,13 @@ const ResponsiveActionPanelContent = ({
     ) || null;
   return (
     <>
-      {/* Progress and Timing */}
       <Grid container spacing={2}>
         <Grid gridColumn={{ xs: 12, md: 6 }}>
           <Typography variant="h6" gutterBottom>
             Completion Progress
           </Typography>
           <Box sx={{ mb: 1 }}>
-            <Typography variant="body2" color="textSecondary">
+            <Typography variant="body1" fontWeight="bold">
               {formatPercentage(row.completionPercentage)} Complete
             </Typography>
           </Box>

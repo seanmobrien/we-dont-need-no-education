@@ -1,7 +1,7 @@
 import type { JWT } from '@compliance-theater/types/next-auth/jwt';
 import { env } from '@compliance-theater/env';
-import { fetch } from '@compliance-theater/nextjs/dynamic-fetch';
-import { InvalidGrantError } from './errors';
+import { resolveFetchService } from './utilities/fetch-service';
+import { InvalidGrantError } from "@compliance-theater/logger/errors/invalid-grant-error";
 
 /**
  * Refreshes the Keycloak access token using the refresh token.
@@ -31,6 +31,7 @@ export const refreshAccessToken = async (token: JWT): Promise<JWT> => {
     // Typically: {issuer}/protocol/openid-connect/token
     const tokenEndpoint = `${issuer.replace(/\/$/, '')}/protocol/openid-connect/token`;
 
+    const fetch = resolveFetchService();
     const response = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: {

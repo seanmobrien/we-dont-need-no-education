@@ -9,6 +9,13 @@
  */
 
 import type { NextRequest } from 'next/server';
+import { resolveFetchService } from '../../../lib/fetch-service';
+
+const fetchMock = jest.fn();
+
+jest.mock('../../../lib/fetch-service', () => ({
+  resolveFetchService: jest.fn(() => fetchMock),
+}));
 
 // hoist-safe mocks
 /*
@@ -27,8 +34,6 @@ jest.mock('../../lib/nextjs-util/fetch', () => ({
   fetch: (...args: unknown[]) => mockFetch(...args),
 }));
 */
-import { fetch as mockFetch } from '@compliance-theater/nextjs/server/fetch';
-
 describe('openapi route', () => {
   beforeEach(() => {
     //jest.resetModules();
@@ -49,7 +54,7 @@ describe('openapi route', () => {
     };
 
     // mock fetch to return an object with text()
-    (mockFetch as jest.Mock).mockResolvedValue({
+    fetchMock.mockResolvedValue({
       text: async () => JSON.stringify(original),
     });
 
@@ -80,7 +85,7 @@ describe('openapi route', () => {
         '/other/path': { post: {} },
       },
     };
-    (mockFetch as jest.Mock).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       text: async () => JSON.stringify(original),
     });
 

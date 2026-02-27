@@ -11,7 +11,7 @@ import type { DataSourceProps, ExtendedGridDataSource } from './types';
 import { isTruthy } from '@compliance-theater/react/utility-methods';
 import { isError, LoggedError, log } from '@compliance-theater/logger';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+import { resolveFetchService } from '@/lib/fetch-service';
 import {
   useQuery,
   useMutation,
@@ -65,6 +65,7 @@ const fetchGridData = async (
     urlWithParams.searchParams.set('filter', JSON.stringify(filterModel));
   }
 
+  const fetch = resolveFetchService();
   const response = await fetch(urlWithParams.toString());
 
   if (!response.ok) {
@@ -165,12 +166,12 @@ export const useDataSource = ({
   } = useQuery({
     queryKey: currentQueryParams
       ? createQueryKey(
-          String(url),
-          currentQueryParams?.page,
-          currentQueryParams?.pageSize,
-          currentQueryParams?.sortModel,
-          currentQueryParams?.filterModel
-        )
+        String(url),
+        currentQueryParams?.page,
+        currentQueryParams?.pageSize,
+        currentQueryParams?.sortModel,
+        currentQueryParams?.filterModel
+      )
       : ['dataGrid', String(url)],
     queryFn: async () => {
       return await fetchGridData(
@@ -198,11 +199,9 @@ export const useDataSource = ({
       if (willRetry) {
         log((l) =>
           l.warn({
-            message: `An unexpected error occurred while loading data; there are ${
-              3 - failureCount
-            } retries remaining.  Details: ${
-              isError(error) ? error.message : String(error)
-            }`,
+            message: `An unexpected error occurred while loading data; there are ${3 - failureCount
+              } retries remaining.  Details: ${isError(error) ? error.message : String(error)
+              }`,
             source: 'grid::dataSource',
             data: error,
           })

@@ -90,4 +90,11 @@ export type { LikeNextRequest } from './lib/nextjs/types/like-nextrequest';
 export type { LikeNextResponse } from './lib/nextjs/types/like-nextresponse';
 
 export type { IsNotNull } from './types/is-not-null';
+export type { IFetchService } from './lib/fetch';
+export type {
+  IAuthSessionService,
+  IImpersonationService,
+  IAccessTokenService,
+  ITokenExchangeService,
+} from './lib/auth';
 export { type EmittingDispose, withEmittingDispose } from './with-emitting-dispose';

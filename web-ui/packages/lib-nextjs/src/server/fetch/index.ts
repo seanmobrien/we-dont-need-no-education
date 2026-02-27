@@ -1,3 +1,1 @@
-import { serverFetch } from './fetch-server';
-
-export { serverFetch as fetch };
+export { fetch } from '@compliance-theater/fetch';

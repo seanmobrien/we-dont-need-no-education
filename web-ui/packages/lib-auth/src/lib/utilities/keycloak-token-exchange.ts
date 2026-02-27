@@ -1,22 +1,14 @@
-import { got } from 'got';
 import { getToken } from '@compliance-theater/types/next-auth/jwt';
 import { NextRequest } from 'next/server';
 import type { NextApiRequest } from 'next';
 import { env } from '@compliance-theater/env';
 import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 import type { KeycloakConfig, TokenExchangeParams, TokenExchangeResponse, GoogleTokens } from './token-exchange-types';
+import { resolveFetchService } from './fetch-service';
 
 type TokenErrorPayload = {
   error?: string;
   error_description?: string;
-};
-
-type GotLikeError = {
-  message: string;
-  response?: {
-    statusCode?: number;
-    body?: unknown;
-  };
 };
 
 const isObjectRecord = (
@@ -57,13 +49,6 @@ const parseTokenErrorPayload = (body: unknown): TokenErrorPayload | undefined =>
   }
 
   return undefined;
-};
-
-const isGotLikeError = (error: unknown): error is GotLikeError => {
-  return (
-    isObjectRecord(error) &&
-    typeof error.message === 'string'
-  );
 };
 
 export class TokenExchangeError extends Error {
@@ -180,43 +165,91 @@ export class KeycloakTokenExchange {
     };
 
     try {
-      const response: TokenExchangeResponse = await got.post(
-        this.tokenEndpoint,
-        {
+      const formBody = new URLSearchParams();
+      Object.entries(requestParams).forEach(([key, value]) => {
+        if (typeof value === 'string' && value.length > 0) {
+          formBody.set(key, value);
+        }
+      });
+
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(() => {
+        abortController.abort();
+      }, 10000);
+
+      const fetch = resolveFetchService();
+      let response: Response;
+      try {
+        response = await fetch(this.tokenEndpoint, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-          form: requestParams,
-          timeout: {
-            request: 10000,
-          },
-        }
-      ).json<TokenExchangeResponse>();
+          body: formBody.toString(),
+          signal: abortController.signal,
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
-      return this.extractGoogleTokens(response);
+      const responseText = await response.text();
+      if (!response.ok) {
+        const errorData = parseTokenErrorPayload(responseText);
+        const errorMessage =
+          errorData?.error_description ||
+          errorData?.error ||
+          response.statusText ||
+          'Token exchange request failed';
+
+        throw new TokenExchangeError(
+          `Keycloak token exchange failed: ${errorMessage}`,
+          'EXCHANGE_FAILED',
+          response.status,
+          responseText
+        );
+      }
+
+      let parsedResponse: unknown;
+      try {
+        parsedResponse = JSON.parse(responseText);
+      } catch (error) {
+        throw new TokenExchangeError(
+          'Invalid JSON response from Keycloak token endpoint',
+          'INVALID_TOKEN_RESPONSE',
+          response.status,
+          error
+        );
+      }
+
+      if (!isObjectRecord(parsedResponse)) {
+        throw new TokenExchangeError(
+          'Invalid token response from Keycloak',
+          'INVALID_TOKEN_RESPONSE',
+          response.status,
+          parsedResponse
+        );
+      }
+
+      return this.extractGoogleTokens(parsedResponse as TokenExchangeResponse);
     } catch (error) {
       // Re-throw TokenExchangeError instances as-is
       if (error instanceof TokenExchangeError) {
         throw error;
       }
 
-      if (isGotLikeError(error)) {
-        const status = error.response?.statusCode;
-        const errorData = parseTokenErrorPayload(error.response?.body);
-        const errorMessage =
-          errorData?.error_description || errorData?.error || error.message;
-
+      if (error instanceof Error && error.name === 'AbortError') {
         throw new TokenExchangeError(
-          `Keycloak token exchange failed: ${errorMessage}`,
+          'Keycloak token exchange request timed out',
           'EXCHANGE_FAILED',
-          status,
+          undefined,
           error
         );
       }
 
       throw new TokenExchangeError(
-        'Unexpected error during token exchange',
-        'UNKNOWN_ERROR',
+        `Keycloak token exchange failed: ${error instanceof Error ? error.message : 'Unexpected error'
+        }`,
+        'EXCHANGE_FAILED',
         undefined,
         error
       );

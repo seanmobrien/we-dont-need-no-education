@@ -7,7 +7,12 @@ import {
 } from '../../shared/test-utils';
 import EmailList from '../../../components/email-message/list';
 import { mockEmailSummary } from '../email.mock-data';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+
+const fetchMock = jest.fn();
+
+jest.mock('../../../lib/fetch-service', () => ({
+  resolveFetchService: jest.fn(() => fetchMock),
+}));
 const TIMEOUT = 30000;
 
 // Mock the router
@@ -38,7 +43,7 @@ describe('EmailList', () => {
   it(
     'should mount and render grid initially',
     () => {
-      (fetch as jest.Mock).mockResolvedValueOnce(
+      fetchMock.mockResolvedValueOnce(
         jsonResponse({ rows: [], totalRowCount: 0 }),
       );
       render(<EmailList />);
@@ -50,9 +55,7 @@ describe('EmailList', () => {
   it(
     'should display error message when fetching emails fails',
     async () => {
-      (fetch as jest.Mock).mockRejectedValueOnce(
-        new Error('Error fetching emails.'),
-      );
+      fetchMock.mockRejectedValueOnce(new Error('Error fetching emails.'));
 
       await asyncRender(<EmailList />);
 
@@ -68,7 +71,7 @@ describe('EmailList', () => {
   it(
     'should display no emails found message when there are no emails',
     async () => {
-      (fetch as jest.Mock).mockResolvedValueOnce(
+      fetchMock.mockResolvedValueOnce(
         jsonResponse({ rows: [], totalRowCount: 0 }),
       );
 
@@ -88,7 +91,7 @@ describe('EmailList', () => {
     'should display a list of emails',
     async () => {
       const mockEmails = mockEmailSummary();
-      (fetch as jest.Mock).mockResolvedValueOnce(
+      fetchMock.mockResolvedValueOnce(
         jsonResponse({ rows: mockEmails, totalRowCount: mockEmails.length }),
       );
       await asyncRender(<EmailList />);
@@ -107,7 +110,7 @@ describe('EmailList', () => {
     'should display the email form when an email is selected',
     async () => {
       const mockEmails = mockEmailSummary();
-      (fetch as jest.Mock).mockResolvedValueOnce(
+      fetchMock.mockResolvedValueOnce(
         jsonResponse({ rows: mockEmails, totalRowCount: mockEmails.length }),
       );
       await asyncRender(<EmailList />);

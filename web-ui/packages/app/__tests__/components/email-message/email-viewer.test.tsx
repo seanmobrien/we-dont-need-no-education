@@ -6,7 +6,12 @@ import {
   hideConsoleOutput,
 } from '../../shared/test-utils';
 import EmailViewer from '../../../components/email-message/email-viewer';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+
+const fetchMock = jest.fn();
+
+jest.mock('../../../lib/fetch-service', () => ({
+  resolveFetchService: jest.fn(() => fetchMock),
+}));
 const TIMEOUT = 30000;
 
 // Mock Promise.withResolvers if not available
@@ -26,7 +31,7 @@ describe('EmailViewer', () => {
   const consoleErrors = hideConsoleOutput();
   beforeEach(() => {
     // Clear fetch mock - it's already mocked globally in jest.setup.ts
-    (fetch as jest.Mock).mockClear();
+    fetchMock.mockClear();
   });
   afterEach(() => {
     consoleErrors.dispose();
@@ -40,7 +45,7 @@ describe('EmailViewer', () => {
       const promise = request.promise;
 
       // Mock fetch to return a delayed promise
-      (fetch as jest.Mock).mockImplementation((url: string) => {
+      fetchMock.mockImplementation((url: string) => {
         if (url.includes('/api/email/test-email-id/attachments')) {
           return Promise.resolve({
             ok: true,
@@ -123,7 +128,7 @@ describe('EmailViewer', () => {
       };
 
       // Mock fetch for both email and attachments
-      (fetch as jest.Mock).mockImplementation((url: string) => {
+      fetchMock.mockImplementation((url: string) => {
         if (url.includes('/api/email/test-email-id/attachments')) {
           return Promise.resolve({
             ok: true,
@@ -161,7 +166,7 @@ describe('EmailViewer', () => {
       // Turn off console.error logging for this planned exception - keeps test output clean.
       consoleErrors.setup();
       // Mock fetch to throw an error
-      (fetch as jest.Mock).mockImplementation((url: string) => {
+      fetchMock.mockImplementation((url: string) => {
         if (url.includes('/api/email/test-email-id/attachments')) {
           return Promise.resolve({
             ok: true,
@@ -194,7 +199,7 @@ describe('EmailViewer', () => {
       // Turn off console.error logging for this planned exception - keeps test output clean.
       consoleErrors.setup();
       // Mock fetch to return 404 for email
-      (fetch as jest.Mock).mockImplementation((url: string) => {
+      fetchMock.mockImplementation((url: string) => {
         if (url.includes('/api/email/test-email-id/attachments')) {
           return Promise.resolve({
             ok: true,
@@ -244,7 +249,7 @@ describe('EmailViewer', () => {
       };
 
       // Mock fetch for both email and attachments
-      (fetch as jest.Mock).mockImplementation((url: string) => {
+      fetchMock.mockImplementation((url: string) => {
         if (url.includes('/api/email/test-email-id/attachments')) {
           return Promise.resolve({
             ok: true,

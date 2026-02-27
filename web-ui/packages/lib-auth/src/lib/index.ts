@@ -1,4 +1,6 @@
 // Auth library exports
+import './services';
+
 export { setupKeyCloakProvider } from './keycloak-provider';
 export { authorized } from './authorized';
 // export { setupDrizzleAdapter } from './drizzle-adapter';
@@ -21,8 +23,8 @@ export * from './refresh-token';
 
 // Utilities
 export * from './utilities';
-export * from './errors';
 export * from './types';
+export * from './services';
 
 // Keycloak factories
 export * from './keycloak-factories';

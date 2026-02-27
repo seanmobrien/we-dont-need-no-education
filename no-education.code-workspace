@@ -53,6 +53,9 @@
 		},
 		{
 			"path": "web-ui/submodules/sce"
+		},
+		{
+			"path": "web-ui/packages/lib-fetch"
 		}
 	],
 	"settings": {

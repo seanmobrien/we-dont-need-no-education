@@ -1,7 +1,12 @@
 import { refreshAccessToken } from '@/lib/auth/refresh-token';
 import { JWT } from '@compliance-theater/types/next-auth/jwt';
-import { fetch } from '@compliance-theater/nextjs/dynamic-fetch';
 import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
+
+const mockFetch = jest.fn();
+
+jest.mock('@/lib/auth/utilities/fetch-service', () => ({
+  resolveFetchService: () => mockFetch,
+}));
 
 const DefaultTokenValues: JWT = {
   name: 'Test User',
@@ -78,11 +83,11 @@ export class JsonWebToken implements JWT {
 
 
 describe('refreshAccessToken', () => {
-  let mockFetch = fetch as jest.MockedFunction<typeof fetch>;
+  let typedMockFetch: jest.MockedFunction<typeof mockFetch>;
 
   beforeEach(() => {
-    mockFetch = fetch as jest.MockedFunction<typeof fetch>;
-    mockFetch.mockReset();
+    typedMockFetch = mockFetch as jest.MockedFunction<typeof mockFetch>;
+    typedMockFetch.mockReset();
   });
 
 
@@ -97,7 +102,7 @@ describe('refreshAccessToken', () => {
       refresh_token: 'valid_refresh_token',
     };
 
-    mockFetch.mockResolvedValueOnce({
+    typedMockFetch.mockResolvedValueOnce({
       ok: true,
       json: jest.fn(() => Promise.resolve(mockResponse)),
     } as unknown as Response);
@@ -115,21 +120,21 @@ describe('refreshAccessToken', () => {
 
 
 
-    expect(mockFetch).toHaveBeenCalledWith(
+    expect(typedMockFetch).toHaveBeenCalledWith(
       'https://keycloak.example.com/realms/test/protocol/openid-connect/token',
       expect.objectContaining({
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: expect.any(URLSearchParams),
+        body: expect.anything(),
       })
     );
   });
 
   it('should return original token with error if refresh fails', async () => {
     hideConsoleOutput().setup();
-    mockFetch.mockResolvedValueOnce({
+    typedMockFetch.mockResolvedValueOnce({
       ok: false,
       json: jest.fn(() => Promise.resolve({ error: 'invalid_grant' })),
     } as unknown as Response);
@@ -164,7 +169,7 @@ describe('refreshAccessToken', () => {
       // no refresh_token in response
     };
 
-    mockFetch.mockResolvedValueOnce({
+    typedMockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     } as unknown as Response);

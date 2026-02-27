@@ -1,7 +1,7 @@
 // @ts-nocheck
 import type { TelemetryClient, TelemetryOptions } from './telemetry.types';
 import { log } from '@compliance-theater/logger/core';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+import { resolveFetchService } from '@/lib/fetch-service';
 import { cryptoRandomBytes } from '@compliance-theater/types/lib/nextjs/crypto-random-bytes';
 
 let version = '2.1.26';
@@ -80,6 +80,7 @@ class UnifiedTelemetry implements TelemetryClient {
   }
 }
 
+const fetch = resolveFetchService();
 const telemetry = new UnifiedTelemetry(POSTHOG_API_KEY, POSTHOG_HOST);
 
 async function captureClientEvent(

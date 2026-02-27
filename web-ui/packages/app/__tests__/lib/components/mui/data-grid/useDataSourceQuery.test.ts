@@ -3,7 +3,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GridLogicOperator } from '@mui/x-data-grid-pro';
 import { useDataSource } from '../../../../../lib/components/mui/data-grid/useDataSource';
 import React, { useEffect } from 'react';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+
+const fetchMock = jest.fn();
+
+jest.mock('../../../../../lib/fetch-service', () => ({
+  resolveFetchService: jest.fn(() => fetchMock),
+}));
 
 const TEST_URL = 'http://localhost:9999/api/test';
 
@@ -14,7 +19,7 @@ const createWrapper = () => {
         retry: false,
         queryFn: async ({ queryKey }) => {
           const [url] = queryKey;
-          const response = await fetch(`${url}`);
+          const response = await fetchMock(`${url}`);
           if (!response.ok) {
             throw new Error(
               `Network response was not ok: ${response.statusText}`,
@@ -37,7 +42,7 @@ const createWrapper = () => {
 describe('useDataSource', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
-    (fetch as jest.Mock).mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({ rows: [], rowCount: 0 }),
     });
@@ -60,7 +65,7 @@ describe('useDataSource', () => {
   it('should update row via PUT request', async () => {
     const mockUpdatedRow = { id: 1, name: 'Updated Test' };
 
-    (fetch as jest.Mock).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => mockUpdatedRow,
     });
@@ -77,7 +82,7 @@ describe('useDataSource', () => {
       });
 
       expect(response).toEqual(mockUpdatedRow);
-      expect(fetch).toHaveBeenCalledWith(TEST_URL, {
+      expect(fetchMock).toHaveBeenCalledWith(TEST_URL, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mockUpdatedRow),

@@ -9,10 +9,15 @@ import {
   useQueueStatistics,
 } from '../../../lib/hooks/use-statistics';
 import type { ModelStat, QueueInfo } from '../../../types/statistics';
-import { fetch } from '@compliance-theater/nextjs/fetch';
 import { act, renderHook, waitFor } from '../../shared/test-utils';
 import { RefObject } from 'react';
 import { assert } from 'console';
+
+const fetchMock = jest.fn();
+
+jest.mock('../../../lib/fetch-service', () => ({
+  resolveFetchService: jest.fn(() => fetchMock),
+}));
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -109,7 +114,7 @@ describe('Statistics hooks', () => {
 
   describe('useModelStatistics', () => {
     it('should fetch model statistics successfully', async () => {
-      (fetch as jest.Mock).mockResolvedValueOnce({
+      fetchMock.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockModelResponse),
       });
@@ -123,13 +128,13 @@ describe('Statistics hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockModelResponse.data);
-      expect(fetch).toHaveBeenCalledWith(
+      expect(fetchMock).toHaveBeenCalledWith(
         '/api/ai/chat/stats/models?source=database'
       );
     });
 
     it('should support Redis data source', async () => {
-      (fetch as jest.Mock).mockResolvedValueOnce({
+      fetchMock.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockModelResponse),
       });
@@ -142,7 +147,7 @@ describe('Statistics hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(fetch).toHaveBeenCalledWith(
+      expect(fetchMock).toHaveBeenCalledWith(
         '/api/ai/chat/stats/models?source=redis'
       );
     });
@@ -150,7 +155,7 @@ describe('Statistics hooks', () => {
 
   describe('useQueueStatistics', () => {
     it('should fetch queue statistics successfully', async () => {
-      (fetch as jest.Mock).mockResolvedValueOnce({
+      fetchMock.mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve(mockQueueResponse),
       });
@@ -164,13 +169,13 @@ describe('Statistics hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockQueueResponse.data);
-      expect(fetch).toHaveBeenCalledWith('/api/ai/chat/stats/queues');
+      expect(fetchMock).toHaveBeenCalledWith('/api/ai/chat/stats/queues');
     });
   });
 
   describe('useStatistics', () => {
     it('should combine model and queue statistics', async () => {
-      (fetch as jest.Mock)
+      fetchMock
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockModelResponse),
@@ -196,7 +201,7 @@ describe('Statistics hooks', () => {
     });
 
     it('should handle combined loading state', () => {
-      (fetch as jest.Mock).mockImplementation(() => new Promise(() => {})); // Never resolves
+      fetchMock.mockImplementation(() => new Promise(() => {})); // Never resolves
 
       const { result } = renderHook(() => useStatistics(), {
         wrapper: createWrapper(),
@@ -207,9 +212,9 @@ describe('Statistics hooks', () => {
     });
 
     it('should refetch both queries when refetch is called', async () => {
-      (fetch as jest.Mock).mockClear();
+      fetchMock.mockClear();
 
-      (fetch as jest.Mock)
+      fetchMock
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockModelResponse),
@@ -237,11 +242,11 @@ describe('Statistics hooks', () => {
       // testState.result.current.refetch();
 
       // Should trigger both queries again
-      expect(fetch).toHaveBeenCalledTimes(2);
-      expect(fetch).toHaveBeenCalledWith(
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(fetchMock).toHaveBeenCalledWith(
         '/api/ai/chat/stats/models?source=database'
       );
-      expect(fetch).toHaveBeenCalledWith('/api/ai/chat/stats/queues');
+      expect(fetchMock).toHaveBeenCalledWith('/api/ai/chat/stats/queues');
     });
   });
 });

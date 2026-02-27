@@ -2369,6 +2369,28 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@compliance-theater/fetch@workspace:*, @compliance-theater/fetch@workspace:web-ui/packages/lib-fetch":
+  version: 0.0.0-use.local
+  resolution: "@compliance-theater/fetch@workspace:web-ui/packages/lib-fetch"
+  dependencies:
+    "@compliance-theater/redis": "workspace:*"
+    "@compliance-theater/types": "workspace:*"
+    "@compliance-theater/typescript": "workspace:*"
+    "@jest/globals": "npm:^30.0.0"
+    "@jest/transform": "npm:^30.0.0"
+    "@jest/types": "npm:^30.0.0"
+    "@types/jest": "npm:^30.0.0"
+    "@types/node": "npm:25.2.3"
+    got: "npm:^14.4.9"
+    jest: "npm:^30.0.5"
+    jest-util: "npm:^30.0.0"
+    lru-cache: "npm:^11.0.2"
+    rimraf: "npm:^6.1.2"
+    ts-jest: "npm:^30.0.0"
+    typescript: "npm:^5.9.3"
+  languageName: unknown
+  linkType: soft
+
 "@compliance-theater/json-viewer-docs@workspace:web-ui/submodules/json-viewer/docs":
   version: 0.0.0-use.local
   resolution: "@compliance-theater/json-viewer-docs@workspace:web-ui/submodules/json-viewer/docs"
@@ -2493,6 +2515,7 @@ __metadata:
     "@compliance-theater/after": "workspace:*"
     "@compliance-theater/env": "workspace:*"
     "@compliance-theater/feature-flags": "workspace:*"
+    "@compliance-theater/fetch": "workspace:*"
     "@compliance-theater/logger": "workspace:*"
     "@compliance-theater/redis": "workspace:*"
     "@compliance-theater/types": "workspace:*"

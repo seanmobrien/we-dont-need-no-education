@@ -1,5 +1,1 @@
-const localFetch = globalThis.fetch;
-
-//const localFetch = fetch;
-
-export { localFetch as fetch };
+export { fetch } from '@compliance-theater/fetch';

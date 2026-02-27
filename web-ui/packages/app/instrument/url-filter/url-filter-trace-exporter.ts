@@ -4,7 +4,6 @@ import type { AttributeValue } from '@opentelemetry/api';
 import {
   log,
   globalRequiredSingleton,
-  globalSingleton,
 } from '@compliance-theater/logger';
 import { UrlFilterEngine } from './url-filter-engine';
 import { UrlFilterOptions } from './url-filter-rules';

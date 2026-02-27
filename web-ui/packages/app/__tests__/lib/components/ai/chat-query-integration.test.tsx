@@ -6,7 +6,12 @@ import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import React from 'react';
 import { renderHook } from '../../../shared/test-utils';
 import { useChatFetchWrapper } from '../../../../lib/components/ai/chat-fetch-wrapper';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+
+const fetchMock = jest.fn();
+
+jest.mock('../../../../lib/fetch-service', () => ({
+  resolveFetchService: jest.fn(() => fetchMock),
+}));
 
 // Polyfill ReadableStream for Node.js test environment
 if (!globalThis.ReadableStream) {
@@ -72,7 +77,7 @@ const createTestWrapper = () => {
 describe('TanStack React Query Chat Integration', () => {
   beforeEach(() => {
     // Clear mocks - fetch is already mocked in jest.setup.ts
-    (fetch as jest.Mock).mockClear();
+    fetchMock.mockClear();
   });
 
   describe('useChatFetchWrapper', () => {
@@ -88,9 +93,7 @@ describe('TanStack React Query Chat Integration', () => {
 
     it('should create chatFetch function that makes requests', async () => {
       const mockResponseData = { message: 'success' };
-      (fetch as jest.Mock).mockResolvedValueOnce(
-        mockResponse(mockResponseData),
-      );
+      fetchMock.mockResolvedValueOnce(mockResponse(mockResponseData));
 
       const { result } = renderHook(() => useChatFetchWrapper(), {
         wrapper: createTestWrapper(),

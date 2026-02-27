@@ -7,7 +7,9 @@ import {
 import { log } from '@compliance-theater/logger';
 import { useCallback } from 'react';
 import { env } from '@compliance-theater/env';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+import { resolveFetchService } from '@/lib/fetch-service';
+
+const fetch = resolveFetchService();
 
 /**
  * Creates a simple fetch wrapper with basic retry logic and error handling

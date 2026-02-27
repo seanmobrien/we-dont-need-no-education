@@ -1,9 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": [
-    "**/*.local",
-    "**/.env"    
-  ],
+
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -29,11 +26,11 @@
         "MEM0_*",
         "OPENAI_*",
         "OTEL_*",
-        "REDIS_*",        
+        "REDIS_*",
         "DATABASE_URL",
         "WORKSPACE_SOURCE_IMPORTS"
       ]
-    },    
+    },
     "@compliance-theater/app#build": {
       "dependsOn": ["^build"],
       "inputs": [
@@ -63,7 +60,7 @@
         "MEM0_*",
         "OPENAI_*",
         "OTEL_*",
-        "REDIS_*",        
+        "REDIS_*",
         "DATABASE_URL",
         "WORKSPACE_SOURCE_IMPORTS"
       ]
@@ -92,13 +89,13 @@
         "MEM0_*",
         "OPENAI_*",
         "OTEL_*",
-        "REDIS_*",        
+        "REDIS_*",
         "DATABASE_URL",
         "WORKSPACE_SOURCE_IMPORTS"
       ]
     },
     "@compliance-theater/app#build:typescript": {
-      "dependsOn": ["^build:typescript"],
+      "dependsOn": ["^@compliance-theater/app#build:typescript"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "app/**",
@@ -126,7 +123,7 @@
         "MEM0_*",
         "OPENAI_*",
         "OTEL_*",
-        "REDIS_*",        
+        "REDIS_*",
         "DATABASE_URL",
         "WORKSPACE_SOURCE_IMPORTS"
       ]
@@ -155,7 +152,7 @@
         "MEM0_*",
         "OPENAI_*",
         "OTEL_*",
-        "REDIS_*",        
+        "REDIS_*",
         "DATABASE_URL",
         "WORKSPACE_SOURCE_IMPORTS"
       ]
@@ -183,7 +180,7 @@
     "test": {
       "dependsOn": ["^test"],
       "outputs": [],
-      "inputs": ["**/*.test.ts", "**/*.test.tsx", "__tests__/**/*", "*.mjs"]
+      "inputs": ["__tests__/**/*", "__tests__/*", "*.mjs"]
     },
     "test:unit": {
       "dependsOn": ["^test:unit"],

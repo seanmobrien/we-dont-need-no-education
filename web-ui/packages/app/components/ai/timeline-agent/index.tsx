@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+import { resolveFetchService } from '@/lib/fetch-service';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -43,6 +43,8 @@ import {
 import { log } from '@compliance-theater/logger';
 import { ClientTimelineAgent } from '@/lib/ai/agents/timeline/agent';
 import { useNotifications } from '@toolpad/core/useNotifications';
+
+const fetch = resolveFetchService();
 
 interface TimelineAgentInterfaceProps {
   initialDocumentId: string;
@@ -319,7 +321,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
         loadSnapshot(file);
       }
     },
-    [loadSnapshot]
+    [loadSnapshot],
   );
 
   // Initialize on mount
@@ -748,7 +750,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
                                 secondary={rating}
                               />
                             </ListItem>
-                          )
+                          ),
                         )}
                       </List>
                     </AccordionDetails>
@@ -811,7 +813,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
                                                 >
                                                   &ldquo;{statement}&rdquo;
                                                 </Typography>
-                                              )
+                                              ),
                                             )}
                                           </Box>
                                         )}
@@ -824,7 +826,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
                                 <Divider />
                               )}
                             </React.Fragment>
-                          )
+                          ),
                         )}
                       </List>
                     </AccordionDetails>

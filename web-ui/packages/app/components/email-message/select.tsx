@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { debounce } from 'lodash';
 import { EmailMessageSummary } from '@/data-models/api/email-message';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+import { resolveFetchService } from '@/lib/fetch-service';
 import { LoggedError } from '@compliance-theater/logger';
+
+const fetch = resolveFetchService();
 
 // Simple replacement for removed classnames function
 const classnames = (...classes: (string | undefined)[]): string => {

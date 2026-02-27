@@ -13,8 +13,8 @@ setupImpersonationMock();
 
 // Mock fetch module BEFORE importing SUTs so the implementation is captured.
 const fetchMock = jest.fn();
-jest.mock('@compliance-theater/nextjs/server/fetch', () => ({
-  fetch: (...args: unknown[]) => fetchMock(...args),
+jest.mock('../../../../../lib/fetch-service', () => ({
+  resolveFetchService: jest.fn(() => fetchMock),
 }));
 
 import { hybridDocumentSearchFactory } from '../../../../../lib/ai/services/search/HybridDocumentSearch';

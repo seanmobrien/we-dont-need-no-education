@@ -11,6 +11,13 @@
  */
 
 declare module "@compliance-theater/types/dependency-injection/types" {
+    import type { IFetchService } from '@compliance-theater/types/lib/fetch';
+    import type {
+        IAccessTokenService,
+        IAuthSessionService,
+        IImpersonationService,
+        ITokenExchangeService,
+    } from '@compliance-theater/types/lib/auth';
     import type {
         AwilixContainer,
         Resolver,
@@ -40,8 +47,13 @@ declare module "@compliance-theater/types/dependency-injection/types" {
      * const logger = resolveService('logger'); // typed as Logger
      * ```
      */
-    // eslint-disable-next-line @typescript-eslint/no-empty-interface
-    export interface ServiceCradle extends Record<string, unknown> { }
+    export interface ServiceCradle extends Record<string, unknown> {
+        'fetch-service': IFetchService;
+        'auth-session-service': IAuthSessionService;
+        'impersonation-service': IImpersonationService;
+        'access-token-service': IAccessTokenService;
+        'token-exchange-service': ITokenExchangeService;
+    }
 
     /**
      * Options for registering a service with the container.

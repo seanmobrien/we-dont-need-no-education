@@ -4,9 +4,22 @@ import type {
     ResolveOptions,
     LifetimeType,
 } from 'awilix';
+import type { IFetchService } from '../lib/fetch';
+import type {
+    IAccessTokenService,
+    IAuthSessionService,
+    IImpersonationService,
+    ITokenExchangeService,
+} from '../lib/auth';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface ServiceCradle extends Record<string, unknown> { }
+export interface ServiceCradle extends Record<string, unknown> {
+    'fetch-service': IFetchService;
+    'auth-session-service': IAuthSessionService;
+    'impersonation-service': IImpersonationService;
+    'access-token-service': IAccessTokenService;
+    'token-exchange-service': ITokenExchangeService;
+}
 
 export type ServiceRegistrationOptions = {
     lifetime?: LifetimeType;

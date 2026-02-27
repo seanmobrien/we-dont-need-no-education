@@ -1,17 +1,18 @@
-import { wrapRouteRequest, fetch } from '@compliance-theater/nextjs/server';
+import { wrapRouteRequest } from '@compliance-theater/nextjs/server';
 import { env } from '@compliance-theater/env';
 import { NextResponse } from 'next/server';
+import { resolveFetchService } from '@/lib/fetch-service';
+
+const fetch = resolveFetchService();
 
 export const GET: (req?: Request) => Promise<Response> = wrapRouteRequest(
   async () => {
     const mem0_api_host = env('MEM0_API_HOST');
     // Use await to ensure any fetch errors are caught within this function and
     // propogated up to wrapRouteRequest for handling.
+    const signal = AbortSignal.timeout(90 * 1000);
     return await fetch(new URL('openapi.json', mem0_api_host).toString(), {
-      timeout: {
-        connect: 90 * 1000,
-        socket: 60 * 1000,
-      },
+      signal,
     }).then(async (res) => {
       const text = await res.text();
       return NextResponse.json(

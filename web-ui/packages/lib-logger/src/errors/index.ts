@@ -1,9 +1,9 @@
-export { LoggedError, dumpError,  } from './logged-error/logged-error-class';
+export { LoggedError, dumpError, } from './logged-error/logged-error-class';
 export { ProgressEventError } from './progress-event-error';
-export type { 
+export type {
   IPostgresError,
   ErrorContext,
-  IContextEnricher  
+  IContextEnricher
 } from './types';
 export type {
   LoggedErrorOptions,
@@ -24,6 +24,7 @@ export { AccessDeniedError } from './access-denied-error';
 export { DataIntegrityError } from './data-integrity-error';
 export { ValidationError } from './validation-error';
 export { AggregateError } from './aggregate-error';
+export { InvalidGrantError } from './invalid-grant-error';
 export { RateRetryError, isRateRetryError } from './rate-retry-error';
 export {
   isConsoleError,
