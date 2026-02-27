@@ -4,9 +4,6 @@
     "noEmit": true,
     "rootDir": "./",
     "baseUrl": ".",
-    "customConditions": [
-      "workspace-source"
-    ],
     "paths": {
       "@/*": [
         "./*"

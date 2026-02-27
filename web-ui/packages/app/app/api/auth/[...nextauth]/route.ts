@@ -1,9 +1,11 @@
+import { NextRequest } from 'next/server';
 import { handlers } from '@compliance-theater/auth';
+import { LikeNextResponse } from '@compliance-theater/types';
 
-type AuthRouteHandler = (req: Request) => Promise<Response>;
+type AuthRouteHandler = (req: NextRequest) => Promise<LikeNextResponse>;
 
 export const GET: AuthRouteHandler = (req) =>
-    handlers.GET(req as Parameters<typeof handlers.GET>[0]);
+    handlers.GET(req);
 export const POST: AuthRouteHandler = (req) =>
-    handlers.POST(req as Parameters<typeof handlers.POST>[0]);
+    handlers.POST(req);
 export const dynamic = 'force-dynamic';

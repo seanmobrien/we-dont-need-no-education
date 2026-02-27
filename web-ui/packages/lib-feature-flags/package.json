@@ -8,52 +8,10 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./client": {
-      "types": "./dist/client.d.ts",
-      "workspace-source": "./src/client.ts",
-      "default": "./dist/client.js"
-    },
-    "./server": {
-      "types": "./dist/server.d.ts",
-      "workspace-source": "./src/server.ts",
-      "default": "./dist/server.js"
-    },
-    "./context": {
-      "types": "./dist/context.d.ts",
-      "workspace-source": "./src/context.ts",
-      "default": "./dist/context.js"
-    },
-    "./types": {
-      "types": "./dist/types.d.ts",
-      "workspace-source": "./src/types.ts",
-      "default": "./dist/types.js"
-    },
-    "./known-feature": {
-      "types": "./dist/known-feature.d.ts",
-      "workspace-source": "./src/known-feature.ts",
-      "default": "./dist/known-feature.js"
-    },
-    "./known-feature-defaults": {
-      "types": "./dist/known-feature-defaults.d.ts",
-      "workspace-source": "./src/known-feature-defaults.ts",
-      "default": "./dist/known-feature-defaults.js"
-    },
-    "./feature-flag-with-refresh": {
-      "types": "./dist/feature-flag-with-refresh.d.ts",
-      "workspace-source": "./src/feature-flag-with-refresh.ts",
-      "default": "./dist/feature-flag-with-refresh.js"
-    },
-    "./components/flag-provider": {
-      "types": "./dist/components/flag-provider.d.ts",
-      "workspace-source": "./src/components/flag-provider.tsx",
-      "default": "./dist/components/flag-provider.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },

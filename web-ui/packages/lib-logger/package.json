@@ -8,62 +8,10 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./errors": {
-      "types": "./dist/errors/index.d.ts",
-      "workspace-source": "./src/errors/index.ts",
-      "default": "./dist/errors/index.js"
-    },
-    "./errors/logged-error": {
-      "types": "./dist/errors/logged-error/index.d.ts",
-      "workspace-source": "./src/errors/logged-error/index.ts",
-      "default": "./dist/errors/logged-error/index.js"
-    },
-    "./errors/monitoring": {
-      "types": "./dist/errors/monitoring/index.d.ts",
-      "workspace-source": "./src/errors/monitoring/index.ts",
-      "default": "./dist/errors/monitoring/index.js"
-    },
-    "./errors/monitoring/*": {
-      "types": "./dist/errors/monitoring/*.d.ts",
-      "workspace-source": "./src/errors/monitoring/*",
-      "default": "./dist/errors/monitoring/*.js"
-    },
-    "./errors/*": {
-      "types": "./dist/errors/*.d.ts",
-      "workspace-source": "./src/errors/*",
-      "default": "./dist/errors/*.js"
-    },
-    "./errors/boundaries": {
-      "types": "./dist/errors/boundaries/index.d.ts",
-      "workspace-source": "./src/errors/boundaries/index.ts",
-      "default": "./dist/errors/boundaries/index.js"
-    },
-    "./errors/boundaries/*": {
-      "types": "./dist/errors/boundaries/*.d.ts",
-      "workspace-source": "./src/errors/boundaries/*",
-      "default": "./dist/errors/boundaries/*.js"
-    },
-    "./core": {
-      "types": "./dist/core.d.ts",
-      "workspace-source": "./src/core.ts",
-      "default": "./dist/core.js"
-    },
-    "./singleton-provider": {
-      "types": "./dist/singleton-provider/index.d.ts",
-      "workspace-source": "./src/singleton-provider/index.ts",
-      "default": "./dist/singleton-provider/index.js"
-    },
-    "./singleton-provider/*": {
-      "types": "./dist/singleton-provider/*.d.ts",
-      "workspace-source": "./src/singleton-provider/*.ts",
-      "default": "./dist/singleton-provider/*.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },

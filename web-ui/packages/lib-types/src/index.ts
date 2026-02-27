@@ -1,6 +1,8 @@
 // Include NextAuth/Auth.js module augmentations
-import type { } from './types/auth';
-import type { } from './types/nextauth';
+import type { } from './types/auth/core/index';
+import type { } from './types/auth/core/jwt';
+import type { } from './types/auth/core/types';
+import type { } from './types/next-auth';
 
 export { ValidKeyValidationStatusValues } from './components/auth/key-validation-status';
 export type { KeyValidationStatus } from './components/auth/key-validation-status';
@@ -45,11 +47,10 @@ export type {
   Session,
   User,
   Account,
-  Profile,
   AuthConfig,
-} from '@auth/core/types';
-export type { JWT } from '@auth/core/jwt';
-export type { Adapter } from '@auth/core/adapters';
+} from './auth-core/types';
+export type { JWT } from './auth-core/jwt';
+export type { Adapter } from './auth-core/adapters';
 export type {
   MessagePartPreservationRules,
   MetadataPreservationOptions,
@@ -72,7 +73,19 @@ export {
   preserveMessageStructure,
 } from './lib/ai/message-structure-preservation';
 
-export type { cryptoRandomBytes } from './lib/nextjs/crypto-random-bytes';
+export {
+  cryptoRandomBytes,
+  cryptoEncrypt,
+  cryptoDecrypt,
+} from './lib/nextjs/crypto-random-bytes';
+export type {
+  CryptoEnvelopeAlgorithm,
+  RsaEnvelopeV1,
+  EcEnvelopeV1,
+  CipherEnvelopeV1,
+  CryptoEncryptOptions,
+  CryptoDecryptOptions,
+} from './lib/nextjs/crypto-random-bytes';
 export type { LikeNextRequest } from './lib/nextjs/types/like-nextrequest';
 export type { LikeNextResponse } from './lib/nextjs/types/like-nextresponse';
 

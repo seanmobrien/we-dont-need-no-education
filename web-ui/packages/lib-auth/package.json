@@ -8,27 +8,10 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./lib": {
-      "types": "./dist/lib/index.d.ts",
-      "workspace-source": "./src/lib/index.ts",
-      "default": "./dist/lib/index.js"
-    },
-    "./lib/utilities": {
-      "types": "./dist/lib/utilities/index.d.ts",
-      "workspace-source": "./src/lib/utilities/index.ts",
-      "default": "./dist/lib/utilities/index.js"
-    },
-    "./components": {
-      "types": "./dist/components/index.d.ts",
-      "workspace-source": "./src/components/index.ts",
-      "default": "./dist/components/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },

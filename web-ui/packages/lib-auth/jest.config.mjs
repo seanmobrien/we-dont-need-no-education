@@ -8,13 +8,10 @@ const config = {
   testEnvironment: "jsdom",
   rootDir: ".",
   moduleNameMapper: {
-    "^@compliance-theater/auth/lib/utilities$": "<rootDir>/src/lib/utilities/index.ts",
     '^got$': '<rootDir>/__mocks__/got.ts',
     ...baseConfig.moduleNameMapper,
     "^jose$": "<rootDir>/../app/__mocks__/jose.ts",
     "^next-auth/providers/keycloak$": "<rootDir>/__mocks__/shared/keycloak-provider.js",
-    "^@compliance-theater/auth/(.*)$": "<rootDir>/src/$1",
-    "^@compliance-theater/auth$": "<rootDir>/src",
     "^@/__tests__/test-utils$": "<rootDir>/__tests__/shared/test-utils.tsx",
     "^@/__tests__/test-utils-server$": "<rootDir>/__tests__/shared/test-utils-server.ts",
     "^@/__tests__/shared/(.*)$": "<rootDir>/__tests__/shared/$1",

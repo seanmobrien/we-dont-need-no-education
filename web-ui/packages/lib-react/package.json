@@ -8,22 +8,10 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./errors": {
-      "types": "./dist/errors/index.d.ts",
-      "workspace-source": "./src/errors/index.ts",
-      "default": "./dist/errors/index.js"
-    },
-    "./hooks": {
-      "types": "./dist/hooks/index.d.ts",
-      "workspace-source": "./src/hooks/index.ts",
-      "default": "./dist/hooks/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },

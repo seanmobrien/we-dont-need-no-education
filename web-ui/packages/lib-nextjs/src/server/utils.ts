@@ -1,7 +1,7 @@
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@compliance-theater/env';
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
-import type { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import {
   SpanKind,
   SpanStatusCode,
@@ -18,7 +18,6 @@ import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
 import { isPromise } from '@compliance-theater/typescript';
 import { getAppStartupState } from './app-startup-accessor';
-import { LikeNextResponse } from '@compliance-theater/types/lib/nextjs';
 export {
   createSafeAsyncWrapper,
   createSafeErrorHandler,
@@ -57,19 +56,19 @@ export const wrapRouteRequest = <
   | [Request, WrappedResponseContext<TContext>],
   TContext extends Record<string, unknown> = Record<string, unknown>,
 >(
-  fn: (...args: A) => Promise<Response | NextResponse | undefined>,
+  fn: (...args: A) => Promise<Response | undefined>,
   options: {
     log?: boolean;
     buildFallback?: object | typeof EnableOnBuild;
     errorCallback?: (error: unknown) => void | Promise<void>;
   } = {},
-): ((...args: A) => Promise<LikeNextResponse>) => {
+): ((...args: A) => Promise<Response>) => {
   const {
     log: shouldLog = env('NODE_ENV') !== 'production',
     buildFallback,
     errorCallback,
   } = options ?? {};
-  return async (...args: A): Promise<LikeNextResponse> => {
+  return async (...args: A): Promise<Response> => {
     const req = args[0] as NextRequest;
     const context = args[1] as WrappedResponseContext<TContext>;
 
@@ -147,7 +146,7 @@ export const wrapRouteRequest = <
             fn as unknown as (
               req: NextRequest,
               context: WrappedResponseContext<TContext>,
-            ) => Promise<Response | NextResponse>
+            ) => Promise<Response>
           )(req, {
             ...context,
             span,

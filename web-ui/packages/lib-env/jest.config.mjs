@@ -3,7 +3,6 @@ export default {
   preset: 'ts-jest',
   testEnvironment: 'node',
   testEnvironmentOptions: {
-    customExportConditions: ['workspace-source'],
   },
   roots: ['<rootDir>'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/*.test.ts'],

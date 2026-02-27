@@ -1,6 +1,9 @@
 import type { NextApiRequest } from 'next';
 import type { NextRequest } from 'next/server';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type NextUrl = URL | any;
+
 type StockRequestBody = Request['body'];
 
 type RequestBodyExtractors = Pick<
@@ -20,7 +23,7 @@ type QuerySupport = {
 };
 
 type NextUrlSupport = {
-	nextUrl?: Pick<URL, 'pathname' | 'search' | 'searchParams' | 'toString'>;
+	nextUrl?: NextUrl;
 };
 
 type CookieStoreLike = Pick<NextRequest['cookies'], 'get'>;
@@ -33,18 +36,24 @@ type StockBodySupport = {
 	body: StockRequestBody;
 };
 
+type BaseRequiredRequestKeys = 'method' | 'url' | 'headers' | 'cookies';
+type RequiredRequestKeys = BaseRequiredRequestKeys | 'bodyUsed' | 'bytes' | 'clone' | 'signal' | 'referrerPolicy' |
+	'redirect' | 'referrer' | 'cache' | 'credentials' | 'destination' | 'integrity' | 'keepalive' | 'mode' | 'page' |
+	'ua';
+
+
 export type LikeNextRequest =
-	| (Pick<NextApiRequest, 'method' | 'url' | 'headers'> &
-			StockBodySupport &
-			Partial<RequestBodyExtractors> &
-			RouteSupport &
-			QuerySupport &
-			NextUrlSupport &
-			CookiesSupport)
-	| (Pick<NextRequest, 'method' | 'url' | 'headers' | 'cookies'> &
-			StockBodySupport &
-			RequestBodyExtractors &
-			RouteSupport &
-			NextUrlSupport &
-			QuerySupport &
-			CookiesSupport);
+	| (Pick<NextApiRequest, BaseRequiredRequestKeys> &
+		StockBodySupport &
+		Partial<RequestBodyExtractors> &
+		RouteSupport &
+		QuerySupport &
+		NextUrlSupport &
+		CookiesSupport)
+	| (Pick<NextRequest, RequiredRequestKeys> &
+		StockBodySupport &
+		RequestBodyExtractors &
+		RouteSupport &
+		NextUrlSupport &
+		QuerySupport &
+		CookiesSupport);

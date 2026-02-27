@@ -8,92 +8,10 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./lib/ai": {
-      "types": "./dist/lib/ai/index.d.ts",
-      "workspace-source": "./src/lib/ai/index.ts",
-      "default": "./dist/lib/ai/index.js"
-    },
-    "./lib/ai/*": {
-      "types": "./dist/lib/ai/*.d.ts",
-      "workspace-source": "./src/lib/ai/*.ts",
-      "default": "./dist/lib/ai/*.js"
-    },
-    "./lib/ai/core": {
-      "types": "./dist/lib/ai/core/index.d.ts",
-      "workspace-source": "./src/lib/ai/core/index.ts",
-      "default": "./dist/lib/ai/core/index.js"
-    },
-    "./lib/ai/core/*": {
-      "types": "./dist/lib/ai/core/*.d.ts",
-      "workspace-source": "./src/lib/ai/core/*.ts",
-      "default": "./dist/lib/ai/core/*.js"
-    },
-    "./lib/ai/chat": {
-      "types": "./dist/lib/ai/chat/index.d.ts",
-      "workspace-source": "./src/lib/ai/chat/index.ts",
-      "default": "./dist/lib/ai/chat/index.js"
-    },
-    "./lib/ai/chat/*": {
-      "types": "./dist/lib/ai/chat/*.d.ts",
-      "workspace-source": "./src/lib/ai/chat/*.ts",
-      "default": "./dist/lib/ai/chat/*.js"
-    },
-    "./lib/ai/message-structure-preservation": {
-      "types": "./dist/lib/ai/message-structure-preservation.d.ts",
-      "workspace-source": "./src/lib/ai/message-structure-preservation.ts",
-      "default": "./dist/lib/ai/message-structure-preservation.js"
-    },
-    "./dependency-injection": {
-      "types": "./dist/dependency-injection/index.d.ts",
-      "workspace-source": "./src/dependency-injection/index.ts",
-      "default": "./dist/dependency-injection/index.js"
-    },
-    "./dependency-injection/*": {
-      "types": "./dist/dependency-injection/*.d.ts",
-      "workspace-source": "./src/dependency-injection/*.ts",
-      "default": "./dist/dependency-injection/*.js"
-    },
-    "./ai-sdk": {
-      "types": "./dist/ai-sdk/index.d.ts",
-      "workspace-source": "./src/ai-sdk/index.ts",
-      "default": "./dist/ai-sdk/index.js"
-    },
-    "./ai-sdk/*": {
-      "types": "./dist/ai-sdk/*.d.ts",
-      "workspace-source": "./src/ai-sdk/*.ts",
-      "default": "./dist/ai-sdk/*.js"
-    },
-    "./lib/nextjs": {
-      "types": "./dist/lib/nextjs/index.d.ts",
-      "workspace-source": "./src/lib/nextjs/index.ts",
-      "default": "./dist/lib/nextjs/index.js"
-    },
-    "./lib/nextjs/guards": {
-      "types": "./dist/lib/nextjs/guards.d.ts",
-      "workspace-source": "./src/lib/nextjs/guards.ts",
-      "default": "./dist/lib/nextjs/guards.js"
-    },
-    "./lib/nextjs/types": {
-      "types": "./dist/lib/nextjs/types/index.d.ts",
-      "workspace-source": "./src/lib/nextjs/types/index.ts",
-      "default": "./dist/lib/nextjs/types/index.js"
-    },
-    "./lib/nextjs/types/*": {
-      "types": "./dist/lib/nextjs/types/*.d.ts",
-      "workspace-source": "./src/lib/nextjs/types/*.ts",
-      "default": "./dist/lib/nextjs/types/*.js"
-    },
-    "./lib/nextjs/get-header-value": {
-      "types": "./dist/lib/nextjs/get-header-value.d.ts",
-      "workspace-source": "./src/lib/nextjs/get-header-value.ts",
-      "default": "./dist/lib/nextjs/get-header-value.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },

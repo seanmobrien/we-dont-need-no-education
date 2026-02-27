@@ -8,17 +8,10 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./singleton-provider": {
-      "types": "./dist/singleton-provider/index.d.ts",
-      "workspace-source": "./src/singleton-provider/index.ts",
-      "default": "./dist/singleton-provider/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },

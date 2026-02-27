@@ -8,27 +8,10 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./driver": {
-      "types": "./dist/driver/index.d.ts",
-      "workspace-source": "./src/driver/index.ts",
-      "default": "./dist/driver/index.js"
-    },
-    "./orm": {
-      "types": "./dist/orm/index.d.ts",
-      "workspace-source": "./src/orm/index.ts",
-      "default": "./dist/orm/index.js"
-    },
-    "./schema": {
-      "types": "./dist/drizzle/schema.d.ts",
-      "workspace-source": "./src/drizzle/schema.ts",
-      "default": "./dist/drizzle/schema.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },

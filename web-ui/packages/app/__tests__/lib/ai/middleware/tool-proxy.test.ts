@@ -127,7 +127,7 @@ describe('wrapWithToolProxyMiddleware', () => {
     wrapWithToolProxyMiddleware({ model, tools });
 
     expect(wrapLanguageModelMock).toHaveBeenCalledTimes(1);
-    const callArgs = wrapLanguageModelMock.mock.calls[0][0];
+    const callArgs = (wrapLanguageModelMock as jest.Mock).mock.calls[0][0];
     expect(callArgs.model).toBe(model);
     expect(callArgs.middleware).toBeDefined();
   });

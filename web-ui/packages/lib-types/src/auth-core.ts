@@ -1,3 +1,9 @@
-import * as auth_core from '@auth/core';
-export { auth_core };
-export * from '@auth/core';
+export * from './auth-core/index';
+export type {
+    Session,
+    User,
+    Account,
+    AuthConfig,
+    JWT,
+    Adapter,
+} from './auth-core/index';

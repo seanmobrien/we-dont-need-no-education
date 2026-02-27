@@ -11,7 +11,7 @@
  */
 
 import { GET } from '../../../../../app/api/ai/chat/history/route';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 // import { mockChatHistoryResponse } from '../../../../components/chat.mock-data';
 const mockChatHistoryResponse = {
   results: [
@@ -88,6 +88,10 @@ describe('/api/ai/chat/history route', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/ai/chat/history?page=0&pageSize=10',
       );
+
+      const r = NextResponse.json('{"test": "response"}');
+      const d = r.json();
+
 
       const response = await GET(request);
       const data = await response.json();

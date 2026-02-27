@@ -8,32 +8,10 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./themes": {
-      "types": "./dist/themes/index.d.ts",
-      "workspace-source": "./src/themes/index.ts",
-      "default": "./dist/themes/index.js"
-    },
-    "./styles": {
-      "types": "./dist/styles/index.d.ts",
-      "workspace-source": "./src/styles/index.ts",
-      "default": "./dist/styles/index.js"
-    },
-    "./provider": {
-      "types": "./dist/themes/provider.d.ts",
-      "workspace-source": "./src/themes/provider.ts",
-      "default": "./dist/themes/provider.js"
-    },
-    "./components/theme-selector": {
-      "types": "./dist/themes/theme-selector.d.ts",
-      "workspace-source": "./src/themes/theme-selector.tsx",
-      "default": "./dist/themes/theme-selector.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },

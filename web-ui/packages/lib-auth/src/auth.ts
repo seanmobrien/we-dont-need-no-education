@@ -1,12 +1,11 @@
 import type {
   Account,
-  Profile,
   User,
   DefaultSession,
   Session,
   NextAuthConfig,
 } from '@compliance-theater/types/next-auth';
-import type { Awaitable } from '@compliance-theater/types/auth-core/types';
+import type { Awaitable, Profile } from '@compliance-theater/types/auth-core/types';
 
 import NextAuth, { type NextAuthResult } from '@compliance-theater/types/next-auth'; // Added NextAuthConfig
 import type { Adapter, AdapterSession, AdapterUser } from '@compliance-theater/types/auth-core/adapters';
@@ -17,7 +16,8 @@ import { logEvent } from '@compliance-theater/logger';
 import { setupKeyCloakProvider } from './lib/keycloak-provider';
 import { authorized } from './lib/authorized';
 import type { JWT } from '@compliance-theater/types/next-auth/jwt';
-import { LikeNextRequest } from '../../lib-nextjs/src/types';
+import { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
+import { LikeNextResponse } from '@compliance-theater/types/lib/nextjs/types/like-nextresponse';
 
 type DynamicImports = {
   drizzleAdapter: {
@@ -233,6 +233,7 @@ const nextAuthResult: NextAuthResult = NextAuth(async () => {
       signIn: '/auth/signin',
     },
     session: {
+      user: { id: '123' } as User,
       strategy: 'jwt',
       maxAge: 30 * 60, // 30 minutes
       updateAge: 5 * 60, // 5 minutes
@@ -247,8 +248,8 @@ const nextAuthResult: NextAuthResult = NextAuth(async () => {
 });
 
 export type NextAuthHandlers = {
-  GET: (req: LikeNextRequest) => Promise<Response>;
-  POST: (req: LikeNextRequest) => Promise<Response>;
+  GET: (req: LikeNextRequest) => Promise<LikeNextResponse<unknown>>;
+  POST: (req: LikeNextRequest) => Promise<LikeNextResponse<unknown>>;
 }
 
 export type NextAuthAuth = NextAuthResult['auth'];

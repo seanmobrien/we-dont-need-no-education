@@ -99,7 +99,6 @@ const config = {
       FetchExternalResources: false,
       ProcessExternalResources: false,
     },
-    customExportConditions: ['workspace-source'],
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled  
   setupFilesAfterEnv: [
@@ -145,26 +144,6 @@ const config = {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
 
     // Aliases to support internal imports with jest resolver
-    '^@compliance-theater/logger/singleton-provider$': '<rootDir>/../lib-logger/src/singleton-provider/index.ts',
-    '^@compliance-theater/logger/core$': '<rootDir>/../lib-logger/src/core.ts',
-    '^@compliance-theater/logger$': '<rootDir>/../lib-logger/src/index.ts',
-    '^@compliance-theater/logger/(.*)$': '<rootDir>/../lib-logger/src/$1',
-    '^@compliance-theater/database/schema$': '<rootDir>/../lib-database/src/drizzle/schema.ts',
-    '^@compliance-theater/typescript(.*)$': '<rootDir>/../lib-typescript/src$1',
-    '^@compliance-theater/types$': '<rootDir>/../lib-types/src/index.ts',
-    '^@compliance-theater/types/lib/ai/(.*)$': '<rootDir>/../lib-types/src/lib/ai/$1',
-    '^@compliance-theater/types/lib/(.*)$': '<rootDir>/../lib-types/src/lib/$1',
-    '^@compliance-theater/types(/.*)$': '<rootDir>/../lib-types/src$1',
-    '^@compliance-theater/env(.*)$': '<rootDir>/../lib-env/src$1',
-    '^@compliance-theater/auth(.*)$': '<rootDir>/../lib-auth/src$1',
-    '^@compliance-theater/database(.*)$': '<rootDir>/../lib-database/src$1',
-    '^@compliance-theater/feature-flags(.*)$': '<rootDir>/../lib-feature-flags/src$1',
-    '^@compliance-theater/nextjs(.*)$': '<rootDir>/../lib-nextjs/src$1',
-    '^@compliance-theater/react(.*)$': '<rootDir>/../lib-react/src$1',
-    '^@compliance-theater/redis(.*)$': '<rootDir>/../lib-redis/src$1',
-    '^@compliance-theater/send-api-request(.*)$': '<rootDir>/../lib-send-api-request/src$1',
-    '^@compliance-theater/themes(.*)$': '<rootDir>/../lib-themes/src$1',
-    '^@compliance-theater/json-viewer(.*)$': '<rootDir>/../../submodules/json-viewer/src$1',
   },
   transform: {
     '^.+\\.(ts|tsx)$': [
