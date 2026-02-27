@@ -129,7 +129,7 @@ const config = {
     '@/instrumentation(.*)$':
       '<rootDir>/__mocks__/shared/setup/instrumentation.ts', // Mock instrumentation module
     // Keycloak providers mock
-    '^(@|\\.)/lib/auth/keycloak-provider$':
+    '^@compliance-theater/auth/lib/keycloak-provider$':
       '<rootDir>/__mocks__/shared/keycloak-provider.js', // Mock static file imports,
     // Metrics module mock
     '^@/lib/site-util/metrics.*$':
@@ -181,8 +181,7 @@ const config = {
   // Additional stability configurations for concurrent testing
   testTimeout: 1000, // Increase timeout to 30 seconds for slower tests
   openHandlesTimeout: 1000, // Allow 1 second for open handles cleanup
-  passWithNoTests: true, // Don't fail if no tests are found (useful when running with testPathPattern)
-  // forceExit: false, // Don't force exit to allow proper cleanup
+  passWithNoTests: true, // Don't fail if no tests are found (useful when running with testPathPattern)  
   // Mock configuration
   clearMocks: true, // Clear mock calls between tests
   resetMocks: false, // Don't reset mock implementations between tests (we want our setup to persist)

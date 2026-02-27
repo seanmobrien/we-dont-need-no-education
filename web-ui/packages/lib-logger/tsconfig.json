@@ -1,28 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "composite": true,
-    "declaration": true,
-    "declarationMap": true,
-    "baseUrl": ".",
     "paths": {},
-    "types": [
-      "node",
-      "jest"
-    ],
-    "noEmit": false
   },
-  "include": [
-    "src/**/*.d.ts",
-    "src/**/*.ts",
-    "src/**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-  ],
   "references": [
     {
       "path": "../lib-types"
