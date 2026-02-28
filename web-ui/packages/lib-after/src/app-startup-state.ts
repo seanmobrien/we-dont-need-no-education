@@ -1,11 +1,7 @@
 import { singletonProviderFactory } from '@compliance-theater/logger/singleton-provider';
+import type { AppStartupState } from '@compliance-theater/types/after';
 
-export type AppStartupState =
-  | 'pending'
-  | 'initializing'
-  | 'ready'
-  | 'teardown'
-  | 'done';
+export type { AppStartupState } from '@compliance-theater/types/after';
 
 class AppStartupStateSingleton {
   #state: AppStartupState = 'pending';

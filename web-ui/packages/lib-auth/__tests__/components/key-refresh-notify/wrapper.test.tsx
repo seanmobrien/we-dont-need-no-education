@@ -1,10 +1,9 @@
-import React from 'react';
-import { render } from '@/__tests__/shared/test-utils';
-import { KeyRefreshNotifyWrapper as KeyRefreshWrapper } from '@/components/auth/key-refresh-notify/wrapper';
+import { render } from "../../shared/test-utils";
+import { KeyRefreshNotifyWrapper as KeyRefreshWrapper } from "../../../src/components/key-refresh-notify/wrapper";
 
-describe('KeyRefreshWrapper', () => {
-  it('renders with default state snapshot', () => {
-    const { container } =  render(
+describe("KeyRefreshWrapper", () => {
+  it("renders with default state snapshot", () => {
+    const { container } = render(
       <KeyRefreshWrapper>
         <div>Test child content</div>
       </KeyRefreshWrapper>,
@@ -12,13 +11,13 @@ describe('KeyRefreshWrapper', () => {
     expect(container).toMatchSnapshot();
   });
 
-  it('renders notification UI', () => {
+  it("renders notification UI", () => {
     const { getByText } = render(
       <KeyRefreshWrapper>
         <div>Test child content</div>
       </KeyRefreshWrapper>,
     );
 
-    expect(getByText('Loading session details...')).toBeInTheDocument();
+    expect(getByText("Loading session details...")).toBeInTheDocument();
   });
 });

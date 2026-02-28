@@ -6,7 +6,7 @@
  * @description Unit tests for the health check API route at app/api/health/route.ts
  */
 
-jest.mock('@/lib/auth/impersonation/impersonation-factory', () => {
+jest.mock('@compliance-theater/auth/lib/impersonation/impersonation-factory', () => {
   const impersonationService = {
     getImpersonatedToken: jest.fn().mockResolvedValue('impersonated-token'),
     getUserContext: jest

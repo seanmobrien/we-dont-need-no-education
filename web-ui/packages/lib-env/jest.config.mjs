@@ -7,6 +7,12 @@ export default {
   roots: ['<rootDir>'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/*.test.ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
+  moduleNameMapper: {
+    '^@compliance-theater/types$': '<rootDir>/../lib-types/src/index.ts',
+    '^@compliance-theater/types/(.*)$': '<rootDir>/../lib-types/src/$1',
+    '^@compliance-theater/logger$': '<rootDir>/../lib-logger/src/index.ts',
+    '^@compliance-theater/logger/(.*)$': '<rootDir>/../lib-logger/src/$1',
+  },
   transform: {
     '^.+\\.ts$': ['ts-jest', {
       tsconfig: {

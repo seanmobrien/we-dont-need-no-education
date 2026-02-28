@@ -2,7 +2,7 @@
 /**
  * Token exchange type definitions for Keycloak OAuth2 token exchange operations.
  *
- * @module @compliance-theater/auth/utilities/token-exchange-types
+ * @module @compliance-theater/auth/lib/utilities/token-exchange-types
  *
  * @description
  * Provides the core type definitions used by {@link KeycloakTokenExchange} to perform
@@ -12,7 +12,7 @@
  *
  * @see {@link https://datatracker.ietf.org/doc/html/rfc8693 | RFC 8693 - OAuth 2.0 Token Exchange}
  */
-declare module '@compliance-theater/auth/utilities/token-exchange-types' {
+declare module '@compliance-theater/auth/lib/utilities/token-exchange-types' {
   /**
    * Configuration for connecting to a Keycloak realm's token endpoint.
    *

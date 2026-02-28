@@ -1,6 +1,6 @@
 /**
  * Third-party impersonation utilities
- * @module @/lib/auth/impersonation/impersonation.thirdparty
+ * @module @compliance-theater/auth/lib/impersonation/impersonation.thirdparty
  */
 
 declare module '@compliance-theater/auth/lib/impersonation/impersonation.thirdparty' {

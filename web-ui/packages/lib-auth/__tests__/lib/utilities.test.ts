@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { jest } from '@jest/globals';
+// import { jest } from '@jest/globals';
 import type { JWTPayload } from 'jose';
 
 // Mock jose using the __mocks__ folder
@@ -22,7 +22,7 @@ jest.mock('lru-cache', () => ({
 }));
 
 // Import after mocks are set
-import { decodeToken } from '@/lib/auth/utilities';
+import { decodeToken } from '../../src/lib/utilities';
 
 describe('decodeToken', () => {
   const validToken = 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjM0In0.signature';

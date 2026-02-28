@@ -1,11 +1,7 @@
 /* @jest-environment node */
 
-import { AuthorizationService } from '@/lib/auth/resources/authorization-service';
-import { fetch } from '@compliance-theater/nextjs/server';
-import { decodeToken } from '@/lib/auth/utilities';
-
+jest.mock('../../../src/lib/utilities');
 jest.mock('@compliance-theater/nextjs/server');
-jest.mock('@/lib/auth/utilities');
 jest.mock('@compliance-theater/env', () => ({
   env: jest.fn((key) => {
     if (key === 'AUTH_KEYCLOAK_ISSUER') return 'http://keycloak/realm';
@@ -13,6 +9,11 @@ jest.mock('@compliance-theater/env', () => ({
     return 'value';
   }),
 }));
+
+import { AuthorizationService } from '../../../src/lib/resources/authorization-service';
+import { fetch } from '@compliance-theater/nextjs/server';
+import { decodeToken } from '../../../src/lib/utilities';
+
 
 describe('AuthorizationService', () => {
   const service = AuthorizationService.Instance;

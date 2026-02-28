@@ -1,6 +1,6 @@
 /**
  * Impersonation service factory
- * @module @/lib/auth/impersonation/impersonation-factory
+ * @module @compliance-theater/auth/lib/impersonation/impersonation-factory
  */
 
 declare module '@compliance-theater/auth/lib/impersonation/impersonation-factory' {

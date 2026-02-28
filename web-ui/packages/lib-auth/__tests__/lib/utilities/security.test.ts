@@ -1,7 +1,7 @@
 import {
   isUserAuthorized,
   isSessionActive,
-} from '@/lib/site-util/auth/security';
+} from '../../../src/lib/utilities/security';
 import type { Session } from '@compliance-theater/types/auth-core/types';
 
 describe('isUserAuthorized', () => {

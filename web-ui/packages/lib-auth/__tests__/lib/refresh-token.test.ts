@@ -1,10 +1,10 @@
-import { refreshAccessToken } from '@/lib/auth/refresh-token';
-import { JWT } from '@compliance-theater/types/next-auth/jwt';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
+import { refreshAccessToken } from '../../src/lib/refresh-token';
+import type { JWT } from '@compliance-theater/types/next-auth/jwt';
+import { hideConsoleOutput } from '../test-utils';
 
 const mockFetch = jest.fn();
 
-jest.mock('@/lib/auth/utilities/fetch-service', () => ({
+jest.mock('@compliance-theater/auth/lib/utilities/fetch-service', () => ({
   resolveFetchService: () => mockFetch,
 }));
 

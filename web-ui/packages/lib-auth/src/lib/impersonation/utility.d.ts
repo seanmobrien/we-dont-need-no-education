@@ -1,6 +1,6 @@
 /**
  * Impersonation utility functions
- * @module @/lib/auth/impersonation/utility
+ * @module @compliance-theater/auth/lib/impersonation/utility
  */
 import type { AdminTokenConfig } from './impersonation.types';
 

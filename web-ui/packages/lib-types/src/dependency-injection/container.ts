@@ -111,9 +111,9 @@ const toBrowserResolver = (
     if (
         resolver &&
         typeof resolver === 'object' &&
-        (resolver as Record<PropertyKey, unknown>)[BROWSER_RESOLVER_SYMBOL] === true
+        (resolver as (ServiceResolver & Record<PropertyKey, unknown>))[BROWSER_RESOLVER_SYMBOL] === true
     ) {
-        return resolver as unknown as BrowserResolverRecord;
+        return resolver as ServiceResolver & BrowserResolverRecord;
     }
     return undefined;
 };

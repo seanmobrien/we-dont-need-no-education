@@ -34,8 +34,8 @@ jest.mock('../../../../lib/api/email/email-service', () => ({
 }));
 
 // Mock authorization checks to always allow access in tests
-jest.mock('@/lib/auth/resources/case-file', () => {
-  const origModule = jest.requireActual('@/lib/auth/resources/case-file');
+jest.mock('@compliance-theater/auth/lib/resources/case-file', () => {
+  const origModule = jest.requireActual('@compliance-theater/auth/lib/resources/case-file');
   return {
     ...origModule,
     checkCaseFileAuthorization: jest

@@ -26,7 +26,7 @@
  */
 
 import type { z } from 'zod';
-import type { AiModelType } from '../../ai/core/unions';
+import type { AiModelType } from '@compliance-theater/types/lib/ai/core';
 
 /**
  * Represents the possible runtime environments where the application code executes.
@@ -204,7 +204,7 @@ export declare const ZodProcessors: {
    */
   aiModelType: (
     defaultValue: AiModelType,
-  ) => z.ZodDefault<z.ZodType<AiModelType, z.ZodTypeDef, unknown>>;
+  ) => z.ZodType<z.ZodType<AiModelType, z.ZodTypeDef, unknown>>;
 
   /**
    * Processor for integer environment variables.

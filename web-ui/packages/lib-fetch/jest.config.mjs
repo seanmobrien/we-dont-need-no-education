@@ -21,7 +21,6 @@ const config = {
         '^@compliance-theater/types$': '<rootDir>/../lib-types/src/index.ts',
         '^@compliance-theater/types(/.*)$': '<rootDir>/../lib-types/src$1',
         '^@compliance-theater/env(.*)$': '<rootDir>/../lib-env/src$1',
-        '^@compliance-theater/auth(.*)$': '<rootDir>/../lib-auth/src$1',
         '^@compliance-theater/database(.*)$': '<rootDir>/../lib-database/src$1',
         '^@compliance-theater/feature-flags(.*)$': '<rootDir>/../lib-feature-flags/src$1',
         '^@compliance-theater/nextjs(.*)$': '<rootDir>/../lib-nextjs/src$1',

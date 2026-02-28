@@ -1,6 +1,6 @@
 /**
  * Impersonation type definitions
- * @module @/lib/auth/impersonation/impersonation.types
+ * @module @compliance-theater/auth/lib/impersonation/impersonation.types
  */
 
 declare module '@compliance-theater/auth/lib/impersonation/impersonation.types' {

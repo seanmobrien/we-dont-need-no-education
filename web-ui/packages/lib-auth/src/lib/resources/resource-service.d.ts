@@ -2,7 +2,7 @@ import type { ServiceInstanceOverloads } from '@compliance-theater/typescript';
 
 /**
  * Resource Service module declaration
- * @module @/lib/auth/resources/resource-service
+ * @module @compliance-theater/auth/lib/resources/resource-service
  */
 
 declare module '@compliance-theater/auth/lib/resources/resource-service' {

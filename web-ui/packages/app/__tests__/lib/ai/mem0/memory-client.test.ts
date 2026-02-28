@@ -17,7 +17,7 @@ jest.mock('@compliance-theater/nextjs/server/utils', () => ({
   reportEvent: jest.fn(() => Promise.resolve()),
 }));
 
-jest.mock('@/lib/auth/impersonation', () => {
+jest.mock('@compliance-theater/auth/lib/impersonation', () => {
   class MockImpersonationService {
     async getImpersonatedToken(): Promise<string> {
       return 'bearer-token';
@@ -37,7 +37,7 @@ jest.mock('@/lib/auth/impersonation', () => {
 const {
   fromRequest: mockFromRequest,
   ImpersonationService: MockImpersonationService,
-} = jest.requireMock('@/lib/auth/impersonation');
+} = jest.requireMock('@compliance-theater/auth/lib/impersonation');
 
 type FetchResponse = {
   ok: boolean;

@@ -4,7 +4,11 @@ import {
   setState as setAppStartupState,
   state as getAppStartupState,
 } from './app-startup-state';
-import type { AppStartupState } from './app-startup-state';
+import type {
+  AppStartupState,
+  IAppStartupManager,
+  StartupAccessorCallbackRegistration,
+} from '@compliance-theater/types/after';
 
 /**
  * The state of the application startup process.
@@ -15,7 +19,7 @@ import type { AppStartupState } from './app-startup-state';
  * - 'teardown': The application startup process is in the process of being torn down.
  * - 'done': The application startup process has completed and is no longer active.
  */
-export type { AppStartupState } from './app-startup-state';
+export type { AppStartupState } from '@compliance-theater/types/after';
 
 /**
  * Type for an initialization function that can be registered with AppStartup.
@@ -242,6 +246,27 @@ export class AppStartup {
       return instance;
     })! satisfies AppStartup;
   }
+}
+
+/**
+ * DI-friendly implementation of IAppStartupManager.
+ */
+export class AppStartupManager implements IAppStartupManager {
+  readonly #appStartup: AppStartup;
+
+  constructor(config: AppStartupConfig = {}, appStartup?: AppStartup) {
+    this.#appStartup = appStartup ?? AppStartup.createInstance(config);
+  }
+
+  getStartupState = async (): Promise<AppStartupState> => {
+    return this.#appStartup.getStateAsync();
+  };
+
+  registerStartupAccessorCallback = (
+    registerAccessor: StartupAccessorCallbackRegistration,
+  ): void => {
+    registerAccessor(this.getStartupState);
+  };
 }
 
 /**

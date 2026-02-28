@@ -1,11 +1,11 @@
- 
+
 /**
  * @fileoverview Tests for ImpersonationServiceCache
  */
 
 import { jest } from '@jest/globals';
-import { ImpersonationServiceCache } from '@/lib/auth/impersonation/impersonation-service-cache';
-import type { ImpersonationService } from '@/lib/auth/impersonation';
+import { ImpersonationServiceCache } from '../../../src/lib/impersonation/impersonation-service-cache';
+import type { ImpersonationService } from '../../../src/lib/impersonation';
 
 // Mock ImpersonationService implementation
 const mockImpersonationService = (): ImpersonationService => {

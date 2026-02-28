@@ -1,6 +1,6 @@
 /**
  * Keycloak factory functions
- * @module @/lib/auth/keycloak-factories
+ * @module @compliance-theater/auth/lib/keycloak-factories
  *
  * This declaration file exposes a minimal, documented surface for creating and
  * interacting with a configured Keycloak Admin client. The runtime implementation

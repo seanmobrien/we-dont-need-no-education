@@ -1,6 +1,6 @@
 /**
  * Impersonation module exports
- * @module @/lib/auth/impersonation
+ * @module @compliance-theater/auth/lib/impersonation
  */
 
 import type { ImpersonationService } from './impersonation.types';

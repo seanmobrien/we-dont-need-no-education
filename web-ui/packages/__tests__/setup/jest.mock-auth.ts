@@ -44,8 +44,8 @@ jest.mock('@compliance-theater/auth/auth', () => {
 
 
 jest.mock('@compliance-theater/auth', () => {
-  const activeAuthMock = jest.requireMock('@compliance-theater/auth/auth');
   const origAuthMock = jest.requireActual('@compliance-theater/auth');
+  const activeAuthMock = jest.requireMock('@compliance-theater/auth/auth');
   return {
     ...origAuthMock,
     __esModule: true,

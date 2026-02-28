@@ -2,6 +2,8 @@
 // and other parts of the application.
 
 import { withTimeout } from "@compliance-theater/logger/with-timeout";
+import { deprecate } from "@compliance-theater/types/deprecate";
+import { isTruthy as baseIsTruthy } from '@compliance-theater/types/types/is-truthy';
 
 // Pseudo-random ID generator for lightweight unique IDs.
 // Not cryptographically secure; suitable for client-side use.
@@ -88,30 +90,7 @@ export const isTemplateStringsArray = (
 };
 
 // Converts various input types to a boolean "truthy" value.
-export const isTruthy = (
-  value: unknown,
-  defaultValue: boolean = false,
-): boolean => {
-  if (value === undefined || value === null) {
-    return defaultValue;
-  }
-  if (typeof value === 'string') {
-    const trimmedValue = value.trim().toLowerCase();
-    return (
-      trimmedValue === 'true' ||
-      trimmedValue === '1' ||
-      trimmedValue === 'yes' ||
-      trimmedValue === 'y'
-    );
-  } else if (Array.isArray(value)) {
-    return value.length > 0;
-    // If we have a completely empty object that's as good as false, and certainly not truthy
-  } else if (typeof value === 'object' && Object.keys(value).length === 0) {
-    return false;
-  }
-  return Boolean(value);
-};
-
+export const isTruthy = deprecate(baseIsTruthy, 'isTruthy from lib-react is deprecated. Please import isTruthy from @compliance-theater/types/is-truthy instead.', 'DEP005');
 // Type guard to check if a value is a non-null object (not an array).
 export const isRecord = (check: unknown): check is Record<string, unknown> => {
   return check !== null && typeof check === 'object';

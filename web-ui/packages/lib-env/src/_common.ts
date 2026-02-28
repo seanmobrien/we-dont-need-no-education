@@ -1,15 +1,16 @@
-import { isTruthy } from './utils';
+import { isTruthy } from '@compliance-theater/types/types/is-truthy';
 import { LoggedError } from '@compliance-theater/logger';
 import z from 'zod';
+import { AiModelTypeValues, type AiModelType } from '@compliance-theater/types/lib/ai/core';
 
 export type RuntimeConfig = 'nodejs' | 'edge' | 'client' | 'static' | 'server';
 const currentRuntime: RuntimeConfig = (() => {
   if (typeof window !== 'undefined') {
     // Client-side detection
-    if ('Deno' in window || 
-        (typeof process !== 'undefined' && 
-         typeof process.env === 'object' && 
-         process.env.NEXT_RUNTIME === 'edge')) {
+    if ('Deno' in window ||
+      (typeof process !== 'undefined' &&
+        typeof process.env === 'object' &&
+        process.env.NEXT_RUNTIME === 'edge')) {
       return 'edge';
     } else if ('process' in window) {
       return 'nodejs';
@@ -33,10 +34,10 @@ export const isRunningOnServer = (): boolean => {
   if (typeof window !== 'undefined') {
     return false;
   }
-  return currentRuntime !== 'client' && 
-         typeof process !== 'undefined' && 
-         typeof process.env === 'object' && 
-         (!!process.env.AUTH_SECRET || currentRuntime === 'nodejs');
+  return currentRuntime !== 'client' &&
+    typeof process !== 'undefined' &&
+    typeof process.env === 'object' &&
+    (!!process.env.AUTH_SECRET || currentRuntime === 'nodejs');
 };
 
 export const isRunningOnClient = (): boolean => {
@@ -58,7 +59,7 @@ export const isBuilding = (): boolean => {
   if (typeof process === 'undefined' || typeof process.env !== 'object') {
     return false;
   }
-  return !!process.env.NEXT_PHASE && 
+  return !!process.env.NEXT_PHASE &&
     process.env.NEXT_PHASE.indexOf('-build') > 0;
 };
 
@@ -108,7 +109,11 @@ export const ZodProcessors = {
       z.boolean(),
       z.boolean(),
     ),
-
+  aiModelType: (
+    defaultValue: AiModelType,
+  ): z.ZodType<AiModelType, z.ZodTypeDef, string> =>
+    z.enum(AiModelTypeValues)
+      .default(defaultValue) as z.ZodType<AiModelType, z.ZodTypeDef, string>,
   array: (): z.ZodDefault<z.ZodArray<z.ZodUnknown>> =>
     z.array(z.unknown()).default([]),
 

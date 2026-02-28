@@ -1,6 +1,6 @@
 /**
  * Access token management module declaration
- * @module @/lib/auth/access-token
+ * @module @compliance-theater/auth/access-token
  */
 import type { NextResponse } from 'next/server';
 import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';

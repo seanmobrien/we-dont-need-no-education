@@ -10,17 +10,18 @@ process.env.AUTH_KEYCLOAK_CLIENT_ID = 'test-client';
 process.env.AUTH_KEYCLOAK_CLIENT_SECRET = 'test-secret';
 process.env.NEXTAUTH_SECRET = 'test-nextauth-secret';
 
-import {
-  KeycloakTokenExchange,
-  TokenExchangeError,
-} from '@/lib/site-util/auth/keycloak-token-exchange';
-//@/lib/site-util/auth/keycloak-token-exchange'; 
-import got from 'got';
-import { getToken } from '@compliance-theater/types/next-auth/jwt';
-
 // Mock dependencies
 jest.mock('got');
 jest.mock('@compliance-theater/types/next-auth/jwt');
+
+import {
+  KeycloakTokenExchange,
+  TokenExchangeError,
+} from '../../../src/lib/utilities/keycloak-token-exchange';
+import got from 'got';
+import { getToken } from '@compliance-theater/types/next-auth/jwt';
+
+
 
 const mockedGot = got as unknown as {
   post: jest.Mock;

@@ -25,8 +25,8 @@
  * @see {@link https://nextjs.org/docs/app/building-your-application/configuring/environment-variables Next.js Environment Variables}
  */
 
-import { z } from 'zod';
-import { AiLanguageModelType } from '../../ai/client';
+import type { z } from 'zod';
+import type { AiLanguageModelType } from '@compliance-theater/types/lib/ai/core';
 
 /**
  * Type representing the validated client-side environment variables.

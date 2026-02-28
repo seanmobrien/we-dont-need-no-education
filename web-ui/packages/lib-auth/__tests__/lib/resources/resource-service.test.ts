@@ -3,21 +3,13 @@
  * @fileoverview Unit tests for ResourceService and AuthorizationService
  */
 
-import { resourceService } from '@/lib/auth/resources/resource-service';
-import { authorizationService } from '@/lib/auth/resources/authorization-service';
-import { fetch } from '@compliance-theater/nextjs/server';
-import { decodeToken } from '@/lib/auth/utilities';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
-
 // Mock dependencies
+jest.mock('@compliance-theater/auth/lib/utilities', () => ({
+  decodeToken: jest.fn(),
+}));
 jest.mock('@compliance-theater/nextjs/server', () => ({
   fetch: jest.fn(),
 }));
-
-jest.mock('@/lib/auth/utilities', () => ({
-  decodeToken: jest.fn(),
-}));
-
 jest.mock('@compliance-theater/env', () => ({
   env: jest.fn((key) => {
     if (key === 'AUTH_KEYCLOAK_ISSUER')
@@ -26,6 +18,14 @@ jest.mock('@compliance-theater/env', () => ({
     return 'value';
   }),
 }));
+
+
+import { resourceService } from '../../../src/lib/resources/resource-service';
+import { authorizationService } from '../../../src/lib/resources/authorization-service';
+import { fetch } from '@compliance-theater/nextjs/server';
+import { decodeToken } from '../../../src/lib/utilities';
+import { hideConsoleOutput } from '../../test-utils';
+
 
 describe('ResourceService', () => {
   beforeEach(() => {

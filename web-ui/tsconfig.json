@@ -1,18 +1,6 @@
 {
     "extends": "./tsconfig.base.json",
     "compilerOptions": {
-        "include": [
-            "!packages/**/*.ts",
-            "!packages/**/*.tsx",
-        ],
-        "exclude": [
-            "tests/**/*.*",
-            "__tests__/**/*.*",
-            "__mocks__/**/*.*",
-            "dist/**/*.*",
-            "packages/**/*.*",
-            "submodules/**/*.*",
-        ],
         "jsx": "react-jsx",
         "noEmit": false,
         "baseUrl": "../",
@@ -20,6 +8,18 @@
             "workspace-source"
         ]
     },
+    "include": [
+        "!packages/**/*.ts",
+        "!packages/**/*.tsx",
+    ],
+    "exclude": [
+        "tests/**/*.*",
+        "__tests__/**/*.*",
+        "__mocks__/**/*.*",
+        "dist/**/*.*",
+        "packages/**/*.*",
+        "submodules/**/*.*",
+    ],
     "references": [
         {
             "path": "packages/lib-logger"

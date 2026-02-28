@@ -51,19 +51,19 @@ jest.mock('@compliance-theater/database/schema', () => {
 });
 
 // Mock checkCaseFileAuthorization
-jest.mock('@/lib/auth/resources/case-file/case-file-middleware', () => ({
+jest.mock('@compliance-theater/auth/lib/resources/case-file/case-file-middleware', () => ({
   checkCaseFileAuthorization: jest.fn().mockResolvedValue(true),
 }));
 
 // Mock checkCaseFileAccess
-jest.mock('@/lib/auth/resources/case-file', () => ({
+jest.mock('@compliance-theater/auth/lib/resources/case-file', () => ({
   checkCaseFileAccess: jest.fn().mockResolvedValue(true),
   CaseFileScope: { READ: 'read', WRITE: 'write' },
   getAccessibleUserIds: jest.fn().mockResolvedValue([]),
 }));
 
 // Mock auth
-jest.mock('@/auth', () => ({
+jest.mock('@compliance-theater/auth/auth', () => ({
   auth: jest.fn().mockResolvedValue({ user: { id: '123' } }),
 }));
 

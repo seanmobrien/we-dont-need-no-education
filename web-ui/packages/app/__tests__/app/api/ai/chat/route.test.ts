@@ -15,11 +15,11 @@ jest.mock('@compliance-theater/types/ai-sdk', () => ({
 
 import { POST } from '../../../../../app/api/ai/chat/route';
 import { NextRequest } from 'next/server';
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/auth';
 import { streamText } from '@compliance-theater/types/ai-sdk';
 
 // Mock dependencies
-jest.mock('@/auth');
+jest.mock('@compliance-theater/auth/auth');
 
 jest.mock('../../../../../lib/ai/aiModelFactory', () => ({
   aiModelFactory: jest.fn().mockResolvedValue({}),

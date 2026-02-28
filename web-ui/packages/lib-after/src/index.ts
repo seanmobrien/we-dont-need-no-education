@@ -1,12 +1,5 @@
 import { log, LoggedError, singletonProviderFactory } from '@compliance-theater/logger';
-
-/**
- * Handler invoked by AfterManager queued operations.
- * The handler returns a promise which resolves when the cleanup work is complete.
- *
- * @template T - the resolved value type (defaults to void/unknown)
- */
-type TAfterHandler<T = unknown | void> = () => Promise<T>;
+import type { IAfterManager, TAfterHandler } from '@compliance-theater/types/after';
 
 /**
  * Webpack-safe singleton key using Symbol.for() to ensure uniqueness across all chunks.
@@ -21,7 +14,7 @@ const AFTER_MANAGER_KEY = Symbol.for('@noeducation/after-manager-instance');
  * all webpack chunks, preventing duplicate singleton instances.
  */
 
-export default class AfterManager {
+export default class AfterManager implements IAfterManager {
   /** Default timeout (ms) for waiting on registered handlers to complete */
   static readonly #TIMEOUT = 7500;
 
@@ -314,5 +307,47 @@ export default class AfterManager {
     } else {
       return AfterManager.getInstance().queue('teardown')?.length ?? 0;
     }
+  }
+}
+
+/**
+ * DI-friendly implementation of IAfterManager.
+ *
+ * This class can be registered in IoC containers while delegating to the
+ * process-global AfterManager singleton by default.
+ */
+export class AfterManagerService implements IAfterManager {
+  readonly #manager: IAfterManager;
+
+  constructor(manager: IAfterManager = AfterManager.getInstance()) {
+    this.#manager = manager;
+  }
+
+  add(queueName: string, handler: TAfterHandler<void>): boolean {
+    return this.#manager.add(queueName, handler);
+  }
+
+  remove(queueName: string, handler: TAfterHandler<void>): boolean {
+    return this.#manager.remove(queueName, handler);
+  }
+
+  queue(queueName: string): Array<TAfterHandler<void>>;
+  queue(queueName: string, create: true): Array<TAfterHandler<void>>;
+  queue(
+    queueName: string,
+    create: false,
+  ): undefined | Array<TAfterHandler<void>>;
+  queue(
+    queueName: string,
+    create: boolean = false,
+  ): undefined | Array<TAfterHandler<void>> {
+    if (create) {
+      return this.#manager.queue(queueName, true);
+    }
+    return this.#manager.queue(queueName, false);
+  }
+
+  signal(signalName: string): Promise<void> {
+    return this.#manager.signal(signalName);
   }
 }

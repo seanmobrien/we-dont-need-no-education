@@ -1,12 +1,12 @@
 /* @jest-environment node */
 
-import { getAccessibleUserIds } from '@/lib/auth/resources/case-file/case-file-helpers';
-import { authorizationService } from '@/lib/auth/resources/authorization-service';
+import { getAccessibleUserIds } from '../../../../src/lib/resources/case-file';
+import { authorizationService } from '../../../../src/lib/resources/authorization-service';
 import { LoggedError } from '@compliance-theater/logger';
-import { hideConsoleOutput } from '@/__tests__/shared/test-utils';
+import { hideConsoleOutput } from '../../../test-utils';
 
 // Mock the authorization service
-jest.mock('@/lib/auth/resources/authorization-service');
+jest.mock('@compliance-theater/auth/lib/resources/authorization-service');
 
 describe('getAccessibleUserIds', () => {
   const mockToken = 'mock-access-token';

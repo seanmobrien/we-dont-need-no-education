@@ -15,3 +15,10 @@ export type SessionContextType<TSessionData extends object> = {
     error?: string;
   };
 };
+
+
+export type SessionResponse<TSessionData extends object> = {
+  status: 'authenticated' | 'unauthenticated';
+  data: TSessionData | null;
+  publicKeys?: string[];
+};

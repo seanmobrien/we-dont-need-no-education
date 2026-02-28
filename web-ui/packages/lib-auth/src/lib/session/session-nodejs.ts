@@ -1,7 +1,7 @@
 /**
  * NodeJS-compatible Session management strategy;
  * full server-side session is pulled from database
- * @module @/lib/auth/session-nodejs
+ * @module @compliance-theater/auth/session-nodejs
  */
 
 import type { JWT } from '@compliance-theater/types/next-auth/jwt';

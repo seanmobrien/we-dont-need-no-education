@@ -1,7 +1,7 @@
 /**
  * Edge-compatible Session management strategy
  * JWT-based session handling for client-side support.
- * @module @/lib/auth/session-edge
+ * @module @compliance-theater/auth/session-edge
  */
 
 import type { JWT } from '@compliance-theater/types/next-auth/jwt';
