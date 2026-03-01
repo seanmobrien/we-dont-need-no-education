@@ -12,13 +12,15 @@
         "!packages/**/*.ts",
         "!packages/**/*.tsx",
     ],
-    "exclude": [
-        "tests/**/*.*",
-        "__tests__/**/*.*",
-        "__mocks__/**/*.*",
-        "dist/**/*.*",
-        "packages/**/*.*",
-        "submodules/**/*.*",
+    "exclude ": [
+        "**/tests/**/*.*",
+        "**/__tests__/**/*.*",
+        "**/__mocks__/**/*.*",
+        "**/dist/**",
+        "**/.next/**",
+        "**/.turbo/**",
+        "**/packages/**",
+        "**/submodules/**",
     ],
     "references": [
         {

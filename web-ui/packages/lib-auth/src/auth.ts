@@ -10,11 +10,11 @@ import type { Awaitable, Profile } from '@compliance-theater/types/auth-core/typ
 import NextAuth, { type NextAuthResult } from '@compliance-theater/types/next-auth'; // Added NextAuthConfig
 import type { Adapter, AdapterSession, AdapterUser } from '@compliance-theater/types/auth-core/adapters';
 import type { CredentialInput, Provider } from '@compliance-theater/types/auth-core/providers';
+import type { authorized as AuthorizedFn } from './lib/authorized';
 import { isRunningOnEdge, env } from '@compliance-theater/env';
 import { logEvent } from '@compliance-theater/logger';
 
 import { setupKeyCloakProvider } from './lib/keycloak-provider';
-import { authorized } from './lib/authorized';
 import type { JWT } from '@compliance-theater/types/next-auth/jwt';
 import { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import { LikeNextResponse } from '@compliance-theater/types/lib/nextjs/types/like-nextresponse';
@@ -127,6 +127,7 @@ type DynamicImports = {
     redirect: {
       redirect: (params: { url: string; baseUrl: string }) => Awaitable<string>;
     };
+    authorized: typeof AuthorizedFn;
   };
 };
 
@@ -158,6 +159,7 @@ const nextAuthResult: NextAuthResult = NextAuth(async () => {
     !isRunningOnEdge() &&
     process.env.NEXT_PHASE !== 'phase-production-build'
   ) {
+
     if (!dynamicImports.drizzleAdapter) {
       dynamicImports.drizzleAdapter = await import(
         './lib/drizzle-adapter'
@@ -218,11 +220,15 @@ const nextAuthResult: NextAuthResult = NextAuth(async () => {
       throw new Error('Failed to load redirect callback');
     }
   }
+  if (!dynamicImports.auth.authorized) {
+    dynamicImports.auth.authorized = (await import('./lib/authorized')).authorized;
+  }
+
   const redirect = dynamicImports.auth.redirect.redirect;
   return {
     adapter,
     callbacks: {
-      authorized,
+      authorized: dynamicImports.auth.authorized,
       signIn: signInImpl,
       jwt,
       session,

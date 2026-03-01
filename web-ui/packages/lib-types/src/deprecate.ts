@@ -21,7 +21,7 @@ export const deprecate = <T extends (...args: any[]) => any>(
     message = `The ${fn.name} function is deprecated.`,
     code = 'DEP000'
 ) => {
-    const stack = getStackTrace({ skip: 3, myCodeOnly: true });
+    const stack = getStackTrace({ skip: 4, myCodeOnly: true });
     const formattedMessage = `${message}\n${stack}`;
     const deprecatedFn = function (
         this: ThisParameterType<T>,

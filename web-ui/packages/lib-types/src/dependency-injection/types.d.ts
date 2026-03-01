@@ -1,3 +1,17 @@
+import type { IFetchService } from '@compliance-theater/types/lib/fetch';
+import type {
+    IAccessTokenService,
+    IAuthSessionService,
+    IImpersonationService,
+    ITokenExchangeService,
+} from '../lib/auth';
+import type {
+    AwilixContainer,
+    Resolver,
+    ResolveOptions,
+    LifetimeType,
+} from 'awilix';
+
 /**
  * Type declarations for the Dependency Injection types module.
  *
@@ -9,51 +23,19 @@
  * @module @compliance-theater/types/dependency-injection/types
  * @since 1.0.0
  */
-
 declare module "@compliance-theater/types/dependency-injection/types" {
-    import type { IFetchService } from '@compliance-theater/types/lib/fetch';
-    import type {
-        IAccessTokenService,
-        IAuthSessionService,
-        IImpersonationService,
-        ITokenExchangeService,
-    } from '@compliance-theater/types/lib/auth';
-    import type {
-        AwilixContainer,
-        Resolver,
-        ResolveOptions,
-        LifetimeType,
-    } from 'awilix';
 
     /**
-     * A record mapping service names to their resolved types.
-     *
-     * Extend this interface via module augmentation to get type-safe resolution
-     * across the application. Each package can declare its own services by
-     * augmenting this interface.
-     *
-     * @example
-     * ```typescript
-     * // In your package's types file:
-     * declare module '@compliance-theater/types/dependency-injection' {
-     *   interface ServiceCradle {
-     *     logger: Logger;
-     *     database: Database;
-     *     config: AppConfig;
-     *   }
-     * }
-     *
-     * // Now resolution is type-safe:
-     * const logger = resolveService('logger'); // typed as Logger
-     * ```
+     * Optional resolve options.
      */
-    export interface ServiceCradle extends Record<string, unknown> {
-        'fetch-service': IFetchService;
-        'auth-session-service': IAuthSessionService;
-        'impersonation-service': IImpersonationService;
-        'access-token-service': IAccessTokenService;
-        'token-exchange-service': ITokenExchangeService;
+    export interface ResolveOptions {
+        /**
+         * If `true` and `resolve` cannot find the requested dependency,
+         * returns `undefined` rather than throwing an error.
+         */
+        allowUnregistered?: boolean;
     }
+
 
     /**
      * Options for registering a service with the container.
@@ -140,10 +122,10 @@ declare module "@compliance-theater/types/dependency-injection/types" {
          * const logger = container.resolve('logger');
          * ```
          */
-        resolve<K extends keyof ServiceCradle>(
+        resolve<TCradle extends Record<string, unknown>, K extends keyof TCradle>(
             name: K,
             options?: ServiceResolveOptions
-        ): ServiceCradle[K];
+        ): TCradle[K];
 
         /**
          * Check whether a service is registered in the container.
@@ -158,7 +140,7 @@ declare module "@compliance-theater/types/dependency-injection/types" {
          * }
          * ```
          */
-        has(name: string): boolean;
+        has(name: string, resolver?: ServiceResolver): boolean;
 
         /**
          * Register one or more services with the container using a name-to-resolver record.
@@ -216,14 +198,5 @@ declare module "@compliance-theater/types/dependency-injection/types" {
          * @returns A promise that resolves when disposal is complete.
          */
         dispose(): Promise<void>;
-
-        /**
-         * Access the underlying Awilix container for advanced use cases.
-         *
-         * Prefer the typed methods above for standard usage. This escape hatch
-         * is available when you need Awilix-specific features not exposed by
-         * the `IServiceContainer` interface.
-         */
-        readonly container: AwilixContainer<ServiceCradle>;
     }
 }

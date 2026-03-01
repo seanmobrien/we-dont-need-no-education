@@ -1,11 +1,4 @@
-import { deprecate } from "@compliance-theater/types/deprecate";
 import { getStackTrace as getStackTraceBase } from "@compliance-theater/types/get-stack-trace";
-
-// Simple stack trace helper to avoid external dependencies
-export const getStackTrace = deprecate(getStackTraceBase,
-  'Use getStackTrace from @compliance-theater/types instead',
-  'DEP004'
-);
 
 export type DbError = Error & {
   code: number;

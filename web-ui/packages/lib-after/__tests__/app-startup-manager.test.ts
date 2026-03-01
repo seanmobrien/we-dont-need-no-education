@@ -14,7 +14,7 @@ describe('AppStartupManager', () => {
 
   it('returns startup state from the provided AppStartup instance', async () => {
     const mockStartup = createMockStartup('ready');
-    const manager = new AppStartupManager({}, mockStartup);
+    const manager = new AppStartupManager({ appStartup: mockStartup });
 
     await expect(manager.getStartupState()).resolves.toBe('ready');
     expect(mockStartup.getStateAsync).toHaveBeenCalledTimes(1);
@@ -22,13 +22,14 @@ describe('AppStartupManager', () => {
 
   it('registers a callback accessor that resolves startup state', async () => {
     const mockStartup = createMockStartup('initializing');
-    const manager = new AppStartupManager({}, mockStartup);
-    const registerAccessor = jest.fn();
+    const manager = new AppStartupManager({ appStartup: mockStartup });
+    const registered = Promise.withResolvers<void>();
+    const registerAccessor = jest.fn((_x: () => Promise<AppStartupState>) => { registered.resolve(void 0); });
 
     manager.registerStartupAccessorCallback(registerAccessor);
-
+    await registered.promise;
     expect(registerAccessor).toHaveBeenCalledTimes(1);
-    const accessor = registerAccessor.mock.calls[0][0] as () => Promise<AppStartupState>;
+    const accessor = registerAccessor.mock.calls[0]?.[0]!;
     await expect(accessor()).resolves.toBe('initializing');
     expect(mockStartup.getStateAsync).toHaveBeenCalledTimes(1);
   });

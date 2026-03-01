@@ -317,18 +317,21 @@ export default class AfterManager implements IAfterManager {
  * process-global AfterManager singleton by default.
  */
 export class AfterManagerService implements IAfterManager {
-  readonly #manager: IAfterManager;
+  readonly #manager: IAfterManager | undefined;
+  get manager(): IAfterManager {
+    return this.#manager ?? AfterManager.getInstance();
+  }
 
-  constructor(manager: IAfterManager = AfterManager.getInstance()) {
+  constructor(manager?: IAfterManager) {
     this.#manager = manager;
   }
 
   add(queueName: string, handler: TAfterHandler<void>): boolean {
-    return this.#manager.add(queueName, handler);
+    return this.manager.add(queueName, handler);
   }
 
   remove(queueName: string, handler: TAfterHandler<void>): boolean {
-    return this.#manager.remove(queueName, handler);
+    return this.manager.remove(queueName, handler);
   }
 
   queue(queueName: string): Array<TAfterHandler<void>>;
@@ -342,12 +345,12 @@ export class AfterManagerService implements IAfterManager {
     create: boolean = false,
   ): undefined | Array<TAfterHandler<void>> {
     if (create) {
-      return this.#manager.queue(queueName, true);
+      return this.manager.queue(queueName, true);
     }
-    return this.#manager.queue(queueName, false);
+    return this.manager.queue(queueName, false);
   }
 
   signal(signalName: string): Promise<void> {
-    return this.#manager.signal(signalName);
+    return this.manager.signal(signalName);
   }
 }

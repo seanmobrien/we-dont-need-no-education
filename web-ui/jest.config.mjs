@@ -1,10 +1,18 @@
+import baseConfig from './packages/__tests__/jest.config-shared.mjs';
+
 /** @type {import('jest').Config} */
 const config = {
- roots: ['<rootDir>'],
-  testPathIgnorePatterns: ['<rootDir>/packages/', '<rootDir>/submodules/'],
-  modulePathIgnorePatterns: ['<rootDir>/packages/', '<rootDir>/submodules/'],
-  watchPathIgnorePatterns: ['<rootDir>/packages/', '<rootDir>/submodules/'],
+  ...baseConfig,
+  //roots: ['<rootDir>'],
+  testPathIgnorePatterns: ['<rootDir>/packages/*/__mocks__'],
+  transformIgnorePatterns: [
+    ...baseConfig.transformIgnorePatterns,
+  ],
   coverageDirectory: '<rootDir>/coverage',
+  setupFilesAfterEnv: baseConfig.setupFilesAfterEnv.map(
+    x => x.replace('__tests__/shared', 'packages/__tests__')
+      .replace('__mocks__/shared', 'packages/__mocks__')
+  ),
   collectCoverageFrom: [
     'packages/**/*.{ts,tsx,mjs}',
     '!**/*.d.ts',

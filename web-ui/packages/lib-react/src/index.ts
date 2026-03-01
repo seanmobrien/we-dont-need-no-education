@@ -9,4 +9,3 @@ export * from './errors';
 export * from './hooks';
 export * from './ClientWrapper';
 export * from './types';
-export * from './crypto-random-bytes'; 

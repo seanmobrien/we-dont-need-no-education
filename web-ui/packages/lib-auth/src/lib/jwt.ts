@@ -2,7 +2,7 @@ import type { JWT } from '@compliance-theater/types/next-auth/jwt';
 import type { Account } from '@compliance-theater/types/auth-core/types';
 import type { AdapterUser } from '@compliance-theater/types/auth-core/adapters';
 import { log } from '@compliance-theater/logger';
-import { decodeToken } from './utilities';
+import { decodeToken } from './utilities/decode-token';
 import type { NextAuthUserWithAccountId } from './types';
 
 /**

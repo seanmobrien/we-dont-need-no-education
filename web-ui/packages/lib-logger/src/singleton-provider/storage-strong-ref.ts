@@ -1,5 +1,6 @@
 import { getStackTrace } from "@compliance-theater/types/get-stack-trace";
-import { log } from "@compliance-theater/logger/core";
+import { logger } from "@compliance-theater/logger/core";
+//'../locore'
 import {
   GlobalWithMyGlobal,
   SingletonStorageKey,

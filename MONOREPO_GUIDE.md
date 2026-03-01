@@ -722,7 +722,7 @@ export { KnownSeverityLevel } from "./constants";
 export { logger, log, logEvent } from "./core";
 
 // 4. Utilities
-export { errorLogFactory, getStackTrace } from "./utilities";
+export { errorLogFactory } from "./utilities";
 
 // 5. Error handling
 export { LoggedError, dumpError } from "./errors";

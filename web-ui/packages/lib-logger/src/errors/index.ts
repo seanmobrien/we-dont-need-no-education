@@ -16,7 +16,6 @@ export {
   isAbortError,
   isProgressEvent,
   isXmlHttpRequest,
-  getStackTrace,
 } from './utilities/error-guards';
 export type { SafeProgressEvent } from './utilities/safe-progress-event';
 export { PostgresError, isDrizzleError, errorFromCode } from './postgres-error';

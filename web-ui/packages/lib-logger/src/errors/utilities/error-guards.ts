@@ -1,7 +1,5 @@
 // Type guards and utility functions for error handling
 import type { SafeProgressEvent } from './safe-progress-event';
-import { deprecate } from '@compliance-theater/types/deprecate';
-import { getStackTrace as getStackTraceBase } from '@compliance-theater/types/get-stack-trace';
 
 /**
  * Type guard to check if a value is an instance of Error
@@ -59,12 +57,3 @@ export const isProgressEvent = (
 export const isAbortError = (value: unknown): value is Error => {
   return value instanceof DOMException && value.name === 'AbortError';
 };
-
-/**
- * Get a stack trace with optional filtering
- */
-export const getStackTrace = deprecate(
-  getStackTraceBase,
-  'getStackTrace is deprecated. Please use getStackTrace from @compliance-theater/types directly.',
-  'DEP004',
-);

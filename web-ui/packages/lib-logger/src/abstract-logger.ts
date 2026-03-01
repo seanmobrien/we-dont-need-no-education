@@ -57,8 +57,6 @@ export class AbstractLogger implements ILogger {
     ...args: unknown[]
   ): [object] {
     let record: Record<string, unknown> & { [Symbol.toStringTag]?: string };
-    const properties = {} as Record<string, unknown>;
-    const attributes = {} as Record<string, unknown>;
     let sliceArgOffset = 0;
     if (typeof message === 'string') {
       record = { message };
@@ -141,7 +139,6 @@ export class AbstractLogger implements ILogger {
     }
     Object.keys(record).forEach((key) => {
       if (
-        typeof key !== 'string' ||
         key.startsWith('_') ||
         typeof record[key] === 'function'
       ) {
@@ -151,19 +148,7 @@ export class AbstractLogger implements ILogger {
     // Cleanup message / Message hanger-ons
     delete record.message;
     delete record.Message;
-    if (Object.keys(properties).length) {
-      record.properties = {
-        ...properties,
-        ...(record.properties ?? {}),
-      };
-    }
-    if (Object.keys(attributes).length) {
-      record.attributes = {
-        ...attributes,
-        ...(record.attributes ?? {}),
-      };
-    }
-    record[Symbol.toStringTag] = stringValue ?? 'No message provided';
+    record[Symbol.toStringTag] = stringValue;
     return [record];
   }
 

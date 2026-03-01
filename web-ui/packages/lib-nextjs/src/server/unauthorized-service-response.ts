@@ -27,7 +27,7 @@ export const unauthorizedServiceResponse = ({
 }: {
   req?: LikeNextRequest;
   scopes?: Array<string>;
-} = {}): NextResponse => {
+} = {}): Response => {
   const { nextUrl = new URL(env('NEXT_PUBLIC_HOSTNAME')) } = req ?? {
     nextUrl: undefined,
   };

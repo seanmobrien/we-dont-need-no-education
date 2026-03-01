@@ -8,7 +8,7 @@
  * @module __tests__/lib/utilities/user-keys.test.ts
  */
 
-import { hideConsoleOutput } from '../../test-utils';
+import { hideConsoleOutput } from '../../shared/test-utils';
 // '@/__tests__/shared/test-utils';
 import {
   validateUserKeysAgainstServer,

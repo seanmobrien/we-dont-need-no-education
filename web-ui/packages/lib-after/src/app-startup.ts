@@ -10,6 +10,12 @@ import type {
   StartupAccessorCallbackRegistration,
 } from '@compliance-theater/types/after';
 
+import {
+  registerServices,
+  asValue,
+  asFunction,
+} from '@compliance-theater/types/dependency-injection/container';
+
 /**
  * The state of the application startup process.
  * Can be one of:
@@ -252,20 +258,24 @@ export class AppStartup {
  * DI-friendly implementation of IAppStartupManager.
  */
 export class AppStartupManager implements IAppStartupManager {
-  readonly #appStartup: AppStartup;
+  readonly #config: AppStartupConfig;
+  readonly #appStartup?: AppStartup;
 
-  constructor(config: AppStartupConfig = {}, appStartup?: AppStartup) {
-    this.#appStartup = appStartup ?? AppStartup.createInstance(config);
+  constructor(config?: AppStartupConfig & { appStartup?: AppStartup }) {
+    this.#appStartup = config?.appStartup;
+    this.#config = config ?? {};
   }
 
   getStartupState = async (): Promise<AppStartupState> => {
-    return this.#appStartup.getStateAsync();
+    return (this.#appStartup ?? AppStartup.createInstance(this.#config)).getStateAsync();
   };
 
   registerStartupAccessorCallback = (
     registerAccessor: StartupAccessorCallbackRegistration,
   ): void => {
-    registerAccessor(this.getStartupState);
+    this.getStartupState().then((state) => {
+      registerAccessor(() => Promise.resolve(state));
+    });
   };
 }
 
@@ -276,7 +286,15 @@ export class AppStartupManager implements IAppStartupManager {
  * @returns Functions to access the startup state
  */
 export const createStartupAccessors = (config: AppStartupConfig = {}) => {
-  const getInstance = () => singletonProviderFactory()?.getOrCreate(config.singletonKey || '@noeducation/app-startup', () => AppStartup.createInstance(config))!;
+  const getInstance = () => singletonProviderFactory()?.getOrCreate(config.singletonKey || '@noeducation/app-startup',
+    () => {
+      const instance = AppStartup.createInstance(config);
+      registerServices({
+        'app-startup': asValue(instance),
+        'after': asFunction()
+      })
+      return instance;
+    })!;
 
   return {
     /**

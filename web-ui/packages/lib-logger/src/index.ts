@@ -19,7 +19,7 @@ export {
   addSendCustomEventListener,
   removeSendCustomEventListener,
 } from './log-emitter';
-export { errorLogFactory, getStackTrace } from './utilities';
+export { errorLogFactory } from './utilities';
 export { logger, log, logEvent } from './core';
 export { simpleScopedLogger } from './simple-scoped-logger';
 export { safeSerialize } from './safe-serialize';
@@ -50,7 +50,6 @@ export {
   isAbortError,
   isProgressEvent,
   isXmlHttpRequest,
-  getStackTrace as getStackTraceFromErrors,
 } from './errors/utilities/error-guards';
 
 // Error handling

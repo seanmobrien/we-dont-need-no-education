@@ -1,10 +1,12 @@
-import type { ServiceCradle } from '../../src/dependency-injection';
+import type { ServiceCradle } from '../../src/dependency-injection/service-cradle';
 import {
     asFunction,
     asValue,
     getServiceContainer,
     resolveService,
 } from '../../src/dependency-injection';
+import { resetRuntime } from '../../src/dependency-injection/container';
+import { BrowserResolverRecord } from '../../src/dependency-injection/types';
 
 const CONTAINER_SYMBOL = Symbol.for(
     '@compliance-theater/types/dependency-injection/container'
@@ -18,14 +20,15 @@ type TestGlobal = typeof globalThis & {
 describe('browser container', () => {
     beforeEach(() => {
         const g = globalThis as TestGlobal;
-        g.window = {};
+        g.window = {} as Window & typeof globalThis;
         delete g[CONTAINER_SYMBOL];
     });
 
     afterEach(() => {
         const g = globalThis as TestGlobal;
-        delete g.window;
+        g.window = {} as Window & typeof globalThis;
         delete g[CONTAINER_SYMBOL];
+        resetRuntime();
     });
 
     it('resolves fetch-service via browser registrations', () => {
@@ -46,7 +49,7 @@ describe('browser container', () => {
 
         container.register(
             'browser-singleton',
-            asFunction(() => ({ id: ++created })).singleton()
+            (asFunction(() => ({ id: ++created })) as BrowserResolverRecord).singleton()
         );
 
         const first = container.resolve(
@@ -63,5 +66,25 @@ describe('browser container', () => {
         expect(first).toBe(second);
         expect(second).toBe(third);
         expect(created).toBe(1);
+    });
+
+    it('supports resolver-aware has checks in browser runtime', () => {
+        const container = getServiceContainer();
+        const firstResolver = asValue({ id: 1 });
+        const secondResolver = asValue({ id: 2 });
+
+        expect(container.has('browser-has-service')).toBe(false);
+        expect(container.has('browser-has-service', firstResolver)).toBe(false);
+
+        container.register('browser-has-service', firstResolver);
+        expect(container.has('browser-has-service')).toBe(true);
+        expect(container.has('browser-has-service', undefined)).toBe(true);
+        expect(container.has('browser-has-service', firstResolver)).toBe(true);
+        expect(container.has('browser-has-service', secondResolver)).toBe(false);
+
+        container.register('browser-has-service', secondResolver);
+        expect(container.has('browser-has-service')).toBe(true);
+        expect(container.has('browser-has-service', firstResolver)).toBe(false);
+        expect(container.has('browser-has-service', secondResolver)).toBe(true);
     });
 });

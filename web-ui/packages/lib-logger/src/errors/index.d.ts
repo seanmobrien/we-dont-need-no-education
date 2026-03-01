@@ -115,13 +115,6 @@ export { isProgressEvent } from './utilities/error-guards';
 export { isXmlHttpRequest } from './utilities/error-guards';
 
 /**
- * Normalized stack extraction helper for unknown error values.
- *
- * @see module:@compliance-theater/logger/errors/utilities/error-guards
- */
-export { getStackTrace } from './utilities/error-guards';
-
-/**
  * Postgres/Drizzle error interface and SQLSTATE helpers.
  *
  * @remarks

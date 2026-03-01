@@ -1,4 +1,3 @@
-import "@testing-library/jest-dom";
 import {
   render,
   RenderOptions,
@@ -6,20 +5,20 @@ import {
   renderHook,
   RenderHookOptions,
   RenderHookResult,
-} from "@testing-library/react";
-import Queries from "@testing-library/dom/types/queries";
-import React, { FC, PropsWithChildren } from "react";
-import { act } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { SessionContext } from "@compliance-theater/types/components/auth/session-context";
-import { ChatPanelContext } from "@compliance-theater/types/components/ai/chat-panel/chat-panel-context";
-import { ThemeProvider, type ThemeType } from "@compliance-theater/themes";
-import { withJestTestExtensions } from "./jest.test-extensions";
+} from '@testing-library/react';
+import '@testing-library/jest-dom';
+import Queries from '@testing-library/dom/types/queries';
+import React, { PropsWithChildren } from 'react';
+import { act } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SessionContext } from '@compliance-theater/auth/components/session-provider/index';
+import { ThemeProvider, type ThemeType } from '@compliance-theater/themes';
 
 const SessionProviderOrFallback = ({ children }: PropsWithChildren) => {
   let sessionData: unknown = null;
   try {
-    sessionData = withJestTestExtensions().session;
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    sessionData = require('./jest.test-extensions').withJestTestExtensions().session;
   } catch {
     sessionData = null;
   }
@@ -27,11 +26,11 @@ const SessionProviderOrFallback = ({ children }: PropsWithChildren) => {
     <SessionContext.Provider
       value={{
         data: sessionData as any,
-        status: "loading",
+        status: 'loading',
         isFetching: false,
         refetch: () => undefined,
         keyValidation: {
-          status: "unknown",
+          status: 'unknown',
           lastValidated: undefined,
           error: undefined,
         },
@@ -42,25 +41,26 @@ const SessionProviderOrFallback = ({ children }: PropsWithChildren) => {
   );
 };
 
-const ChatPanelProviderOrFallback = ({ children }: PropsWithChildren) => {
-  let chatPanelContextData: unknown = null;
+const ChatPanelProviderOrFallback = (() => {
   try {
-    chatPanelContextData = withJestTestExtensions().chatPanelContext;
-  } catch {
-    chatPanelContextData = null;
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const maybeProvider = require(
+      '@compliance-theater/types/components/ai',
+    ).ChatPanelProvider;
+    if (typeof maybeProvider !== 'function') {
+      return ({ children }: PropsWithChildren) => <>{children}</>;
+    }
+    return maybeProvider;
+  } catch (e) {
+    console.error('ChatPanelProvider not found, using fallback. Error:', e);
+    return ({ children }: PropsWithChildren) => <>{children}</>;
   }
-  return (
-    <ChatPanelContext.Provider value={(chatPanelContextData as any) ?? {}}>
-      <>{children}</>
-    </ChatPanelContext.Provider>
-  );
-};
+})();
 
 const FlagProviderOrFallback = (() => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require("@compliance-theater/feature-flags/components/flag-provider")
-      .FlagProvider;
+    return require('@compliance-theater/feature-flags/components/flag-provider').FlagProvider;
   } catch {
     return ({ children }: PropsWithChildren) => <>{children}</>;
   }
@@ -69,7 +69,7 @@ const FlagProviderOrFallback = (() => {
 type CustomRenderOptions = RenderOptions & {
   withFlags?: boolean;
   theme?: ThemeType;
-  chatPanel?: boolean | FC<PropsWithChildren<unknown>>;
+  chatPanel?: boolean;
 };
 
 // Create a test QueryClient with disabled retries and logs
@@ -86,7 +86,7 @@ const createTestQueryClient = () =>
   });
 type WrapperProps = PropsWithChildren & {
   theme?: ThemeType;
-  chatPanel?: CustomRenderOptions["chatPanel"];
+  chatPanel?: boolean;
 };
 const AllTheProviders = ({
   children: childrenFromProps,
@@ -94,27 +94,18 @@ const AllTheProviders = ({
   chatPanel = false,
 }: WrapperProps) => {
   const queryClient = createTestQueryClient();
-  const ChatPanelWrapper = ({ children }: PropsWithChildren) => {
-    if (chatPanel) {
-      // If chatPanel is a function, treat it as a component that handles the provider wrapper
-      if (typeof chatPanel === "function") {
-        const ChatPanelComponent = chatPanel;
-        return <ChatPanelComponent>{children}</ChatPanelComponent>;
-      }
-      // Otherwise, wrap with the default ChatPanelProvider
-      return (
-        <ChatPanelProviderOrFallback>{children}</ChatPanelProviderOrFallback>
-      );
-    }
-    // If chatPanel is false, just render children without the provider
-    return <>{children}</>;
-  };
+  const ChatPanelWrapper = ({ children }: PropsWithChildren) =>
+    chatPanel ? (
+      <ChatPanelProviderOrFallback>{children}</ChatPanelProviderOrFallback>
+    ) : (
+      <>{children}</>
+    );
   return (
     <>
       <QueryClientProvider client={queryClient}>
         <ChatPanelWrapper>
           <SessionProviderOrFallback>
-            <ThemeProvider defaultTheme={theme ?? "dark"}>
+            <ThemeProvider defaultTheme={theme ?? 'dark'}>
               {childrenFromProps}
             </ThemeProvider>
           </SessionProviderOrFallback>
@@ -232,7 +223,7 @@ const customRenderHook = <
 };
 
 // re-export everything
-export * from "@testing-library/react";
+export * from '@testing-library/react';
 // override render method
 export {
   customRender as render,
@@ -256,22 +247,22 @@ export const jsonResponse = <TData extends object>(
   return {
     ok: stat < 400,
     status: stat ?? 200,
-    statusText: stat < 400 ? "OK" : "Error",
+    statusText: stat < 400 ? 'OK' : 'Error',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     json: jsonCallback,
   };
 };
 
-export { type MockedConsole, hideConsoleOutput } from "./test-utils-server";
+export { type MockedConsole, hideConsoleOutput } from './test-utils-server';
 
 let mockIdCounter: number = 0;
 let mockUseId: jest.SpyInstance<string, [], any> | undefined;
 
 beforeEach(() => {
   mockIdCounter = 0;
-  mockUseId = jest.spyOn(React, "useId");
+  mockUseId = jest.spyOn(React, 'useId');
   mockUseId.mockImplementation(() => `mock-id-${mockIdCounter++}`);
 });
 

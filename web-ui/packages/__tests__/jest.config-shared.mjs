@@ -90,6 +90,10 @@ export const filter = (props) => {
   return source;
 };
 
+const pathIgnorePatterns = [
+  '<rootDir>/**/*.worktrees/' // Ignore temporary agent worktree directories
+];
+
 const config = {
   preset: 'ts-jest', // Use ts-jest preset for TypeScript support
   testEnvironment: 'jsdom', // Set the test environment to jsdom
@@ -101,6 +105,8 @@ const config = {
     },
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled  
+  modulePathIgnorePatterns: pathIgnorePatterns,
+  watchPathIgnorePatterns: pathIgnorePatterns,
   setupFilesAfterEnv: [
     '<rootDir>/__tests__/shared/setup/jest.disallow-global-mock-reset.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-text-encoding.ts',
@@ -111,9 +117,10 @@ const config = {
     '<rootDir>/__tests__/shared/setup/jest.mock-opentelemetry.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-got.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-node-modules.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-dependency-injection.ts',
   ],
   testMatch: [
-    '**/__tests__/**/*.test.(ts|tsx)',
+    '**/__tests__/**/*.(ts|tsx)',
     '!/.next/**',
     '!/dist/**',
     '!/.upstream/**',
@@ -172,6 +179,9 @@ const config = {
 
     // Aliases to support internal imports with jest resolver
   },
+  projects: [
+    '<rootDir>../**/*.config.mjs', // Lol lets see what it does if we give it all the things everywhere XD    
+  ],
   transform: {
     '^.+\\.(ts|tsx)$': [
       'ts-jest',

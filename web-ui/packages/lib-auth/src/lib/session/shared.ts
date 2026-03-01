@@ -4,7 +4,7 @@ import type { Session } from '@compliance-theater/types/auth-core/types';
 type SessionWithAccountId = Session;
 
 import { LoggedError } from '@compliance-theater/logger';
-import { decodeToken } from '../utilities';
+import { decodeToken } from '../utilities/decode-token';
 
 export const setupSession = async ({
   session: sessionFromProps,

@@ -1,8 +1,7 @@
 import type { NextAuthConfig, Session } from '@compliance-theater/types/next-auth';
-import { extractToken, KnownScopeValues, KnownScopeIndex } from './utilities';
+import { extractToken, KnownScopeValues, KnownScopeIndex } from './utilities/extract-token';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
-
-import { log } from '@compliance-theater/logger';
+import { log } from '@compliance-theater/logger/core';
 
 type AuthorizedCallback = NonNullable<
   NonNullable<NextAuthConfig['callbacks']>['authorized']

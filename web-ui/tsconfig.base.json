@@ -45,8 +45,9 @@
     "src/**/*.mjs"
   ],
   "exclude": [
-    "node_modules",
-    "dist",
-    "__tests__"
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/__tests__/**",
+    "**/__mocks__/**"
   ],
 }

@@ -12,6 +12,8 @@ export default [
             '**/.next/**',
             '**/*.d.ts',
             '**/*.tsbuildinfo',
+            '**/__tests__/**',
+            '**/__mocks__/**'
         ],
     },
     js.configs.recommended,
