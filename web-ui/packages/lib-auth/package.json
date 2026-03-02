@@ -101,7 +101,7 @@
     "node-html-parser": "^7.0.1",
     "openid-client": "^6.6.4",
     "rimraf": "^6.1.2",
-    "ts-jest": "^30.0.0",
+    "ts-jest": "^29.4.6",
     "typescript": "^5.9.3"
   }
 }

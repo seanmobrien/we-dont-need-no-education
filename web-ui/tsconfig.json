@@ -8,11 +8,8 @@
             "workspace-source"
         ]
     },
-    "include": [
-        "!packages/**/*.ts",
-        "!packages/**/*.tsx",
-    ],
-    "exclude ": [
+    "files": [],
+    "exclude": [
         "**/tests/**/*.*",
         "**/__tests__/**/*.*",
         "**/__mocks__/**/*.*",
@@ -37,6 +34,9 @@
         },
         {
             "path": "packages/lib-after"
+        },
+        {
+            "path": "packages/app"
         },
         {
             "path": "packages/lib-database"

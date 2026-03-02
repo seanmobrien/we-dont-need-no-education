@@ -9,14 +9,15 @@
   },
   "workspaces": [
     "web-ui",
-    "web-ui/packages/*",
-    "web-ui/submodules/json-viewer",
-    "web-ui/submodules/json-viewer/docs",
+    "web-ui/packages/lib-*",
+    "web-ui/packages/app",
+    "web-ui/submodules/json-viewer/packages",
     "web-ui/submodules/sce/packages/**/ts"
   ],
   "scripts": {
     "add": "yarn workspace compliance-theater add ",
     "preinstall": "node scripts/validate-yarn.js",
+    "link:clean": "bash scripts/clean-link.sh",
     "changeset": "changeset",
     "changeset:status": "changeset status",
     "changeset:version": "changeset version",

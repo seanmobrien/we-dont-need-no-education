@@ -6,6 +6,7 @@
     "composite": true,
     "declaration": true,
     "declarationMap": true,
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "baseUrl": ".",
     "types": [
       "node",

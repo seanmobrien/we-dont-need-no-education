@@ -1,0 +1,198 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "src/**",
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.*",
+        "!dist/**",
+        "!.next/**",
+        "!coverage/**",
+        "!tsconfig.tsbuildinfo"
+      ],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "WORKSPACE_SOURCE_IMPORTS"
+      ]
+    },
+    "@compliance-theater/app#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "app/**",
+        "components/**",
+        "lib/**",
+        "instrument/**",
+        "public/**",
+        "scripts/**",
+        "next.config.*",
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.*",
+        "!coverage/**",
+        "!.next/cache/**"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "WORKSPACE_SOURCE_IMPORTS"
+      ]
+    },
+    "build:typescript": {
+      "dependsOn": ["^build:typescript"],
+      "inputs": [
+        "src/**",
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.*",
+        "!dist/**",
+        "!.next/**",
+        "!coverage/**",
+        "!tsconfig.tsbuildinfo"
+      ],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "WORKSPACE_SOURCE_IMPORTS"
+      ]
+    },
+    "@compliance-theater/app#build:typescript": {
+      "dependsOn": ["^@compliance-theater/app#build:typescript"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "app/**",
+        "components/**",
+        "lib/**",
+        "instrument/**",
+        "public/**",
+        "scripts/**",
+        "next.config.*",
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.*",
+        "!coverage/**",
+        "!.next/cache/**"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "WORKSPACE_SOURCE_IMPORTS"
+      ]
+    },
+    "build:publish": {
+      "dependsOn": ["^build:publish"],
+      "inputs": [
+        "src/**",
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.*",
+        "!dist/**",
+        "!.next/**",
+        "!coverage/**",
+        "!tsconfig.tsbuildinfo"
+      ],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "WORKSPACE_SOURCE_IMPORTS"
+      ]
+    },
+    "build:clean": {
+      "dependsOn": ["^build:clean"],
+      "cache": false,
+      "persistent": false,
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "dependsOn": ["^dev"],
+      "persistent": true
+    },
+    "debug": {
+      "cache": false,
+      "dependsOn": ["^debug"],
+      "persistent": true
+    },
+    "add": {
+      "dependsOn": ["^add"],
+      "cache": false
+    },
+    "test": {
+      "dependsOn": ["^test"],
+      "outputs": [],
+      "inputs": ["__tests__/**/*", "__tests__/*", "*.mjs"]
+    },
+    "test:unit": {
+      "dependsOn": ["^test:unit"],
+      "outputs": []
+    },
+    "test:e2e": {
+      "dependsOn": ["^test:e2e"],
+      "cache": false
+    },
+    "lint": {
+      "dependsOn": ["^lint"],
+      "outputs": []
+    }
+  }
+}

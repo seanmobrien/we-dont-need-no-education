@@ -1,5 +1,5 @@
 import { getStackTrace } from "@compliance-theater/types/get-stack-trace";
-import { logger } from "@compliance-theater/logger/core";
+import { log } from "@compliance-theater/logger/core";
 //'../locore'
 import {
   GlobalWithMyGlobal,

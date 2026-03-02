@@ -5,6 +5,7 @@
     "rootDir": "./src",
     "composite": true,
     "declaration": true,
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "declarationMap": true,
     "baseUrl": ".",
     "paths": {},

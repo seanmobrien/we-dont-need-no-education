@@ -1,30 +1,5 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
-/**
- * @typedef {import('jest').Config.InitialOptions} ConfigType
- */
-
-const resolveFirstExistingPath = (relativePaths) => {
-  for (const relativePath of relativePaths) {
-    const absolutePath = path.resolve(
-      path.dirname(new URL(import.meta.url).pathname),
-      relativePath,
-    );
-    if (fs.existsSync(absolutePath)) {
-      return absolutePath;
-    }
-  }
-  return '@tanstack/react-query';
-};
-
-const tanstackReactQueryPath = resolveFirstExistingPath([
-  '../../node_modules/@tanstack/react-query',
-  '../app/node_modules/@tanstack/react-query',
-  '../lib-auth/node_modules/@tanstack/react-query',
-  '../lib-feature-flags/node_modules/@tanstack/react-query',
-  '../lib-logger/node_modules/@tanstack/react-query',
-]);
+const { defaults: tsjPreset } = require("ts-jest/presets");
+const tanstackReactQueryPath = '../../node_modules/@tanstack/react-query'
 
 
 /**
@@ -91,11 +66,17 @@ export const filter = (props) => {
 };
 
 const pathIgnorePatterns = [
-  '<rootDir>/**/*.worktrees/' // Ignore temporary agent worktree directories
+  "/[^/]+\\.worktrees/",
+  "/\\.next/",
+  "/\\.turbo/",
+  "/dist/",
 ];
 
 const config = {
+  ...defaults,
   preset: 'ts-jest', // Use ts-jest preset for TypeScript support
+  roots: ["<rootDir>/__tests__", "<rootDir>/__mocks__"],
+  testMatch: ["/__tests__/.*\\.tsx?$"],
   testEnvironment: 'jsdom', // Set the test environment to jsdom
   testEnvironmentOptions: {
     // Configure jsdom for React 19 concurrent features
@@ -119,55 +100,28 @@ const config = {
     '<rootDir>/__tests__/shared/setup/jest.mock-node-modules.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-dependency-injection.ts',
   ],
-  testMatch: [
-    '**/__tests__/**/*.(ts|tsx)',
-    '!/.next/**',
-    '!/dist/**',
-    '!/.upstream/**',
-    '!/(rsc)/**',
-  ],
   moduleNameMapper: {
-    '^react$': '<rootDir>/../../node_modules/react/index.js',
-    '^react-dom$': '<rootDir>/../../node_modules/react-dom/index.js',
-    '^@tanstack/react-query$': tanstackReactQueryPath,
-    '^@compliance-theater/env$': '<rootDir>/../lib-env/src/index.ts',
-    '^@compliance-theater/after$': '<rootDir>/../lib-after/src/index.ts',
-    '^@compliance-theater/after/(.*)$': '<rootDir>/../lib-after/src/$1',
-    '^@compliance-theater/auth$': '<rootDir>/../lib-auth/src/index.ts',
-    '^@compliance-theater/auth/(.*)$': '<rootDir>/../lib-auth/src/$1',
-    '^@compliance-theater/database$': '<rootDir>/../lib-database/src/index.ts',
-    '^@compliance-theater/database/(.*)$': '<rootDir>/../lib-database/src/$1',
-    '^@compliance-theater/feature-flags$': '<rootDir>/../lib-feature-flags/src/index.ts',
-    '^@compliance-theater/feature-flags/(.*)$': '<rootDir>/../lib-feature-flags/src/$1',
-    '^@compliance-theater/fetch$': '<rootDir>/../lib-fetch/src/index.ts',
-    '^@compliance-theater/fetch/(.*)$': '<rootDir>/../lib-fetch/src/$1',
-    '^@compliance-theater/logger$': '<rootDir>/../lib-logger/src/index.ts',
-    '^@compliance-theater/logger/(.*)$': '<rootDir>/../lib-logger/src/$1',
-    '^@compliance-theater/nextjs$': '<rootDir>/../lib-nextjs/src/index.ts',
-    '^@compliance-theater/nextjs/(.*)$': '<rootDir>/../lib-nextjs/src/$1',
-    '^@compliance-theater/react$': '<rootDir>/../lib-react/src/index.ts',
-    '^@compliance-theater/react/(.*)$': '<rootDir>/../lib-react/src/$1',
-    '^@compliance-theater/redis$': '<rootDir>/../lib-redis/src/index.ts',
-    '^@compliance-theater/redis/(.*)$': '<rootDir>/../lib-redis/src/$1',
-    '^@compliance-theater/send-api-request$': '<rootDir>/../lib-send-api-request/src/index.ts',
-    '^@compliance-theater/send-api-request/(.*)$': '<rootDir>/../lib-send-api-request/src/$1',
-    '^@compliance-theater/themes$': '<rootDir>/../lib-themes/src/index.ts',
-    '^@compliance-theater/themes/(.*)$': '<rootDir>/../lib-themes/src/$1',
-    '^@compliance-theater/types$': '<rootDir>/../lib-types/src/index.ts',
-    '^@compliance-theater/types/(.*)$': '<rootDir>/../lib-types/src/$1',
-    '^@compliance-theater/typescript$': '<rootDir>/../lib-typescript/src/index.ts',
-    '^@compliance-theater/typescript/(.*)$': '<rootDir>/../lib-typescript/src/$1',
-    // All material UI icons are served by a single mock
-    '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx', // Mock all MUI icons to a singular mock
-    // Instrumentation library mock
-    '@/instrumentation(.*)$':
-      '<rootDir>/__mocks__/shared/setup/instrumentation.ts', // Mock instrumentation module
     // Keycloak providers mock
     '^@compliance-theater/auth/lib/keycloak-provider$':
       '<rootDir>/__mocks__/shared/keycloak-provider.js', // Mock static file imports,
-    // Metrics module mock
+    // Metrics module mock - todo migrate off app
     '^@/lib/site-util/metrics.*$':
       '<rootDir>/__mocks__/shared/metrics.ts', // Alias for lib imports
+    // Generic workspace mapping
+    '^@compliance-theater/json-viewer$': '<rootDir>/../../submodules/json-viewer/packages/src/index.ts',
+    '^@compliance-theater/([^/]+)(/.*)?$': '<rootDir>/../lib-$1/src$2',
+    // Instrumentation library mock
+    '@/instrumentation(.*)$':
+      '<rootDir>/__mocks__/shared/setup/instrumentation.ts', // Mock instrumentation module        
+    // Explicitly map React and ReactDOM to the versions installed at the monorepo root to avoid potential issues with multiple React versions in the context of linked packages and workspaces
+    /*
+    '^react$': '<rootDir>/../../node_modules/react/index.js',
+    '^react-dom$': '<rootDir>/../../node_modules/react-dom/index.js',
+    */
+    // Map tanstack react-query to the resolved path to ensure consistent module resolution across packages and workspaces
+    '^@tanstack/react-query$': tanstackReactQueryPath,
+    // All material UI icons are served by a single mock
+    '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx', // Mock all MUI icons to a singular mock    
     // Prexit module mock
     '^prexit$': '<rootDir>/__mocks__/shared/prexit.ts', // Mock prexit module
     // Zodex module mock
@@ -175,13 +129,8 @@ const config = {
     // Redis module mock
     '^redis$': '<rootDir>/__mocks__/shared/redis.ts',
     // css modules
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
-
-    // Aliases to support internal imports with jest resolver
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports    
   },
-  projects: [
-    '<rootDir>../**/*.config.mjs', // Lol lets see what it does if we give it all the things everywhere XD    
-  ],
   transform: {
     '^.+\\.(ts|tsx)$': [
       'ts-jest',
@@ -195,20 +144,22 @@ const config = {
   },
   transformIgnorePatterns: [
     // Allow transpiling certain ESM packages (zodex, zod) which ship ESM-only
-    '<rootDir>/node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client|jose))',
-    '<rootDir>/.next',
-    '<rootDir>/.upstream',
-    '.upstream',
+    '/node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client|jose))',
+    '/.next/',
+    '/.upstream/',
   ],
   collectCoverageFrom: [
-    '**/*.{ts,tsx}', // Collect coverage from TypeScript files in src directory
-    '!**/*.d.ts', // Exclude type declaration files
-    '!__(tests|mocks)__/**/*.*', // Exclude test and mock files
-    '!tests/**/*.*', // Exclude playwright test files    
-    '!.next/**/*.*', // Exclude next build files
-    '!.upstream/**/*.*', // Exclude upstream build files
-    '!(rsc)/**/*.*', // Exclude upstream build files
-    '!dist/**/*.*', // Exclude dist build files
+    '<rootDir>/src/**/*.{ts,tsx}',
+
+    // Exclusions
+    '!**/*.d.ts',
+    '!**/__tests__/**',
+    '!**/__mocks__/**',
+    '!**/tests/**',
+    '!**/.next/**',
+    '!**/.upstream/**',
+    '!**/dist/**',
+    '!**/(rsc)/**'
   ],
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text-summary', 'text', 'clover'], // Coverage report formats
@@ -218,7 +169,6 @@ const config = {
   // Additional stability configurations for concurrent testing
   testTimeout: 1000, // Increase timeout to 30 seconds for slower tests
   openHandlesTimeout: 1000, // Allow 1 second for open handles cleanup
-  passWithNoTests: true, // Don't fail if no tests are found (useful when running with testPathPattern)  
   // Mock configuration
   clearMocks: true, // Clear mock calls between tests
   resetMocks: false, // Don't reset mock implementations between tests (we want our setup to persist)

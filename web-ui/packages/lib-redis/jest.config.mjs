@@ -6,7 +6,6 @@ const config = {
   displayName: "Libraries: redis",
   preset: "ts-jest",
   testEnvironment: "node",
-  rootDir: ".",
   moduleNameMapper: {
     ...baseConfig.moduleNameMapper,
   },

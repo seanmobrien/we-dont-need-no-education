@@ -21,55 +21,54 @@
  * }
  * ```
  */
-declare module "@compliance-theater/types/is-running-on" {
 
-    /**
-     * Checks whether the current code is executing in the Next.js Node.js server runtime.
-     *
-     * Inspects `process.env.NEXT_RUNTIME` for the value `'nodejs'`.
-     *
-     * @returns `true` if running on the Node.js server runtime, `false` otherwise.
-     *
-     * @example
-     * ```ts
-     * if (isRunningOnServer()) {
-     *   const data = await readFileSync('/etc/config');
-     * }
-     * ```
-     */
-    export const isRunningOnServer: (() => boolean);
 
-    /**
-     * Checks whether the current code is executing in the Next.js Edge runtime.
-     *
-     * Inspects `process.env.NEXT_RUNTIME` for the value `'edge'`.
-     *
-     * @returns `true` if running on the Edge runtime, `false` otherwise.
-     *
-     * @example
-     * ```ts
-     * if (isRunningOnEdge()) {
-     *   // use edge-compatible APIs only
-     * }
-     * ```
-     */
-    export const isRunningOnEdge: (() => boolean);
+/**
+ * Checks whether the current code is executing in the Next.js Node.js server runtime.
+ *
+ * Inspects `process.env.NEXT_RUNTIME` for the value `'nodejs'`.
+ *
+ * @returns `true` if running on the Node.js server runtime, `false` otherwise.
+ *
+ * @example
+ * ```ts
+ * if (isRunningOnServer()) {
+ *   const data = await readFileSync('/etc/config');
+ * }
+ * ```
+ */
+export const isRunningOnServer: (() => boolean);
 
-    /**
-     * Checks whether the current code is executing in a browser client environment.
-     *
-     * Returns `true` when the `window` global is defined and the code is **not**
-     * running on the Edge runtime (which also lacks a true `window` but may have
-     * partial globals).
-     *
-     * @returns `true` if running in a browser client, `false` otherwise.
-     *
-     * @example
-     * ```ts
-     * if (isRunningOnClient()) {
-     *   document.title = 'Hello';
-     * }
-     * ```
-     */
-    export const isRunningOnClient: (() => boolean);
-}
+/**
+ * Checks whether the current code is executing in the Next.js Edge runtime.
+ *
+ * Inspects `process.env.NEXT_RUNTIME` for the value `'edge'`.
+ *
+ * @returns `true` if running on the Edge runtime, `false` otherwise.
+ *
+ * @example
+ * ```ts
+ * if (isRunningOnEdge()) {
+ *   // use edge-compatible APIs only
+ * }
+ * ```
+ */
+export const isRunningOnEdge: (() => boolean);
+
+/**
+ * Checks whether the current code is executing in a browser client environment.
+ *
+ * Returns `true` when the `window` global is defined and the code is **not**
+ * running on the Edge runtime (which also lacks a true `window` but may have
+ * partial globals).
+ *
+ * @returns `true` if running in a browser client, `false` otherwise.
+ *
+ * @example
+ * ```ts
+ * if (isRunningOnClient()) {
+ *   document.title = 'Hello';
+ * }
+ * ```
+ */
+export const isRunningOnClient: (() => boolean);

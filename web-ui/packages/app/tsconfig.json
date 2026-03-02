@@ -81,7 +81,7 @@
       "path": "../lib-feature-flags"
     },
     {
-      "path": "../../submodules/json-viewer"
+      "path": "../../submodules/json-viewer/packages"
     }
   ]
 }

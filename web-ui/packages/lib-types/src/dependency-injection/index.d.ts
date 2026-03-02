@@ -33,30 +33,30 @@
  * @since 1.0.0
  */
 
-declare module "@compliance-theater/types/dependency-injection" {
-    // ── Types ──────────────────────────────────────────────────────────────────
-    export type {
-        IServiceContainer,
-        ServiceCradle,
-        ServiceRegistrationOptions,
-        ServiceResolver,
-        ServiceResolveOptions,
-    } from './types';
 
-    // ── Container Implementation & Helpers ─────────────────────────────────────
-    export {
-        ServiceContainer,
-        getServiceContainer,
-        registerServices,
-        resolveService,
-    } from './container';
+// ── Types ──────────────────────────────────────────────────────────────────
+export type {
+    IServiceContainer,
+    ServiceCradle,
+    ServiceRegistrationOptions,
+    ServiceResolver,
+    ServiceResolveOptions,
+} from './types';
 
-    // ── Re-exported Awilix Utilities ───────────────────────────────────────────
-    export {
-        asClass,
-        asFunction,
-        asValue,
-        Lifetime,
-        InjectionMode,
-    } from './container';
-}
+// ── Container Implementation & Helpers ─────────────────────────────────────
+export {
+    ServiceContainer,
+    getServiceContainer,
+    registerServices,
+    resolveService,
+} from './container';
+
+// ── Re-exported Awilix Utilities ───────────────────────────────────────────
+export {
+    asClass,
+    asFunction,
+    asValue,
+    Lifetime,
+    InjectionMode,
+} from './container';
+

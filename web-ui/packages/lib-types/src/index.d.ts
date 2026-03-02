@@ -300,35 +300,38 @@ import type {
   ChatMessage,
   ChatTurn,
   ChatDetails,
+} from "./lib/ai/chat";
+
+import {
   isChatMessage,
   isChatTurn,
   isChatDetails,
   getRetryErrorInfoKind,
 } from "./lib/ai/chat";
 
-declare module "@compliance-theater/types" {
-  export type {
-    ValueOf,
-    AnnotatedErrorMessageBase,
-    AnnotatedErrorPart,
-    AnnotatedErrorMessage,
-    AnnotatedRetryMessage,
-    AnnotatedMessage,
-    RetryErrorInfo,
-    ChatMessage,
-    ChatTurn,
-    ChatDetails,
-  };
-  export {
-    isAnnotatedMessageBase,
-    isAnnotatedErrorMessage,
-    isAnnotatedRetryMessage,
-    isAiLanguageModelType,
-    isAiModelType,
-    isAiProviderType,
-    isChatMessage,
-    isChatTurn,
-    isChatDetails,
-    getRetryErrorInfoKind,
-  };
-}
+
+export type {
+  ValueOf,
+  AnnotatedErrorMessageBase,
+  AnnotatedErrorPart,
+  AnnotatedErrorMessage,
+  AnnotatedRetryMessage,
+  AnnotatedMessage,
+  RetryErrorInfo,
+  ChatMessage,
+  ChatTurn,
+  ChatDetails,
+};
+export {
+  isAnnotatedMessageBase,
+  isAnnotatedErrorMessage,
+  isAnnotatedRetryMessage,
+  isAiLanguageModelType,
+  isAiModelType,
+  isAiProviderType,
+  isChatMessage,
+  isChatTurn,
+  isChatDetails,
+  getRetryErrorInfoKind,
+};
+
