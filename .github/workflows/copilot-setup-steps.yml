@@ -89,7 +89,7 @@ jobs:
         with:
           node-version: "24.x"
           cache: yarn
-          cache-dependency-path: 'yarn.lock'
+          cache-dependency-path: "yarn.lock"
 
       - name: Enable Corepack and activate Yarn 4.12.0
         working-directory: ./
