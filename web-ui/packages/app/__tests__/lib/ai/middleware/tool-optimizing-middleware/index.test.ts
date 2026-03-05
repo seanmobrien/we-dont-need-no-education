@@ -42,7 +42,6 @@ jest.mock('@compliance-theater/logger', () => ({
 
 jest.mock('../../../../../lib/ai/services/model-stats/tool-map');
 jest.mock('../../../../../lib/ai/chat/message-optimizer-tools');
-jest.mock('@compliance-theater/logger');
 jest.mock('../../../../../lib/site-util/metrics', () => ({
   appMeters: {
     createCounter: jest.fn().mockReturnValue({
@@ -92,9 +91,11 @@ describe('Tool Optimizing Middleware', () => {
   let mockParams: LanguageModelV2CallOptions;
   let sampleMessages: UIMessage[];
   let sampleTools: LanguageModelV2FunctionTool[];
+  let loggedErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
     jest.restoreAllMocks();
+    loggedErrorSpy = jest.spyOn(LoggedError, 'isTurtlesAllTheWayDownBaby');
 
     // Mock ToolMap instance
     mockToolMapInstance = {
@@ -342,7 +343,7 @@ describe('Tool Optimizing Middleware', () => {
         model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
       });
 
-      expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalled();
+      expect(loggedErrorSpy).toHaveBeenCalled();
       expect(result.prompt.length).toBe(sampleMessages.length + 1); // Falls back to original
     });
 
@@ -489,7 +490,7 @@ describe('Tool Optimizing Middleware', () => {
       });
 
       // Tool scanning failed but message optimization should still work
-      expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
+      expect(loggedErrorSpy).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
           source: 'ToolOptimizingMiddleware.toolScanning',
@@ -525,7 +526,7 @@ describe('Tool Optimizing Middleware', () => {
       });
       const result = await middleware.transformParams!(p);
 
-      expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
+      expect(loggedErrorSpy).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
           source: 'ToolOptimizingMiddleware.transformParams',

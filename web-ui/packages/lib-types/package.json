@@ -35,18 +35,12 @@
   },
   "dependencies": {
     "@auth/core": "0.41.1",
-    "@react-native/virtualized-lists": "npm:0.84.0",
     "ai": "^5.0.23",
     "awilix": "^13.0.0",
-    "got": "^14.4.9",
-    "mitt": "^3.0.1",
-    "next": "15.5.12",
+    "next": "^15.5.12",
     "next-auth": "^5.0.0-beta.30",
-    "postgres": "^3.4.5",
     "react-native": "^0.84.0",
-    "ts-pattern": "^5.5.2",
-    "zod": "^3.25.76",
-    "zodex": "^3.0.0"
+    "ts-pattern": "^5.7.1"
   },
   "peerDependencies": {
     "react": "19.2.4",
@@ -62,8 +56,6 @@
   },
   "devDependencies": {
     "@jest/globals": "^30.0.5",
-    "@jest/transform": "^30.0.0",
-    "@jest/types": "^30.0.0",
     "@swc/core": "^1.13.5",
     "@swc/jest": "^0.2.39",
     "@types/jest": "^30.0.0",
@@ -71,7 +63,6 @@
     "@types/react": "19.2.4",
     "@types/react-dom": "19.2.3",
     "jest": "^30.0.5",
-    "jest-util": "^30.0.0",
     "rimraf": "^6.1.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.9.3"

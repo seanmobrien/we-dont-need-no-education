@@ -19,6 +19,7 @@ const config = {
     '<rootDir>/__tests__/setup/jest.setup.ts',
   ], // Setup file for global imports
   moduleNameMapper: {
+    // '^../../__mocks__/service-cradle$': '<rootDir>/__mocks__/shared/service-cradle.ts',
     ...(baseConfig.moduleNameMapper ?? {}),
     '^react$': '<rootDir>/node_modules/react/index.js',
     '^react-dom$': '<rootDir>/node_modules/react-dom/index.js',
@@ -29,6 +30,7 @@ const config = {
     '^@tanstack/query-core$':
       '<rootDir>/node_modules/@tanstack/query-core/build/modern/index.cjs',
     '^got$': '<rootDir>/__mocks__/got.ts',
+    '^jose$': '<rootDir>/__mocks__/jose.ts',
     '^@/__tests__/test-utils$': '<rootDir>/__tests__/shared/test-utils.tsx',
     '^@/__tests__/test-utils-server$': '<rootDir>/__tests__/shared/test-utils-server.ts',
     '^next-auth/providers/keycloak$': '<rootDir>/__mocks__/shared/keycloak-provider.js',

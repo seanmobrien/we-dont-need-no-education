@@ -8,7 +8,7 @@ import type {
   GridValidRowModel,
 } from '@mui/x-data-grid-pro';
 import type { DataSourceProps, ExtendedGridDataSource } from './types';
-import { isTruthy } from '@compliance-theater/react/utility-methods';
+import { isTruthy } from '@compliance-theater/types';
 import { isError, LoggedError, log } from '@compliance-theater/logger';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { resolveFetchService } from '@/lib/fetch-service';

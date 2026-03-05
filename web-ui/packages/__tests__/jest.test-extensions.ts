@@ -156,6 +156,7 @@ type JestTestExtensions = {
       position: 'inline' | 'docked' | 'floating';
     };
   };
+  mockServices: Record<string, unknown>;
   makeMockDb: () => DatabaseMockType;
   suppressDeprecation: boolean;
   singletonStore: Map<SymbolKey, unknown>;

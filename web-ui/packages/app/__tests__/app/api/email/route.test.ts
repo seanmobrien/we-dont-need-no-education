@@ -51,15 +51,18 @@ jest.mock('@compliance-theater/auth/lib/resources/case-file/index', () => {
   };
 });
 
-let mockExtractParams: jest.Mock | undefined;
+const mockExtractParamsImpl: jest.Mock = jest.fn();
+
+function mockExtractParams(...args: unknown[]) {
+  return mockExtractParamsImpl(...args);
+}
 
 // Mock modules
 jest.mock('@compliance-theater/nextjs/server/utils', () => {
   const orig = jest.requireActual('@compliance-theater/nextjs/server/utils');
-  mockExtractParams = jest.fn();
   return {
     ...orig,
-    extractParams: (...args: unknown[]) => mockExtractParams!(...args),
+    extractParams: (...args: unknown[]) => mockExtractParams(...args),
   };
 });
 jest.mock('../../../../lib/components/mui/data-grid/queryHelpers');
@@ -83,8 +86,8 @@ type MockDbQuery = {
 };
 
 let mockDb = withJestTestExtensions().makeMockDb();
-let mockDbQuery = mockDb.query as MockDbQuery;
-let mockDbDelete = mockDb.delete as jest.Mock;
+let mockDbQuery: MockDbQuery;
+let mockDbDelete: jest.Mock;
 
 describe('Email API', () => {
   beforeEach(() => {
@@ -98,8 +101,8 @@ describe('Email API', () => {
     mockDbDelete = mockDb.delete as jest.Mock;
 
     // Reset extractParams mock
-    mockExtractParams!.mockReset();
-    mockExtractParams!.mockImplementation(async (req) => {
+    mockExtractParamsImpl.mockReset();
+    mockExtractParamsImpl.mockImplementation(async (req) => {
       const params = await req.params;
       return params;
     });

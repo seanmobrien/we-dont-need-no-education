@@ -33,6 +33,9 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
+    "tests",
+    "**/__tests__/**",
+    "**/__mocks__/**",
     "node_modules",
     ".upstream/**/*.*",
     "**/.upstream/**/*.*",

@@ -88,8 +88,8 @@ const pathIgnorePatterns = [
 ];
 
 const config = {
-  roots: ["<rootDir>/__tests__", "<rootDir>/__mocks__"],
-  testMatch: ["**/?(*.)+(spec|test)?.[jt]s?(x)"],
+  roots: ["<rootDir>/__tests__"],
+  testMatch: ['**/*.test.[jt]s?(x)', '**/*.spec.[jt]s?(x)'],
   testEnvironment: 'jsdom', // Set the test environment to jsdom
   testEnvironmentOptions: {
     // Configure jsdom for React 19 concurrent features
@@ -151,7 +151,7 @@ const config = {
   },
   transformIgnorePatterns: [
     // Allow transpiling certain ESM packages (zodex, zod) which ship ESM-only
-    '/node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client|jose|@compliance-theater))',
+    '.*node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client|jose|@compliance-theater)).*',
     '/.next/',
     '/.upstream/',
   ],

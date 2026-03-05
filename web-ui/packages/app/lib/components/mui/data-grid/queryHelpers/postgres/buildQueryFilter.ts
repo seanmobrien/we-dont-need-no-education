@@ -10,7 +10,7 @@ import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types
 import { columnMapFactory } from '../utility';
 import { BuildQueryFilterProps, BuildItemFilterProps } from './types';
 import { isGridFilterModel } from './guards';
-import { isTruthy } from '@compliance-theater/react/utility-methods';
+import { isTruthy } from '@compliance-theater/types';
 
 export const buildAttachmentOrEmailFilter = ({
   attachments,

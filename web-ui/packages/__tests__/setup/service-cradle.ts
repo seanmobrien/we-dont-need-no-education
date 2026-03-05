@@ -1,27 +1,21 @@
 import type { IAfterManager, IAppStartupManager, StartupAccessorCallbackRegistration } from "@compliance-theater/types/after";
 import type { IAccessTokenService, IAuthSessionService, IImpersonationService, ITokenExchangeService } from "@compliance-theater/types/lib/auth/services";
 import type { IFetchService } from "@compliance-theater/types/lib/fetch";
-import { ISingletonProvider } from "@compliance-theater/types/lib/logger/singleton-provider";
+import type { ISingletonProvider } from "@compliance-theater/types/lib/logger/singleton-provider";
 
-//import { withJestTestExtensions } from './../../__tests__/shared/jest.test-extensions';
-
-const withJestTestExtensions = () => {
-    const EXTENSION_SYMBOL = Symbol.for('@compliance-theater/lib-auth/jest-test-extensions');
-    const globalWithExtensions = globalThis as typeof globalThis & {
-        [EXTENSION_SYMBOL]?: {
-            mockServices: Record<string, unknown>;
-            mockSingletons: Map<string | number | symbol, unknown>;
-        };
-    };
-    if (!globalWithExtensions[EXTENSION_SYMBOL]) {
-        globalWithExtensions[EXTENSION_SYMBOL] = {
-            mockServices: {},
-            mockSingletons: new Map<string | number | symbol, unknown>(),
-        };
-    }
-    return globalWithExtensions[EXTENSION_SYMBOL]!;
+export type {
+    IAfterManager,
+    IAppStartupManager,
+    StartupAccessorCallbackRegistration,
+    IAccessTokenService,
+    IAuthSessionService,
+    IImpersonationService,
+    ITokenExchangeService,
+    IFetchService,
+    ISingletonProvider,
 };
 
+import { withJestTestExtensions } from '../jest.test-extensions';
 
 export interface ServiceCradle extends Record<string | number | symbol, unknown> {
     fetch: IFetchService;
@@ -103,7 +97,7 @@ const mockSingletonProviderFactory = (): ISingletonProvider => {
         key?: string | number | symbol,
         value?: unknown,
     ): Map<string | number | symbol, unknown> | unknown | undefined => {
-        const actual = withJestTestExtensions().mockSingletons;
+        const actual = withJestTestExtensions().singletonStore;
         if (typeof key === 'undefined') {
             return actual;
         }

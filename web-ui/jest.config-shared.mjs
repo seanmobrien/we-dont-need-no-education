@@ -80,20 +80,17 @@ export const filter = (props) => {
 
 const pathIgnorePatterns = [
   "/[^/]+\\.worktrees/",
+  "/tests/",
+  "/__(tests|mocks)__/",
+  "/dist/",
   "/\\.next/",
   "/\\.turbo/",
-  "**/tests/**/*.*",
-  "**/__tests__/**/*.*",
-  "**/__mocks__/**/*.  *",
-  "**/dist/**",
-  "**/.next/**",
-  "**/.turbo/**",
-  "**/packages/**",
-  "**/submodules/**",
+  "/packages/",
+  "/submodules/",
 ];
 
 const config = {
-  roots: ["<rootDir>/__tests__", "<rootDir>/__mocks__"],
+  roots: ["<rootDir>/__tests__"],
   testMatch: ["**/*.ts?(x)"],
   testEnvironment: 'jsdom', // Set the test environment to jsdom
   testEnvironmentOptions: {

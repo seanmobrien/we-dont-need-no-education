@@ -6,9 +6,6 @@ setupImpersonationMock();
 
 jest.mock('@compliance-theater/logger', () => ({
   ...jest.requireActual('@compliance-theater/logger'),
-  LoggedError: {
-    isTurtlesAllTheWayDownBaby: jest.fn(),
-  },
   isError: jest.fn((error: any) => error instanceof Error),
 }));
 jest.mock('../../../../lib/ai/services/search');
@@ -25,6 +22,7 @@ describe('searchCaseFile', () => {
   const mockHybridSearch = jest.fn();
   const mockLog = jest.fn();
   const mockError = jest.fn();
+  let loggedErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
     (HybridDocumentSearch as unknown as jest.Mock).mockImplementation(() => ({
@@ -36,6 +34,11 @@ describe('searchCaseFile', () => {
     (hybridDocumentSearchFactory as jest.Mock).mockImplementation(() => ({
       hybridSearch: mockHybridSearch,
     }));
+    loggedErrorSpy = jest.spyOn(LoggedError, 'isTurtlesAllTheWayDownBaby');
+  });
+
+  afterEach(() => {
+    loggedErrorSpy.mockRestore();
   });
 
   it('should call HybridDocumentSearch.hybridSearch with the correct arguments and log the call', async () => {
@@ -63,9 +66,7 @@ describe('searchCaseFile', () => {
     mockHybridSearch.mockImplementation(() => {
       throw error;
     });
-    (LoggedError.isTurtlesAllTheWayDownBaby as jest.Mock).mockReturnValue(
-      loggedError
-    );
+    loggedErrorSpy.mockReturnValue(loggedError);
 
     const result = await localSearchCaseFile({ query, options });
     expect(result.structuredContent.result.isError).toBe(true);

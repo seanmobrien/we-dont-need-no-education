@@ -1,5 +1,4 @@
-import { createMockServiceCradle } from '../../../__mocks__/shared/service-cradle';
-import type { ServiceCradle } from '@compliance-theater/types/dependency-injection/service-cradle';
+import { createMockServiceCradle, type ServiceCradle } from './service-cradle';
 import type {
     IServiceContainer,
     ServiceResolveOptions,
@@ -22,7 +21,7 @@ class MockServiceContainer implements IServiceContainer {
                 return ret;
             }
         }
-        return this.#cradle [name] as T;
+        return this.#cradle[name] as T;
     }
     has(name: string | symbol | number, resolver?: ServiceResolver<unknown>): boolean {
         return this.registrations.has(name);

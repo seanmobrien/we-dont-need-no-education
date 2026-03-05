@@ -7,11 +7,6 @@ setupImpersonationMock();
 jest.mock('../../../../lib/ai/services/search');
 jest.mock('@compliance-theater/logger', () => ({
   ...jest.requireActual('@compliance-theater/logger'),
-  LoggedError: {
-    isTurtlesAllTheWayDownBaby: jest.fn((error, options) => {
-      return new Error(options.message);
-    }),
-  },
   isError: jest.fn((error: any) => error instanceof Error),
 }));
 
@@ -23,6 +18,7 @@ import { toolCallbackResultFactory } from '../../../../lib/ai/tools/utility';
 
 describe('searchPolicyStore', () => {
   const mockHybridSearch = jest.fn();
+  let loggedErrorSpy: jest.SpyInstance;
 
   beforeEach(() => {
     (HybridPolicySearch as unknown as jest.Mock).mockImplementation(() => ({
@@ -31,6 +27,11 @@ describe('searchPolicyStore', () => {
     (hybridPolicySearchFactory as jest.Mock).mockReturnValue({
       hybridSearch: mockHybridSearch,
     });
+    loggedErrorSpy = jest.spyOn(LoggedError, 'isTurtlesAllTheWayDownBaby');
+  });
+
+  afterEach(() => {
+    loggedErrorSpy.mockRestore();
   });
 
   it('should call HybridPolicySearch.hybridSearch with the correct arguments and log the call', async () => {
@@ -58,9 +59,7 @@ describe('searchPolicyStore', () => {
     mockHybridSearch.mockImplementation(() => {
       throw error;
     });
-    (LoggedError.isTurtlesAllTheWayDownBaby as jest.Mock).mockReturnValue(
-      loggedError,
-    );
+    loggedErrorSpy.mockReturnValue(loggedError);
 
     expect(await searchPolicyStore({ query, options })).toEqual(expectedResult);
 

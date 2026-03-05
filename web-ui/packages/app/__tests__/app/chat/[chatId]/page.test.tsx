@@ -144,16 +144,6 @@ beforeAll(async () => {
 // ---------------- Tests: Page Wrapper ----------------
 
 describe('ChatDetailPage', () => {
-  beforeEach(() => {
-    /*
-    unauthorizedMock.mockClear();
-    notFoundMock.mockClear();
-    // authMock.mockReset();
-    drizDbWithInitMock.mockReset();
-    isUserAuthorizedMock.mockReset();
-    */
-  });
-
   test('unauthorized when no session', async () => {
     setSession(null);
     await expect(
