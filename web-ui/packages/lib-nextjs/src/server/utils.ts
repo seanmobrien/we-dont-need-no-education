@@ -20,7 +20,7 @@ import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
 import { isPromise } from '@compliance-theater/typescript';
 import { resolveService } from '@compliance-theater/types/dependency-injection/container';
-import type { IStartupManager } from '@compliance-theater/types/after';
+import type { IAppStartupManager } from '@compliance-theater/types/after';
 export {
   createSafeAsyncWrapper,
   createSafeErrorHandler,
@@ -106,7 +106,7 @@ export const wrapRouteRequest = <
             'app.startup.check',
             async (startupSpan) => {
               try {
-                const startupService = resolveService<IStartupManager>('startup');
+                const startupService = resolveService<IAppStartupManager>('startup');
                 if (!startupService) {
                   log((l) =>
                     l.warn(

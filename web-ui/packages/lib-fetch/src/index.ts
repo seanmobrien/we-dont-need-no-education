@@ -6,6 +6,8 @@ import {
   registerServices,
   resolveService,
 } from '@compliance-theater/types/dependency-injection';
+import type { ISingletonProvider } from '@compliance-theater/types/lib/logger/singleton-provider';
+
 import { isRunningOnServer } from '@compliance-theater/types/is-running-on';
 
 type RuntimeFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
@@ -53,7 +55,7 @@ export const fetch = (
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<Response> => {
-  const impl = resolveService('singleton-provider')
+  const impl = resolveService<ISingletonProvider>('singleton')
     .getOrCreate('@compliance-theater/fetch/runtime-fetch', loadRuntimeFetch);
   if (!impl) {
     throw new Error('Unable to initialize a valid fetch implementation for current runtime...' +

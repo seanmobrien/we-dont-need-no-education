@@ -7,7 +7,8 @@
  */
 
 import type { AppStartupState } from '@compliance-theater/after/app-startup';
-import { resolveService } from '@compliance-theater/types/dependency-injection';
+import type { IAppStartupManager } from '@compliance-theater/types/after';
+import { resolveService } from '@compliance-theater/types/dependency-injection/container';
 import { deprecate } from '@compliance-theater/types/deprecate';
 
 /**
@@ -29,6 +30,7 @@ export const configureAppStartupAccessor = (
  * @returns Promise resolving to the current startup state
  */
 export const getAppStartupState = deprecate(
-  (): Promise<AppStartupState> => resolveService('startup').getStartupState(),
+  (): Promise<AppStartupState> =>
+    resolveService<IAppStartupManager>('startup').getStartupState(),
   'getAppStartupState is deprecated. Please use registered IAppStartupManager directly instead.',
   'DEP006'); 

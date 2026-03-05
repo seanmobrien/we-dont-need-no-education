@@ -16,7 +16,7 @@
     "packages/lib-themes",
     "packages/lib-types",
     "packages/lib-with-feature-flags",
-    "submodules/json-viewer/packages",
+    "submodules/json-viewer/packages/*",
     "submodules/sce/packages/*/ts"
   ],
   "scripts": {

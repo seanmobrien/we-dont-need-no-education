@@ -1,5 +1,6 @@
 export type {
     IServiceContainer,
+    IServiceRegistrar,
     ServiceRegistrationOptions,
     ServiceResolver,
     ServiceResolveOptions,

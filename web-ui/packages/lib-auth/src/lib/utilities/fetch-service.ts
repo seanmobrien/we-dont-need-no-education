@@ -1,11 +1,11 @@
 import type { IFetchService } from '@compliance-theater/types';
-import { resolveService } from '@compliance-theater/types/dependency-injection';
+import { resolveService } from '@compliance-theater/types/dependency-injection/container';
 
 type FetchFn = IFetchService['fetch'];
 
 export const resolveFetchService = (): FetchFn => {
     try {
-        const service = resolveService('fetch');
+        const service = resolveService<IFetchService>('fetch');
         if (service && typeof service.fetch === 'function') {
             return service.fetch.bind(service);
         }

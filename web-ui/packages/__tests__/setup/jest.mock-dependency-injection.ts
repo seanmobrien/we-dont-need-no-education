@@ -1,5 +1,10 @@
-import { createMockServiceCradle } from '../../__mocks__/service-cradle';
-import type { IServiceContainer, ServiceCradle, ServiceResolveOptions, ServiceResolver } from '@compliance-theater/types/dependency-injection/types';
+import { createMockServiceCradle } from '../../../__mocks__/shared/service-cradle';
+import type { ServiceCradle } from '@compliance-theater/types/dependency-injection/service-cradle';
+import type {
+    IServiceContainer,
+    ServiceResolveOptions,
+    ServiceResolver,
+} from '@compliance-theater/types/dependency-injection/types';
 
 class MockServiceContainer implements IServiceContainer {
     #cradle = createMockServiceCradle();

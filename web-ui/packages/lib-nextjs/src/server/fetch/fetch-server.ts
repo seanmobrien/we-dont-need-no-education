@@ -1,4 +1,4 @@
-/* global Headers, URLSearchParams, URL, Buffer, AbortController */
+/* global Headers, URLSearchParams, URL, Buffer, AbortController, BodyInit, RequestCache */
 
 import got, {
   Response as GotResponse,
@@ -547,7 +547,13 @@ export class FetchManager implements ServerFetchManager {
     // otherwise, do got stream
     await this.semManager.sem.acquire();
     try {
-      const stream = got.stream(normalizedUrl, options);
+      const streamOptions: Omit<OptionsInit, 'isStream'> & {
+        isStream: true;
+      } = {
+        ...options,
+        isStream: true,
+      };
+      const stream = got.stream(normalizedUrl, streamOptions);
       const releaseOnce = () => {
         try {
           this.semManager.sem.release();
@@ -578,17 +584,46 @@ export class FetchManager implements ServerFetchManager {
   async #doDomFetch(url: string, normalInit: OptionsInit) {
     const domFetch = globalThis.fetch;
     if (typeof domFetch === 'function') {
+      const normalizeDomHeaders = (
+        source: OptionsInit['headers'],
+      ): Headers | undefined => {
+        if (!source) {
+          return undefined;
+        }
+        const headers = new Headers();
+        if (source instanceof Headers) {
+          source.forEach((value, key) => headers.set(key, value));
+          return headers;
+        }
+        if (Array.isArray(source)) {
+          source.forEach(([key, value]) => {
+            headers.set(key, Array.isArray(value) ? value.join(', ') : value);
+          });
+          return headers;
+        }
+        Object.entries(source).forEach(([key, value]) => {
+          if (typeof value === 'undefined') {
+            return;
+          }
+          headers.set(key, Array.isArray(value) ? value.join(', ') : value);
+        });
+        return headers;
+      };
+
       const controller = new AbortController();
       // If we were provided a signal then forward it to the controller
       const signal = normalInit.signal;
       if (signal) {
         signal.addEventListener('abort', controller.abort);
       }
-      normalInit.signal = controller.signal;
-      const domReq = domFetch(
-        url,
-        normalInit as RequestInit,
-      );
+      const domInit: globalThis.RequestInit = {
+        method: normalInit.method,
+        headers: normalizeDomHeaders(normalInit.headers),
+        body: normalInit.body as BodyInit | null | undefined,
+        cache: normalInit.cache as RequestCache | undefined,
+        signal: controller.signal,
+      };
+      const domReq = domFetch(url, domInit);
       // the only timeout we handle here is request timeout
       return normalInit.timeout?.request
         ? withTimeout(domReq, normalInit.timeout.request).then((x) => {
