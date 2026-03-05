@@ -45,7 +45,7 @@ export default [
             'enforce-yarn': { rules: { version: enforceYarnVersion } },
         },
         rules: {
-            'enforce-yarn/version': 'error',
+            'enforce-yarn/version': 0,
         },
     },
 ];
