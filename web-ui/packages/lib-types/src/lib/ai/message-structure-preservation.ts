@@ -1,3 +1,5 @@
+/* global Buffer */
+
 /**
  * @fileoverview Strongly-typed interface for message structure preservation
  *
@@ -617,15 +619,17 @@ const evaluateMessagePreservation = (
       break;
 
     case 'semantic':
-      // Contextual evaluation for semantic preservation
-      const contextResult = evaluateContextualPreservation(
-        message,
-        index,
-        messages,
-        options
-      );
-      preserve = contextResult.preserve;
-      reason = contextResult.reason;
+      {
+        // Contextual evaluation for semantic preservation
+        const contextResult = evaluateContextualPreservation(
+          message,
+          index,
+          messages,
+          options
+        );
+        preserve = contextResult.preserve;
+        reason = contextResult.reason;
+      }
       break;
 
     case 'custom':

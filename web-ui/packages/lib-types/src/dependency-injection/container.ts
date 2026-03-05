@@ -1,9 +1,10 @@
+/* global require */
+
 import type {
     IServiceContainer,
     ServiceResolver,
     ContainerRuntime,
     IServiceRegistrarOverload,
-    ServiceResolveOptions,
 } from './types';
 import { ServiceCradle } from './service-cradle';
 import { isRunningOnServer } from '../is-running-on';
@@ -20,8 +21,11 @@ const getNodeRequire = (): ((id: string) => ContainerRuntime) | undefined => {
     if (!isRunningOnServer()) {
         return undefined;
     }
-    if (typeof require === 'function') {
-        return require;
+    const runtimeRequire = (globalThis as typeof globalThis & {
+        require?: (id: string) => ContainerRuntime;
+    }).require;
+    if (typeof runtimeRequire === 'function') {
+        return runtimeRequire;
     }
     return undefined;
 };
@@ -29,8 +33,11 @@ const getBrowserRequire = (): ((id: string) => ContainerRuntime) | undefined => 
     if (isRunningOnServer()) {
         return undefined;
     }
-    if (typeof require === 'function') {
-        return require;
+    const runtimeRequire = (globalThis as typeof globalThis & {
+        require?: (id: string) => ContainerRuntime;
+    }).require;
+    if (typeof runtimeRequire === 'function') {
+        return runtimeRequire;
     }
     return undefined;
 }

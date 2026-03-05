@@ -1,15 +1,38 @@
 import type { NextApiRequest } from 'next';
-import type { NextRequest } from 'next/server';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type NextUrl = URL | any;
+type NextUrl = URL | { pathname?: string; searchParams?: URLSearchParams };
 
-type StockRequestBody = Request['body'];
+type RequestBodyExtractors = {
+	json: () => Promise<unknown>;
+	text: () => Promise<string>;
+	arrayBuffer: () => Promise<unknown>;
+	formData: () => Promise<unknown>;
+	blob: () => Promise<unknown>;
+};
 
-type RequestBodyExtractors = Pick<
-	Request,
-	'json' | 'text' | 'arrayBuffer' | 'formData' | 'blob'
->;
+type FetchRequest = {
+	method: string;
+	url: string;
+	headers: unknown;
+	cookies: CookieStoreLike;
+	bodyUsed: boolean;
+	clone: () => unknown;
+	signal: unknown;
+	referrerPolicy?: unknown;
+	redirect?: unknown;
+	referrer?: string;
+	cache?: unknown;
+	credentials?: unknown;
+	destination?: unknown;
+	integrity?: string;
+	keepalive?: boolean;
+	mode?: unknown;
+	page?: unknown;
+	ua?: unknown;
+	bytes?: () => Promise<unknown>;
+};
+
+type StockRequestBody = NextApiRequest['body'];
 
 type RouteParams = Record<string, string | string[] | undefined>;
 
@@ -26,7 +49,9 @@ type NextUrlSupport = {
 	nextUrl?: NextUrl;
 };
 
-type CookieStoreLike = Pick<NextRequest['cookies'], 'get'>;
+type CookieStoreLike = {
+	get: (name: string) => unknown;
+};
 
 type CookiesSupport = {
 	cookies?: NextApiRequest['cookies'] | CookieStoreLike;
@@ -50,7 +75,7 @@ export type LikeNextRequest =
 		QuerySupport &
 		NextUrlSupport &
 		CookiesSupport)
-	| (Pick<NextRequest, RequiredRequestKeys> &
+	| (Pick<FetchRequest, RequiredRequestKeys> &
 		StockBodySupport &
 		RequestBodyExtractors &
 		RouteSupport &

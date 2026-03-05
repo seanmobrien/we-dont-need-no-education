@@ -6,7 +6,6 @@ export type EmittingDispose = {
 
 export const withEmittingDispose = <T>(input: T): T & EmittingDispose => {
     const listeners = new Set<() => void>();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const originalDispose = (input as any)[Symbol.dispose] as
         | (() => void)
         | undefined;

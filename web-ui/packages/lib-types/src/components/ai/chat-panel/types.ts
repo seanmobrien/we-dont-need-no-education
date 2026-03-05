@@ -1,26 +1,28 @@
-import { Dispatch, SetStateAction } from 'react';
+/* global HTMLDivElement */
 
+import { Dispatch, SetStateAction } from 'react';
+import type { AiProviderType, AiModelType } from '../../../lib/ai/core/types';
 /**
  * Available AI providers
  * @deprecated Use {@see @compliance-theater/types/lib/ai/core/AiProviderType} instead.
  */
 
-export type AiProvider = 'azure' | 'google' | 'openai';
+export type AiProvider = AiProviderType;
 
 /**
  * Model types available across providers
- * @deprecated Use {@see @compliance-theater/types/lib/ai/core/ModelType} instead.
+ * @deprecated Use {@see @compliance-theater/types/lib/ai/core/AiModelType} instead.
  */
-export type ModelType = 'lofi' | 'hifi' | 'reasoning-medium' | 'reasoning-high';
+export type ModelType = AiModelType;
 
 /**
  * Provider configuration with display name and available models
  */
 export type ProviderConfig = {
-  id: AiProvider;
+  id: AiProviderType;
   displayName: string;
   models: Array<{
-    id: ModelType;
+    id: AiModelType;
     displayName: string;
     available: boolean;
   }>;
@@ -30,8 +32,8 @@ export type ProviderConfig = {
  * Combined model selection state
  */
 export type ModelSelection = {
-  provider: AiProvider;
-  model: ModelType;
+  provider: AiProviderType;
+  model: AiModelType;
 };
 
 /**
