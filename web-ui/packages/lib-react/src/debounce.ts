@@ -1,7 +1,8 @@
+/* global NodeJS, clearTimeout, setTimeout */
+
 import { log, LoggedError } from '@compliance-theater/logger';
 import { isError } from './utility-methods';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const debounce = <R, T extends (...args: any[]) => R>(
   func: T,
   delay: number | { wait: number; timeout?: number }

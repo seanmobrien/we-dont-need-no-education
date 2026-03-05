@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * @module types
  * This module provides various utility types for TypeScript, including:

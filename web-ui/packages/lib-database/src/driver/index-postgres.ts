@@ -252,8 +252,6 @@ export class Resultset<T extends readonly any[] = readonly any[]>
     }
     // No go
     return false;
-
-    return true;
   }
   static #makeRecordFromArray<TRecord extends readonly any[]>(
     result: TRecord | any[],

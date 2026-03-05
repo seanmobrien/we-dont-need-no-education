@@ -1,3 +1,5 @@
+/* global Headers, URLSearchParams, URL, Buffer, Response */
+
 import got, {
     type OptionsInit,
     type OptionsOfBufferResponseBody,
@@ -13,7 +15,7 @@ import {
     fetchConfig,
     fetchConfigSync,
 } from './fetch-config';
-import { makeResponse, webStreamToReadable } from '../response';
+import { makeResponse } from '../response';
 import { CacheStrategies } from './cache-strategies';
 import { StreamingStrategy } from './streaming-strategy';
 import { BufferingStrategy } from './buffering-strategy';

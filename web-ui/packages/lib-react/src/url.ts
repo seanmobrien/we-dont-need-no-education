@@ -1,3 +1,5 @@
+/* global URL */
+
 import { env } from '@compliance-theater/env';
 import { SiteRoute, SiteRouteType } from './internal/site-route-types';
 import { UrlObject } from 'url';

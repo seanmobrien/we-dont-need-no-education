@@ -117,7 +117,7 @@ export const drizDbWithInit: DrizDbInitOverloads = <T>(
     return Promise.resolve(db) as T;
   };
   const drizDb = get_DrizDb();
-  if (!!drizDb) {
+  if (drizDb) {
     return Promise.resolve(drizDb).then(resolver);
   }
   let drizDbPromise = get_DrizDbPromise();

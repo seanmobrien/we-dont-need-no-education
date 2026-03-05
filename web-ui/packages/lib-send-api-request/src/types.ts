@@ -1,6 +1,5 @@
 import { ICancellablePromiseExt } from '@compliance-theater/typescript';
 import { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
-import { NextApiRequest } from 'next';
 import { UrlObject } from 'url';
 import type { Route } from 'next';
 

@@ -1,3 +1,5 @@
+/* global AbortController */
+
 import { LoggedError } from '@compliance-theater/logger';
 import { getFeatureFlag } from './server';
 import { log } from '@compliance-theater/logger/core';
@@ -127,14 +129,7 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
 
     // Trigger refresh asynchronously without blocking
     if (this.isStale && !this._pendingRefresh) {
-      new Promise(async (resolve, reject) => {
-        try {
-          const ret = await this.refreshValue();
-          resolve(ret);
-        } catch (e) {
-          reject(e);
-        }
-      }).catch((error) => {
+      this.refreshValue().catch((error) => {
         LoggedError.isTurtlesAllTheWayDownBaby(error, {
           log: true,
           source: `FeatureFlag:${this.key}/refresh-value`,
@@ -204,16 +199,14 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
     // Create abort controller for cancellation support
     this._abortController = new AbortController();
     const originalValue = this._value;
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const that = this;
     let didValueChange = false;
     const pending = getFeatureFlag<T>(this.key, {
       userId: this.userId,
       flagsmith: this.#flagsmithFactory,
     })
       .then((newValue) => {
-        if (that._isDisposed) {
-          return [that._value, false] as const;
+        if (this._isDisposed) {
+          return [this._value, false] as const;
         }
         let valueUpdated = false;
         let firstRefresh = false;
@@ -221,16 +214,16 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
         const now = Date.now();
         // If we've never refreshed before then always treat as an update.
         // This supports the transition from defaultValue/not loaded to loaded.
-        if (that._lastRefreshedAt === 0) {
+        if (this._lastRefreshedAt === 0) {
           firstRefresh = true;
-          that._lastRefreshedAt = now;
+          this._lastRefreshedAt = now;
           valueUpdated = true;
         }
-        that._refreshAt = now + that.ttl;
+        this._refreshAt = now + this.ttl;
 
-        if (!that.equals(currentValue)) {
-          that._value = currentValue;
-          that._lastRefreshedAt = now;
+        if (!this.equals(currentValue)) {
+          this._value = currentValue;
+          this._lastRefreshedAt = now;
           valueUpdated = true;
           log((l) =>
             l.verbose(
@@ -240,7 +233,7 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
           );
         }
 
-        return [that._value, valueUpdated] as const;
+        return [this._value, valueUpdated] as const;
       })
       .then(([v, valueUpdated]) => {
         // If value changed set the changed bit so we know

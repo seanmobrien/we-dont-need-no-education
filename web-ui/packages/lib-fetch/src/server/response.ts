@@ -1,3 +1,5 @@
+/* global Response, ReadableStream, NodeJS, Buffer, TextEncoder */
+
 import type { Readable } from 'stream';
 import type { CachedValue } from './fetch/fetch-types';
 

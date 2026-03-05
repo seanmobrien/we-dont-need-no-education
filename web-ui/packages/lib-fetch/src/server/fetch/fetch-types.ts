@@ -1,3 +1,5 @@
+/* global Buffer, URL */
+
 import type {
     RequestInfo,
     RequestInit,

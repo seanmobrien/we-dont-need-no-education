@@ -1,3 +1,5 @@
+/* global Response, Buffer, setInterval, clearInterval */
+
 import type { EventEmitter } from 'events';
 import type { Readable } from 'stream';
 import { makeResponse, makeStreamResponse, nodeStreamToReadableStream } from '../response';

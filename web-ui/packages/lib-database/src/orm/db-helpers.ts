@@ -66,49 +66,7 @@ export const getDocumentRelationReason = async ({
       .execute()) ?? [];
   if (rows.length > 0) {
     const { relationReasonId } = rows[0];
-    if (relationReasonId || !add) {
-      return relationReasonId;
-    }
-  }
-  if (!add) {
-    return undefined;
-  }
-  const [{ relationReasonId: newRelationReasonId } = {}] = await db
-    .insert(documentRelationshipReason)
-    .values({ description: normalized })
-    .returning();
-  return newRelationReasonId;
-};
 
-type LikeDocumentRelationshipType = Omit<
-  DocumentRelationshipType,
-  'timestamp' | 'relationshipReasonId'
-> & {
-  relationshipReasonId: number | string;
-};
-
-/**
- * Adds document relationships to the database.
- *
- * @param db - The database transaction to use.
- * @param addDocumentRelations - An array of document relationships to add.
- * @returns An array of added document relationships.
- *
- * @example
- * ```typescript
- * const relationships = await addDocumentRelations({
- *   db,
- *   addDocumentRelations: [
- *     {
- *       sourceDocumentId: 1,
- *       targetDocumentId: 2,
- *       relationshipReasonId: 'Duplicate',
- *     },
- *   ],
- * });
- * console.log(relationships); // Outputs the added relationships
- * ```
- */
 export const addDocumentRelations = async ({
   db,
   addDocumentRelations,
@@ -123,72 +81,62 @@ export const addDocumentRelations = async ({
     const values = (
       await Promise.all(
         addDocumentRelations.map(
-          ({
+          async ({
             sourceDocumentId,
             targetDocumentId,
             relationshipReasonId: reason,
-          }) =>
-            new Promise<Omit<DocumentRelationshipType, 'timestamp'>>(
-              async (resolve, reject) => {
-                try {
-                  // Resolve incoming reason into a valid relationship id
-                  const relationshipReasonId = await getDocumentRelationReason({
-                    db,
-                    reason,
-                  });
-                  if (!relationshipReasonId) {
-                    throw new Error('Failed to get relationship reason ID');
-                  }
-                  // Check if the relationship already exists
+          }) => {
+            const relationshipReasonId = await getDocumentRelationReason({
+              db,
+              reason,
+            });
+            if (!relationshipReasonId) {
+              throw new Error('Failed to get relationship reason ID');
+            }
 
-                  const exists = await db
-                    .select()
-                    .from(schema.documentRelationship)
-                    .where(
-                      and(
-                        eq(
-                          schema.documentRelationship.sourceDocumentId,
-                          sourceDocumentId
-                        ),
-                        eq(
-                          schema.documentRelationship.targetDocumentId,
-                          targetDocumentId
-                        ),
-                        eq(
-                          schema.documentRelationship.relationshipReasonId,
-                          relationshipReasonId
-                        )
-                      )
-                    )
-                    .limit(1)
-                    .execute();
-                  if (exists && exists.length > 0) {
-                    log((l) =>
-                      l.warn(
-                        'Document relationship already exists - skipping',
-                        {
-                          sourceDocumentId,
-                          targetDocumentId,
-                          relationshipReasonId,
-                        }
-                      )
-                    );
-                    resolve(undefined as unknown as DocumentRelationshipType);
-                  } else {
-                    resolve({
-                      sourceDocumentId,
-                      targetDocumentId,
-                      relationshipReasonId,
-                    });
-                  }
-                } catch (error) {
-                  reject(error);
-                }
-              }
-            )
+            const exists = await db
+              .select()
+              .from(schema.documentRelationship)
+              .where(
+                and(
+                  eq(
+                    schema.documentRelationship.sourceDocumentId,
+                    sourceDocumentId
+                  ),
+                  eq(
+                    schema.documentRelationship.targetDocumentId,
+                    targetDocumentId
+                  ),
+                  eq(
+                    schema.documentRelationship.relationshipReasonId,
+                    relationshipReasonId
+                  )
+                )
+              )
+              .limit(1)
+              .execute();
+
+            if (exists && exists.length > 0) {
+              log((l) =>
+                l.warn('Document relationship already exists - skipping', {
+                  sourceDocumentId,
+                  targetDocumentId,
+                  relationshipReasonId,
+                })
+              );
+              return undefined;
+            }
+
+            return {
+              sourceDocumentId,
+              targetDocumentId,
+              relationshipReasonId,
+            } as Omit<DocumentRelationshipType, 'timestamp'>;
+          }
         )
       )
-    ).filter(Boolean);
+    ).filter(Boolean) as Array<Omit<DocumentRelationshipType, 'timestamp'>>;
+
     if (!values.length) {
       return [];
     }
