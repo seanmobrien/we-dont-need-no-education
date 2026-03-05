@@ -145,7 +145,6 @@ export const darkTheme: Theme = createTheme({
     colorTextLinkActiveLight: '#19c4ce', // color-text-link-active-light
     colorTextLinkActiveDark: '#1898a8', // color-text-link-active-dark
     colorTextLinkActiveAccent: '#18b9b6', // color-text-link-active-accent
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any,
   palette: {
     mode: 'dark',

@@ -5,10 +5,9 @@ import type { SafeProgressEvent } from './utilities/safe-progress-event';
 import type { ErrorContext, IContextEnricher } from './types';
 
 export class ProgressEventError<
-    TEventTarget extends EventTarget = XMLHttpRequest,
-  >
-  implements Error, IContextEnricher
-{
+  TEventTarget extends EventTarget = XMLHttpRequest,
+>
+  implements Error, IContextEnricher {
   name: string;
   message: string;
   lengthComputable: boolean;

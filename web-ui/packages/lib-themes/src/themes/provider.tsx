@@ -1,3 +1,5 @@
+/* global localStorage, document */
+
 'use client';
 import React, {
   createContext,
@@ -44,7 +46,6 @@ export const ThemeProvider = ({
         });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMounted]);
 
   // Update CSS data-theme attribute when theme changes

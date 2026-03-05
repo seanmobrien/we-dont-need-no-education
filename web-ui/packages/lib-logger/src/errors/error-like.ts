@@ -138,9 +138,9 @@ class ErrorLikeInstance implements ErrorLike {
     const match = ErrorLikeInstance.#extractStackFrameRegex.exec(stackLine);
     return match
       ? [
-          Number(match[ErrorLikeInstance.#ExtractStackFrameGroups.Line]),
-          Number(match[ErrorLikeInstance.#ExtractStackFrameGroups.Column]),
-        ]
+        Number(match[ErrorLikeInstance.#ExtractStackFrameGroups.Line]),
+        Number(match[ErrorLikeInstance.#ExtractStackFrameGroups.Column]),
+      ]
       : undefined;
   }
   static errorLikeProxyFactory(inner: ErrorLike): ErrorLike {

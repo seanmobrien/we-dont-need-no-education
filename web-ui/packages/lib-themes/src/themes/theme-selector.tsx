@@ -1,3 +1,5 @@
+/* global HTMLElement, document */
+
 'use client';
 import React, { useState, useMemo } from 'react';
 import IconButton from '@mui/material/IconButton';
@@ -52,7 +54,7 @@ export const ThemeSelector = () => {
       currentTarget,
     }: React.MouseEvent<HTMLElement>) => {
       const themeType = currentTarget?.dataset?.theme as ThemeType;
-      if (!!themeType && currentTheme !== themeType) {
+      if (themeType && currentTheme !== themeType) {
         setTheme(themeType);
         document.cookie = `theme=${encodeURIComponent(themeType)}; path=/; max-age=31536000`;
       }

@@ -25,7 +25,7 @@ import { CustomAppInsightsEvent } from './event';
 import type { ILogger } from './types';
 
 export class AbstractLogger implements ILogger {
-  constructor() {}
+  constructor() { }
 
   protected logInfoMessage(record: object): void {
     throw new Error('Method not implementedfor ' + JSON.stringify(record));
