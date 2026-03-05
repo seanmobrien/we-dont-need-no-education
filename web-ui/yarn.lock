@@ -1263,6 +1263,8 @@ __metadata:
     "@types/node": "npm:^24.0.0"
     ai: "npm:^4.3.16"
     jest: "npm:^30.0.5"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     rimraf: "npm:^6.1.2"
     ts-jest: "npm:^29.3.4"
     ts-pattern: "npm:^5.5.2"
@@ -14246,7 +14248,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@npm:^19.2.0":
+"react-dom@npm:19.2.4, react-dom@npm:^19.2.0":
   version: 19.2.4
   resolution: "react-dom@npm:19.2.4"
   dependencies:
@@ -14355,7 +14357,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:^19.2.0":
+"react@npm:19.2.4, react@npm:^19.2.0":
   version: 19.2.4
   resolution: "react@npm:19.2.4"
   checksum: 10c0/cd2c9ff67a720799cc3b38a516009986f7fc4cb8d3e15716c6211cf098d1357ee3e348ab05ad0600042bbb0fd888530ba92e329198c92eafa0994f5213396596
