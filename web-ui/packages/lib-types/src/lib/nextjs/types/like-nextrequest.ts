@@ -1,3 +1,5 @@
+/* global URL, URLSearchParams */
+
 import type { NextApiRequest } from 'next';
 import type { NextRequest } from 'next/server';
 
