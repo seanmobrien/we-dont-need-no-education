@@ -1,5 +1,3 @@
-/* global process */
-
 import { log, safeSerialize, LoggedError, singletonProviderFactory } from '@compliance-theater/logger';
 import AfterManager from './index';
 import {

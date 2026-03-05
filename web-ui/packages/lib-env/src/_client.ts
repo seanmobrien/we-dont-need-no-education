@@ -1,3 +1,5 @@
+/* global process */
+
 import { z } from 'zod';
 import { getMappedSource, ZodProcessors } from './_common';
 

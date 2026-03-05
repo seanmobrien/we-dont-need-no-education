@@ -1,3 +1,5 @@
+/* global window, process, URL */
+
 import { isTruthy } from '@compliance-theater/types/types/is-truthy';
 import { LoggedError } from '@compliance-theater/logger';
 import z from 'zod';
