@@ -50,7 +50,7 @@ env:
   OPENAI_KEY_TEXT: "xxxxx"
   OTEL_SERVICE_NAME: "WebUI-CoPilot"
   OTEL_RESOURCE_ATTRIBUTES: service.namespace=ObApps.ComplianceTheatre,service.version=1.0,deployment.environment=CoPilot
-
+  
 jobs:
   # The job MUST be called `copilot-setup-steps` or it will not be picked up by Copilot.
   copilot-setup-steps:
@@ -92,5 +92,5 @@ jobs:
 
       - name: Run yarn install
         working-directory: ./web-ui
-        run: yarn install --immutable
-        shell: bash
+        run: YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install
+        shell: bash        
