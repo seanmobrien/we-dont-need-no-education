@@ -1,3 +1,5 @@
+/* global process, window, Buffer, TextEncoder, TextDecoder, btoa, atob */
+
 type NodeCryptoModule = {
     randomBytes: (size: number) => Uint8Array;
     createCipheriv: (

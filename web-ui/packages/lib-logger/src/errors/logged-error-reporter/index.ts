@@ -1,3 +1,5 @@
+/* global process */
+
 import type { ErrorReporterInterface } from '../monitoring/types';
 
 export const reporter = async (): Promise<ErrorReporterInterface> => {

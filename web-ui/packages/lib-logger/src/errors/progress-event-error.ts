@@ -1,3 +1,5 @@
+/* global EventTarget, XMLHttpRequest */
+
 import { isProgressEvent } from './utilities/error-guards';
 import type { SafeProgressEvent } from './utilities/safe-progress-event';
 import type { ErrorContext, IContextEnricher } from './types';

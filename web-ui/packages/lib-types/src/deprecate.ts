@@ -1,3 +1,5 @@
+/* global process, console */
+
 import { getStackTrace } from './get-stack-trace';
 
 // When we're running on node we can process.emitWarning
@@ -15,7 +17,6 @@ const warnDeprecatedOffNode = (
     }: ${message}`
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const deprecate = <T extends (...args: any[]) => any>(
     fn: T,
     message = `The ${fn.name} function is deprecated.`,

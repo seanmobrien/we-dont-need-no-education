@@ -1,4 +1,6 @@
 
+/* global process */
+
 export const isRunningOnServer = (): boolean =>
     process.env && process.env.NEXT_RUNTIME === 'nodejs';
 

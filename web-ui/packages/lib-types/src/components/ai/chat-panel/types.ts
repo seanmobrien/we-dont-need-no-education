@@ -1,3 +1,5 @@
+/* global HTMLDivElement */
+
 import { Dispatch, SetStateAction } from 'react';
 
 /**

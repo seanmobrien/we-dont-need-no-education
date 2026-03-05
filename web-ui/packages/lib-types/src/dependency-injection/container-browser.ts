@@ -58,8 +58,8 @@ const createBrowserResolver = <T = unknown>({
 export const asClass = <T>(...args: unknown[]): ServiceResolver<T> => {
     const ctor = (args[0] as new (...args: unknown[]) => T);
     const resolver = createBrowserResolver<T>({
-        matches: c => c.tag === ctor,
-        resolve: c => new ctor()
+        matches: _c => _c.tag === ctor,
+        resolve: _c => new ctor()
     });
     resolver.kind = 'class';
     resolver.tag = ctor;
@@ -69,7 +69,7 @@ export const asClass = <T>(...args: unknown[]): ServiceResolver<T> => {
 export const asFunction = <T>(...args: unknown[]): ServiceResolver<T> => {
     const resolve = args[0] as <TCradle extends Record<string | symbol | number, unknown>>(cradle: TCradle) => T;
     const resolver = createBrowserResolver<T>({
-        matches: c => c.tag === resolve,
+        matches: _c => _c.tag === resolve,
         resolve
     });
     resolver.kind = 'function';
@@ -79,7 +79,7 @@ export const asFunction = <T>(...args: unknown[]): ServiceResolver<T> => {
 export const asValue = <T>(...args: unknown[]): ServiceResolver<T> => {
     const value = args[0] as T;
     const resolver = createBrowserResolver({
-        matches: c => c.tag === value,
+        matches: _c => _c.tag === value,
         resolve: () => value
     });
     resolver.kind = 'value';

@@ -1,3 +1,5 @@
+/* global Request, Response */
+
 import type { Session, User } from '@compliance-theater/types/next-auth';
 import type { JWT } from '@compliance-theater/types/next-auth/jwt';
 import type { LikeNextRequest } from '../nextjs/types/like-nextrequest';

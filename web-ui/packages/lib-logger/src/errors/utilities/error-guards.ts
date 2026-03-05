@@ -1,3 +1,5 @@
+/* global XMLHttpRequest, DOMException */
+
 // Type guards and utility functions for error handling
 import type { SafeProgressEvent } from './safe-progress-event';
 

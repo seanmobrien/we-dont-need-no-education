@@ -68,7 +68,6 @@ export function withErrorBoundary<P extends object>(
   const {
     fallbackRender,
     onReset,
-    isolate = false,
   } = config;
 
   const componentName =

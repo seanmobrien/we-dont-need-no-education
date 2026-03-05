@@ -1,3 +1,5 @@
+/* global EventTarget, Event */
+
 export type SafeProgressEvent<T extends EventTarget = EventTarget> = Event & {
   /**
    * The **`ProgressEvent.lengthComputable`** read-only property is a boolean flag indicating if the resource concerned by the length

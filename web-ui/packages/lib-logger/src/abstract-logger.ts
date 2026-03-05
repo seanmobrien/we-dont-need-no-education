@@ -85,9 +85,9 @@ export class AbstractLogger implements ILogger {
     let stringValue: string;
     // Error / exception messages
     if (isError(message)) {
-      stringValue = !!message.message
+      stringValue = message.message
         ? typeof message.message === 'object'
-          ? 'body' in message && !!message.body
+          ? 'body' in message && message.body
             ? String(message.body)
             : String(message.message)
           : String(message.message)

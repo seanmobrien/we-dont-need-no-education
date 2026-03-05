@@ -1,3 +1,5 @@
+/* global process, ErrorEvent, PromiseRejectionEvent, console, window, navigator, btoa, localStorage */
+
 import { log } from '../../core';
 import { safeSerialize } from '../../safe-serialize';
 import { LoggedError } from '../logged-error/logged-error-class';
@@ -458,7 +460,7 @@ export class ErrorReporter implements ErrorReporterInterface {
       if (typeof error === 'string') {
         normalError = new Error(LoggedError.buildMessage(error));
       } else {
-        normalError = !!error
+        normalError = error
           ? new Error(`Non-error thrown: ${LoggedError.buildMessage(error)}`)
           : new TypeError('Normalized null error');
       }
@@ -651,7 +653,6 @@ interface ErrorReporterInstanceOverloads {
   <
     TCallback extends (
       reporter: ErrorReporterInterface,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ) => any extends infer TResult ? TResult : never,
   >(
     cb: TCallback,
@@ -661,7 +662,6 @@ interface ErrorReporterInstanceOverloads {
 // Export singleton instance
 export const errorReporter: ErrorReporterInstanceOverloads = (
   cb?: (reporter: ErrorReporterInterface) => unknown,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any => {
   const reporter = ErrorReporter.getInstance();
   if (typeof cb === 'undefined') {
