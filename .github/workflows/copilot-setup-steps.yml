@@ -68,6 +68,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Initialize git submodules for web-ui
+        run: |
+          set -euo pipefail
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule sync --recursive
+          git submodule update --init --recursive --jobs 4
+          git submodule status --recursive
+        shell: bash
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -92,5 +101,7 @@ jobs:
 
       - name: Run yarn install
         working-directory: ./
-        run: node .yarn/releases/yarn-4.12.0.cjs install --immutable
+        run: |
+          set -euo pipefail
+          node .yarn/releases/yarn-4.12.0.cjs install --immutable
         shell: bash
