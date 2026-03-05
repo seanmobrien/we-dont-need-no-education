@@ -18,7 +18,7 @@ jest.mock('@azure/storage-blob', () => ({
 
 describe('DocumentUnitRepository', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   test('SasKey is empty when generateDownloadKey is false', () => {

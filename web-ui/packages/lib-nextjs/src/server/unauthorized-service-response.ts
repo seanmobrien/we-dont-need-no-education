@@ -1,3 +1,5 @@
+/* global Response, URL */
+
 import { NextResponse } from 'next/server';
 import { SessionTokenKey } from '../utilities/session-token-key';
 import { env } from '@compliance-theater/env';
@@ -31,7 +33,7 @@ export const unauthorizedServiceResponse = ({
   const { nextUrl = new URL(env('NEXT_PUBLIC_HOSTNAME')) } = req ?? {
     nextUrl: undefined,
   };
-  const isAuthenticated = !!getCookieValue(req).length;
+  const isAuthenticated = getCookieValue(req).length > 0;
   const resourceMetadataPath = `/.well-known/oauth-protected-resource${nextUrl.pathname}`;
   return NextResponse.json(
     { error: 'Unauthorized', message: 'Active session required.' },

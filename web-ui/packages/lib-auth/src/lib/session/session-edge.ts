@@ -1,3 +1,5 @@
+/* global TextEncoder */
+
 /**
  * Edge-compatible Session management strategy
  * JWT-based session handling for client-side support.

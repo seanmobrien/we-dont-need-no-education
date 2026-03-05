@@ -1,3 +1,5 @@
+/* global CryptoKey, crypto, btoa */
+
 import { log, SingletonProvider } from '@compliance-theater/logger';
 
 const KEY_VALIDATION_STORAGE_KEY = 'lastKeyValidation';

@@ -32,7 +32,7 @@ describe('TodoListFlyout', () => {
       },
     });
 
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   const TestWrapper = () => {

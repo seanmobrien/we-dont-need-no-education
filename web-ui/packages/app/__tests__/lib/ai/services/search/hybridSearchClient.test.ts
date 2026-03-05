@@ -12,7 +12,7 @@ setupImpersonationMock();
  */
 
 // Mock fetch module BEFORE importing SUTs so the implementation is captured.
-var fetchMock = jest.fn();
+const fetchMock = jest.fn();
 jest.mock('../../../../../lib/fetch-service', () => ({
   resolveFetchService: jest.fn(
     () =>

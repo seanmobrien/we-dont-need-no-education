@@ -33,7 +33,6 @@ interface IsKeyOfGuard {
 export const isKeyOf: IsKeyOfGuard = (
   key: unknown,
   check?: unknown
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): key is any => {
   if (check === undefined || check === null) {
     return false;
@@ -45,7 +44,6 @@ export const isKeyOf: IsKeyOfGuard = (
   ) {
     if (Array.isArray(check)) {
       // runtime: check if any element equals the key
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (check as any[]).some((v) => v === key);
     }
     if (check && typeof check === "object") {

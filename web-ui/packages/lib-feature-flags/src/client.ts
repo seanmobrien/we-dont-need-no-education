@@ -74,7 +74,6 @@ export const getFeatureFlag = async <T extends KnownFeatureType>(
       await server.getFlags();
     }
     const hasFeature = server.hasFeature(flagKey, false);
-    console.log('context looks like', server.getContext());
     const featureValue = hasFeature ? server.getValue(flagKey) : null;
     return (
       extractFlagValue(flagKey, {

@@ -106,7 +106,7 @@ describe('resolveEmailId', () => {
 
     mockDrizDb.mockResolvedValue(mockDb as any);
 
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
 
     const result = await resolveEmailId(documentId);
     expect(result).toBeNull();

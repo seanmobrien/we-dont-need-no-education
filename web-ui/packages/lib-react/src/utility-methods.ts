@@ -1,3 +1,5 @@
+/* global EventTarget, Event, XMLHttpRequest, DOMException */
+
 // General utility methods used across React components
 // and other parts of the application.
 

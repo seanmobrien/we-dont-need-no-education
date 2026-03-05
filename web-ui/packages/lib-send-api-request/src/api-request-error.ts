@@ -1,3 +1,5 @@
+/* global Response */
+
 /**
  * A unique symbol to identify API request errors.
  */

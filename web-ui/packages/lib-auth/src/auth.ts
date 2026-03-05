@@ -1,3 +1,5 @@
+/* global process, window */
+
 import type {
   Account,
   User,
@@ -43,7 +45,6 @@ type DynamicImports = {
            * :::
            */
           // Using any for library compatibility
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           newSession: any;
           trigger?: 'update';
         },
@@ -120,7 +121,6 @@ type DynamicImports = {
          * ⚠ Note, you should validate this data before using it.
          */
         // Using any for library compatibility
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         session?: any;
       }) => Awaitable<JWT | null>;
     };
@@ -149,7 +149,6 @@ const nextAuthResult: NextAuthResult = NextAuth(async () => {
   // Added NextAuthConfig return type
   let adapter: Adapter | undefined;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let signInImpl: any;
 
   // Skip database adapter during build process, on edge, or client-side (which should never happen)

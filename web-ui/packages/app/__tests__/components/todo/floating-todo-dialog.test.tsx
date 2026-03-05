@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../../shared/test-utils'
+import { render, screen, fireEvent, waitFor } from '../../shared/test-utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FloatingTodoDialog } from '../../../components/todo/floating-todo-dialog';
 
@@ -41,7 +41,7 @@ describe('FloatingTodoDialog', () => {
         mutations: { retry: false },
       },
     });
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
 
     (useToggleTodo as jest.Mock).mockReturnValue({
       mutate: mockMutate,

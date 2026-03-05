@@ -94,7 +94,7 @@ describe('Tool Optimizing Middleware', () => {
   let sampleTools: LanguageModelV2FunctionTool[];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
 
     // Mock ToolMap instance
     mockToolMapInstance = {

@@ -1,6 +1,16 @@
- 
-import { screen, render, renderHook, waitFor, act,hideConsoleOutput } from '../../shared/test-utils';
-import { useEmail, useWriteEmail, emailKeys } from '../../../lib/hooks/use-email';
+import {
+  screen,
+  render,
+  renderHook,
+  waitFor,
+  act,
+  hideConsoleOutput,
+} from '../../shared/test-utils';
+import {
+  useEmail,
+  useWriteEmail,
+  emailKeys,
+} from '../../../lib/hooks/use-email';
 import { getEmail, writeEmailRecord } from '../../../lib/api/client';
 import { UseMutateFunction } from '@tanstack/react-query';
 
@@ -134,7 +144,7 @@ describe('useEmailQuery hooks', () => {
 
   describe('useWriteEmail hook', () => {
     beforeEach(() => {
-      jest.clearAllMocks();
+      jest.restoreAllMocks();
     });
 
     it(

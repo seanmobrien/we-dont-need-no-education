@@ -1,3 +1,5 @@
+/* global process */
+
 import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 
 const LOCAL_FETCH: unique symbol = Symbol(

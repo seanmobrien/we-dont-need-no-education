@@ -755,7 +755,6 @@ export type { DbTransactionType } from './schema';
  * type UserQuery = Types.Queries['users'];
  * ```
  */
-// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Types {
   /**
    * Collection of all table SELECT result types.

@@ -1,3 +1,5 @@
+/* global AbortSignal, AbortController */
+
 import { ICancellablePromiseExt } from "./types";
 
 export const abortablePromise: unique symbol = Symbol("abortablePromise");
@@ -6,7 +8,6 @@ const chainInitToken: unique symbol = Symbol("chainInit");
 export type OperationCancelledError = Error & { [abortablePromise]: true };
 type AbortablePromiseExecutor<T> = (
   resolve: (value: T | PromiseLike<T>) => void,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   reject: (reason?: any) => void,
   signal: AbortSignal
 ) => void;
@@ -75,7 +76,6 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
         settled = true;
         resolve(value);
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const wrappedReject = (reason?: any) => {
         settled = true;
         reject(reason);
@@ -112,7 +112,7 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
       | ((value: T) => TResult1 | PromiseLike<TResult1>)
       | null
       | undefined,
-    onrejected?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onrejected?:
     ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined
   ): ICancellablePromiseExt<TResult1 | TResult2> {
     const nextPromise = this.#promise.then(onfulfilled, (e) => {
@@ -128,7 +128,7 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
   }
 
   catch<TResult = never>(
-    onrejected?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onrejected?:
     ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined
   ): ICancellablePromiseExt<T | TResult> {
     // Don't catch cancellation errors - those should only be handled by cancelled()
@@ -155,7 +155,7 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
   }
 
   cancelled<TResult = never>(
-    onrejected?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onrejected?:
     ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined
   ): ICancellablePromiseExt<T | TResult> {
     const nextPromise = this.#promise.catch((e) => {

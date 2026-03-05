@@ -3,7 +3,12 @@
  */
 
 import React from 'react';
-import { render, waitFor, act,hideConsoleOutput } from '../../shared/test-utils';
+import {
+  render,
+  waitFor,
+  act,
+  hideConsoleOutput,
+} from '../../shared/test-utils';
 // import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
@@ -31,11 +36,14 @@ jest.mock('@compliance-theater/logger/errors/monitoring', () => {
 
 const mockReload = jest.fn();
 
-jest.mock('@compliance-theater/logger/errors/monitoring/recovery-strategies', () => ({
-  getRecoveryActions: jest.fn(),
-  getDefaultRecoveryAction: jest.fn(),
-  classifyError: jest.fn(),
-}));
+jest.mock(
+  '@compliance-theater/logger/errors/monitoring/recovery-strategies',
+  () => ({
+    getRecoveryActions: jest.fn(),
+    getDefaultRecoveryAction: jest.fn(),
+    classifyError: jest.fn(),
+  }),
+);
 
 const mockGetRecoveryActions =
   require('@compliance-theater/logger/errors/monitoring/recovery-strategies').getRecoveryActions;
@@ -178,9 +186,7 @@ describe('Error Flow Integration Tests', () => {
     it('should debounce duplicate global errors', async () => {
       render(
         <TestWrapper>
-          <LocalErrorBoundary 
-            FallbackComponent={RenderFallbackFromBoundary}
-          >
+          <LocalErrorBoundary FallbackComponent={RenderFallbackFromBoundary}>
             <ClientErrorManager debounceMs={10000} />
           </LocalErrorBoundary>
         </TestWrapper>,
@@ -213,10 +219,10 @@ describe('Error Flow Integration Tests', () => {
 
 describe('Performance and Memory Management', () => {
   type EventListenerState = {
-    'addEventListener'?: typeof window.addEventListener;
-    'removeEventListener'?: typeof window.removeEventListener;
+    addEventListener?: typeof window.addEventListener;
+    removeEventListener?: typeof window.removeEventListener;
   };
-  let eventListenerState: EventListenerState = {};
+  const eventListenerState: EventListenerState = {};
 
   beforeEach(() => {
     eventListenerState.addEventListener = window.addEventListener;
@@ -224,14 +230,14 @@ describe('Performance and Memory Management', () => {
     window.addEventListener = jest.fn();
     window.removeEventListener = jest.fn();
   });
-  
+
   afterEach(() => {
     const restoreIt = (method: 'addEventListener' | 'removeEventListener') => {
       if (jest.isMockFunction(window[method])) {
         window[method].mockRestore();
-      }      
+      }
       window[method] = eventListenerState[method] ?? window[method];
-    }
+    };
     restoreIt('addEventListener');
     restoreIt('removeEventListener');
   });

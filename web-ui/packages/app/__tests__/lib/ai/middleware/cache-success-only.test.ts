@@ -7,7 +7,7 @@
  */
 
 // Mock Redis client first
-var mockRedisClient = {
+const mockRedisClient = {
   connect: jest.fn().mockResolvedValue(undefined),
   quit: jest.fn().mockResolvedValue(undefined),
   get: jest.fn().mockResolvedValue(null),

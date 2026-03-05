@@ -1,3 +1,5 @@
+/* global Headers, URLSearchParams, URL, Buffer, AbortController */
+
 import got, {
   Response as GotResponse,
   OptionsInit,
@@ -81,8 +83,7 @@ const mergeHeaders = (
 ) => {
   if (!source) return;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getMatchingKey = (obj: Record<string, any>, key: string) => {
+  const getMatchingKey = (obj: Record<string, unknown>, key: string) => {
     const lower = key.toLowerCase();
     return Object.keys(obj).find((k) => k.toLowerCase() === lower) || key;
   };
@@ -253,8 +254,7 @@ export const normalizeRequestInit = ({
   const headers: Record<string, string | string[] | undefined> = {};
 
   if (defaults?.headers) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mergeHeaders(headers, defaults.headers as any);
+    mergeHeaders(headers, defaults.headers as Record<string, string | string[]>);
   }
 
   if (init.headers) {
@@ -266,7 +266,7 @@ export const normalizeRequestInit = ({
   const cleanOptions: OptionsInit = {};
   for (const [k, v] of Object.entries(options)) {
     const key = k as keyof OptionsInit;
-    if (!!v) {
+    if (v) {
       (cleanOptions as Record<typeof key, OptionsInit[keyof OptionsInit]>)[
         key
       ] = v;
@@ -547,12 +547,13 @@ export class FetchManager implements ServerFetchManager {
     // otherwise, do got stream
     await this.semManager.sem.acquire();
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stream = got.stream(normalizedUrl, options as any);
+      const stream = got.stream(normalizedUrl, options);
       const releaseOnce = () => {
         try {
           this.semManager.sem.release();
-        } catch { }
+        } catch {
+          // ignore release race during stream shutdown
+        }
       };
       stream.on('end', releaseOnce);
       stream.on('error', releaseOnce);
@@ -586,8 +587,7 @@ export class FetchManager implements ServerFetchManager {
       normalInit.signal = controller.signal;
       const domReq = domFetch(
         url,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        normalInit as any,
+        normalInit as RequestInit,
       );
       // the only timeout we handle here is request timeout
       return normalInit.timeout?.request

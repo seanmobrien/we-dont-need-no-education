@@ -1,3 +1,5 @@
+/* global Request */
+
 import type { ImpersonationService } from './impersonation.types';
 import { ImpersonationThirdParty } from './impersonation.thirdparty';
 import { ImpersonationServiceCache } from './impersonation-service-cache';

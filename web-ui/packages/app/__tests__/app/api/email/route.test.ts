@@ -20,7 +20,7 @@
  */
 
 // Mock EmailService before imports
-var mockEmailService = {
+const mockEmailService = {
   getEmailsSummary: jest.fn(),
   getEmailById: jest.fn(),
   createEmail: jest.fn(),
@@ -51,7 +51,7 @@ jest.mock('@compliance-theater/auth/lib/resources/case-file/index', () => {
   };
 });
 
-var mockExtractParams: jest.Mock | undefined;
+let mockExtractParams: jest.Mock | undefined;
 
 // Mock modules
 jest.mock('@compliance-theater/nextjs/server/utils', () => {
@@ -83,8 +83,8 @@ type MockDbQuery = {
 };
 
 let mockDb = withJestTestExtensions().makeMockDb();
-let mockDbQuery = mockDb?.query as MockDbQuery;
-let mockDbDelete = mockDb?.delete! as jest.Mock;
+let mockDbQuery = mockDb.query as MockDbQuery;
+let mockDbDelete = mockDb.delete as jest.Mock;
 
 describe('Email API', () => {
   beforeEach(() => {

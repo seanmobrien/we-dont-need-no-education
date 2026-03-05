@@ -7,13 +7,9 @@ import { and, sql } from '@compliance-theater/database/drizzle-orm';
 export const setupDrizzleAdapter = (): Promise<Adapter> =>
   drizDbWithInit((db) => {
     const ret = (DrizzleAdapter as any)(db, {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       usersTable: schema.users as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       accountsTable: schema.accounts as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       sessionsTable: schema.sessions as any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       verificationTokensTable: schema.verificationTokens as any,
     });
 

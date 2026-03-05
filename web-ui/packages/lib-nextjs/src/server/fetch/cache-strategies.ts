@@ -1,3 +1,5 @@
+/* global Buffer */
+
 /**
  * @fileoverview Cache strategy implementations for enhanced fetch
  *

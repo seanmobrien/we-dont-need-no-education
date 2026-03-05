@@ -65,7 +65,6 @@ export const withRequestAccessToken: RequestWithAccessTokenOverloads = (
   req: LikeNextRequest | undefined,
   value?: RequestWithAccessTokenCache
 ): // Any necessary to support the interface pattern
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 any => withRequestTokens(req, value)?.access_token;
 
 export const withRequestProviderAccountId = (req: LikeNextRequest | undefined) =>
@@ -73,7 +72,7 @@ export const withRequestProviderAccountId = (req: LikeNextRequest | undefined) =
 
 export const getRequestTokens = async (req: LikeNextRequest | undefined) => {
   const ret = withRequestTokens(req);
-  if (!!ret) {
+  if (ret) {
     return ret;
   }
   let session: AuthSessionLike = null;

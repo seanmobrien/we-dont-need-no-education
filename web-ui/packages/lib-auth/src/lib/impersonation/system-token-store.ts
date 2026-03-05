@@ -1,3 +1,5 @@
+/* global URL, process, require, URLSearchParams */
+
 /**
  * @fileoverview SystemTokenStore - Singleton for managing shared admin tokens across impersonation instances
  *
@@ -25,9 +27,6 @@
  * @since 1.0.0
  * @version 2.0.0
  */
-
-/* eslint-disable @typescript-eslint/no-require-imports */
-/* eslint-disable @typescript-eslint/no-unsafe-function-type */
 
 import { CookieJar } from 'tough-cookie';
 import { log, LoggedError, SingletonProvider } from '@compliance-theater/logger';
