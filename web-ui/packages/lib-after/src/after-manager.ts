@@ -1,3 +1,5 @@
+/* global setTimeout, clearTimeout */
+
 import { log, LoggedError, singletonProviderFactory } from '@compliance-theater/logger';
 import type { IAfterManager, TAfterHandler } from '@compliance-theater/types/after';
 
@@ -141,74 +143,68 @@ export default class AfterManager implements IAfterManager {
   }
 
   public async signal(signalName: string): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
-      try {
-        const queueHandlers = this.#queues.get(signalName);
-        if (!queueHandlers) {
-          return resolve();
-        }
-        const promises = queueHandlers.map((handler) => handler());
-        const completed = await Promise.race([
-          Promise.all(promises),
-          new Promise((resolve) => {
-            timeoutHandle = setTimeout(() => {
-              const timedOut = { __brand: AfterManager.#brand } as unknown as {
-                __brand: symbol;
-              };
-              resolve(timedOut);
-            }, AfterManager.#TIMEOUT);
-            timeoutHandle.unref?.();
-          }),
-        ]);
-        if (timeoutHandle) {
-          clearTimeout(timeoutHandle);
-        }
-        const maybeBranded = completed as unknown;
-        let isBrandedObj = false;
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const queueHandlers = this.#queues.get(signalName);
+      if (!queueHandlers) {
+        return;
+      }
+      const promises = queueHandlers.map((handler) => handler());
+      const completed = await Promise.race([
+        Promise.all(promises),
+        new Promise((resolve) => {
+          timeoutHandle = setTimeout(() => {
+            const timedOut = { __brand: AfterManager.#brand } as unknown as {
+              __brand: symbol;
+            };
+            resolve(timedOut);
+          }, AfterManager.#TIMEOUT);
+          timeoutHandle.unref?.();
+        }),
+      ]);
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
+      const maybeBranded = completed as unknown;
+      let isBrandedObj = false;
+      if (
+        typeof maybeBranded === 'object' &&
+        maybeBranded !== null &&
+        '__brand' in (maybeBranded as Record<string, unknown>)
+      ) {
+        const objBrand = (maybeBranded as Record<string, unknown>).__brand;
+        isBrandedObj =
+          typeof objBrand === 'symbol' && objBrand === AfterManager.#brand;
+      }
+      let isBrandedArray = false;
+      if (
+        Array.isArray(maybeBranded) &&
+        (maybeBranded as Array<unknown>).length > 0
+      ) {
+        const first = (maybeBranded as Array<unknown>)[0];
         if (
-          typeof maybeBranded === 'object' &&
-          maybeBranded !== null &&
-          '__brand' in (maybeBranded as Record<string, unknown>)
+          typeof first === 'object' &&
+          first !== null &&
+          '__brand' in (first as Record<string, unknown>)
         ) {
-          const objBrand = (maybeBranded as Record<string, unknown>).__brand;
-          isBrandedObj =
-            typeof objBrand === 'symbol' && objBrand === AfterManager.#brand;
+          const arrBrand = (first as Record<string, unknown>).__brand;
+          isBrandedArray =
+            typeof arrBrand === 'symbol' && arrBrand === AfterManager.#brand;
         }
-        let isBrandedArray = false;
-        if (
-          Array.isArray(maybeBranded) &&
-          (maybeBranded as Array<unknown>).length > 0
-        ) {
-          const first = (maybeBranded as Array<unknown>)[0];
-          if (
-            typeof first === 'object' &&
-            first !== null &&
-            '__brand' in (first as Record<string, unknown>)
-          ) {
-            const arrBrand = (first as Record<string, unknown>).__brand;
-            isBrandedArray =
-              typeof arrBrand === 'symbol' && arrBrand === AfterManager.#brand;
-          }
-        }
-        if (isBrandedObj || isBrandedArray) {
-          log((l) =>
-            l.warn(
-              `AfterManager ${signalName} timed out before all registered callbacks completed`,
-            ),
-          );
-          return resolve();
-        }
-      } catch (error) {
-        return reject(
-          LoggedError.isTurtlesAllTheWayDownBaby(error, {
-            log: true,
-            source: `AfterManager signal ${signalName}`,
-          }),
+      }
+      if (isBrandedObj || isBrandedArray) {
+        log((l) =>
+          l.warn(
+            `AfterManager ${signalName} timed out before all registered callbacks completed`,
+          ),
         );
       }
-      resolve();
-    });
+    } catch (error) {
+      throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: `AfterManager signal ${signalName}`,
+      });
+    }
   }
 
   public static processExit(): number;

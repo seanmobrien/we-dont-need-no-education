@@ -1,3 +1,5 @@
+/* global process */
+
 import { log, safeSerialize, LoggedError, singletonProviderFactory } from '@compliance-theater/logger';
 import AfterManager from './index';
 import {
@@ -144,9 +146,6 @@ export class AppStartup {
       try {
         // First, discover any late-bound initializers
         await this.#discoverInitializers();
-
-        // Determine environment-specific initializers
-        const isNodeEnv = typeof window === 'undefined' && process.env.NEXT_RUNTIME === 'nodejs';
 
         // Run all initializers in parallel
         const allPendingInitializers = await Promise.allSettled(
