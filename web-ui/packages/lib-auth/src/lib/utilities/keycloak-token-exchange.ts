@@ -1,3 +1,5 @@
+/* global process, URLSearchParams, AbortController, setTimeout, Response, clearTimeout */
+
 import { getToken } from '@compliance-theater/types/next-auth/jwt';
 import { NextRequest } from 'next/server';
 import type { NextApiRequest } from 'next';

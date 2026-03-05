@@ -471,7 +471,7 @@ afterEach(() => {
   // Restore natural timers and clear mocks
   jest.clearAllTimers();
   jest.useRealTimers();
-  jest.clearAllMocks();
+  jest.restoreAllMocks();
   // Reset all the singletons attached to global state
   SingletonProvider.Instance.clear();
 });

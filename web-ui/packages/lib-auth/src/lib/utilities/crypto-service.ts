@@ -1,3 +1,5 @@
+/* global process, Buffer */
+
 import {
   cryptoEncrypt,
   cryptoDecrypt,

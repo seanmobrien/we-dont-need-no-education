@@ -25,7 +25,7 @@ import { CustomAppInsightsEvent } from './event';
 import type { ILogger } from './types';
 
 export class AbstractLogger implements ILogger {
-  constructor() {}
+  constructor() { }
 
   protected logInfoMessage(record: object): void {
     throw new Error('Method not implementedfor ' + JSON.stringify(record));
@@ -85,9 +85,9 @@ export class AbstractLogger implements ILogger {
     let stringValue: string;
     // Error / exception messages
     if (isError(message)) {
-      stringValue = !!message.message
+      stringValue = message.message
         ? typeof message.message === 'object'
-          ? 'body' in message && !!message.body
+          ? 'body' in message && message.body
             ? String(message.body)
             : String(message.message)
           : String(message.message)

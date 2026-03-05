@@ -15,7 +15,7 @@ const mockConsole = hideConsoleOutput();
 
 describe('checkChatHealth', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   it('should return healthy when all subsystems are healthy', async () => {

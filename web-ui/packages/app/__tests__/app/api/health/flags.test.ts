@@ -10,7 +10,7 @@ import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
 
 describe('health feature-flag driven behavior', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   afterEach(() => {

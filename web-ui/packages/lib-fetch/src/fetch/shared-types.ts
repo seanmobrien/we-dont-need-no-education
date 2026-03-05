@@ -1,3 +1,5 @@
+/* global URL, BodyInit, RequestCache, RequestCredentials, Headers, RequestMode, RequestPriority, RequestRedirect, ReferrerPolicy, AbortSignal */
+
 type ResponseType = typeof globalThis['Response'];
 type RequestType = typeof globalThis['Request'];
 

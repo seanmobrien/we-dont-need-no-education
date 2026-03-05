@@ -52,7 +52,7 @@ jest.mock('@compliance-theater/logger', () => ({
 
 describe('memoryMiddleware.transformParams', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
     warnMock.mockClear();
     verboseMock.mockClear();
     debugMock.mockClear();

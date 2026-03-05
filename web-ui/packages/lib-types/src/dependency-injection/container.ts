@@ -1,9 +1,10 @@
+/* global require */
+
 import type {
     IServiceContainer,
     ServiceResolver,
     ContainerRuntime,
     IServiceRegistrarOverload,
-    ServiceResolveOptions,
 } from './types';
 import { ServiceCradle } from './service-cradle';
 import { isRunningOnServer } from '../is-running-on';

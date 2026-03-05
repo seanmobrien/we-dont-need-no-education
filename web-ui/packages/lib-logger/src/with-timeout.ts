@@ -1,16 +1,18 @@
+/* global setTimeout */
+
 import { log } from './core';
 import { safeSerialize } from './safe-serialize';
 import { TimeoutError } from './timeout-error';
 
 export type AwaitedWithTimeout<T> =
   | {
-      value: Awaited<T>;
-      timedOut?: false;
-    }
+    value: Awaited<T>;
+    timedOut?: false;
+  }
   | {
-      timedOut: true;
-      value?: undefined;
-    };
+    timedOut: true;
+    value?: undefined;
+  };
 
 /**
  * Creates a timeout wrapper for async operations.
@@ -27,8 +29,7 @@ export const withTimeout = <T>(
       if (resolved) {
         log((l) =>
           l.warn(
-            `${
-              operation ?? 'Operation'
+            `${operation ?? 'Operation'
             } threw an error after timeout expired.\n\tDetails: ${safeSerialize(
               error,
             )}`,

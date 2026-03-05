@@ -1,3 +1,5 @@
+/* global RequestInfo, URL, RequestInit, Response, require, process, window */
+
 import type { IFetchService } from '@compliance-theater/types/lib/fetch';
 import {
   asFunction,

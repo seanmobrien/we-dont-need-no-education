@@ -1,3 +1,5 @@
+/* global URL */
+
 import { env } from '@compliance-theater/env';
 
 /**

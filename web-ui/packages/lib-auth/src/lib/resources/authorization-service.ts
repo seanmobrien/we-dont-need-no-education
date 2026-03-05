@@ -1,3 +1,5 @@
+/* global URLSearchParams */
+
 /**
  * @fileoverview Authorization Service for Keycloak
  *
@@ -241,7 +243,6 @@ export class AuthorizationService {
       const decodedToken = await decodeToken(accessToken);
 
       const permissions =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (decodedToken as any).authorization?.permissions || [];
       return permissions;
     } catch (error) {

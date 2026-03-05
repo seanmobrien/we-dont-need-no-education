@@ -1,3 +1,5 @@
+/* global Response, Buffer, setInterval, clearInterval */
+
 /**
  * @fileoverview Buffering response strategy with dynamic streaming switch
  *

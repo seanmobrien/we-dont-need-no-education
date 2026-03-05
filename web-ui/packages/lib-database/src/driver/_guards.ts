@@ -9,12 +9,10 @@ export const isDbError = (error: unknown): error is IPostgresError =>
   'name' in error &&
   error.name === 'IPostgresError';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isResultset = <T extends readonly any[]>(
   check: unknown,
 ): check is IResultset<T> => Resultset.isResultset<T>(check);
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isRowList = <T extends readonly any[]>(
   check: unknown,
 ): check is RowList<T> => Resultset.isRowList<T>(check);

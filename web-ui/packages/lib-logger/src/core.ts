@@ -1,3 +1,5 @@
+/* global process, console */
+
 import pino from 'pino';
 import { WrappedLogger } from './wrapped-logger';
 import type { ILogger, EventSeverity, LogEventOverloads } from './types';

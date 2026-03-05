@@ -6,7 +6,7 @@ import {
   hideConsoleOutput,
 } from '../../shared/test-utils';
 
-var fetchMock = jest.fn();
+let fetchMock = jest.fn();
 
 jest.mock('@/lib/fetch-service', () => ({
   ...(() => {

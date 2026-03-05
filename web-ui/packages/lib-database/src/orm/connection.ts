@@ -37,7 +37,6 @@ const PG_DRIVER_KEY = Symbol.for('@noeducation/pg-driver-factory');
 interface GlobalDbRegistry {
   [DB_INSTANCE_KEY]?: DbDatabaseType;
   [DB_PROMISE_KEY]?: Promise<DbDatabaseType>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [PG_DRIVER_KEY]?: any;
 }
 
@@ -117,13 +116,12 @@ export const drizDbWithInit: DrizDbInitOverloads = <T>(
     return Promise.resolve(db) as T;
   };
   const drizDb = get_DrizDb();
-  if (!!drizDb) {
+  if (drizDb) {
     return Promise.resolve(drizDb).then(resolver);
   }
   let drizDbPromise = get_DrizDbPromise();
   if (!drizDbPromise) {
     drizDbPromise = getPostgresDriver()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then((sql: any) => {
         const value = drizzle(sql, {
           casing: 'snake_case',

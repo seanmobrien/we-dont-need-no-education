@@ -1,3 +1,5 @@
+/* global Request, console, URL */
+
 import { getToken, type JWT } from '@compliance-theater/types/next-auth/jwt';
 import { env } from '@compliance-theater/env';
 

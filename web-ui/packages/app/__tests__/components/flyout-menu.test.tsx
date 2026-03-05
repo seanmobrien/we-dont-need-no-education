@@ -15,7 +15,7 @@ describe('FlyoutMenu', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('Rendering', () => {

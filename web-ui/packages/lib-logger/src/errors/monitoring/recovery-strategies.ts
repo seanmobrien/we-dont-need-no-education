@@ -1,3 +1,5 @@
+/* global window, navigator, alert, setTimeout, caches, console */
+
 /**
  * Error recovery strategies for different types of errors
  * Provides automatic and manual recovery mechanisms

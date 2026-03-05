@@ -128,67 +128,60 @@ export const addDocumentRelations = async ({
             targetDocumentId,
             relationshipReasonId: reason,
           }) =>
-            new Promise<Omit<DocumentRelationshipType, 'timestamp'>>(
-              async (resolve, reject) => {
-                try {
-                  // Resolve incoming reason into a valid relationship id
-                  const relationshipReasonId = await getDocumentRelationReason({
-                    db,
-                    reason,
-                  });
-                  if (!relationshipReasonId) {
-                    throw new Error('Failed to get relationship reason ID');
-                  }
-                  // Check if the relationship already exists
+            (async (): Promise<Omit<DocumentRelationshipType, 'timestamp'> | undefined> => {
+              // Resolve incoming reason into a valid relationship id
+              const relationshipReasonId = await getDocumentRelationReason({
+                db,
+                reason,
+              });
+              if (!relationshipReasonId) {
+                throw new Error('Failed to get relationship reason ID');
+              }
+              // Check if the relationship already exists
 
-                  const exists = await db
-                    .select()
-                    .from(schema.documentRelationship)
-                    .where(
-                      and(
-                        eq(
-                          schema.documentRelationship.sourceDocumentId,
-                          sourceDocumentId
-                        ),
-                        eq(
-                          schema.documentRelationship.targetDocumentId,
-                          targetDocumentId
-                        ),
-                        eq(
-                          schema.documentRelationship.relationshipReasonId,
-                          relationshipReasonId
-                        )
-                      )
+              const exists = await db
+                .select()
+                .from(schema.documentRelationship)
+                .where(
+                  and(
+                    eq(
+                      schema.documentRelationship.sourceDocumentId,
+                      sourceDocumentId
+                    ),
+                    eq(
+                      schema.documentRelationship.targetDocumentId,
+                      targetDocumentId
+                    ),
+                    eq(
+                      schema.documentRelationship.relationshipReasonId,
+                      relationshipReasonId
                     )
-                    .limit(1)
-                    .execute();
-                  if (exists && exists.length > 0) {
-                    log((l) =>
-                      l.warn(
-                        'Document relationship already exists - skipping',
-                        {
-                          sourceDocumentId,
-                          targetDocumentId,
-                          relationshipReasonId,
-                        }
-                      )
-                    );
-                    resolve(undefined as unknown as DocumentRelationshipType);
-                  } else {
-                    resolve({
+                  )
+                )
+                .limit(1)
+                .execute();
+              if (exists && exists.length > 0) {
+                log((l) =>
+                  l.warn(
+                    'Document relationship already exists - skipping',
+                    {
                       sourceDocumentId,
                       targetDocumentId,
                       relationshipReasonId,
-                    });
-                  }
-                } catch (error) {
-                  reject(error);
-                }
+                    }
+                  )
+                );
+                return undefined;
               }
-            )
+              return {
+                sourceDocumentId,
+                targetDocumentId,
+                relationshipReasonId,
+              };
+            })()
         )
       )
-    ).filter(Boolean);
+    ).filter(Boolean) as Array<Omit<DocumentRelationshipType, 'timestamp'>>;
     if (!values.length) {
       return [];
     }

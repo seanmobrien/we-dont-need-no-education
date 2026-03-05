@@ -101,7 +101,7 @@ export type BrowserResolverRecord<T = any> = {
 };
 
 export type ContainerRuntime = {
-    createContainer: <T extends object>(options?: {
+    createContainer: (options?: {
         injectionMode?: unknown;
         strict?: boolean;
     }) => IServiceContainer;

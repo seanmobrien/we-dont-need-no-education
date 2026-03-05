@@ -34,7 +34,7 @@ describe('Message Filtering', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   it('renders filter controls and badges correctly', async () => {

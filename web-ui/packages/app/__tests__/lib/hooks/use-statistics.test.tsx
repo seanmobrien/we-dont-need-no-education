@@ -12,7 +12,7 @@ let useStatistics: typeof import('../../../lib/hooks/use-statistics').useStatist
 let useModelStatistics: typeof import('../../../lib/hooks/use-statistics').useModelStatistics;
 let useQueueStatistics: typeof import('../../../lib/hooks/use-statistics').useQueueStatistics;
 
-var fetchMock = jest.fn();
+let fetchMock = jest.fn();
 
 jest.mock('@/lib/fetch-service', () => ({
   ...(() => {

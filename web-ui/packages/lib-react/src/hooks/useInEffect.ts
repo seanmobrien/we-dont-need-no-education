@@ -1,3 +1,5 @@
+/* global NodeJS, setTimeout, clearTimeout */
+
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
@@ -141,8 +143,6 @@ export const useInEffect = () => {
   });
 
   const enqueue = useCallback(
-    // Using any here makes the callback more flexible, allowing any function that returns a Promise to be queued.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     <TArgs extends any[], TResult>(
       operation: (...args: TArgs) => Promise<TResult>,
       ...args: TArgs

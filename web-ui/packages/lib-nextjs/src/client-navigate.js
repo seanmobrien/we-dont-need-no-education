@@ -1,3 +1,5 @@
+/* global window */
+
 export const clientReload = () => {
     if (typeof window !== 'undefined' &&
         window.location &&

@@ -10,8 +10,6 @@ import type { AppStartupState } from '@compliance-theater/after/app-startup';
 import { resolveService } from '@compliance-theater/types/dependency-injection';
 import { deprecate } from '@compliance-theater/types/deprecate';
 
-let startupAccessor: (() => Promise<AppStartupState>) | undefined;
-
 /**
  * Configure the app-startup accessor.
  * This should be called once during application initialization.
@@ -19,9 +17,9 @@ let startupAccessor: (() => Promise<AppStartupState>) | undefined;
  * @param accessor - Function that returns the current startup state
  */
 export const configureAppStartupAccessor = (
-  accessor: () => Promise<AppStartupState>,
+  _accessor: () => Promise<AppStartupState>,
 ) => {
-  startupAccessor = accessor;
+  // no-op: retained for backward compatibility while startup resolves via DI.
 };
 
 /**

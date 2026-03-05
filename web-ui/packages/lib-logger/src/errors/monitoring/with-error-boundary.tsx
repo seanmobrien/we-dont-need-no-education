@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { ComponentType, ReactNode } from 'react';
-import { ErrorSeverity } from './error-reporter';
+import React, { ComponentType, ReactNode } from "react";
+import { ErrorSeverity } from "./error-reporter";
 
 interface FallbackProps {
   error: Error;
@@ -65,21 +65,14 @@ export function withErrorBoundary<P extends object>(
   WrappedComponent: ComponentType<P>,
   config: WithErrorBoundaryConfig = {},
 ) {
-  const {
-    fallbackRender,
-    onReset,
-    isolate = false,
-  } = config;
+  const { fallbackRender, onReset } = config;
 
   const componentName =
-    WrappedComponent.displayName || WrappedComponent.name || 'Component';
+    WrappedComponent.displayName || WrappedComponent.name || "Component";
 
   const WithErrorBoundaryComponent = (props: P) => {
     return (
-      <InternalErrorBoundary
-        fallbackRender={fallbackRender}
-        onReset={onReset}
-      >
+      <InternalErrorBoundary fallbackRender={fallbackRender} onReset={onReset}>
         <WrappedComponent {...props} />
       </InternalErrorBoundary>
     );

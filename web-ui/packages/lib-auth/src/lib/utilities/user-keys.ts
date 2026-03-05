@@ -1,3 +1,5 @@
+/* global IDBDatabase, indexedDB, IDBOpenDBRequest, CryptoKey, window, crypto, btoa, TextEncoder */
+
 import { LoggedError } from '@compliance-theater/logger';
 
 // Key pair management for user signing (detailed docs live in user-keys.d.ts)

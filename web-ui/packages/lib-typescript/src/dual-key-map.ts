@@ -1,6 +1,5 @@
 
 export class DualKeyMap<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   TRecordType extends { [K in TIdField | TNameField]: any },
   TRecordIdType extends PropertyKey,
   TRecordNameType extends PropertyKey,

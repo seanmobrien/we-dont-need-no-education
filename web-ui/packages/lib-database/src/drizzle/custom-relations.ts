@@ -327,7 +327,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   userPublicKeys: many(userPublicKeys),
 }));
 
-export const sessionsRelations = relations(sessions, ({ one, many }) => ({
+export const sessionsRelations = relations(sessions, ({ one }) => ({
   account: one(accounts, {
     fields: [sessions.userId],
     references: [accounts.userId],

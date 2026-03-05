@@ -1,3 +1,5 @@
+/* global Request, Response, process, URL */
+
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@compliance-theater/env';
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
@@ -17,7 +19,6 @@ import {
 import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
 import { isPromise } from '@compliance-theater/typescript';
-import { getAppStartupState } from './app-startup-accessor';
 import { resolveService } from '@compliance-theater/types/dependency-injection/container';
 import type { IStartupManager } from '@compliance-theater/types/after';
 export {
@@ -139,7 +140,7 @@ export const wrapRouteRequest = <
           }
 
           if (shouldLog) {
-            const extractedParams = await (!!context?.params
+            const extractedParams = await (context?.params
               ? context.params
               : Promise.resolve({} as Record<string, unknown>));
             const url = (req as unknown as Request)?.url ?? '<no-req>';
@@ -175,20 +176,21 @@ export const wrapRouteRequest = <
           span.setStatus({ code: SpanStatusCode.OK });
           return result;
         } catch (error) {
+          let handledError = error;
           // Record exception and propagate through existing error handling
           try {
-            span.recordException(error as Error);
+            span.recordException(handledError as Error);
             span.setStatus({ code: SpanStatusCode.ERROR });
           } catch {
             // ignore span record errors
           }
 
           if (shouldLog) {
-            const extractedParams = await (!!context?.params
+            const extractedParams = await (context?.params
               ? context.params
               : Promise.resolve({} as Record<string, unknown>));
             // Wrap in a LoggedError to prevent callback from auto-logging
-            error = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            handledError = LoggedError.isTurtlesAllTheWayDownBaby(handledError, {
               log: true,
               source: 'wrapRouteRequest:catch',
               data: {
@@ -200,7 +202,7 @@ export const wrapRouteRequest = <
           // If a callback was provided, invoke it within a try/catch to avoid secondary errors
           if (errorCallback) {
             try {
-              const maybePromise = errorCallback(error);
+              const maybePromise = errorCallback(handledError);
               if (maybePromise instanceof Promise) {
                 await maybePromise;
               }
@@ -214,7 +216,7 @@ export const wrapRouteRequest = <
           const errResponse = errorResponseFactory(
             'An unexpected error occurred',
             {
-              cause: error,
+              cause: handledError,
             },
           );
           try {
@@ -247,7 +249,7 @@ const getRequestSpanInit = async (
   ctx?: { params: Promise<Record<string, unknown>> },
 ): Promise<{ attributes: Attributes; parentCtx: OtelContext }> => {
   const { path, query, method } = getPathQueryAndMethod(req);
-  const routeParams = await (!!ctx?.params
+  const routeParams = await (ctx?.params
     ? ctx.params
     : Promise.resolve({} as Record<string, unknown>));
   const headersObj = getHeadersObject(req);

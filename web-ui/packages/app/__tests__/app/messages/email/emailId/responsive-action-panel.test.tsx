@@ -4,7 +4,7 @@ import { CallToActionResponseDetails } from '../../../../../data-models/api';
 
 let ResponsiveActionPanel: typeof import('../../../../../app/messages/email/[emailId]/call-to-action-response/panel').ResponsiveActionPanel;
 
-var fetchMock = jest.fn();
+let fetchMock = jest.fn();
 
 jest.mock('@/lib/fetch-service', () => ({
   ...(() => {
@@ -16,9 +16,9 @@ jest.mock('@/lib/fetch-service', () => ({
 }));
 
 beforeAll(() => {
-  const module =
+  const panelModule =
     require('../../../../../app/messages/email/[emailId]/call-to-action-response/panel') as typeof import('../../../../../app/messages/email/[emailId]/call-to-action-response/panel');
-  ResponsiveActionPanel = module.ResponsiveActionPanel;
+  ResponsiveActionPanel = panelModule.ResponsiveActionPanel;
 });
 
 // Mock next/navigation

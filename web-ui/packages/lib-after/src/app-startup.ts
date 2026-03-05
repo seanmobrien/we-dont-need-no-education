@@ -145,9 +145,6 @@ export class AppStartup {
         // First, discover any late-bound initializers
         await this.#discoverInitializers();
 
-        // Determine environment-specific initializers
-        const isNodeEnv = typeof window === 'undefined' && process.env.NEXT_RUNTIME === 'nodejs';
-
         // Run all initializers in parallel
         const allPendingInitializers = await Promise.allSettled(
           this.#initializers.map((init) => init())

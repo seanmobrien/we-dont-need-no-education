@@ -1,3 +1,5 @@
+/* global ErrorEventInit */
+
 const isErrorLikeBrand: unique symbol = Symbol('mct2k.utils.error-like.brand');
 
 export type ErrorLike = {
@@ -136,9 +138,9 @@ class ErrorLikeInstance implements ErrorLike {
     const match = ErrorLikeInstance.#extractStackFrameRegex.exec(stackLine);
     return match
       ? [
-          Number(match[ErrorLikeInstance.#ExtractStackFrameGroups.Line]),
-          Number(match[ErrorLikeInstance.#ExtractStackFrameGroups.Column]),
-        ]
+        Number(match[ErrorLikeInstance.#ExtractStackFrameGroups.Line]),
+        Number(match[ErrorLikeInstance.#ExtractStackFrameGroups.Column]),
+      ]
       : undefined;
   }
   static errorLikeProxyFactory(inner: ErrorLike): ErrorLike {
@@ -162,18 +164,20 @@ class ErrorLikeInstance implements ErrorLike {
             case 'source':
               ret = ErrorLikeInstance.extractSourceFromStack(target.stack);
               break;
-            case 'line':
+            case 'line': {
               const line = ErrorLikeInstance.extractLineAndColumnFromStack(
                 target.stack,
               );
               ret = line ? line[0] : 0;
               break;
-            case 'column':
+            }
+            case 'column': {
               const column = ErrorLikeInstance.extractLineAndColumnFromStack(
                 target.stack,
               );
               ret = column ? column[1] : 0;
               break;
+            }
             default:
               ret = undefined;
               break;

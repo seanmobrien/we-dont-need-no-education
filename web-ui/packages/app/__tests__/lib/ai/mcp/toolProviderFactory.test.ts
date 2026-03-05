@@ -7,13 +7,13 @@ import { setupImpersonationMock } from '../../../jest.mock-impersonation';
 setupImpersonationMock();
 
 // Mock all dependencies first
-var mockGetResolvedPromises = jest.fn() as jest.MockedFunction<any>;
-var mockIsError = jest.fn() as jest.MockedFunction<any>;
-var mockCreateMCPClient = jest.fn() as jest.MockedFunction<any>;
-var mockInstrumentedSseTransport = jest.fn() as jest.MockedFunction<any>;
-var mockGetToolCache = jest.fn() as jest.MockedFunction<any>;
+let mockGetResolvedPromises = jest.fn() as jest.MockedFunction<any>;
+let mockIsError = jest.fn() as jest.MockedFunction<any>;
+let mockCreateMCPClient = jest.fn() as jest.MockedFunction<any>;
+let mockInstrumentedSseTransport = jest.fn() as jest.MockedFunction<any>;
+let mockGetToolCache = jest.fn() as jest.MockedFunction<any>;
 // Returns either a map of cached tools or null when none cached
-var mockGetCachedTools = jest.fn() as unknown as jest.MockedFunction<
+let mockGetCachedTools = jest.fn() as unknown as jest.MockedFunction<
   () => Promise<Record<string, unknown> | null>
 >;
 mockGetCachedTools.mockResolvedValue(null as Record<string, unknown> | null);

@@ -889,7 +889,7 @@ describe('buildDrizzleQueryFilter', () => {
     mockColumns[name as keyof typeof mockColumns];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
     mockQuery = createMockQuery();
   });
 

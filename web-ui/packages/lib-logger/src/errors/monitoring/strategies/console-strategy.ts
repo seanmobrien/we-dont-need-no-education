@@ -1,3 +1,5 @@
+/* global console */
+
 import { ErrorReport, ErrorReporterConfig, ErrorReportResult } from '../types';
 import { ReportActionStrategy } from './report-action-strategy';
 

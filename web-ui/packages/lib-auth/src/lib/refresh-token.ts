@@ -1,3 +1,5 @@
+/* global process, URLSearchParams, console */
+
 import type { JWT } from '@compliance-theater/types/next-auth/jwt';
 import { env } from '@compliance-theater/env';
 import { resolveFetchService } from './utilities/fetch-service';
@@ -62,16 +64,17 @@ export const refreshAccessToken = async (token: JWT): Promise<JWT> => {
     console.error('Error refreshing access token', error);
     // We propagate 'RefreshAccessTokenError' which causes the client-side useSession hook
     // to detect the error and force a sign-out, effectively clearing the session.
-    if (
+    const normalizedError =
+      (
       (error as { cause?: { error?: string; }; })?.cause?.error === 'invalid_grant' ||
       (error as { error?: string; })?.error === 'invalid_grant'
-    ) {
-      error = new InvalidGrantError(error);
-    }
+      )
+        ? new InvalidGrantError(error)
+        : error;
 
     return {
       ...token,
-      error: error instanceof Error ? error.message : String(error),
+      error: normalizedError instanceof Error ? normalizedError.message : String(normalizedError),
     };
   }
 }

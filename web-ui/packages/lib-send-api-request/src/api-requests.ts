@@ -1,3 +1,5 @@
+/* global Headers, RequestInit, fetch */
+
 import { log } from '@compliance-theater/logger';
 import {
   AbortablePromise,

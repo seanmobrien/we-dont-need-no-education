@@ -1,3 +1,5 @@
+/* global Buffer, Response, URL, Request, BodyInit, RequestCache, RequestCredentials, Headers, RequestMode, RequestPriority, RequestRedirect, ReferrerPolicy, AbortSignal */
+
 /**
  * @fileoverview Shared type definitions for fetch strategy pattern implementation
  *
@@ -127,7 +129,6 @@ export interface BufferingStrategyDeps {
     alreadyBufferedChunks: Buffer[],
   ) => Promise<void>;
   /** Function to get Redis client for caching */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getRedisClient: () => Promise<any>;
   /** Fetch configuration */
   fetchConfig: () => Required<FetchConfig>;

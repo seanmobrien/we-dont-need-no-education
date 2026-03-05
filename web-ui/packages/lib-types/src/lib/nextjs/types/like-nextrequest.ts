@@ -1,7 +1,8 @@
+/* global URL, Request */
+
 import type { NextApiRequest } from 'next';
 import type { NextRequest } from 'next/server';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type NextUrl = URL | any;
 
 type StockRequestBody = Request['body'];

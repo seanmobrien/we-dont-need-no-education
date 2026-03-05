@@ -1,3 +1,5 @@
+/* global Buffer */
+
 /**
  * @fileoverview Strongly-typed interface for message structure preservation
  *
@@ -616,7 +618,7 @@ const evaluateMessagePreservation = (
       reason = preserve ? 'Has text content' : 'No text content';
       break;
 
-    case 'semantic':
+    case 'semantic': {
       // Contextual evaluation for semantic preservation
       const contextResult = evaluateContextualPreservation(
         message,
@@ -627,6 +629,7 @@ const evaluateMessagePreservation = (
       preserve = contextResult.preserve;
       reason = contextResult.reason;
       break;
+    }
 
     case 'custom':
       // Apply custom validator if provided

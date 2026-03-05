@@ -1,3 +1,5 @@
+/* global Response */
+
 import { isError } from '@compliance-theater/logger';
 
 export type ErrorResponseOptions = {

@@ -26,7 +26,6 @@ const loadHooks = () => {
   // Load the real hooks module without isolating modules so it shares
   // the same `@tanstack/react-query` instance used by the test wrapper.
   jest.unmock('../../../lib/hooks/use-todo');
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const hooks = require('../../../lib/hooks/use-todo');
   return hooks;
 };
