@@ -17,7 +17,7 @@ import { makeResponse, webStreamToReadable } from '../response';
 import { CacheStrategies } from './cache-strategies';
 import { StreamingStrategy } from './streaming-strategy';
 import { BufferingStrategy } from './buffering-strategy';
-import type { CachedValue, RequestInfo, RequestInit, ServerFetchManager } from './fetch-types';
+import type { CachedValue, RequestInfo, RequestInit, ServerFetchManager, Response as FetchResponse } from './fetch-types';
 
 type RequestInitWithTimeout = Omit<RequestInit, 'timeout'> & {
     timeout?: number | Record<string, number | undefined>;
@@ -115,7 +115,7 @@ export const normalizeRequestInit = ({
     } else if (requestInfo instanceof URL) {
         url = requestInfo.toString();
     } else if ('url' in requestInfo) {
-        const infoTimeout = (requestInfo as Request & { timeout?: unknown }).timeout;
+        const infoTimeout = 'timeout' in requestInfo ? requestInfo.timeout : undefined;
         if (typeof infoTimeout === 'number') {
             init.timeout = {
                 connect: infoTimeout,
@@ -128,14 +128,13 @@ export const normalizeRequestInit = ({
                 ...(init.timeout ?? {}),
             };
         }
+        url = requestInfo.url ? String(requestInfo.url) : '';
 
         init = {
-            ...((requestInfo as unknown as Record<string, unknown>) ?? {}),
+            ...((requestInfo as Record<string, unknown>) ?? {}),
             ...init,
+            ...(url ? { url } : {}),
         } as typeof init;
-
-        delete (init as unknown as Record<string, unknown>).url;
-        url = requestInfo.url;
     } else {
         throw new Error('Invalid requestInfo');
     }
@@ -247,7 +246,7 @@ export class FetchManager implements ServerFetchManager {
         }
     }
 
-    async fetch(input: RequestInfo, init?: RequestInitWithTimeout): Promise<Response> {
+    async fetch(input: RequestInfo | URL | string, init?: RequestInitWithTimeout): Promise<FetchResponse> {
         const cfg = await fetchConfig();
         const [url, normalInit] = normalizeRequestInit({
             requestInfo: input,
@@ -262,13 +261,13 @@ export class FetchManager implements ServerFetchManager {
 
         if (method === 'GET') {
             const memoryCached = await this.cacheStrategies.tryMemoryCache(cacheKey);
-            if (memoryCached) return memoryCached;
+            if (memoryCached) return memoryCached as unknown as FetchResponse;
 
             const redisCached = await this.cacheStrategies.tryRedisCache(cacheKey);
-            if (redisCached) return redisCached;
+            if (redisCached) return redisCached as unknown as FetchResponse;
 
             const inflightCached = await this.cacheStrategies.tryInflightDedupe(cacheKey);
-            if (inflightCached) return inflightCached;
+            if (inflightCached) return inflightCached as unknown as FetchResponse;
 
             await this.semManager.sem.acquire();
             try {
@@ -315,7 +314,7 @@ export class FetchManager implements ServerFetchManager {
                         headersLower,
                         resHead.statusCode ?? 200,
                         () => this.semManager.sem.release(),
-                    );
+                    ) as unknown as FetchResponse;
                 }
 
                 const buffered = await this.bufferingStrategy.handleBufferedResponse(
@@ -334,7 +333,7 @@ export class FetchManager implements ServerFetchManager {
                     statusCode: resHead.statusCode ?? 200,
                 });
 
-                return buffered;
+                return buffered as unknown as FetchResponse;
             } catch (error) {
                 this.semManager.sem.release();
                 throw error;
@@ -342,7 +341,7 @@ export class FetchManager implements ServerFetchManager {
         }
 
         const result = await this.doGotFetch(url, normalInit as unknown as RequestInit);
-        return makeResponse(result);
+        return makeResponse(result) as unknown as FetchResponse;
     }
 
     async fetchStream(input: RequestInfo, init?: RequestInitWithTimeout): Promise<Readable> {
@@ -392,7 +391,7 @@ export const getFetchManager = (): FetchManager => {
 export const serverFetch = async (
     input: RequestInfo,
     init?: RequestInitWithTimeout,
-): Promise<Response> => getFetchManager().fetch(input, init);
+): Promise<Response> => getFetchManager().fetch(input, init) as unknown as Response;
 
 export const fetchStream = async (
     input: RequestInfo,

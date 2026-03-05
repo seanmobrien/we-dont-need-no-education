@@ -3,7 +3,7 @@
 import { getAccessibleUserIds } from '../../../../src/lib/resources/case-file';
 import { authorizationService } from '../../../../src/lib/resources/authorization-service';
 import { LoggedError } from '@compliance-theater/logger';
-import { hideConsoleOutput } from '../../../test-utils';
+import { hideConsoleOutput } from '../../../shared/test-utils';
 
 // Mock the authorization service
 jest.mock('@compliance-theater/auth/lib/resources/authorization-service');

@@ -7,8 +7,6 @@
  * wraps the upstream Keycloak Admin SDK and normalizes the interface used across
  * the codebase so callers can rely on a small, well-documented subset of APIs.
  */
-
-declare module '@compliance-theater/auth/lib/keycloak-factories' {
   /**
    * Supported HTTP methods used when constructing Keycloak API requests.
    */
@@ -208,4 +206,3 @@ declare module '@compliance-theater/auth/lib/keycloak-factories' {
   export function keycloakAdminClientFactory(
     config: ConnectionConfig,
   ): KeycloakAdminClient;
-}

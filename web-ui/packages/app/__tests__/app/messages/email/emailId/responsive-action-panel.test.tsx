@@ -1,13 +1,25 @@
 import React from 'react';
-import { waitFor, act, render, screen  } from '../../../../shared/test-utils';
-import { ResponsiveActionPanel } from '../../../../../app/messages/email/[emailId]/call-to-action-response/panel';
+import { waitFor, act, render, screen } from '../../../../shared/test-utils';
 import { CallToActionResponseDetails } from '../../../../../data-models/api';
 
-const fetchMock = jest.fn();
+let ResponsiveActionPanel: typeof import('../../../../../app/messages/email/[emailId]/call-to-action-response/panel').ResponsiveActionPanel;
 
-jest.mock('../../../../../lib/fetch-service', () => ({
-  resolveFetchService: jest.fn(() => fetchMock),
+var fetchMock = jest.fn();
+
+jest.mock('@/lib/fetch-service', () => ({
+  ...(() => {
+    fetchMock = jest.fn();
+    return {
+      resolveFetchService: jest.fn(() => fetchMock),
+    };
+  })(),
 }));
+
+beforeAll(() => {
+  const module =
+    require('../../../../../app/messages/email/[emailId]/call-to-action-response/panel') as typeof import('../../../../../app/messages/email/[emailId]/call-to-action-response/panel');
+  ResponsiveActionPanel = module.ResponsiveActionPanel;
+});
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({

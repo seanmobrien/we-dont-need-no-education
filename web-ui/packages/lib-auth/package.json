@@ -67,14 +67,24 @@
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
     "postgres": "^3.4.5",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
     "react-native": "^0.84.0",
     "readable-web-to-node-stream": "^5.0.0",
     "redis": ">=5.5.6",
     "tough-cookie": "^6.0.0",
     "zod": "^3.25.76",
     "zodex": "^3.0.0"
+  },
+  "peerDependencies": {
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@emotion/cache": "^11.14.0",
@@ -86,6 +96,8 @@
     "@keycloak/keycloak-admin-client": "^26.3.4",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
+    "@swc/core": "^1.13.5",
+    "@swc/jest": "^0.2.39",
     "@tanstack/react-query": "^5.67.2",
     "@testing-library/jest-dom": "^6.6.4",
     "@toolpad/core": "^0.15.0",
@@ -101,7 +113,6 @@
     "node-html-parser": "^7.0.1",
     "openid-client": "^6.6.4",
     "rimraf": "^6.1.2",
-    "ts-jest": "^29.4.6",
     "typescript": "^5.9.3"
   }
 }

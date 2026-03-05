@@ -5,7 +5,7 @@ type FetchFn = IFetchService['fetch'];
 
 export const resolveFetchService = (): FetchFn => {
     try {
-        const service = resolveService('fetch-service');
+        const service = resolveService('fetch');
         if (service && typeof service.fetch === 'function') {
             return service.fetch.bind(service);
         }

@@ -99,17 +99,25 @@ describe('health feature-flag driven behavior', () => {
   it('startup threshold from flag relaxes memory requirement after threshold reached', async () => {
     process.env.HEALTH_STARTUP_FAILURE_THRESHOLD = '1';
 
-    const { GET } = await import('../../../../app/api/health/probe/[probe_type]/route');
-    const dbModule = await import('../../../../lib/api/health/database');
-    const memModule = await import('../../../../lib/api/health/memory');
+    jest.resetModules();
 
-    // Mock DB healthy, memory unhealthy
-    jest
-      .spyOn(dbModule, 'checkDatabaseHealth')
+    const checkDatabaseHealthMock = jest
+      .fn()
       .mockResolvedValue({ status: 'healthy' } as any);
-    jest
-      .spyOn(memModule, 'getMemoryHealthCache')
-      .mockReturnValue({ get: () => undefined } as any);
+    const getMemoryHealthCacheMock = jest
+      .fn()
+      .mockResolvedValue({ get: () => undefined } as any);
+    const determineHealthStatusMock = jest.fn().mockReturnValue('error');
+
+    jest.doMock('../../../../lib/api/health/database', () => ({
+      checkDatabaseHealth: checkDatabaseHealthMock,
+    }));
+    jest.doMock('../../../../lib/api/health/memory', () => ({
+      getMemoryHealthCache: getMemoryHealthCacheMock,
+      determineHealthStatus: determineHealthStatusMock,
+    }));
+
+    const { GET } = await import('../../../../app/api/health/probe/[probe_type]/route');
 
     const mockSpan = {
       setAttribute: jest.fn(),

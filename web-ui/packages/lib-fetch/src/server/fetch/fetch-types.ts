@@ -1,3 +1,10 @@
+import type {
+    RequestInfo,
+    RequestInit,
+    Response as ResponseType,
+    Request as RequestType
+} from '../../fetch/shared-types';
+
 export type EnhancedFetchConfigTimeout = {
     lookup?: number;
     connect?: number;
@@ -34,27 +41,15 @@ export type CacheStrategyDeps = {
     fetchConfig: () => Required<FetchConfig>;
 };
 
-export type RequestInfo = string | URL | Request;
-
-export type RequestInit = {
-    body?: BodyInit | null;
-    cache?: RequestCache;
-    credentials?: RequestCredentials;
-    headers?: Record<string, string | string[]> | Headers | [string, string | string[]][];
-    integrity?: string;
-    keepalive?: boolean;
-    method?: string;
-    mode?: RequestMode;
-    priority?: RequestPriority;
-    redirect?: RequestRedirect;
-    referrer?: string;
-    referrerPolicy?: ReferrerPolicy;
-    signal?: AbortSignal | null;
-    timeout?: number;
-    window?: null;
+export type ServerFetchManager = {
+    fetch: (url: RequestInfo | URL | string, init?: RequestInit) => Promise<ResponseType>;
+    [Symbol.dispose](): void;
 };
 
-export type ServerFetchManager = {
-    fetch: (url: RequestInfo, init?: RequestInit) => Promise<Response>;
-    [Symbol.dispose](): void;
+export type Request = RequestType;
+export type Response = ResponseType;
+
+export type {
+    RequestInfo,
+    RequestInit
 };

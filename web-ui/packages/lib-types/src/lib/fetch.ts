@@ -1,3 +1,3 @@
 export type IFetchService = {
-    fetch: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+    fetch: (input: string | URL | RequestInfo, init?: RequestInit) => Promise<Response>;
 };

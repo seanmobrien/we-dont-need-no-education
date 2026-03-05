@@ -5,7 +5,6 @@ import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types
  *
  * @module lib/auth/resources/case-file/case-file-resource
  */
-declare module '@compliance-theater/auth/lib/resources/case-file/case-file-resource' {
   /**
    * Represents a case file resource in Keycloak
    */
@@ -106,4 +105,3 @@ declare module '@compliance-theater/auth/lib/resources/case-file/case-file-resou
    * ```
    */
   export function getCaseFileResourceId(userId: number): Promise<string | null>;
-}

@@ -18,6 +18,8 @@ import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
 import { isPromise } from '@compliance-theater/typescript';
 import { getAppStartupState } from './app-startup-accessor';
+import { resolveService } from '@compliance-theater/types/dependency-injection/container';
+import type { IStartupManager } from '@compliance-theater/types/after';
 export {
   createSafeAsyncWrapper,
   createSafeErrorHandler,
@@ -103,7 +105,16 @@ export const wrapRouteRequest = <
             'app.startup.check',
             async (startupSpan) => {
               try {
-                const state = await getAppStartupState();
+                const startupService = resolveService<IStartupManager>('startup');
+                if (!startupService) {
+                  log((l) =>
+                    l.warn(
+                      'App startup manager not found in container; assuming startup complete.',
+                    ),
+                  );
+                  return 'done';
+                }
+                const state = await startupService.getStartupState();
                 startupSpan.setAttribute('app.startup_state', state);
                 return state;
               } finally {

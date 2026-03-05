@@ -57,6 +57,10 @@ export interface IServiceRegistrarOverload {
     <T>(name: string | symbol | number, resolver: ((state: unknown) => T)): void;
 }
 
+export interface IServiceRegistrar {
+    register: (container: IServiceContainer) => void;
+}
+
 export interface IServiceContainer {
     resolve<T>(
         name: string | symbol | number,

@@ -45,11 +45,13 @@
  * @since 1.0.0
  * @version 1.0.0
  */
-export type { ISingletonProvider } from "./types";
+
+import type { ISingletonProvider } from "@compliance-theater/types/lib/logger/singleton-provider";
+export type { ISingletonProvider };
 
 import { SingletonProvider } from "./provider";
 import type { IsNotNull } from "@compliance-theater/types/types/is-not-null";
-import type { SingletonConfig, ISingletonProvider } from "./types";
+import type { SingletonConfig } from "./types";
 
 export type {
   SingletonConfig,

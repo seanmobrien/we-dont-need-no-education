@@ -5,8 +5,6 @@
 import type { NextResponse } from 'next/server';
 import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import type { NormalizedAccessToken, NormalizeAccessTokenOptions } from './types';
-
-declare module '@compliance-theater/auth/lib/access-token' {
   /**
    * Overloaded interface for `withRequestAccessToken` function.
    */
@@ -126,4 +124,3 @@ declare module '@compliance-theater/auth/lib/access-token' {
     userAccessTokenOrRequest: LikeNextRequest | undefined | string,
     options?: NormalizeAccessTokenOptions
   ): Promise<NormalizedAccessToken | undefined>;
-}

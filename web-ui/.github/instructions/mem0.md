@@ -93,21 +93,21 @@ client = MemoryClient()
 ```
 
 ```typescript
-import MemoryClient from 'mem0ai';
+import MemoryClient from "mem0ai";
 
 const client = new MemoryClient({
-  apiKey: 'your-api-key',
+  apiKey: "your-api-key",
   // Optional: specify organization and project
-  organizationName: 'your-org',
-  projectName: 'your-project',
+  organizationName: "your-org",
+  projectName: "your-project",
 });
 ```
 
 ```javascript
-const MemoryClient = require('mem0ai').default;
+const MemoryClient = require("mem0ai").default;
 
 const client = new MemoryClient({
-  apiKey: 'your-api-key',
+  apiKey: "your-api-key",
 });
 ```
 
@@ -151,8 +151,8 @@ memory = Memory.from_config(config)
 **TypeScript:**
 
 ```typescript
-import { Memory } from 'mem0ai/oss';
-import dotenv from 'dotenv';
+import { Memory } from "mem0ai/oss";
+import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -161,27 +161,27 @@ const memory = new Memory();
 
 // With custom configuration
 const memory = new Memory({
-  version: 'v1.1',
+  version: "v1.1",
   llm: {
-    provider: 'openai',
+    provider: "openai",
     config: {
       apiKey: process.env.OPENAI_API_KEY,
-      model: 'gpt-4o-mini',
+      model: "gpt-4o-mini",
       temperature: 0.2,
       maxTokens: 1500,
     },
   },
   embedder: {
-    provider: 'openai',
+    provider: "openai",
     config: {
       apiKey: process.env.OPENAI_API_KEY,
-      model: 'text-embedding-3-small',
+      model: "text-embedding-3-small",
     },
   },
   vectorStore: {
-    provider: 'memory', // In-memory store
+    provider: "memory", // In-memory store
     config: {
-      collectionName: 'memories',
+      collectionName: "memories",
       dimension: 1536,
     },
   },
@@ -232,15 +232,15 @@ def main():
 **TypeScript:**
 
 ```typescript
-import { Memory } from 'mem0ai/oss';
-import OpenAI from 'openai';
+import { Memory } from "mem0ai/oss";
+import OpenAI from "openai";
 
 const openai = new OpenAI();
 const memory = new Memory();
 
 async function chatWithMemories(
   message: string,
-  userId: string = 'default_user',
+  userId: string = "default_user",
 ): Promise<string> {
   // Retrieve relevant memories
   const relevantMemories = await memory.search({
@@ -250,17 +250,17 @@ async function chatWithMemories(
   });
   const memoriesStr = relevantMemories.results
     .map((entry) => `- ${entry.memory}`)
-    .join('\n');
+    .join("\n");
 
   // Generate Assistant response
   const systemPrompt = `You are a helpful AI. Answer the question based on query and memories.\nUser Memories:\n${memoriesStr}`;
   const messages = [
-    { role: 'system' as const, content: systemPrompt },
-    { role: 'user' as const, content: message },
+    { role: "system" as const, content: systemPrompt },
+    { role: "user" as const, content: message },
   ];
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: "gpt-4o-mini",
     messages,
   });
 
@@ -269,7 +269,7 @@ async function chatWithMemories(
   // Create new memories from the conversation
   const conversationMessages = [
     ...messages,
-    { role: 'assistant' as const, content: assistantResponse },
+    { role: "assistant" as const, content: assistantResponse },
   ];
   await memory.add(conversationMessages, userId);
 
@@ -279,15 +279,15 @@ async function chatWithMemories(
 // Usage
 async function main() {
   console.log("Chat with AI (type 'exit' to quit)");
-  const readline = require('readline').createInterface({
+  const readline = require("readline").createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
   const askQuestion = () => {
-    readline.question('You: ', async (userInput: string) => {
-      if (userInput.toLowerCase() === 'exit') {
-        console.log('Goodbye!');
+    readline.question("You: ", async (userInput: string) => {
+      if (userInput.toLowerCase() === "exit") {
+        console.log("Goodbye!");
         readline.close();
         return;
       }
@@ -327,32 +327,32 @@ print(memories)
 **TypeScript:**
 
 ```typescript
-import MemoryClient from 'mem0ai';
+import MemoryClient from "mem0ai";
 
 const client = new MemoryClient({ apiKey: process.env.MEM0_API_KEY });
 
 // Add memories
 const messages = [
   {
-    role: 'user',
-    content: 'Thinking of making a sandwich. What do you recommend?',
+    role: "user",
+    content: "Thinking of making a sandwich. What do you recommend?",
   },
   {
-    role: 'assistant',
-    content: 'How about adding some cheese for extra flavor?',
+    role: "assistant",
+    content: "How about adding some cheese for extra flavor?",
   },
-  { role: 'user', content: "Actually, I don't like cheese." },
+  { role: "user", content: "Actually, I don't like cheese." },
   {
-    role: 'assistant',
+    role: "assistant",
     content:
       "I'll remember that you don't like cheese for future recommendations.",
   },
 ];
 
-await client.add(messages, { user_id: 'alex' });
+await client.add(messages, { user_id: "alex" });
 
 // Search memories
-const memories = await client.search('food preferences', { user_id: 'alex' });
+const memories = await client.search("food preferences", { user_id: "alex" });
 console.log(memories);
 ```
 
@@ -374,22 +374,22 @@ client.add([image_message], user_id="user123")
 ```typescript
 // Add image or PDF as memory
 const pdfMessage = {
-  role: 'user' as const,
+  role: "user" as const,
   content: {
-    type: 'pdf_url',
-    pdf_url: { url: 'https://example.com/document.pdf' },
+    type: "pdf_url",
+    pdf_url: { url: "https://example.com/document.pdf" },
   },
 };
-await client.add([pdfMessage], { user_id: 'user123' });
+await client.add([pdfMessage], { user_id: "user123" });
 
 const imageMessage = {
-  role: 'user' as const,
+  role: "user" as const,
   content: {
-    type: 'image_url',
-    image_url: { url: 'https://example.com/image.jpg' },
+    type: "image_url",
+    image_url: { url: "https://example.com/image.jpg" },
   },
 };
-await client.add([imageMessage], { user_id: 'user123' });
+await client.add([imageMessage], { user_id: "user123" });
 ```
 
 ## Core Components
@@ -492,13 +492,13 @@ memory.add(messages, user_id="user123", metadata={})
 ```typescript
 // Platform client
 await client.add(messages, {
-  user_id: 'user123',
+  user_id: "user123",
   metadata: {},
-  output_format: 'v1.1',
+  output_format: "v1.1",
 });
 
 // Self-hosted OSS
-await memory.add(messages, 'user123', { category: 'food' });
+await memory.add(messages, "user123", { category: "food" });
 ```
 
 **Parameters:**
@@ -533,9 +533,9 @@ messages = [
 ```typescript
 // Text messages
 const messages = [
-  { role: 'user' as const, content: 'I prefer vegetarian food' },
+  { role: "user" as const, content: "I prefer vegetarian food" },
   {
-    role: 'assistant' as const,
+    role: "assistant" as const,
     content: "I'll remember your vegetarian preference",
   },
 ];
@@ -543,14 +543,14 @@ const messages = [
 // Multimodal messages
 const multimodalMessages = [
   {
-    role: 'user' as const,
-    content: { type: 'text', text: "What's in this image?" },
+    role: "user" as const,
+    content: { type: "text", text: "What's in this image?" },
   },
   {
-    role: 'user' as const,
+    role: "user" as const,
     content: {
-      type: 'image_url',
-      image_url: { url: 'https://example.com/image.jpg' },
+      type: "image_url",
+      image_url: { url: "https://example.com/image.jpg" },
     },
   },
 ];
@@ -579,23 +579,23 @@ memories = client.search(
 
 ```typescript
 // Platform client - basic search
-const memories = await client.search('vegetarian preferences', {
-  user_id: 'user123',
+const memories = await client.search("vegetarian preferences", {
+  user_id: "user123",
 });
 
 // Platform client - advanced search with filters
-const filteredMemories = await client.search('food preferences', {
-  user_id: 'user123',
-  agent_id: 'chef_bot',
+const filteredMemories = await client.search("food preferences", {
+  user_id: "user123",
+  agent_id: "chef_bot",
   limit: 10,
-  filters: { category: 'food' },
+  filters: { category: "food" },
   threshold: 0.7,
 });
 
 // OSS - search with options
 const ossMemories = await memory.search({
-  query: 'food preferences',
-  userId: 'user123',
+  query: "food preferences",
+  userId: "user123",
   limit: 10,
   threshold: 0.7,
 });
@@ -656,37 +656,37 @@ history = client.history("mem_123")
 ```typescript
 // Platform client
 // Get specific memory
-const memoryDetail = await client.get('mem_123');
+const memoryDetail = await client.get("mem_123");
 
 // Get all memories for user
-const allMemories = await client.get_all({ user_id: 'user123' });
+const allMemories = await client.get_all({ user_id: "user123" });
 
 // Update memory
-const updated = await client.update('mem_123', {
-  data: 'Updated preference: vegan food only',
+const updated = await client.update("mem_123", {
+  data: "Updated preference: vegan food only",
 });
 
 // Delete memory
-await client.delete('mem_123');
+await client.delete("mem_123");
 
 // Delete all memories for user
-await client.delete_all({ user_id: 'user123' });
+await client.delete_all({ user_id: "user123" });
 
 // Get memory history
-const history = await client.history('mem_123');
+const history = await client.history("mem_123");
 
 // OSS client
 // Get specific memory
-const ossMemoryDetail = await memory.get('mem_123');
+const ossMemoryDetail = await memory.get("mem_123");
 
 // Update memory
 const ossUpdated = await memory.update(
-  'mem_123',
-  'Updated preference: vegan food only',
+  "mem_123",
+  "Updated preference: vegan food only",
 );
 
 // Delete memory
-await memory.delete('mem_123');
+await memory.delete("mem_123");
 
 // Reset all memories
 await memory.reset();
@@ -815,48 +815,48 @@ memory = Memory.from_config(config)
 **TypeScript:**
 
 ```typescript
-import { Memory } from 'mem0ai/oss';
+import { Memory } from "mem0ai/oss";
 
 // Basic configuration
 const memory = new Memory();
 
 // Detailed configuration
 const memory = new Memory({
-  version: 'v1.1',
+  version: "v1.1",
   llm: {
-    provider: 'openai',
+    provider: "openai",
     config: {
       apiKey: process.env.OPENAI_API_KEY,
-      model: 'gpt-4o-mini',
+      model: "gpt-4o-mini",
       temperature: 0.1,
       maxTokens: 2000,
     },
   },
   embedder: {
-    provider: 'openai',
+    provider: "openai",
     config: {
       apiKey: process.env.OPENAI_API_KEY,
-      model: 'text-embedding-3-small',
+      model: "text-embedding-3-small",
     },
   },
   vectorStore: {
-    provider: 'qdrant',
+    provider: "qdrant",
     config: {
-      collectionName: 'mem0_collection',
+      collectionName: "mem0_collection",
       embeddingModelDims: 1536,
-      url: 'localhost',
+      url: "localhost",
       port: 6333,
     },
   },
   graphStore: {
-    provider: 'neo4j',
+    provider: "neo4j",
     config: {
-      url: 'bolt://localhost:7687',
-      username: 'neo4j',
-      password: 'password',
+      url: "bolt://localhost:7687",
+      username: "neo4j",
+      password: "password",
     },
   },
-  historyDbPath: './memory.db',
+  historyDbPath: "./memory.db",
 });
 ```
 
@@ -886,16 +886,16 @@ llm_config = {
 
 ```typescript
 const llmConfig = {
-  provider: 'openai',
+  provider: "openai",
   config: {
     apiKey: process.env.OPENAI_API_KEY,
-    model: 'gpt-4o-mini', // or gpt-4, gpt-3.5-turbo
+    model: "gpt-4o-mini", // or gpt-4, gpt-3.5-turbo
     temperature: 0.1, // 0.0 to 1.0
     maxTokens: 2000, // Response length limit
     topP: 0.1, // Nucleus sampling
-    baseURL: 'https://api.openai.com/v1', // Custom endpoint
+    baseURL: "https://api.openai.com/v1", // Custom endpoint
     enableVision: true, // For multimodal models
-    visionDetails: 'auto', // auto, low, high
+    visionDetails: "auto", // auto, low, high
   },
 };
 ```
@@ -920,10 +920,10 @@ llm_config = {
 
 ```typescript
 const llmConfig = {
-  provider: 'anthropic',
+  provider: "anthropic",
   config: {
     apiKey: process.env.ANTHROPIC_API_KEY,
-    model: 'claude-3-haiku-20240307', // or claude-3-sonnet, claude-3-opus
+    model: "claude-3-haiku-20240307", // or claude-3-sonnet, claude-3-opus
     temperature: 0.1,
     maxTokens: 2000,
   },
@@ -936,10 +936,10 @@ const llmConfig = {
 
 ```typescript
 const llmConfig = {
-  provider: 'mistral',
+  provider: "mistral",
   config: {
     apiKey: process.env.MISTRAL_API_KEY,
-    model: 'mistral-small-latest',
+    model: "mistral-small-latest",
     temperature: 0.1,
     maxTokens: 2000,
   },
@@ -965,11 +965,11 @@ llm_config = {
 
 ```typescript
 const llmConfig = {
-  provider: 'ollama',
+  provider: "ollama",
   config: {
-    model: 'llama3.1:8b',
+    model: "llama3.1:8b",
     temperature: 0.1,
-    baseURL: 'http://localhost:11434',
+    baseURL: "http://localhost:11434",
   },
 };
 ```
@@ -997,14 +997,14 @@ llm_config = {
 
 ```typescript
 const llmConfig = {
-  provider: 'azure_openai',
+  provider: "azure_openai",
   config: {
-    model: 'gpt-4',
+    model: "gpt-4",
     azureKwargs: {
       apiKey: process.env.AZURE_OPENAI_API_KEY,
-      apiVersion: '2024-02-01',
-      azureEndpoint: 'https://your-resource.openai.azure.com',
-      azureDeployment: 'your-deployment-name',
+      apiVersion: "2024-02-01",
+      azureEndpoint: "https://your-resource.openai.azure.com",
+      azureDeployment: "your-deployment-name",
     },
   },
 };
@@ -1033,13 +1033,13 @@ vector_config = {
 
 ```typescript
 const vectorConfig = {
-  provider: 'qdrant',
+  provider: "qdrant",
   config: {
-    collectionName: 'mem0_collection',
+    collectionName: "mem0_collection",
     embeddingModelDims: 1536,
-    url: 'localhost',
+    url: "localhost",
     port: 6333,
-    path: '/path/to/qdrant/storage', // For local storage
+    path: "/path/to/qdrant/storage", // For local storage
   },
 };
 ```
@@ -1050,13 +1050,13 @@ const vectorConfig = {
 
 ```typescript
 const vectorConfig = {
-  provider: 'supabase',
+  provider: "supabase",
   config: {
     supabaseUrl: process.env.SUPABASE_URL,
     supabaseKey: process.env.SUPABASE_KEY,
-    tableName: 'memories',
-    embeddingColumnName: 'embedding',
-    metadataColumnName: 'metadata',
+    tableName: "memories",
+    embeddingColumnName: "embedding",
+    metadataColumnName: "metadata",
   },
 };
 ```
@@ -1067,9 +1067,9 @@ const vectorConfig = {
 
 ```typescript
 const vectorConfig = {
-  provider: 'memory',
+  provider: "memory",
   config: {
-    collectionName: 'mem0_collection',
+    collectionName: "mem0_collection",
     dimension: 1536,
   },
 };
@@ -1094,11 +1094,11 @@ vector_config = {
 
 ```typescript
 const vectorConfig = {
-  provider: 'pinecone',
+  provider: "pinecone",
   config: {
     apiKey: process.env.PINECONE_API_KEY,
-    indexName: 'mem0-index',
-    environment: 'us-west1-gcp',
+    indexName: "mem0-index",
+    environment: "us-west1-gcp",
   },
 };
 ```
@@ -1123,11 +1123,11 @@ vector_config = {
 
 ```typescript
 const vectorConfig = {
-  provider: 'chroma',
+  provider: "chroma",
   config: {
-    collectionName: 'mem0_collection',
-    path: '/path/to/chroma/db',
-    host: 'localhost',
+    collectionName: "mem0_collection",
+    path: "/path/to/chroma/db",
+    host: "localhost",
     port: 8000,
   },
 };
@@ -1153,10 +1153,10 @@ embedder_config = {
 
 ```typescript
 const embedderConfig = {
-  provider: 'openai',
+  provider: "openai",
   config: {
     apiKey: process.env.OPENAI_API_KEY,
-    model: 'text-embedding-3-small', // or text-embedding-3-large
+    model: "text-embedding-3-small", // or text-embedding-3-large
   },
 };
 ```
@@ -1179,9 +1179,9 @@ embedder_config = {
 
 ```typescript
 const embedderConfig = {
-  provider: 'huggingface',
+  provider: "huggingface",
   config: {
-    model: 'all-MiniLM-L6-v2', // or any sentence-transformer model
+    model: "all-MiniLM-L6-v2", // or any sentence-transformer model
     apiKey: process.env.HF_TOKEN, // Optional for private models
   },
 };
@@ -1307,25 +1307,25 @@ npm install @mem0/vercel-ai-provider
 #### Basic Usage with Mem0 Provider
 
 ```typescript
-import { generateText } from 'ai';
-import { createMem0 } from '@mem0/vercel-ai-provider';
+import { generateText } from "ai";
+import { createMem0 } from "@mem0/vercel-ai-provider";
 
 // Initialize Mem0 provider
 const mem0 = createMem0({
-  provider: 'openai',
+  provider: "openai",
   mem0ApiKey: process.env.MEM0_API_KEY,
   apiKey: process.env.OPENAI_API_KEY,
   config: {
-    compatibility: 'strict',
+    compatibility: "strict",
   },
 });
 
 // Generate text with memory context
 const { text } = await generateText({
-  model: mem0('gpt-4o', {
-    user_id: 'user123',
+  model: mem0("gpt-4o", {
+    user_id: "user123",
   }),
-  prompt: 'What did I tell you about my preferences?',
+  prompt: "What did I tell you about my preferences?",
 });
 
 console.log(text); // AI responds with remembered information
@@ -1334,16 +1334,16 @@ console.log(text); // AI responds with remembered information
 #### Streaming Support
 
 ```typescript
-import { streamText } from 'ai';
-import { createMem0 } from '@mem0/vercel-ai-provider';
+import { streamText } from "ai";
+import { createMem0 } from "@mem0/vercel-ai-provider";
 
 const mem0 = createMem0();
 
 const { textStream } = await streamText({
-  model: mem0('gpt-4o', {
-    user_id: 'user123',
+  model: mem0("gpt-4o", {
+    user_id: "user123",
   }),
-  prompt: 'Suggest me a good car to buy based on my preferences!',
+  prompt: "Suggest me a good car to buy based on my preferences!",
 });
 
 for await (const textPart of textStream) {
@@ -1358,37 +1358,37 @@ import {
   addMemories,
   retrieveMemories,
   getMemories,
-} from '@mem0/vercel-ai-provider';
-import { generateText } from 'ai';
-import { openai } from '@ai-sdk/openai';
+} from "@mem0/vercel-ai-provider";
+import { generateText } from "ai";
+import { openai } from "@ai-sdk/openai";
 
 // Add memories manually
 const memories = [
   {
-    role: 'user',
+    role: "user",
     content: [
-      { type: 'text', text: 'I love red cars.' },
-      { type: 'text', text: 'I prefer Toyota cars.' },
-      { type: 'text', text: 'I like SUVs.' },
+      { type: "text", text: "I love red cars." },
+      { type: "text", text: "I prefer Toyota cars." },
+      { type: "text", text: "I like SUVs." },
     ],
   },
 ];
 
-await addMemories(memories, { user_id: 'user123' });
+await addMemories(memories, { user_id: "user123" });
 
 // Retrieve memories for context
-const prompt = 'Suggest me a good car to buy.';
-const memoryContext = await retrieveMemories(prompt, { user_id: 'user123' });
+const prompt = "Suggest me a good car to buy.";
+const memoryContext = await retrieveMemories(prompt, { user_id: "user123" });
 
 const { text } = await generateText({
-  model: openai('gpt-4o'),
+  model: openai("gpt-4o"),
   prompt: prompt,
   system: memoryContext,
 });
 
 // Get memories in array format
-const userMemories = await getMemories('car preferences', {
-  user_id: 'user123',
+const userMemories = await getMemories("car preferences", {
+  user_id: "user123",
 });
 console.log(userMemories);
 ```
@@ -1396,25 +1396,25 @@ console.log(userMemories);
 #### Advanced Integration with Multiple Providers
 
 ```typescript
-import { generateText, LanguageModelPrompt } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
-import { retrieveMemories } from '@mem0/vercel-ai-provider';
+import { generateText, LanguageModelPrompt } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
+import { retrieveMemories } from "@mem0/vercel-ai-provider";
 
 const messages: LanguageModelPrompt = [
   {
-    role: 'user',
+    role: "user",
     content: [
-      { type: 'text', text: 'Suggest me a good car to buy.' },
-      { type: 'text', text: 'Why is it better than other cars for me?' },
+      { type: "text", text: "Suggest me a good car to buy." },
+      { type: "text", text: "Why is it better than other cars for me?" },
     ],
   },
 ];
 
 // Retrieve memories based on conversation
-const memories = await retrieveMemories(messages, { user_id: 'user123' });
+const memories = await retrieveMemories(messages, { user_id: "user123" });
 
 const { text } = await generateText({
-  model: anthropic('claude-3-haiku-20240307'),
+  model: anthropic("claude-3-haiku-20240307"),
   messages: messages,
   system: memories,
 });
@@ -1528,8 +1528,8 @@ response = chatbot.handle_customer_query("user123", "I need help with my order")
 **TypeScript:**
 
 ```typescript
-import { Memory } from 'mem0ai/oss';
-import Anthropic from '@anthropic-ai/sdk';
+import { Memory } from "mem0ai/oss";
+import Anthropic from "@anthropic-ai/sdk";
 
 class SupportChatbot {
   private client: Anthropic;
@@ -1541,12 +1541,12 @@ class SupportChatbot {
     });
 
     this.memory = new Memory({
-      version: 'v1.1',
+      version: "v1.1",
       llm: {
-        provider: 'anthropic',
+        provider: "anthropic",
         config: {
           apiKey: process.env.ANTHROPIC_API_KEY,
-          model: 'claude-3-5-sonnet-latest',
+          model: "claude-3-5-sonnet-latest",
           temperature: 0.1,
           maxTokens: 2000,
         },
@@ -1563,7 +1563,7 @@ class SupportChatbot {
     });
 
     // Build context
-    let context = 'Previous interactions:\n';
+    let context = "Previous interactions:\n";
     for (const memory of relevantHistory.results) {
       context += `- ${memory.memory}\n`;
     }
@@ -1578,19 +1578,19 @@ class SupportChatbot {
         `;
 
     const response = await this.client.messages.create({
-      model: 'claude-3-5-sonnet-latest',
+      model: "claude-3-5-sonnet-latest",
       max_tokens: 1000,
-      messages: [{ role: 'user', content: prompt }],
+      messages: [{ role: "user", content: prompt }],
     });
 
     const responseText =
-      response.content[0].type === 'text' ? response.content[0].text : '';
+      response.content[0].type === "text" ? response.content[0].text : "";
 
     // Store interaction
     await this.memory.add(
       [
-        { role: 'user', content: query },
-        { role: 'assistant', content: responseText },
+        { role: "user", content: query },
+        { role: "assistant", content: responseText },
       ],
       userId,
       { timestamp: new Date().toISOString() },
@@ -1603,8 +1603,8 @@ class SupportChatbot {
 // Usage
 const chatbot = new SupportChatbot();
 const response = await chatbot.handleCustomerQuery(
-  'user123',
-  'I need help with my order',
+  "user123",
+  "I need help with my order",
 );
 ```
 
@@ -1717,28 +1717,28 @@ recommendation = recommend_movie_with_memory("user123", "I want a sci-fi movie")
 **TypeScript:**
 
 ```typescript
-import { Memory } from 'mem0ai/oss';
-import OpenAI from 'openai';
+import { Memory } from "mem0ai/oss";
+import OpenAI from "openai";
 
 // Configure with local models for privacy
 const memory = new Memory({
-  version: 'v1.1',
+  version: "v1.1",
   vectorStore: {
-    provider: 'qdrant',
+    provider: "qdrant",
     config: { embeddingModelDims: 384 },
   },
   llm: {
-    provider: 'openai', // Using OpenAI instead of xAI for TS compatibility
+    provider: "openai", // Using OpenAI instead of xAI for TS compatibility
     config: {
       apiKey: process.env.OPENAI_API_KEY,
-      model: 'gpt-4o',
+      model: "gpt-4o",
       temperature: 0.1,
       maxTokens: 2000,
     },
   },
   embedder: {
-    provider: 'huggingface',
-    config: { model: 'all-MiniLM-L6-v2' },
+    provider: "huggingface",
+    config: { model: "all-MiniLM-L6-v2" },
   },
 });
 
@@ -1752,28 +1752,28 @@ async function recommendMovieWithMemory(
 ): Promise<string> {
   // Get movie preferences from memory
   const pastMemories = await memory.search({
-    query: 'movie preferences',
+    query: "movie preferences",
     userId,
   });
 
   let prompt = userQuery;
   if (pastMemories.results.length > 0) {
-    const preferences = pastMemories.results.map((m) => m.memory).join('\n');
+    const preferences = pastMemories.results.map((m) => m.memory).join("\n");
     prompt += `\nUser's movie preferences: ${preferences}`;
   }
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o',
-    messages: [{ role: 'user', content: prompt }],
+    model: "gpt-4o",
+    messages: [{ role: "user", content: prompt }],
   });
 
-  const recommendation = response.choices[0].message.content || '';
+  const recommendation = response.choices[0].message.content || "";
 
   // Store interaction
   await memory.add(
     [
-      { role: 'user', content: userQuery },
-      { role: 'assistant', content: recommendation },
+      { role: "user", content: userQuery },
+      { role: "assistant", content: recommendation },
     ],
     userId,
   );
@@ -1783,8 +1783,8 @@ async function recommendMovieWithMemory(
 
 // Example usage
 const recommendation = await recommendMovieWithMemory(
-  'user123',
-  'I want a sci-fi movie',
+  "user123",
+  "I want a sci-fi movie",
 );
 console.log(recommendation);
 ```
@@ -1979,10 +1979,10 @@ def test_memory_operations(memory_store):
 **TypeScript:**
 
 ```typescript
-import { Memory } from 'mem0ai/oss';
-import MemoryClient from 'mem0ai';
+import { Memory } from "mem0ai/oss";
+import MemoryClient from "mem0ai";
 
-describe('Memory Operations', () => {
+describe("Memory Operations", () => {
   let memory: Memory;
   let client: MemoryClient;
 
@@ -1991,41 +1991,41 @@ describe('Memory Operations', () => {
     client = new MemoryClient({ apiKey: process.env.MEM0_API_KEY });
   });
 
-  test('should add and retrieve memories', async () => {
+  test("should add and retrieve memories", async () => {
     // Test OSS memory operations
-    const messages = [{ role: 'user' as const, content: 'I like pizza' }];
-    const result = await memory.add(messages, 'test_user');
+    const messages = [{ role: "user" as const, content: "I like pizza" }];
+    const result = await memory.add(messages, "test_user");
     expect(result).toBeDefined();
     expect(result.length).toBeGreaterThan(0);
 
     // Test searching memories
     const memories = await memory.search({
-      query: 'food preferences',
-      userId: 'test_user',
+      query: "food preferences",
+      userId: "test_user",
     });
     expect(memories.results.length).toBeGreaterThan(0);
   });
 
-  test('should handle client operations', async () => {
+  test("should handle client operations", async () => {
     // Test platform client
-    const messages = [{ role: 'user' as const, content: 'I enjoy hiking' }];
-    await client.add(messages, { user_id: 'test_user' });
+    const messages = [{ role: "user" as const, content: "I enjoy hiking" }];
+    await client.add(messages, { user_id: "test_user" });
 
-    const memories = await client.search('outdoor activities', {
-      user_id: 'test_user',
+    const memories = await client.search("outdoor activities", {
+      user_id: "test_user",
     });
     expect(memories.results).toBeDefined();
   });
 
-  test('should update and delete memories', async () => {
+  test("should update and delete memories", async () => {
     // Add memory
-    const messages = [{ role: 'user' as const, content: 'I like cats' }];
-    const result = await memory.add(messages, 'test_user');
+    const messages = [{ role: "user" as const, content: "I like cats" }];
+    const result = await memory.add(messages, "test_user");
     const memoryId = result[0].id;
 
     // Update memory
-    const updated = await memory.update(memoryId, 'I love cats and dogs');
-    expect(updated.memory).toContain('dogs');
+    const updated = await memory.update(memoryId, "I love cats and dogs");
+    expect(updated.memory).toContain("dogs");
 
     // Delete memory
     await memory.delete(memoryId);
@@ -2094,7 +2094,7 @@ pytest -k "async" tests/
 
 ```bash
 # Install dependencies
-npm install --save-dev jest @types/jest ts-jest
+npm install --save-dev jest @types/jest @swc/core @swc/jest
 
 # Run all tests
 npm test
@@ -2684,13 +2684,13 @@ os.environ["OPENAI_API_KEY"] = "your-key"
 **TypeScript Solutions:**
 
 ```typescript
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 
 // Load environment variables
 dotenv.config();
 
 // Verify variables are set
-const requiredVars = ['OPENAI_API_KEY', 'MEM0_API_KEY'];
+const requiredVars = ["OPENAI_API_KEY", "MEM0_API_KEY"];
 for (const varName of requiredVars) {
   if (!process.env[varName]) {
     throw new Error(`Missing required environment variable: ${varName}`);
@@ -2852,7 +2852,7 @@ result = memory.add([{"role": "user", "content": "test"}])
 
 ```typescript
 // For Node.js applications, you can enable debug logging
-process.env.DEBUG = 'mem0:*';
+process.env.DEBUG = "mem0:*";
 
 // Or use console.log for debugging
 const memory = new Memory({
@@ -2861,9 +2861,9 @@ const memory = new Memory({
 });
 
 // Log operations
-console.log('Adding memory...');
-const result = await memory.add([{ role: 'user', content: 'test' }], 'user123');
-console.log('Result:', result);
+console.log("Adding memory...");
+const result = await memory.add([{ role: "user", content: "test" }], "user123");
+console.log("Result:", result);
 ```
 
 #### Inspect Memory State
@@ -2886,26 +2886,26 @@ print(response)
 
 ```typescript
 // Check memory configuration
-console.log('Memory config:', JSON.stringify(memory.config, null, 2));
+console.log("Memory config:", JSON.stringify(memory.config, null, 2));
 
 // Test individual operations
 try {
   const searchResult = await memory.search({
-    query: 'test',
-    userId: 'debug_user',
+    query: "test",
+    userId: "debug_user",
   });
-  console.log('Search works:', searchResult.results.length);
+  console.log("Search works:", searchResult.results.length);
 } catch (error) {
-  console.error('Search failed:', error);
+  console.error("Search failed:", error);
 }
 
 // Test client connectivity for platform
 const client = new MemoryClient({ apiKey: process.env.MEM0_API_KEY });
 try {
   await client.ping();
-  console.log('Client connection successful');
+  console.log("Client connection successful");
 } catch (error) {
-  console.error('Client connection failed:', error);
+  console.error("Client connection failed:", error);
 }
 ```
 
@@ -3019,20 +3019,20 @@ def research_with_memory(topic, user_id="researcher"):
 Build conversational interfaces with memory using Vercel AI SDK.
 
 ```typescript
-import { createMem0 } from 'mem0ai';
-import { generateText } from 'ai';
+import { createMem0 } from "mem0ai";
+import { generateText } from "ai";
 
 const mem0OpenAI = createMem0({
-  provider: 'openai',
+  provider: "openai",
   apiKey: process.env.OPENAI_API_KEY,
   mem0Config: {
-    user_id: 'user123',
+    user_id: "user123",
   },
 });
 
 const result = await generateText({
-  model: mem0OpenAI('gpt-4o'),
-  prompt: 'What did I tell you about my preferences?',
+  model: mem0OpenAI("gpt-4o"),
+  prompt: "What did I tell you about my preferences?",
 });
 
 console.log(result.text); // AI responds with remembered information

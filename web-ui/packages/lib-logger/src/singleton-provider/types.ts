@@ -1,4 +1,4 @@
-import { IsNotNull } from '@compliance-theater/types/types/is-not-null';
+export type { ISingletonProvider } from "@compliance-theater/types/lib/logger/singleton-provider";
 
 /**
  * Configuration options for singleton pattern implementations.
@@ -83,6 +83,9 @@ export type SingletonStorageStrategy = {
   clear(): void;
 };
 
+
+
+
 type GlobalThis = typeof globalThis;
 
 
@@ -90,34 +93,3 @@ export type GlobalWithMyGlobal<T, S extends symbol> = GlobalThis & {
   [K in S]?: T;
 };
 
-export type ISingletonProvider = {
-  get<T = unknown, S extends string | symbol = string>(symbol: S): T | undefined;
-  getOrCreate<T, S extends string | symbol = string>(
-    symbol: S,
-    factory: () => IsNotNull<T> | undefined,
-    config?: unknown
-  ): T | undefined;
-  getRequired<T, S extends string | symbol = string>(
-    symbol: S,
-    factory: () => IsNotNull<T> | undefined,
-    config?: unknown
-  ): T;
-  getOrCreateAsync<T, S extends string | symbol = string>(
-    symbol: S,
-    factory: () => Promise<IsNotNull<T> | undefined>,
-    config?: unknown
-  ): Promise<T | undefined>;
-  getRequiredAsync<T, S extends string | symbol = string>(
-    symbol: S,
-    factory: () => Promise<IsNotNull<T> | undefined>,
-    config?: unknown
-  ): Promise<T>;
-  has<S extends string | symbol = string>(symbol: S): boolean;
-  set<T, S extends string | symbol = string>(
-    symbol: S,
-    value: IsNotNull<T>,
-    config?: unknown
-  ): void;
-  clear(): void;
-  delete<S extends string | symbol = string>(symbol: S): void;
-};

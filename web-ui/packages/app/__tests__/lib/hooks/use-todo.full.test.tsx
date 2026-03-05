@@ -16,7 +16,10 @@ import {
   QueryClientProvider,
   useQueryClient,
 } from '@tanstack/react-query';
-import { fetch } from '@compliance-theater/nextjs';
+jest.mock('@compliance-theater/fetch', () => ({
+  fetch: jest.fn(),
+}));
+import { fetch } from '@compliance-theater/fetch';
 
 // Load the real hooks inside isolated modules after unmocking the global mock
 const loadHooks = () => {
@@ -187,8 +190,11 @@ describe('use-todo real implementation', () => {
     // update item
     const updatedItem = { id: 'i1', title: 'Item 1 updated' };
     mockFetch.mockResolvedValue(jsonResponse({ data: updatedItem }));
-    const { result: updateItemResult } = renderHook(() =>
-      useUpdateTodoItem('list-1'),
+    const { result: updateItemResult } = renderHook(
+      () => useUpdateTodoItem('list-1'),
+      {
+        wrapper: TestWrapper,
+      },
     );
 
     await act(async () => {

@@ -1,6 +1,4 @@
 import type { ICredential, CredentialOptions } from './_types';
-
-declare module '@compliance-theater/auth/lib/utilities/_credentialProvider' {
   /**
    * Credential factory function
    *
@@ -57,4 +55,3 @@ declare module '@compliance-theater/auth/lib/utilities/_credentialProvider' {
   export function credentialFactory(
     options: CredentialOptions,
   ): Promise<ICredential>;
-}

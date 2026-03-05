@@ -12,9 +12,15 @@ setupImpersonationMock();
  */
 
 // Mock fetch module BEFORE importing SUTs so the implementation is captured.
-const fetchMock = jest.fn();
+var fetchMock = jest.fn();
 jest.mock('../../../../../lib/fetch-service', () => ({
-  resolveFetchService: jest.fn(() => fetchMock),
+  resolveFetchService: jest.fn(
+    () =>
+      (...args: unknown[]) =>
+        (globalThis.fetch as unknown as (...args: unknown[]) => unknown)(
+          ...args,
+        ),
+  ),
 }));
 
 import { hybridDocumentSearchFactory } from '../../../../../lib/ai/services/search/HybridDocumentSearch';
@@ -146,6 +152,8 @@ describe('HybridSearchClient tests', () => {
 
   describe('HybridDocumentSearch.hybridSearch', () => {
     beforeEach(() => {
+      (globalThis as { fetch?: typeof fetch }).fetch =
+        fetchMock as unknown as typeof fetch;
       fetchMock.mockReset();
     });
 
@@ -199,6 +207,8 @@ describe('HybridSearchClient tests', () => {
 
   describe('HybridPolicySearch.hybridSearch', () => {
     beforeEach(() => {
+      (globalThis as { fetch?: typeof fetch }).fetch =
+        fetchMock as unknown as typeof fetch;
       fetchMock.mockReset();
     });
 
@@ -218,6 +228,12 @@ describe('HybridSearchClient tests', () => {
   });
 
   describe('HybridSearchClient.hybridSearch error handling', () => {
+    beforeEach(() => {
+      (globalThis as { fetch?: typeof fetch }).fetch =
+        fetchMock as unknown as typeof fetch;
+      fetchMock.mockReset();
+    });
+
     test('wraps and rethrows fetch/network errors', async () => {
       mockConsole.setup();
       const embeddingService = makeEmbeddingService();

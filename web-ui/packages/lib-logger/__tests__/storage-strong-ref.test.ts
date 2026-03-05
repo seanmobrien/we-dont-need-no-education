@@ -24,10 +24,11 @@ describe('StrongReferenceStorage', () => {
     expect(storage.has(keyB)).toBe(false);
   });
 
-  it('throws for non-global symbol keys in current implementation', () => {
+  it('allows non-global symbol keys without throwing', () => {
     const localSymbol = Symbol('local-storage-key');
 
-    expect(() => storage.get(localSymbol)).toThrow(ReferenceError);
-    expect(() => storage.set(localSymbol, { id: 'x' })).toThrow(ReferenceError);
+    expect(() => storage.get(localSymbol)).not.toThrow();
+    expect(() => storage.set(localSymbol, { id: 'x' })).not.toThrow();
+    expect(storage.get(localSymbol)).toEqual({ id: 'x' });
   });
 });

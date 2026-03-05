@@ -1,12 +1,10 @@
 /* @jest-environment node */
 
-const mockGot = Object.assign(jest.fn(), {
-    stream: jest.fn(),
-});
-
 jest.mock('got', () => ({
     __esModule: true,
-    default: mockGot,
+    default: Object.assign(jest.fn(), {
+        stream: jest.fn(),
+    }),
 }));
 
 jest.mock('@compliance-theater/redis', () => ({
@@ -15,6 +13,10 @@ jest.mock('@compliance-theater/redis', () => ({
 
 import { getRedisClient } from '@compliance-theater/redis';
 import { FetchManager } from '../../../src/server/fetch/fetch-server';
+
+const mockGot = jest.requireMock('got').default as jest.Mock & {
+    stream: jest.Mock;
+};
 
 describe('FetchManager Redis integration', () => {
     beforeEach(() => {

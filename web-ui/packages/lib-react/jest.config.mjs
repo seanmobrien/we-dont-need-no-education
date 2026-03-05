@@ -4,7 +4,6 @@ import baseConfig from './__tests__/shared/jest.config-shared.mjs';
 const config = {
   ...baseConfig,
   displayName: "Libraries: react",
-  preset: "ts-jest",
   testEnvironment: "jsdom",  // React needs jsdom
   testEnvironmentOptions: {
     // Configure jsdom for React 19 concurrent features

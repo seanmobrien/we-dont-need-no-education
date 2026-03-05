@@ -6,7 +6,7 @@
         "baseUrl": "../",
         "customConditions": [
             "workspace-source"
-        ]
+        ],
     },
     "files": [],
     "exclude": [
@@ -60,7 +60,7 @@
             "path": "packages/lib-types"
         },
         {
-            "path": "submodules/json-viewer"
+            "path": "submodules/json-viewer/packages/src"
         },
         {
             "path": "submodules/sce/packages/core/ts"

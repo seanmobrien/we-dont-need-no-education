@@ -1,12 +1,16 @@
+jest.mock('../../src/is-running-on', () => ({
+    isRunningOnServer: jest.fn().mockReturnValue(false),
+}));
+
+import { isRunningOnServer } from '../../src/is-running-on';
+
+jest.unmock('../../src/dependency-injection/container');
+jest.unmock('../../src/dependency-injection');
+
 import type { ServiceCradle } from '../../src/dependency-injection/service-cradle';
-import {
-    asFunction,
-    asValue,
-    getServiceContainer,
-    resolveService,
-} from '../../src/dependency-injection';
-import { resetRuntime } from '../../src/dependency-injection/container';
-import { BrowserResolverRecord } from '../../src/dependency-injection/types';
+
+import { resetRuntime, getServiceContainer, resolveService, asFunction, asValue } from '../../src/dependency-injection/container';
+import type { BrowserResolverRecord } from '../../src/dependency-injection/types';
 
 const CONTAINER_SYMBOL = Symbol.for(
     '@compliance-theater/types/dependency-injection/container'
@@ -37,9 +41,9 @@ describe('browser container', () => {
             fetch: jest.fn(),
         };
 
-        container.register('fetch-service', asValue(fetchService));
+        container.register('fetch', asValue(fetchService));
 
-        const resolved = resolveService('fetch-service');
+        const resolved = resolveService('fetch');
         expect(resolved).toBe(fetchService);
     });
 

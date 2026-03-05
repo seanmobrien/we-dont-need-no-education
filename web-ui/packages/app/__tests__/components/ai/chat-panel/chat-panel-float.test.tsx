@@ -61,9 +61,11 @@ describe('ChatPanel Float Functionality', () => {
   }, 10000);
 
   it('switches to floating mode when Float is clicked', async () => {
-    render(<ChatPanel page="test" />, {
-      chatPanel: ChatPanelProvider,
-    });
+    render(
+      <ChatPanelProvider>
+        <ChatPanel page="test" />
+      </ChatPanelProvider>,
+    );
 
     // Find and click the menu button
     const menuButton = screen.getByTestId('button-chat-menu');
@@ -79,6 +81,8 @@ describe('ChatPanel Float Functionality', () => {
     fireEvent.click(floatOption);
 
     // Check if it switched to floating mode
-    expect(screen.getByText(/Chat panel is floating/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText(/Chat panel is floating/i)).toBeInTheDocument();
+    });
   }, 10000);
 });

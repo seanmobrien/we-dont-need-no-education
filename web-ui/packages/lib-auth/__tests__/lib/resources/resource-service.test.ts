@@ -24,7 +24,7 @@ import { resourceService } from '../../../src/lib/resources/resource-service';
 import { authorizationService } from '../../../src/lib/resources/authorization-service';
 import { fetch } from '@compliance-theater/nextjs/server';
 import { decodeToken } from '../../../src/lib/utilities';
-import { hideConsoleOutput } from '../../test-utils';
+import { hideConsoleOutput } from '../../shared/test-utils';
 
 
 describe('ResourceService', () => {

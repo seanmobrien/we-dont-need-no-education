@@ -4,7 +4,6 @@ import baseConfig, { filter } from './__tests__/shared/jest.config-shared.mjs';
 const config = {
   ...baseConfig,
   displayName: "Libraries: after",
-  preset: "ts-jest",
   testEnvironment: "node",
   rootDir: ".",
   transformIgnorePatterns: [

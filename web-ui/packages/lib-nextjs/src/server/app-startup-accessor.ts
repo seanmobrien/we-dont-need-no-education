@@ -31,6 +31,6 @@ export const configureAppStartupAccessor = (
  * @returns Promise resolving to the current startup state
  */
 export const getAppStartupState = deprecate(
-  (): Promise<AppStartupState> => resolveService('app-startup').getStartupState(),
+  (): Promise<AppStartupState> => resolveService('startup').getStartupState(),
   'getAppStartupState is deprecated. Please use registered IAppStartupManager directly instead.',
-  'DEP006');
+  'DEP006'); 

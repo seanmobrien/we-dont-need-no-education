@@ -476,14 +476,8 @@ describe('Automatic Recovery', () => {
       // Verify the action was executed (auth redirect would change location)
     });
 
-    it('should return false for errors without default actions', async () => {
-      // Mock an error that has no default action
-      const recoveryModule = await import('../../src/errors/monitoring/recovery-strategies');
-      jest
-        .spyOn(recoveryModule, 'getDefaultRecoveryAction')
-        .mockReturnValue(null);
-
-      const unknownError = new Error('No default action');
+    it('should return false for errors without automatic default actions', async () => {
+      const unknownError = new Error('Some completely unknown error type');
 
       const result = await attemptAutoRecovery(unknownError);
 

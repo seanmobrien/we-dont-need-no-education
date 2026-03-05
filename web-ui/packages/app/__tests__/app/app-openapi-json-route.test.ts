@@ -9,12 +9,12 @@
  */
 
 import type { NextRequest } from 'next/server';
-import { resolveFetchService } from '../../../lib/fetch-service';
+import { resolveFetchService } from '../../lib/fetch-service';
 
 const fetchMock = jest.fn();
 
-jest.mock('../../../lib/fetch-service', () => ({
-  resolveFetchService: jest.fn(() => fetchMock),
+jest.mock('../../lib/fetch-service', () => ({
+  resolveFetchService: jest.fn(),
 }));
 
 // hoist-safe mocks
@@ -36,6 +36,7 @@ jest.mock('../../lib/nextjs-util/fetch', () => ({
 */
 describe('openapi route', () => {
   beforeEach(() => {
+    (resolveFetchService as unknown as jest.Mock).mockReturnValue(fetchMock);
     //jest.resetModules();
     process.env.MEM0_API_HOST = 'https://mem0.example';
     process.env.MEM0_API_BASE_PATH = 'api/v1';

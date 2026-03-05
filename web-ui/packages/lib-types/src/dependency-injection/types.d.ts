@@ -200,3 +200,27 @@ export interface IServiceContainer {
     dispose(): Promise<void>;
 }
 
+/**
+ * A registrar is an object that can register services with the container.
+ * This is a common pattern for modularizing service registration logic.
+ * Each package can export one or more registrars that know how to register the
+ * services it provides.  This simplifies the composition of the container across the application, 
+ * as different modules can independently define their service registrations.
+ */
+export interface IServiceRegistrar {
+    /**
+     * Register services with the provided container.
+     *
+     * @param container - The service container to register services with.
+     *
+     * @example
+     * ```typescript
+     * export const serviceRegistrar: IServiceRegistrar = {
+     *   register: (container) => {
+     *     container.register('authService', asClass(AuthService));
+     *    container.register('tokenService', asClass(TokenService));
+     *   }
+     * };
+     */
+    register: (container: IServiceContainer) => void;
+}

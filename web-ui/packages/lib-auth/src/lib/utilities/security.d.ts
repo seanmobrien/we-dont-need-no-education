@@ -1,6 +1,4 @@
 import type { Session } from '@compliance-theater/types/next-auth';
-
-declare module '@compliance-theater/auth/lib/utilities/security' {
   /**
    * Determines whether a signed-in user is authorized to access (read and/or write) another user's resources.
    *
@@ -48,4 +46,3 @@ declare module '@compliance-theater/auth/lib/utilities/security' {
   export const isSessionActive: (props: {
     session: Session | null | undefined;
   }) => boolean;
-}

@@ -20,7 +20,7 @@
  */
 
 // Mock EmailService before imports
-const mockEmailService = {
+var mockEmailService = {
   getEmailsSummary: jest.fn(),
   getEmailById: jest.fn(),
   createEmail: jest.fn(),
@@ -34,8 +34,8 @@ jest.mock('../../../../lib/api/email/email-service', () => ({
 }));
 
 // Mock authorization checks to always allow access in tests
-jest.mock('@compliance-theater/auth/lib/resources/case-file', () => {
-  const origModule = jest.requireActual('@compliance-theater/auth/lib/resources/case-file');
+jest.mock('@compliance-theater/auth/lib/resources/case-file/index', () => {
+  const origModule = jest.requireActual('@compliance-theater/auth/lib/resources/case-file/index');
   return {
     ...origModule,
     checkCaseFileAuthorization: jest
@@ -51,14 +51,15 @@ jest.mock('@compliance-theater/auth/lib/resources/case-file', () => {
   };
 });
 
-const mockExtractParams = jest.fn();
+var mockExtractParams: jest.Mock | undefined;
 
 // Mock modules
 jest.mock('@compliance-theater/nextjs/server/utils', () => {
   const orig = jest.requireActual('@compliance-theater/nextjs/server/utils');
+  mockExtractParams = jest.fn();
   return {
     ...orig,
-    extractParams: mockExtractParams,
+    extractParams: (...args: unknown[]) => mockExtractParams!(...args),
   };
 });
 jest.mock('../../../../lib/components/mui/data-grid/queryHelpers');
@@ -97,8 +98,8 @@ describe('Email API', () => {
     mockDbDelete = mockDb.delete as jest.Mock;
 
     // Reset extractParams mock
-    mockExtractParams.mockReset();
-    mockExtractParams.mockImplementation(async (req) => {
+    mockExtractParams!.mockReset();
+    mockExtractParams!.mockImplementation(async (req) => {
       const params = await req.params;
       return params;
     });

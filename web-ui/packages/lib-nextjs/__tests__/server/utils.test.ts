@@ -481,7 +481,7 @@ describe('Server Utils', () => {
     test('logs request details in non-production', async () => {
       const handler = wrapRouteRequest(async (_req: Request) => {
         return new Response('success');
-      });
+      }, { log: true });
 
       const mockRequest = {
         url: 'https://example.com/test',

@@ -1,3 +1,5 @@
+jest.unmock('../../src/dependency-injection/container-browser');
+
 import {
     asClass,
     asFunction,
@@ -11,7 +13,6 @@ import type { BrowserResolverRecord } from '../../src/dependency-injection/types
 describe('container-browser', () => {
     it('identifies browser resolver records', () => {
         const resolver = asValue({ id: 1 });
-
         expect(isBrowserResolver(resolver)).toBe(true);
         expect(isBrowserResolver(null)).toBe(false);
         expect(isBrowserResolver(undefined)).toBe(false);

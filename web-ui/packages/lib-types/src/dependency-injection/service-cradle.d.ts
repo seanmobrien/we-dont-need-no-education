@@ -27,6 +27,15 @@ import type { IFetchService } from '../lib/fetch';
  * across the application. Each package can declare its own services by
  * augmenting this interface.
  *
+ * @property fetch - The fetch service for making HTTP requests
+ * @property session - The authentication session service
+ * @property impersonation - The impersonation service for user impersonation
+ * @property accessTokens - The access token service for managing tokens
+ * @property exchangeTokens - The token exchange service for exchanging tokens
+ * @property startup - The app startup manager for managing application startup state
+ * @property after - The After manager for managing After lifecycle events
+ * @property singleton - The singleton provider for managing singleton instances 
+ * 
  * @example
  * ```typescript
  * // In your package's types file:
@@ -43,9 +52,12 @@ import type { IFetchService } from '../lib/fetch';
  * ```
  */
 export interface ServiceCradle extends Record<string, unknown> {
-    'fetch-service': IFetchService;
-    'auth-session-service': IAuthSessionService;
-    'impersonation-service': IImpersonationService;
-    'access-token-service': IAccessTokenService;
-    'token-exchange-service': ITokenExchangeService;
+  fetch: IFetchService;
+  session: IAuthSessionService;
+  impersonation: IImpersonationService;
+  accessTokens: IAccessTokenService;
+  exchangeTokens: ITokenExchangeService;
+  startup: IAppStartupManager;
+  after: IAfterManager;
+  singleton: ISingletonProvider;
 }

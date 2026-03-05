@@ -7,35 +7,49 @@ import { setupImpersonationMock } from '../../../jest.mock-impersonation';
 setupImpersonationMock();
 
 // Mock all dependencies first
-const mockGetResolvedPromises = jest.fn() as jest.MockedFunction<any>;
-const mockIsError = jest.fn() as jest.MockedFunction<any>;
-const mockCreateMCPClient = jest.fn() as jest.MockedFunction<any>;
-const mockInstrumentedSseTransport = jest.fn() as jest.MockedFunction<any>;
+var mockGetResolvedPromises = jest.fn() as jest.MockedFunction<any>;
+var mockIsError = jest.fn() as jest.MockedFunction<any>;
+var mockCreateMCPClient = jest.fn() as jest.MockedFunction<any>;
+var mockInstrumentedSseTransport = jest.fn() as jest.MockedFunction<any>;
+var mockGetToolCache = jest.fn() as jest.MockedFunction<any>;
 // Returns either a map of cached tools or null when none cached
-const mockGetCachedTools = jest.fn() as unknown as jest.MockedFunction<
+var mockGetCachedTools = jest.fn() as unknown as jest.MockedFunction<
   () => Promise<Record<string, unknown> | null>
 >;
 mockGetCachedTools.mockResolvedValue(null as Record<string, unknown> | null);
 
-jest.mock('@compliance-theater/react/utility-methods', () => {
+function createReactUtilityMethodsMock() {
   const originalReactUtil = jest.requireActual('@compliance-theater/react/utility-methods');
+  mockGetResolvedPromises = jest.fn() as jest.MockedFunction<any>;
+  mockIsError = jest.fn() as jest.MockedFunction<any>;
   return {
     ...originalReactUtil,
     getResolvedPromises: mockGetResolvedPromises,
     isError: mockIsError,
   };
-});
+}
 
-jest.mock('../../../../lib/ai/mcp/cache', () => {
+jest.mock('@compliance-theater/react/utility-methods', createReactUtilityMethodsMock);
+
+function createMcpCacheMock() {
+  mockGetToolCache = jest.fn() as jest.MockedFunction<any>;
+  mockGetCachedTools = jest.fn() as unknown as jest.MockedFunction<
+    () => Promise<Record<string, unknown> | null>
+  >;
+  mockGetCachedTools.mockResolvedValue(null as Record<string, unknown> | null);
   const mock = {
     getCachedTools: mockGetCachedTools,
     setCachedTools: async () => Promise.resolve(),
     invalidateCache: async () => Promise.resolve(),
   };
+  mockGetToolCache.mockReturnValue(mock);
   return {
-    getToolCache: jest.fn(() => Promise.resolve(mock)),
+    getToolCache: mockGetToolCache,
   };
-});
+}
+
+jest.mock('../../../../lib/ai/mcp/cache', createMcpCacheMock);
+jest.mock('../../../../lib/ai/mcp/cache/index', createMcpCacheMock);
 
 
 /*
@@ -47,15 +61,22 @@ jest.mock('ai', () => ({
 
 jest.mock('@ai-sdk/mcp', () => {
   const original = jest.requireActual('@ai-sdk/mcp');
+  mockCreateMCPClient = jest.fn() as jest.MockedFunction<any>;
   return {
     ...original,
     experimental_createMCPClient: mockCreateMCPClient,
   };
 });
 
-jest.mock('../../../../lib/ai/mcp/instrumented-sse-transport', () => ({
-  InstrumentedSseTransport: mockInstrumentedSseTransport,
-}));
+function createInstrumentedSseTransportMock() {
+  mockInstrumentedSseTransport = jest.fn() as jest.MockedFunction<any>;
+  return {
+    InstrumentedSseTransport: mockInstrumentedSseTransport,
+  };
+}
+
+jest.mock('../../../../lib/ai/mcp/instrumented-sse-transport', createInstrumentedSseTransportMock);
+jest.mock('../../../../lib/ai/mcp/instrumented-sse-transport/index', createInstrumentedSseTransportMock);
 jest.mock('../../../../lib/ai/mcp/providers/client-tool-provider', () => ({
   clientToolProviderFactory: jest.fn(() => {
     const emitter = new EventEmitter();
@@ -146,9 +167,25 @@ describe('toolProviderFactory', () => {
   };
 
   beforeEach(() => {
+    const reactUtils = jest.requireMock('@compliance-theater/react/utility-methods');
+    mockGetResolvedPromises = reactUtils.getResolvedPromises as typeof mockGetResolvedPromises;
+    mockIsError = reactUtils.isError as typeof mockIsError;
+
+    const mcp = jest.requireMock('@ai-sdk/mcp');
+    mockCreateMCPClient = mcp.experimental_createMCPClient as typeof mockCreateMCPClient;
+
+    const transport = jest.requireMock('../../../../lib/ai/mcp/instrumented-sse-transport');
+    mockInstrumentedSseTransport =
+      transport.InstrumentedSseTransport as typeof mockInstrumentedSseTransport;
+
+    const cache = jest.requireMock('../../../../lib/ai/mcp/cache');
+    const toolCache = cache.getToolCache();
+    mockGetCachedTools = toolCache.getCachedTools as typeof mockGetCachedTools;
+
     // Reset individual mocks without clearing global ones
     mockIsError.mockReset();
     mockInstrumentedSseTransport.mockReset();
+    mockGetCachedTools.mockReset();
     mockMCPClient.tools.mockReset();
     mockMCPClient.close.mockReset();
     mockCreateMCPClient.mockReset();
@@ -162,6 +199,7 @@ describe('toolProviderFactory', () => {
       send: jest.fn(() => Promise.resolve()),
       close: jest.fn(() => Promise.resolve()),
     }));
+    mockGetCachedTools.mockResolvedValue(null as Record<string, unknown> | null);
     mockMCPClient.tools.mockResolvedValue(mockTools);
     mockMCPClient.close.mockResolvedValue(undefined);
     mockCreateMCPClient.mockResolvedValue(mockMCPClient);
@@ -446,6 +484,13 @@ describe('toolProviderSetFactory', () => {
   };
 
   beforeEach(() => {
+    const reactUtils = jest.requireMock('@compliance-theater/react/utility-methods');
+    mockGetResolvedPromises = reactUtils.getResolvedPromises as typeof mockGetResolvedPromises;
+
+    const cache = jest.requireMock('../../../../lib/ai/mcp/cache');
+    const toolCache = cache.getToolCache();
+    mockGetCachedTools = toolCache.getCachedTools as typeof mockGetCachedTools;
+
     (createAutoRefreshFeatureFlag as jest.Mock).mockResolvedValue({
       key: 'mcp_enable_tool_caching',
       userId: 'server',
@@ -453,6 +498,8 @@ describe('toolProviderSetFactory', () => {
     } as unknown as never);
     // Reset individual mocks instead of clearing all global mocks
     mockGetResolvedPromises.mockReset();
+    mockGetCachedTools.mockReset();
+    mockGetCachedTools.mockResolvedValue(null as Record<string, unknown> | null);
     (mockLoggedError.isTurtlesAllTheWayDownBaby as jest.Mock).mockReset();
   });
 
@@ -675,7 +722,9 @@ describe('toolProviderSetFactory', () => {
     });
 
     it('should handle pending promise rejections', async () => {
-      const rejectedPromise = Promise.reject(new Error('Async failure'));
+      const rejectedPromise = new Promise<never>((_resolve, reject) => {
+        setTimeout(() => reject(new Error('Async failure')), 0);
+      });
       mockGetResolvedPromises.mockResolvedValue({
         fulfilled: [],
         rejected: [],

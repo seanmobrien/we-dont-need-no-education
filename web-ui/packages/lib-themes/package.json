@@ -47,15 +47,27 @@
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
     "postgres": "^3.4.5",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
     "zod": "^3.25.76",
     "zodex": "^3.0.0"
+  },
+  "peerDependencies": {
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@jest/globals": "^30.0.0",
     "@jest/transform": "^30.0.0",
     "@jest/types": "^30.0.0",
+    "@swc/core": "^1.13.5",
+    "@swc/jest": "^0.2.39",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
@@ -66,11 +78,8 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "jest": "^30.0.5",
     "jest-util": "^30.0.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
     "react-native": "^0.84.0",
     "rimraf": "^6.1.2",
-    "ts-jest": "^29.4.6",
     "typescript": "^5.9.3"
   }
 }

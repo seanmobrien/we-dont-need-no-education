@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { act, render } from "@testing-library/react";
 import { useInEffect } from "../../src/hooks/useInEffect";
 import { hideConsoleOutput } from "../shared/test-utils";
+import { log, LoggedError } from "@compliance-theater/logger";
 
 type EnqueueType = ReturnType<typeof useInEffect>["enqueue"];
 
@@ -95,9 +96,6 @@ describe("useInEffect", () => {
       mountedEffects: number;
     }>);
 
-    const warnSpy = consoleErrorSpy.warn;
-    const logSpy = consoleErrorSpy.log;
-
     render(<HookProbe onReady={() => {}} />);
 
     await act(async () => {
@@ -105,8 +103,7 @@ describe("useInEffect", () => {
       await Promise.resolve();
     });
 
-    expect(logSpy).toHaveBeenCalled();
-    expect(warnSpy).toHaveBeenCalled();
+    expect(log).toHaveBeenCalled();
   });
 
   it("exits scheduled processing when hook instance is inactive", async () => {
@@ -124,7 +121,6 @@ describe("useInEffect", () => {
   it("processes pre-existing pending operation and logs resolver forwarding errors", async () => {
     const settleOperations: Array<(value: unknown) => void> = [];
     const forwardingError = new Error("resolver-forward-failed");
-    const loggedErrorSpy = consoleErrorSpy.error;
 
     jest.spyOn(React, "useRef").mockReturnValueOnce({
       current: {
@@ -169,7 +165,7 @@ describe("useInEffect", () => {
       await Promise.resolve();
     });
 
-    expect(loggedErrorSpy).toHaveBeenCalled();
+    expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalled();
   });
 
   it("skips forwarding results when the hook instance is inactive", async () => {

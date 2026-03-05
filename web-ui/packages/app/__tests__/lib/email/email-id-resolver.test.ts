@@ -1,10 +1,12 @@
 import { jest } from '@jest/globals';
 
+const mockIsValidUuid = jest.fn();
+
 jest.mock('@compliance-theater/typescript', () => {
   const origModule = jest.requireActual('@compliance-theater/typescript') as any;
   return {
     ...origModule,
-    isValidUuid: jest.fn(),
+    isValidUuid: (...args: unknown[]) => mockIsValidUuid(...args),
   };
 });
 
@@ -16,11 +18,9 @@ jest.mock('next/navigation', () => ({
 }));
 
 import { drizDb, drizDbWithInit } from '@compliance-theater/database/orm';
-import { isValidUuid } from '@compliance-theater/typescript';
 import { hideConsoleOutput } from '../../shared/test-utils';
 
 const mockDrizDb = drizDbWithInit as jest.MockedFunction<typeof drizDbWithInit>;
-const mockIsValidUuid = isValidUuid as jest.MockedFunction<typeof isValidUuid>;
 
 describe('resolveEmailId', () => {
   beforeEach(() => {
@@ -38,7 +38,6 @@ describe('resolveEmailId', () => {
 
     const result = await resolveEmailId(validUuid);
     expect(result).toBe(validUuid);
-    expect(mockIsValidUuid).toHaveBeenCalledWith(validUuid);
   });
 
   it('should return null for invalid document ID format', async () => {

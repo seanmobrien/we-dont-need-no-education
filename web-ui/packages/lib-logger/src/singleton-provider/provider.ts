@@ -1,5 +1,5 @@
 import { IsNotNull } from "@compliance-theater/types/types/is-not-null";
-import type { ISingletonProvider } from "./types";
+import type { ISingletonProvider } from "@compliance-theater/types/lib/logger/singleton-provider";
 import { StrongReferenceStorage } from "./storage-strong-ref";
 import { WeakReferenceStorage } from "./storage-weak-ref";
 import {

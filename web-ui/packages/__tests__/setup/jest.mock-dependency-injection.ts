@@ -1,4 +1,4 @@
-import { createMockServiceCradle } from '../../../__mocks__/shared/service-cradle';
+import { createMockServiceCradle } from '../../__mocks__/service-cradle';
 import type { IServiceContainer, ServiceCradle, ServiceResolveOptions, ServiceResolver } from '@compliance-theater/types/dependency-injection/types';
 
 class MockServiceContainer implements IServiceContainer {
@@ -11,10 +11,13 @@ class MockServiceContainer implements IServiceContainer {
             if (typeof resolver === 'object' && 'resolve' in resolver && typeof resolver.resolve === 'function') {
                 return resolver.resolve<ServiceCradle>(this.#cradle as any) as T;
             }
-            return typeof resolver === 'function'
+            var ret = typeof resolver === 'function'
                 ? (resolver as any)(this.#cradle) : (resolver as any);
+            if (!!ret) {
+                return ret;
+            }
         }
-        return this.#cradle[name] as T;
+        return this.#cradle [name] as T;
     }
     has(name: string | symbol | number, resolver?: ServiceResolver<unknown>): boolean {
         return this.registrations.has(name);
@@ -46,20 +49,16 @@ let containerMock = new MockServiceContainer();
 
 jest.mock('@compliance-theater/types/dependency-injection/container-browser', () => {
     const actual = jest.requireActual('@compliance-theater/types/dependency-injection/container-browser');
-    const asClass = jest.fn((...args: unknown[]) => ({ type: 'browser-class', args }));
-    const asFunction = jest.fn((...args: unknown[]) => ({ type: 'browser-function', args }));
-    const asValue = jest.fn((...args: unknown[]) => ({ type: 'browser-value', args }));
     return {
         ...actual,
-        createContainer: jest.fn(() => containerMock),
-        asClass,
-        asFunction,
-        asValue,
+        createContainer: jest.fn(() => containerMock)
     };
 });
 jest.mock('@compliance-theater/types/dependency-injection/container-server', () => {
     const actual = jest.requireActual('@compliance-theater/types/dependency-injection/container-server');
-    const { asClass, asFunction, asValue } = jest.requireMock('@compliance-theater/types/dependency-injection/container-browser');
+    const asClass = jest.fn((...args: unknown[]) => ({ type: 'browser-class', args }));
+    const asFunction = jest.fn((...args: unknown[]) => ({ type: 'browser-function', args }));
+    const asValue = jest.fn((...args: unknown[]) => ({ type: 'browser-value', args }));
     return {
         ...actual,
         createContainer: jest.fn(() => containerMock),

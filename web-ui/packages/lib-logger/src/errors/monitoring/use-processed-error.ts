@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { log, LoggedError } from '../../index';
+import { log } from '../../core';
+import { LoggedError } from '../logged-error/logged-error-class';
 import { errorReporter } from './error-reporter';
 import { ErrorReportResult, ErrorSeverity } from './types';
 

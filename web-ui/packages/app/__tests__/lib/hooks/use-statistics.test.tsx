@@ -3,21 +3,33 @@ import {
   QueryClientProvider,
   UseQueryResult,
 } from '@tanstack/react-query';
-import {
-  useStatistics,
-  useModelStatistics,
-  useQueueStatistics,
-} from '../../../lib/hooks/use-statistics';
 import type { ModelStat, QueueInfo } from '../../../types/statistics';
 import { act, renderHook, waitFor } from '../../shared/test-utils';
 import { RefObject } from 'react';
 import { assert } from 'console';
 
-const fetchMock = jest.fn();
+let useStatistics: typeof import('../../../lib/hooks/use-statistics').useStatistics;
+let useModelStatistics: typeof import('../../../lib/hooks/use-statistics').useModelStatistics;
+let useQueueStatistics: typeof import('../../../lib/hooks/use-statistics').useQueueStatistics;
 
-jest.mock('../../../lib/fetch-service', () => ({
-  resolveFetchService: jest.fn(() => fetchMock),
+var fetchMock = jest.fn();
+
+jest.mock('@/lib/fetch-service', () => ({
+  ...(() => {
+    fetchMock = jest.fn();
+    return {
+      resolveFetchService: jest.fn(() => fetchMock),
+    };
+  })(),
 }));
+
+beforeAll(() => {
+  const hooks =
+    require('../../../lib/hooks/use-statistics') as typeof import('../../../lib/hooks/use-statistics');
+  useStatistics = hooks.useStatistics;
+  useModelStatistics = hooks.useModelStatistics;
+  useQueueStatistics = hooks.useQueueStatistics;
+});
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -129,7 +141,7 @@ describe('Statistics hooks', () => {
 
       expect(result.current.data).toEqual(mockModelResponse.data);
       expect(fetchMock).toHaveBeenCalledWith(
-        '/api/ai/chat/stats/models?source=database'
+        '/api/ai/chat/stats/models?source=database',
       );
     });
 
@@ -148,7 +160,7 @@ describe('Statistics hooks', () => {
       });
 
       expect(fetchMock).toHaveBeenCalledWith(
-        '/api/ai/chat/stats/models?source=redis'
+        '/api/ai/chat/stats/models?source=redis',
       );
     });
   });
@@ -244,7 +256,7 @@ describe('Statistics hooks', () => {
       // Should trigger both queries again
       expect(fetchMock).toHaveBeenCalledTimes(2);
       expect(fetchMock).toHaveBeenCalledWith(
-        '/api/ai/chat/stats/models?source=database'
+        '/api/ai/chat/stats/models?source=database',
       );
       expect(fetchMock).toHaveBeenCalledWith('/api/ai/chat/stats/queues');
     });

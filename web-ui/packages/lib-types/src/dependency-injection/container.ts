@@ -3,6 +3,7 @@ import type {
     ServiceResolver,
     ContainerRuntime,
     IServiceRegistrarOverload,
+    ServiceResolveOptions,
 } from './types';
 import { ServiceCradle } from './service-cradle';
 import { isRunningOnServer } from '../is-running-on';
@@ -102,9 +103,19 @@ export const InjectionMode = {
     CLASSIC: 'CLASSIC',
 } as const;
 
-export const resolveService = <K extends keyof ServiceCradle>(
-    name: K
-): ServiceCradle[K] => getServiceContainer().resolve<ServiceCradle[K]>(name);
+
+interface IResolveServiceOverload {
+    (
+        name: keyof ServiceCradle
+    ): ServiceCradle[typeof name];
+    <T = unknown>(name: string | symbol | number): T;
+}
+
+export const resolveService: IResolveServiceOverload = <T>(
+    name: T extends keyof ServiceCradle ? T : string | symbol | number
+): typeof name extends keyof ServiceCradle
+    ? ServiceCradle[typeof name]
+    : T => getServiceContainer().resolve<typeof name extends keyof ServiceCradle ? ServiceCradle[typeof name] : T>(name);
 
 export const asClass = <T>(...args: unknown[]): ServiceResolver<T> =>
     loadRuntime().asClass(...args) as ServiceResolver<T>;

@@ -1,6 +1,4 @@
 import type { DatabaseType } from '@compliance-theater/database/orm';
-
-declare module '@compliance-theater/auth/lib/utilities/user-keys-server' {
   /**
    * Returns all public keys for a user that were active at a given date.
    *
@@ -57,4 +55,3 @@ declare module '@compliance-theater/auth/lib/utilities/user-keys-server' {
     effectiveDate?: string | Date;
     db?: DatabaseType;
   }) => Promise<string[]>;
-}

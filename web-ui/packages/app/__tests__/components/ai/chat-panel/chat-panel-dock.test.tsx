@@ -2,8 +2,6 @@
  * @fileoverview Tests for the chat panel docking functionality
  */
 
-
-
 // Mock the dependencies
 jest.mock('@ai-sdk/react', () => {
   const useChatContext = {
@@ -39,7 +37,7 @@ jest.mock('@compliance-theater/types/lib/ai', () => ({
 }));
 
 jest.mock('../../../../lib/components/ai/chat-fetch-wrapper', () => ({
-  ... jest.requireActual('../../../../lib/components/ai/chat-fetch-wrapper'),
+  ...jest.requireActual('../../../../lib/components/ai/chat-fetch-wrapper'),
   useChatFetchWrapper: jest.fn(() => ({ chatFetch: jest.fn() })),
 }));
 
@@ -54,7 +52,7 @@ describe('ChatPanel Docking Functionality', () => {
   beforeEach(() => {
     useChatContext = useChat();
   });
-  
+
   /*
   afterEach(() => {
     useChatContext.handleInputChange.mockReset();
@@ -63,7 +61,7 @@ describe('ChatPanel Docking Functionality', () => {
     useChatContext.reload.mockReset();
   });
   */
-  
+
   it('shows docking options in menu', async () => {
     render(<ChatPanel page="test" />, {
       chatPanel: true,
@@ -86,9 +84,11 @@ describe('ChatPanel Docking Functionality', () => {
   }, 10000);
 
   it('shows placeholder when docked to left', async () => {
-    render(<ChatPanel page="test" />, {
-      chatPanel: ChatPanelProvider,
-    });
+    render(
+      <ChatPanelProvider>
+        <ChatPanel page="test" />
+      </ChatPanelProvider>,
+    );
 
     // Open menu and click dock left
     const menuButton = screen.getByTestId('button-chat-menu');
@@ -102,9 +102,11 @@ describe('ChatPanel Docking Functionality', () => {
     fireEvent.click(dockLeftOption);
 
     // Check if it shows docked placeholder
-    expect(
-      screen.getByText(/Chat panel is docked to left/),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Chat panel is docked to left/i),
+      ).toBeInTheDocument();
+    });
   }, 10000);
 
   it('handles dashboard layout flag', async () => {
@@ -148,9 +150,11 @@ describe('ChatPanel Docking Functionality', () => {
   }, 10000);
 
   it('can undock from docked state', async () => {
-    render(<ChatPanel page="test" />, {
-      chatPanel: ChatPanelProvider,
-    });
+    render(
+      <ChatPanelProvider>
+        <ChatPanel page="test" />
+      </ChatPanelProvider>,
+    );
 
     // First dock the panel
     const menuButton = screen.getByTestId('button-chat-menu');
@@ -164,9 +168,11 @@ describe('ChatPanel Docking Functionality', () => {
     fireEvent.click(dockBottomOption);
 
     // Verify it's docked
-    expect(
-      screen.getByText(/Chat panel is docked to bottom/),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Chat panel is docked to bottom/i),
+      ).toBeInTheDocument();
+    });
 
     // Note: In the actual implementation, the docked panel would have its own close button
     // For this test, we're verifying the docking state change occurs

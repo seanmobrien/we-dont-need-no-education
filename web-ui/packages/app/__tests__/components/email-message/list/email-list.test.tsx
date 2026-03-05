@@ -8,37 +8,43 @@ jest.mock('@toolpad/core/useNotifications', () => ({
   useNotifications: () => ({ show: jest.fn() }),
 }));
 
-jest.mock('../../../../components/mui/data-grid/server-bound-data-grid', () => ({
-  ServerBoundDataGrid: ({
-    columns,
-    onRowDoubleClick,
-    idColumn,
-    getDetailPanelContent,
-    getDetailPanelHeight,
-    url,
-    ...rest
-  }: any) => {
-    const subjectCol = columns.find((c: any) => c.field === 'subject');
-    const subjectLink = subjectCol?.renderCell
-      ? subjectCol.renderCell({ value: 'Hello world', row: { emailId: '123' } })
-      : null;
-    const handleDbl = () => {
-      onRowDoubleClick?.(
-        { row: { emailId: '999' } },
-        { isPropagationStopped: () => false } as any,
-        {} as any,
+jest.mock(
+  '../../../../components/mui/data-grid/server-bound-data-grid',
+  () => ({
+    ServerBoundDataGrid: ({
+      columns,
+      onRowDoubleClick,
+      idColumn,
+      getDetailPanelContent,
+      getDetailPanelHeight,
+      url,
+      ...rest
+    }: any) => {
+      const subjectCol = columns.find((c: any) => c.field === 'subject');
+      const subjectLink = subjectCol?.renderCell
+        ? subjectCol.renderCell({
+            value: 'Hello world',
+            row: { emailId: '123' },
+          })
+        : null;
+      const handleDbl = () => {
+        onRowDoubleClick?.(
+          { row: { emailId: '999' } },
+          { isPropagationStopped: () => false } as any,
+          {} as any,
+        );
+      };
+      return (
+        <div data-testid="grid" data-columns={columns.length} {...rest}>
+          <button data-testid="dbl" onClick={handleDbl}>
+            dbl
+          </button>
+          {subjectLink}
+        </div>
       );
-    };
-    return (
-      <div data-testid="grid" data-columns={columns.length} {...rest}>
-        <button data-testid="dbl" onClick={handleDbl}>
-          dbl
-        </button>
-        {subjectLink}
-      </div>
-    );
-  },
-}));
+    },
+  }),
+);
 
 jest.mock('../../../../lib/site-util/url-builder', () => ({
   __esModule: true,
@@ -48,6 +54,10 @@ jest.mock('../../../../lib/site-util/url-builder', () => ({
       email: (id: string) => ({ toString: () => `/messages/email/${id}` }),
     },
   },
+}));
+
+jest.mock('../../../../lib/hooks/use-email', () => ({
+  usePrefetchEmail: () => jest.fn(),
 }));
 
 describe('EmailList', () => {

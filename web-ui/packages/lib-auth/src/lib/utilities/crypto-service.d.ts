@@ -1,4 +1,3 @@
-declare module '@compliance-theater/auth/lib/utilities/crypto-service' {
   /**
    * Module: CryptoService
    *
@@ -113,4 +112,3 @@ declare module '@compliance-theater/auth/lib/utilities/crypto-service' {
    * Default export of CryptoService class
    */
   export default CryptoService;
-}

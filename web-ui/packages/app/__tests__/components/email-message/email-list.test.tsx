@@ -13,6 +13,10 @@ const fetchMock = jest.fn();
 jest.mock('../../../lib/fetch-service', () => ({
   resolveFetchService: jest.fn(() => fetchMock),
 }));
+
+jest.mock('../../../lib/hooks/use-email', () => ({
+  usePrefetchEmail: () => jest.fn(),
+}));
 const TIMEOUT = 30000;
 
 // Mock the router

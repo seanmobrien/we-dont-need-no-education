@@ -12,7 +12,6 @@
  *
  * @see {@link https://datatracker.ietf.org/doc/html/rfc8693 | RFC 8693 - OAuth 2.0 Token Exchange}
  */
-declare module '@compliance-theater/auth/lib/utilities/token-exchange-types' {
   /**
    * Configuration for connecting to a Keycloak realm's token endpoint.
    *
@@ -181,5 +180,4 @@ declare module '@compliance-theater/auth/lib/utilities/token-exchange-types' {
      */
     scope?: string;
   };
-}
 

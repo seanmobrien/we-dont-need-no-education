@@ -5,6 +5,8 @@ const makeResponse = () =>
     status: 200,
     statusText: 'OK',
     headers: new Headers({ 'Content-Type': 'application/json' }),
+    text: () => Promise.resolve('{ "status": "ok" }'),
+    json: () => Promise.resolve({ status: 'ok' }),
     body: Buffer.from('{ "status": "ok" }'),
   });
 
@@ -95,6 +97,8 @@ beforeEach(() => {
       status: 200,
       statusText: 'OK',
       headers: new Headers({ 'Content-Type': 'application/json' }),
+      text: () => Promise.resolve('{ "status": "ok" }'),
+      json: () => Promise.resolve({ status: 'ok' }),
       body: Buffer.from('{ "status": "ok" }'),
     });
   });

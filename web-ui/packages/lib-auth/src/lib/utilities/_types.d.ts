@@ -2,8 +2,6 @@ import type { OAuth2Client } from 'google-auth-library';
 import type { NextApiRequest } from 'next';
 import type { Session } from '@compliance-theater/types/next-auth';
 import type { NextRequest } from 'next/server';
-
-declare module '@compliance-theater/auth/lib/utilities/_types' {
   /**
    * Server-side session tokens with promise-based access
    *
@@ -132,4 +130,3 @@ declare module '@compliance-theater/auth/lib/utilities/_types' {
      */
     getCredential(options: CredentialOptions): Promise<ICredential>;
   };
-}

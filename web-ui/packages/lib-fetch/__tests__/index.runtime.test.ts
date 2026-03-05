@@ -14,7 +14,7 @@ describe('runtime fetch dispatch', () => {
             return;
         }
 
-        const runtimeGlobal = globalThis as typeof globalThis & {
+        const runtimeGlobal = globalThis as object & {
             window?: unknown;
         };
         delete runtimeGlobal.window;
@@ -24,6 +24,13 @@ describe('runtime fetch dispatch', () => {
         const serverFetch = jest.fn(async () => new Response('server'));
         const browserFetch = jest.fn(async () => new Response('browser'));
 
+        jest.doMock('@compliance-theater/types/dependency-injection', () => ({
+            asFunction: (factory: unknown) => factory,
+            registerServices: jest.fn(),
+            resolveService: jest.fn(() => ({
+                getOrCreate: () => serverFetch,
+            })),
+        }));
         jest.doMock('../src/server/fetch', () => ({ fetch: serverFetch }));
         jest.doMock('../src/fetch', () => ({ fetch: browserFetch }));
 
@@ -45,6 +52,13 @@ describe('runtime fetch dispatch', () => {
         const serverFetch = jest.fn(async () => new Response('server'));
         const browserFetch = jest.fn(async () => new Response('browser'));
 
+        jest.doMock('@compliance-theater/types/dependency-injection', () => ({
+            asFunction: (factory: unknown) => factory,
+            registerServices: jest.fn(),
+            resolveService: jest.fn(() => ({
+                getOrCreate: () => browserFetch,
+            })),
+        }));
         jest.doMock('../src/server/fetch', () => ({ fetch: serverFetch }));
         jest.doMock('../src/fetch', () => ({ fetch: browserFetch }));
 

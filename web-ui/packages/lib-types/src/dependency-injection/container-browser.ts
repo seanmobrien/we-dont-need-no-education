@@ -16,7 +16,8 @@ export const isBrowserResolver = (
 ): resolver is (ServiceResolver & BrowserResolverRecord) => (
     !!resolver &&
     typeof resolver === 'object' &&
-    (resolver as (ServiceResolver & Record<PropertyKey, unknown>))[BROWSER_RESOLVER_SYMBOL] === true
+    BROWSER_RESOLVER_SYMBOL in resolver &&
+    resolver[BROWSER_RESOLVER_SYMBOL] === true
 );
 
 

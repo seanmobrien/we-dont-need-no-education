@@ -1,4 +1,19 @@
-const { defaults: tsjPreset } = require("ts-jest/presets");
+const swcTransform = ['@swc/jest', {
+  jsc: {
+    parser: {
+      syntax: 'typescript',
+      tsx: true,
+    },
+    transform: {
+      react: {
+        runtime: 'automatic',
+      },
+    },
+  },
+  module: {
+    type: 'commonjs',
+  },
+}];
 const tanstackReactQueryPath = '../../node_modules/@tanstack/react-query'
 
 
@@ -73,10 +88,8 @@ const pathIgnorePatterns = [
 ];
 
 const config = {
-  ...defaults,
-  preset: 'ts-jest', // Use ts-jest preset for TypeScript support
   roots: ["<rootDir>/__tests__", "<rootDir>/__mocks__"],
-  testMatch: ["/__tests__/.*\\.tsx?$"],
+  testMatch: ["**/?(*.)+(spec|test)?.[jt]s?(x)"],
   testEnvironment: 'jsdom', // Set the test environment to jsdom
   testEnvironmentOptions: {
     // Configure jsdom for React 19 concurrent features
@@ -108,18 +121,18 @@ const config = {
     '^@/lib/site-util/metrics.*$':
       '<rootDir>/__mocks__/shared/metrics.ts', // Alias for lib imports
     // Generic workspace mapping
-    '^@compliance-theater/json-viewer$': '<rootDir>/../../submodules/json-viewer/packages/src/index.ts',
+    '^@compliance-theater/json-viewer$': '<rootDir>/../../submodules/json-viewer/packages/src/index.tsx',
+    '^@compliance-theater/app(/.*)?$': '<rootDir>/../app$1',
     '^@compliance-theater/([^/]+)(/.*)?$': '<rootDir>/../lib-$1/src$2',
     // Instrumentation library mock
     '@/instrumentation(.*)$':
       '<rootDir>/__mocks__/shared/setup/instrumentation.ts', // Mock instrumentation module        
-    // Explicitly map React and ReactDOM to the versions installed at the monorepo root to avoid potential issues with multiple React versions in the context of linked packages and workspaces
-    /*
     '^react$': '<rootDir>/../../node_modules/react/index.js',
     '^react-dom$': '<rootDir>/../../node_modules/react-dom/index.js',
-    */
+    '^react/jsx-runtime$': '<rootDir>/../../node_modules/react/jsx-runtime.js',
+    '^react/jsx-dev-runtime$': '<rootDir>/../../node_modules/react/jsx-dev-runtime.js',
     // Map tanstack react-query to the resolved path to ensure consistent module resolution across packages and workspaces
-    '^@tanstack/react-query$': tanstackReactQueryPath,
+    // '^@tanstack/react-query$': tanstackReactQueryPath,
     // All material UI icons are served by a single mock
     '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx', // Mock all MUI icons to a singular mock    
     // Prexit module mock
@@ -133,35 +146,21 @@ const config = {
   },
   transform: {
     '^.+\\.(ts|tsx)$': [
-      'ts-jest',
-      {
-        tsconfig: {
-          jsx: 'react-jsx', // Enable JSX transformation for React
-          //useESM: true, // Use ESM modules
-        },
-      },
-    ], // Transform TypeScript files using ts-jest    
+      ...swcTransform,
+    ],
   },
   transformIgnorePatterns: [
     // Allow transpiling certain ESM packages (zodex, zod) which ship ESM-only
-    '/node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client|jose))',
+    '/node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client|jose|@compliance-theater))',
     '/.next/',
     '/.upstream/',
   ],
   collectCoverageFrom: [
-    '<rootDir>/src/**/*.{ts,tsx}',
-
-    // Exclusions
-    '!**/*.d.ts',
-    '!**/__tests__/**',
-    '!**/__mocks__/**',
-    '!**/tests/**',
-    '!**/.next/**',
-    '!**/.upstream/**',
-    '!**/dist/**',
-    '!**/(rsc)/**'
+    'src/**/*.ts',
+    '!src/**/*.d.ts',
+    '!src/**/__tests__/**',
   ],
-  coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
+  coverageDirectory: './coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text-summary', 'text', 'clover'], // Coverage report formats
   // detectLeaks: true,
   // detectOpenHandles: true, // Enable detection of async operations that prevent Jest from exiting

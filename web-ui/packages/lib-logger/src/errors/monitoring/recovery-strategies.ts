@@ -3,7 +3,7 @@
  * Provides automatic and manual recovery mechanisms
  */
 
-import { log } from '../../index';
+import { log } from '../../core';
 import { isRunningOnEdge } from '@compliance-theater/types/is-running-on';
 
 /**

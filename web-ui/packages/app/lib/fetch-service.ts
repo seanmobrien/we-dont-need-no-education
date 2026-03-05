@@ -5,7 +5,7 @@ type FetchFn = IFetchService['fetch'];
 
 export const resolveFetchService = (): FetchFn => {
     try {
-        const service = resolveService('fetch-service');
+        const service = resolveService<IFetchService>('fetch');
         if (service && typeof service.fetch === 'function') {
             return service.fetch.bind(service);
         }
@@ -17,5 +17,5 @@ export const resolveFetchService = (): FetchFn => {
         return globalThis.fetch.bind(globalThis) as FetchFn;
     }
 
-    throw new Error('fetch-service is not registered and global fetch is unavailable');
+    throw new Error('fetch service is not registered and global fetch is unavailable');
 };

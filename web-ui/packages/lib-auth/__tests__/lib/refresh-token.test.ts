@@ -1,12 +1,8 @@
 import { refreshAccessToken } from '../../src/lib/refresh-token';
 import type { JWT } from '@compliance-theater/types/next-auth/jwt';
-import { hideConsoleOutput } from '../test-utils';
-
-const mockFetch = jest.fn();
-
-jest.mock('@compliance-theater/auth/lib/utilities/fetch-service', () => ({
-  resolveFetchService: () => mockFetch,
-}));
+import { hideConsoleOutput } from '../shared/test-utils';
+import { resolveService } from '@compliance-theater/types/dependency-injection';
+import { IFetchService } from '@compliance-theater/types/lib/fetch';
 
 const DefaultTokenValues: JWT = {
   name: 'Test User',
@@ -83,11 +79,15 @@ export class JsonWebToken implements JWT {
 
 
 describe('refreshAccessToken', () => {
-  let typedMockFetch: jest.MockedFunction<typeof mockFetch>;
+  let typedMockFetch: jest.MockedFunction<IFetchService['fetch']>;
 
   beforeEach(() => {
-    typedMockFetch = mockFetch as jest.MockedFunction<typeof mockFetch>;
-    typedMockFetch.mockReset();
+    typedMockFetch = (resolveService('fetch') as IFetchService)
+      .fetch as jest.MockedFunction<IFetchService['fetch']>;
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
 

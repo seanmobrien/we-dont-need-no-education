@@ -1,8 +1,6 @@
 import type { NextApiRequest } from 'next';
 import type { NextRequest } from 'next/server';
 import type { KeycloakConfig, TokenExchangeParams, TokenExchangeResponse, GoogleTokens } from './token-exchange-types';
-
-declare module '@compliance-theater/auth/lib/utilities/keycloak-token-exchange' {
   /**
    * Comprehensive error class for token exchange operations
    */
@@ -88,4 +86,3 @@ declare module '@compliance-theater/auth/lib/utilities/keycloak-token-exchange' 
   export function getGoogleTokensFromKeycloak(
     req: NextRequest | NextApiRequest,
   ): Promise<GoogleTokens>;
-}

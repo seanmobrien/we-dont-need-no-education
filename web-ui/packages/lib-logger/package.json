@@ -31,12 +31,42 @@
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
+  "dependencies": {
+    "@auth/core": "0.41.1",
+    "@compliance-theater/types": "workspace:*",
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/api-logs": "0.57.2",
+    "@react-native/virtualized-lists": "npm:0.84.0",
+    "got": "^14.4.9",
+    "mitt": "^3.0.1",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
+    "postgres": "^3.4.5",
+    "react-native": "^0.84.0",
+    "redis": ">=5.5.6",
+    "zod": "^3.25.76",
+    "zodex": "^3.0.0"
+  },
+  "peerDependencies": {
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@jest/globals": "^30.0.0",
     "@jest/transform": "^30.0.0",
     "@jest/types": "^30.0.0",
     "@playwright/test": "^1.55.0",
+    "@swc/core": "^1.13.5",
+    "@swc/jest": "^0.2.39",
     "@tanstack/react-query": "^5.80.10",
     "@tanstack/react-query-devtools": "5.91.3",
     "@testing-library/dom": "^10.4.1",
@@ -67,26 +97,8 @@
     "jsdom": "^26.1.0",
     "postcss": "^8.5.3",
     "rimraf": "^6.1.2",
-    "ts-jest": "^29.4.6",
     "typescript": "^5.9.3",
     "undici": "^7.16.0",
     "web-streams-polyfill": "^4.2.0"
-  },
-  "dependencies": {
-    "@auth/core": "0.41.1",
-    "@compliance-theater/types": "workspace:*",
-    "@opentelemetry/api": "1.9.0",
-    "@opentelemetry/api-logs": "0.57.2",
-    "@react-native/virtualized-lists": "npm:0.84.0",
-    "got": "^14.4.9",
-    "mitt": "^3.0.1",
-    "pino": "^9.6.0",
-    "pino-pretty": "^13.0.0",
-    "postgres": "^3.4.5",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "react-native": "^0.84.0",
-    "zod": "^3.25.76",
-    "zodex": "^3.0.0"
   }
 }

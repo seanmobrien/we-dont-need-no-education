@@ -42,6 +42,8 @@ const createWrapper = () => {
 describe('useDataSource', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
+    (global as unknown as { fetch?: typeof fetch }).fetch =
+      fetchMock as unknown as typeof fetch;
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({ rows: [], rowCount: 0 }),
@@ -64,11 +66,23 @@ describe('useDataSource', () => {
 
   it('should update row via PUT request', async () => {
     const mockUpdatedRow = { id: 1, name: 'Updated Test' };
+    const mockMutationResponse = { status: 'ok' };
 
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockUpdatedRow,
-    });
+    fetchMock.mockImplementation(
+      async (_url: string, init?: RequestInit) => {
+        if (init?.method === 'PUT') {
+          return {
+            ok: true,
+            json: async () => mockMutationResponse,
+          };
+        }
+
+        return {
+          ok: true,
+          json: async () => ({ rows: [], rowCount: 0 }),
+        };
+      },
+    );
 
     const { result } = renderHook(() => useDataSource({ url: TEST_URL }), {
       wrapper: createWrapper(),
@@ -81,7 +95,7 @@ describe('useDataSource', () => {
         previousRow: { id: 1, name: 'Test' },
       });
 
-      expect(response).toEqual(mockUpdatedRow);
+      expect(response).toEqual(mockMutationResponse);
       expect(fetchMock).toHaveBeenCalledWith(TEST_URL, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

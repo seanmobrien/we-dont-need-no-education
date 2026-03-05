@@ -4,8 +4,6 @@ import type { ServiceInstanceOverloads } from '@compliance-theater/typescript';
  * Authorization Service module declaration
  * @module @compliance-theater/auth/lib/resources/authorization-service
  */
-
-declare module '@compliance-theater/auth/lib/resources/authorization-service' {
   /**
    * Options for checking resource access
    */
@@ -58,4 +56,3 @@ declare module '@compliance-theater/auth/lib/resources/authorization-service' {
    * Singleton instance of AuthorizationService
    */
   export const authorizationService: ServiceInstanceOverloads<AuthorizationService>;
-}

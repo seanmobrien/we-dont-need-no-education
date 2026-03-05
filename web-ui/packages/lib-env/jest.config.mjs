@@ -1,6 +1,5 @@
 export default {
   displayName: '@compliance-theater/env',
-  preset: 'ts-jest',
   testEnvironment: 'node',
   testEnvironmentOptions: {
   },
@@ -8,6 +7,7 @@ export default {
   testMatch: ['**/__tests__/**/*.test.ts', '**/*.test.ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   moduleNameMapper: {
+    '^@compliance-theater/app(/.*)?$': '<rootDir>/../app$1',
     '^@compliance-theater/([^/]+)(/.*)?$': '<rootDir>/../lib-$1/src$2',
     /*
     '^@compliance-theater/types$': '<rootDir>/../lib-types/src/index.ts',
@@ -17,10 +17,15 @@ export default {
     */
   },
   transform: {
-    '^.+\\.ts$': ['ts-jest', {
-      tsconfig: {
-        esModuleInterop: true,
-        allowSyntheticDefaultImports: true,
+    '^.+\\.ts$': ['@swc/jest', {
+      jsc: {
+        parser: {
+          syntax: 'typescript',
+          tsx: false,
+        },
+      },
+      module: {
+        type: 'commonjs',
       },
     }],
   },

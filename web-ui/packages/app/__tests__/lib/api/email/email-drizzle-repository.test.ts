@@ -56,7 +56,7 @@ jest.mock('@compliance-theater/auth/lib/resources/case-file/case-file-middleware
 }));
 
 // Mock checkCaseFileAccess
-jest.mock('@compliance-theater/auth/lib/resources/case-file', () => ({
+jest.mock('@compliance-theater/auth/lib/resources/case-file/index', () => ({
   checkCaseFileAccess: jest.fn().mockResolvedValue(true),
   CaseFileScope: { READ: 'read', WRITE: 'write' },
   getAccessibleUserIds: jest.fn().mockResolvedValue([]),
@@ -81,6 +81,12 @@ describe('EmailDrizzleRepository', () => {
 
     // Get the mock database instance
     mockDb = drizDb();
+    (drizDbWithInit as jest.Mock).mockImplementation(
+      (cb?: (db: unknown) => unknown): Promise<unknown> => {
+        const normalCallback = cb ?? ((x: unknown) => x);
+        return Promise.resolve(normalCallback(mockDb));
+      },
+    );
   });
 
   describe('constructor', () => {

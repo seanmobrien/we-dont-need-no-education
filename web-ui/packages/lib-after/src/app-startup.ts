@@ -234,11 +234,6 @@ export class AppStartup {
     return singletonProvider.getOrCreate(singletonKey, () => {
       const instance = new AppStartup(config);
 
-      // Initialize app startup
-      instance.initialize().then(() => {
-        log((l) => l.info('App startup successfully completed.'));
-      });
-
       // Subscribe to process exit to handle app state teardown
       AfterManager.processExit(() =>
         instance.teardown().catch((e) => {
@@ -248,7 +243,10 @@ export class AppStartup {
           return;
         })
       );
-
+      // Initialize app startup
+      instance.initialize().then(() => {
+        log((l) => l.info('App startup successfully completed.'));
+      });
       return instance;
     })! satisfies AppStartup;
   }

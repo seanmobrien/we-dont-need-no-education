@@ -47,6 +47,7 @@
     "@compliance-theater/database": "workspace:*",
     "@compliance-theater/env": "workspace:*",
     "@compliance-theater/feature-flags": "workspace:*",
+    "@compliance-theater/fetch": "workspace:*",
     "@compliance-theater/json-viewer": "workspace:*",
     "@compliance-theater/logger": "workspace:*",
     "@compliance-theater/nextjs": "workspace:*",
@@ -163,6 +164,8 @@
     "@jest/transform": "^30.0.0",
     "@jest/types": "^30.0.0",
     "@playwright/test": "^1.55.0",
+    "@swc/core": "^1.13.5",
+    "@swc/jest": "^0.2.39",
     "@tanstack/react-query-devtools": "5.91.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.4",
@@ -192,7 +195,6 @@
     "jsdom": "^26.1.0",
     "postcss": "^8.5.3",
     "rimraf": "^6.1.2",
-    "ts-jest": "^29.4.6",
     "undici": "^7.16.0",
     "web-streams-polyfill": "^4.2.0"
   }

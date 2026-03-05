@@ -73,7 +73,7 @@ const mockEncrypt = jest.fn(async (s: string) => `enc:${s}`);
 const mockDecrypt = jest.fn(async (s: string) =>
   s.startsWith('enc:') ? s.slice(4) : s,
 );
-jest.mock('@/lib/site-util/auth/crypto-service', () => ({
+jest.mock('../../src/lib/utilities/crypto-service', () => ({  
   CryptoService: jest.fn().mockImplementation(() => ({
     encrypt: mockEncrypt,
     decrypt: mockDecrypt,

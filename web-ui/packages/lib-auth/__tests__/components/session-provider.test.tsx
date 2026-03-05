@@ -1,4 +1,4 @@
-import { render, screen } from "../test-utils";
+import { render, screen } from "../shared/test-utils";
 import { SessionProvider } from "../../src/components/session-provider/provider";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
@@ -13,7 +13,7 @@ jest.mock("@toolpad/core", () => ({
   useNotifications: jest.fn(() => ({ show: jest.fn() })),
 }));
 
-jest.mock("@/lib/site-util/auth/key-validation", () => ({
+jest.mock("../../src/lib/utilities/key-validation", () => ({
   isKeyValidationDue: jest.fn(() => false),
 }));
 

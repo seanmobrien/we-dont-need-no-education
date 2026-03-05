@@ -43,8 +43,6 @@
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
     "postgres": "^3.4.5",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
     "redis": ">=5.5.6",
     "uuid": "^11.1.0",
     "zod": "^3.25.76",
@@ -54,6 +52,8 @@
     "@jest/globals": "^30.0.0",
     "@jest/transform": "^30.0.0",
     "@jest/types": "^30.0.0",
+    "@swc/core": "^1.13.5",
+    "@swc/jest": "^0.2.39",
     "@types/jest": "^30.0.0",
     "@types/node": "25.2.3",
     "@types/react": "19.2.4",
@@ -63,7 +63,6 @@
     "jest-util": "^30.0.0",
     "react-native": "^0.84.0",
     "rimraf": "^6.1.2",
-    "ts-jest": "^29.4.6",
     "typescript": "^5.9.3"
   }
 }

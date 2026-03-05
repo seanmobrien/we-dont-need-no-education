@@ -5,13 +5,19 @@ import {
   act,
   hideConsoleOutput,
 } from '../../shared/test-utils';
-import EmailViewer from '../../../components/email-message/email-viewer';
 
-const fetchMock = jest.fn();
+var fetchMock = jest.fn();
 
-jest.mock('../../../lib/fetch-service', () => ({
-  resolveFetchService: jest.fn(() => fetchMock),
+jest.mock('@/lib/fetch-service', () => ({
+  ...(() => {
+    fetchMock = jest.fn();
+    return {
+      resolveFetchService: jest.fn(() => fetchMock),
+    };
+  })(),
 }));
+const EmailViewer = require('../../../components/email-message/email-viewer')
+  .default as typeof import('../../../components/email-message/email-viewer').default;
 const TIMEOUT = 30000;
 
 // Mock Promise.withResolvers if not available
@@ -32,6 +38,39 @@ describe('EmailViewer', () => {
   beforeEach(() => {
     // Clear fetch mock - it's already mocked globally in jest.setup.ts
     fetchMock.mockClear();
+    fetchMock.mockImplementation((url: string) => {
+      const normalizedUrl = String(url);
+      if (normalizedUrl.includes('/api/email/test-email-id/attachments')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      }
+      if (normalizedUrl.includes('/api/email/test-email-id')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              emailId: 'test-email-id',
+              sender: {
+                contactId: 1,
+                name: 'Default Sender',
+                email: 'sender@test.com',
+              },
+              recipients: [],
+              subject: 'Default Subject',
+              body: 'Default body',
+              sentOn: '2023-01-01T00:00:00Z',
+              threadId: 1,
+              parentEmailId: null,
+            }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({}),
+      });
+    });
   });
   afterEach(() => {
     consoleErrors.dispose();

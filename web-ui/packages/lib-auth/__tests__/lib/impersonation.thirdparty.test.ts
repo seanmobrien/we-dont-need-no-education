@@ -67,7 +67,7 @@ jest.mock('@compliance-theater/auth/lib/keycloak-factories', () => {
 });
 
 // Mock CryptoService for token encryption/decryption
-jest.mock('@/lib/site-util/auth/crypto-service', () => ({
+jest.mock('../../src/lib/utilities/crypto-service', () => ({
   CryptoService: jest.fn().mockImplementation(() => ({
     encrypt: jest.fn(async (data: string) => `encrypted:${data}`),
     decrypt: jest.fn(async (data: string) => data.replace('encrypted:', '')),

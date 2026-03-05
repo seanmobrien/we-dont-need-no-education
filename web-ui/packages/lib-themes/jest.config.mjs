@@ -4,7 +4,6 @@ import baseConfig from './__tests__/shared/jest.config-shared.mjs';
 const config = {
   ...baseConfig,
   displayName: "Libraries: themes",
-  preset: "ts-jest",
   testEnvironment: "jsdom",
   rootDir: ".",
   moduleNameMapper: {

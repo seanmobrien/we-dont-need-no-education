@@ -12,14 +12,27 @@ jest.mock('jose');
 import { decodeJwt, jwtVerify, createRemoteJWKSet } from 'jose';
 
 // Mock LRU cache
-const mockGet = jest.fn();
-const mockSet = jest.fn();
-jest.mock('lru-cache', () => ({
-  LRUCache: jest.fn().mockImplementation(() => ({
-    get: mockGet,
-    set: mockSet,
-  })),
-}));
+jest.mock('lru-cache', () => {
+  const mockGet = jest.fn();
+  const mockSet = jest.fn();
+
+  return {
+    LRUCache: jest.fn().mockImplementation(() => ({
+      get: mockGet,
+      set: mockSet,
+    })),
+    __mockGet: mockGet,
+    __mockSet: mockSet,
+  };
+});
+
+const {
+  __mockGet: mockGet,
+  __mockSet: mockSet,
+} = jest.requireMock('lru-cache') as {
+  __mockGet: jest.Mock;
+  __mockSet: jest.Mock;
+};
 
 // Import after mocks are set
 import { decodeToken } from '../../src/lib/utilities';

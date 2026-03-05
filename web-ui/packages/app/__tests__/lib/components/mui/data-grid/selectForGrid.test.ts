@@ -7,10 +7,26 @@
  * verifying its ability to integrate filtering, sorting, and pagination
  * for Drizzle ORM queries in data grid operations.
  */
-
-import { selectForGrid } from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid';
 import { NextRequest } from 'next/server';
 import { CallToActionDetails } from '../../../../../data-models/api/email-properties/extended-properties';
+
+jest.mock(
+  '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid',
+  () => {
+    const actual = jest.requireActual(
+      '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid',
+    );
+    return {
+      ...actual,
+      countQueryFactory: jest.fn(),
+    };
+  },
+);
+
+import {
+  selectForGrid,
+} from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid';
+import { drizDb } from '@compliance-theater/database/orm';
 
 // Mock the dependencies before importing
 jest.mock('../../../../../lib/components/mui/data-grid/queryHelpers/utility', () => {
@@ -62,11 +78,6 @@ import { buildDrizzleQueryFilter as buildDrizzleFilter } from '../../../../../li
 import { buildDrizzleOrderBy as buildDrizzleOrder } from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
 import { buildDrizzlePagination as buildDrizzlePage } from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzlePagination';
 
-// Import and mock the countQueryFactory
-import * as selectForGridModule from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid';
-
-const mockCountQueryFactory = jest.fn();
-
 const mockParsePaginationStats = parsePaginationStats as jest.MockedFunction<
   typeof parsePaginationStats
 >;
@@ -94,6 +105,7 @@ describe('selectForGrid', () => {
   let mockReq: NextRequest;
   let mockGetColumn: jest.Mock;
   let mockRecordMapper: jest.Mock;
+  let mockTotalCount = 0;
 
   beforeEach(() => {
     // jest.clearAllMocks();
@@ -103,8 +115,16 @@ describe('selectForGrid', () => {
       url: 'https://example.com/api/data?page=1&pageSize=10&filter=test',
     } as NextRequest;
 
-    // Create mock query that can be executed
-    mockQuery = jest.fn();
+    // Create mock query that can be transformed into a subquery
+    mockQuery = {
+      as: jest.fn(() => ({ name: 'app_subq_count' })),
+    };
+
+    const db = {
+      select: jest.fn(() => ({ from: jest.fn(() => ({})) })),
+      $count: jest.fn(() => Promise.resolve(mockTotalCount)),
+    };
+    (drizDb as unknown as jest.Mock).mockReturnValue(db);
 
     // Create mock functions
     mockGetColumn = jest.fn().mockImplementation((name: string) => {
@@ -142,16 +162,7 @@ describe('selectForGrid', () => {
       return [] as DrizzleSelectQuery;
     });
 
-    // Mock the countQueryFactory
-    mockCountQueryFactory.mockReturnValue({
-      select: () => Promise.resolve([]),
-      count: Promise.resolve(0),
-    });
-
-    // Spy on the module and replace the countQueryFactory
-    jest
-      .spyOn(selectForGridModule, 'countQueryFactory')
-      .mockImplementation(mockCountQueryFactory);
+    mockTotalCount = 0;
   });
 
   describe('Basic functionality', () => {
@@ -162,10 +173,7 @@ describe('selectForGrid', () => {
       ];
 
       // Mock the countQueryFactory to return proper select and count functions
-      mockCountQueryFactory.mockReturnValue({
-        select: mockResults, // This returns the results directly, not a function
-        count: Promise.resolve(50),
-      });
+      mockTotalCount = 50;
 
       // Mock buildDrizzlePagination to return the results
       mockBuildDrizzlePagination.mockImplementation(() => mockResults);
@@ -195,10 +203,7 @@ describe('selectForGrid', () => {
       ];
 
       // Mock the countQueryFactory to return proper select and count functions
-      mockCountQueryFactory.mockReturnValue({
-        select: mockResults, // This returns the results directly, not a function
-        count: Promise.resolve(25),
-      });
+      mockTotalCount = 25;
 
       // Mock buildDrizzlePagination to return the results
       mockBuildDrizzlePagination.mockImplementation(() => mockResults);
@@ -221,10 +226,7 @@ describe('selectForGrid', () => {
       const mockResults: any[] = [];
 
       // Mock the countQueryFactory to return empty results
-      mockCountQueryFactory.mockReturnValue({
-        select: mockResults,
-        count: Promise.resolve(0),
-      });
+      mockTotalCount = 0;
 
       // Mock buildDrizzlePagination to return empty results
       mockBuildDrizzlePagination.mockImplementation(() => mockResults);
@@ -248,10 +250,7 @@ describe('selectForGrid', () => {
       const mockResults: any[] = [];
 
       // Mock the countQueryFactory to return empty results
-      mockCountQueryFactory.mockReturnValue({
-        select: mockResults,
-        count: Promise.resolve(0),
-      });
+      mockTotalCount = 0;
 
       // Mock buildDrizzlePagination to return empty results
       mockBuildDrizzlePagination.mockImplementation(() => mockResults);
@@ -270,10 +269,7 @@ describe('selectForGrid', () => {
       const mockResults: any[] = [];
 
       // Mock the countQueryFactory to return count of 75
-      mockCountQueryFactory.mockReturnValue({
-        select: mockResults,
-        count: Promise.resolve(75),
-      });
+      mockTotalCount = 75;
 
       // Mock buildDrizzlePagination to return empty results
       mockBuildDrizzlePagination.mockImplementation(() => mockResults);
@@ -294,10 +290,7 @@ describe('selectForGrid', () => {
       const error = new Error('Database connection failed');
 
       // Mock the countQueryFactory to return proper select and count functions
-      mockCountQueryFactory.mockReturnValue({
-        select: [], // This should be the result after query factory, not a promise
-        count: Promise.resolve(0),
-      });
+      mockTotalCount = 0;
 
       // Mock buildDrizzlePagination to return a function that rejects
       mockBuildDrizzlePagination.mockImplementation(
@@ -321,10 +314,7 @@ describe('selectForGrid', () => {
       const error = new Error('Mapping failed');
 
       // Mock the countQueryFactory to return mock results
-      mockCountQueryFactory.mockReturnValue({
-        select: mockResults,
-        count: Promise.resolve(1),
-      });
+      mockTotalCount = 1;
 
       // Mock buildDrizzlePagination to return the results
       mockBuildDrizzlePagination.mockImplementation(() => mockResults);
@@ -358,10 +348,7 @@ describe('selectForGrid', () => {
       ];
 
       // Mock the countQueryFactory to return mock results
-      mockCountQueryFactory.mockReturnValue({
-        select: mockResults,
-        count: Promise.resolve(1),
-      });
+      mockTotalCount = 1;
 
       // Mock buildDrizzlePagination to return the results
       mockBuildDrizzlePagination.mockImplementation(() => mockResults);
@@ -406,10 +393,7 @@ describe('selectForGrid', () => {
       const mockResults = [{ id: 1, name: 'Test', other: 'value' }];
 
       // Mock the countQueryFactory to return mock results
-      mockCountQueryFactory.mockReturnValue({
-        select: mockResults,
-        count: Promise.resolve(1),
-      });
+      mockTotalCount = 1;
 
       // Mock buildDrizzlePagination to return the results
       mockBuildDrizzlePagination.mockImplementation(() => mockResults);

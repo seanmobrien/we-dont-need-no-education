@@ -1,4 +1,7 @@
-import { isError, LoggedError, log, safeSerialize } from '../../index';
+import { log } from '../../core';
+import { safeSerialize } from '../../safe-serialize';
+import { LoggedError } from '../logged-error/logged-error-class';
+import { isError } from '../utilities/error-guards';
 import type { ErrorReportArgs } from '../logged-error/types';
 import {
   ErrorSeverity,

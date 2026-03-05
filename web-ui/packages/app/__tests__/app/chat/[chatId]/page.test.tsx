@@ -17,7 +17,6 @@ jest.mock('next/navigation', () => ({
   notFound: () => notFoundMock(),
 }));
 
-
 import React from 'react';
 import { withJestTestExtensions } from '../../../shared/jest.test-extensions';
 
@@ -26,10 +25,6 @@ import { withJestTestExtensions } from '../../../shared/jest.test-extensions';
  * We intentionally DO NOT re-mock modules already covered there (auth, drizzle, etc.).
  * Instead we retrieve and manipulate their existing jest mocks to avoid divergence.
  */
-
-
-
-
 
 // Use the globally mocked auth (from jest.setup.ts) and override implementation per test via helper
 // import { auth as authMockOriginal } from '@compliance-theater/auth';
@@ -45,18 +40,20 @@ const setSession = (userId: number | null) => {
 
 const setChatFindFirst = (value: unknown) => {
   const db = withJestTestExtensions().makeMockDb();
-  const query = (db as unknown as {
-    query: {
-      chats: {
-        findFirst: jest.Mock;
+  const query = (
+    db as unknown as {
+      query: {
+        chats: {
+          findFirst: jest.Mock;
+        };
       };
-    };
-  }).query;
+    }
+  ).query;
   query.chats.findFirst.mockResolvedValueOnce(value);
 };
 
 const isUserAuthorizedMock = jest.fn();
-jest.mock('@/lib/site-util/auth', () => ({
+jest.mock('@compliance-theater/auth/lib/utilities', () => ({
   isUserAuthorized: (args: { signedInUserId: number; ownerUserId: number }) =>
     isUserAuthorizedMock(args),
 }));
