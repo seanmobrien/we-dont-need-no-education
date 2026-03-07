@@ -20,9 +20,17 @@ find . -type f \( \
   -name "tsconfig.tsbuildinfo" -o \
   -name "npm-shrinkwrap.json" \
 \) -print -delete && \
-touch ./web-ui/submodules/sce/yarn.lock ./yarn.lock && \
-yarn install && \
-cd ./web-ui/submodules/sce && \
-yarn install && \
-cd ../../.. && \
+touch ./web-ui/submodules/json-viewer/packages/yarn.lock \
+  ./web-ui/submodules/sce/yarn.lock \
+  ./yarn.lock && \
+pushd ./web-ui/submodules/sce && \
+echo "Installing Semantic Communication Engine dependencies..." && \
+.yarn/releases/yarn-4.12.0.cjs install && \
+popd && \
+pushd ./web-ui/submodules/json-viewer/packages && \
+echo "Installing JSON Viewer dependencies..." && \
+.yarn/releases/yarn-4.12.0.cjs install && \
+popd &&
+echo "Installing root dependencies..." && \
+.yarn/releases/yarn-4.12.0.cjs install && \
 echo "Cleaned up symlinks and lockfiles, and reinstalled dependencies."
