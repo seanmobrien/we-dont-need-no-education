@@ -1,6 +1,16 @@
-import { render, screen, fireEvent } from '@/__tests__/test-utils';
-import { ToolDetailsDialog } from '@/components/ai/chat/tool-details-dialog';
+import { render, screen, fireEvent } from '../../../shared/test-utils';
+import { ToolDetailsDialog } from '../../../../components/ai/chat/tool-details-dialog';
 import { mockToolMessage } from '../chat.mock-data';
+
+jest.mock(
+  '@compliance-theater/json-viewer',
+  () => ({
+    JsonViewer: ({ data }: { data: unknown }) => (
+      <pre data-testid="json-viewer">{JSON.stringify(data)}</pre>
+    ),
+  }),
+  { virtual: true },
+);
 
 describe('ToolDetailsDialog', () => {
   const mockOnClose = jest.fn();

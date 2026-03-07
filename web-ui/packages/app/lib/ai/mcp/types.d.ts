@@ -2,7 +2,7 @@
  * Type declarations for MCP types module
  */
 
-import type { ToolSet } from 'ai';
+import type { ToolSet } from '@compliance-theater/types/ai-sdk';
 
 declare module '@/lib/ai/mcp/types' {
   /**

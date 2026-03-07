@@ -65,6 +65,17 @@ describe('isStringOrErrorLike', () => {
 });
 
 describe('asErrorLike', () => {
+  it('returns undefined for falsy input', () => {
+    expect(asErrorLike(undefined)).toBeUndefined();
+    expect(asErrorLike(null)).toBeUndefined();
+  });
+
+  it('converts plain object without message using fallback message', () => {
+    const result = asErrorLike({ code: 500 })!;
+    expect(result.message).toBe('Unexpected error');
+    expect(result.name).toBe('Error');
+  });
+
   it('converts a string to an ErrorLike', () => {
     const result = asErrorLike('fail');
     expect(result).toMatchObject({
@@ -101,6 +112,26 @@ describe('asErrorLike', () => {
     const target = asErrorLike(new Error('fail'))!;
     const result = target.source;
     expect(result).toBe('error-like.test.ts');
+  });
+
+  it('proxy computes source/line/column defaults when stack frame is missing', () => {
+    const proxied = asErrorLike({
+      message: 'no-frame',
+      name: 'NoFrameError',
+      stack: 'NoFrameError: no-frame',
+    })!;
+
+    expect(proxied.source).toBeUndefined();
+    expect(proxied.line).toBe(0);
+    expect(proxied.column).toBe(0);
+  });
+
+  it('proxy returns undefined for unknown properties', () => {
+    const proxied = asErrorLike({ message: 'x', name: 'X' }) as Record<
+      string,
+      unknown
+    >;
+    expect(proxied.nonexistent).toBeUndefined();
   });
   it('converts a string to an ErrorLike with custom name', () => {
     const result = asErrorLike('fail', { name: 'CustomError' })!;

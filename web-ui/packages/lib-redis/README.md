@@ -117,7 +117,7 @@ Or from the workspace root:
 
 ```bash
 cd web-ui
-yarn workspace @compliance-theater/redis test
+yarn test
 ```
 
 ## Implementation Details

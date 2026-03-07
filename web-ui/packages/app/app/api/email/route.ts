@@ -13,7 +13,7 @@ import {
   wrapRouteRequest,
 } from '@compliance-theater/nextjs/server/utils';
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray } from '@compliance-theater/database/drizzle-orm';
 // count_kpi import removed; not used in this route currently
 import {
   DrizzleSelectQuery,
@@ -21,8 +21,8 @@ import {
   selectForGrid,
 } from '@/lib/components/mui/data-grid/queryHelpers';
 import { ContactSummary, EmailMessageSummary } from '@/data-models';
-import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
-import { getAccessToken } from '@/lib/auth/access-token';
+import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file/index';
+import { getAccessToken } from '@compliance-theater/auth/lib/access-token';
 
 export const dynamic = 'force-dynamic';
 

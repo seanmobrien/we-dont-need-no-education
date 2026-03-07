@@ -13,7 +13,7 @@ import { errorResponseFactory } from '../../src/server/error-response';
 import { trace, context as otelContext, propagation } from '@opentelemetry/api';
 import { SpanStatusCode } from '@opentelemetry/api';
 import { log, LoggedError } from '@compliance-theater/logger';
-import { NextRequest } from 'next/dist/server/web/spec-extension/request';
+import { NextRequest } from 'next/server';
 
 // Mock external dependencies
 jest.mock('@opentelemetry/api', () => ({
@@ -378,13 +378,13 @@ describe('Server Utils', () => {
     describe('build fallback scenarios', () => {
       let ORIGINAL_PHASE = process.env.NEXT_PHASE;
       beforeEach(() => {        // Clear environment variables before each test
-        process.env.NEXT_PHASE = 'phase-production-build';        
+        process.env.NEXT_PHASE = 'phase-production-build';
       });
       afterEach(() => {
         process.env.NEXT_PHASE = ORIGINAL_PHASE; // Restore original environment variable after tests
       });
 
-      test('handles build fallback when IS_BUILDING is set', async () => {        
+      test('handles build fallback when IS_BUILDING is set', async () => {
         // Mock startActiveSpan to add debug logging
         mockTracer.startActiveSpan.mockImplementation(
           async (name, options, parentCtx, fn) => {
@@ -481,7 +481,7 @@ describe('Server Utils', () => {
     test('logs request details in non-production', async () => {
       const handler = wrapRouteRequest(async (_req: Request) => {
         return new Response('success');
-      });
+      }, { log: true });
 
       const mockRequest = {
         url: 'https://example.com/test',

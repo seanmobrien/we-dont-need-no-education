@@ -15,8 +15,8 @@ import {
   isStateCollectionRequest,
   isStateRestorationRequest,
 } from './create-stateful-middleware';
-import { generateText, wrapLanguageModel } from 'ai';
-import { SingletonProvider } from '@compliance-theater/typescript';
+import { generateText, wrapLanguageModel } from '@compliance-theater/types/ai-sdk';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 
 export class MiddlewareStateManager {
   static readonly #REGISTRY_KEY = Symbol.for(
@@ -91,8 +91,8 @@ export class MiddlewareStateManager {
   }: {
     model: LanguageModelV2;
     state:
-      | Array<[string, SerializableState]>
-      | { timestamp: number; state: Array<[string, SerializableState]> };
+    | Array<[string, SerializableState]>
+    | { timestamp: number; state: Array<[string, SerializableState]> };
   }): Promise<void> {
     const timestamp = 'timestamp' in state ? state.timestamp : Date.now();
     const stateItems = Array.isArray(state) ? state : state.state;
@@ -140,8 +140,8 @@ export class MiddlewareStateManager {
   }: {
     middlewareId: string;
     middleware:
-      | LanguageModelV2Middleware
-      | SerializableLanguageModelMiddleware<string, TState>;
+    | LanguageModelV2Middleware
+    | SerializableLanguageModelMiddleware<string, TState>;
     serialize?: SerializableMiddleware<TState>['serializeState'];
     deserialize?: SerializableMiddleware<TState>['deserializeState'];
   }): LanguageModelV2Middleware {

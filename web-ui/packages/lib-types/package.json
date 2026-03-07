@@ -11,16 +11,6 @@
       "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
-    "./ai/core": {
-      "types": "./dist/ai/core/index.d.ts",
-      "workspace-source": "./src/ai/core/index.ts",
-      "default": "./dist/ai/core/index.js"
-    },
-    "./ai/chat": {
-      "types": "./dist/ai/chat/index.d.ts",
-      "workspace-source": "./src/ai/chat/index.ts",
-      "default": "./dist/ai/chat/index.js"
-    },
     "./*": {
       "types": "./dist/*.d.ts",
       "workspace-source": "./src/*.ts",
@@ -32,32 +22,50 @@
   ],
   "engines": {
     "node": ">=22.0.0",
-    "yarn": ">=1.22.0"
+    "yarn": ">=4.12.0"
   },
   "scripts": {
-    "build": "yarn workspace @compliance-theater/types run build:typescript",
-    "build:publish": "yarn workspace @compliance-theater/types run build && yarn workspace @compliance-theater/types pack --out ./dist/@compliance-theater-types.tgz",
-    "build:typescript": "echo 'Building lib/types typescript...' && tsc -b tsconfig.json && printf '\\u001b[1;32mBuild complete: @compliance-theater/types.\\u001b[0m\\n' || (printf '\\u001b[31mBuild failed: @compliance-theater/types.\\u001b[0m\\n' >&2; exit 1)",
+    "add": "yarn workspace @compliance-theater/types add ",
+    "build": "yarn build:typescript",
+    "build:publish": "yarn build && yarn pack --out ./dist/@compliance-theater-types.tgz",
+    "build:typescript": "echo 'Building lib/types...' && tsc -b tsconfig.json && printf '\\u001b[1;32mBuild complete: @compliance-theater/types.\\u001b[0m\\n' || (printf '\\u001b[31mBuild failed: @compliance-theater/types.\\u001b[0m\\n' >&2; exit 1)",
     "test": "jest",
-    "lint": "echo 'Linting lib-types...'",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    "@compliance-theater/logger": "workspace:*",
-    "ai": "^4.3.16",
+    "@auth/core": "0.41.1",
+    "ai": "^5.0.23",
+    "awilix": "^13.0.0",
+    "next": "^15.5.12",
+    "next-auth": "^5.0.0-beta.30",
+    "react-native": "^0.84.0",
+    "ts-pattern": "^5.7.1"
+  },
+  "peerDependencies": {
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "ts-pattern": "^5.5.2"
   },
-  "peerDependencies": {
-    "zod": "^3.0.0"
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@jest/globals": "^30.0.5",
+    "@swc/core": "^1.13.5",
+    "@swc/jest": "^0.2.39",
+    "@types/jest": "^30.0.0",
+    "@types/node": "25.2.3",
+    "@types/react": "19.2.4",
+    "@types/react-dom": "19.2.3",
     "jest": "^30.0.5",
     "rimraf": "^6.1.2",
-    "ts-jest": "^29.3.4",
-    "typescript": "^5",
-    "zod": "^3.24.1"
+    "ts-node": "^10.9.1",
+    "typescript": "^5.9.3"
   }
 }

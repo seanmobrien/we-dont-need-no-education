@@ -14,6 +14,22 @@ The Title IX Victim Advocacy Platform is a sophisticated advocacy technology sol
 
 ## Architecture Patterns
 
+### Monorepo Structure
+- All code is organized in a monorepo with clear package boundaries:
+- See [MONOREPO_GUIDE.md](./MONOREPO_GUIDE.md) for detailed structure and conventions.
+
+### Shared Test Config Symlink Invariants
+- `web-ui/packages/*/__tests__/shared` is symlinked to `web-ui/packages/__tests__/shared`.
+- Treat `web-ui/packages/__tests__/shared` as the single source of truth.
+- For shared Jest behavior (especially `moduleNameMapper`), edit only `web-ui/packages/__tests__/jest.config-shared.mjs`.
+- Do not mass-edit package-local `__tests__/shared` paths unless a package intentionally uses a real, non-symlink directory.
+- Before patching multiple shared files, verify the symlink target with `readlink`/`realpath` and patch the canonical target.
+
+### Jest Mock Reset Rule (Hard Gate)
+- Do not call `jest.clearAllMocks()` or `jest.resetAllMocks()` as a broad suite reset.
+- Use targeted resets (`mockFn.mockClear()` / `mockFn.mockReset()`) only for mocks required by the test contract.
+- Before adding or changing tests, prefer extending existing global mocks from setup files over resetting all mocks globally.
+
 ### Backend (Java)
 Follow these established patterns when working with the Java backend:
 

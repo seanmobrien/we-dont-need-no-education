@@ -23,7 +23,7 @@ import {
   getCurrentProvider,
   constructModelKey,
 } from './metrics-utils';
-import { LanguageModel } from 'ai';
+import { LanguageModel } from '@compliance-theater/types/ai-sdk';
 import { ModelMap } from '../../services/model-stats/model-map';
 import { MiddlewareStateManager } from '../state-management';
 

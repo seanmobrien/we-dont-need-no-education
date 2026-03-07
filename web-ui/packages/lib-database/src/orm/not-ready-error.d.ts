@@ -3,7 +3,7 @@
  * @module @/lib/drizzle-db/not-ready-error
  */
 
-declare module '@/lib/drizzle-db/not-ready-error' {
+declare module '@compliance-theater/database/orm/not-ready-error' {
   /**
    * Error thrown when database is not ready for operations.
    */

@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
-import { FlyoutMenu } from '@/components/flyout-menu';
+import { render, screen, fireEvent, waitFor } from '../shared/test-utils';
+import { FlyoutMenu } from '../../components/flyout-menu';
 import MenuItem from '@mui/material/MenuItem';
 
 describe('FlyoutMenu', () => {
@@ -15,7 +15,7 @@ describe('FlyoutMenu', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('Rendering', () => {

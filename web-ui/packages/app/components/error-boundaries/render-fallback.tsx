@@ -22,8 +22,8 @@ import {
   getRecoveryActions,
   getDefaultRecoveryAction,
   classifyError,
-} from '@/lib/error-monitoring/recovery-strategies';
-import type { RecoveryAction } from '@/lib/error-monitoring/recovery-strategies';
+} from '@compliance-theater/logger/errors/monitoring/recovery-strategies';
+import type { RecoveryAction } from '@compliance-theater/logger/errors/monitoring/recovery-strategies';
 import { dumpError, LoggedError } from '@compliance-theater/logger';
 
 const fnNoOp = () => {};

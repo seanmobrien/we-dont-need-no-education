@@ -59,9 +59,12 @@ import type {
   DrizzleSelectQueryBase,
   SelectForGridProps,
 } from './types';
-import type { AnyPgSelect, PgSession } from 'drizzle-orm/pg-core';
-import type { PgCountBuilder } from 'drizzle-orm/pg-core/query-builders/count';
-import { drizDb } from '@compliance-theater/database/orm';
+import { 
+  drizDb, 
+  type AnyPgSelect,
+  type  PgSession,
+  type  PgCountBuilder 
+} from '@compliance-theater/database/orm';
 
 /**
  * Creates both data and count query factories from a base Drizzle select query.

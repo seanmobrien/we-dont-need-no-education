@@ -11,24 +11,27 @@ import {
   type AiModelType,
   isAiLanguageModelType,
   type AiProviderType,
-} from '@/lib/ai/core';
+} from '@compliance-theater/types/lib/ai/core';
 import {
   AiModelTypeValue_Embedding,
   AiModelTypeValue_GoogleEmbedding,
-} from '@/lib/ai/core/unions';
+} from '@compliance-theater/types/lib/ai/core/unions';
 import { log, LoggedError } from '@compliance-theater/logger';
 
-import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
+import { customProvider, createProviderRegistry, wrapLanguageModel } from '@compliance-theater/types/ai-sdk/ai';
 import { cacheWithRedis } from '../middleware/cacheWithRedis';
 import { setNormalizedDefaultsMiddleware } from '../middleware/set-normalized-defaults';
 import { tokenStatsLoggingOnlyMiddleware } from '../middleware/tokenStatsTracking';
 import { MiddlewareStateManager } from '../middleware/state-management';
 
 import {
-  globalRequiredSingleton,
   isNotNull,
-  SingletonProvider,
+  isPromise
 } from '@compliance-theater/typescript';
+import {
+  globalRequiredSingleton,
+  SingletonProvider,
+} from '@compliance-theater/logger/singleton-provider';
 import { isAutoRefreshFeatureFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 import type {
   AutoRefreshFeatureFlag,
@@ -36,7 +39,6 @@ import type {
   ModelProviderFactoryConfig,
   ModelServerConfig,
 } from '@compliance-theater/feature-flags/types';
-import { isPromise } from 'util/types';
 import {
   type ModelFromDeploymentId,
   SupportedProviders,
@@ -62,12 +64,7 @@ const setupMiddleware = async (
       middleware: setNormalizedDefaultsMiddleware,
     }),
     middleware: [
-      tokenStatsLoggingOnlyMiddleware({ provider }),
-      /*
-      retryRateLimitMiddlewareFactory({
-        model,
-      }),
-      */
+      tokenStatsLoggingOnlyMiddleware({ provider })
     ],
   });
 };
@@ -230,35 +227,36 @@ const customProviderFactory = async <
  * the ones used by OpenAI and Google (hifi, lofi, embedding, etc).
  */
 const getAzureProvider = async () => {
-  return customProviderFactory({
+  const ret = await customProviderFactory({
     provider: 'azure',
     providerFactory: createAzure,
     apiKey: env('AZURE_API_KEY'),
     baselineFactory: (model: string | undefined) =>
       model === 'embedding'
         ? {
-            model,
-            // base: env('AZURE_OPENAI_ENDPOINT_EMBEDDING'),
-            apiKey: env('AZURE_OPENAI_KEY_EMBEDDING'),
-          }
+          model,
+          // base: env('AZURE_OPENAI_ENDPOINT_EMBEDDING'),
+          apiKey: env('AZURE_OPENAI_KEY_EMBEDDING'),
+        }
         : {
-            model,
-            apiKey: env('AZURE_API_KEY'),
-            // base: env('AZURE_OPENAI_ENDPOINT'),
-          },
+          model,
+          apiKey: env('AZURE_API_KEY'),
+          // base: env('AZURE_OPENAI_ENDPOINT'),
+        },
     optionsFactory: (merged: OptionsFactoryProps) => ({
       baseURL: merged.base,
       apiKey: merged.apiKey,
       ...(merged.deployBased
         ? {
-            ...(merged.version ? { apiVersion: merged.version } : {}),
-            useDeploymentBasedUrls: true,
-          }
+          ...(merged.version ? { apiVersion: merged.version } : {}),
+          useDeploymentBasedUrls: true,
+        }
         : {
-            useDeploymentBasedUrls: false,
-          }),
+          useDeploymentBasedUrls: false,
+        }),
     }),
   });
+  return ret;
 };
 
 /**
@@ -404,39 +402,7 @@ export const getProviderRegistry = async () => {
   });
 };
 
-/**
- * Overloads for the AI model provider factory function.
- *
- * @remarks
- * This interface defines the various call signatures for obtaining different types of AI model providers.
- *
- * @overload
- * Returns the default Azure provider when called with no arguments.
- *
- * @overload
- * Returns an embedding model when called with a deployment ID of `'embedding'` or `'google-embedding'` and optional embedding options.
- * @param deploymentId - The deployment identifier for the embedding model.
- * @param options - Optional configuration for the embedding model.
- * @returns An instance of `EmbeddingModelV2<string>`.
- *
- * @overload
- * Returns a language model when called with any other deployment ID and optional chat options.
- * @param deploymentId - The deployment identifier for the language model, excluding embedding types.
- * @param options - Optional configuration for the language model.
- * @returns An instance of `LanguageModel`.
- */
-interface GetAiModelProviderOverloads {
-  (): Promise<ReturnType<typeof getAzureProvider>>;
-  (deploymentId: 'embedding' | 'google-embedding'): Promise<
-    EmbeddingModelV2<string>
-  >;
-  (
-    deploymentId: Exclude<AiModelType, 'embedding' | 'google-embedding'>
-  ): Promise<LanguageModelV2>;
-  (deploymentId: AiModelType): Promise<
-    LanguageModelV2 | EmbeddingModelV2<string>
-  >;
-}
+import { GetAiModelProviderOverloads } from "@compliance-theater/types/lib/ai/ai-model-factory/types";
 
 /**
  * Main factory function that provides backward compatibility with existing usage

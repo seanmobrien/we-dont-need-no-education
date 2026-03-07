@@ -1,9 +1,25 @@
 import React from 'react';
-import { waitFor, act } from '@testing-library/react';
-import { render, screen } from '@/__tests__/test-utils';
-import { ResponsiveActionPanel } from '@/app/messages/email/[emailId]/call-to-action-response/panel';
-import { CallToActionResponseDetails } from '@/data-models/api';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+import { waitFor, act, render, screen } from '../../../../shared/test-utils';
+import { CallToActionResponseDetails } from '../../../../../data-models/api';
+
+let ResponsiveActionPanel: typeof import('../../../../../app/messages/email/[emailId]/call-to-action-response/panel').ResponsiveActionPanel;
+
+let fetchMock = jest.fn();
+
+jest.mock('@/lib/fetch-service', () => ({
+  ...(() => {
+    fetchMock = jest.fn();
+    return {
+      resolveFetchService: jest.fn(() => fetchMock),
+    };
+  })(),
+}));
+
+beforeAll(() => {
+  const panelModule =
+    require('../../../../../app/messages/email/[emailId]/call-to-action-response/panel') as typeof import('../../../../../app/messages/email/[emailId]/call-to-action-response/panel');
+  ResponsiveActionPanel = panelModule.ResponsiveActionPanel;
+});
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -46,8 +62,8 @@ const mockRelatedCTA = {
 };
 beforeEach(() => {
   // Clear and setup fetch mock - it's already mocked globally in jest.setup.ts
-  (fetch as jest.Mock).mockClear();
-  (fetch as jest.Mock).mockResolvedValue({
+  fetchMock.mockClear();
+  fetchMock.mockResolvedValue({
     ok: true,
     json: async () => ({
       results: [mockRelatedCTA],
@@ -115,7 +131,7 @@ describe('ResponsiveActionPanel', () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
 
     await waitFor(() => {
-      expect(fetch as jest.Mock).toHaveBeenCalledWith(
+      expect(fetchMock).toHaveBeenCalledWith(
         '/api/email/test-email-id/properties/call-to-action',
       );
     });
@@ -141,7 +157,7 @@ describe('ResponsiveActionPanel', () => {
 
   it('shows loading state while fetching related CTA', async () => {
     // Make the API call take some time
-    (fetch as jest.Mock).mockImplementation(
+    fetchMock.mockImplementation(
       () =>
         new Promise((resolve) =>
           setTimeout(
@@ -164,7 +180,7 @@ describe('ResponsiveActionPanel', () => {
   });
 
   it('handles no related CTA found', async () => {
-    (fetch as jest.Mock).mockResolvedValue({
+    fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({
         results: [],

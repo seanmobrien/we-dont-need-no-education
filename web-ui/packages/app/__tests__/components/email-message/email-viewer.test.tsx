@@ -4,9 +4,20 @@ import {
   waitFor,
   act,
   hideConsoleOutput,
-} from '@/__tests__/test-utils';
-import EmailViewer from '@/components/email-message/email-viewer';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+} from '../../shared/test-utils';
+
+let fetchMock = jest.fn();
+
+jest.mock('@/lib/fetch-service', () => ({
+  ...(() => {
+    fetchMock = jest.fn();
+    return {
+      resolveFetchService: jest.fn(() => fetchMock),
+    };
+  })(),
+}));
+const EmailViewer = require('../../../components/email-message/email-viewer')
+  .default as typeof import('../../../components/email-message/email-viewer').default;
 const TIMEOUT = 30000;
 
 // Mock Promise.withResolvers if not available
@@ -26,7 +37,40 @@ describe('EmailViewer', () => {
   const consoleErrors = hideConsoleOutput();
   beforeEach(() => {
     // Clear fetch mock - it's already mocked globally in jest.setup.ts
-    (fetch as jest.Mock).mockClear();
+    fetchMock.mockClear();
+    fetchMock.mockImplementation((url: string) => {
+      const normalizedUrl = String(url);
+      if (normalizedUrl.includes('/api/email/test-email-id/attachments')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      }
+      if (normalizedUrl.includes('/api/email/test-email-id')) {
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              emailId: 'test-email-id',
+              sender: {
+                contactId: 1,
+                name: 'Default Sender',
+                email: 'sender@test.com',
+              },
+              recipients: [],
+              subject: 'Default Subject',
+              body: 'Default body',
+              sentOn: '2023-01-01T00:00:00Z',
+              threadId: 1,
+              parentEmailId: null,
+            }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({}),
+      });
+    });
   });
   afterEach(() => {
     consoleErrors.dispose();
@@ -40,7 +84,7 @@ describe('EmailViewer', () => {
       const promise = request.promise;
 
       // Mock fetch to return a delayed promise
-      (fetch as jest.Mock).mockImplementation((url: string) => {
+      fetchMock.mockImplementation((url: string) => {
         if (url.includes('/api/email/test-email-id/attachments')) {
           return Promise.resolve({
             ok: true,
@@ -123,7 +167,7 @@ describe('EmailViewer', () => {
       };
 
       // Mock fetch for both email and attachments
-      (fetch as jest.Mock).mockImplementation((url: string) => {
+      fetchMock.mockImplementation((url: string) => {
         if (url.includes('/api/email/test-email-id/attachments')) {
           return Promise.resolve({
             ok: true,
@@ -161,7 +205,7 @@ describe('EmailViewer', () => {
       // Turn off console.error logging for this planned exception - keeps test output clean.
       consoleErrors.setup();
       // Mock fetch to throw an error
-      (fetch as jest.Mock).mockImplementation((url: string) => {
+      fetchMock.mockImplementation((url: string) => {
         if (url.includes('/api/email/test-email-id/attachments')) {
           return Promise.resolve({
             ok: true,
@@ -194,7 +238,7 @@ describe('EmailViewer', () => {
       // Turn off console.error logging for this planned exception - keeps test output clean.
       consoleErrors.setup();
       // Mock fetch to return 404 for email
-      (fetch as jest.Mock).mockImplementation((url: string) => {
+      fetchMock.mockImplementation((url: string) => {
         if (url.includes('/api/email/test-email-id/attachments')) {
           return Promise.resolve({
             ok: true,
@@ -244,7 +288,7 @@ describe('EmailViewer', () => {
       };
 
       // Mock fetch for both email and attachments
-      (fetch as jest.Mock).mockImplementation((url: string) => {
+      fetchMock.mockImplementation((url: string) => {
         if (url.includes('/api/email/test-email-id/attachments')) {
           return Promise.resolve({
             ok: true,

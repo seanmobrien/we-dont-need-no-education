@@ -1,9 +1,8 @@
 import { forOneOrMany, OneOrMany } from '@compliance-theater/typescript';
 import {
   globalRequiredSingleton,
-  globalSingleton,
   SingletonProvider,
-} from '@compliance-theater/typescript/singleton-provider';
+} from '@compliance-theater/logger/singleton-provider';
 import { ContactSummary, Contact } from './contact';
 import { isContact } from './guards';
 

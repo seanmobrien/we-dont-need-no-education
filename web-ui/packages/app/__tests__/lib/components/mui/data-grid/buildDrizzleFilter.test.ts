@@ -39,21 +39,21 @@ import {
   notBetween,
   SQL,
   sql,
-} from 'drizzle-orm';
-import { PgColumn } from 'drizzle-orm/pg-core';
+} from '@compliance-theater/database/drizzle-orm';
+import { PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 import {
   buildDrizzleAttachmentOrEmailFilter,
   buildDrizzleItemFilter,
   buildDrizzleQueryFilter,
-} from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleFilter';
+} from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleFilter';
 import { NextRequest } from 'next/server';
-import { LikeNextRequest } from '@compliance-theater/nextjs/types';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 
 import { ILogger, log } from '@compliance-theater/logger';
 
 // Mock logger
 // Mock Drizzle imports
-jest.mock('drizzle-orm', () => ({
+jest.mock('@compliance-theater/database/drizzle-orm', () => ({
   and: jest.fn((...conditions) => ({
     type: 'and',
     conditions,
@@ -170,8 +170,8 @@ const createMockColumn = (
       dataType === 'string'
         ? 'text'
         : dataType === 'number'
-        ? 'integer'
-        : 'boolean',
+          ? 'integer'
+          : 'boolean',
     table: 'test_table', // Add table property to match real Drizzle columns
     // Add the proper config structure expected by Drizzle
     _: {
@@ -180,14 +180,14 @@ const createMockColumn = (
         dataType === 'string'
           ? 'string'
           : dataType === 'number'
-          ? 'number'
-          : 'boolean',
+            ? 'number'
+            : 'boolean',
       columnType:
         dataType === 'string'
           ? 'PgUUID'
           : dataType === 'number'
-          ? 'PgInteger'
-          : 'PgBoolean',
+            ? 'PgInteger'
+            : 'PgBoolean',
       notNull: false,
       hasDefault: false,
       primary: false,
@@ -199,10 +199,10 @@ const createMockColumn = (
 
 // Create mock SQL expression
 const createMockSQL = (expression: string): SQL =>
-  ({
-    type: 'sql',
-    expression,
-  } as unknown as SQL);
+({
+  type: 'sql',
+  expression,
+} as unknown as SQL);
 
 // Mock query builder that tracks where calls
 type MockQuery = {
@@ -889,7 +889,7 @@ describe('buildDrizzleQueryFilter', () => {
     mockColumns[name as keyof typeof mockColumns];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
     mockQuery = createMockQuery();
   });
 
@@ -1031,7 +1031,7 @@ describe('buildDrizzleQueryFilter', () => {
       };
       const url = new URL(
         'https://example.com/api/data?filter=' +
-          encodeURIComponent(JSON.stringify(filterModel))
+        encodeURIComponent(JSON.stringify(filterModel))
       );
 
       buildDrizzleQueryFilter({
@@ -1075,7 +1075,7 @@ describe('buildDrizzleQueryFilter', () => {
       };
       const request = new NextRequest(
         'https://example.com/api/data?filter=' +
-          encodeURIComponent(JSON.stringify(filterModel))
+        encodeURIComponent(JSON.stringify(filterModel))
       );
 
       buildDrizzleQueryFilter({

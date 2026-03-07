@@ -5,20 +5,20 @@ import {
   extractParams,
 } from '@compliance-theater/nextjs/server/utils';
 import { EmailProperty } from '@/data-models/api/email-properties/property-type';
-import { eq, and, ne } from 'drizzle-orm';
+import { eq, and, ne } from '@compliance-theater/database/drizzle-orm';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { schema } from '@compliance-theater/database/orm';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,
-} from '@/lib/auth/resources/case-file';
+} from '@compliance-theater/auth/lib/resources/case-file/index';
 import {
   DrizzleSelectQuery,
   getEmailColumn,
   selectForGrid,
 } from '@/lib/components/mui/data-grid/queryHelpers';
 import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
-import { PgColumn } from 'drizzle-orm/pg-core';
+import { PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 export const GET = wrapRouteRequest(

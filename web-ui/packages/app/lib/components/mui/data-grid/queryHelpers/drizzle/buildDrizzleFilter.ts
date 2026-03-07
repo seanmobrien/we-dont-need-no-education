@@ -9,7 +9,7 @@
  * @since 2025-07-27
  */
 
-import { isLikeNextRequest } from '@compliance-theater/nextjs/guards';
+import { isLikeNextRequest } from '@compliance-theater/types/lib/nextjs/guards';
 import type { GridFilterModel } from '@mui/x-data-grid-pro';
 import {
   and,
@@ -29,11 +29,11 @@ import {
   notBetween,
   SQL,
   sql,
-} from 'drizzle-orm';
-import type { AnyPgSelect } from 'drizzle-orm/pg-core';
+} from '@compliance-theater/database/drizzle-orm';
+import type { AnyPgSelect } from '@compliance-theater/database/drizzle-orm/pg-core';
 import { isGridFilterModel } from '../../guards';
 import { columnMapFactory, parseFilterOptions } from '../utility';
-import { isTruthy } from '@compliance-theater/react/utility-methods';
+import { isTruthy } from '@compliance-theater/types';
 import { schema } from '@compliance-theater/database/orm';
 import { log } from '@compliance-theater/logger';
 import type {

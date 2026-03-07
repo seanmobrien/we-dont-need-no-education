@@ -1,3 +1,5 @@
+/* global DOMException */
+
 /**
  * Type guard to check if a value is an AbortError
  * Copied from react-util to avoid circular dependency

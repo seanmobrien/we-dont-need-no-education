@@ -1,7 +1,7 @@
 'use client'; // Error boundaries must be Client Components
 
 import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/render-fallback';
-import { useProcessedError } from '@/lib/error-monitoring/use-processed-error';
+import { useProcessedError } from '@compliance-theater/logger/errors/monitoring/use-processed-error';
 
 type ErrorProps = {
   error: Error & { digest?: string };

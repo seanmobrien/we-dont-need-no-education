@@ -1,7 +1,7 @@
 /* @jest-environment node */
 
 // Mock middleware
-jest.mock('@/lib/ai/middleware', () => ({
+jest.mock('../../../lib/ai/middleware', () => ({
   retryRateLimitMiddlewareFactory: jest.fn(),
   setNormalizedDefaultsMiddleware: jest.fn(),
   rateLimitMiddleware: jest.fn(),
@@ -24,7 +24,7 @@ import {
   tokenStatsLoggingOnlyMiddleware,
   cacheWithRedis,
   getRedisClient,
-} from '@/lib/ai/middleware';
+} from '../../../lib/ai/middleware';
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import {
@@ -36,8 +36,8 @@ import {
   AiModelTypeValue_GeminiPro,
   AiModelTypeValue_GeminiFlash,
   AiModelTypeValue_GoogleEmbedding,
-} from '@/lib/ai/core/unions';
-import { isAiModelType, isAiLanguageModelType } from '@/lib/ai/core/guards';
+} from '@compliance-theater/types/lib/ai/core/unions';
+import { isAiModelType, isAiLanguageModelType } from '@compliance-theater/types/lib/ai/core/guards';
 
 // Mock environment variables - handled globally in jest.env-vars.ts
 
@@ -112,14 +112,14 @@ describe('AI Model Factory Integration', () => {
   it('should be importable without errors', async () => {
     // This test ensures our module structure is correct
     expect(async () => {
-      const { aiModelFactory } = await import('@/lib/ai/aiModelFactory');
+      const { aiModelFactory } = await import('../../../lib/ai/aiModelFactory');
       expect(typeof aiModelFactory).toBe('function');
     }).not.toThrow();
   });
 
   it('should define createGoogleEmbeddingModel function', async () => {
     const { createGoogleEmbeddingModel } = await import(
-      '@/lib/ai/aiModelFactory'
+      '../../../lib/ai/aiModelFactory'
     );
     expect(typeof createGoogleEmbeddingModel).toBe('function');
   });
@@ -137,7 +137,7 @@ describe('AI Model Factory Integration', () => {
       resetModelAvailability,
       handleAzureRateLimit,
       handleGoogleRateLimit,
-    } = await import('@/lib/ai/aiModelFactory');
+    } = await import('../../../lib/ai/aiModelFactory');
 
     expect(typeof disableModel).toBe('function');
     expect(typeof enableModel).toBe('function');
@@ -153,7 +153,7 @@ describe('AI Model Factory Integration', () => {
   });
 
   it('should return a Promise from aiModelFactory', async () => {
-    const { aiModelFactory } = await import('@/lib/ai/aiModelFactory');
+    const { aiModelFactory } = await import('../../../lib/ai/aiModelFactory');
     const result = aiModelFactory('lofi');
     expect(result).toBeInstanceOf(Promise);
     const model = await result;
@@ -166,7 +166,7 @@ describe('Model Availability Management', () => {
 
   beforeEach(async () => {
     // jest.clearAllMocks();
-    modelControls = await import('@/lib/ai/aiModelFactory');
+    modelControls = await import('../../../lib/ai/aiModelFactory');
     // Reset to defaults before each test
     modelControls.resetModelAvailability();
   });

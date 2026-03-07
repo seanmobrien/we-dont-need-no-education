@@ -10,21 +10,23 @@ import {
   act,
   jsonResponse,
   hideConsoleOutput,
-} from '@/__tests__/test-utils';
+} from '../../shared/test-utils';
 import {
   QueryClient,
   QueryClientProvider,
   useQueryClient,
 } from '@tanstack/react-query';
-import { fetch } from '@compliance-theater/nextjs';
+jest.mock('@compliance-theater/fetch', () => ({
+  fetch: jest.fn(),
+}));
+import { fetch } from '@compliance-theater/fetch';
 
 // Load the real hooks inside isolated modules after unmocking the global mock
 const loadHooks = () => {
   // Load the real hooks module without isolating modules so it shares
   // the same `@tanstack/react-query` instance used by the test wrapper.
-  jest.unmock('@/lib/hooks/use-todo');
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const hooks = require('@/lib/hooks/use-todo');
+  jest.unmock('../../../lib/hooks/use-todo');
+  const hooks = require('../../../lib/hooks/use-todo');
   return hooks;
 };
 
@@ -187,8 +189,11 @@ describe('use-todo real implementation', () => {
     // update item
     const updatedItem = { id: 'i1', title: 'Item 1 updated' };
     mockFetch.mockResolvedValue(jsonResponse({ data: updatedItem }));
-    const { result: updateItemResult } = renderHook(() =>
-      useUpdateTodoItem('list-1'),
+    const { result: updateItemResult } = renderHook(
+      () => useUpdateTodoItem('list-1'),
+      {
+        wrapper: TestWrapper,
+      },
     );
 
     await act(async () => {

@@ -8,7 +8,7 @@ import type {
 } from '@opentelemetry/sdk-logs';
 import type { ExportResult } from '@opentelemetry/core';
 import type { AnyValueMap } from '@opentelemetry/api-logs';
-import { UrlFilteredLogExporter } from '@/instrument/url-filter/url-filtered-log-exporter';
+import { UrlFilteredLogExporter } from '../../../instrument/url-filter/url-filtered-log-exporter';
 
 class CaptureLogExporter implements LogRecordExporter {
   public captured: ReadableLogRecord[] = [];

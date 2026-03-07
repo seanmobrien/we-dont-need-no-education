@@ -3,24 +3,30 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "composite": true,
     "declaration": true,
     "declarationMap": true,
-    "baseUrl": ".",
-    "paths": {},
-    "types": [
-      "node",
-      "jest"
-    ],
-    "noEmit": false
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "paths": {}
   },
   "include": [
-    "src/**/*.d.ts",
-    "src/**/*.ts",
-    "src/**/*.tsx"
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
     "dist",
+    "**/__tests__/**",
+    "**/__mocks__/**",
+  ],
+  "references": [
+    {
+      "path": "../lib-types"
+    }
   ]
 }

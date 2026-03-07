@@ -90,14 +90,14 @@ This is a Yarn workspace. To work with individual packages:
 
 ```bash
 # Run commands in a specific package
-yarn workspace @repo/app dev
-yarn workspace @repo/app test
+yarn dev
+yarn test
 
 # Add a dependency to a package
-yarn workspace @repo/app add package-name
+yarn add package-name
 
 # Add a dev dependency
-yarn workspace @repo/app add -D package-name
+yarn add -D package-name
 ```
 
 ## Technology Stack

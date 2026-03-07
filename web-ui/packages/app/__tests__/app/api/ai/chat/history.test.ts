@@ -10,9 +10,9 @@
  * - Proper drizzle query construction and record mapping
  */
 
-import { GET } from '@/app/api/ai/chat/history/route';
-import { NextRequest } from 'next/server';
-// import { mockChatHistoryResponse } from '@/__tests__/components/chat.mock-data';
+import { GET } from '../../../../../app/api/ai/chat/history/route';
+import { NextRequest, NextResponse } from 'next/server';
+// import { mockChatHistoryResponse } from '../../../../components/chat.mock-data';
 const mockChatHistoryResponse = {
   results: [
     {
@@ -49,11 +49,11 @@ const columnMap = {
   userId: 'user_id',
 } as const;
 
-jest.mock('@/lib/components/mui/data-grid/queryHelpers', () => ({
+jest.mock('../../../../../lib/components/mui/data-grid/queryHelpers', () => ({
   selectForGrid: jest.fn(),
 }));
 
-jest.mock('@/lib/react-util', () => ({
+jest.mock('../../../../../lib/react-util', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
@@ -61,9 +61,9 @@ jest.mock('@/lib/react-util', () => ({
 
 // Import mocked dependencies
 import { drizDbWithInit, drizDb } from '@compliance-theater/database/orm';
-import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { selectForGrid } from '../../../../../lib/components/mui/data-grid/queryHelpers';
 import { schema } from '@compliance-theater/database/orm';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { hideConsoleOutput } from '../../../../shared/test-utils-server';
 
 const mockConsole = hideConsoleOutput();
 
@@ -88,6 +88,10 @@ describe('/api/ai/chat/history route', () => {
       const request = new NextRequest(
         'http://localhost:3000/api/ai/chat/history?page=0&pageSize=10',
       );
+
+      const r = NextResponse.json('{"test": "response"}');
+      const d = r.json();
+
 
       const response = await GET(request);
       const data = await response.json();

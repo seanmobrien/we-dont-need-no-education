@@ -1,6 +1,6 @@
 /* @jest-environment node */
 
-import { DocumentUnitRepository } from '@/lib/api/document-unit';
+import { DocumentUnitRepository } from '../../../../lib/api/document-unit';
 import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 
 jest.mock('@azure/storage-blob', () => ({
@@ -18,7 +18,7 @@ jest.mock('@azure/storage-blob', () => ({
 
 describe('DocumentUnitRepository', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   test('SasKey is empty when generateDownloadKey is false', () => {

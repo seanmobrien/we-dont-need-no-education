@@ -17,14 +17,14 @@
  */
 
 import { GridSortModel } from '@mui/x-data-grid';
-import { asc, desc, SQL } from 'drizzle-orm';
-import { PgColumn } from 'drizzle-orm/pg-core';
+import { asc, desc, SQL } from '@compliance-theater/database/drizzle-orm';
+import { PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 import {
   buildDrizzleOrderBy,
   createColumnGetter,
   createTableColumnGetter,
-} from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
-import type { DrizzleSelectQuery } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/types';
+} from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
+import type { DrizzleSelectQuery } from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/types';
 import { NextRequest } from 'next/server';
 import { log } from '@compliance-theater/logger';
 
@@ -39,7 +39,7 @@ const mockLogger = {
 jest.mock('@compliance-theater/logger');
 
 // Mock Drizzle imports
-jest.mock('drizzle-orm', () => ({
+jest.mock('@compliance-theater/database/drizzle-orm', () => ({
   asc: jest.fn((col) => ({ type: 'asc', column: col })),
   desc: jest.fn((col) => ({ type: 'desc', column: col })),
   sql: jest.fn((template, ...values) => ({ type: 'sql', template, values })),
@@ -47,19 +47,19 @@ jest.mock('drizzle-orm', () => ({
 
 // Create mock column objects that resemble Drizzle PgColumn
 const createMockColumn = (name: string): PgColumn =>
-  ({
-    name,
-    type: 'column',
-    tableName: 'test_table',
-    dataType: 'text',
-  } as unknown as PgColumn);
+({
+  name,
+  type: 'column',
+  tableName: 'test_table',
+  dataType: 'text',
+} as unknown as PgColumn);
 
 // Create mock SQL expression
 const createMockSQL = (expression: string): SQL =>
-  ({
-    type: 'sql',
-    expression,
-  } as unknown as SQL);
+({
+  type: 'sql',
+  expression,
+} as unknown as SQL);
 
 // Mock query builder that tracks orderBy calls
 type MockQuery = {
@@ -123,7 +123,7 @@ describe('buildDrizzleOrderBy', () => {
 
   beforeEach(() => {
     // jest.clearAllMocks();
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
     (log as jest.Mock).mockImplementation((cb) => cb(mockLogger));
     mockQuery = createMockQuery();
   });

@@ -1,27 +1,29 @@
-'use client';
-import React, { useState, useMemo } from 'react';
-import IconButton from '@mui/material/IconButton';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import ListSubheader from '@mui/material/ListSubheader';
-import Tooltip from '@mui/material/Tooltip';
-import PaletteIcon from '@mui/icons-material/Palette';
-import { useTheme, themeDisplayNames, type ThemeType } from '../themes';
+/* global HTMLElement, document */
 
-const availableThemes: ThemeType[] = ['dark', 'light'] as const;
+"use client";
+import React, { useState, useMemo } from "react";
+import IconButton from "@mui/material/IconButton";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import ListSubheader from "@mui/material/ListSubheader";
+import Tooltip from "@mui/material/Tooltip";
+import PaletteIcon from "@mui/icons-material/Palette";
+import { useTheme, themeDisplayNames, type ThemeType } from "../themes";
+
+const availableThemes: ThemeType[] = ["dark", "light"] as const;
 const origins = {
   anchor: {
-    vertical: 'bottom',
-    horizontal: 'right',
+    vertical: "bottom",
+    horizontal: "right",
   },
   transform: {
-    vertical: 'top',
-    horizontal: 'right',
+    vertical: "top",
+    horizontal: "right",
   },
 } as const;
 const slotProps = {
   list: {
-    'aria-labelledby': 'theme-selector-button',
+    "aria-labelledby": "theme-selector-button",
   },
 } as const;
 
@@ -35,11 +37,11 @@ export const ThemeSelector = () => {
       { currentTarget }: { currentTarget?: HTMLElement; data?: string } = {
         currentTarget: undefined,
       },
-      reason?: 'backdropClick' | 'escapeKeyDown',
+      reason?: "backdropClick" | "escapeKeyDown",
     ) => {
       const newAnchorEl =
-        reason === 'backdropClick' ||
-        reason === 'escapeKeyDown' ||
+        reason === "backdropClick" ||
+        reason === "escapeKeyDown" ||
         !currentTarget
           ? null
           : currentTarget;
@@ -52,9 +54,11 @@ export const ThemeSelector = () => {
       currentTarget,
     }: React.MouseEvent<HTMLElement>) => {
       const themeType = currentTarget?.dataset?.theme as ThemeType;
-      if (!!themeType && currentTheme !== themeType) {
+      if (themeType && currentTheme !== themeType) {
         setTheme(themeType);
-        document.cookie = `theme=${encodeURIComponent(themeType)}; path=/; max-age=31536000`;
+        document.cookie = `theme=${encodeURIComponent(
+          themeType,
+        )}; path=/; max-age=31536000`;
       }
       handleMenuClick();
     };
@@ -72,9 +76,9 @@ export const ThemeSelector = () => {
           onClick={handleMenuClick}
           data-id="theme-selector-button"
           id="theme-selector-button"
-          aria-controls={open ? 'theme-menu' : undefined}
+          aria-controls={open ? "theme-menu" : undefined}
           aria-haspopup="true"
-          aria-expanded={open ? 'true' : undefined}
+          aria-expanded={open ? "true" : undefined}
         >
           <PaletteIcon />
         </IconButton>

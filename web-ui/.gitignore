@@ -1,3 +1,4 @@
 # Local docker build scripts and output
 build-docker.sh
 *.log
+node_modules

@@ -13,6 +13,7 @@ This package provides a comprehensive logging system built on top of Pino, with 
 - **Scoped Loggers**: Create loggers with specific scopes for better log organization
 - **Custom Events**: Support for emitting custom Application Insights events
 - **Error Handling**: Specialized utilities for database error logging
+- **Singleton Provider**: Type-safe singleton pattern implementation
 
 ## Usage
 
@@ -49,6 +50,20 @@ logEvent("UserAction", {
 });
 ```
 
+### Singleton Provider
+
+```typescript
+import { SingletonProvider } from "@compliance-theater/logger/singleton-provider";
+
+class MyService {}
+
+const service = SingletonProvider.Instance.getSingletonOrCreate(
+  "my-service-key",
+  () => new MyService()
+);
+```
+
+
 ## API
 
 ### Main Exports
@@ -57,7 +72,8 @@ logEvent("UserAction", {
 - `logEvent`: Emit custom Application Insights events
 - `simpleScopedLogger`: Create a scoped logger instance
 - `errorLogFactory`: Create structured error log entries
-- `getDbError`: Extract and format database errors
+- `getDbError`: Extract and format database error
+- `SingletonProvider`: type-safe singleton support
 
 ## Development
 

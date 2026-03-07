@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "composite": true,
     "declaration": true,
     "declarationMap": true,
@@ -13,7 +14,11 @@
     ],
     "noEmit": false,
     "jsx": "react-jsx",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ]
   },
   "include": [
     "src/**/*.d.ts",
@@ -22,6 +27,16 @@
   ],
   "exclude": [
     "node_modules",
+    "**/__tests__/**",
+    "**/__mocks__/**",
     "dist"
+  ],
+  "references": [
+    {
+      "path": "../lib-logger"
+    },
+    {
+      "path": "../lib-types"
+    }
   ]
 }

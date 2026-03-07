@@ -1,8 +1,8 @@
 // @ts-nocheck
 import type { TelemetryClient, TelemetryOptions } from './telemetry.types';
 import { log } from '@compliance-theater/logger/core';
-import { fetch } from '@compliance-theater/nextjs/fetch';
-import { cryptoRandomBytes } from '@/lib/react-util/crypto-random-bytes';
+import { resolveFetchService } from '@/lib/fetch-service';
+import { cryptoRandomBytes } from '@compliance-theater/types/lib/nextjs/crypto-random-bytes';
 
 let version = '2.1.26';
 
@@ -10,7 +10,7 @@ let version = '2.1.26';
 let MEM0_TELEMETRY = true;
 try {
   MEM0_TELEMETRY = process?.env?.MEM0_TELEMETRY === 'false' ? false : true;
-} catch (error) {}
+} catch (error) { }
 const POSTHOG_API_KEY = 'phc_hgJkUVJFYtmaJqrvf6CYN67TIQ8yhXAkWzUn9AMU4yX';
 const POSTHOG_HOST = 'https://us.i.posthog.com/i/v0/e/';
 
@@ -80,6 +80,7 @@ class UnifiedTelemetry implements TelemetryClient {
   }
 }
 
+const fetch = resolveFetchService();
 const telemetry = new UnifiedTelemetry(POSTHOG_API_KEY, POSTHOG_HOST);
 
 async function captureClientEvent(

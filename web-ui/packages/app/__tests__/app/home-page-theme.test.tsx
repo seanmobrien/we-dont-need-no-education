@@ -1,9 +1,9 @@
-import { render, screen } from '@/__tests__/test-utils';
+import { render, screen } from '../shared/test-utils';
 import { ThemeProvider } from '@compliance-theater/themes';
-import HomePage from '@/app/page';
+import HomePage from '../../app/page';
 
-// Mock next-auth/react
-jest.mock('next-auth/react', () => ({
+jest.mock('@compliance-theater/auth/components/session-provider/index', () => ({
+  SessionProvider: ({ children }: { children: unknown }) => children,
   useSession: jest.fn(() => ({
     data: null,
     status: 'unauthenticated',

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BaseDrizzleRepository } from './_baseDrizzleRepository';
 import { PickField } from '@compliance-theater/typescript';
-import { LikeNextRequest } from '@compliance-theater/nextjs/types';
-import { isRequestOrApiRequest } from '@compliance-theater/nextjs/guards';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
+import { isRequestOrApiRequest } from '@compliance-theater/types/lib/nextjs/guards';
 import { LoggedError } from '@compliance-theater/logger';
 import { PaginatedResultset } from '@/data-models/_types';
 import type { PaginationStats } from '@/data-models/_types';
@@ -14,8 +14,8 @@ type KeysFromModel<
   TRepositoryModel,
   TRepositoryKey extends keyof TRepositoryModel
 > = {
-  [key in TRepositoryKey]: PickField<TRepositoryModel, key>;
-};
+    [key in TRepositoryKey]: PickField<TRepositoryModel, key>;
+  };
 
 /**
  * DrizzleCrudRepositoryController provides REST API endpoints for any BaseDrizzleRepository implementation.
@@ -34,25 +34,25 @@ export class DrizzleCrudRepositoryController<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     any
   >
-    ? TInferModel
-    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      any = TRepository extends BaseDrizzleRepository<infer TInferModel, any>
-    ? TInferModel
-    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      any,
+  ? TInferModel
+  : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any = TRepository extends BaseDrizzleRepository<infer TInferModel, any>
+  ? TInferModel
+  : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any,
   TRepositoryKey extends TRepository extends BaseDrizzleRepository<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     any,
     infer TInferKey
   >
-    ? TInferKey
-    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      any = TRepository extends BaseDrizzleRepository<any, infer TInferKey>
-    ? TInferKey
-    : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      any
+  ? TInferKey
+  : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any = TRepository extends BaseDrizzleRepository<any, infer TInferKey>
+  ? TInferKey
+  : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  any
 > {
-  constructor(private repository: TRepository) {}
+  constructor(private repository: TRepository) { }
 
   /**
    * Handles GET requests for listing resources with optional pagination

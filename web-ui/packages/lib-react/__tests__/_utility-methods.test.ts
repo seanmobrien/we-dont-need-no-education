@@ -3,11 +3,14 @@
  */
 
 import {
+  isTruthy
+} from '@compliance-theater/types/types/is-truthy';
+
+import {
   generateUniqueId,
   isError,
   isAbortError,
   isTemplateStringsArray,
-  isTruthy,
   isRecord,
   TypeBrandSymbol,
   isTypeBranded,

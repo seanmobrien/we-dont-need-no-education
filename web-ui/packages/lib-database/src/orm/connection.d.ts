@@ -9,7 +9,7 @@
 
 import type { DbDatabaseType } from './schema';
 
-declare module '@/lib/drizzle-db/connection' {
+declare module '@compliance-theater/database/orm/connection' {
   /**
    * Ensure the Drizzle DB is initialized and optionally run a callback with the db.
    *

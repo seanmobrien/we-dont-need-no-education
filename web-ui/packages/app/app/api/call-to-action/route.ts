@@ -4,7 +4,7 @@ import {
   buildFallbackGrid,
   wrapRouteRequest,
 } from '@compliance-theater/nextjs/server/utils';
-import { eq, and, sql, SQL } from 'drizzle-orm';
+import { eq, and, sql, SQL } from '@compliance-theater/database/drizzle-orm';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { schema } from '@compliance-theater/database/orm';
 import {
@@ -12,7 +12,7 @@ import {
   getEmailColumn,
   selectForGrid,
 } from '@/lib/components/mui/data-grid/queryHelpers';
-import { PgColumn } from 'drizzle-orm/pg-core';
+import { PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 
 export const dynamic = 'force-dynamic';
 

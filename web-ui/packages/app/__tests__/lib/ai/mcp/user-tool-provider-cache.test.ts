@@ -3,7 +3,7 @@
 import type {
   ToolProviderSet,
   UserToolProviderCache as UserToolProviderCacheType,
-} from '@/lib/ai/mcp/types';
+} from '../../../../lib/ai/mcp/types';
 
 import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
 jest.mock('@compliance-theater/feature-flags/server', () => ({
@@ -11,9 +11,9 @@ jest.mock('@compliance-theater/feature-flags/server', () => ({
   getAllFeatureFlags: jest.fn(),
 }));
 
-import { mockFlagsmithInstanceFactory } from '@/__tests__/setup/jest.setup';
+import { mockFlagsmithInstanceFactory } from '../../../setup/jest.setup';
 import { createFlagsmithInstance } from 'flagsmith/isomorphic';
-import { getUserToolProviderCache } from '@/lib/ai/mcp/cache';
+import { getUserToolProviderCache } from '../../../../lib/ai/mcp/cache';
 import EventEmitter from '@protobufjs/eventemitter';
 
 const makeToolSet = (input: Partial<ToolProviderSet>) => {

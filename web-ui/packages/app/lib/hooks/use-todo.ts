@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Todo, TodoList, TodoListSummary } from '@/data-models/api/todo';
-import { fetch } from '@compliance-theater/nextjs';
+import { fetch } from '@compliance-theater/fetch';
 import { LoggedError } from '@compliance-theater/logger';
 
 // Query keys for todo-related queries
@@ -439,10 +439,10 @@ export const useToggleTodo = (listId: string) => {
           todos: previousList.todos.map((todo) =>
             todo.id === itemId
               ? {
-                  ...todo,
-                  completed,
-                  status: completed ? 'complete' : 'active',
-                }
+                ...todo,
+                completed,
+                status: completed ? 'complete' : 'active',
+              }
               : todo,
           ),
         });
@@ -455,14 +455,14 @@ export const useToggleTodo = (listId: string) => {
           previousLists.map((list) =>
             list.id === listId
               ? {
-                  ...list,
-                  completedItems: completed
-                    ? (list.completedItems ?? 0) + 1
-                    : (list.completedItems ?? 0) - 1,
-                  pendingItems: completed
-                    ? (list.pendingItems ?? 0) - 1
-                    : (list.pendingItems ?? 0) + 1,
-                }
+                ...list,
+                completedItems: completed
+                  ? (list.completedItems ?? 0) + 1
+                  : (list.completedItems ?? 0) - 1,
+                pendingItems: completed
+                  ? (list.pendingItems ?? 0) - 1
+                  : (list.pendingItems ?? 0) + 1,
+              }
               : list,
           ),
         );

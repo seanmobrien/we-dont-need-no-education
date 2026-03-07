@@ -1,0 +1,72 @@
+{
+    "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+        "jsx": "react-jsx",
+        "noEmit": false,
+        "baseUrl": "../",
+        "customConditions": [
+            "workspace-source"
+        ],
+    },
+    "files": [],
+    "exclude": [
+        "**/tests/**",
+        "**/__tests__/**",
+        "**/__mocks__/**",
+        "**/dist/**",
+        "**/.next/**",
+        "**/.turbo/**",
+        "**/packages/**",
+        "**/submodules/**",
+    ],
+    "references": [
+        {
+            "path": "packages/lib-logger"
+        },
+        {
+            "path": "packages/lib-env"
+        },
+        {
+            "path": "packages/lib-typescript"
+        },
+        {
+            "path": "packages/lib-redis"
+        },
+        {
+            "path": "packages/lib-after"
+        },
+        {
+            "path": "packages/app"
+        },
+        {
+            "path": "packages/lib-database"
+        },
+        {
+            "path": "packages/lib-auth"
+        },
+        {
+            "path": "packages/lib-nextjs"
+        },
+        {
+            "path": "packages/lib-react"
+        },
+        {
+            "path": "packages/lib-send-api-request"
+        },
+        {
+            "path": "packages/lib-themes"
+        },
+        {
+            "path": "packages/lib-types"
+        },
+        {
+            "path": "submodules/json-viewer/packages/src"
+        },
+        {
+            "path": "submodules/sce/packages/core/ts"
+        },
+        {
+            "path": "submodules/sce/packages/semanticencoding/ts"
+        }
+    ]
+}

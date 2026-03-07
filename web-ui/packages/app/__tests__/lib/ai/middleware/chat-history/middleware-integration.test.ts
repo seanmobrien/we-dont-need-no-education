@@ -3,13 +3,15 @@
 jest.unmock('@opentelemetry/api');
 jest.unmock('@opentelemetry/sdk-trace-base');
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+jest.mock('@compliance-theater/logger/errors/logged-error', () => ({
+  LoggedError: {
+    isTurtlesAllTheWayDownBaby: jest.fn(),
+  },
+}));
 
-setupImpersonationMock();
-
-jest.mock('@/lib/ai/middleware/chat-history/utility', () => {
+jest.mock('../../../../../lib/ai/middleware/chat-history/utility', () => {
   const original = jest.requireActual(
-    '/lib/ai/middleware/chat-history/utility',
+    '../../../../../lib/ai/middleware/chat-history/utility',
   );
   return {
     ...original,
@@ -17,21 +19,23 @@ jest.mock('@/lib/ai/middleware/chat-history/utility', () => {
   };
 });
 
+
+import { setupImpersonationMock } from '../../../../jest.mock-impersonation';
+
+setupImpersonationMock();
+
+
 /**
  * Integration tests for chat history middleware supporting both streaming and text completions
  */
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
-import { createChatHistoryMiddlewareEx } from '@/lib/ai/middleware/chat-history';
-import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
-import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
+import { hideConsoleOutput } from '../../../../shared/test-utils';
 
-jest.mock('@/lib/react-util', () => ({
-  LoggedError: {
-    isTurtlesAllTheWayDownBaby: jest.fn(),
-  },
-}));
+import { createChatHistoryMiddlewareEx } from '../../../../../lib/ai/middleware/chat-history';
+import { createUserChatHistoryContext } from '../../../../../lib/ai/middleware/chat-history/create-chat-history-context';
+import type { ChatHistoryContext } from '../../../../../lib/ai/middleware/chat-history/types';
 
-jest.mock('@/lib/ai/core', () => ({
+
+jest.mock('@compliance-theater/types/lib/ai/core', () => ({
   generateChatId: jest.fn(() => ({ id: 'generated-chat-id' })),
 }));
 

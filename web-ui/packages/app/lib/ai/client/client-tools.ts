@@ -1,4 +1,4 @@
-import { UIDataTypes, UIMessage, UITools } from 'ai';
+import { UIDataTypes, UIMessage, UITools } from '@compliance-theater/types/ai-sdk';
 import { ValueOf } from '../core/types';
 
 /**

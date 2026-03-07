@@ -19,7 +19,7 @@ import {
   type SelectedChatItem,
 } from '@/lib/ai/chat/export';
 import type { ChatTurn } from '@/lib/ai/chat/types';
-import { errorReporter } from '@/lib/error-monitoring/error-reporter';
+import { errorReporter } from '@compliance-theater/logger/errors/monitoring/error-reporter';
 
 interface ChatExportMenuProps {
   turns: ChatTurn[];

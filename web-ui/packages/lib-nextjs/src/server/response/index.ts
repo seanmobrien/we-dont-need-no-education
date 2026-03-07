@@ -1,3 +1,5 @@
+/* global TextEncoder, Response, Buffer, ReadableStream, Headers, TextDecoder, Blob, NodeJS, process, ResponseInit, require */
+
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
 import { isAbortError } from '../../utilities/is-abort-error';
 import { isRunningOnServer } from '@compliance-theater/env';
@@ -403,7 +405,6 @@ export const makeJsonResponse = (
   try {
     if (isRunningOnServer()) {
       // In Node.js environment, use NextResponse
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { NextResponse } = require('next/server');
       return NextResponse.json(data, responseInit);
     }

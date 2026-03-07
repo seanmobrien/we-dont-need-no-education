@@ -8,7 +8,7 @@ import { styled } from '@mui/material/styles';
 import { Resizable } from 'react-resizable';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
-import { useChatPanelContext } from './chat-panel-context';
+import { useChatPanelContext } from '@compliance-theater/types/components/ai/chat-panel/chat-panel-context';
 import type { DockPosition } from './types';
 
 /**

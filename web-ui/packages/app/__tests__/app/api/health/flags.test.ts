@@ -2,8 +2,6 @@
  * @jest-environment node
  */
 
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
-
 jest.mock('@compliance-theater/feature-flags/server', () => ({
   getFeatureFlag: jest.fn(),
 }));
@@ -12,19 +10,17 @@ import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
 
 describe('health feature-flag driven behavior', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    SingletonProvider.Instance.clear();
+    jest.restoreAllMocks();
   });
 
   afterEach(() => {
-    SingletonProvider.Instance.clear();
     jest.useRealTimers();
   });
 
   it('applies memory cache TTL from flag', async () => {
     // Test that MemoryHealthCache works with both numbers and AutoRefreshFeatureFlag instances
     // We test with numbers here because AutoRefreshFeatureFlag doesn't work well with fake timers
-    const { MemoryHealthCache } = await import('@/lib/api/health/memory');
+    const { MemoryHealthCache } = await import('../../../../lib/api/health/memory');
 
     jest.useFakeTimers();
 
@@ -86,7 +82,7 @@ describe('health feature-flag driven behavior', () => {
     });
 
     const { ensureDatabaseCacheConfigured, getDatabaseHealthCache } =
-      await import('@/lib/api/health/database');
+      await import('../../../../lib/api/health/database');
 
     jest.useFakeTimers();
 
@@ -103,17 +99,25 @@ describe('health feature-flag driven behavior', () => {
   it('startup threshold from flag relaxes memory requirement after threshold reached', async () => {
     process.env.HEALTH_STARTUP_FAILURE_THRESHOLD = '1';
 
-    const { GET } = await import('@/app/api/health/probe/[probe_type]/route');
-    const dbModule = await import('@/lib/api/health/database');
-    const memModule = await import('@/lib/api/health/memory');
+    jest.resetModules();
 
-    // Mock DB healthy, memory unhealthy
-    jest
-      .spyOn(dbModule, 'checkDatabaseHealth')
+    const checkDatabaseHealthMock = jest
+      .fn()
       .mockResolvedValue({ status: 'healthy' } as any);
-    jest
-      .spyOn(memModule, 'getMemoryHealthCache')
-      .mockReturnValue({ get: () => undefined } as any);
+    const getMemoryHealthCacheMock = jest
+      .fn()
+      .mockResolvedValue({ get: () => undefined } as any);
+    const determineHealthStatusMock = jest.fn().mockReturnValue('error');
+
+    jest.doMock('../../../../lib/api/health/database', () => ({
+      checkDatabaseHealth: checkDatabaseHealthMock,
+    }));
+    jest.doMock('../../../../lib/api/health/memory', () => ({
+      getMemoryHealthCache: getMemoryHealthCacheMock,
+      determineHealthStatus: determineHealthStatusMock,
+    }));
+
+    const { GET } = await import('../../../../app/api/health/probe/[probe_type]/route');
 
     const mockSpan = {
       setAttribute: jest.fn(),

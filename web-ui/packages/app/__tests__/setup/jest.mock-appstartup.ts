@@ -1,7 +1,7 @@
 type AppStartupState = 'pending' | 'initializing' | 'ready' | 'teardown' | 'done';
 
 
-jest.mock('@/lib/site-util/app-startup', () => {
+jest.mock('../../lib/site-util/app-startup', () => {
   const startup = jest.fn(() => {
     if (ret._currentState === 'pending' || ret._currentState === 'initializing') {
       ret._currentState = 'ready';
@@ -21,4 +21,4 @@ jest.mock('@/lib/site-util/app-startup', () => {
   return ret;
 });
 // Import to ensure mock is sticky
-import { startup } from '@/lib/site-util/app-startup';
+import { startup } from '../../lib/site-util/app-startup';

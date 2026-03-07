@@ -1,5 +1,5 @@
 import { repairTopMemoriesToolCall } from '../../../../../lib/ai/middleware/memory-middleware/repair-top-memories';
-import { InvalidToolInputError, NoSuchToolError, type ToolSet } from 'ai';
+import { InvalidToolInputError, NoSuchToolError, type ToolSet } from '@compliance-theater/types/ai-sdk';
 
 type RepairOptions = Parameters<typeof repairTopMemoriesToolCall>[0];
 

@@ -8,7 +8,7 @@ import type {
   ModelProviderFactoryConfig,
   EnhancedFetchConfig,
 } from './types';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 import { PickField } from '@compliance-theater/typescript/types';
 
 const DEFAULT_IN_MEMORY_STORAGE_CONFIG =
@@ -34,10 +34,10 @@ const DEFAULT_ENHANCED_FETCH_CONFIG = {
 
 type ModelConfigDefaultType = {
   [key in AiProvider | 'client']: key extends infer K
-    ? K extends AiProvider
-      ? ModelProviderFactoryConfig
-      : ModelConfig
-    : never;
+  ? K extends AiProvider
+  ? ModelProviderFactoryConfig
+  : ModelConfig
+  : never;
 };
 
 const ModelConfigDefaults: ModelConfigDefaultType = {

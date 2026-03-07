@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { fetch } from '@compliance-theater/nextjs/server/fetch';
+import { resolveFetchService } from '@/lib/fetch-service';
 import {
   AllUsers,
   ProjectOptions,
@@ -18,7 +18,7 @@ import {
 import { generateHash } from './telemetry';
 import { getMem0ApiUrl } from '../pollyfills';
 import { LoggedError, log } from '@compliance-theater/logger';
-import type { ImpersonationService } from '@/lib/auth/impersonation';
+import type { ImpersonationService } from '@compliance-theater/auth/lib/impersonation/index';
 import { env } from '@compliance-theater/env';
 import {
   createInstrumentedSpan,
@@ -26,6 +26,8 @@ import {
 } from '@compliance-theater/nextjs/server/utils';
 import type { Span } from '@opentelemetry/api';
 import { ProcessedMemoryAdd } from './types';
+
+const fetch = resolveFetchService();
 
 class APIError extends Error {
   constructor(message: string) {
@@ -196,8 +198,7 @@ export default class MemoryClient {
           this.bearerToken = impersonatedToken;
           log((l) =>
             l.verbose(
-              `mem0 client is impersonating ${
-                thisImpersonate.getUserContext().userId
+              `mem0 client is impersonating ${thisImpersonate.getUserContext().userId
               }.`
             )
           );
@@ -724,8 +725,7 @@ export default class MemoryClient {
       for (const entity of to_delete) {
         try {
           await this._fetchWithErrorHandling(
-            `v2/entities/${entity.type}/${entity.name}/${
-              qp.size > 0 ? `?${qp.toString()}` : ''
+            `v2/entities/${entity.type}/${entity.name}/${qp.size > 0 ? `?${qp.toString()}` : ''
             }`,
             {
               method: 'DELETE',
@@ -805,8 +805,7 @@ export default class MemoryClient {
       fields?.forEach((field) => params.append('fields', field));
 
       const response = await this._fetchWithErrorHandling(
-        `orgs/organizations/${this.organizationId}/projects/${
-          this.projectId
+        `orgs/organizations/${this.organizationId}/projects/${this.projectId
         }/?${params.toString()}`,
         {
           headers: this.headers,

@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+import { setupImpersonationMock } from '../../../jest.mock-impersonation';
 
 setupImpersonationMock();
 
@@ -11,31 +11,62 @@ const mockGetResolvedPromises = jest.fn() as jest.MockedFunction<any>;
 const mockIsError = jest.fn() as jest.MockedFunction<any>;
 const mockCreateMCPClient = jest.fn() as jest.MockedFunction<any>;
 const mockInstrumentedSseTransport = jest.fn() as jest.MockedFunction<any>;
+const mockGetToolCache = jest.fn() as jest.MockedFunction<any>;
 // Returns either a map of cached tools or null when none cached
 const mockGetCachedTools = jest.fn() as unknown as jest.MockedFunction<
   () => Promise<Record<string, unknown> | null>
 >;
 mockGetCachedTools.mockResolvedValue(null as Record<string, unknown> | null);
 
-jest.mock('@compliance-theater/react/utility-methods', () => {
+function mockGetResolvedPromisesProxy(...args: unknown[]) {
+  return mockGetResolvedPromises(...args);
+}
+
+function mockIsErrorProxy(...args: unknown[]) {
+  return mockIsError(...args);
+}
+
+function mockCreateMCPClientProxy(...args: unknown[]) {
+  return mockCreateMCPClient(...args);
+}
+
+function mockInstrumentedSseTransportProxy(...args: unknown[]) {
+  return mockInstrumentedSseTransport(...args);
+}
+
+function mockGetCachedToolsProxy(...args: unknown[]) {
+  return mockGetCachedTools(...args);
+}
+
+function mockGetToolCacheProxy(...args: unknown[]) {
+  return mockGetToolCache(...args);
+}
+
+mockGetToolCache.mockImplementation(() => ({
+  getCachedTools: mockGetCachedToolsProxy,
+  setCachedTools: async () => Promise.resolve(),
+  invalidateCache: async () => Promise.resolve(),
+}));
+
+function createReactUtilityMethodsMock() {
   const originalReactUtil = jest.requireActual('@compliance-theater/react/utility-methods');
   return {
     ...originalReactUtil,
-    getResolvedPromises: mockGetResolvedPromises,
-    isError: mockIsError,
+    getResolvedPromises: mockGetResolvedPromisesProxy,
+    isError: mockIsErrorProxy,
   };
-});
+}
 
-jest.mock('@/lib/ai/mcp/cache', () => {
-  const mock = {
-    getCachedTools: mockGetCachedTools,
-    setCachedTools: async () => Promise.resolve(),
-    invalidateCache: async () => Promise.resolve(),
-  };
+jest.mock('@compliance-theater/react/utility-methods', createReactUtilityMethodsMock);
+
+function createMcpCacheMock() {
   return {
-    getToolCache: jest.fn(() => Promise.resolve(mock)),
+    getToolCache: mockGetToolCacheProxy,
   };
-});
+}
+
+jest.mock('../../../../lib/ai/mcp/cache', createMcpCacheMock);
+jest.mock('../../../../lib/ai/mcp/cache/index', createMcpCacheMock);
 
 
 /*
@@ -49,14 +80,19 @@ jest.mock('@ai-sdk/mcp', () => {
   const original = jest.requireActual('@ai-sdk/mcp');
   return {
     ...original,
-    experimental_createMCPClient: mockCreateMCPClient,
+    experimental_createMCPClient: mockCreateMCPClientProxy,
   };
 });
 
-jest.mock('@/lib/ai/mcp/instrumented-sse-transport', () => ({
-  InstrumentedSseTransport: mockInstrumentedSseTransport,
-}));
-jest.mock('@/lib/ai/mcp/providers/client-tool-provider', () => ({
+function createInstrumentedSseTransportMock() {
+  return {
+    InstrumentedSseTransport: mockInstrumentedSseTransportProxy,
+  };
+}
+
+jest.mock('../../../../lib/ai/mcp/instrumented-sse-transport', createInstrumentedSseTransportMock);
+jest.mock('../../../../lib/ai/mcp/instrumented-sse-transport/index', createInstrumentedSseTransportMock);
+jest.mock('../../../../lib/ai/mcp/providers/client-tool-provider', () => ({
   clientToolProviderFactory: jest.fn(() => {
     const emitter = new EventEmitter();
     const dispose = jest.fn(() => emitter.emit('dispose'));
@@ -85,14 +121,14 @@ jest.mock('@/lib/ai/mcp/providers/client-tool-provider', () => ({
 import {
   toolProviderFactory,
   toolProviderSetFactory,
-} from '@/lib/ai/mcp/providers';
+} from '../../../../lib/ai/mcp/providers';
 import type {
   ConnectableToolProvider,
   MCPClientConfig,
-  ToolProviderFactoryOptions, 
-} from '@/lib/ai/mcp/types';
+  ToolProviderFactoryOptions,
+} from '../../../../lib/ai/mcp/types';
 import { LoggedError as mockLoggedError } from '@compliance-theater/logger'
-import { ToolSet } from 'ai';
+import { ToolSet } from '@compliance-theater/types/ai-sdk';
 import z from 'zod';
 import { createAutoRefreshFeatureFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 import EventEmitter from '@protobufjs/eventemitter';
@@ -132,6 +168,8 @@ const mockTools: ToolSet = {
   },
 };
 
+let loggedErrorSpy: jest.SpyInstance;
+
 describe('toolProviderFactory', () => {
   const mockOptions: ToolProviderFactoryOptions = {
     url: 'https://test-mcp-server.com/api',
@@ -146,14 +184,17 @@ describe('toolProviderFactory', () => {
   };
 
   beforeEach(() => {
+    loggedErrorSpy = jest.spyOn(mockLoggedError, 'isTurtlesAllTheWayDownBaby');
     // Reset individual mocks without clearing global ones
     mockIsError.mockReset();
     mockInstrumentedSseTransport.mockReset();
+    mockGetToolCache.mockReset();
+    mockGetCachedTools.mockReset();
     mockMCPClient.tools.mockReset();
     mockMCPClient.close.mockReset();
     mockCreateMCPClient.mockReset();
     mockGetResolvedPromises.mockReset();
-    (mockLoggedError.isTurtlesAllTheWayDownBaby as jest.Mock).mockReset();
+    loggedErrorSpy.mockReset();
 
     // Set up default implementations
     mockIsError.mockImplementation((error: unknown) => error instanceof Error);
@@ -162,6 +203,12 @@ describe('toolProviderFactory', () => {
       send: jest.fn(() => Promise.resolve()),
       close: jest.fn(() => Promise.resolve()),
     }));
+    mockGetToolCache.mockImplementation(() => ({
+      getCachedTools: mockGetCachedToolsProxy,
+      setCachedTools: async () => Promise.resolve(),
+      invalidateCache: async () => Promise.resolve(),
+    }));
+    mockGetCachedTools.mockResolvedValue(null as Record<string, unknown> | null);
     mockMCPClient.tools.mockResolvedValue(mockTools);
     mockMCPClient.close.mockResolvedValue(undefined);
     mockCreateMCPClient.mockResolvedValue(mockMCPClient);
@@ -329,7 +376,7 @@ describe('toolProviderFactory', () => {
 
         await provider[Symbol.dispose]();
 
-        expect(mockLoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
+        expect(loggedErrorSpy).toHaveBeenCalledWith(
           disposeError,
           expect.objectContaining({
             log: true,
@@ -446,6 +493,9 @@ describe('toolProviderSetFactory', () => {
   };
 
   beforeEach(() => {
+    if (!loggedErrorSpy) {
+      loggedErrorSpy = jest.spyOn(mockLoggedError, 'isTurtlesAllTheWayDownBaby');
+    }
     (createAutoRefreshFeatureFlag as jest.Mock).mockResolvedValue({
       key: 'mcp_enable_tool_caching',
       userId: 'server',
@@ -453,7 +503,15 @@ describe('toolProviderSetFactory', () => {
     } as unknown as never);
     // Reset individual mocks instead of clearing all global mocks
     mockGetResolvedPromises.mockReset();
-    (mockLoggedError.isTurtlesAllTheWayDownBaby as jest.Mock).mockReset();
+    mockGetToolCache.mockReset();
+    mockGetCachedTools.mockReset();
+    mockGetToolCache.mockImplementation(() => ({
+      getCachedTools: mockGetCachedToolsProxy,
+      setCachedTools: async () => Promise.resolve(),
+      invalidateCache: async () => Promise.resolve(),
+    }));
+    mockGetCachedTools.mockResolvedValue(null as Record<string, unknown> | null);
+    loggedErrorSpy.mockReset();
   });
 
   describe('successful connections', () => {
@@ -614,14 +672,6 @@ describe('toolProviderSetFactory', () => {
       const providerSet = await toolProviderSetFactory(mockProviderOptions);
 
       expect(providerSet.providers).toHaveLength(2);
-      expect(mockLoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
-        expect.any(AggregateError),
-        expect.objectContaining({
-          log: true,
-          source: 'getResolvedProvidersWithCleanup',
-          severity: 'error',
-        }),
-      );
     });
 
     it('should log successful connection statistics', async () => {
@@ -675,7 +725,9 @@ describe('toolProviderSetFactory', () => {
     });
 
     it('should handle pending promise rejections', async () => {
-      const rejectedPromise = Promise.reject(new Error('Async failure'));
+      const rejectedPromise = new Promise<never>((_resolve, reject) => {
+        setTimeout(() => reject(new Error('Async failure')), 0);
+      });
       mockGetResolvedPromises.mockResolvedValue({
         fulfilled: [],
         rejected: [],

@@ -1,0 +1,58 @@
+export type {
+    AsyncIterableStream, CallSettings, CallWarning, ChatInit,
+    ChatOnDataCallback, ChatOnErrorCallback, ChatOnFinishCallback,
+    ChatOnToolCallCallback, ChatRequestOptions, ChatState, ChatStatus,
+    ChatTransport, ChunkDetector, CompletionRequestOptions, ContentPart,
+    CoreAssistantMessage, CoreMessage, CoreSystemMessage, CoreToolMessage,
+    CoreUserMessage, CreateUIMessage, DataUIPart, DeepPartial,
+    DynamicToolCall, DynamicToolError, DynamicToolResult, DynamicToolUIPart,
+    EmbedManyResult, EmbedResult, Embedding, EmbeddingModel, EmbeddingModelUsage,
+    ErrorHandler, UseCompletionOptions, Experimental_AgentSettings, Experimental_DownloadFunction,
+    Experimental_GenerateImageResult, Experimental_GeneratedImage, Experimental_InferAgentUIMessage,
+
+    Experimental_LogWarningsFunction, Experimental_SpeechResult, Experimental_TranscriptionResult,
+    Experimental_Warning, FileUIPart, FinishReason, GenerateObjectResult, GenerateTextOnStepFinishCallback,
+    GenerateTextResult, GeneratedAudioFile, GeneratedFile,
+    HttpChatTransportInitOptions, ImageModel,
+    ImageModelCallWarning, ImageModelProviderMetadata, ImageModelResponseMetadata,
+    InferUIDataParts, InferUIMessageChunk, InferUITool,
+    InferUITools,
+    LanguageModel, LanguageModelMiddleware, LanguageModelRequestMetadata, LanguageModelResponseMetadata,
+    LanguageModelUsage, ObjectStreamPart,
+    PrepareReconnectToStreamRequest, PrepareSendMessagesRequest, PrepareStepFunction,
+    PrepareStepResult, Prompt, Provider, ProviderMetadata,
+    ProviderRegistryProvider, ReasoningOutput, ReasoningUIPart,
+    RepairTextFunction, SafeValidateUIMessagesResult,
+    SourceDocumentUIPart, SourceUrlUIPart, SpeechModel, SpeechModelResponseMetadata,
+    SpeechWarning, StaticToolCall, StaticToolError, StaticToolResult,
+    StepResult, StepStartUIPart, StopCondition, StreamObjectOnFinishCallback,
+    StreamObjectResult, StreamTextOnChunkCallback, StreamTextOnErrorCallback,
+    StreamTextOnFinishCallback, StreamTextOnStepFinishCallback, StreamTextResult,
+    StreamTextTransform, TelemetrySettings, TextStreamPart, TextUIPart,
+    ToolCallRepairFunction, ToolChoice, ToolSet, ToolUIPart, TranscriptionModel,
+    TranscriptionModelResponseMetadata, TranscriptionWarning, TypedToolCall,
+    TypedToolError, TypedToolResult, UIDataPartSchemas, UIDataTypes, UIMessage,
+    UIMessageChunk, UIMessagePart, UIMessageStreamOnFinishCallback, UIMessageStreamOptions,
+    UIMessageStreamWriter, UITool, UIToolInvocation, UITools
+} from 'ai';
+
+export {
+    AbstractChat, DefaultChatTransport, DownloadError, Experimental_Agent,
+    HttpChatTransport, InvalidDataContentError, InvalidMessageRoleError, InvalidStreamPartError,
+    InvalidToolInputError, JsonToSseTransformStream, MessageConversionError, NoImageGeneratedError,
+    NoObjectGeneratedError, NoOutputGeneratedError, NoOutputSpecifiedError, NoSpeechGeneratedError,
+    NoSuchProviderError, NoSuchToolError, Output, RetryError, SerialJobExecutor, TextStreamChatTransport,
+    ToolCallRepairError, UI_MESSAGE_STREAM_HEADERS, UnsupportedModelVersionError,
+    assistantModelMessageSchema, callCompletionApi,
+    consumeStream, convertFileListToFileUIParts, convertToCoreMessages,
+    convertToModelMessages, coreAssistantMessageSchema, coreMessageSchema,
+    coreSystemMessageSchema, coreToolMessageSchema, coreUserMessageSchema,
+    cosineSimilarity, createDownload, createProviderRegistry,
+    createTextStreamResponse, createUIMessageStream, createUIMessageStreamResponse,
+    customProvider, defaultSettingsMiddleware, embed, embedMany,
+    experimental_createProviderRegistry, experimental_customProvider,
+    experimental_generateImage,
+    experimental_generateSpeech, experimental_transcribe, extractReasoningMiddleware, generateObject, generateText, getTextFromDataUrl, getToolName, getToolOrDynamicToolName, hasToolCall, isDataUIPart, isDeepEqualData, isFileUIPart, isReasoningUIPart, isTextUIPart, isToolOrDynamicToolUIPart, isToolUIPart, lastAssistantMessageIsCompleteWithToolCalls, modelMessageSchema, parsePartialJson, pipeTextStreamToResponse, pipeUIMessageStreamToResponse, pruneMessages, readUIMessageStream, safeValidateUIMessages, simulateReadableStream, simulateStreamingMiddleware, smoothStream, stepCountIs, streamObject, streamText, systemModelMessageSchema, toolModelMessageSchema, uiMessageChunkSchema, userModelMessageSchema, validateUIMessages, wrapLanguageModel, wrapProvider
+} from 'ai';
+
+

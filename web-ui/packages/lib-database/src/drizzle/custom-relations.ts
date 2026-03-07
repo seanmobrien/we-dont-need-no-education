@@ -1,3 +1,6 @@
+// eslint-disable @typescript-eslint/no-implicit-any
+
+
 import { relations } from 'drizzle-orm/relations';
 import {
   callToActionDetails,
@@ -324,7 +327,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   userPublicKeys: many(userPublicKeys),
 }));
 
-export const sessionsRelations = relations(sessions, ({ one, many }) => ({
+export const sessionsRelations = relations(sessions, ({ one }) => ({
   account: one(accounts, {
     fields: [sessions.userId],
     references: [accounts.userId],

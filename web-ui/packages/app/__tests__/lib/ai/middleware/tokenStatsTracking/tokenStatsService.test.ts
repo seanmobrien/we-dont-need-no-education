@@ -18,18 +18,18 @@ import {
   getTokenStatsService,
   TokenStatsServiceType,
   TokenUsageData,
-} from '@/lib/ai/middleware/tokenStatsTracking';
-import { reset } from '@/lib/ai/services/model-stats/token-stats-service';
+} from '../../../../../lib/ai/middleware/tokenStatsTracking';
+import { reset } from '../../../../../lib/ai/services/model-stats/token-stats-service';
 import { getRedisClient } from '@compliance-theater/redis';
 //import { drizDbWithInit, schema } from '@compliance-theater/database';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '../../../../shared/test-utils';
 import {
   setupMaps,
   PROVIDER_ID_AZURE,
   PROVIDER_ID_GOOGLE,
   MODEL_ID_GPT4_NO_QUOTA,
-} from '@/__tests__/setup/jest.mock-provider-model-maps';
-import { ModelMap } from '@/lib/ai/services/model-stats/model-map';
+} from '../../../../setup/jest.mock-provider-model-maps';
+import { ModelMap } from '../../../../../lib/ai/services/model-stats/model-map';
 
 const mockRedisClient = {
   get: jest.fn(),

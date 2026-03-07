@@ -6,7 +6,7 @@
  * @description Unit tests for the health check API route at app/api/health/route.ts
  */
 
-jest.mock('@/lib/auth/impersonation/impersonation-factory', () => {
+jest.mock('@compliance-theater/auth/lib/impersonation/impersonation-factory', () => {
   const impersonationService = {
     getImpersonatedToken: jest.fn().mockResolvedValue('impersonated-token'),
     getUserContext: jest
@@ -21,7 +21,7 @@ jest.mock('@/lib/auth/impersonation/impersonation-factory', () => {
   };
 });
 
-jest.mock('@/lib/ai/mcp/providers', () => ({
+jest.mock('../../../../lib/ai/mcp/providers', () => ({
   setupDefaultTools: jest.fn().mockResolvedValue({
     isHealthy: true,
     providers: [{}, {}], // 2 providers
@@ -29,14 +29,14 @@ jest.mock('@/lib/ai/mcp/providers', () => ({
     [Symbol.dispose]: jest.fn(),
   }),
 }));
-import { auth } from '@/auth';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
-import { GET } from '@/app/api/health/route';
+import { auth } from '@compliance-theater/auth';
+import { hideConsoleOutput } from '../../../shared/test-utils';
+import { GET } from '../../../../app/api/health/route';
 import { NextRequest } from 'next/server';
-import { fromUserId } from '@/lib/auth/impersonation/impersonation-factory';
+import { fromUserId } from '@compliance-theater/auth/lib/impersonation/impersonation-factory';
 
 // Mock the memory client factory
-jest.mock('@/lib/ai/mem0/memoryclient-factory', () => ({
+jest.mock('../../../../lib/ai/mem0/memoryclient-factory', () => ({
   memoryClientFactory: jest.fn(() =>
     Promise.resolve({
       healthCheck: jest.fn(),

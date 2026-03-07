@@ -29,22 +29,21 @@ jest.mock('@compliance-theater/after', () => {
 
 import {
   /*resetEnvVariables, */ withRedisConnection,
-} from '@/__tests__/setup/jest.setup';
+} from '../../../setup/jest.setup';
 import {
   getCacheConfig,
   validateCacheConfig,
   type CacheConfig,
-} from '@/lib/ai/middleware/cacheWithRedis/config';
+} from '../../../../lib/ai/middleware/cacheWithRedis/config';
 import {
   metricsCollector,
   setupConsoleMetrics,
   getPrometheusMetrics,
-} from '@/lib/ai/middleware/cacheWithRedis/metrics';
+} from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
 import { getRedisClient, closeRedisClient } from '@compliance-theater/redis';
-import type { RedisClientType } from 'redis';
 
 describe('Enterprise Cache Features', () => {
-  let redis: RedisClientType;
+  let redis: Awaited<ReturnType<typeof getRedisClient>>;
 
   beforeAll(async () => {
     withRedisConnection();

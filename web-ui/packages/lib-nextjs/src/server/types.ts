@@ -1,3 +1,5 @@
+/* global Response */
+
 import { Span } from '@opentelemetry/api';
 
 export type ServerErrorResponseType = Response;

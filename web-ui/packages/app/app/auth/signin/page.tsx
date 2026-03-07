@@ -4,9 +4,9 @@ import {
   SignInPage,
   type AuthProvider,
 } from '@toolpad/core/SignInPage';
-import { AuthError } from '@auth/core/errors';
+import { AuthError } from '@compliance-theater/types/auth-core/errors';
 import Image from 'next/image';
-import { providerMap, signIn } from '../../../auth';
+import { providerMap, signIn } from '@compliance-theater/auth';
 import { NextAppProvider } from '@toolpad/core/nextjs';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { dumpError, LoggedError } from '@compliance-theater/logger';

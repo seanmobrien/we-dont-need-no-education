@@ -10,17 +10,17 @@ jest.mock('@compliance-theater/database/schema', () => ({}));
 jest.mock('google-auth-library');
 jest.mock('googleapis');
 jest.mock('@compliance-theater/send-api-request');
-jest.mock('@/lib/api/email/import/google');
+jest.mock('../../../../lib/api/email/import/google');
 
-jest.mock('@/lib/email/import/google/managermapfactory');
+jest.mock('../../../../lib/email/import/google/managermapfactory');
 
-import { DefaultImportManager } from '@/lib/email/import/importmanager';
+import { DefaultImportManager } from '../../../../lib/email/import/importmanager';
 import {
   ImportSourceMessage,
   ImportStageValues,
-} from '@/data-models/api/import/email-message';
+} from '../../../../data-models/api/import/email-message';
 import { NextRequest } from 'next/server';
-import { loadEmail } from '@/lib/api/email/import/google';
+import { loadEmail } from '../../../../lib/api/email/import/google';
 import { LoggedError } from '@compliance-theater/logger';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
@@ -29,10 +29,10 @@ import {
   ICancellablePromise,
   ICancellablePromiseExt,
 } from '@compliance-theater/typescript';
-import { managerMapFactory } from '@/lib/email/import/google/managermapfactory';
-import { ImportManagerMap } from '@/lib/email/import/types';
-import { TransactionalStateManagerBase } from '@/lib/email/import/default/transactional-statemanager';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { managerMapFactory } from '../../../../lib/email/import/google/managermapfactory';
+import { ImportManagerMap } from '../../../../lib/email/import/types';
+import { TransactionalStateManagerBase } from '../../../../lib/email/import/default/transactional-statemanager';
+import { hideConsoleOutput } from '../../../shared/test-utils';
 
 const mockManagerMapFactory = managerMapFactory as jest.MockedFunction<
   typeof managerMapFactory

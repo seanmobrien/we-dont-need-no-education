@@ -1,3 +1,4 @@
+import { withJestTestExtensions } from '../jest.test-extensions';
 
 const createMockSpan = () => ({
   end: jest.fn(),
@@ -10,109 +11,116 @@ const createMockSpan = () => ({
   isRecording: jest.fn(),
 });
 
-jest.mock('@opentelemetry/api', () => ({
-  trace: {
-    getTracer: jest.fn(() => ({
-      startActiveSpan: jest.fn((name, fn2, ctx, fn) => (fn ?? fn2)(createMockSpan())),
-    })),
-  },
-  metrics: {
-    getMeter: jest.fn(() => ({
-      createCounter: jest.fn().mockReturnValue({
-        add: jest.fn(),
-      }),
-      createHistogram: jest.fn().mockReturnValue({
-        record: jest.fn(),
-      }),
-      createObservableGauge: jest.fn().mockReturnValue({
-        addCallback: jest.fn(),
-      }),
-      createUpDownCounter: jest.fn().mockReturnValue({
-        add: jest.fn(),
-      }),
-      createObservableUpDownCounter: jest.fn().mockReturnValue({
-        addCallback: jest.fn(),
-      }),
-      createObservableCounter: jest.fn().mockReturnValue({
-        addCallback: jest.fn(),
-      }),
-      createObservableHistogram: jest.fn().mockReturnValue({
-        addCallback: jest.fn(),
-      }),
-    })),
-  },
-  context: {
-    active: jest.fn(),
-  },
-  propagation: {
-    extract: jest.fn(),
-  },
-  SpanContext: {
-    traceId: 'traceId',
-    spanId: 'spanId',
-    traceFlags: 1,
-  },
-  SpanKind: { SERVER: 1 },
-  SpanStatusCode: { OK: 1, ERROR: 2 },
-}));
-
-jest.mock('@opentelemetry/sdk-trace-base', () => {
-  enum ExportResult {
-    OK = 1,
-    ERROR = 2,
-  }
-  const mockExport = jest.fn((spans: unknown[], callback: (result: ExportResult) => void) => {
-    callback(ExportResult.OK);
-  });
-
-  return {
-    BasicTracerProvider: jest.fn().mockReturnValue({
-      getTracer: jest.fn(() => {
-        return {
-          startSpan: jest.fn(() => createMockSpan()),
-        }
-      }),
-    }),
-    InMemorySpanExporter: jest.fn().mockReturnValue({
-      export: mockExport,
-      reset: jest.fn(),
-      getFinishedSpans: jest.fn(() => {
-        let ret: unknown[] = [];
-        mockExport.mock.calls.forEach(([spans]) => {
-          ret.push(...spans);
-        });
-        return ret;
-      }),
-    }),
-    ReadableSpan: jest.fn().mockReturnValue({
-      name: 'test-span',
-      kind: 1,
+try {
+  jest.mock('@opentelemetry/api', () => ({
+    trace: {
+      getTracer: jest.fn(() => ({
+        startActiveSpan: jest.fn((name, fn2, ctx, fn) => (fn ?? fn2)(createMockSpan())),
+      })),
+    },
+    metrics: {
+      getMeter: jest.fn(() => ({
+        createCounter: jest.fn().mockReturnValue({
+          add: jest.fn(),
+        }),
+        createHistogram: jest.fn().mockReturnValue({
+          record: jest.fn(),
+        }),
+        createObservableGauge: jest.fn().mockReturnValue({
+          addCallback: jest.fn(),
+        }),
+        createUpDownCounter: jest.fn().mockReturnValue({
+          add: jest.fn(),
+        }),
+        createObservableUpDownCounter: jest.fn().mockReturnValue({
+          addCallback: jest.fn(),
+        }),
+        createObservableCounter: jest.fn().mockReturnValue({
+          addCallback: jest.fn(),
+        }),
+        createObservableHistogram: jest.fn().mockReturnValue({
+          addCallback: jest.fn(),
+        }),
+      })),
+    },
+    context: {
+      active: jest.fn(),
+    },
+    propagation: {
+      extract: jest.fn(),
+    },
+    SpanContext: {
       traceId: 'traceId',
       spanId: 'spanId',
       traceFlags: 1,
-      resource: {
-        attributes: {},
-      },
-      instrumentationScope: {
-        name: 'test',
-      },
-      parentSpanId: 'parentSpanId',
-      startTime: new Date(),
-      endTime: new Date(),
-      duration: 1,
-      attributes: {},
-      links: [],
-      events: [],
-      status: {
-        code: 1,
-        message: 'test',
-      },
-      resourceSpans: [],
-      scopeSpans: [],
-    }),
-    ExportResult,
-  }
-});
+    },
+    SpanKind: { SERVER: 1 },
+    SpanStatusCode: { OK: 1, ERROR: 2 },
+  }));
 
-// Make those mocks sticky
-import { trace, metrics, SpanStatusCode, SpanKind } from '@opentelemetry/api';
+  jest.mock('@opentelemetry/sdk-trace-base', () => {
+    enum ExportResult {
+      OK = 1,
+      ERROR = 2,
+    }
+    const mockExport = jest.fn((spans: unknown[], callback: (result: ExportResult) => void) => {
+      callback(ExportResult.OK);
+    });
+
+    return {
+      BasicTracerProvider: jest.fn().mockReturnValue({
+        getTracer: jest.fn(() => {
+          return {
+            startSpan: jest.fn(() => createMockSpan()),
+          }
+        }),
+      }),
+      InMemorySpanExporter: jest.fn().mockReturnValue({
+        export: mockExport,
+        reset: jest.fn(),
+        getFinishedSpans: jest.fn(() => {
+          let ret: unknown[] = [];
+          mockExport.mock.calls.forEach(([spans]) => {
+            ret.push(...spans);
+          });
+          return ret;
+        }),
+      }),
+      ReadableSpan: jest.fn().mockReturnValue({
+        name: 'test-span',
+        kind: 1,
+        traceId: 'traceId',
+        spanId: 'spanId',
+        traceFlags: 1,
+        resource: {
+          attributes: {},
+        },
+        instrumentationScope: {
+          name: 'test',
+        },
+        parentSpanId: 'parentSpanId',
+        startTime: new Date(),
+        endTime: new Date(),
+        duration: 1,
+        attributes: {},
+        links: [],
+        events: [],
+        status: {
+          code: 1,
+          message: 'test',
+        },
+        resourceSpans: [],
+        scopeSpans: [],
+      }),
+      ExportResult,
+    }
+  });
+
+  // Make those mocks sticky
+  const { trace, metrics, SpanStatusCode, SpanKind } = require('@opentelemetry/api');
+
+} catch {
+  withJestTestExtensions().addMockWarning('@opentelemetry/api');
+  withJestTestExtensions().addMockWarning('@opentelemetry/sdk-trace-base');
+}
+

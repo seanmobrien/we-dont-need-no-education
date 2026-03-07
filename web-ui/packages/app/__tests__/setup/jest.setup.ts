@@ -1,12 +1,12 @@
 process.env.MEM0_API_BASE_PATH = process.env.MEM0_API_BASE_PATH ?? 'api/v1';
 
 jest.mock('@compliance-theater/nextjs/client-navigate', () => ({
-  clientReload: jest.fn().mockImplementation(() => {}),
-  clientNavigate: jest.fn().mockImplementation(() => {}),
-  clientNavigateSignIn: jest.fn().mockImplementation(() => {}),
+  clientReload: jest.fn().mockImplementation(() => { }),
+  clientNavigate: jest.fn().mockImplementation(() => { }),
+  clientNavigateSignIn: jest.fn().mockImplementation(() => { }),
 }));
 
-jest.mock('@/lib/hooks/use-todo', () => ({
+jest.mock('../../lib/hooks/use-todo', () => ({
   useTodoLists: jest.fn(() => ({
     data: [],
     isLoading: false,
@@ -54,23 +54,26 @@ jest.mock('@/lib/hooks/use-todo', () => ({
   })),
 }));
 
-jest.mock('@/instrument/browser', () => ({
+jest.mock('../../instrument/browser', () => ({
   getReactPlugin: jest.fn(() => ({
     trackEvent: jest.fn(),
     trackPageView: jest.fn(),
+    trackMetric: jest.fn(),
   })),
   getClickPlugin: jest.fn(() => ({
     trackEvent: jest.fn(),
     trackPageView: jest.fn(),
+    trackMetric: jest.fn(),
   })),
   getAppInsights: jest.fn(() => ({
     trackEvent: jest.fn(),
     trackPageView: jest.fn(),
+    trackMetric: jest.fn(),
   })),
   instrument: jest.fn(),
 }));
 
-// Mock window.matchMedia for @textea/json-viewer compatibility (only in jsdom environment)
+// Mock window.matchMedia for @compliance-theater/json-viewer compatibility (only in jsdom environment)
 if (typeof window !== 'undefined') {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
@@ -103,28 +106,30 @@ import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 
 import 'jest';
-import '@testing-library/jest-dom';
+import '../shared/test-utils';
 
 // Polyfill TextEncoder and TextDecoder for Node.js environment
 import { TextEncoder, TextDecoder } from 'util';
 import { mock } from 'jest-mock-extended';
 import { zerialize } from 'zodex';
 import { createElement } from 'react';
-import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
-import instrument, { getAppInsights } from '@/instrument/browser';
-import { log } from '@compliance-theater/logger';
+import { TrackWithAppInsight } from '../../components/general/telemetry/track-with-app-insight';
+import instrument, { getAppInsights } from '../../instrument/browser';
+import { log } from '@compliance-theater/logger/core';
 import {
   FirstParameter,
   isKeyOf,
-  isPromise,
-  SingletonProvider,
+  isPromise
 } from '@compliance-theater/typescript';
+import {
+  SingletonProvider
+} from '@compliance-theater/logger/singleton-provider';
 import { result, xorBy } from 'lodash';
 
 import { ITraits } from 'flagsmith/react';
 import { P } from 'ts-pattern';
 import { LoggedError, ErrorReportArgs } from '@compliance-theater/logger';
-import { ErrorReporterInterface } from '@/lib/error-monitoring/types';
+import type { ErrorReporterInterface } from '@compliance-theater/logger/errors/monitoring/types';
 globalThis.TextEncoder = TextEncoder as any;
 globalThis.TextDecoder = TextDecoder as any;
 
@@ -431,7 +436,7 @@ beforeAll(() => {
   }
 });
 
-jest.mock('@/lib/react-util/errors/logged-error-reporter', () => {
+jest.mock('@compliance-theater/logger/errors/logged-error-reporter', () => {
   return {
     reporter: jest.fn(() =>
       Promise.resolve({
@@ -466,7 +471,7 @@ afterEach(() => {
   // Restore natural timers and clear mocks
   jest.clearAllTimers();
   jest.useRealTimers();
-  jest.clearAllMocks();
+  jest.restoreAllMocks();
   // Reset all the singletons attached to global state
   SingletonProvider.Instance.clear();
 });

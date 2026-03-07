@@ -5,12 +5,12 @@ import {
 } from '@compliance-theater/nextjs/server/utils';
 import { extractParams } from '@compliance-theater/nextjs/server/utils';
 
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql } from '@compliance-theater/database/drizzle-orm';
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,
-} from '@/lib/auth/resources/case-file';
+} from '@compliance-theater/auth/lib/resources/case-file/index';
 import {
   DrizzleSelectQuery,
   buildDrizzleAttachmentOrEmailFilter,

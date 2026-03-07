@@ -2,19 +2,19 @@
  * @jest-environment node
  */
 
-import { GET } from '@/app/api/health/probe/[probe_type]/route';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
+import { GET } from '../../../../app/api/health/probe/[probe_type]/route';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 
 // Mock DB health module
-jest.mock('@/lib/api/health/database', () => ({
+jest.mock('../../../../lib/api/health/database', () => ({
   checkDatabaseHealth: jest.fn(),
 }));
 
 // Mock memory cache module
-jest.mock('@/lib/api/health/memory', () => {
+jest.mock('../../../../lib/api/health/memory', () => {
   const getMemoryHealthCache = jest.fn();
   const ensureMemoryCacheConfigured = jest.fn();
-  const originalModule = jest.requireActual('@/lib/api/health/memory');
+  const originalModule = jest.requireActual('../../../../lib/api/health/memory');
   return {
     ...originalModule,
     getMemoryHealthCache,
@@ -22,8 +22,8 @@ jest.mock('@/lib/api/health/memory', () => {
   };
 });
 
-import { checkDatabaseHealth } from '@/lib/api/health/database';
-import { getMemoryHealthCache } from '@/lib/api/health/memory';
+import { checkDatabaseHealth } from '../../../../lib/api/health/database';
+import { getMemoryHealthCache } from '../../../../lib/api/health/memory';
 
 const buildHealthyMemoryDetails = () => ({
   client_active: true,
@@ -132,8 +132,8 @@ describe('health probe route', () => {
     expect(
       (
         SingletonProvider.Instance.get('startup-failure-counter') as
-          | { count: number }
-          | undefined
+        | { count: number }
+        | undefined
       )?.count,
     ).toBe(1);
   });

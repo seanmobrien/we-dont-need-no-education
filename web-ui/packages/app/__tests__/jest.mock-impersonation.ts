@@ -1,4 +1,4 @@
-import type { ImpersonationService } from '@/lib/auth/impersonation';
+import type { ImpersonationService } from '@compliance-theater/auth/lib/impersonation/index';
 
 // Mock ImpersonationService implementation
 export const mockImpersonationServiceFactory = (): ImpersonationService => {
@@ -22,18 +22,18 @@ class MockImpersonationServiceCache {
   public async getOrCreate() {
     return this.#mock;
   }
-  public invalidateUser() {}
-  public invalidateAudience() {}
+  public invalidateUser() { }
+  public invalidateAudience() { }
   public has() {
     return false;
   }
-  public clear() {}
+  public clear() { }
   public getStats() {
     return {
       totalEntries: 0,
       userCounts: 0,
       audienceCounts: 0,
-       
+
       config: {} as any,
     };
   }
@@ -50,10 +50,10 @@ export const setupImpersonationMock = (
   mock?: ImpersonationService,
 ): ImpersonationService => {
   const thisMock = mock ?? mockImpersonationServiceFactory();
-  jest.mock('@/lib/auth/impersonation/impersonation-factory', () => ({
+  jest.mock('@compliance-theater/auth/lib/impersonation/impersonation-factory', () => ({
     fromRequest: jest.fn(async () => thisMock),
   }));
-  jest.mock('@/lib/auth/impersonation', () => ({
+  jest.mock('@compliance-theater/auth/lib/impersonation', () => ({
     fromRequest: jest.fn(async () => thisMock),
     ImpersonationServiceCache: MockImpersonationServiceCache,
   }));

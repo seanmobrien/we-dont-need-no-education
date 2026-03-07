@@ -22,7 +22,7 @@ import { config } from './common';
 import AfterManager from '@compliance-theater/after';
 import UrlFilteredSpanExporter from './url-filter/url-filter-trace-exporter';
 import UrlFilteredLogExporter from './url-filter/url-filtered-log-exporter';
-import { GlobalWithMyGlobal } from '@compliance-theater/typescript/singleton-provider';
+import type { GlobalWithMyGlobal } from '@compliance-theater/logger/singleton-provider';
 
 enum KnownSeverityLevel {
   Verbose = 'Verbose',
@@ -91,7 +91,7 @@ const instrumentServer = () => {
     return;
   }
 
-  const connStr = process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING    
+  const connStr = process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING
     ?? process.env.AZURE_MONITOR_CONNECTION_STRING;
   console.info(`[otel] Azure Monitor Connection String: [${connStr}]`);
 
@@ -111,8 +111,8 @@ const instrumentServer = () => {
   };
   const traceExporter = new UrlFilteredSpanExporter(
     new ChunkingTraceExporter(
-      new AzureMonitorTraceExporter({ 
-        connectionString: connStr,        
+      new AzureMonitorTraceExporter({
+        connectionString: connStr,
         //connectionString: connStr 
       }),
       { maxChunkChars: 8000, keepOriginalKey: false },

@@ -4,10 +4,10 @@
  */
 jest.mock('@compliance-theater/database/driver');
 
-import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
+import { CallToActionDetailsRepository } from '../../../../../lib/api/email/properties/call-to-action/cta-details-repository';
 import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 import { query, queryExt } from '@compliance-theater/database/driver';
-import { CallToActionDetails } from '@/data-models/api';
+import { CallToActionDetails } from '../../../../../data-models/api';
 
 describe('CallToActionDetailsRepository', () => {
   let repository: CallToActionDetailsRepository;

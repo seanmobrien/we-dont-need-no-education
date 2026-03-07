@@ -1,12 +1,11 @@
 import { drizDbWithInit, type DbDatabaseType, schema } from '@compliance-theater/database/orm';
 import type { ChatToolType } from '@compliance-theater/database/orm';
-import { LoggedError, log } from '@compliance-theater/logger';
+import { LoggedError, log, SingletonProvider } from '@compliance-theater/logger';
 import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
 import type {
   LanguageModelV2ProviderDefinedTool,
   LanguageModelV2FunctionTool,
 } from '@ai-sdk/provider';
-import { SingletonProvider } from '@compliance-theater/typescript';
 
 type ToolMapEntry = ChatToolType;
 type ToolIdType = ChatToolType['chatToolId'];
@@ -211,8 +210,7 @@ export class ToolMap {
           default:
             log((l) =>
               l.warn(
-                `Unknown tool type in scanForTools: ${
-                  (tool as { type: string })?.type
+                `Unknown tool type in scanForTools: ${(tool as { type: string })?.type
                 }`
               )
             );

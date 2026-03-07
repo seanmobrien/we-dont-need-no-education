@@ -1,16 +1,16 @@
 jest.mock('@compliance-theater/send-api-request');
-jest.mock('@/lib/site-util/url-builder');
+jest.mock('../../../../../../lib/site-util/url-builder');
 
 import {
   searchEmails,
   loadEmail,
   queueEmailImport,
-} from '@/lib/api/email/import/google';
+} from '../../../../../../lib/api/email/import/google';
 import {
   sendApiRequest,
   apiRequestHelperFactory,
 } from '@compliance-theater/send-api-request';
-import siteMap from '@/lib/site-util/url-builder';
+import siteMap from '../../../../../../lib/site-util/url-builder';
 
 const apiHelper = {
   get: jest

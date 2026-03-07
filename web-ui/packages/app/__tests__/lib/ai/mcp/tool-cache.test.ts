@@ -5,9 +5,9 @@
  * Tests the cache key generation, storage, retrieval, and invalidation logic
  */
 
-import { MCPToolCache, serializeCacheEntry } from '@/lib/ai/mcp/cache';
-import { ToolSet } from 'ai';
-import type { ToolProviderFactoryOptions } from '@/lib/ai/mcp/types';
+import { MCPToolCache, serializeCacheEntry } from '../../../../lib/ai/mcp/cache';
+import { ToolSet } from '@compliance-theater/types/ai-sdk';
+import type { ToolProviderFactoryOptions } from '../../../../lib/ai/mcp/types';
 import z from 'zod';
 import {
   wellKnownFlag,

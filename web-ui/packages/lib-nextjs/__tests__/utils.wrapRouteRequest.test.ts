@@ -11,8 +11,8 @@ jest.unmock('@opentelemetry/sdk-trace-base');
  */
 import { wrapRouteRequest } from '../src/server';
 import { ILogger, logger } from '@compliance-theater/logger';
-import { hideConsoleOutput } from '../../app/__tests__/test-utils-server';
-import { NextRequest } from 'next/dist/server/web/spec-extension/request';
+import { hideConsoleOutput } from './shared/test-utils-server';
+import { NextRequest } from 'next/server';
 
 const consoleSpy = hideConsoleOutput();
 
@@ -28,7 +28,7 @@ describe('wrapRouteRequest', () => {
   });
   it('should call the wrapped function and return its result', async () => {
     consoleSpy.setup();
-    const fn = jest.fn().mockResolvedValue('ok');
+    const fn = jest.fn().mockResolvedValue(new Response('ok', { status: 200 }));
     const wrapped = wrapRouteRequest(fn);
     const paramsPromise = Promise.resolve({ emailId: 'b' });
     const req = mockNextRequest();
@@ -43,7 +43,9 @@ describe('wrapRouteRequest', () => {
         }),
       }),
     });
-    expect(result).toBe('ok');
+    expect(result).toBeInstanceOf(Response);
+    expect(result.status).toBe(200);
+    expect(await result.text()).toBe('ok');
   });
 
   it('should log error if log option is true', async () => {
@@ -64,13 +66,15 @@ describe('wrapRouteRequest', () => {
   it('should not log if log option is false', async () => {
     consoleSpy.setup();
     const logSpy = (await logger()) as jest.Mocked<ILogger>;
-    const fn = jest.fn().mockResolvedValue('ok');
+    const fn = jest.fn().mockResolvedValue(new Response('ok', { status: 200 }));
     const wrapped = wrapRouteRequest(fn, { log: false });
     const result = await wrapped(mockNextRequest(), {
       params: Promise.resolve({ emailId: 'y' }),
     });
     expect(logSpy.info as jest.Mock).not.toHaveBeenCalled();
-    expect(result).toBe('ok');
+    expect(result).toBeInstanceOf(Response);
+    expect(result.status).toBe(200);
+    expect(await result.text()).toBe('ok');
   });
 
   it('should return errorResponseFactory on thrown error', async () => {

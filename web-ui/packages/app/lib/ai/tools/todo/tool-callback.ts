@@ -7,7 +7,7 @@ import { getTodoManager } from './todo-manager';
 import type { Todo, TodoList, TodoPriority, TodoStatus } from './types';
 import { SEQUENTIAL_THINKING_TOOL_NAME } from '@/lib/ai/tools/sequentialthinking/tool-callback';
 import z from 'zod';
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 
 // Zod schema for Todo serialization
 const TodoSchema = z.object({

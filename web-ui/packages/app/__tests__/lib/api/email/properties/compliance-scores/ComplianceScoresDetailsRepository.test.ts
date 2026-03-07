@@ -4,10 +4,10 @@
  */
 jest.mock('@compliance-theater/database/driver');
 
-import { ComplianceScoresDetailsRepository } from '@/lib/api/email/properties/compliance-scores/compliance-scores-details-repository';
+import { ComplianceScoresDetailsRepository } from '../../../../../../lib/api/email/properties/compliance-scores/compliance-scores-details-repository';
 import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 import { query, queryExt } from '@compliance-theater/database/driver';
-import { ComplianceScoresDetails } from '@/data-models/api';
+import { ComplianceScoresDetails } from '../../../../../../data-models/api';
 
 describe('ComplianceScoresDetailsRepository', () => {
   let repository: ComplianceScoresDetailsRepository;

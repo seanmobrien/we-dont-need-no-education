@@ -256,7 +256,7 @@ const zodToSchemaField = (schema: ZodTypeAny): SchemaField => {
         // Format: [ <element-type>, ... ] as Array<type>
         builder = `[ ${ret.items ? withComma(ret.items.toString(indent + 1)) : withComma("unknown")} ... ] as Array<${ret.items?.type ?? "any"}>`;
         break;
-      case "object":
+      case "object": {
         // Format: { key: <type>, ... } with proper indentation
         const indentStr = " ".repeat((indent + 1) * 2);
         builder =
@@ -268,6 +268,7 @@ const zodToSchemaField = (schema: ZodTypeAny): SchemaField => {
             .join("") +
           `\n${" ".repeat(indent * 2)}}`;
         break;
+      }
       case undefined:
         // Fallback for undefined type
         builder = "<any>";

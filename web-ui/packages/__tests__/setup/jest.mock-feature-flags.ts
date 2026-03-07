@@ -1,4 +1,4 @@
-import { SingletonProvider } from '@compliance-theater/typescript';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 import { AllFeatureFlagsDefault } from '@compliance-theater/feature-flags/known-feature-defaults';
 
 const NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID = 'test-environment-id';
@@ -239,7 +239,7 @@ jest.mock('flagsmith/react', () => {
     }),
     useFlagsmithLoading: jest.fn(() => loadingState),
   };
-});
+}, { virtual: true });
 
 jest.mock('flagsmith/isomorphic', () => ({
   __esModule: true,
@@ -248,7 +248,7 @@ jest.mock('flagsmith/isomorphic', () => ({
       mockFlagsmithInstance ?? mockFlagsmithInstanceFactory();
     return mockFlagsmithInstance;
   }),
-}));
+}), { virtual: true });
 
 // Mock flagsmith-nodejs for server-side feature flags
 jest.mock('flagsmith-nodejs', () => {
@@ -259,7 +259,7 @@ jest.mock('flagsmith-nodejs', () => {
         getFeatureValue: jest.fn((key: string) => {
           return (
             AllFeatureFlagsDefault[
-              key as keyof typeof AllFeatureFlagsDefault
+            key as keyof typeof AllFeatureFlagsDefault
             ] ?? false
           );
         }),
@@ -268,7 +268,7 @@ jest.mock('flagsmith-nodejs', () => {
         getFlag: jest.fn((flag: string) => {
           const ret =
             AllFeatureFlagsDefault[
-              flag as keyof typeof AllFeatureFlagsDefault
+            flag as keyof typeof AllFeatureFlagsDefault
             ] ?? null;
           if (!ret) {
             return {
@@ -289,7 +289,7 @@ jest.mock('flagsmith-nodejs', () => {
     }),
     Flags: jest.fn(),
   };
-});
+}, { virtual: true });
 
 const createAutoRefreshFlagImpl = (options: AutoRefreshFeatureFlagOptions) => {
   mockFlagsmithInstance =
@@ -306,7 +306,10 @@ const createAutoRefreshFlagImpl = (options: AutoRefreshFeatureFlagOptions) => {
 };
 
 jest.mock('@compliance-theater/feature-flags', () => {
-  const originalModule = jest.requireActual('@compliance-theater/feature-flags');
+  let originalModule: object = {};
+  try {
+    originalModule = jest.requireActual('@compliance-theater/feature-flags');
+  } catch { }
   return {
     __esModule: true,
     ...originalModule,
@@ -323,9 +326,15 @@ jest.mock('@compliance-theater/feature-flags', () => {
   };
 });
 jest.mock('@compliance-theater/feature-flags/feature-flag-with-refresh', () => {
-  const originalModule = jest.requireActual(
-    '@compliance-theater/feature-flags/feature-flag-with-refresh'
-  );
+  let originalModule: {
+    wellKnownFlag?: (...args: unknown[]) => unknown;
+    wellKnownFlagSync?: (...args: unknown[]) => unknown;
+  } = {};
+  try {
+    originalModule = jest.requireActual(
+      '@compliance-theater/feature-flags/feature-flag-with-refresh'
+    );
+  } catch { }
   return {
     __esModule: true,
     ...originalModule,
@@ -339,8 +348,8 @@ jest.mock('@compliance-theater/feature-flags/feature-flag-with-refresh', () => {
         return createAutoRefreshFlagImpl(options);
       }
     ),
-    wellKnownFlag: jest.fn(originalModule.wellKnownFlag),
-    wellKnownFlagSync: jest.fn(originalModule.wellKnownFlagSync),
+    wellKnownFlag: jest.fn(originalModule.wellKnownFlag ?? (() => undefined)),
+    wellKnownFlagSync: jest.fn(originalModule.wellKnownFlagSync ?? (() => undefined)),
   };
 });
 

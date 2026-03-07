@@ -47,7 +47,7 @@
  * @module @/ai/mcp/cache
  */
 
-import type { ToolSet } from 'ai';
+import type { ToolSet } from '@compliance-theater/types/ai-sdk';
 import type {
   ToolProviderFactoryOptions,
   UserToolProviderCache,

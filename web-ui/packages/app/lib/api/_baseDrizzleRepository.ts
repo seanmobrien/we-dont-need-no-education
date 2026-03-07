@@ -9,10 +9,10 @@ import {
   PartialExceptFor,
   unwrapPromise,
 } from '@compliance-theater/typescript';
-import { eq, count, SQL } from 'drizzle-orm';
+import { eq, count, SQL } from '@compliance-theater/database/drizzle-orm';
 import { LoggedError, log } from '@compliance-theater/logger';
-import { getTableConfig } from 'drizzle-orm/pg-core';
-import { PgColumn } from 'drizzle-orm/pg-core';
+import { getTableConfig } from '@compliance-theater/database/drizzle-orm/pg-core';
+import { PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 
 /**
  * Helper function to detect primary key column and field name from a Drizzle table schema

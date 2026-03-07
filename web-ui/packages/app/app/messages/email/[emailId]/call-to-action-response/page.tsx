@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box';
 import CtaResponseGrid from './grid';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import { ChatPanel, ChatPanelLayout } from '@/components/ai/chat-panel';
 import { extractParams } from '@compliance-theater/nextjs/server/utils';
 import { resolveEmailIdWithRedirect } from '@/lib/email/email-id-resolver';

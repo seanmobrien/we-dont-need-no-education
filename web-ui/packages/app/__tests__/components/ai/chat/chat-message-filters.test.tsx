@@ -3,15 +3,13 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import { render, screen, fireEvent, hideConsoleOutput } from '../../../shared/test-utils';
 import {
   ChatMessageFilters,
   searchMessageContent,
   type MessageType,
-} from '@/components/ai/chat/chat-message-filters';
-import type { ChatMessage } from '@/lib/ai/chat/types';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+} from '../../../../components/ai/chat/chat-message-filters';
+import type { ChatMessage } from '../../../../lib/ai/chat/types';
 
 /*
 

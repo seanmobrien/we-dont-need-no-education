@@ -1,6 +1,5 @@
-import { isAiProviderType } from '@/lib/ai/core';
-import { log, LoggedError } from '@compliance-theater/logger';
-import { globalRequiredSingleton } from '@compliance-theater/typescript';
+import { isAiProviderType } from '@compliance-theater/types/lib/ai/core';
+import { log, LoggedError, globalRequiredSingleton } from '@compliance-theater/logger';
 import { getModelFlag } from './util';
 
 /**
@@ -34,7 +33,7 @@ export class ModelAvailabilityManager {
         )
       )
     )
-      .then(() => {})
+      .then(() => { })
       .catch((error) => {
         LoggedError.isTurtlesAllTheWayDownBaby(error, {
           log: true,

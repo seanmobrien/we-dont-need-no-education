@@ -1,29 +1,33 @@
 /**
  * @jest-environment node
  */
-import { POST } from '@/app/api/health/util/route';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
-import { NextRequest } from 'next/server';
+
 
 // Mock SingletonProvider
-jest.mock('@compliance-theater/typescript/singleton-provider', () => {
+jest.mock('@compliance-theater/logger/singleton-provider/provider', () => {
   const clearMock = jest.fn();
   return {
     SingletonProvider: {
       Instance: {
         clear: clearMock,
       },
-    },
-    // Expose mock for assertions
-    __mockClear: clearMock,
+    }
   };
 });
+jest.mock('@compliance-theater/logger/singleton-provider', () => ({
+  ...jest.requireActual('@compliance-theater/logger/singleton-provider'),
+  ...jest.requireMock('@compliance-theater/logger/singleton-provider/provider'),
+}));
+
+import { POST } from '../../../../../app/api/health/util/route';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
+import { NextRequest } from 'next/server';
 
 describe('Health Utility Route', () => {
   const mockClear = SingletonProvider.Instance.clear as jest.Mock;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   it('should clear globals when action is reset-globals', async () => {

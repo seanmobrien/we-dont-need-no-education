@@ -18,7 +18,7 @@ import {
   Output,
   stepCountIs,
   ToolSet,
-} from 'ai';
+} from '@compliance-theater/types/ai-sdk';
 import { StopConditions } from '../../stop-conditions';
 import {
   type MemoryAugmentationResult,

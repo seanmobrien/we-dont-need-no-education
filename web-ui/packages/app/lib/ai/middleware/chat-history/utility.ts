@@ -4,7 +4,7 @@ import type {
 } from '@ai-sdk/provider';
 import { schema } from '@compliance-theater/database/orm';
 import { type DbTransactionType, drizDbWithInit } from '@compliance-theater/database/orm';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc } from '@compliance-theater/database/drizzle-orm';
 import { ToolStatus } from './types';
 
 export const getNextSequence = async ({

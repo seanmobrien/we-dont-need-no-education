@@ -1,7 +1,9 @@
+/* global Request, Response, process, URL */
+
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@compliance-theater/env';
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
-import type { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import {
   SpanKind,
   SpanStatusCode,
@@ -17,7 +19,14 @@ import {
 import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
 import { isPromise } from '@compliance-theater/typescript';
-import { getAppStartupState } from './app-startup-accessor';
+import { resolveService } from '@compliance-theater/types/dependency-injection/container';
+import type { IAppStartupManager } from '@compliance-theater/types/after';
+export {
+  createSafeAsyncWrapper,
+  createSafeErrorHandler,
+  SafeOperation,
+  type OperationMetrics,
+} from '@compliance-theater/logger/safe-operation';
 
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');
 
@@ -41,28 +50,28 @@ export const extractParams = async <T extends object>(req: {
 
 export const wrapRouteRequest = <
   A extends
-    | []
-    | [NextRequest]
-    | [Request]
-    | [NextRequest, Pick<WrappedResponseContext<TContext>, 'params'>]
-    | [NextRequest, WrappedResponseContext<TContext>]
-    | [Request, Pick<WrappedResponseContext<TContext>, 'params'>]
-    | [Request, WrappedResponseContext<TContext>],
+  | []
+  | [NextRequest]
+  | [Request]
+  | [NextRequest, Pick<WrappedResponseContext<TContext>, 'params'>]
+  | [NextRequest, WrappedResponseContext<TContext>]
+  | [Request, Pick<WrappedResponseContext<TContext>, 'params'>]
+  | [Request, WrappedResponseContext<TContext>],
   TContext extends Record<string, unknown> = Record<string, unknown>,
 >(
-  fn: (...args: A) => Promise<Response | NextResponse | undefined>,
+  fn: (...args: A) => Promise<Response | undefined>,
   options: {
     log?: boolean;
     buildFallback?: object | typeof EnableOnBuild;
     errorCallback?: (error: unknown) => void | Promise<void>;
   } = {},
-): ((...args: A) => Promise<Response | NextResponse>) => {
+): ((...args: A) => Promise<Response>) => {
   const {
     log: shouldLog = env('NODE_ENV') !== 'production',
     buildFallback,
     errorCallback,
   } = options ?? {};
-  return async (...args: A): Promise<Response | NextResponse> => {
+  return async (...args: A): Promise<Response> => {
     const req = args[0] as NextRequest;
     const context = args[1] as WrappedResponseContext<TContext>;
 
@@ -97,7 +106,16 @@ export const wrapRouteRequest = <
             'app.startup.check',
             async (startupSpan) => {
               try {
-                const state = await getAppStartupState();
+                const startupService = resolveService<IAppStartupManager>('startup');
+                if (!startupService) {
+                  log((l) =>
+                    l.warn(
+                      'App startup manager not found in container; assuming startup complete.',
+                    ),
+                  );
+                  return 'done';
+                }
+                const state = await startupService.getStartupState();
                 startupSpan.setAttribute('app.startup_state', state);
                 return state;
               } finally {
@@ -122,7 +140,7 @@ export const wrapRouteRequest = <
           }
 
           if (shouldLog) {
-            const extractedParams = await (!!context?.params
+            const extractedParams = await (context?.params
               ? context.params
               : Promise.resolve({} as Record<string, unknown>));
             const url = (req as unknown as Request)?.url ?? '<no-req>';
@@ -140,7 +158,7 @@ export const wrapRouteRequest = <
             fn as unknown as (
               req: NextRequest,
               context: WrappedResponseContext<TContext>,
-            ) => Promise<Response | NextResponse>
+            ) => Promise<Response>
           )(req, {
             ...context,
             span,
@@ -158,20 +176,21 @@ export const wrapRouteRequest = <
           span.setStatus({ code: SpanStatusCode.OK });
           return result;
         } catch (error) {
+          let handledError = error;
           // Record exception and propagate through existing error handling
           try {
-            span.recordException(error as Error);
+            span.recordException(handledError as Error);
             span.setStatus({ code: SpanStatusCode.ERROR });
           } catch {
             // ignore span record errors
           }
 
           if (shouldLog) {
-            const extractedParams = await (!!context?.params
+            const extractedParams = await (context?.params
               ? context.params
               : Promise.resolve({} as Record<string, unknown>));
             // Wrap in a LoggedError to prevent callback from auto-logging
-            error = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            handledError = LoggedError.isTurtlesAllTheWayDownBaby(handledError, {
               log: true,
               source: 'wrapRouteRequest:catch',
               data: {
@@ -183,7 +202,7 @@ export const wrapRouteRequest = <
           // If a callback was provided, invoke it within a try/catch to avoid secondary errors
           if (errorCallback) {
             try {
-              const maybePromise = errorCallback(error);
+              const maybePromise = errorCallback(handledError);
               if (maybePromise instanceof Promise) {
                 await maybePromise;
               }
@@ -197,7 +216,7 @@ export const wrapRouteRequest = <
           const errResponse = errorResponseFactory(
             'An unexpected error occurred',
             {
-              cause: error,
+              cause: handledError,
             },
           );
           try {
@@ -230,7 +249,7 @@ const getRequestSpanInit = async (
   ctx?: { params: Promise<Record<string, unknown>> },
 ): Promise<{ attributes: Attributes; parentCtx: OtelContext }> => {
   const { path, query, method } = getPathQueryAndMethod(req);
-  const routeParams = await (!!ctx?.params
+  const routeParams = await (ctx?.params
     ? ctx.params
     : Promise.resolve({} as Record<string, unknown>));
   const headersObj = getHeadersObject(req);
@@ -408,17 +427,17 @@ export const createInstrumentedSpan = async ({
       ): Promise<TResult> => {
         // No-op span for when OpenTelemetry is not available
         const noOpSpan = {
-          setAttributes: () => {},
-          setStatus: () => {},
-          recordException: () => {},
-          end: () => {},
+          setAttributes: () => { },
+          setStatus: () => { },
+          recordException: () => { },
+          end: () => { },
           spanContext: () => ({}) as SpanContext,
-          setAttribute: () => {},
-          addEvent: () => {},
-          addLink: () => {},
-          addLinks: () => {},
+          setAttribute: () => { },
+          addEvent: () => { },
+          addLink: () => { },
+          addLinks: () => { },
           isRecording: () => false,
-          updateName: () => {},
+          updateName: () => { },
         } as unknown as Span;
         return fn(noOpSpan);
       },

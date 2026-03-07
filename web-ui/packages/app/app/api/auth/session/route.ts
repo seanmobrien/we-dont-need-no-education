@@ -9,10 +9,10 @@
  * is evaluated on each request.
  */
 
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveUserPublicKeys } from '@/lib/site-util/auth/user-keys-server';
-import { isSessionActive } from '@/lib/site-util/auth';
+import { getActiveUserPublicKeys } from '@compliance-theater/auth/lib/utilities/user-keys-server';
+import { isSessionActive } from '@compliance-theater/auth/lib/utilities';
 
 export const dynamic = 'force-dynamic';
 

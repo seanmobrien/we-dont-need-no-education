@@ -1,3 +1,5 @@
+/* global Buffer, NodeJS */
+
 // =============================================================================
 // Core PostgreSQL Types and Interfaces
 // =============================================================================
@@ -95,11 +97,9 @@ interface PostgresResultQueryMeta<T extends number | null, U>
 
 export type PostgresExecutionResult<T> = [] &
   PostgresResultQueryMeta<number, keyof NonNullable<T>>;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type PostgresValuesRowList<T extends readonly any[]> =
   T[number][keyof T[number]][][] &
     PostgresResultQueryMeta<T['length'], keyof T[number]>;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type PostgresRawRowList<T extends readonly any[]> = Buffer[][] &
     Iterable<Buffer[][]> &
     PostgresResultQueryMeta<T['length'], keyof T[number]>;
@@ -108,7 +108,6 @@ export type PostgresRawRowList<T extends readonly any[]> = Buffer[][] &
 /**
  * Represents a list of rows returned from a query.
  * Equivalent to postgres.RowList<T> from 'postgres' package.*/
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type PostgresRowList<T extends readonly any[]> = T &
     Iterable<NonNullable<T[number]>> &
     PostgresResultQueryMeta<T['length'], keyof T[number]>;

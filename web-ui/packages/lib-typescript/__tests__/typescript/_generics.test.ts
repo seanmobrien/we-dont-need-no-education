@@ -1,6 +1,43 @@
 import {
+  forOneOrMany,
+  serviceInstanceOverloadsFactory,
   unwrapPromise,
 } from "@compliance-theater/typescript";
+
+describe("forOneOrMany", () => {
+  it("maps a scalar input through forOne", () => {
+    const result = forOneOrMany((value: number) => value * 2, 4);
+    expect(result).toBe(8);
+  });
+
+  it("maps an array input through forOne", () => {
+    const result = forOneOrMany((value: number) => value + 1, [1, 2, 3]);
+    expect(result).toEqual([2, 3, 4]);
+  });
+});
+
+describe("serviceInstanceOverloadsFactory", () => {
+  it("returns the service instance when called without callback", () => {
+    const service = { id: "svc" };
+    const serviceFactory = jest.fn(() => service);
+    const overload = serviceInstanceOverloadsFactory(serviceFactory);
+
+    const result = overload();
+
+    expect(result).toBe(service);
+    expect(serviceFactory).toHaveBeenCalledTimes(1);
+  });
+
+  it("invokes callback with service and returns callback result", () => {
+    const serviceFactory = jest.fn(() => ({ count: 2 }));
+    const overload = serviceInstanceOverloadsFactory(serviceFactory);
+
+    const result = overload((service) => service.count * 10);
+
+    expect(result).toBe(20);
+    expect(serviceFactory).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("unwrapPromise", () => {
   it("should return scalar value as-is", async () => {

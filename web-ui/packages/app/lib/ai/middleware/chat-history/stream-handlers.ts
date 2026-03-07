@@ -4,7 +4,7 @@ import type {
   LanguageModelV2ToolCall,
 } from '@ai-sdk/provider';
 import { chatMessages, chatTurns, tokenUsage } from '@compliance-theater/database/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and } from '@compliance-theater/database/drizzle-orm';
 import {
   ChatMessagesType,
   DbTransactionType,

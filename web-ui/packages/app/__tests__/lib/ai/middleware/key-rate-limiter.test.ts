@@ -1,6 +1,6 @@
 /* @jest-environment node */
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+import { setupImpersonationMock } from '../../../jest.mock-impersonation';
 
 setupImpersonationMock();
 
@@ -12,12 +12,12 @@ import {
   afterEach,
   jest,
 } from '@jest/globals';
-import { retryRateLimitMiddlewareFactory } from '@/lib/ai/middleware/key-rate-limiter/middleware';
+import { retryRateLimitMiddlewareFactory } from '../../../../lib/ai/middleware/key-rate-limiter/middleware';
 
 // Mock dependencies
-jest.mock('@/lib/ai/middleware/key-rate-limiter/queue-manager');
-jest.mock('@/lib/ai/middleware/key-rate-limiter/metrics');
-jest.mock('@/lib/ai/aiModelFactory');
+jest.mock('../../../../lib/ai/middleware/key-rate-limiter/queue-manager');
+jest.mock('../../../../lib/ai/middleware/key-rate-limiter/metrics');
+jest.mock('../../../../lib/ai/aiModelFactory');
 
 describe('retryRateLimitMiddlewareFactory', () => {
   beforeEach(() => {

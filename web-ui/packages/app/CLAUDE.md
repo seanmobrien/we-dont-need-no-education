@@ -22,9 +22,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Database Operations
 
-- `yarn workspace @compliance-theater/database drizzle-migrate` - Run database migrations
-- `yarn workspace @compliance-theater/database drizzle-generate` - Generate Drizzle artifacts
-- `yarn workspace @compliance-theater/database drizzle-studio` - Open Drizzle Studio database viewer
+- `yarn drizzle-migrate` - Run database migrations
+- `yarn drizzle-generate` - Generate Drizzle artifacts
+- `yarn drizzle-studio` - Open Drizzle Studio database viewer
 
 ## Project Architecture
 
@@ -154,6 +154,10 @@ Checklist (all required):
    - Concurrency limits, timeouts, clear/reset behavior (e.g., `clearMocks`, `resetMocks`)
    - Any global side‑effects or polyfills
 4. Note existing utilities/helpers you should reuse instead of recreating.
+
+Hard rule for mock resets:
+- Do not use `jest.clearAllMocks()` or `jest.resetAllMocks()` as a broad reset strategy in suites.
+- Use targeted resets only (`mockFn.mockClear()` / `mockFn.mockReset()`) for mocks owned by the suite.
 
 Do NOT write a local `jest.mock(...)` for something already mocked globally unless you have a documented reason and you restore the original afterward.
 

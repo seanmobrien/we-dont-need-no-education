@@ -1,5 +1,5 @@
 import { MiddlewareStateManager } from "./state-management/middleware-state-manager";
-import { wrapLanguageModel, type LanguageModelMiddleware } from "ai";
+import { wrapLanguageModel, type LanguageModelMiddleware } from "@compliance-theater/types/ai-sdk";
 import type { LanguageModelV2, LanguageModelV2CallOptions } from "@ai-sdk/provider";
 
 export const toolProxyMiddlewareFactory = ({

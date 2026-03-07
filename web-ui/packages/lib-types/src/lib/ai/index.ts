@@ -34,3 +34,25 @@ export {
   isChatDetails,
   getRetryErrorInfoKind,
 } from "./chat";
+
+export type {
+  MessagePartPreservationRules,
+  MetadataPreservationOptions,
+  ContentTransformationOptions,
+  PreservationStrategy,
+  ToolPreservationRules,
+  ContextualPreservationOptions,
+  PerformanceOptions,
+  MessageStructureOptions,
+  MessagePreservationResult,
+} from './message-structure-preservation';
+
+export {
+  hasMessageStructureOptions,
+  isPreservationEnabled,
+  DEFAULT_MESSAGE_STRUCTURE_OPTIONS,
+  createMessageStructureOptions,
+  validateMessageStructureOptions,
+  preserveMessageStructure,
+  createPresetConfiguration
+} from './message-structure-preservation';

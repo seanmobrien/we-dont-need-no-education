@@ -2,7 +2,31 @@ import { FlagsmithRedisCache } from '../src/flagsmith-cache';
 import { getRedisClient } from '@compliance-theater/redis';
 import { Flags } from 'flagsmith-nodejs';
 import type { RedisClientType } from 'redis';
-import { hideConsoleOutput } from './test-utils';
+import { hideConsoleOutput } from './shared/test-utils-server';
+
+jest.mock('lru-cache', () => {
+  class MockLRUCache<TKey, TValue> {
+    private readonly store = new Map<TKey, TValue>();
+
+    set(key: TKey, value: TValue): this {
+      this.store.set(key, value);
+      return this;
+    }
+
+    get(key: TKey): TValue | undefined {
+      return this.store.get(key);
+    }
+
+    has(key: TKey): boolean {
+      return this.store.has(key);
+    }
+  }
+
+  return {
+    __esModule: true,
+    LRUCache: MockLRUCache,
+  };
+});
 
 const defaultFlagsOptions = { flags: {}, traits: {} };
 
@@ -75,7 +99,7 @@ describe('FlagsmithRedisCache', () => {
 
     mockRedisClient.get.mockResolvedValue(JSON.stringify(flagsData));
 
-    const result = await cache.get('miss-key'); 
+    const result = await cache.get('miss-key');
 
     expect(mockRedisClient.get).toHaveBeenCalledWith('test:miss-key');
     expect(result).toBeInstanceOf(Flags);

@@ -5,43 +5,50 @@ const makeResponse = () =>
     status: 200,
     statusText: 'OK',
     headers: new Headers({ 'Content-Type': 'application/json' }),
+    text: () => Promise.resolve('{ "status": "ok" }'),
+    json: () => Promise.resolve({ status: 'ok' }),
     body: Buffer.from('{ "status": "ok" }'),
   });
 
 // Mock got
-jest.mock('got', () => {
-  const mockGot = jest.fn(() => {
+try {
+  jest.mock('got', () => {
+    const mockGot = jest.fn(() => {
+      return {
+        body: Buffer.from('ok'),
+        headers: { 'Content-Type': 'application/json' },
+        statusCode: 200,
+        rawBody: Buffer.from('ok')
+      };
+    });
+    // Mock stream method
+    (mockGot as any).stream = jest.fn().mockReturnValue({
+      on: jest.fn(),
+      pipe: jest.fn(),
+    });
+    (mockGot as any).get = jest.fn();
+    (mockGot as any).post = jest.fn();
+    (mockGot as any).stream = jest.fn();
+    const gotExtended = {
+      get: (...args: any[]) => (mockGot as any).get(...args),
+      post: (...args: any[]) => (mockGot as any).post(...args),
+      stream: (...args: any[]) => (mockGot as any).stream(...args),
+    };
+    const gotExtend = jest.fn().mockReturnValue(gotExtended);
+    (mockGot as any).extend = gotExtend;
     return {
-      body: Buffer.from('ok'),
-      headers: { 'Content-Type': 'application/json' },
-      statusCode: 200,
-      rawBody: Buffer.from('ok')
+      __esModule: true,
+      default: mockGot,
+      got: mockGot,
+      gotExtended,
     };
   });
-  // Mock stream method
-  (mockGot as any).stream = jest.fn().mockReturnValue({
-    on: jest.fn(),
-    pipe: jest.fn(),
-  });
-  (mockGot as any).get = jest.fn();
-  (mockGot as any).post = jest.fn();
-  (mockGot as any).stream = jest.fn();
-  const gotExtended = {
-    get: (...args: any[]) => (mockGot as any).get(...args),
-    post: (...args: any[]) => (mockGot as any).post(...args),
-    stream: (...args: any[]) => (mockGot as any).stream(...args),
-  };
-  const gotExtend = jest.fn().mockReturnValue(gotExtended);
-  (mockGot as any).extend = gotExtend;
-  return {
-    __esModule: true,
-    default: mockGot,
-    got: mockGot,
-    gotExtended,
-  };
-});
 
-try{
+} catch {
+
+}
+
+try {
   jest.mock('@compliance-theater/nextjs/fetch', () => {
     let mockFetch = jest.fn().mockImplementation(() => {
       return makeResponse();
@@ -50,11 +57,11 @@ try{
       fetch: mockFetch
     };
   });
-}catch{
+} catch {
 
 }
 
-try{
+try {
   jest.mock('@compliance-theater/nextjs/server/fetch', () => {
     let mockFetch = jest.fn().mockImplementation(() => {
       return makeResponse();
@@ -63,11 +70,11 @@ try{
       fetch: mockFetch
     };
   });
-}catch{
+} catch {
 
 }
 
-try{
+try {
   jest.mock('@compliance-theater/nextjs/dynamic-fetch', () => {
     let mockFetch = jest.fn().mockImplementation(() => {
       return makeResponse();
@@ -75,14 +82,10 @@ try{
     return {
       fetch: mockFetch
     };
-  });  
+  });
 } catch {
 
 }
-
-import { fetch as clientFetch } from '@compliance-theater/nextjs/fetch';
-import { fetch as serverFetch } from '@compliance-theater/nextjs/server/fetch';
-import got from 'got'; 
 
 let originalFetch: typeof globalThis.fetch | undefined;
 
@@ -94,6 +97,8 @@ beforeEach(() => {
       status: 200,
       statusText: 'OK',
       headers: new Headers({ 'Content-Type': 'application/json' }),
+      text: () => Promise.resolve('{ "status": "ok" }'),
+      json: () => Promise.resolve({ status: 'ok' }),
       body: Buffer.from('{ "status": "ok" }'),
     });
   });

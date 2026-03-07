@@ -1,10 +1,10 @@
-import type { LikeNextRequest } from '@compliance-theater/nextjs/types';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import type {
   GridFilterModel,
   GridSortModel,
   GridFilterItem,
 } from '@mui/x-data-grid-pro';
-import { isLikeNextRequest } from '@compliance-theater/nextjs/guards';
+import { isLikeNextRequest } from '@compliance-theater/types/lib/nextjs/guards';
 import { isGridSortModel, isString, isURL } from './postgres/guards';
 import { isGridFilterModel } from '../guards';
 import type { ArrayElement } from '@compliance-theater/typescript/types';
@@ -35,18 +35,18 @@ export const parseFilterOptions = (
     return x.items.length === 0
       ? addKeys.length > 0
         ? {
-            ...x,
-            items: addKeys.map((key) => ({ field: key, ...additional![key] })),
-          }
+          ...x,
+          items: addKeys.map((key) => ({ field: key, ...additional![key] })),
+        }
         : undefined
       : addKeys.length > 0
         ? {
-            ...x,
-            items: [
-              ...(x.items || []),
-              ...addKeys.map((key) => ({ field: key, ...additional![key] })),
-            ],
-          }
+          ...x,
+          items: [
+            ...(x.items || []),
+            ...addKeys.map((key) => ({ field: key, ...additional![key] })),
+          ],
+        }
         : x;
   };
 
@@ -98,8 +98,8 @@ export const parseSortOptions = (
   source?: ParseSortOptionsParam,
 ): typeof source extends infer TSource
   ? TSource extends ParseSortOptionsParam
-    ? GridSortModel
-    : undefined
+  ? GridSortModel
+  : undefined
   : never => {
   if (source === null) {
     return [] as GridSortModel; // Test expects [] for null

@@ -12,20 +12,20 @@ import {
   handleToolCall,
   handleFinish,
   processStreamChunk,
-} from '@/lib/ai/middleware/chat-history/stream-handlers';
+} from '../../../../../lib/ai/middleware/chat-history/stream-handlers';
 import { type DbDatabaseType } from '@compliance-theater/database';
 import { drizDb } from '@compliance-theater/database/orm';
 import { chatMessages, tokenUsage } from '@compliance-theater/database/schema';
-import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
+import { getNextSequence } from '../../../../../lib/ai/middleware/chat-history/utility';
 import { log } from '@compliance-theater/logger';
-import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
+import type { StreamHandlerContext } from '../../../../../lib/ai/middleware/chat-history/types';
 import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
-import { ensureCreateResult } from '@/lib/ai/middleware/chat-history/stream-handler-result';
+import { hideConsoleOutput } from '../../../../shared/test-utils';
+import { ensureCreateResult } from '../../../../../lib/ai/middleware/chat-history/stream-handler-result';
 
 // Mock dependencies
 jest.mock('@compliance-theater/database');
-jest.mock('@/lib/ai/middleware/chat-history/utility');
+jest.mock('../../../../../lib/ai/middleware/chat-history/utility');
 jest.mock('@compliance-theater/logger');
 
 let mockDb: jest.Mocked<DbDatabaseType>;
