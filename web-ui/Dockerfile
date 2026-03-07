@@ -132,11 +132,15 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 # Copy pruned package manifests and lockfile
 COPY --link=true --from=pruner /repo/out/full/ ./
-COPY --link=true --from=pruner /repo/out/yarn.lock ./yarn.lock
+# Use full yarn.lock instead of pruned to ensure all peer dependencies are included
+COPY --link=true --from=pruner /repo/yarn.lock ./yarn.lock
 COPY --link=true --from=pruner /repo/.yarnrc.yml ./.yarnrc.yml
 COPY --link=true --from=pruner /repo/.yarn/ ./.yarn/
 
 RUN node .yarn/releases/yarn-4.12.0.cjs install --immutable
+RUN pushd web-ui && node .yarn/releases/yarn-4.12.0.cjs install --immutable || popd
+RUN pushd web-ui/submodules/sce && node .yarn/releases/yarn-4.12.0.cjs install --immutable || popd
+RUN pushd web-ui/submodules/json-viewer/packages && node .yarn/releases/yarn-4.12.0.cjs install --immutable || popd
 
 # Build layer with pruned source
 FROM deps AS builder
@@ -190,7 +194,8 @@ ENV NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID=$NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
 ENV NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=$NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 
-RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
+RUN --mount=type=secret,id=env_file \
+  --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
   --mount=type=secret,id=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING \
   --mount=type=secret,id=AZURE_MONITOR_CONNECTION_STRING \
   --mount=type=secret,id=REDIS_URL \
@@ -209,23 +214,27 @@ RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
   TMP_ENV="$(mktemp)"; \
   add_var() { name="$1"; value="$2"; [ -n "$value" ] && printf "%s=%s\n" "$name" "$value" >> "$TMP_ENV"; }; \
   read_secret() { name="$1"; file="$2"; eval "current=\${$name:-}"; [ -z "$current" ] && current="$(cat "$file" 2>/dev/null || true)"; add_var "$name" "$current"; }; \
-  read_secret NEXT_PUBLIC_MUI_LICENSE "$SECRETS/NEXT_PUBLIC_MUI_LICENSE"; \
-  read_secret AZURE_MONITOR_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
-  read_secret NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
-  read_secret AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
-  read_secret NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
-  read_secret DATABASE_URL "$SECRETS/DATABASE_URL"; \
-  read_secret AZURE_STORAGE_ACCOUNT_KEY "$SECRETS/AZURE_STORAGE_ACCOUNT_KEY"; \
-  read_secret AZURE_STORAGE_CONNECTION_STRING "$SECRETS/AZURE_STORAGE_CONNECTION_STRING"; \
-  read_secret AUTH_GOOGLE_ID "$SECRETS/AUTH_GOOGLE_ID"; \
-  read_secret OPENID_KEY_TEXT "$SECRETS/OPENID_KEY_TEXT"; \
-  read_secret REDIS_URL "$SECRETS/REDIS_URL"; \
-  read_secret REDIS_PASSWORD "$SECRETS/REDIS_PASSWORD"; \
-  read_secret AZURE_API_KEY "$SECRETS/AZURE_API_KEY"; \
-  read_secret AZURE_AISEARCH_KEY "$SECRETS/AZURE_AISEARCH_KEY"; \
-  read_secret AUTH_GOOGLE_SECRET "$SECRETS/AUTH_GOOGLE_SECRET"; \
-  read_secret AUTH_GOOGLE_APIKEY "$SECRETS/AUTH_GOOGLE_APIKEY"; \
-  read_secret FLAGSMITH_SDK_KEY "$SECRETS/FLAGSMITH_SDK_KEY"; \
+  if [ -f "$SECRETS/env_file" ]; then \
+    cp "$SECRETS/env_file" "$TMP_ENV"; \
+  else \
+    read_secret NEXT_PUBLIC_MUI_LICENSE "$SECRETS/NEXT_PUBLIC_MUI_LICENSE"; \
+    read_secret AZURE_MONITOR_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
+    read_secret NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
+    read_secret AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
+    read_secret NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING "$SECRETS/NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"; \
+    read_secret DATABASE_URL "$SECRETS/DATABASE_URL"; \
+    read_secret AZURE_STORAGE_ACCOUNT_KEY "$SECRETS/AZURE_STORAGE_ACCOUNT_KEY"; \
+    read_secret AZURE_STORAGE_CONNECTION_STRING "$SECRETS/AZURE_STORAGE_CONNECTION_STRING"; \
+    read_secret AUTH_GOOGLE_ID "$SECRETS/AUTH_GOOGLE_ID"; \
+    read_secret OPENID_KEY_TEXT "$SECRETS/OPENID_KEY_TEXT"; \
+    read_secret REDIS_URL "$SECRETS/REDIS_URL"; \
+    read_secret REDIS_PASSWORD "$SECRETS/REDIS_PASSWORD"; \
+    read_secret AZURE_API_KEY "$SECRETS/AZURE_API_KEY"; \
+    read_secret AZURE_AISEARCH_KEY "$SECRETS/AZURE_AISEARCH_KEY"; \
+    read_secret AUTH_GOOGLE_SECRET "$SECRETS/AUTH_GOOGLE_SECRET"; \
+    read_secret AUTH_GOOGLE_APIKEY "$SECRETS/AUTH_GOOGLE_APIKEY"; \
+    read_secret FLAGSMITH_SDK_KEY "$SECRETS/FLAGSMITH_SDK_KEY"; \
+  fi; \
   set -a; [ -f "$TMP_ENV" ] && . "$TMP_ENV"; set +a; \
   cp "$TMP_ENV" ./packages/app/.env.local; \
   cp "$TMP_ENV" ./packages/app/.env.production.local; \
@@ -234,7 +243,6 @@ RUN --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
   if [ ! -d "./packages/app/.next/standalone" ]; then echo "Error: standalone build output missing" >&2; exit 1; fi
 
 FROM base AS runner
-WORKDIR /app/packages/app
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
@@ -279,12 +287,20 @@ RUN addgroup --system --gid 1001 nodejs \
 
 WORKDIR /app
 
-# Copy Next.js standalone output from the app workspace
+# Copy Next.js standalone output from the app workspace.
+# outputFileTracingRoot in next.config.ts is set to the workspace root (web-ui/), so the
+# standalone build preserves the monorepo path structure: server.js lands at
+# packages/app/server.js inside the standalone directory.
 COPY --link=true --from=builder /app/packages/app/.next/standalone /app
+# Static assets must mirror the app path within the standalone tree so the server can
+# resolve them via the default /_next/static route.
 COPY --link=true --from=builder /app/packages/app/.next/static /app/packages/app/.next/static
-# NOTE: we only need one of these 2 copy statements, but not sure which one
-COPY --link=true --from=pruner /repo/packages/app/public /app/public
+# public/ must live alongside server.js (i.e. at /app/packages/app/public) because Next.js
+# standalone serves public assets relative to the directory from which server.js runs
+# (WORKDIR /app/packages/app at runtime).  A copy to /app/public would be unreachable.
 COPY --link=true --from=pruner /repo/packages/app/public /app/packages/app/public
+# Copy startup and cron scripts from the app workspace.  rate-retry-client.sh is invoked
+# by the cron job configured below and expects to live at /app/scripts/.
 COPY --link=true --from=pruner /repo/packages/app/scripts /app/scripts
 
 # Set up cron and write runtime env file (pulling from secrets when env is unset)

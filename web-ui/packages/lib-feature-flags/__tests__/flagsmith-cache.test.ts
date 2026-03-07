@@ -1,7 +1,7 @@
 import { FlagsmithRedisCache } from '../src/flagsmith-cache';
 import { getRedisClient } from '@compliance-theater/redis';
 import { Flags } from 'flagsmith-nodejs';
-import type { RedisClientType } from 'redis';
+import type { RedisClientType } from '@redis/client';
 import { hideConsoleOutput } from './shared/test-utils-server';
 
 jest.mock('lru-cache', () => {

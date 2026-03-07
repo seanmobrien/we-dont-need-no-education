@@ -48,6 +48,7 @@
     "@mui/material": "^7.3.6",
     "@opentelemetry/api": "1.9.0",
     "@opentelemetry/api-logs": "0.57.2",
+    "@redis/client": ">=5.5.6",
     "@tanstack/react-query": "5.90.21",
     "@toolpad/core": "^0.15.0",
     "google-auth-library": "^9.15.1",
@@ -58,7 +59,6 @@
     "next-auth": "^5.0.0-beta.30",
     "node-html-parser": "^7.0.1",
     "react-native": "^0.84.0",
-    "redis": ">=5.5.6",
     "tough-cookie": "^6.0.0"
   },
   "peerDependencies": {

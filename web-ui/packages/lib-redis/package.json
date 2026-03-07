@@ -39,7 +39,7 @@
     "@compliance-theater/typescript": "workspace:*",
     "@opentelemetry/api": "1.9.0",
     "@opentelemetry/api-logs": "0.57.2",
-    "redis": ">=5.5.6"
+    "@redis/client": ">=5.5.6"
   },
   "devDependencies": {
     "@swc/core": "^1.13.5",
