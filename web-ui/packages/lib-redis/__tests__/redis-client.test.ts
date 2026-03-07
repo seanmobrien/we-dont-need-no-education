@@ -1,5 +1,5 @@
 import { getRedisClient, closeRedisClient } from '../src';
-import { createClient } from 'redis';
+import { createClient } from '@redis/client';
 import * as loggerModule from '@compliance-theater/logger';
 import AfterManager from '@compliance-theater/after';
 import { SingletonProvider } from '@compliance-theater/logger/singleton-provider/provider';

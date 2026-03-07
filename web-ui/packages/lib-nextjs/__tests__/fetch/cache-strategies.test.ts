@@ -14,8 +14,7 @@ import type {
   CachedValue,
   CacheStrategyDeps,
 } from '../../src/server/fetch/fetch-types';
-import { type RedisClientType } from '@compliance-theater/redis';
-import { createClient } from 'redis';
+import { getRedisClient, type RedisClientType } from '@compliance-theater/redis';
 import { hideConsoleOutput } from '../shared/test-utils-server';
 
 /*
@@ -77,12 +76,13 @@ describe('CacheStrategies', () => {
   };
   const mockConsole = hideConsoleOutput();
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Reset all mocks
     // jest.clearAllMocks();
     mockConsole.setup();
 
-    mockRedisClient = createClient() as jest.Mocked<RedisClientType>;
+    mockRedisClient =
+      (await getRedisClient()) as unknown as jest.Mocked<RedisClientType>;
     // Create fresh instances for each test
     cache = new LRUCache({ max: 100 });
     inflightMap = new Map();

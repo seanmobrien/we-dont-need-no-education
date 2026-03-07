@@ -24,20 +24,20 @@ This package is part of the monorepo workspace and is installed automatically wh
 ### Basic Usage
 
 ```typescript
-import { getRedisClient } from '@compliance-theater/redis';
+import { getRedisClient } from "@compliance-theater/redis";
 
 // Get default Redis client (database 0, non-subscribe mode)
 const redis = await getRedisClient();
 
 // Use Redis operations
-await redis.set('key', 'value');
-const value = await redis.get('key');
+await redis.set("key", "value");
+const value = await redis.get("key");
 ```
 
 ### Multiple Databases
 
 ```typescript
-import { getRedisClient } from '@compliance-theater/redis';
+import { getRedisClient } from "@compliance-theater/redis";
 
 // Connect to different databases
 const db0 = await getRedisClient({ database: 0 });
@@ -47,20 +47,20 @@ const db1 = await getRedisClient({ database: 1 });
 ### Subscribe Mode
 
 ```typescript
-import { getRedisClient } from '@compliance-theater/redis';
+import { getRedisClient } from "@compliance-theater/redis";
 
 // Get client for pub/sub operations
 const subscriber = await getRedisClient({ subscribeMode: true });
 
-await subscriber.subscribe('channel', (message) => {
-  console.log('Received:', message);
+await subscriber.subscribe("channel", (message) => {
+  console.log("Received:", message);
 });
 ```
 
 ### Manual Cleanup
 
 ```typescript
-import { closeRedisClient } from '@compliance-theater/redis';
+import { closeRedisClient } from "@compliance-theater/redis";
 
 // Close all Redis connections
 await closeRedisClient();
@@ -73,6 +73,7 @@ await closeRedisClient();
 Gets or creates a Redis client with the specified options.
 
 **Options:**
+
 - `database?: number` - Redis database number (default: 0)
 - `subscribeMode?: boolean` - Enable subscribe features (default: false)
 
@@ -86,7 +87,7 @@ Closes all Redis client instances.
 
 ### Types
 
-- `RedisClientType` - Re-exported from the `redis` package
+- `RedisClientType` - Re-exported from the `@redis/client` package
 - `RedisClientOptions` - Options for creating a Redis client
 
 ## Configuration
@@ -102,7 +103,7 @@ The package uses environment variables from `@compliance-theater/env`:
 - `@compliance-theater/env` - For environment configuration
 - `@compliance-theater/logger` - For logging
 - `@compliance-theater/typescript` - For singleton provider
-- `redis` (^4.7.0) - Redis client library
+- `@redis/client` (>=5.5.6) - Redis client library
 
 ## Testing
 
@@ -125,6 +126,7 @@ yarn test
 ### Singleton Pattern
 
 The package uses a process-global singleton provider to ensure that:
+
 - Only one client instance exists per configuration (database + subscribe mode)
 - Connections are reused across the application
 - Cleanup is centralized and automatic

@@ -143,6 +143,7 @@ const config = {
     '^zodex$': '<rootDir>/__mocks__/shared/zodex.js',
     // Redis module mock
     '^redis$': '<rootDir>/__mocks__/shared/redis.ts',
+    '^@redis/client$': '<rootDir>/__mocks__/shared/redis.ts',
     // got and jose are common dependencies that can cause issues if not mocked due to their use of native modules and ESM - we mock them globally here to ensure consistency across tests
     '^got$': '<rootDir>/__mocks__/shared/got.ts',
     '^jose$': '<rootDir>/__mocks__/shared/jose.ts',
