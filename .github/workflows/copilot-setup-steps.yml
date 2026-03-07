@@ -103,5 +103,5 @@ jobs:
         working-directory: ./
         run: |
           set -euo pipefail
-          node .yarn/releases/yarn-4.12.0.cjs install --immutable
+          YARN_ENABLE_IMMUTABLE_INSTALLS=false node .yarn/releases/yarn-4.12.0.cjs install
         shell: bash

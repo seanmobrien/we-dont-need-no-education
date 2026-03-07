@@ -96,11 +96,7 @@ jobs:
         working-directory: ./
         run: |
           set -euo pipefail
-          node .yarn/releases/yarn-4.12.0.cjs install --immutable
-          cd web-ui/submodules/sce
-          node .yarn/releases/yarn-4.12.0.cjs install --immutable
-          cd ../json-viewer/packages
-          node .yarn/releases/yarn-4.12.0.cjs install --immutable
+          ./scripts/clean-link.sh
         shell: bash
 
       # NOTE: Turbo lint tool depends on typescript build, so this will do both lint and typescript validation.

@@ -25,11 +25,11 @@
     "web-ui/packages/lib-typescript",
     "web-ui/packages/app",
     "web-ui/submodules/json-viewer/packages",
-    "web-ui/submodules/sce/packages/**/ts"
+    "web-ui/submodules/sce"
   ],
   "scripts": {
     "add": "yarn workspace compliance-theater add ",
-    "preinstall": "node scripts/validate-yarn.js",
+    "preinstall": "node preinstall.js",
     "link:clean": "bash scripts/clean-link.sh",
     "changeset": "changeset",
     "changeset:status": "changeset status",
@@ -73,6 +73,7 @@
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-promise": "7.2.1",
     "jsx-ast-utils@npm:3.3.5": "patch:jsx-ast-utils@npm%3A3.3.5#./patches/jsx-ast-utils-npm-3.3.5.patch",
+    "redis@npm:^4.6.0": "npm:@redis/client@5.11.0",
     "lodash-es@npm:^4.17.21": "npm:4.17.23",
     "@esbuild-kit/core-utils/esbuild": "^0.27.3",
     "drizzle-kit/esbuild": "^0.27.3",

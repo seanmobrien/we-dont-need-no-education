@@ -2,6 +2,7 @@
   "name": "compliance-theater",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "yarn@4.12.0",
   "workspaces": [
     "packages/app",
     "packages/lib-logger",
@@ -15,9 +16,11 @@
     "packages/lib-react",
     "packages/lib-themes",
     "packages/lib-types",
-    "packages/lib-with-feature-flags",
-    "submodules/json-viewer/packages/*",
-    "submodules/sce/packages/*/ts"
+    "packages/lib-feature-flags",
+    "packages/lib-fetch",
+    "packages/lib-send-api-request",
+    "submodules/json-viewer/packages",
+    "submodules/sce"
   ],
   "scripts": {
     "add": "turbo run add --filter='@compliance-theater/*' ",
@@ -93,6 +96,7 @@
     "@compliance-theater/typescript": "workspace:*",
     "@opentelemetry/api": "1.9.0",
     "@opentelemetry/api-logs": "0.57.2",
+    "@redis/client": ">=5.5.6",
     "@semanticencoding/core": "workspace:*",
     "drizzle-orm": "^0.44.1",
     "got": "^14.4.9",
@@ -104,7 +108,6 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-native": "^0.84.0",
-    "redis": ">=5.5.6",
     "semanticencoding": "workspace:*",
     "zod": "3.25.76",
     "zodex": "^3.0.0"

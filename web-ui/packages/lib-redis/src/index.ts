@@ -1,5 +1,5 @@
 import { SingletonProvider } from '@compliance-theater/logger/singleton-provider/provider';
-import { createClient, type RedisClientType } from 'redis';
+import { createClient, type RedisClientType } from '@redis/client';
 import { env } from '@compliance-theater/env';
 import { LoggedError, log } from '@compliance-theater/logger';
 import AfterManager from '@compliance-theater/after';
