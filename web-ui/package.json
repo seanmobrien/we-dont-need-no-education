@@ -20,7 +20,7 @@
     "packages/lib-fetch",
     "packages/lib-send-api-request",
     "submodules/json-viewer/packages",
-    "submodules/sce/packages/*/ts"
+    "submodules/sce"
   ],
   "scripts": {
     "add": "turbo run add --filter='@compliance-theater/*' ",

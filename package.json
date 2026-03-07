@@ -25,7 +25,7 @@
     "web-ui/packages/lib-typescript",
     "web-ui/packages/app",
     "web-ui/submodules/json-viewer/packages",
-    "web-ui/submodules/sce/packages/**/ts"
+    "web-ui/submodules/sce"
   ],
   "scripts": {
     "add": "yarn workspace compliance-theater add ",
