@@ -138,6 +138,9 @@ COPY --link=true --from=pruner /repo/.yarnrc.yml ./.yarnrc.yml
 COPY --link=true --from=pruner /repo/.yarn/ ./.yarn/
 
 RUN node .yarn/releases/yarn-4.12.0.cjs install --immutable
+RUN pushd web-ui && node .yarn/releases/yarn-4.12.0.cjs install --immutable || popd
+RUN pushd web-ui/submodules/sce && node .yarn/releases/yarn-4.12.0.cjs install --immutable || popd
+RUN pushd web-ui/submodules/json-viewer/packages && node .yarn/releases/yarn-4.12.0.cjs install --immutable || popd
 
 # Build layer with pruned source
 FROM deps AS builder
