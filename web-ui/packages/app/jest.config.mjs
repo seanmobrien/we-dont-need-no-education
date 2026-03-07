@@ -33,6 +33,7 @@ const config = {
     '^@/__tests__/test-utils-server$': '<rootDir>/__tests__/shared/test-utils-server.ts',
     '^next-auth/providers/keycloak$': '<rootDir>/__mocks__/shared/keycloak-provider.js',
     '^next/navigation$': '<rootDir>/__mocks__/shared/next-navigation.ts',
+    '^@semanticencoding/core$': '<rootDir>/../../submodules/sce/packages/core/ts/src/index.ts',
     '^@/(.*)$': '<rootDir>/$1', // Alias for module-level (app) imports.   
   },
 };
