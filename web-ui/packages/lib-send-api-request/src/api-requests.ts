@@ -1,3 +1,5 @@
+/* global Headers, RequestInit, fetch */
+
 import { log } from '@compliance-theater/logger';
 import {
   AbortablePromise,
@@ -13,7 +15,7 @@ import type {
 } from './types';
 import { ApiRequestError } from './api-request-error';
 import { LoggedError } from '@compliance-theater/logger';
-import { getHeaderValue } from './nextjs-utils';
+import { getHeaderValue } from '@compliance-theater/types/lib/nextjs/get-header-value';
 
 /**
  * Sends an API request with the specified parameters.

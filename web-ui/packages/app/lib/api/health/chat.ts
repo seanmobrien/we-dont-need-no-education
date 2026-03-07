@@ -3,11 +3,10 @@ import {
   HealthCheckStatusEntry,
   HealthCheckStatusCode,
 } from '@/lib/hooks/types';
-import { globalRequiredSingleton } from '@compliance-theater/typescript/singleton-provider';
 import { getRedisClient } from '@compliance-theater/redis';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getMem0EnabledFlag } from '@/lib/ai/mcp/tool-flags';
-import { LoggedError } from '@compliance-theater/logger';
+import { LoggedError, globalRequiredSingleton } from '@compliance-theater/logger';
 import type { NextRequest } from 'next/server';
 import { ToolProviderSet } from '@/lib/ai/mcp/types';
 

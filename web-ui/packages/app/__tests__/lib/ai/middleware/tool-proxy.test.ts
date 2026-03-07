@@ -1,7 +1,17 @@
+jest.mock('@compliance-theater/types/ai-sdk/ai', () => ({
+  ...jest.requireActual('@compliance-theater/types/ai-sdk/ai'),
+  wrapLanguageModel: jest.fn(),
+}));
+jest.mock('@compliance-theater/types/ai-sdk', () => ({
+  ...jest.requireActual('@compliance-theater/types/ai-sdk'),
+  ...jest.requireMock('@compliance-theater/types/ai-sdk/ai'),
+}));
+
+import { wrapLanguageModel as wrapLanguageModelMock } from '@compliance-theater/types/ai-sdk/ai';
 import { toolProxyMiddlewareFactory, wrapWithToolProxyMiddleware } from '../../../../lib/ai/middleware/tool-proxy';
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 
-const wrapLanguageModelMock = jest.fn();
+
 
 // State manager mock to unwrap middleware directly
 jest.mock('../../../../lib/ai/middleware/state-management/middleware-state-manager', () => ({
@@ -12,13 +22,10 @@ jest.mock('../../../../lib/ai/middleware/state-management/middleware-state-manag
   },
 }));
 
-jest.mock('ai', () => ({
-  wrapLanguageModel: (...args: any[]) => wrapLanguageModelMock(...args),
-}));
 
 describe('toolProxyMiddlewareFactory', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   it('merges tools by default and removes duplicates by name', async () => {
@@ -110,7 +117,7 @@ describe('toolProxyMiddlewareFactory', () => {
 
 describe('wrapWithToolProxyMiddleware', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   it('wraps model with tool proxy middleware', () => {
@@ -120,7 +127,7 @@ describe('wrapWithToolProxyMiddleware', () => {
     wrapWithToolProxyMiddleware({ model, tools });
 
     expect(wrapLanguageModelMock).toHaveBeenCalledTimes(1);
-    const callArgs = wrapLanguageModelMock.mock.calls[0][0];
+    const callArgs = (wrapLanguageModelMock as jest.Mock).mock.calls[0][0];
     expect(callArgs.model).toBe(model);
     expect(callArgs.middleware).toBeDefined();
   });

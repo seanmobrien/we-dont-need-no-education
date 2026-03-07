@@ -3,7 +3,7 @@
  * @module @/lib/drizzle-db/drizzle-error
  */
 
-declare module '@/lib/drizzle-db/drizzle-error' {
+declare module '@compliance-theater/database/orm/drizzle-error' {
   /**
    * IPostgresError represents the shape of an error object returned by
    * PostgreSQL drivers and Drizzle adapters. It extends the standard Error

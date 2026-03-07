@@ -83,7 +83,7 @@ Ensure your Keycloak client has the following settings:
 ### Basic Usage
 
 ```typescript
-import { Impersonation } from '@/lib/auth/impersonation';
+import { Impersonation } from '@compliance-theater/auth/lib/impersonation';
 import { NextRequest } from 'next/server';
 
 // Create impersonation instance from request
@@ -109,7 +109,7 @@ if (impersonation) {
 import { toolProviderSetFactory } from '@/lib/ai/mcp/toolProviderFactory';
 
 // Use the factory to select the active strategy based on flags
-import { fromRequest as impersonationFactory } from '@/lib/auth/impersonation-factory';
+import { fromRequest as impersonationFactory } from '@compliance-theater/auth/lib/impersonation-factory';
 
 const impersonation = await impersonationFactory({});
 
@@ -127,7 +127,7 @@ const toolProviders = await toolProviderSetFactory([
 ```typescript
 import { memoryClientFactory } from '@/lib/ai/mem0';
 
-import { fromRequest as impersonationFactory } from '@/lib/auth/impersonation-factory';
+import { fromRequest as impersonationFactory } from '@compliance-theater/auth/lib/impersonation-factory';
 
 const impersonation = await impersonationFactory({});
 

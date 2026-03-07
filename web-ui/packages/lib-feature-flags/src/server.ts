@@ -13,9 +13,8 @@ import {
   FLAGSMITH_SERVER_SINGLETON_KEY,
 } from './known-feature-defaults';
 
-import { globalSingleton } from '@compliance-theater/typescript';
 import { env } from '@compliance-theater/env';
-import { LoggedError, log } from '@compliance-theater/logger';
+import { LoggedError, log, globalSingleton } from '@compliance-theater/logger';
 import { extractFlagValue } from './util';
 
 import { FlagsmithRedisCache } from './flagsmith-cache';

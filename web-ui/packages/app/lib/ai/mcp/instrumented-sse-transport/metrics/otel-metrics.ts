@@ -6,6 +6,7 @@
  */
 
 import { trace, metrics } from '@opentelemetry/api';
+import { MetricsRecorder as BaseMetricsRecorder } from '@compliance-theater/logger/otel/metrics-recorder';
 
 // OTEL Configuration
 export const OTEL_MODE = process.env.MCP_OTEL_MODE?.toUpperCase() || 'WARNING';
@@ -29,23 +30,11 @@ export const messageSizeHistogram = meter.createHistogram('mcp_message_size_byte
   description: 'Size of MCP messages in bytes',
 });
 
-// Error Metrics
-export const errorCounter = meter.createCounter('mcp_errors_total', {
-  description: 'Total number of MCP transport errors',
-});
-
 // Duration Metrics
 export const sessionDurationHistogram = meter.createHistogram(
   'mcp_session_duration_ms',
   {
     description: 'Duration of MCP sessions in milliseconds',
-  },
-);
-
-export const operationDurationHistogram = meter.createHistogram(
-  'mcp_operation_duration_ms',
-  {
-    description: 'Duration of MCP operations in milliseconds',
   },
 );
 
@@ -101,16 +90,19 @@ export class MetricsRecorder {
   }
 
   static recordError(operation: string, errorType: string) {
-    errorCounter.add(1, {
-      'mcp.transport.operation': operation,
-      'mcp.transport.error_type': errorType,
+    BaseMetricsRecorder.recordError({
+      operation,
+      errorType,
+      prefix: 'mcp.transport',
     });
   }
 
   static recordOperationDuration(duration: number, operation: string, status: string) {
-    operationDurationHistogram.record(duration, {
-      'mcp.transport.operation': operation,
-      'mcp.transport.status': status,
+    BaseMetricsRecorder.recordOperationDuration({
+      duration,
+      operation,
+      status,
+      prefix: 'mcp.transport',
     });
   }
 

@@ -1,7 +1,7 @@
 import { schema } from '@compliance-theater/database/orm';
 import type { ChatMessagesType, DbTransactionType } from '@compliance-theater/database/orm';
 import { ChatHistoryContext, ToolStatus } from './types';
-import { eq, desc, and } from 'drizzle-orm';
+import { eq, desc, and } from '@compliance-theater/database/drizzle-orm';
 import { log } from '@compliance-theater/logger';
 import { getNextSequence, getNewMessages, getItemOutput } from './utility';
 import { generateChatId } from '@/lib/ai/core';

@@ -22,12 +22,12 @@
  * ```
  * @compliance-theater/types                    [Main entry point]
  * ├── @compliance-theater/types/ai             [AI types aggregate]
- * │   ├── @compliance-theater/types/ai/core    [Model/provider types & guards]
+ * │   ├── @compliance-theater/types/lib/ai/core    [Model/provider types & guards]
  * │   │   ├── types.d.ts                       [Type definitions]
  * │   │   ├── unions.d.ts                      [Model & provider enums]
  * │   │   ├── guards.d.ts                      [Type validation functions]
  * │   │   └── index.d.ts                       [Module exports]
- * │   └── @compliance-theater/types/ai/chat    [Chat structures & validators]
+ * │   └── @compliance-theater/types/lib/ai/chat    [Chat structures & validators]
  * │       ├── types.d.ts                       [Chat type definitions]
  * │       ├── guards.d.ts                      [Chat validation functions]
  * │       └── index.d.ts                       [Module exports]
@@ -49,20 +49,20 @@
  * import directly from the relevant submodule to avoid importing unneeded code:
  * ```typescript
  * // Only AI model types
- * import type { AiModelType } from '@compliance-theater/types/ai/core';
- * import { AiModelTypeValues } from '@compliance-theater/types/ai/core';
+ * import type { AiModelType } from '@compliance-theater/types/lib/ai/core';
+ * import { AiModelTypeValues } from '@compliance-theater/types/lib/ai/core';
  *
  * // Only chat types
- * import type { ChatMessage, ChatTurn } from '@compliance-theater/types/ai/chat';
- * import { isChatMessage, isChatTurn } from '@compliance-theater/types/ai/chat';
+ * import type { ChatMessage, ChatTurn } from '@compliance-theater/types/lib/ai/chat';
+ * import { isChatMessage, isChatTurn } from '@compliance-theater/types/lib/ai/chat';
  * ```
  *
  * ### Fine-Grained: Import from Specialized Modules
  * For maximum control, import directly from individual files:
  * ```typescript
- * import type { AiModelType } from '@compliance-theater/types/ai/core/types';
- * import { AiModelTypeValues } from '@compliance-theater/types/ai/core/unions';
- * import { isAiModelType } from '@compliance-theater/types/ai/core/guards';
+ * import type { AiModelType } from '@compliance-theater/types/lib/ai/core/types';
+ * import { AiModelTypeValues } from '@compliance-theater/types/lib/ai/core/unions';
+ * import { isAiModelType } from '@compliance-theater/types/lib/ai/core/guards';
  * ```
  *
  * ## Common Patterns
@@ -83,7 +83,7 @@
  *
  * ### Pattern 2: Exhaustive Model Configuration
  * ```typescript
- * import { AiModelTypeValues } from '@compliance-theater/types/ai/core';
+ * import { AiModelTypeValues } from '@compliance-theater/types/lib/ai/core';
  *
  * // TypeScript ensures all models have configuration
  * const modelConfig = Object.fromEntries(
@@ -96,7 +96,7 @@
  *
  * ### Pattern 3: Error Classification for Retry Logic
  * ```typescript
- * import { getRetryErrorInfoKind } from '@compliance-theater/types/ai/chat';
+ * import { getRetryErrorInfoKind } from '@compliance-theater/types/lib/ai/chat';
  *
  * async function callWithRetry(operation: () => Promise<any>) {
  *   const result = await operation();
@@ -117,8 +117,8 @@
  *
  * ### Pattern 4: Type-Safe Model Selection
  * ```typescript
- * import type { AiLanguageModelType } from '@compliance-theater/types/ai/core';
- * import { isAiLanguageModelType } from '@compliance-theater/types/ai/core';
+ * import type { AiLanguageModelType } from '@compliance-theater/types/lib/ai/core';
+ * import { isAiLanguageModelType } from '@compliance-theater/types/lib/ai/core';
  *
  * async function generateText(modelId: unknown, prompt: string): Promise<string> {
  *   if (!isAiLanguageModelType(modelId)) {
@@ -300,35 +300,38 @@ import type {
   ChatMessage,
   ChatTurn,
   ChatDetails,
+} from "./lib/ai/chat";
+
+import {
   isChatMessage,
   isChatTurn,
   isChatDetails,
   getRetryErrorInfoKind,
 } from "./lib/ai/chat";
 
-declare module "@compliance-theater/types" {
-  export type {
-    ValueOf,
-    AnnotatedErrorMessageBase,
-    AnnotatedErrorPart,
-    AnnotatedErrorMessage,
-    AnnotatedRetryMessage,
-    AnnotatedMessage,
-    RetryErrorInfo,
-    ChatMessage,
-    ChatTurn,
-    ChatDetails,
-  };
-  export {
-    isAnnotatedMessageBase,
-    isAnnotatedErrorMessage,
-    isAnnotatedRetryMessage,
-    isAiLanguageModelType,
-    isAiModelType,
-    isAiProviderType,
-    isChatMessage,
-    isChatTurn,
-    isChatDetails,
-    getRetryErrorInfoKind,
-  };
-}
+
+export type {
+  ValueOf,
+  AnnotatedErrorMessageBase,
+  AnnotatedErrorPart,
+  AnnotatedErrorMessage,
+  AnnotatedRetryMessage,
+  AnnotatedMessage,
+  RetryErrorInfo,
+  ChatMessage,
+  ChatTurn,
+  ChatDetails,
+};
+export {
+  isAnnotatedMessageBase,
+  isAnnotatedErrorMessage,
+  isAnnotatedRetryMessage,
+  isAiLanguageModelType,
+  isAiModelType,
+  isAiProviderType,
+  isChatMessage,
+  isChatTurn,
+  isChatDetails,
+  getRetryErrorInfoKind,
+};
+

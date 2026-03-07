@@ -46,5 +46,13 @@ export type {
 export * from './connection';
 
 export * from './db-helpers';
+export * from './resolve-case-file-id';
 
 export { sql, type DrizzleSqlType } from './drizzle-sql';
+export type {
+  AnyPgSelect, 
+  PgSession, 
+  PgCountBuilder,
+  ColumnBaseConfig,
+  PgColumn
+} from './drizzle-aliases';

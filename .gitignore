@@ -24,10 +24,13 @@ out/
 .next
 .turbo
 
+!.gitkeep
+
 
 # production
 /build
 dist
+!**/src/*/dist
 
 # misc
 .DS_Store

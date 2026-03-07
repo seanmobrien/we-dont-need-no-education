@@ -2,20 +2,20 @@
 
 import { checkChatHealth } from '../../../../lib/api/health/chat';
 import { getRedisClient } from '@compliance-theater/redis';
-import { setupDefaultTools } from '@/lib/ai/mcp/providers';
-import { getMem0EnabledFlag } from '@/lib/ai/mcp/tool-flags';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { setupDefaultTools } from '../../../../lib/ai/mcp/providers';
+import { getMem0EnabledFlag } from '../../../../lib/ai/mcp/tool-flags';
+import { hideConsoleOutput } from '../../../shared/test-utils';
 
 // Mock dependencies
 jest.mock('@compliance-theater/redis');
-jest.mock('@/lib/ai/mcp/providers');
-jest.mock('@/lib/ai/mcp/tool-flags');
+jest.mock('../../../../lib/ai/mcp/providers');
+jest.mock('../../../../lib/ai/mcp/tool-flags');
 
 const mockConsole = hideConsoleOutput();
 
 describe('checkChatHealth', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   it('should return healthy when all subsystems are healthy', async () => {

@@ -8,12 +8,12 @@
  * protocol including state collection and restoration across multiple middleware.
  */
 
-import { aiModelFactory } from '@/lib/ai/aiModelFactory';
+import { aiModelFactory } from '../../../../../lib/ai/aiModelFactory';
 import {
   MiddlewareStateManager,
   setNormalizedDefaultsMiddleware,
-} from '@/lib/ai/middleware';
-import { generateText, wrapLanguageModel } from 'ai';
+} from '../../../../../lib/ai/middleware';
+import { generateText, wrapLanguageModel } from '@compliance-theater/types/ai-sdk';
 
 const makeMiddleware = () => ({
   wrapGenerate: async (options: any) => {
@@ -56,7 +56,7 @@ const makeMockModel = (stateManager?: MiddlewareStateManager) => {
     : model;
 };
 
-jest.mock('@/lib/ai/aiModelFactory');
+jest.mock('../../../../../lib/ai/aiModelFactory');
 const mockAiModelFactory = aiModelFactory as jest.MockedFunction<typeof aiModelFactory>;
 
 describe('State Management Protocol Integration', () => {
@@ -65,9 +65,9 @@ describe('State Management Protocol Integration', () => {
 
   beforeEach(async () => {
     const setupImpersonationMock =
-      require('@/__tests__/jest.mock-impersonation').setupImpersonationMock;
+      require('../../../../jest.mock-impersonation').setupImpersonationMock;
     const setupMaps =
-      require('@/__tests__/setup/jest.mock-provider-model-maps').setupMaps;
+      require('../../../../setup/jest.mock-provider-model-maps').setupMaps;
 
     setupImpersonationMock();
     setupMaps();

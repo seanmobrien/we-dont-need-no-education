@@ -6,7 +6,7 @@
  * @description Unit tests for the InMemoryCache base class
  */
 
-import { InMemoryCache } from '@/lib/api/health/base-cache';
+import { InMemoryCache } from '../../../../lib/api/health/base-cache';
 
 describe('InMemoryCache', () => {
   beforeEach(() => {

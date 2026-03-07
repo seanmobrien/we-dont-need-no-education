@@ -13,14 +13,14 @@ import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-no
 
 import { drizDbWithInit, type DbDatabaseType } from '@compliance-theater/database/orm';
 import { schema } from '@compliance-theater/database/orm';
-import { eq, and } from 'drizzle-orm';
+import { eq, and } from '@compliance-theater/database/drizzle-orm';
 import { LoggedError, log } from '@compliance-theater/logger';
 import {
   ProviderMap,
   ProviderPrimaryNameType,
   ProviderPrimaryNameTypeValues,
 } from './provider-map';
-import { LanguageModel } from 'ai';
+import { LanguageModel } from '@compliance-theater/types/ai-sdk';
 import { ModelClassification } from '../../middleware/key-rate-limiter/types';
 import { isKeyOf, newUuid } from '@compliance-theater/typescript';
 

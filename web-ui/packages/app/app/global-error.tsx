@@ -4,7 +4,7 @@ import * as React from 'react';
 import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/render-fallback';
 import { FlagProvider } from '@compliance-theater/feature-flags/components/flag-provider';
 import { ClientWrapper } from '@compliance-theater/react';
-import { useProcessedError } from '@/lib/error-monitoring/use-processed-error';
+import { useProcessedError } from '@compliance-theater/logger/errors/monitoring/use-processed-error';
 import Link from 'next/link';
 
 type GlobalErrorProps = {

@@ -3,26 +3,29 @@
  */
 
 jest.mock('@compliance-theater/database');
-jest.mock('@/lib/site-util/auth/user-keys-server');
+jest.mock('@compliance-theater/auth/lib/utilities/user-keys-server');
 
-import { GET } from '@/app/api/auth/session/route';
-import { getActiveUserPublicKeys } from '@/lib/site-util/auth/user-keys-server';
+import { getActiveUserPublicKeys } from '@compliance-theater/auth/lib/utilities/user-keys-server';
 import { NextURL } from 'next/dist/server/web/next-url';
 import { NextRequest } from 'next/server';
-import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
+import { withJestTestExtensions } from '../../../../shared/jest.test-extensions';
+import { GET } from '../../../../../app/api/auth/session/route';
 
-const mockedGetActiveUserPublicKeys =
-  getActiveUserPublicKeys as jest.MockedFunction<
-    typeof getActiveUserPublicKeys
-  >;
+
 describe('AuthSessionRoute GET', () => {
   const mockKeys = ['key1', 'key2'];
   let mockSession: ReturnType<typeof withJestTestExtensions>['session'] | null =
     null;
+  let mockedGetActiveUserPublicKeys = getActiveUserPublicKeys as jest.MockedFunction<
+    typeof getActiveUserPublicKeys
+  >;
+
+
 
   beforeEach(() => {
-    // jest.clearAllMocks();
-    // mockedAuth.mockResolvedValue(mockSession as never);
+    mockedGetActiveUserPublicKeys = getActiveUserPublicKeys as jest.MockedFunction<
+      typeof getActiveUserPublicKeys
+    >;
     mockSession = withJestTestExtensions().session;
     mockedGetActiveUserPublicKeys.mockResolvedValue(mockKeys);
   });
@@ -30,6 +33,7 @@ describe('AuthSessionRoute GET', () => {
   function makeNextRequest(url: string) {
     return { url, nextUrl: new NextURL(url) } as unknown as NextRequest;
   }
+
   it('returns unauthenticated if no session', async () => {
     withJestTestExtensions().session = null;
     const req = makeNextRequest('http://localhost/api/auth/session');
@@ -39,6 +43,7 @@ describe('AuthSessionRoute GET', () => {
     expect(json.data).toBeNull();
     expect(json.publicKeys).toBeUndefined();
   });
+
 
   it('returns authenticated session without keys if get-keys param is missing', async () => {
     const req = makeNextRequest('http://localhost/api/auth/session');

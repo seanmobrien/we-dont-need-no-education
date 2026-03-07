@@ -19,11 +19,17 @@
     "src/**/*.tsx"
   ],
   "exclude": [
+    "**/__tests__/**",
+    "**/__mocks__/**",
     "node_modules",
     "dist"
   ],
   "references": [
-    { "path": "../lib-logger" },
-    { "path": "../lib-typescript" }
+    {
+      "path": "../lib-logger"
+    },
+    {
+      "path": "../lib-types"
+    }
   ]
 }

@@ -5,7 +5,7 @@ import {
 } from '@/lib/api/health/memory';
 import { getFeatureFlag } from '@compliance-theater/feature-flags/server';;
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 import { NextRequest, NextResponse } from 'next/server';
 import type { Span } from '@opentelemetry/api';
 import { wellKnownFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';

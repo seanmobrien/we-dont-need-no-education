@@ -3,7 +3,7 @@
 import {
   EmailDrizzleRepository,
   EmailDomain,
-} from '@/lib/api/email/email-drizzle-repository';
+} from '../../../../lib/api/email/email-drizzle-repository';
 import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 
 import { drizDb, drizDbWithInit } from '@compliance-theater/database/orm';
@@ -23,8 +23,8 @@ jest.mock('@compliance-theater/database', () => {
 
 // Mock drizzle schema
 jest.mock('@compliance-theater/database/schema', () => {
-  const { Table } = require('drizzle-orm');
-  const { PgTable } = require('drizzle-orm/pg-core');
+  const { Table } = require('@compliance-theater/database/drizzle-orm');
+  const { PgTable } = require('@compliance-theater/database/drizzle-orm/pg-core');
 
   const mockEmailIdColumn = {
     name: 'email_id',
@@ -51,19 +51,19 @@ jest.mock('@compliance-theater/database/schema', () => {
 });
 
 // Mock checkCaseFileAuthorization
-jest.mock('@/lib/auth/resources/case-file/case-file-middleware', () => ({
+jest.mock('@compliance-theater/auth/lib/resources/case-file/case-file-middleware', () => ({
   checkCaseFileAuthorization: jest.fn().mockResolvedValue(true),
 }));
 
 // Mock checkCaseFileAccess
-jest.mock('@/lib/auth/resources/case-file', () => ({
+jest.mock('@compliance-theater/auth/lib/resources/case-file/index', () => ({
   checkCaseFileAccess: jest.fn().mockResolvedValue(true),
   CaseFileScope: { READ: 'read', WRITE: 'write' },
   getAccessibleUserIds: jest.fn().mockResolvedValue([]),
 }));
 
 // Mock auth
-jest.mock('@/auth', () => ({
+jest.mock('@compliance-theater/auth/auth', () => ({
   auth: jest.fn().mockResolvedValue({ user: { id: '123' } }),
 }));
 
@@ -81,6 +81,12 @@ describe('EmailDrizzleRepository', () => {
 
     // Get the mock database instance
     mockDb = drizDb();
+    (drizDbWithInit as jest.Mock).mockImplementation(
+      (cb?: (db: unknown) => unknown): Promise<unknown> => {
+        const normalCallback = cb ?? ((x: unknown) => x);
+        return Promise.resolve(normalCallback(mockDb));
+      },
+    );
   });
 
   describe('constructor', () => {

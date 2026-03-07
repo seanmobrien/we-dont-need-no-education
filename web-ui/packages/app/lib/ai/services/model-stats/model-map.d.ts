@@ -11,7 +11,7 @@
  */
 
 import { type DbDatabaseType } from '@compliance-theater/database/orm';
-import { LanguageModel } from 'ai';
+import { LanguageModel } from '@compliance-theater/types/ai-sdk';
 import { ModelClassification } from '../../middleware/key-rate-limiter/types';
 import { ProviderPrimaryNameType } from './provider-map';
 

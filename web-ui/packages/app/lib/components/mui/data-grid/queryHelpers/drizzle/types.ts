@@ -1,12 +1,12 @@
-import type { LikeNextRequest } from '@compliance-theater/nextjs/types';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import type {
   GridFilterModel,
   GridFilterItem,
   GridSortModel,
 } from '@mui/x-data-grid-pro';
 import type { NextRequest } from 'next/server';
-import type { ColumnBaseConfig, SQL } from 'drizzle-orm';
-import type { AnyPgSelect, PgColumn } from 'drizzle-orm/pg-core';
+import type { ColumnBaseConfig, AnyPgSelect, PgColumn } from '@compliance-theater/database/orm';
+import type { SQL } from '@compliance-theater/database/drizzle-orm';
 
 // Type for Drizzle select query builder - simplified to match actual usage
 export type DrizzleSelectQueryBase = Pick<
@@ -57,7 +57,7 @@ export type SelectForGridProps<T> = {
   /**
    * The default sort model or column name to use if none is provided.
    */
-  defaultSort?: GridSortModel | string | SQL | PgColumn;
+  defaultSort?: GridSortModel | string | SQL | SQL.Aliased | PgColumn;
 };
 
 /**
@@ -136,8 +136,8 @@ export type BuildDrizzleAttachmentOrEmailFilterProps = {
    * The Drizzle column object for the document ID field.
    */
   document_id_column:
-    | PgColumn<ColumnBaseConfig<'number', 'PgInteger'>, object, object>
-    | SQL.Aliased<number>;
+  | PgColumn<ColumnBaseConfig<'number', 'PgInteger'>, object, object>
+  | SQL.Aliased<number>;
 
   /**
    * Function that returns a SQL expression for email_to_document_id conversion.
@@ -167,7 +167,7 @@ export type BuildDrizzleItemFilterProps = {
     T extends ColumnBaseConfig<ColumnDataType, string> = ColumnBaseConfig<ColumnDataType, string>,
     TRuntimeConfig extends object = object,
     TConfig extends object = object,
-  >(columnName: string) => PgColumn<T, TRuntimeConfig, TConfig> | SQL | undefined;
+  >(columnName: string) => PgColumn<T, TRuntimeConfig, TConfig> | DrizzleSqlType | undefined;
 */
   getColumn: (columnName: string) => PgColumn | SQL | SQL.Aliased | undefined;
 

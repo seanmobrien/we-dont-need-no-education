@@ -10,8 +10,8 @@ import {
   isAbortError,
   isError,
   isProgressEvent,
-  getStackTrace,
 } from '../utilities/error-guards';
+import { getStackTrace } from '@compliance-theater/types/get-stack-trace';
 import { asKnownSeverityLevel } from '../../constants';
 import type {
   TurtleRecursionParams,
@@ -275,11 +275,9 @@ export class LoggedError extends Error {
     const _fingerprintValue = getWithFallback('fingerprint');
     const _sourceValue = getWithFallback('source');
 
-    return `LoggedError${
-      _fingerprintValue ? ` (Fingerprint: ${_fingerprintValue}) ` : ''
-    }${_sourceValue ? ` [Source: ${_sourceValue}] ` : ''}: ${
-      this[CRITICAL] ? 'CRITICAL - ' : ''
-    }${LoggedError.buildMessage(this)}`;
+    return `LoggedError${_fingerprintValue ? ` (Fingerprint: ${_fingerprintValue}) ` : ''
+      }${_sourceValue ? ` [Source: ${_sourceValue}] ` : ''}: ${this[CRITICAL] ? 'CRITICAL - ' : ''
+      }${LoggedError.buildMessage(this)}`;
   }
 
   // Constructor overloads to handle various input scenarios.
@@ -288,7 +286,7 @@ export class LoggedError extends Error {
     message: string | LoggedErrorOptions | Error,
     options?:
       | (Omit<LoggedErrorOptions, 'error'> &
-          Partial<Pick<LoggedErrorOptions, 'error'>>)
+        Partial<Pick<LoggedErrorOptions, 'error'>>)
       | Error,
   ) {
     super();
@@ -317,9 +315,9 @@ export class LoggedError extends Error {
     Object.entries(this[INNER_ERROR]).forEach(([key, value]) => {
       if (!(key in this) && typeof value !== 'function') {
         if (typeof key === 'string' || typeof key === 'symbol') {
-          try{
+          try {
             this[key as string | symbol] = value;
-          }catch{
+          } catch {
             // supress error on error
           }
         }
@@ -331,7 +329,7 @@ export class LoggedError extends Error {
         || this[INNER_ERROR].cause.name === 'DrizzleError')
     ) {
       Object.entries(this[INNER_ERROR]).forEach(([key, value]) => {
-        try{
+        try {
           if (!(key in this) && !!value && typeof value !== 'function') {
             if (typeof key === 'string' || typeof key === 'symbol') {
               if (!this[key as string | symbol]) {
@@ -341,7 +339,7 @@ export class LoggedError extends Error {
           }
         } catch {
           // supress error on error
-        }        
+        }
       });
     }
     this[brandLoggedError] = true;

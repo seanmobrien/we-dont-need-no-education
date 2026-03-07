@@ -16,7 +16,7 @@ import type { ChatHistoryContext } from '../chat-history/types';
 import { noopStrategyFactory } from './noop-strategy';
 import { directAccessStrategyFactory } from './direct-access';
 import { promptInjectionStrategyFactory } from './prompt-injection-strategy';
-import { wrapLanguageModel } from 'ai';
+import { wrapLanguageModel } from '@compliance-theater/types/ai-sdk';
 import { PassthroughStreamProcessor } from '../chat-history/passthrough-processor';
 import { ensureCreateResult } from '../chat-history/stream-handler-result';
 

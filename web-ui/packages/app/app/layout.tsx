@@ -8,13 +8,13 @@ import './globals.css';
 import QueryProvider from '@/components/general/react-query/query-provider';
 import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
-import { SessionProvider } from '@/components/auth/session-provider';
-import { KeyRefreshNotify } from '@/components/auth/key-refresh-notify';
+import { SessionProvider } from '@compliance-theater/auth/components/session-provider/index';
+import { KeyRefreshNotify } from '@compliance-theater/auth/components/key-refresh-notify/index';
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 import { Suspense} from 'react';
 // import { cookies } from 'next/headers';
 import { FlagProvider } from '@compliance-theater/feature-flags/components/flag-provider';
-import { state } from '@/lib/site-util/app-startup';
+import { state } from '@compliance-theater/after/app-startup-state';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',

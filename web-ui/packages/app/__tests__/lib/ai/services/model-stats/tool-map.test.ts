@@ -1,9 +1,9 @@
-import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
+import { ToolMap } from '../../../../../lib/ai/services/model-stats/tool-map';
 import type { ChatToolType } from '@compliance-theater/database';
 import {
   ResourceNotFoundError,
   isResourceNotFoundError,
-} from '@/lib/ai/services/chat/errors/resource-not-found-error';
+} from '../../../../../lib/ai/services/chat/errors/resource-not-found-error';
 
 describe('ToolMap', () => {
   const toolA: ChatToolType = {

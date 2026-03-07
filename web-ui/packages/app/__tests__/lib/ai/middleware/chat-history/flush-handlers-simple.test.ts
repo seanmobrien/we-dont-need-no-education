@@ -8,7 +8,7 @@
  * @module __tests__/lib/ai/middleware/chat-history/flush-handlers-simple.test.ts
  */
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+import { setupImpersonationMock } from '../../../../jest.mock-impersonation';
 setupImpersonationMock();
 
 import {
@@ -18,19 +18,18 @@ import {
   markTurnAsError,
   handleFlush,
   DEFAULT_FLUSH_CONFIG,
-} from '@/lib/ai/middleware/chat-history/flush-handlers';
+} from '../../../../../lib/ai/middleware/chat-history/flush-handlers';
 import type {
   FlushContext,
   FlushConfig,
-} from '@/lib/ai/middleware/chat-history/types';
-import { DbDatabaseType } from '@compliance-theater/database';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
-import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
+} from '../../../../../lib/ai/middleware/chat-history/types';
+import { hideConsoleOutput } from '../../../../shared/test-utils';
+import { withJestTestExtensions } from '../../../../shared/jest.test-extensions';
 
 const makeMockDb = () => withJestTestExtensions().makeMockDb();
 
 // Mock instrumentation functions that might be called
-jest.mock('@/lib/ai/middleware/chat-history/instrumentation', () => ({
+jest.mock('../../../../../lib/ai/middleware/chat-history/instrumentation', () => ({
   instrumentFlushOperation: jest.fn(async (fn) => {
     if (typeof fn === 'function') {
       try {
@@ -54,12 +53,12 @@ jest.mock('@/lib/ai/middleware/chat-history/instrumentation', () => ({
 }));
 
 // Mock import-incoming-message functions
-jest.mock('@/lib/ai/middleware/chat-history/import-incoming-message', () => ({
+jest.mock('../../../../../lib/ai/middleware/chat-history/import-incoming-message', () => ({
   insertPendingAssistantMessage: jest.fn(),
   reserveTurnId: jest.fn(() => Promise.resolve(1)),
 }));
 
-let mockDbInstance: DbDatabaseType;
+let mockDbInstance: ReturnType<typeof makeMockDb>;
 
 describe('Flush Handlers - Compilation Fix Test', () => {
   let mockContext: FlushContext;
@@ -92,8 +91,13 @@ describe('Flush Handlers - Compilation Fix Test', () => {
       }),
     });
 
-    mockQuery.chats.findFirst = mockDbInstance.query.chats
-      .findFirst as jest.Mock;
+    mockQuery.chats.findFirst = (mockDbInstance as unknown as {
+      query: {
+        chats: {
+          findFirst: jest.Mock;
+        };
+      };
+    }).query.chats.findFirst;
     mockQuery.chats.findFirst.mockResolvedValue(null);
   });
 

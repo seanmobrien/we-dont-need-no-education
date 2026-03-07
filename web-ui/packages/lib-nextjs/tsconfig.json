@@ -1,20 +1,13 @@
 {
-  "extends": "../../tsconfig.next.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
     "composite": true,
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "declaration": true,
     "declarationMap": true,
     "baseUrl": ".",
-    "paths": {
-      "next": [
-        "../../node_modules/next"
-      ],
-      "next/*": [
-        "../../node_modules/next/*"
-      ]
-    },
     "types": [
       "node",
       "jest"
@@ -28,6 +21,8 @@
   ],
   "exclude": [
     "node_modules",
+    "**/__tests__/**",
+    "**/__mocks__/**",
     "dist"
   ],
   "references": [
@@ -48,6 +43,9 @@
     },
     {
       "path": "../lib-feature-flags"
+    },
+    {
+      "path": "../lib-types"
     }
   ]
 }

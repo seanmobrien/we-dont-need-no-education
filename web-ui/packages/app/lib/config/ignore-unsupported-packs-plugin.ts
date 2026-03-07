@@ -43,7 +43,7 @@ export const withIgnorePacks: NextConfigPlugin = <TArg extends NextConfig>(
         'js-tiktoken',
         '@auth/core',
         '@auth/drizzle-adapter',
-        'next-auth',
+        '@compliance-theater/types/next-auth',
         'ai',
         '@compliance-theater/*',
       ],

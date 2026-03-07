@@ -1,30 +1,38 @@
 /**
  * @jest-environment node
  */
-import { POST } from '@/app/api/ai/chat/route';
-import { NextRequest } from 'next/server';
-import { auth } from '@/auth';
-import { streamText } from 'ai';
 
-// Mock dependencies
-jest.mock('@/auth');
-jest.mock('ai', () => ({
-  ...jest.requireActual('ai'),
+
+jest.mock('@compliance-theater/types/ai-sdk/ai', () => ({
+  ...jest.requireActual('@compliance-theater/types/ai-sdk/ai'),
   streamText: jest.fn(),
   convertToModelMessages: jest.fn((msgs) => msgs),
 }));
-jest.mock('@/lib/ai/aiModelFactory', () => ({
+jest.mock('@compliance-theater/types/ai-sdk', () => ({
+  ...jest.requireActual('@compliance-theater/types/ai-sdk'),
+  ...jest.requireMock('@compliance-theater/types/ai-sdk/ai'),
+}));
+
+import { POST } from '../../../../../app/api/ai/chat/route';
+import { NextRequest } from 'next/server';
+import { auth } from '@compliance-theater/auth/auth';
+import { streamText } from '@compliance-theater/types/ai-sdk';
+
+// Mock dependencies
+jest.mock('@compliance-theater/auth/auth');
+
+jest.mock('../../../../../lib/ai/aiModelFactory', () => ({
   aiModelFactory: jest.fn().mockResolvedValue({}),
 }));
-jest.mock('@/lib/ai/middleware/chat-history', () => ({
+jest.mock('../../../../../lib/ai/middleware/chat-history', () => ({
   wrapChatHistoryMiddleware: jest.fn((props) => props.model),
 }));
-jest.mock('@/lib/ai/middleware/chat-history/create-chat-history-context', () => ({
+jest.mock('../../../../../lib/ai/middleware/chat-history/create-chat-history-context', () => ({
   createUserChatHistoryContext: jest.fn(() => ({
     dispose: jest.fn(),
   })),
 }));
-jest.mock('@/lib/ai/mcp/providers', () => ({
+jest.mock('../../../../../lib/ai/mcp/providers', () => ({
   setupDefaultTools: jest.fn().mockResolvedValue({ tools: {} }),
 }));
 jest.mock('@compliance-theater/feature-flags/server', () => ({
@@ -32,10 +40,10 @@ jest.mock('@compliance-theater/feature-flags/server', () => ({
 }));
 
 // Use real wrapRouteRequest
-jest.unmock('@compliance-theater/nextjs/server');
+jest.unmock('@compliance-theater/nextjs/server/utils');
 
-jest.mock('@/lib/react-util/utility-methods', () => {
-  const originalModule = jest.requireActual('@/lib/react-util/utility-methods');
+jest.mock('@compliance-theater/react', () => {
+  const originalModule = jest.requireActual('@compliance-theater/react');
   return {
     ...originalModule,
     isAbortError: jest.fn().mockReturnValue(false),
@@ -76,6 +84,12 @@ describe('/api/ai/chat route', () => {
 
     const response = await POST(req);
     expect(response.status).toBe(200);
+    if (!('headers' in response)) {
+      throw new Error('Response is missing headers');
+    }
+    if (!('body' in response)) {
+      throw new Error('Response is missing body');
+    }
     expect(response.headers.get('Content-Type')).toBe('text/event-stream;charset=utf-8');
 
     const reader = response.body?.getReader();

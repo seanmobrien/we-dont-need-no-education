@@ -4,11 +4,11 @@
  */
 
 import React from 'react';
-import { render, screen } from '@/__tests__/test-utils';
-import { DatabaseStatusIndicator } from '@/components/health/database-status/database-status-indicator';
-import { useHealth } from '@/components/health/health-provider/health-context';
+import { render, screen } from '../../shared/test-utils';
+import { DatabaseStatusIndicator } from '../../../components/health/database-status/database-status-indicator';
+import { useHealth } from '../../../components/health/health-provider/health-context';
 
-jest.mock('@/components/health/health-provider/health-context');
+jest.mock('../../../components/health/health-provider/health-context');
 const mockUseHealth = useHealth as jest.Mock;
 
 describe('DatabaseStatusIndicator', () => {

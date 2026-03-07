@@ -1,7 +1,7 @@
 // General utility methods used across React components
 // and other parts of the application.
 
-import { withTimeout } from '@compliance-theater/nextjs/with-timeout';
+import { withTimeout } from '@compliance-theater/logger/with-timeout';
 
 // Pseudo-random ID generator for lightweight unique IDs.
 // Not cryptographically secure; suitable for client-side use.

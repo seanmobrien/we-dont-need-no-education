@@ -1,12 +1,12 @@
 import type {
   MemoryStatusHookResult
-} from '@/lib/hooks/types';
+} from '../../lib/hooks/types';
 
 let originalMemoryHook: (() => MemoryStatusHookResult) | undefined = undefined;
 
-jest.mock('@/lib/hooks/use-memory-health', () => {
+jest.mock('../../lib/hooks/use-memory-health', () => {
   originalMemoryHook = jest.requireActual(
-    '@/lib/hooks/use-memory-health',
+    '../../lib/hooks/use-memory-health',
   ).useMemoryHealth;
   return {
     useMemoryHealth: jest.fn(

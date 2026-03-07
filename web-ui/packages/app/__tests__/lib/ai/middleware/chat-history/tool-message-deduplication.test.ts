@@ -7,8 +7,8 @@
  * @module __tests__/lib/ai/middleware/chat-history/tool-message-deduplication.test.ts
  */
 
-import { upsertToolMessage } from '@/lib/ai/middleware/chat-history/import-incoming-message';
-import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
+import { upsertToolMessage } from '../../../../../lib/ai/middleware/chat-history/import-incoming-message';
+import { getNewMessages } from '../../../../../lib/ai/middleware/chat-history/utility';
 import type { DbTransactionType } from '@compliance-theater/database';
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 

@@ -9,8 +9,10 @@ import { MCPError } from '../mcp-error';
 import { JSONRPCMessage, JSONRPCMessageSchema } from './json-rpc-message';
 import { log, safeSerialize, LoggedError, isAbortError } from '@compliance-theater/logger';
 import { createInstrumentedSpan } from '@compliance-theater/nextjs/server/utils';
-import { fetch } from '@compliance-theater/nextjs/server/fetch';
+import { resolveFetchService } from '@/lib/fetch-service';
 import type { Span } from '@opentelemetry/api';
+
+const fetch = resolveFetchService();
 
 const MCP_CONNECTION_TIMEOUT = {
   socket: 5 * 60 * 1000,
@@ -113,10 +115,16 @@ export class SseMCPTransport implements MCPTransport {
             url: this.url.href,
           })
         );
+        const signal =
+          typeof AbortSignal.any === 'function'
+            ? AbortSignal.any([
+                this.abortController.signal,
+                AbortSignal.timeout(MCP_CONNECTION_TIMEOUT.connect),
+              ])
+            : this.abortController.signal;
         const response = await fetch(this.url.href, {
           headers: await this.resolveHeaders(),
-          signal: this.abortController?.signal,
-          timeout: MCP_CONNECTION_TIMEOUT,
+          signal,
         });
 
         log((l) =>

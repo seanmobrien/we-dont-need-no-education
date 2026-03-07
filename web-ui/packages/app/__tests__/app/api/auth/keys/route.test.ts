@@ -10,15 +10,8 @@
  * @module __tests__/app/api/auth/keys/route.test.ts
  */
 
-import { NextRequest } from 'next/server';
-import { POST, GET } from '@/app/api/auth/keys/route';
-// import { auth } from '@/auth';
-import { drizDb } from '@compliance-theater/database/orm';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
-import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
+/*
 
-// Mock dependencies
-// jest.mock('@/auth');
 jest.mock('@compliance-theater/database/orm', () => {
   const actualSchema = jest.requireActual('@compliance-theater/database/orm');
   return {
@@ -27,15 +20,29 @@ jest.mock('@compliance-theater/database/orm', () => {
     schema: actualSchema.schema,
   };
 });
-jest.mock('@compliance-theater/logger');
+*/
+
+// jest.mock('@compliance-theater/logger');
+/*
 jest.mock('@/lib/react-util', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn((error) => error),
   },
 }));
+*/
 
+import { NextRequest } from 'next/server';
+import { DbDatabaseType, drizDb } from '@compliance-theater/database/orm';
+import { POST, GET } from '../../../../../app/api/auth/keys/route';
+import { hideConsoleOutput } from '../../../../shared/test-utils';
+import { withJestTestExtensions } from '../../../../shared/jest.test-extensions';
+
+/*
 // const mockAuth = auth as jest.MockedFunction<typeof auth>;
-const mockDrizDb = drizDb as jest.MockedFunction<typeof drizDb>;
+const mockDrizDb = withJestTestExtensions
+
+
+//drizDb as jest.MockedFunction<typeof drizDb>;
 
 // Mock database instance
 const mockDbInstance = {
@@ -49,16 +56,16 @@ const mockDbInstance = {
 };
 
 mockDrizDb.mockReturnValue(mockDbInstance as any);
+*/
 
-const consoleSpy = hideConsoleOutput();
 
 describe('/api/auth/keys', () => {
-  beforeEach(() => {
-    // jest.clearAllMocks();
-  });
 
-  afterEach(() => {
-    consoleSpy.dispose();
+  let mockDbInstance: jest.Mocked<DbDatabaseType>;
+  const consoleSpy = hideConsoleOutput();
+
+  beforeEach(() => {
+    mockDbInstance = drizDb() as jest.Mocked<DbDatabaseType>;
   });
 
   describe('POST - Upload public key', () => {
@@ -77,7 +84,7 @@ describe('/api/auth/keys', () => {
       withJestTestExtensions().session!.user!.id = String(123);
 
       // Mock no existing key
-      mockDbInstance.query.userPublicKeys.findFirst.mockResolvedValue(null);
+      (mockDbInstance.query.userPublicKeys.findFirst as jest.Mock).mockResolvedValue(null);
 
       // Mock successful insertion - proper Drizzle chain: insert(table).values(data).returning(cols)
       const returningMock = jest.fn().mockResolvedValue([
@@ -95,7 +102,8 @@ describe('/api/auth/keys', () => {
       // Mock insert as a function that accepts a table parameter and returns the values chain
       mockDbInstance.insert.mockImplementation(() => ({
         values: valuesMock,
-      }));
+        // es-lint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any));
 
       const request = createMockRequest({ publicKey: validPublicKey });
       const response = await POST(request);
@@ -174,7 +182,7 @@ describe('/api/auth/keys', () => {
       withJestTestExtensions().session!.user!.id = String(123);
 
       // Mock existing key
-      mockDbInstance.query.userPublicKeys.findFirst.mockResolvedValue({
+      (mockDbInstance.query.userPublicKeys.findFirst as jest.Mock).mockResolvedValue({
         id: 1,
         publicKey: validPublicKey,
         userId: '123',
@@ -198,7 +206,7 @@ describe('/api/auth/keys', () => {
       withJestTestExtensions().session!.user!.id = String(123);
 
       // Mock database error
-      mockDbInstance.query.userPublicKeys.findFirst.mockRejectedValue(
+      (mockDbInstance.query.userPublicKeys.findFirst as jest.Mock).mockRejectedValue(
         new Error('Database connection failed'),
       );
 
@@ -217,7 +225,7 @@ describe('/api/auth/keys', () => {
     it('should handle custom expiration date', async () => {
       withJestTestExtensions().session!.user!.id = String(123);
 
-      mockDbInstance.query.userPublicKeys.findFirst.mockResolvedValue(null);
+      (mockDbInstance.query.userPublicKeys.findFirst as jest.Mock).mockResolvedValue(null);
 
       const returningMock = jest.fn().mockResolvedValue([
         {
@@ -231,7 +239,7 @@ describe('/api/auth/keys', () => {
         returning: returningMock,
       });
 
-      mockDbInstance.insert.mockImplementation(() => ({
+      (mockDbInstance.insert as jest.Mock).mockImplementation(() => ({
         values: valuesMock,
       }));
 
@@ -271,7 +279,7 @@ describe('/api/auth/keys', () => {
         },
       ];
 
-      mockDbInstance.query.userPublicKeys.findMany.mockResolvedValue(mockKeys);
+      (mockDbInstance.query.userPublicKeys.findMany as jest.Mock).mockResolvedValue(mockKeys);
 
       const response = await GET();
 
@@ -316,7 +324,7 @@ describe('/api/auth/keys', () => {
     it('should return empty array when no keys exist', async () => {
       withJestTestExtensions().session!.user!.id = String(123);
 
-      mockDbInstance.query.userPublicKeys.findMany.mockResolvedValue([]);
+      (mockDbInstance.query.userPublicKeys.findMany as jest.Mock).mockResolvedValue([]);
 
       const response = await GET();
 
@@ -335,7 +343,7 @@ describe('/api/auth/keys', () => {
 
       withJestTestExtensions().session!.user!.id = String(123);
 
-      mockDbInstance.query.userPublicKeys.findMany.mockRejectedValue(
+      (mockDbInstance.query.userPublicKeys.findMany as jest.Mock).mockRejectedValue(
         new Error('Database connection failed'),
       );
 

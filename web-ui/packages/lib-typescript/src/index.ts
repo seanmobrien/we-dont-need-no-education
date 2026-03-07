@@ -66,13 +66,4 @@ export {
   type OperationCancelledError,
 } from "./abortable-promise";
 export { zodToStructure } from "./zod-to-json-structure";
-export {
-  SingletonProvider,
-  globalSingleton,
-  globalRequiredSingleton,
-  globalSingletonAsync,
-  globalRequiredSingletonAsync,
-  type SingletonConfig,
-  type WeakReferenceStorage,
-  type StrongReferenceStorage,
-} from "./singleton-provider";
+

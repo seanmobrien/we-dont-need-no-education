@@ -1,6 +1,6 @@
 /**
  * Main entry point for Drizzle DB functionality
- * @module @/lib/drizzle-db
+ * @module @compliance-theater/database/orm
  */
 
 import type {
@@ -56,7 +56,7 @@ import type {
 } from './db-helpers';
 import type { sql, DrizzleSqlType } from './drizzle-sql';
 
-declare module '@/lib/drizzle-db' {
+declare module '@compliance-theater/database/orm' {
   export type {
     DatabaseType,
     SchemaType,

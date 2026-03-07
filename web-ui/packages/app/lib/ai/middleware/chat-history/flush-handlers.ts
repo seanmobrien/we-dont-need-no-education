@@ -1,5 +1,5 @@
 // import { chats, chatTurns, chatMessages } from '@compliance-theater/database/schema';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull } from '@compliance-theater/database/drizzle-orm';
 import { drizDb, schema } from '@compliance-theater/database/orm';
 import { log, LoggedError } from '@compliance-theater/logger';
 import type { FlushContext, FlushResult, FlushConfig } from './types';

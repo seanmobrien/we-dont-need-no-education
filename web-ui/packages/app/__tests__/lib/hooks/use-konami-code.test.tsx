@@ -1,5 +1,5 @@
-import { renderHook, act } from '@testing-library/react';
-import { useKonamiCode } from '@/lib/hooks/use-konami-code';
+import { renderHook, act } from '../../shared/test-utils';
+import { useKonamiCode } from '../../../lib/hooks/use-konami-code';
 
 describe('useKonamiCode', () => {
   it('calls callback when konami code is entered', () => {

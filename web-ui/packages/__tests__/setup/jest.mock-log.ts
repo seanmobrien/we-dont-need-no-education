@@ -1,3 +1,5 @@
+import { withJestTestExtensions } from '../jest.test-extensions';
+
 const logSymbol = Symbol.for('@tests/logger-instance');
 
 type LoggerInstance = {
@@ -19,7 +21,7 @@ const getLogger = () => {
   if (!globalWithLogger[logSymbol]) {
     const makeMockImplementation = (name: string) => {
       return (...args: unknown[]) =>
-        () => {};
+        () => { };
     };
     globalWithLogger[logSymbol] = {
       warn: jest.fn(makeMockImplementation('warn')),
@@ -39,28 +41,140 @@ const getLogger = () => {
 let internalLog: (jest.Mock<void, [cb: (l: LoggerInstance) => void], any>) | undefined = undefined;
 let internalLogger: (jest.Mock<Promise<LoggerInstance>, [], any>) | undefined = undefined;
 
+type SymbolKey = string | symbol;
 
-jest.mock('@compliance-theater/logger/core', () => {  
+/*
+type SingletonProvider = {
+  get: <T = unknown, S extends SymbolKey = string>(
+    symbol: S,
+  ) => T | undefined;
+  getOrCreate: <T, S extends SymbolKey = string>(
+    symbol: S,
+    factory: () => T | undefined,
+  ) => T | undefined;
+  getRequired: <T, S extends SymbolKey = string>(
+    symbol: S,
+    factory: () => T | undefined,
+  ) => T;
+  getOrCreateAsync: <T, S extends SymbolKey = string>(
+    symbol: S,
+    factory: () => Promise<T | undefined>,
+  ) => Promise<T | undefined>;
+  getRequiredAsync: <T, S extends SymbolKey = string>(
+    symbol: S,
+    factory: () => Promise<T | undefined>,
+  ) => Promise<T>;
+  has: <S extends SymbolKey = string>(symbol: S) => boolean;
+  set: <T, S extends SymbolKey = string>(symbol: S, value: T) => void;
+  clear: () => void;
+  delete: <S extends SymbolKey = string>(symbol: S) => void;
+};
+
+const mockSingletonProviderFactory = ({
+  withJestTestExtensions
+}: {
+  withJestTestExtensions: (() => {
+    singletonStore: Map<SymbolKey, unknown>;
+  })
+}): SingletonProvider => {
+  const globalStore = withJestTestExtensions().singletonStore;
+  const PROVIDER_KEY = Symbol.for('@tests/singleton-provider');
+  const existingProvider = globalStore.get(PROVIDER_KEY);
+  if (existingProvider) {
+    return existingProvider as SingletonProvider;
+  }
+  const provider = {
+    get: <T = unknown, S extends SymbolKey = string>(symbol: S): T | undefined =>
+      withJestTestExtensions().singletonStore.get(symbol) as T | undefined,
+    getOrCreate: <T, S extends SymbolKey = string>(
+      symbol: S,
+      factory: () => T | undefined,
+    ): T | undefined => {
+      const singletonStore = withJestTestExtensions().singletonStore as Map<SymbolKey, unknown>;
+      if (!singletonStore.has(symbol)) {
+        const created = factory();
+        if (created !== undefined && created !== null) {
+          singletonStore.set(symbol, created);
+        }
+      }
+      return singletonStore.get(symbol) as T | undefined;
+    },
+    getRequired: <T, S extends SymbolKey = string>(
+      symbol: S,
+      factory: () => T | undefined,
+    ): T => {
+      const value = provider.getOrCreate<T, S>(symbol, factory);
+      if (value === undefined || value === null) {
+        throw new Error(`Missing required singleton: ${String(symbol)}`);
+      }
+      return value;
+    },
+    getOrCreateAsync: async <T, S extends SymbolKey = string>(
+      symbol: S,
+      factory: () => Promise<T | undefined>,
+    ): Promise<T | undefined> => {
+      const singletonStore = withJestTestExtensions().singletonStore as Map<SymbolKey, unknown>;
+      if (!singletonStore.has(symbol)) {
+        const created = await factory();
+        if (created !== undefined && created !== null) {
+          singletonStore.set(symbol, created);
+        }
+      }
+      return singletonStore.get(symbol) as T | undefined;
+    },
+    getRequiredAsync: async <T, S extends SymbolKey = string>(
+      symbol: S,
+      factory: () => Promise<T | undefined>,
+    ): Promise<T> => {
+      const value = await provider.getOrCreateAsync<T, S>(symbol, factory);
+      if (value === undefined || value === null) {
+        throw new Error(`Missing required singleton: ${String(symbol)}`);
+      }
+      return value;
+    },
+    has: <S extends SymbolKey = string>(symbol: S): boolean => {
+      const singletonStore = withJestTestExtensions().singletonStore as Map<SymbolKey, unknown>;
+      return singletonStore.has(symbol);
+    },
+    set: <T, S extends SymbolKey = string>(symbol: S, value: T): void => {
+      if (value !== undefined && value !== null) {
+        const singletonStore = withJestTestExtensions().singletonStore as Map<SymbolKey, unknown>;
+        singletonStore.set(symbol, value);
+      }
+    },
+    clear: (): void => {
+      const singletonStore = withJestTestExtensions().singletonStore as Map<SymbolKey, unknown>;
+      singletonStore.clear();
+    },
+    delete: <S extends SymbolKey = string>(symbol: S): void => {
+      const singletonStore = withJestTestExtensions().singletonStore as Map<SymbolKey, unknown>;
+      singletonStore.delete(symbol);
+    },
+  };
+  globalStore.set(PROVIDER_KEY, provider);
+  return provider;
+};
+
+jest.mock('@compliance-theater/logger/core', () => {
   return {
     get logger() {
-      if (!internalLogger) {        
+      if (!internalLogger) {
         internalLogger = jest.fn(() => Promise.resolve(getLogger()));
       }
       return internalLogger;
     },
-    get log() { 
+    get log() {
       internalLog = internalLog ?? jest.fn((cb: (l: LoggerInstance) => void) => {
-          cb(getLogger());
-        });
+        cb(getLogger());
+      });
       return internalLog;
     },
     logEvent: jest.fn(() => Promise.resolve()),
   };
 });
-
+*/
 jest.mock('@compliance-theater/logger', () => {
   const originalModule = jest.requireActual('@compliance-theater/logger');
-  
   // Spy on static methods instead of replacing the class to preserve instanceof behavior
   const LoggedErrorWithSpies = originalModule.LoggedError;
   jest.spyOn(LoggedErrorWithSpies, 'subscribeToErrorReports');
@@ -74,15 +188,15 @@ jest.mock('@compliance-theater/logger', () => {
     ...originalModule,
     logEvent: jest.fn(() => Promise.resolve()),
     get logger() {
-      if (!internalLogger) {        
+      if (!internalLogger) {
         internalLogger = jest.fn(() => Promise.resolve(getLogger()));
       }
       return internalLogger;
     },
-    get log() { 
+    get log() {
       internalLog = internalLog ?? jest.fn((cb: (l: LoggerInstance) => void) => {
-          cb(getLogger());
-        });
+        cb(getLogger());
+      });
       return internalLog;
     },
     errorLogFactory: jest.fn((x) => x),
@@ -93,7 +207,6 @@ jest.mock('@compliance-theater/logger', () => {
 
 import { LoggedError } from '@compliance-theater/logger';
 import { logger } from '@compliance-theater/logger/core';
-import { withJestTestExtensions } from '../jest.test-extensions';
 
 let emitWarningMock: jest.SpyInstance | undefined;
 

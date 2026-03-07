@@ -17,9 +17,9 @@ import { tracer, MetricsRecorder, DEBUG_MODE } from './metrics/otel-metrics';
 import { CounterManager } from './metrics/counter-manager';
 import { SessionManager } from './session/session-manager';
 import { TraceContextManager } from './tracing/trace-context';
-import { SafetyUtils } from '@/lib/nextjs-util/safety-utils';
+import { SafeOperation } from '@compliance-theater/logger/safe-operation';
 import { MessageProcessor } from './message/message-processor';
-import { ImpersonationService } from '@/lib/auth/impersonation';
+import { ImpersonationService } from '@compliance-theater/auth/lib/impersonation/index';
 
 type InstrumentedSseTransportOptions = {
   url: string;
@@ -38,7 +38,7 @@ type InstrumentedSseTransportOptions = {
  * - CounterManager: Active session and tool call tracking
  * - SessionManager: Session lifecycle and timeout management
  * - TraceContextManager: Distributed tracing support
- * - SafetyUtils: Error handling and timeout utilities
+ * - SafeOperation: Error handling and timeout utilities
  * - MessageProcessor: Message parsing and tool call detection
  *
  * All original functionality is preserved with improved maintainability.
@@ -47,7 +47,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
   // Module dependencies
   #counterManager: CounterManager;
   #sessionManager: SessionManager;
-  #safetyUtils: SafetyUtils;
+  #safetyUtils: SafeOperation;
   #messageProcessor: MessageProcessor;
   #impersonation?: ImpersonationService;
   // Core transport state
@@ -112,7 +112,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       }
 
       // Initialize module dependencies
-      this.#safetyUtils = new SafetyUtils(opts.url);
+      this.#safetyUtils = new SafeOperation(opts.url);
       this.#counterManager = new CounterManager();
       this.#sessionManager = new SessionManager(opts.url, this.#counterManager);
       this.#messageProcessor = new MessageProcessor(

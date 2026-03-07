@@ -8,17 +8,10 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./singleton-provider": {
-      "types": "./dist/singleton-provider/index.d.ts",
-      "workspace-source": "./src/singleton-provider/index.ts",
-      "default": "./dist/singleton-provider/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },
@@ -27,24 +20,36 @@
   ],
   "engines": {
     "node": ">=22.0.0",
-    "yarn": ">=1.22.0"
+    "yarn": ">=4.12.0"
   },
   "scripts": {
-    "build": "yarn workspace @compliance-theater/typescript run build:typescript",
-    "build:publish": "yarn workspace @compliance-theater/typescript run build && yarn workspace @compliance-theater/typescript pack --out ./dist/@compliance-theater-typescript.tgz",
-    "build:typescript": "echo 'Building lib/typescript typescript...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/typescript.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/typescript.\u001b[0m\n' >&2; exit 1)",
+    "add": "yarn workspace @compliance-theater/typescript add ",
+    "build": "yarn run build:typescript",
+    "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-typescript.tgz",
+    "build:typescript": "echo 'Building @compliance-theater/typescript...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/typescript.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/typescript.\u001b[0m\n' >&2; exit 1)",
     "test": "jest",
-    "lint": "echo 'Linting lib-typescript...'",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    "@compliance-theater/logger": "workspace:*"
+    "@compliance-theater/env": "workspace:*",
+    "@compliance-theater/logger": "workspace:*",
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/api-logs": "0.57.2",
+    "uuid": "^11.1.0",
+    "zod": "3.25.76"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@swc/core": "^1.13.5",
+    "@swc/jest": "^0.2.39",
+    "@types/jest": "^30.0.0",
+    "@types/node": "25.2.3",
+    "@types/react": "19.2.4",
+    "@types/react-dom": "19.2.3",
+    "babel-plugin-react-compiler": "^1.0.0",
     "jest": "^30.0.5",
+    "react-native": "^0.84.0",
     "rimraf": "^6.1.2",
-    "ts-jest": "^29.3.4",
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }

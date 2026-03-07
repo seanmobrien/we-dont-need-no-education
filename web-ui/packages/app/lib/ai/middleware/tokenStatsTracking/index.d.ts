@@ -30,7 +30,7 @@ import {
  * @example Basic usage with middleware
  * ```typescript
  * import { tokenStatsMiddleware } from '@/lib/ai/middleware/tokenStatsTracking';
- * import { wrapLanguageModel } from 'ai';
+ * import { wrapLanguageModel } from '@compliance-theater/types/ai-sdk';
  *
  * const model = wrapLanguageModel({
  *   model: baseModel,

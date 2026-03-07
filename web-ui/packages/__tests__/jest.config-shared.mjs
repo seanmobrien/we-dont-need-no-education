@@ -1,6 +1,20 @@
-/**
- * @typedef {import('jest').Config.InitialOptions} ConfigType
- */
+const swcTransform = ['@swc/jest', {
+  jsc: {
+    parser: {
+      syntax: 'typescript',
+      tsx: true,
+    },
+    transform: {
+      react: {
+        runtime: 'automatic',
+      },
+    },
+  },
+  module: {
+    type: 'commonjs',
+  },
+}];
+const tanstackReactQueryPath = '../../node_modules/@tanstack/react-query'
 
 
 /**
@@ -66,8 +80,16 @@ export const filter = (props) => {
   return source;
 };
 
+const pathIgnorePatterns = [
+  "/[^/]+\\.worktrees/",
+  "/\\.next/",
+  "/\\.turbo/",
+  "/dist/",
+];
+
 const config = {
-  preset: 'ts-jest', // Use ts-jest preset for TypeScript support
+  roots: ["<rootDir>/__tests__"],
+  testMatch: ['**/*.test.[jt]s?(x)', '**/*.spec.[jt]s?(x)'],
   testEnvironment: 'jsdom', // Set the test environment to jsdom
   testEnvironmentOptions: {
     // Configure jsdom for React 19 concurrent features
@@ -75,10 +97,12 @@ const config = {
       FetchExternalResources: false,
       ProcessExternalResources: false,
     },
-    customExportConditions: ['workspace-source'],
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled  
+  modulePathIgnorePatterns: pathIgnorePatterns,
+  watchPathIgnorePatterns: pathIgnorePatterns,
   setupFilesAfterEnv: [
+    '<rootDir>/__tests__/shared/setup/jest.disallow-global-mock-reset.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-text-encoding.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-log.ts',
     '<rootDir>/__tests__/shared/setup/jest.env-vars.ts',
@@ -87,70 +111,69 @@ const config = {
     '<rootDir>/__tests__/shared/setup/jest.mock-opentelemetry.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-got.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-node-modules.ts',
-  ],
-  testMatch: [
-    '**/__tests__/**/*.test.(ts|tsx)',
-    '!/.next/**',
-    '!/dist/**',
-    '!/.upstream/**',
-    '!/(rsc)/**',
+    '<rootDir>/__tests__/shared/setup/jest.mock-dependency-injection.ts',
   ],
   moduleNameMapper: {
-    // All material UI icons are served by a single mock
-    '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx', // Mock all MUI icons to a singular mock
-    // Instrumentation library mock
-    '@/instrumentation(.*)$':
-      '<rootDir>/__mocks__/shared/setup/instrumentation.ts', // Mock instrumentation module
     // Keycloak providers mock
-    '^(@|\\.)/lib/auth/keycloak-provider$':
+    '^@compliance-theater/auth/lib/keycloak-provider$':
       '<rootDir>/__mocks__/shared/keycloak-provider.js', // Mock static file imports,
-    // Metrics module mock
+    // Metrics module mock - todo migrate off app
     '^@/lib/site-util/metrics.*$':
       '<rootDir>/__mocks__/shared/metrics.ts', // Alias for lib imports
+    // Generic workspace mapping
+    '^@compliance-theater/json-viewer$': '<rootDir>/../../submodules/json-viewer/packages/src/index.tsx',
+    '^@compliance-theater/app(/.*)?$': '<rootDir>/../app$1',
+    '^@compliance-theater/([^/]+)(/.*)?$': '<rootDir>/../lib-$1/src$2',
+    // Instrumentation library mock
+    '@/instrumentation(.*)$':
+      '<rootDir>/__mocks__/shared/setup/instrumentation.ts', // Mock instrumentation module        
+    '^react$': '<rootDir>/../../node_modules/react/index.js',
+    '^react-dom$': '<rootDir>/../../node_modules/react-dom/index.js',
+    '^react/jsx-runtime$': '<rootDir>/../../node_modules/react/jsx-runtime.js',
+    '^react/jsx-dev-runtime$': '<rootDir>/../../node_modules/react/jsx-dev-runtime.js',
+    // Map tanstack react-query to the resolved path to ensure consistent module resolution across packages and workspaces
+    // '^@tanstack/react-query$': tanstackReactQueryPath,
+    // All material UI icons are served by a single mock
+    '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx', // Mock all MUI icons to a singular mock    
     // Prexit module mock
     '^prexit$': '<rootDir>/__mocks__/shared/prexit.ts', // Mock prexit module
+    // Got module mock
+    '^got$': '<rootDir>/__mocks__/shared/got.ts',
     // Zodex module mock
     '^zodex$': '<rootDir>/__mocks__/shared/zodex.js',
+    // Redis module mock
+    '^redis$': '<rootDir>/__mocks__/shared/redis.ts',
+    // got and jose are common dependencies that can cause issues if not mocked due to their use of native modules and ESM - we mock them globally here to ensure consistency across tests
+    '^got$': '<rootDir>/__mocks__/shared/got.ts',
+    '^jose$': '<rootDir>/__mocks__/shared/jose.ts',
     // css modules
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports    
   },
   transform: {
     '^.+\\.(ts|tsx)$': [
-      'ts-jest',
-      {
-        tsconfig: {
-          jsx: 'react-jsx', // Enable JSX transformation for React
-          //useESM: true, // Use ESM modules
-        },
-      },
-    ], // Transform TypeScript files using ts-jest    
+      ...swcTransform,
+    ],
   },
   transformIgnorePatterns: [
     // Allow transpiling certain ESM packages (zodex, zod) which ship ESM-only
-    '<rootDir>/node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client))',
-    '<rootDir>/.next',
-    '<rootDir>/.upstream',
-    '.upstream',
+
+    '.*node_modules/(?!(zodex|zod|react-error-boundary|openid-client|jose|@compliance-theater)).*',
+    '/.next/',
+    '/.upstream/',
   ],
   collectCoverageFrom: [
-    '**/*.{ts,tsx}', // Collect coverage from TypeScript files in src directory
-    '!**/*.d.ts', // Exclude type declaration files
-    '!__(tests|mocks)__/**/*.*', // Exclude test and mock files
-    '!tests/**/*.*', // Exclude playwright test files    
-    '!.next/**/*.*', // Exclude next build files
-    '!.upstream/**/*.*', // Exclude upstream build files
-    '!(rsc)/**/*.*', // Exclude upstream build files
-    '!dist/**/*.*', // Exclude dist build files
+    'src/**/*.ts',
+    '!src/**/*.d.ts',
+    '!src/**/__tests__/**',
   ],
-  coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
-  coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats
+  coverageDirectory: './coverage', // Output directory for coverage reports
+  coverageReporters: ['json', 'lcov', 'text-summary', 'text', 'clover'], // Coverage report formats
   // detectLeaks: true,
   // detectOpenHandles: true, // Enable detection of async operations that prevent Jest from exiting
   // logHeapUsage: true,
   // Additional stability configurations for concurrent testing
   testTimeout: 1000, // Increase timeout to 30 seconds for slower tests
   openHandlesTimeout: 1000, // Allow 1 second for open handles cleanup
-  // forceExit: false, // Don't force exit to allow proper cleanup
   // Mock configuration
   clearMocks: true, // Clear mock calls between tests
   resetMocks: false, // Don't reset mock implementations between tests (we want our setup to persist)

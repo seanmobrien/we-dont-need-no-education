@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, type Context } from 'react';
 import type { KnownFeatureType, KnownFeatureValueType } from './types';
 import { AllFeatureFlagsDefault } from './known-feature-defaults';
 
@@ -30,7 +30,7 @@ export type FeatureFlagsApi = {
 
 export const defaultFlags = AllFeatureFlagsDefault;
 
-export const FeatureFlagsContext = createContext<FeatureFlagsApi | undefined>(
+export const FeatureFlagsContext: Context<FeatureFlagsApi | undefined> = createContext<FeatureFlagsApi | undefined>(
   undefined,
 );
 

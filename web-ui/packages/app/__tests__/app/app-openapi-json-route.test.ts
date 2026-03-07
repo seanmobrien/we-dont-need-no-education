@@ -9,6 +9,13 @@
  */
 
 import type { NextRequest } from 'next/server';
+import { resolveFetchService } from '../../lib/fetch-service';
+
+const fetchMock = jest.fn();
+
+jest.mock('../../lib/fetch-service', () => ({
+  resolveFetchService: jest.fn(),
+}));
 
 // hoist-safe mocks
 /*
@@ -23,14 +30,13 @@ jest.mock('@compliance-theater/env', () => ({
 }));
 */
 /*
-jest.mock('@/lib/nextjs-util/fetch', () => ({
+jest.mock('../../lib/nextjs-util/fetch', () => ({
   fetch: (...args: unknown[]) => mockFetch(...args),
 }));
 */
-import { fetch as mockFetch } from '@compliance-theater/nextjs/server/fetch';
-
 describe('openapi route', () => {
   beforeEach(() => {
+    (resolveFetchService as unknown as jest.Mock).mockReturnValue(fetchMock);
     //jest.resetModules();
     process.env.MEM0_API_HOST = 'https://mem0.example';
     process.env.MEM0_API_BASE_PATH = 'api/v1';
@@ -49,12 +55,12 @@ describe('openapi route', () => {
     };
 
     // mock fetch to return an object with text()
-    (mockFetch as jest.Mock).mockResolvedValue({
+    fetchMock.mockResolvedValue({
       text: async () => JSON.stringify(original),
     });
 
     // import fresh GET (module imports env and fetch lazily via aliases)
-    const { GET: handler } = await import('@/app/openapi.json/route');
+    const { GET: handler } = await import('../../app/openapi.json/route');
 
     const req = new Request(
       'http://localhost/openapi',
@@ -80,11 +86,11 @@ describe('openapi route', () => {
         '/other/path': { post: {} },
       },
     };
-    (mockFetch as jest.Mock).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       text: async () => JSON.stringify(original),
     });
 
-    const { GET: handler } = await import('@/app/openapi.json/route');
+    const { GET: handler } = await import('../../app/openapi.json/route');
     const req = new Request(
       'http://localhost/openapi',
     ) as unknown as NextRequest;

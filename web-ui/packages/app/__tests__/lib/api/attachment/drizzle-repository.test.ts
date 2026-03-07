@@ -26,8 +26,8 @@ jest.mock('@compliance-theater/database', () => {
 });
 
 jest.mock('@compliance-theater/database/schema', () => {
-  const { Table } = require('drizzle-orm');
-  const { PgTable } = require('drizzle-orm/pg-core');
+  const { Table } = require('@compliance-theater/database/drizzle-orm');
+  const { PgTable } = require('@compliance-theater/database/drizzle-orm/pg-core');
 
   // Create a more complete mock that supports getTableConfig
   const mockAttachmentIdColumn = {
@@ -57,7 +57,7 @@ jest.mock('@compliance-theater/logger', () => ({
   log: jest.fn(),
 }));
 
-jest.mock('@/lib/react-util', () => ({
+jest.mock('../../../../lib/react-util', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
@@ -69,8 +69,8 @@ jest.mock('@/lib/react-util', () => ({
   },
 }));
 
-import { EmailAttachmentDrizzleRepository } from '@/lib/api/attachment/drizzle-repository';
-import { EmailAttachment } from '@/data-models/api/attachment';
+import { EmailAttachmentDrizzleRepository } from '../../../../lib/api/attachment/drizzle-repository';
+import { EmailAttachment } from '../../../../data-models/api/attachment';
 
 describe('EmailAttachmentDrizzleRepository', () => {
   let repository: EmailAttachmentDrizzleRepository;

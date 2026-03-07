@@ -9,7 +9,10 @@ export { RenderFallbackFromBoundary } from './render-fallback-from-boundary';
 
 // Client-side error management
 export { ClientErrorManager } from './ClientErrorManager';
-export type { ClientErrorManagerConfig, ErrorSuppressionRule } from './types';
+export type {
+  ClientErrorManagerConfig,
+  ErrorSuppressionRule,
+} from '@compliance-theater/logger/errors/boundaries/types';
 export {
   createSuppressionRule,
   useErrorSuppression,

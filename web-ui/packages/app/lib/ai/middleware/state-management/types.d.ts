@@ -23,7 +23,7 @@ import type {
   LanguageModelV2CallOptions,
   SharedV2ProviderOptions,
 } from '@ai-sdk/provider';
-import { JSONValue } from 'ai';
+import { JSONValue } from '@compliance-theater/types/ai-sdk';
 
 declare module '@/lib/ai/middleware/state-management/types' {
   /**

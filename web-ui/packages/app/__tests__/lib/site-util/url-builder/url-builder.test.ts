@@ -1,7 +1,7 @@
 jest.mock('@compliance-theater/env');
 
-import { UrlBuilder } from '@/lib/site-util/url-builder/_impl';
-import { mappedUrlBuilderFactory } from '@/lib/site-util/url-builder/_from-map';
+import { UrlBuilder } from '../../../../lib/site-util/url-builder/_impl';
+import { mappedUrlBuilderFactory } from '../../../../lib/site-util/url-builder/_from-map';
 import { env } from '@compliance-theater/env';
 
 describe('UrlBuilder', () => {

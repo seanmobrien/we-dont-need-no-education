@@ -1,4 +1,6 @@
-'use client';
+/* global localStorage, document */
+
+"use client";
 import React, {
   createContext,
   useContext,
@@ -6,11 +8,11 @@ import React, {
   useEffect,
   useCallback,
   PropsWithChildren,
-} from 'react';
-import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
-import type { ThemeType, ThemeContextType } from './types';
-import { themes } from './definitions';
-import { log } from '@compliance-theater/logger';
+} from "react";
+import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
+import type { ThemeType, ThemeContextType } from "./types";
+import { themes } from "./definitions";
+import { log } from "@compliance-theater/logger";
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
@@ -18,24 +20,21 @@ interface ThemeProviderProps {
   defaultTheme?: ThemeType;
 }
 
-const THEME_STORAGE_KEY = 'selectedTheme';
+const THEME_STORAGE_KEY = "selectedTheme";
 
 export const ThemeProvider = ({
   children,
-  defaultTheme = 'dark',
+  defaultTheme = "dark",
 }: PropsWithChildren<ThemeProviderProps>) => {
   const [currentTheme, setCurrentTheme] = useState<ThemeType>(defaultTheme);
   const [hasMounted, setHasMounted] = useState(false);
 
   // Load theme from localStorage on mount
   useEffect(() => {
-    if (!hasMounted && typeof window !== 'undefined') {
+    if (!hasMounted && typeof window !== "undefined") {
       setHasMounted(true);
       const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) as ThemeType;
-      if (
-        savedTheme &&
-        (savedTheme === 'dark' || savedTheme === 'light')
-      ) {
+      if (savedTheme && (savedTheme === "dark" || savedTheme === "light")) {
         setCurrentTheme((ct) => {
           if (ct !== savedTheme) {
             return savedTheme;
@@ -44,20 +43,19 @@ export const ThemeProvider = ({
         });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasMounted]);
 
   // Update CSS data-theme attribute when theme changes
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      document.documentElement.setAttribute('data-theme', currentTheme);
+    if (typeof window !== "undefined") {
+      document.documentElement.setAttribute("data-theme", currentTheme);
       document.documentElement.setAttribute(
-        'data-toolpad-color-scheme',
-        currentTheme
+        "data-toolpad-color-scheme",
+        currentTheme,
       );
       document.documentElement.setAttribute(
-        'data-mui-color-scheme',
-        currentTheme
+        "data-mui-color-scheme",
+        currentTheme,
       );
     }
   }, [currentTheme]);
@@ -69,11 +67,11 @@ export const ThemeProvider = ({
         return; // Skip redundant updates
       }
       setCurrentTheme(theme);
-      if (typeof window !== 'undefined') {
+      if (typeof window !== "undefined") {
         localStorage.setItem(THEME_STORAGE_KEY, theme);
       }
     },
-    [currentTheme]
+    [currentTheme],
   );
 
   const contextValue: ThemeContextType = {
@@ -96,7 +94,7 @@ export const ThemeProvider = ({
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    throw new Error("useTheme must be used within a ThemeProvider");
   }
   return context;
 };

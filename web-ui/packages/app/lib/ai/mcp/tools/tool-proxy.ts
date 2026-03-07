@@ -1,4 +1,4 @@
-import { JSONValue, Tool, ToolCallOptions, ToolExecuteFunction } from 'ai';
+import { JSONValue, Tool, ToolCallOptions, ToolExecuteFunction } from '@compliance-theater/types/ai-sdk';
 import { LanguageModelV2ToolResultPart } from '@ai-sdk/provider';
 import type { MCPClient } from '../types';
 import { LoggedError } from '@compliance-theater/logger';

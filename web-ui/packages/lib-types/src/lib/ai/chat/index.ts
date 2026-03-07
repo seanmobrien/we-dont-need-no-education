@@ -4,38 +4,38 @@
  * This module exports type definitions for chat functionality,
  * including chat messages, turns, and retry error handling.
  */
-import { APICallError } from "ai";
+import type { APICallError } from 'ai';
 
 export type RetryErrorInfo =
   | {
-      /** Operation produced no error. */
-      isError: false;
-      isRetry: never;
-      error?: never;
-      retryAfter?: never;
-    }
+    /** Operation produced no error. */
+    isError: false;
+    isRetry: never;
+    error?: never;
+    retryAfter?: never;
+  }
   | {
-      /** Generic branch (legacy / transitional) when caller pre-classifies. */
-      isError: boolean;
-      isRetry?: boolean;
-      error?: APICallError | Error;
-      /** Milliseconds until retry is recommended (if present). */
-      retryAfter?: number;
-    }
+    /** Generic branch (legacy / transitional) when caller pre-classifies. */
+    isError: boolean;
+    isRetry?: boolean;
+    error?: APICallError | Error;
+    /** Milliseconds until retry is recommended (if present). */
+    retryAfter?: number;
+  }
   | {
-      /** Error and the platform indicates safe retry. */
-      isError: true;
-      isRetry: true;
-      error: APICallError;
-      retryAfter: number;
-    }
+    /** Error and the platform indicates safe retry. */
+    isError: true;
+    isRetry: true;
+    error: APICallError;
+    retryAfter: number;
+  }
   | {
-      /** Error but retry is not advised (validation, fatal, etc.). */
-      isError: true;
-      isRetry: false;
-      error?: Error | APICallError;
-      retryAfter?: never;
-    };
+    /** Error but retry is not advised (validation, fatal, etc.). */
+    isError: true;
+    isRetry: false;
+    error?: Error | APICallError;
+    retryAfter?: never;
+  };
 
 /**
  * A single atomic message within a chat turn. Represents user, assistant,

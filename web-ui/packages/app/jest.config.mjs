@@ -5,10 +5,11 @@ const config = {
   displayName: "Web UI: app",
   setupFilesAfterEnv: [
     ...(baseConfig.setupFilesAfterEnv ?? []),
+    '@testing-library/jest-dom',
     '<rootDir>/__tests__/setup/jest.mock-appstartup.ts',
     '<rootDir>/__tests__/shared/jest.test-extensions.ts',
     '<rootDir>/__tests__/setup/jest.mock-health.ts',
-    '<rootDir>/__tests__/setup/jest.mock-auth.ts',
+    '<rootDir>/__tests__/shared/setup/jest.mock-auth.ts',
     '<rootDir>/__tests__/shared/setup/jest.mock-feature-flags.ts',
     '<rootDir>/__tests__/setup/jest.mock-ai.ts',
     '<rootDir>/__tests__/shared/setup/jest.error-monitoring.error-reporter.ts',
@@ -18,8 +19,22 @@ const config = {
     '<rootDir>/__tests__/setup/jest.setup.ts',
   ], // Setup file for global imports
   moduleNameMapper: {
+    // '^../../__mocks__/service-cradle$': '<rootDir>/__mocks__/shared/service-cradle.ts',
     ...(baseConfig.moduleNameMapper ?? {}),
-    '^@/(.*)$': '<rootDir>/$1', // Alias for module imports    
+    '^react$': '<rootDir>/node_modules/react/index.js',
+    '^react-dom$': '<rootDir>/node_modules/react-dom/index.js',
+    '^react/jsx-runtime$': '<rootDir>/node_modules/react/jsx-runtime.js',
+    '^react/jsx-dev-runtime$': '<rootDir>/node_modules/react/jsx-dev-runtime.js',
+    '^@tanstack/react-query$':
+      '<rootDir>/node_modules/@tanstack/react-query/build/modern/index.cjs',
+    '^@tanstack/query-core$':
+      '<rootDir>/node_modules/@tanstack/query-core/build/modern/index.cjs',
+    '^@/__tests__/test-utils$': '<rootDir>/__tests__/shared/test-utils.tsx',
+    '^@/__tests__/test-utils-server$': '<rootDir>/__tests__/shared/test-utils-server.ts',
+    '^next-auth/providers/keycloak$': '<rootDir>/__mocks__/shared/keycloak-provider.js',
+    '^next/navigation$': '<rootDir>/__mocks__/shared/next-navigation.ts',
+    '^@semanticencoding/core$': '<rootDir>/../../submodules/sce/packages/core/ts/src/index.ts',
+    '^@/(.*)$': '<rootDir>/$1', // Alias for module-level (app) imports.   
   },
 };
 

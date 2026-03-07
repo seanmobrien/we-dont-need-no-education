@@ -1,6 +1,6 @@
 import { LoggedError, log } from '@compliance-theater/logger';
 import { zodToStructure } from '@compliance-theater/typescript';
-import { GenerateTextResult, ToolSet } from 'ai';
+import { GenerateTextResult, ToolSet } from '@compliance-theater/types/ai-sdk';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import { DocumentResource } from '../documentResource';
 import { DocumentSchema } from '../schemas';

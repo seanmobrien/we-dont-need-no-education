@@ -6,7 +6,7 @@
  */
 
 import type { LanguageModelV2Middleware } from '@ai-sdk/provider';
-import { LanguageModel } from 'ai';
+import { LanguageModel } from '@compliance-theater/types/ai-sdk';
 
 declare module '@/lib/ai/middleware/key-rate-limiter/types' {
   /**

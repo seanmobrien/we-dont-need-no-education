@@ -6,10 +6,10 @@ import {
   DrizzleSelectQuery,
   selectForGrid,
 } from '@/lib/components/mui/data-grid/queryHelpers';
-import type { PgColumn } from 'drizzle-orm/pg-core';
+import type { PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
-import { SQL, lte, inArray } from 'drizzle-orm/sql';
-import { getAccessibleUserIds } from '@/lib/auth/resources/case-file';
+import { SQL, lte, inArray } from '@compliance-theater/database/drizzle-orm/sql';
+import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file/index';
 
 const NEVER_USE_USER_ID = -942370932 as const;
 

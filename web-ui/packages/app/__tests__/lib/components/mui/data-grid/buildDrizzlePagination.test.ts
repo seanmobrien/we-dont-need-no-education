@@ -8,14 +8,14 @@
  * verifying its ability to handle various pagination scenarios and parameter formats.
  */
 
-import { buildDrizzlePagination } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzlePagination';
+import { buildDrizzlePagination } from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzlePagination';
 import type {
   LikeNextRequest,
   PaginatedGridListRequest,
-} from '@/lib/components/mui/data-grid/types';
+} from '../../../../../lib/components/mui/data-grid/types';
 
 // Mock the parsePaginationStats function
-jest.mock('@/lib/components/mui/data-grid/queryHelpers/utility', () => {
+jest.mock('../../../../../lib/components/mui/data-grid/queryHelpers/utility', () => {
   const orig = jest.requireActual(
     '/lib/components/mui/data-grid/queryHelpers/utility',
   );
@@ -24,10 +24,8 @@ jest.mock('@/lib/components/mui/data-grid/queryHelpers/utility', () => {
     parsePaginationStats: jest.fn(),
   };
 });
-
-jest.mock('@compliance-theater/nextjs/utils', () => {
-  const nextJsUtils = jest.requireActual('@compliance-theater/nextjs/utils');
-   
+// lolz thats one way to shut up the nag XD
+jest.mock('@compliance-theater/types/deprecate', () => {
   const deprecate = <T extends (...args: any[]) => any>(fn: T) => {
     const deprecatedFn = function (
       this: ThisParameterType<T>,
@@ -38,12 +36,12 @@ jest.mock('@compliance-theater/nextjs/utils', () => {
     return deprecatedFn;
   };
   return {
-    ...nextJsUtils,
+    __esModule: true,
     deprecate,
   };
 });
 
-import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
+import { parsePaginationStats } from '../../../../../lib/components/mui/data-grid/queryHelpers/utility';
 
 const mockParsePaginationStats = parsePaginationStats as jest.MockedFunction<
   typeof parsePaginationStats
@@ -207,7 +205,7 @@ describe('buildDrizzlePagination', () => {
         offset: 60,
       });
 
-       
+
       const req: LikeNextRequest = new Request(
         'https://example.com/api/data?page=3&pageSize=30',
       ) as any;

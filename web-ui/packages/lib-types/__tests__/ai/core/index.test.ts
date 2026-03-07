@@ -6,7 +6,7 @@ import {
   isAiModelType,
   isAiLanguageModelType,
   isAiProviderType,
-} from '@compliance-theater/types/ai/core';
+} from '../../../src/lib/ai/core';
 
 describe('AI Core Types', () => {
   describe('Type Values', () => {

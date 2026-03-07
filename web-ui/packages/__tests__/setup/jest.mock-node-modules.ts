@@ -1,10 +1,20 @@
 import { createElement } from 'react';
+import { withJestTestExtensions } from '../jest.test-extensions';
 
-jest.mock('google-auth-library');
-jest.mock('googleapis');
+const safeMock = (moduleName: string, factory?: () => unknown): void => {
+  try {
+    jest.mock(moduleName, factory);
+  } catch {
+    withJestTestExtensions().addMockWarning(moduleName);
+  }
+};
+
+
+safeMock('google-auth-library');
+safeMock('googleapis');
 
 // Mocking modules before imports
-jest.mock('postgres', () => {
+safeMock('postgres', () => {
   return {
     default: jest.fn().mockImplementation(() => {
       return jest.fn(() => Promise.resolve({ rows: [] }));
@@ -13,7 +23,7 @@ jest.mock('postgres', () => {
 });
 
 // Mock Next.js router
-jest.mock('next/navigation', () => ({
+safeMock('next/navigation', () => ({
   useRouter: jest.fn(() => ({
     push: jest.fn(),
     replace: jest.fn(),
@@ -26,28 +36,27 @@ jest.mock('next/navigation', () => ({
   useSearchParams: jest.fn(() => new URLSearchParams()),
 }));
 
-try{
-  jest.mock('@/components/general/telemetry/track-with-app-insight', () => ({
-    TrackWithAppInsight: jest.fn((props: any) => {
-      const { children, ...rest } = props;
-      return createElement('div', rest, children);
-    }),
-  }));
-}catch{
+safeMock('@/components/general/telemetry/track-with-app-insight', () => ({
+  TrackWithAppInsight: jest.fn((props: any) => {
+    const { children, ...rest } = props;
+    return createElement('div', rest, children);
+  }),
+}));
 
-}
-
-jest.mock('@microsoft/applicationinsights-react-js', () => ({
+safeMock('@microsoft/applicationinsights-react-js', () => ({
   withAITracking: (_plugin: any, Component: any) => Component,
 }));
-jest.mock('@mui/material/ButtonBase/TouchRipple', () => {
+safeMock('@mui/material/ButtonBase/TouchRipple', () => {
   return function MockTouchRipple() {
     return null;
   };
 });
-const ErrorBoundary = jest.requireActual('./jest.mock-error-boundary').default;
 
-jest.mock('react-error-boundary', () => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let ErrorBoundary: any = jest.fn(() => ({}))();
+
+safeMock('react-error-boundary', () => {
+  ErrorBoundary = require('./jest.mock-error-boundary').default;
   return {
     ErrorBoundary,
     FallbackComponent: ({ error }: { error?: Error }) => {

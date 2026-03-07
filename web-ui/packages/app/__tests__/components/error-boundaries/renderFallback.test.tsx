@@ -7,27 +7,27 @@ import {
   fireEvent,
   waitFor,
   act,
-} from '@/__tests__/test-utils';
+} from '../../shared/test-utils';
 // import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
-import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/render-fallback';
+import { RenderErrorBoundaryFallback } from '../../../components/error-boundaries/render-fallback';
 
 // Mock the recovery strategies
 const mockReload = jest.fn();
 
-jest.mock('@/lib/error-monitoring/recovery-strategies', () => ({
+jest.mock('@compliance-theater/logger/errors/monitoring/recovery-strategies', () => ({
   getRecoveryActions: jest.fn(),
   getDefaultRecoveryAction: jest.fn(),
   classifyError: jest.fn(),
 }));
 
 const mockGetRecoveryActions =
-  require('/lib/error-monitoring/recovery-strategies').getRecoveryActions;
+  require('@compliance-theater/logger/errors/monitoring/recovery-strategies').getRecoveryActions;
 const mockGetDefaultRecoveryAction =
-  require('/lib/error-monitoring/recovery-strategies').getDefaultRecoveryAction;
+  require('@compliance-theater/logger/errors/monitoring/recovery-strategies').getDefaultRecoveryAction;
 const mockClassifyError =
-  require('/lib/error-monitoring/recovery-strategies').classifyError;
+  require('@compliance-theater/logger/errors/monitoring/recovery-strategies').classifyError;
 
 // Create a test theme
 const testTheme = createTheme({

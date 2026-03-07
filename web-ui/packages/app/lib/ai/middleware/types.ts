@@ -1,2 +1,2 @@
-export type { ToolSet } from 'ai';
+export type { ToolSet } from '@compliance-theater/types/ai-sdk';
 

@@ -1,4 +1,4 @@
-import { ImpersonationService } from '@/lib/auth/impersonation';
+import { ImpersonationService } from '@compliance-theater/auth/lib/impersonation/index';
 import { ToolProviderSet } from '../../mcp';
 import { MemoryClient } from '../../mem0';
 import { LanguageModelV2CallOptions, LanguageModelV2Middleware, LanguageModelV2Content } from '@ai-sdk/provider';

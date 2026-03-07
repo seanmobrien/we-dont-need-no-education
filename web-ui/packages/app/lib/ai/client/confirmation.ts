@@ -1,5 +1,5 @@
 import { LoggedError } from '@compliance-theater/logger';
-import { signData } from '@/lib/site-util/auth/user-keys';
+import { signData } from '@compliance-theater/auth/lib/utilities/user-keys';
 
 /**
  * Represents a user's response to a confirmation prompt.

@@ -1,9 +1,13 @@
-import { credentialFactory } from '@/lib/site-util/auth';
+import { credentialFactory } from '@compliance-theater/auth/lib/utilities';
 import { google } from 'googleapis';
 import { NextApiRequest } from 'next';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 
-type CredentialOps = { req: NextRequest | NextApiRequest; userId?: number };
+type CredentialOps = {
+  req: LikeNextRequest | NextApiRequest;
+  userId?: number;
+};
 
 export const googleProviderFactory = async (
   provider: string,
@@ -18,7 +22,7 @@ export const googleProviderFactory = async (
   const credential = await credentialFactory({
     provider,
     service: 'email',
-    req: options.req,
+    req: options.req as never,
     userId: options.userId,
   });
 

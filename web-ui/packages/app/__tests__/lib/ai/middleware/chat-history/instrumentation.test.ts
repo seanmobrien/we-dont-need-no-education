@@ -18,7 +18,7 @@ const mockSpan = {
 };
 
 const mockTracer = {
-  startSpan: jest.fn(() => mockSpan),
+  startSpan: jest.fn((_name?: string, _options?: unknown) => mockSpan),
   startActiveSpan: jest.fn((_name, fn2: any, _ctx, fn: any) => (fn ?? fn2)(mockSpan)),
 };
 
@@ -59,19 +59,27 @@ jest.mock('@opentelemetry/api', () => ({
 import type {
   FlushResult,
   FlushContext,
-} from '@/lib/ai/middleware/chat-history/types';
-import {
-  instrumentFlushOperation,
-  instrumentStreamChunk,
-  recordQueueOperation,
-  createChatHistoryError,
-} from '@/lib/ai/middleware/chat-history/instrumentation';
-import { getStackTrace } from '@compliance-theater/nextjs/get-stack-trace';
+} from '../../../../../lib/ai/middleware/chat-history/types';
+import { getStackTrace } from '@compliance-theater/types/get-stack-trace';
 import { isError } from '@compliance-theater/logger';
+
+type InstrumentationModule = typeof import('../../../../../lib/ai/middleware/chat-history/instrumentation');
+
+let instrumentFlushOperation: InstrumentationModule['instrumentFlushOperation'];
+let instrumentStreamChunk: InstrumentationModule['instrumentStreamChunk'];
+let recordQueueOperation: InstrumentationModule['recordQueueOperation'];
+let createChatHistoryError: InstrumentationModule['createChatHistoryError'];
 
 describe('Chat History Instrumentation', () => {
   beforeEach(() => {
-    // jest.clearAllMocks();
+    jest.resetModules();
+    const instrumentation = require(
+      '../../../../../lib/ai/middleware/chat-history/instrumentation'
+    ) as InstrumentationModule;
+    instrumentFlushOperation = instrumentation.instrumentFlushOperation;
+    instrumentStreamChunk = instrumentation.instrumentStreamChunk;
+    recordQueueOperation = instrumentation.recordQueueOperation;
+    createChatHistoryError = instrumentation.createChatHistoryError;
   });
 
   describe('instrumentFlushOperation', () => {

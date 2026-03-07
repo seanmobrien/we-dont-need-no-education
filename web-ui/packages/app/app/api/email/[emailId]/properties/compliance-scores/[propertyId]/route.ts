@@ -6,8 +6,8 @@ import {
   wrapRouteRequest,
   extractParams,
 } from '@compliance-theater/nextjs/server/utils';
-import { CaseFileScope } from '@/lib/auth/resources/case-file/case-file-resource';
-import { checkCaseFileAuthorization } from '@/lib/auth/resources/case-file/case-file-middleware';
+import { CaseFileScope } from '@compliance-theater/auth/lib/resources/case-file/case-file-resource';
+import { checkCaseFileAuthorization } from '@compliance-theater/auth/lib/resources/case-file/case-file-middleware';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 export const dynamic = 'force-dynamic';

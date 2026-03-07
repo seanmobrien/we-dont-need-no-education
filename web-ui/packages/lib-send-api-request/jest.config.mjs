@@ -4,7 +4,6 @@ import baseConfig from '../app/__tests__/shared/jest.config-shared.mjs';
 const config = {
   ...baseConfig,
   displayName: "Libraries: send-api-request",
-  preset: "ts-jest",
   testEnvironment: "node",
   rootDir: ".",
   moduleNameMapper: {

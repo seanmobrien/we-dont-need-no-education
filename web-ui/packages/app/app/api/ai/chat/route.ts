@@ -4,18 +4,18 @@ import {
   convertToModelMessages,
   stepCountIs,
   hasToolCall,
-} from 'ai';
+} from '@compliance-theater/types/ai-sdk';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
-import { isAiLanguageModelType } from '@/lib/ai/core/guards';
-import { splitIds, generateChatId } from '@/lib/ai/core/chat-ids';
+import { isAiLanguageModelType } from '@compliance-theater/types/lib/ai/core/guards';
+import { splitIds, generateChatId } from '@compliance-theater/types/lib/ai/core/chat-ids';
 import { getRetryErrorInfo } from '@/lib/ai/chat/error-helpers';
 import { getUserToolProviderCache } from '@/lib/ai/mcp/cache';
 import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
 import { env } from '@compliance-theater/env';
-import { auth } from '@/auth';
+import { auth } from '@compliance-theater/auth';
 import { type NextRequest, NextResponse } from 'next/server';
 import { log, LoggedError } from '@compliance-theater/logger';
-import { isTruthy } from '@compliance-theater/react/utility-methods';
+import { isTruthy } from '@compliance-theater/types';
 import {
   unauthorizedServiceResponse,
   wrapRouteRequest,
@@ -24,7 +24,7 @@ import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/c
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
-import type { User } from '@auth/core/types';
+import type { User } from '@compliance-theater/types/auth-core/types';
 import { wrapMemoryMiddleware } from '@/lib/ai/middleware/memory-middleware';
 import { streamingMessageResponse } from '@/lib/ai/chat/streamed-result';
 

@@ -5,16 +5,16 @@ import {
   extractParams,
 } from '@compliance-theater/nextjs/server/utils';
 import { EmailSentimentAnalysisDetails } from '@/data-models/api/email-properties/extended-properties';
-import { eq, and } from 'drizzle-orm';
+import { eq, and } from '@compliance-theater/database/drizzle-orm';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { schema } from '@compliance-theater/database/orm';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,
-} from '@/lib/auth/resources/case-file';
+} from '@compliance-theater/auth/lib/resources/case-file/index';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { DefaultEmailColumnMap } from '@/lib/components/mui/data-grid/server';
-import { PgColumn } from 'drizzle-orm/pg-core';
+import { PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 const columnMap = {

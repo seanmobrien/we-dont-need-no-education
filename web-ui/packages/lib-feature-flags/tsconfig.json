@@ -5,6 +5,7 @@
     "rootDir": "./src",
     "composite": true,
     "declaration": true,
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "declarationMap": true,
     "baseUrl": ".",
     "paths": {},
@@ -27,13 +28,28 @@
   "exclude": [
     "node_modules",
     "dist",
+    "**/__tests__/**",
+    "**/__mocks__/**",
     "src/**/*.d.ts"
   ],
   "references": [
-    { "path": "../lib-logger" },
-    { "path": "../lib-env" },
-    { "path": "../lib-typescript" },
-    { "path": "../lib-redis" },
-    { "path": "../lib-react" }
+    {
+      "path": "../lib-logger"
+    },
+    {
+      "path": "../lib-env"
+    },
+    {
+      "path": "../lib-typescript"
+    },
+    {
+      "path": "../lib-redis"
+    },
+    {
+      "path": "../lib-react"
+    },
+    {
+      "path": "../lib-types"
+    }
   ]
 }

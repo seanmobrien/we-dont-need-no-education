@@ -13,7 +13,7 @@
  * The goal is to enable expressive, type-safe test doubles without leaking
  * implementation details of the real database layer.
  */
-import type { DbDatabaseType } from '@compliance-theater/database/orm';
+type DbDatabaseType = Record<string, unknown>;
 
 /**
  * List of query builder method names that tests commonly stub.

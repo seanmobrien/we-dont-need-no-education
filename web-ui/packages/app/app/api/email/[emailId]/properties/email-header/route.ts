@@ -10,12 +10,12 @@ import {
   selectForGrid,
 } from '@/lib/components/mui/data-grid/server';
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
-import { and, eq } from 'drizzle-orm';
-import { PgColumn } from 'drizzle-orm/pg-core';
+import { and, eq } from '@compliance-theater/database/drizzle-orm';
+import { PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,
-} from '@/lib/auth/resources/case-file';
+} from '@compliance-theater/auth/lib/resources/case-file/index';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 
 export const dynamic = 'force-dynamic';
