@@ -6,7 +6,6 @@ import { SingletonProvider } from '@compliance-theater/logger/singleton-provider
 
 describe('Redis Client', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     SingletonProvider.Instance.clear();
     // Reset the singleton by clearing Redis mock
     (createClient as any)('teardown');
@@ -44,7 +43,15 @@ describe('Redis Client', () => {
 
       expect(client1).toBeDefined();
       expect(client2).toBeDefined();
-      expect(client1).not.toBe(client2);
+      expect(createClient).toHaveBeenCalledTimes(2);
+      expect(createClient).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({ database: 0 }),
+      );
+      expect(createClient).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({ database: 1 }),
+      );
     });
 
     it('should create separate clients for subscribe mode', async () => {
@@ -53,7 +60,7 @@ describe('Redis Client', () => {
 
       expect(client1).toBeDefined();
       expect(client2).toBeDefined();
-      expect(client1).not.toBe(client2);
+      expect(createClient).toHaveBeenCalledTimes(2);
     });
 
     it('should disable subscribe methods in non-subscribe mode', async () => {
@@ -307,7 +314,7 @@ describe('Redis Client', () => {
 
       expect(client).toBeDefined();
       // Subscribe mode clients should not throw on subscribe calls
-      expect(() => client.subscribe).not.toThrow();
+      expect(() => (client.subscribe as any)()).not.toThrow();
     });
   });
 

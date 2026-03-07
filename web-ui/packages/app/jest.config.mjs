@@ -29,13 +29,11 @@ const config = {
       '<rootDir>/node_modules/@tanstack/react-query/build/modern/index.cjs',
     '^@tanstack/query-core$':
       '<rootDir>/node_modules/@tanstack/query-core/build/modern/index.cjs',
-    '^got$': '<rootDir>/__mocks__/got.ts',
-    '^jose$': '<rootDir>/__mocks__/jose.ts',
     '^@/__tests__/test-utils$': '<rootDir>/__tests__/shared/test-utils.tsx',
     '^@/__tests__/test-utils-server$': '<rootDir>/__tests__/shared/test-utils-server.ts',
     '^next-auth/providers/keycloak$': '<rootDir>/__mocks__/shared/keycloak-provider.js',
-    '^next/navigation$': '<rootDir>/__mocks__/next-navigation.ts',
-    '^@/(.*)$': '<rootDir>/$1', // Alias for module imports    
+    '^next/navigation$': '<rootDir>/__mocks__/shared/next-navigation.ts',
+    '^@/(.*)$': '<rootDir>/$1', // Alias for module-level (app) imports.   
   },
 };
 

@@ -137,10 +137,15 @@ const config = {
     '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx', // Mock all MUI icons to a singular mock    
     // Prexit module mock
     '^prexit$': '<rootDir>/__mocks__/shared/prexit.ts', // Mock prexit module
+    // Got module mock
+    '^got$': '<rootDir>/__mocks__/shared/got.ts',
     // Zodex module mock
     '^zodex$': '<rootDir>/__mocks__/shared/zodex.js',
     // Redis module mock
     '^redis$': '<rootDir>/__mocks__/shared/redis.ts',
+    // got and jose are common dependencies that can cause issues if not mocked due to their use of native modules and ESM - we mock them globally here to ensure consistency across tests
+    '^got$': '<rootDir>/__mocks__/shared/got.ts',
+    '^jose$': '<rootDir>/__mocks__/shared/jose.ts',
     // css modules
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports    
   },
@@ -151,7 +156,8 @@ const config = {
   },
   transformIgnorePatterns: [
     // Allow transpiling certain ESM packages (zodex, zod) which ship ESM-only
-    '.*node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client|jose|@compliance-theater)).*',
+
+    '.*node_modules/(?!(zodex|zod|react-error-boundary|openid-client|jose|@compliance-theater)).*',
     '/.next/',
     '/.upstream/',
   ],

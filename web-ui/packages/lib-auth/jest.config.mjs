@@ -9,7 +9,6 @@ const config = {
   moduleNameMapper: {
     '^got$': '<rootDir>/__mocks__/got.ts',
     ...baseConfig.moduleNameMapper,
-    "^jose$": "<rootDir>/../app/__mocks__/jose.ts",
     "^next-auth/providers/keycloak$": "<rootDir>/__mocks__/shared/keycloak-provider.js"
   },
   transformIgnorePatterns: [

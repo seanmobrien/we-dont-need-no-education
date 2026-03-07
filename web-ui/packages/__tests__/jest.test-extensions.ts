@@ -129,6 +129,7 @@ const testExtensionFactory = () => {
     },
     suppressDeprecation: false,
     singletonStore: new Map<SymbolKey, unknown>(),
+    mockServices: {} as Record<string, unknown>,
     addTestMessage,
     addMockWarning: (module: string) => {
       addTestMessage(`WARNING: Module ${module} is not available for mocking at this time.`)

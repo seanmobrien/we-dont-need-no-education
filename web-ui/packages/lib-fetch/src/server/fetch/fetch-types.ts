@@ -48,6 +48,8 @@ export type ServerFetchManager = {
     [Symbol.dispose](): void;
 };
 
+export type FetchRequest = RequestType;
+export type FetchResponse = ResponseType;
 export type Request = RequestType;
 export type Response = ResponseType;
 

@@ -1,3 +1,4 @@
+import { hideConsoleOutput } from '../../app/__tests__/shared/test-utils-server';
 import { StrongReferenceStorage } from '../src/singleton-provider/storage-strong-ref';
 
 describe('StrongReferenceStorage', () => {
@@ -25,8 +26,8 @@ describe('StrongReferenceStorage', () => {
   });
 
   it('allows non-global symbol keys without throwing', () => {
+    hideConsoleOutput().setup();
     const localSymbol = Symbol('local-storage-key');
-
     expect(() => storage.get(localSymbol)).not.toThrow();
     expect(() => storage.set(localSymbol, { id: 'x' })).not.toThrow();
     expect(storage.get(localSymbol)).toEqual({ id: 'x' });

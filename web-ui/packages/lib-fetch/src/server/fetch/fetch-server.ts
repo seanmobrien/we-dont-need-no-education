@@ -21,9 +21,15 @@ import { StreamingStrategy } from './streaming-strategy';
 import { BufferingStrategy } from './buffering-strategy';
 import type { CachedValue, RequestInfo, RequestInit, ServerFetchManager, Response as FetchResponse } from './fetch-types';
 
+
 type RequestInitWithTimeout = Omit<RequestInit, 'timeout'> & {
     timeout?: number | Record<string, number | undefined>;
 };
+
+
+
+export type { RequestInitWithTimeout, FetchResponse };
+
 
 const DEFAULT_CONFIG = {
     concurrency: 8,
