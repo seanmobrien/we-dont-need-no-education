@@ -2,6 +2,7 @@
   "name": "compliance-theater",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "yarn@4.12.0",
   "workspaces": [
     "packages/app",
     "packages/lib-logger",
@@ -15,8 +16,10 @@
     "packages/lib-react",
     "packages/lib-themes",
     "packages/lib-types",
-    "packages/lib-with-feature-flags",
-    "submodules/json-viewer/packages/*",
+    "packages/lib-feature-flags",
+    "packages/lib-fetch",
+    "packages/lib-send-api-request",
+    "submodules/json-viewer/packages",
     "submodules/sce/packages/*/ts"
   ],
   "scripts": {
