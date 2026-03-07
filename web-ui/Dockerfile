@@ -132,7 +132,8 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 # Copy pruned package manifests and lockfile
 COPY --link=true --from=pruner /repo/out/full/ ./
-COPY --link=true --from=pruner /repo/out/yarn.lock ./yarn.lock
+# Use full yarn.lock instead of pruned to ensure all peer dependencies are included
+COPY --link=true --from=pruner /repo/yarn.lock ./yarn.lock
 COPY --link=true --from=pruner /repo/.yarnrc.yml ./.yarnrc.yml
 COPY --link=true --from=pruner /repo/.yarn/ ./.yarn/
 
