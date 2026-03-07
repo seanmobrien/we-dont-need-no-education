@@ -5,6 +5,8 @@ import {
 } from '../../src/lib/nextjs/crypto-random-bytes';
 import { generateKeyPairSync } from 'node:crypto';
 
+jest.setTimeout(5000);
+
 const NODE_CRYPTO_MODULE_SYMBOL = Symbol.for(
     '@compliance-theater/types/lib/nextjs/crypto-random-bytes/node-crypto-module'
 );
