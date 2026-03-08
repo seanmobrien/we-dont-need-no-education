@@ -133,7 +133,7 @@
       ]
     },
     "@compliance-theater/app#build:typescript": {
-      "dependsOn": ["^@compliance-theater/app#build:typescript"],
+      "dependsOn": ["^build:typescript"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "app/**",
@@ -168,7 +168,7 @@
       ]
     },
     "@semanticencoding/monorepo#build:typescript": {
-      "dependsOn": ["^@semanticencoding/monorepo#build:typescript"],
+      "dependsOn": ["^build:typescript"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "app/**",
@@ -232,7 +232,7 @@
       ]
     },
     "@semanticencoding/monorepo#build:publish": {
-      "dependsOn": ["^@semanticencoding/monorepo#build:publish"],
+      "dependsOn": ["^build:publish"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "app/**",
