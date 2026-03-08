@@ -5499,7 +5499,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@semanticencoding/monorepo@workspace:submodules/sce":
+"@semanticencoding/monorepo@workspace:*, @semanticencoding/monorepo@workspace:submodules/sce":
   version: 0.0.0-use.local
   resolution: "@semanticencoding/monorepo@workspace:submodules/sce"
   dependencies:
@@ -8186,6 +8186,7 @@ __metadata:
     "@playwright/test": "npm:^1.55.0"
     "@redis/client": "npm:>=5.5.6"
     "@semanticencoding/core": "workspace:*"
+    "@semanticencoding/monorepo": "workspace:*"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
     "@tanstack/react-query": "npm:5.90.21"

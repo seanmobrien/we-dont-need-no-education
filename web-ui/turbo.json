@@ -67,6 +67,41 @@
         "WORKSPACE_SOURCE_IMPORTS"
       ]
     },
+    "@semanticencoding/monorepo#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "app/**",
+        "components/**",
+        "lib/**",
+        "instrument/**",
+        "public/**",
+        "scripts/**",
+        "next.config.*",
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.*",
+        "!coverage/**",
+        "!.next/cache/**"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "YARN_IGNORE_PATH",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "WORKSPACE_SOURCE_IMPORTS"
+      ]
+    },
     "build:typescript": {
       "dependsOn": ["^build:typescript"],
       "inputs": [
@@ -98,7 +133,42 @@
       ]
     },
     "@compliance-theater/app#build:typescript": {
-      "dependsOn": ["^@compliance-theater/app#build:typescript"],
+      "dependsOn": ["^build:typescript"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "app/**",
+        "components/**",
+        "lib/**",
+        "instrument/**",
+        "public/**",
+        "scripts/**",
+        "next.config.*",
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.*",
+        "!coverage/**",
+        "!.next/cache/**"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "YARN_IGNORE_PATH",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "WORKSPACE_SOURCE_IMPORTS"
+      ]
+    },
+    "@semanticencoding/monorepo#build:typescript": {
+      "dependsOn": ["^build:typescript"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "app/**",
@@ -161,6 +231,42 @@
         "WORKSPACE_SOURCE_IMPORTS"
       ]
     },
+    "@semanticencoding/monorepo#build:publish": {
+      "dependsOn": ["^build:publish"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "app/**",
+        "components/**",
+        "lib/**",
+        "instrument/**",
+        "public/**",
+        "scripts/**",
+        "next.config.*",
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.*",
+        "!coverage/**",
+        "!.next/cache/**"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "YARN_IGNORE_PATH",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "WORKSPACE_SOURCE_IMPORTS"
+      ]
+    },
+
     "build:clean": {
       "dependsOn": ["^build:clean"],
       "cache": false,
@@ -184,7 +290,7 @@
     "test": {
       "dependsOn": ["^test"],
       "outputs": [],
-      "inputs": ["__tests__/**/*", "__tests__/*", "*.mjs"]
+      "inputs": ["tests/**/*", "*.cjs"]
     },
     "test:unit": {
       "dependsOn": ["^test:unit"],

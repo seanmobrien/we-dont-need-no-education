@@ -63,6 +63,9 @@
             "path": "submodules/json-viewer/packages/src"
         },
         {
+            "path": "submodules/sce"
+        },
+        {
             "path": "submodules/sce/packages/core/ts"
         },
         {

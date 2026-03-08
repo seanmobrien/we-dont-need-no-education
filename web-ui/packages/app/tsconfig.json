@@ -7,13 +7,7 @@
     "paths": {
       "@/*": [
         "./*"
-      ] // ,
-      // "next": [
-      //   "../../node_modules/next"
-      // ],
-      // "next/*": [
-      //   "../../node_modules/next/*"
-      // ]
+      ]
     },
     // Explicit types prevent accidental inclusion of @types packages (for
     // example mocha) that collide with jest globals in the monorepo.
@@ -88,6 +82,9 @@
     },
     {
       "path": "../../submodules/sce/packages/core/ts"
+    },
+    {
+      "path": "../../submodules/sce/packages/semanticencoding/ts"
     }
   ]
 }

@@ -25,7 +25,9 @@
     "web-ui/packages/lib-typescript",
     "web-ui/packages/app",
     "web-ui/submodules/json-viewer/packages",
-    "web-ui/submodules/sce"
+    "web-ui/submodules/sce",
+    "web-ui/submodules/sce/packages/core/ts",
+    "web-ui/submodules/sce/packages/semanticencoding/ts"
   ],
   "scripts": {
     "add": "yarn workspace compliance-theater add ",
@@ -69,9 +71,7 @@
   },
   "resolutions": {
     "@compliance-theater/json-viewer": "workspace:*",
-    "eslint-plugin-n": "17.24.0",
-    "eslint-plugin-import": "2.32.0",
-    "eslint-plugin-promise": "7.2.1",
+    "semanticencoding": "workspace:*",
     "jsx-ast-utils@npm:3.3.5": "patch:jsx-ast-utils@npm%3A3.3.5#./patches/jsx-ast-utils-npm-3.3.5.patch",
     "redis@npm:^4.6.0": "npm:@redis/client@5.11.0",
     "lodash-es@npm:^4.17.21": "npm:4.17.23",
