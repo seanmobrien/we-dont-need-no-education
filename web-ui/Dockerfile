@@ -136,6 +136,10 @@ COPY --link=true --from=pruner /repo/out/full/ ./
 COPY --link=true --from=pruner /repo/yarn.lock ./yarn.lock
 COPY --link=true --from=pruner /repo/.yarnrc.yml ./.yarnrc.yml
 COPY --link=true --from=pruner /repo/.yarn/ ./.yarn/
+# 
+COPY --link=true --from=pruner /repo/yarn.lock ./yarn.lock
+COPY --link=true --from=pruner /repo/.yarnrc.yml ./.yarnrc.yml
+COPY --link=true --from=pruner /repo/.yarn/ ./.yarn/
 
 RUN node .yarn/releases/yarn-4.12.0.cjs install --immutable
 RUN pushd web-ui && node .yarn/releases/yarn-4.12.0.cjs install --immutable || popd

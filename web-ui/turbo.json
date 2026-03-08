@@ -67,6 +67,41 @@
         "WORKSPACE_SOURCE_IMPORTS"
       ]
     },
+    "@semanticencoding/monorepo#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "app/**",
+        "components/**",
+        "lib/**",
+        "instrument/**",
+        "public/**",
+        "scripts/**",
+        "next.config.*",
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.*",
+        "!coverage/**",
+        "!.next/cache/**"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "YARN_IGNORE_PATH",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "WORKSPACE_SOURCE_IMPORTS"
+      ]
+    },
     "build:typescript": {
       "dependsOn": ["^build:typescript"],
       "inputs": [
@@ -132,6 +167,41 @@
         "WORKSPACE_SOURCE_IMPORTS"
       ]
     },
+    "@semanticencoding/monorepo#build:typescript": {
+      "dependsOn": ["^@semanticencoding/monorepo#build:typescript"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "app/**",
+        "components/**",
+        "lib/**",
+        "instrument/**",
+        "public/**",
+        "scripts/**",
+        "next.config.*",
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.*",
+        "!coverage/**",
+        "!.next/cache/**"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "YARN_IGNORE_PATH",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "WORKSPACE_SOURCE_IMPORTS"
+      ]
+    },
     "build:publish": {
       "dependsOn": ["^build:publish"],
       "inputs": [
@@ -161,6 +231,42 @@
         "WORKSPACE_SOURCE_IMPORTS"
       ]
     },
+    "@semanticencoding/monorepo#build:publish": {
+      "dependsOn": ["^@semanticencoding/monorepo#build:publish"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "app/**",
+        "components/**",
+        "lib/**",
+        "instrument/**",
+        "public/**",
+        "scripts/**",
+        "next.config.*",
+        "package.json",
+        "tsconfig.json",
+        "tsconfig.*",
+        "!coverage/**",
+        "!.next/cache/**"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "YARN_IGNORE_PATH",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "WORKSPACE_SOURCE_IMPORTS"
+      ]
+    },
+
     "build:clean": {
       "dependsOn": ["^build:clean"],
       "cache": false,

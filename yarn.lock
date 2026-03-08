@@ -4874,7 +4874,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@semanticencoding/monorepo@workspace:web-ui/submodules/sce":
+"@semanticencoding/monorepo@workspace:*, @semanticencoding/monorepo@workspace:web-ui/submodules/sce":
   version: 0.0.0-use.local
   resolution: "@semanticencoding/monorepo@workspace:web-ui/submodules/sce"
   dependencies:
@@ -7531,6 +7531,7 @@ __metadata:
     "@playwright/test": "npm:^1.55.0"
     "@redis/client": "npm:>=5.5.6"
     "@semanticencoding/core": "workspace:*"
+    "@semanticencoding/monorepo": "workspace:*"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
     "@tanstack/react-query": "npm:5.90.21"
@@ -9209,7 +9210,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-import@npm:2.32.0":
+"eslint-plugin-import@npm:^2.31.0":
   version: 2.32.0
   resolution: "eslint-plugin-import@npm:2.32.0"
   dependencies:

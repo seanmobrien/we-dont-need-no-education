@@ -20,7 +20,9 @@
     "packages/lib-fetch",
     "packages/lib-send-api-request",
     "submodules/json-viewer/packages",
-    "submodules/sce"
+    "submodules/sce",
+    "submodules/sce/packages/core/ts",
+    "submodules/sce/packages/semanticencoding/ts"
   ],
   "scripts": {
     "add": "turbo run add --filter='@compliance-theater/*' ",
@@ -98,6 +100,7 @@
     "@opentelemetry/api-logs": "0.57.2",
     "@redis/client": ">=5.5.6",
     "@semanticencoding/core": "workspace:*",
+    "@semanticencoding/monorepo": "workspace:*",
     "drizzle-orm": "^0.44.1",
     "got": "^14.4.9",
     "mitt": "^3.0.1",

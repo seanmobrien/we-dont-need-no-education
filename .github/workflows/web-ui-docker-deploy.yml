@@ -8,7 +8,7 @@ permissions:
 
 on:
   workflow_run:
-    workflows: ['Java CI with Maven']
+    workflows: ["Java CI with Maven"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
@@ -21,7 +21,7 @@ jobs:
       contents: read
       id-token: write
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,6 +30,11 @@ jobs:
 
       - name: Verify Yarn 4 release file
         run: |
+          set -euo pipefail
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule sync --recursive
+          git submodule update --init --recursive --jobs 4
+          git submodule status --recursive        
           test -f ./web-ui/.yarn/releases/yarn-4.12.0.cjs
         shell: bash
 
@@ -45,12 +50,12 @@ jobs:
       - name: Validate required secrets and configuration
         run: |
           set -euo pipefail
-          
+
           echo "::group::Validating deployment prerequisites"
-          
+
           MISSING_SECRETS=""
           MISSING_VARS=""
-          
+
           # Critical secrets validation
           [ -z "${{ secrets.AZURE_API_KEY }}" ] && MISSING_SECRETS="$MISSING_SECRETS AZURE_API_KEY"
           [ -z "${{ secrets.DATABASE_URL }}" ] && MISSING_SECRETS="$MISSING_SECRETS DATABASE_URL"
@@ -60,23 +65,23 @@ jobs:
           [ -z "${{ secrets.FLAGSMITH_SDK_KEY }}" ] && MISSING_SECRETS="$MISSING_SECRETS FLAGSMITH_SDK_KEY"
           [ -z "${{ secrets.OPENID_KEY_TEXT }}" ] && MISSING_SECRETS="$MISSING_SECRETS OPENID_KEY_TEXT"
           [ -z "${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}" ] && MISSING_SECRETS="$MISSING_SECRETS NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING"
-          
+
           # Variables validation
           [ -z "${{ vars.NEXT_PUBLIC_DEFAULT_AI_MODEL }}" ] && MISSING_VARS="$MISSING_VARS NEXT_PUBLIC_DEFAULT_AI_MODEL"
           [ -z "${{ vars.NEXT_PUBLIC_HOSTNAME }}" ] && MISSING_VARS="$MISSING_VARS NEXT_PUBLIC_HOSTNAME"
-          
+
           if [ -n "$MISSING_SECRETS" ]; then
             echo "::error::Missing required secrets:$MISSING_SECRETS"
             echo "::error::Please configure these secrets in GitHub Settings > Secrets and variables > Actions"
             exit 1
           fi
-          
+
           if [ -n "$MISSING_VARS" ]; then
             echo "::error::Missing required variables:$MISSING_VARS"
             echo "::error::Please configure these variables in GitHub Settings > Secrets and variables > Actions"
             exit 1
           fi
-          
+
           echo "✅ All required secrets and variables are present"
           echo "::endgroup::"
 
@@ -84,7 +89,7 @@ jobs:
         run: |
           echo "Disk space before cleanup:"
           df -h
-          
+
           echo "Cleaning up disk space..."
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
@@ -94,10 +99,10 @@ jobs:
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           sudo docker system prune --all --force --volumes
           sudo apt-get clean
-          
+
           echo "Disk space after cleanup:"
           df -h
-    
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -167,7 +172,7 @@ jobs:
           FOR_STANDALONE=1
 
           ENV_EOF
-          
+
           # Validate the file was created
           if [ ! -f ./web-ui/packages/app/.env.production.local ]; then
             echo "::error::Failed to create .env.production.local file"
@@ -257,9 +262,9 @@ jobs:
         id: deploy_tag
         run: |
           set -euo pipefail
-          
+
           echo "::group::Deploy tag extraction and validation"
-          
+
           # Log deployment context for audit trail
           echo "::notice::Deployment Context"
           echo "::notice::  Branch: ${{ github.ref_name }}"
@@ -268,10 +273,10 @@ jobs:
           echo "::notice::  Actor: ${{ github.actor }}"
           echo "::notice::  Run ID: ${{ github.run_id }}"
           echo "::notice::  Triggered by: ${{ github.event_name }}"
-          
+
           # Extract deploy tag from metadata
           DEPLOY_TAG=$(echo "${{ steps.meta.outputs.tags }}" | grep "${{ github.ref_name }}-${{ steps.sha.outputs.short }}" | head -n1 || true)
-          
+
           # Validate tag was extracted
           if [ -z "$DEPLOY_TAG" ]; then
             echo "::error::Failed to extract deploy tag"
@@ -282,10 +287,10 @@ jobs:
             done
             exit 1
           fi
-          
+
           # Set output for next step
           echo "tag=$DEPLOY_TAG" >> $GITHUB_OUTPUT
-          
+
           # Audit log
           echo "::notice::Deploy Tag Selected: $DEPLOY_TAG"
           echo "::notice::Image Digest: ${{ steps.docker_build.outputs.digest }}"
@@ -306,9 +311,9 @@ jobs:
         if: success()
         run: |
           set -euo pipefail
-          
+
           echo "::group::Deployment Verification and Audit"
-          
+
           # Create deployment audit record
           cat << AUDIT_EOF
           ========================================
@@ -317,26 +322,26 @@ jobs:
           Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
           Environment: Production
           Service: Title IX Victim Advocacy Platform - Web UI
-          
+
           Deployment Details:
             - Image: ${{ steps.deploy_tag.outputs.tag }}
             - Digest: ${{ steps.docker_build.outputs.digest }}
             - Resource Group: SchoolLawyer
             - Container App: full-ui
             - Registry: schoollawregistry.azurecr.io
-          
+
           Source Control:
             - Repository: ${{ github.repository }}
             - Branch: ${{ github.ref_name }}
             - Commit: ${{ steps.sha.outputs.short }} ( ${{ github.sha }} )
-          
+
           Workflow:
             - Triggered by: ${{ github.event_name }}
             - Actor: ${{ github.actor }}
             - Run ID: ${{ github.run_id }}
             - Run Number: ${{ github.run_number }}
             - Attempt: ${{ github.run_attempt }}
-          
+
           Compliance Notes:
             - FERPA compliance: Enabled
             - Audit logging: Enabled
@@ -344,7 +349,7 @@ jobs:
             - Azure Monitor: Connected
           ========================================
           AUDIT_EOF
-          
+
           echo "::notice::✅ Deployment completed successfully"
           echo "::notice::Image: ${{ steps.deploy_tag.outputs.tag }}"
           echo "::notice::Run ID: ${{ github.run_id }} for audit reference"
