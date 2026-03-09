@@ -10734,9 +10734,9 @@ __metadata:
   linkType: hard
 
 "flatted@npm:^3.2.9":
-  version: 3.3.4
-  resolution: "flatted@npm:3.3.4"
-  checksum: 10/185b93176da0f54a97f88f56f9b8bccca9cbbb6ff1caaf264ae8b6ee4d3c041d7df131301060208695d7b573925dbee7162951be5ffd1efb5b6969495e83dba8
+  version: 3.4.0
+  resolution: "flatted@npm:3.4.0"
+  checksum: 10/6007896f62acb93c811aef52d962c5cd2fa3c703eacfc4146865c3fc8964d3e466c66e10b1c175a84ce0a207fdc761e2e70d7ca982c82604257d45866169af6a
   languageName: node
   linkType: hard
 
@@ -13351,13 +13351,13 @@ __metadata:
   linkType: hard
 
 "katex@npm:^0.16.22":
-  version: 0.16.37
-  resolution: "katex@npm:0.16.37"
+  version: 0.16.38
+  resolution: "katex@npm:0.16.38"
   dependencies:
     commander: "npm:^8.3.0"
   bin:
     katex: cli.js
-  checksum: 10/6b9cef9b44e268f84d2f54edf87a96602b7cd5886ebf5043b58c5e963e4c62acaf4803d9aea930c60df3569fc621545dc3425b53d2d65f5c8d39ebace92a50f4
+  checksum: 10/e9103def114d9d08ab216864e66b68e6f50a6360fdc5aa29d8edeee430e1618dd7551b9f080e9c591b3ee24c18fe6910b8fe0c89c7c4b1109abd2b63e223fbc5
   languageName: node
   linkType: hard
 

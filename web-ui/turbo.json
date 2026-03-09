@@ -1,18 +1,29 @@
 {
   "$schema": "https://turbo.build/schema.json",
-
+  "globalDependencies": [
+    "./tsconfig.json",
+    "./tsconfig.*.json",
+    "./*.mjs",
+    "./package.json"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": [
-        "src/**",
-        "package.json",
-        "tsconfig.json",
-        "tsconfig.*",
-        "!dist/**",
-        "!.next/**",
-        "!coverage/**",
-        "!tsconfig.tsbuildinfo"
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/install-state.gz",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
       ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
@@ -36,18 +47,19 @@
       "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "app/**",
-        "components/**",
-        "lib/**",
-        "instrument/**",
-        "public/**",
-        "scripts/**",
-        "next.config.*",
-        "package.json",
-        "tsconfig.json",
-        "tsconfig.*",
-        "!coverage/**",
-        "!.next/cache/**"
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/install-state.gz",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
       ],
       "outputs": [],
       "env": [
@@ -71,18 +83,19 @@
       "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "app/**",
-        "components/**",
-        "lib/**",
-        "instrument/**",
-        "public/**",
-        "scripts/**",
-        "next.config.*",
-        "package.json",
-        "tsconfig.json",
-        "tsconfig.*",
-        "!coverage/**",
-        "!.next/cache/**"
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/install-state.gz",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
       ],
       "outputs": [],
       "env": [
@@ -105,14 +118,20 @@
     "build:typescript": {
       "dependsOn": ["^build:typescript"],
       "inputs": [
-        "src/**",
-        "package.json",
-        "tsconfig.json",
-        "tsconfig.*",
-        "!dist/**",
-        "!.next/**",
-        "!coverage/**",
-        "!tsconfig.tsbuildinfo"
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/install-state.gz",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
       ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
@@ -136,18 +155,19 @@
       "dependsOn": ["^build:typescript"],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "app/**",
-        "components/**",
-        "lib/**",
-        "instrument/**",
-        "public/**",
-        "scripts/**",
-        "next.config.*",
-        "package.json",
-        "tsconfig.json",
-        "tsconfig.*",
-        "!coverage/**",
-        "!.next/cache/**"
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/install-state.gz",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
       ],
       "outputs": [],
       "env": [
@@ -171,18 +191,19 @@
       "dependsOn": ["^build:typescript"],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "app/**",
-        "components/**",
-        "lib/**",
-        "instrument/**",
-        "public/**",
-        "scripts/**",
-        "next.config.*",
-        "package.json",
-        "tsconfig.json",
-        "tsconfig.*",
-        "!coverage/**",
-        "!.next/cache/**"
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/install-state.gz",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
       ],
       "outputs": [],
       "env": [
@@ -205,13 +226,20 @@
     "build:publish": {
       "dependsOn": ["^build:publish"],
       "inputs": [
-        "src/**",
-        "package.json",
-        "tsconfig.json",
-        "!dist/**",
-        "!.next/**",
-        "!coverage/**",
-        "!tsconfig.tsbuildinfo"
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/install-state.gz",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
       ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
@@ -235,18 +263,19 @@
       "dependsOn": ["^build:publish"],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "app/**",
-        "components/**",
-        "lib/**",
-        "instrument/**",
-        "public/**",
-        "scripts/**",
-        "next.config.*",
-        "package.json",
-        "tsconfig.json",
-        "tsconfig.*",
-        "!coverage/**",
-        "!.next/cache/**"
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/install-state.gz",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
       ],
       "outputs": [],
       "env": [
@@ -290,18 +319,81 @@
     "test": {
       "dependsOn": ["^test"],
       "outputs": [],
-      "inputs": ["tests/**/*", "*.cjs"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/install-state.gz",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
+      ]
     },
     "test:unit": {
       "dependsOn": ["^test:unit"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/install-state.gz",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
+      ],
       "outputs": []
     },
     "test:e2e": {
       "dependsOn": ["^test:e2e"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/install-state.gz",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
+      ],
       "cache": false
     },
     "lint": {
       "dependsOn": ["^lint"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/install-state.gz",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
+      ],
       "outputs": []
     }
   }

@@ -120,7 +120,6 @@
     "react-error-boundary": "^6.0.0",
     "react-native": "^0.84.0",
     "react-resizable": "^3.0.5",
-    "semanticencoding": "workspace:*",
     "ts-node": "^10.9.1",
     "ts-pattern": "^5.7.1",
     "typescript": "^5.9.3",

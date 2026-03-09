@@ -1,5 +1,4 @@
 # syntax=docker/dockerfile:1.7
-# Multi-stage build aligned with the monorepo (web-ui root) and Next.js standalone output
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
@@ -23,6 +22,8 @@ ARG MEM0_USERNAME
 ARG BUILD_CACHE
 
 FROM node:25-alpine AS base
+
+FROM base AS base_builder
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
@@ -48,11 +49,9 @@ ARG BUILD_CACHE
 ENV PYTHONUNBUFFERED=1
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
-# System deps for canvas / fonts used by Next.js build
+# Build deps needed for native modules during yarn install (canvas/sharp toolchain)
 RUN apk add --no-cache \
     libc6-compat \
-    dcron \
-    curl \
     build-base \
     cairo-dev \
     pango-dev \
@@ -68,86 +67,36 @@ RUN apk add --no-cache \
 
 FROM base AS pruner
 
-ARG RATE_RETRY_INTERVAL_MINUTES
-ARG NEXT_PUBLIC_HOSTNAME
-ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
-ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
-ARG NEXT_PUBLIC_FLAGSMITH_API_URL
-ARG NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
-ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
-ARG NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING
-ARG OTEL_SERVICE_NAME
-ARG OTEL_RESOURCE_ATTRIBUTES
-ARG AZURE_OPENAI_ENDPOINT
-ARG AZURE_AISEARCH_ENDPOINT
-ARG AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
-ARG AZURE_AISEARCH_POLICY_INDEX_NAME
-ARG AZURE_STORAGE_CONNECTION_STRING
-ARG AZURE_STORAGE_ACCOUNT_NAME
-ARG MEM0_API_HOST
-ARG MEM0_UI_HOST
-ARG MEM0_USERNAME
-ARG BUILD_CACHE
-
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 WORKDIR /repo
 
-# Install turbo CLI for pruning (small global install avoids full node_modules)
-RUN npm install -g turbo@^2.8.3
-
 # Copy workspace to compute prune graph
 COPY --link=true . .
 
-# Produce a pruned workspace for the app package
-RUN turbo prune --scope=@compliance-theater/app --docker && \
-cp tsconfig.*.json out/full
+# Install turbo CLI for pruning (small global install avoids full node_modules)
+#   then produce a pruned workspace for the app package
+RUN npm install -g turbo@^2.8.3 && \
+  turbo prune --scope=@compliance-theater/app --docker && \
+  cp tsconfig.*.json out/full && \
+  cp tsconfig.*.json out/json
 
 # Dependencies layer uses pruned workspace
-FROM base AS deps
+FROM base_builder AS deps
+
 WORKDIR /app
 
-ARG RATE_RETRY_INTERVAL_MINUTES
-ARG NEXT_PUBLIC_HOSTNAME
-ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
-ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
-ARG NEXT_PUBLIC_FLAGSMITH_API_URL
-ARG NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
-ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
-ARG NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING
-ARG OTEL_SERVICE_NAME
-ARG OTEL_RESOURCE_ATTRIBUTES
-ARG AZURE_OPENAI_ENDPOINT
-ARG AZURE_AISEARCH_ENDPOINT
-ARG AZURE_AISEARCH_DOCUMENTS_INDEX_NAME
-ARG AZURE_AISEARCH_POLICY_INDEX_NAME
-ARG AZURE_STORAGE_CONNECTION_STRING
-ARG AZURE_STORAGE_ACCOUNT_NAME
-ARG MEM0_API_HOST
-ARG MEM0_UI_HOST
-ARG MEM0_USERNAME
-ARG BUILD_CACHE
-
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-
 # Copy pruned package manifests and lockfile
-COPY --link=true --from=pruner /repo/out/full/ ./
-# Use full yarn.lock instead of pruned to ensure all peer dependencies are included
-COPY --link=true --from=pruner /repo/yarn.lock ./yarn.lock
-COPY --link=true --from=pruner /repo/.yarnrc.yml ./.yarnrc.yml
-COPY --link=true --from=pruner /repo/.yarn/ ./.yarn/
-# 
-COPY --link=true --from=pruner /repo/yarn.lock ./yarn.lock
-COPY --link=true --from=pruner /repo/.yarnrc.yml ./.yarnrc.yml
-COPY --link=true --from=pruner /repo/.yarn/ ./.yarn/
+COPY --link=true --from=pruner /repo/out/json/ ./
 
-RUN node .yarn/releases/yarn-4.12.0.cjs install --immutable
-RUN pushd web-ui && node .yarn/releases/yarn-4.12.0.cjs install --immutable || popd
-RUN pushd web-ui/submodules/sce && node .yarn/releases/yarn-4.12.0.cjs install --immutable || popd
-RUN pushd web-ui/submodules/json-viewer/packages && node .yarn/releases/yarn-4.12.0.cjs install --immutable || popd
+RUN node .yarn/releases/yarn-4.12.0.cjs install 
+ # && cd /app/submodules/sce \
+ # && node .yarn/releases/yarn-4.12.0.cjs install \
+ # && cd /app
 
 # Build layer with pruned source
-FROM deps AS builder
+FROM base AS builder_root
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
@@ -172,6 +121,10 @@ ARG BUILD_CACHE
 WORKDIR /app
 
 COPY --link=true --from=deps /app/ ./
+COPY --link=true --from=pruner /repo/out/full/ ./
+RUN rm -rf /app/submodules/sce/.yarn \
+ && rm -rf /app/submodules/sce/yarn.lock \
+ && rm -rf /app/submodules/sce/.yarnrc.yml;
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
@@ -195,7 +148,7 @@ ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
 ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
 ENV NEXT_PUBLIC_FLAGSMITH_API_URL=$NEXT_PUBLIC_FLAGSMITH_API_URL
 ENV NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID=$NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
-ENV NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=$NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING
+# ENV NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=$NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 
 RUN --mount=type=secret,id=env_file \
@@ -218,6 +171,22 @@ RUN --mount=type=secret,id=env_file \
   TMP_ENV="$(mktemp)"; \
   add_var() { name="$1"; value="$2"; [ -n "$value" ] && printf "%s=%s\n" "$name" "$value" >> "$TMP_ENV"; }; \
   read_secret() { name="$1"; file="$2"; eval "current=\${$name:-}"; [ -z "$current" ] && current="$(cat "$file" 2>/dev/null || true)"; add_var "$name" "$current"; }; \
+  apk add --no-cache \
+      libc6-compat \
+      dcron \
+      curl \
+      build-base \
+      cairo-dev \
+      pango-dev \
+      jpeg-dev \
+      giflib-dev \
+      fontconfig-dev \
+      freetype-dev \
+      python3-dev \
+      python3 \
+      py3-pip \
+      pixman && \
+  ln -sf python3 /usr/bin/python && \
   if [ -f "$SECRETS/env_file" ]; then \
     cp "$SECRETS/env_file" "$TMP_ENV"; \
   else \
@@ -241,8 +210,11 @@ RUN --mount=type=secret,id=env_file \
   fi; \
   set -a; [ -f "$TMP_ENV" ] && . "$TMP_ENV"; set +a; \
   cp "$TMP_ENV" ./packages/app/.env.local; \
-  cp "$TMP_ENV" ./packages/app/.env.production.local; \
-  node .yarn/releases/yarn-4.12.0.cjs run build:publish; \
+  cp "$TMP_ENV" ./packages/app/.env.production.local;
+
+FROM builder_root AS builder
+
+RUN node .yarn/releases/yarn-4.12.0.cjs workspace compliance-theater run build:publish --filter="@compliance-theater/app" && \
   rm -f "$TMP_ENV" ./packages/app/.env.local ./packages/app/.env.production.local; \
   if [ ! -d "./packages/app/.next/standalone" ]; then echo "Error: standalone build output missing" >&2; exit 1; fi
 
@@ -285,11 +257,22 @@ ENV MEM0_USERNAME=$MEM0_USERNAME
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+WORKDIR /app
+
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 --shell /bin/sh nextjs \
-  && mkdir -p /app/scripts
-
-WORKDIR /app
+  && mkdir -p /app/scripts \
+  && apk add --no-cache \
+      libc6-compat \
+      dcron \
+      curl \
+      cairo \
+      pango \
+      jpeg \
+      giflib \
+      fontconfig \
+      freetype \
+      pixman
 
 # Copy Next.js standalone output from the app workspace.
 # outputFileTracingRoot in next.config.ts is set to the workspace root (web-ui/), so the

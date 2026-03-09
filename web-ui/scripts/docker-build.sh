@@ -160,7 +160,8 @@ function build_image() {
     cd "$PROJECT_ROOT"
     
     # Verify standalone build exists before attempting to build the image
-    ensure_standalone
+    # Umm...Why?
+    # ensure_standalone
     
     # Extract git commit hash
     VCS_REF="${VCS_REF:-$(git rev-parse HEAD 2>/dev/null || echo 'unknown')}"

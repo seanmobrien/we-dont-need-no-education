@@ -79,12 +79,6 @@
     },
     {
       "path": "../../submodules/json-viewer/packages"
-    },
-    {
-      "path": "../../submodules/sce/packages/core/ts"
-    },
-    {
-      "path": "../../submodules/sce/packages/semanticencoding/ts"
     }
   ]
 }
