@@ -5,8 +5,42 @@ import {
   jsonResponse,
   asyncRender,
 } from '../../shared/test-utils';
-import EmailList from '../../../components/email-message/list';
 import { mockEmailSummary } from '../email.mock-data';
+
+if (typeof globalThis.Request === 'undefined') {
+  class RequestShim {
+    readonly url: string;
+
+    constructor(input?: string | { url?: string }) {
+      this.url =
+        typeof input === 'string' ? input : (input?.url ?? 'http://localhost/');
+    }
+  }
+
+  Object.assign(globalThis, {
+    Request: RequestShim,
+  });
+}
+
+if (typeof globalThis.Response === 'undefined') {
+  class ResponseShim {}
+  Object.assign(globalThis, { Response: ResponseShim });
+}
+
+if (typeof globalThis.Headers === 'undefined') {
+  class HeadersShim {
+    private readonly map = new Map<string, string>();
+
+    set(name: string, value: string): void {
+      this.map.set(name.toLowerCase(), value);
+    }
+
+    get(name: string): string | null {
+      return this.map.get(name.toLowerCase()) ?? null;
+    }
+  }
+  Object.assign(globalThis, { Headers: HeadersShim });
+}
 
 const fetchMock = jest.fn();
 
@@ -17,6 +51,8 @@ jest.mock('../../../lib/fetch-service', () => ({
 jest.mock('../../../lib/hooks/use-email', () => ({
   usePrefetchEmail: () => jest.fn(),
 }));
+
+const EmailList = require('../../../components/email-message/list').default;
 const TIMEOUT = 30000;
 
 // Mock the router

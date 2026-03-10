@@ -11,20 +11,67 @@ import {
   fireEvent,
   act,
 } from '../../shared/test-utils';
-import EmailDetailPanel from '../../../components/email-message/list/email-detail-panel';
-import { EmailMessageSummary } from '../../../data-models/api/email-message';
-import { getEmail } from '../../../lib/api/client';
-import {
-  getKeyPoints,
-  getCallToAction,
-  getCallToActionResponse,
-  getSentimentAnalysis,
-  getNotes,
-} from '../../../lib/api/email/properties/client';
+import type { EmailMessageSummary } from '@/data-models/api/email-message';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { KeyPointsDetails } from '../../../data-models/api';
+import type { KeyPointsDetails } from '@/data-models/api';
 
-jest.mock('../../../lib/components/mui/data-grid/query-client', () => {
+if (typeof globalThis.Request === 'undefined') {
+  class RequestShim {
+    readonly url: string;
+
+    constructor(input?: string | { url?: string }) {
+      this.url =
+        typeof input === 'string' ? input : (input?.url ?? 'http://localhost/');
+    }
+  }
+
+  Object.assign(globalThis, {
+    Request: RequestShim,
+  });
+}
+
+if (typeof globalThis.Response === 'undefined') {
+  class ResponseShim {}
+  Object.assign(globalThis, { Response: ResponseShim });
+}
+
+if (typeof globalThis.Headers === 'undefined') {
+  class HeadersShim {
+    private readonly map = new Map<string, string>();
+
+    set(name: string, value: string): void {
+      this.map.set(name.toLowerCase(), value);
+    }
+
+    get(name: string): string | null {
+      return this.map.get(name.toLowerCase()) ?? null;
+    }
+  }
+  Object.assign(globalThis, { Headers: HeadersShim });
+}
+
+jest.mock('next/server', () => {
+  class MockNextRequest {
+    url: string;
+
+    nextUrl: URL;
+
+    headers: Headers;
+
+    constructor(req: Request | string) {
+      const input = typeof req === 'string' ? req : req?.url;
+      this.url = input ?? 'http://localhost/';
+      this.nextUrl = new URL(this.url, 'http://localhost');
+      this.headers = new Headers();
+    }
+  }
+
+  return {
+    NextRequest: MockNextRequest,
+  };
+});
+
+jest.mock('@/lib/components/mui/data-grid/query-client', () => {
   const { QueryClient } = jest.requireActual('@tanstack/react-query');
   return {
     dataGridQueryClient: new QueryClient({
@@ -36,8 +83,22 @@ jest.mock('../../../lib/components/mui/data-grid/query-client', () => {
 });
 
 // Mock the API functions
-jest.mock('../../../lib/api/client');
-jest.mock('../../../lib/api/email/properties/client');
+jest.mock('@/lib/api/client');
+jest.mock('@/lib/api/email/properties/client');
+
+const EmailDetailPanel =
+  require('@/components/email-message/list/email-detail-panel').default;
+
+const { getEmail } =
+  require('@/lib/api/client') as typeof import('@/lib/api/client');
+const {
+  getKeyPoints,
+  getCallToAction,
+  getCallToActionResponse,
+  getSentimentAnalysis,
+  getNotes,
+} =
+  require('@/lib/api/email/properties/client') as typeof import('@/lib/api/email/properties/client');
 
 // Get mocked versions for type safety
 const mockGetEmail = jest.mocked(getEmail);
@@ -131,8 +192,6 @@ const mockKeyPoints: KeyPointsDetails[] = [
 
 describe('EmailDetailPanel', () => {
   beforeEach(() => {
-    // jest.clearAllMocks();
-
     // Default successful email loading mock
     mockGetEmail.mockResolvedValue(mockFullEmail as any);
     mockGetKeyPoints.mockResolvedValue({

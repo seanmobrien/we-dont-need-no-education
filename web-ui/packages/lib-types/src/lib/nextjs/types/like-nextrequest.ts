@@ -38,9 +38,6 @@ type StockBodySupport = {
 };
 
 type BaseRequiredRequestKeys = 'method' | 'url' | 'headers' | 'cookies';
-type RequiredRequestKeys = BaseRequiredRequestKeys | 'bodyUsed' | 'bytes' | 'clone' | 'signal' | 'referrerPolicy' |
-	'redirect' | 'referrer' | 'cache' | 'credentials' | 'destination' | 'integrity' | 'keepalive' | 'mode' | 'page' |
-	'ua';
 
 
 export type LikeNextRequest =
@@ -51,7 +48,7 @@ export type LikeNextRequest =
 		QuerySupport &
 		NextUrlSupport &
 		CookiesSupport)
-	| (Pick<NextRequest, RequiredRequestKeys> &
+	| (Pick<NextRequest, keyof Request> &
 		StockBodySupport &
 		RequestBodyExtractors &
 		RouteSupport &

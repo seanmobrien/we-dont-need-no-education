@@ -114,8 +114,8 @@ export class AppStartup {
 
     for (const modulePath of this.#config.initializerModules) {
       try {
-        // Use dynamic import with require to avoid circular dependencies
-        const module = await import(modulePath);
+        // Keep late-bound startup modules out of the bundle graph to avoid expression warnings.
+        const module = await import(/* webpackIgnore: true */ modulePath);
 
         if (module && typeof module.initAppStartup === 'function') {
           this.#initializers.push(module.initAppStartup);

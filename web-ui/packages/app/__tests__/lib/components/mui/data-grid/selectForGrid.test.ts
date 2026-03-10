@@ -7,65 +7,65 @@
  * verifying its ability to integrate filtering, sorting, and pagination
  * for Drizzle ORM queries in data grid operations.
  */
-import { NextRequest } from 'next/server';
+// NextRequest is only used as a type annotation — import type to avoid loading
+// next/server as a value (it references `Request` global, unavailable in jsdom).
+import type { NextRequest } from 'next/server';
 import { CallToActionDetails } from '../../../../../data-models/api/email-properties/extended-properties';
 
-jest.mock(
-  '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid',
-  () => {
-    const actual = jest.requireActual(
-      '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid',
-    );
-    return {
-      ...actual,
-      countQueryFactory: jest.fn(),
-    };
-  },
-);
+// Explicit factories prevent loading real modules that transitively import
+// @compliance-theater/types/lib/nextjs/guards → next/server → `Request` (not
+// available in jsdom).  jest.requireActual bypasses mocks so it must NOT be
+// used here — plain factories only.
 
-import {
-  selectForGrid,
-} from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid';
-import { drizDb } from '@compliance-theater/database/orm';
-
-// Mock the dependencies before importing
-jest.mock('../../../../../lib/components/mui/data-grid/queryHelpers/utility', () => {
-  const orig = jest.requireActual(
-    '/lib/components/mui/data-grid/queryHelpers/utility',
-  );
-  return {
-    ...orig,
-    parsePaginationStats: jest.fn(),
-  };
-});
-
-jest.mock('../../../../../lib/components/mui/data-grid/queryHelpers', () => ({
-  buildDrizzlePagination: jest.fn(),
-  buildDrizzleOrderBy: jest.fn(),
-  buildDrizzleQueryFilter: jest.fn(),
+// utility.ts imports isLikeNextRequest from guards; mock the whole module.
+jest.mock('../../../../../lib/components/mui/data-grid/queryHelpers/utility', () => ({
+  parsePaginationStats: jest.fn(),
+  parseFilterOptions: jest.fn(),
+  parseSortOptions: jest.fn(),
+  parsePaginationOptions: jest.fn(),
+  columnMapFactory: jest.fn(),
 }));
 
+// Each drizzle helper imports isLikeNextRequest from guards directly.
+// Previous paths were /lib/… (absolute filesystem paths that never matched
+// the module registry); correct relative paths ensure selectForGrid's own
+// static imports are intercepted too.
 jest.mock(
-  '/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleFilter',
+  '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleFilter',
   () => ({
     buildDrizzleQueryFilter: jest.fn(),
   }),
 );
 
 jest.mock(
-  '/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy',
+  '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy',
   () => ({
     buildDrizzleOrderBy: jest.fn(),
   }),
 );
 
 jest.mock(
-  '/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzlePagination',
+  '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzlePagination',
   () => ({
     buildDrizzlePagination: jest.fn(),
   }),
 );
 
+// Barrel mock (controls the test's own imports from queryHelpers index).
+jest.mock('../../../../../lib/components/mui/data-grid/queryHelpers', () => ({
+  buildDrizzlePagination: jest.fn(),
+  buildDrizzleOrderBy: jest.fn(),
+  buildDrizzleQueryFilter: jest.fn(),
+}));
+
+jest.mock('@compliance-theater/database/orm', () => ({
+  drizDb: jest.fn(),
+}));
+
+import {
+  selectForGrid,
+} from '../../../../../lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid';
+import { drizDb } from '@compliance-theater/database/orm';
 import { parsePaginationStats } from '../../../../../lib/components/mui/data-grid/queryHelpers/utility';
 
 import {

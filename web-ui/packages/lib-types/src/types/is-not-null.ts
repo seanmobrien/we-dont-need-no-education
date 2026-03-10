@@ -1,5 +1,6 @@
-export type IsNotNull<K> = K extends null
-    ? never
-    : K extends undefined
-    ? never
-    : K;
+import type { IsNotNull as IsNotNullBase } from './typescript/is-not-null';
+
+/**
+ * @deprecated use {@link IsNotNullBase} instead.
+ */
+export type IsNotNull<K> = IsNotNullBase<K>;

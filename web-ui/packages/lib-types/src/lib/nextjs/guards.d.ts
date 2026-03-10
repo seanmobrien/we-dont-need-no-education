@@ -88,3 +88,25 @@ export function isNextResponse<Data = unknown>(
     res: unknown,
 ): res is NextResponse<Data>;
 
+/**
+ * Converts a standard Request object to a NextRequest.
+ *
+ * This function checks if the provided `req` is already a NextRequest.
+ * If it is, it returns the same object. Otherwise, it creates a new NextRequest
+ * instance using the provided Request object.
+ *
+ * @param req - The Request object to convert.
+ * @returns A NextRequest instance.
+ * @throws Will throw an error if the input is not a valid Request object.
+ * 
+ * @example
+ * ```ts
+ * import { asNextRequest } from '@compliance-theater/types/lib/nextjs/guards';
+ *
+ * const handler = async (req: Request) => {
+ *   const nextReq = asNextRequest(req);
+ *   // Now you can use nextReq with Next.js specific properties and methods
+ * };
+ * ```
+ */
+export function asNextRequest(req: Request): NextRequest;

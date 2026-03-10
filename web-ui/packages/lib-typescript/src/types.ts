@@ -6,6 +6,18 @@
  * - Handling cancelable promises.
  */
 
+import type {
+  FirstParameter as FirstParameterBase,
+  FunctionArguments as FunctionArgumentsBase,
+  KeysOfMethods as KeysOfMethodsBase,
+  MethodsOf as MethodsOfBase,
+  ReturnTypeOfMethods as ReturnTypeOfMethodsBase
+} from '@compliance-theater/types/types/typescript/parameters';
+
+import type {
+  IsNotNull as IsNotNullBase
+} from '@compliance-theater/types/types/typescript/is-not-null';
+
 /**
  * Converts a union type `T` into a tuple type.
  *
@@ -251,22 +263,19 @@ export type ICancellablePromiseExt<T> = Omit<
  * Infers the type of the first parameter passed to a function.
  *
  * @template T - The function type.
+ * @deprecated Use {@link FirstParamterBase} instead.
  * @example
  * ```typescript
  * type MyFunction = (arg1: string, arg2: number) => void;
  * type FirstParamType = FirstParameter<MyFunction>; // string
  * ```
  */
-export type FirstParameter<T extends (...args: any) => any> = T extends (
-  arg1: infer P,
-  ...args: any
-) => any
-  ? P
-  : never;
+export type FirstParameter<T extends (...args: any) => any> = FirstParameterBase<T>;
 
 /**
  * Extracts the arguments of a function type as a tuple.
  *
+ * @deprecated Use {@link FunctionArgumentsBase} instead.
  * @template T - The function type.
  * @example
  * ```typescript
@@ -274,15 +283,11 @@ export type FirstParameter<T extends (...args: any) => any> = T extends (
  * type ArgsTuple = FunctionArguments<MyFunction>; // [string, number]
  * ```
  */
-export type FunctionArguments<T extends (...args: any) => any> = T extends (
-  ...args: infer A
-) => any
-  ? A
-  : never;
+export type FunctionArguments<T extends (...args: any) => any> = FunctionArgumentsBase<T>;
 
 /**
- * Extracts the return type of a function type.
- * @template T - The function type.
+ * Extracts keys for all members that resolve to a function
+ * @template T - The type to extract members from
  * @example
  *
  * ```typescript
@@ -295,12 +300,10 @@ export type FunctionArguments<T extends (...args: any) => any> = T extends (
  * type KeysOfMethodsInMyType = KeysOfMethods<MyType>; // 'd'
  * ```
  */
-export type KeysOfMethods<T> = {
-  [K in keyof T]: T[K] extends (...args: any[]) => any ? K : never;
-}[keyof T];
-
+export type KeysOfMethods<T> = KeysOfMethodsBase<T>;
 /**
  * Extracts all methods from a given object type.
+ * @deprecated Use {@link MethodsOfBase} instead.
  * @template T - The object type.
  * @example
  *
@@ -313,11 +316,12 @@ export type KeysOfMethods<T> = {
  * type Methods = MethodsOf<MyType>; // { b: () => number; c: () => boolean; }
  * ```
  */
-export type MethodsOf<T> = Pick<T, KeysOfMethods<T>>;
+export type MethodsOf<T> = MethodsOfBase<T>;
 
 /**
  * Extracts the return type of methods from an object type.
  * @template T - The object type.
+ * @deprecated Use {@link ReturnTypeOfMethodsBase} instead.
  * @example
  * ```typescript
  * type MyType = {
@@ -328,9 +332,7 @@ export type MethodsOf<T> = Pick<T, KeysOfMethods<T>>;
  * type Returns = ReturnTypeOfMethods<MyType>; // { b: number; c: boolean; }
  * ```
  */
-export type ReturnTypeOfMethods<T> = {
-  [K in keyof T]: T[K] extends (...args: any[]) => infer R ? R : never;
-}[keyof MethodsOf<T>];
+export type ReturnTypeOfMethods<T> = ReturnTypeOfMethodsBase<T>;
 
 /**
  * Excludes types from `T` that are exactly the same as `U`.
@@ -348,6 +350,7 @@ export type ExcludeExactMatch<T, U> = T extends U ? never : T;
 /**
  * A type that excludes `null` and `undefined` from a given type `K`.
  *
+ * @deprecated Use {@link IsNotNullBase} instead.
  * @template K - The type to be checked.
  *
  * @example
@@ -358,9 +361,4 @@ export type ExcludeExactMatch<T, U> = T extends U ? never : T;
  * type NonNullableObject = IsNotNull<{ a: number } | null | undefined>; // Result is { a: number }
  * ```
  */
-export type IsNotNull<K> = K extends null
-  ? never
-  : K extends undefined
-  ? never
-  : K;
-
+export type IsNotNull<K> = IsNotNullBase<K>;

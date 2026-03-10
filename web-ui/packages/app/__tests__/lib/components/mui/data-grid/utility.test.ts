@@ -1,9 +1,45 @@
- 
-import {
+
+if (typeof globalThis.Request === 'undefined') {
+  class RequestShim {
+    readonly url: string;
+
+    constructor(input?: string | { url?: string }) {
+      this.url = typeof input === 'string'
+        ? input
+        : input?.url ?? 'http://localhost/';
+    }
+  }
+
+  Object.assign(globalThis, {
+    Request: RequestShim,
+  });
+}
+
+if (typeof globalThis.Response === 'undefined') {
+  class ResponseShim { }
+  Object.assign(globalThis, { Response: ResponseShim });
+}
+
+if (typeof globalThis.Headers === 'undefined') {
+  class HeadersShim {
+    private readonly map = new Map<string, string>();
+
+    set(name: string, value: string): void {
+      this.map.set(name.toLowerCase(), value);
+    }
+
+    get(name: string): string | null {
+      return this.map.get(name.toLowerCase()) ?? null;
+    }
+  }
+  Object.assign(globalThis, { Headers: HeadersShim });
+}
+
+const {
   parseSortOptions,
   // buildOrderBy,
   parseFilterOptions,
-} from '../../../../../lib/components/mui/data-grid/server';
+} = require('../../../../../lib/components/mui/data-grid/server') as typeof import('../../../../../lib/components/mui/data-grid/server');
 import { GridFilterModel, GridSortModel } from '@mui/x-data-grid-pro';
 
 describe('utility functions', () => {

@@ -49,6 +49,7 @@ export const withIgnorePacks: NextConfigPlugin = <TArg extends NextConfig>(
       ],
     },
     serverExternalPackages: [
+      'awilix',
       '@opentelemetry/sdk-node',
       '@opentelemetry/exporter-jaeger',
       '@opentelemetry/instrumentation',
@@ -61,6 +62,18 @@ export const withIgnorePacks: NextConfigPlugin = <TArg extends NextConfig>(
     ],
     webpack: (webpackConfig, args) => {
       const ret = originalWebpack?.(webpackConfig, args) ?? webpackConfig;
+      const existingIgnoreWarnings = webpackConfig.ignoreWarnings ?? [];
+      webpackConfig.ignoreWarnings = [
+        ...existingIgnoreWarnings,
+        {
+          module: /awilix[\\/]lib[\\/]load-module-native\.mjs$/,
+          message: /Critical dependency: the request of a dependency is an expression/,
+        },
+        {
+          module: /lib-after[\\/]dist[\\/]app-startup\.js$/,
+          message: /Critical dependency: the request of a dependency is an expression/,
+        },
+      ];
       webpackConfig.plugins.push(
         new args.webpack.IgnorePlugin({
           resourceRegExp: /^pg-native$|^cloudflare:sockets$/,

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Todo, TodoList, TodoListSummary } from '@/data-models/api/todo';
-import { fetch } from '@compliance-theater/fetch';
+import type { IFetchService } from '@compliance-theater/types/lib/fetch';
+import { resolveService } from '@compliance-theater/types/dependency-injection';
 import { LoggedError } from '@compliance-theater/logger';
 
 // Query keys for todo-related queries
@@ -18,12 +19,15 @@ export const useTodoLists = (options?: {
   enabled?: boolean;
   staleTime?: number;
   gcTime?: number;
+  fetch?: IFetchService;
 }) => {
+
   return useQuery({
     queryKey: todoKeys.lists(),
     queryFn: async (): Promise<TodoListSummary[]> => {
       try {
-        const response = await fetch('/api/todo-lists');
+        const fetcher = options?.fetch ?? resolveService<IFetchService>('fetch');
+        const response = await fetcher.fetch('/api/todo-lists');
         if (!response.ok) {
           throw new Error(`Failed to fetch todo lists: ${response.statusText}`);
         }
@@ -51,6 +55,7 @@ export const useTodoList = (
     enabled?: boolean;
     staleTime?: number;
     gcTime?: number;
+    fetch?: IFetchService;
   },
 ) => {
   return useQuery({
@@ -61,7 +66,8 @@ export const useTodoList = (
       }
 
       try {
-        const response = await fetch(`/api/todo-lists/${listId}`);
+        const fetcher = options?.fetch ?? resolveService<IFetchService>('fetch');
+        const response = await fetcher.fetch(`/api/todo-lists/${listId}`);
         if (!response.ok) {
           throw new Error(`Failed to fetch todo list: ${response.statusText}`);
         }
@@ -87,6 +93,7 @@ export const useTodoList = (
 export const useCreateTodoList = (options?: {
   onSuccess?: (data: TodoList) => void;
   onError?: (error: unknown) => void;
+  fetch?: IFetchService;
 }) => {
   const queryClient = useQueryClient();
 
@@ -98,7 +105,8 @@ export const useCreateTodoList = (options?: {
       priority?: 'high' | 'medium' | 'low';
     }): Promise<TodoList> => {
       try {
-        const response = await fetch('/api/todo-lists', {
+        const fetcher = options?.fetch ?? resolveService<IFetchService>('fetch');
+        const response = await fetcher.fetch('/api/todo-lists', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
@@ -136,9 +144,10 @@ export const useCreateTodoList = (options?: {
 export const useUpdateTodoList = (options?: {
   onSuccess?: (data: TodoList) => void;
   onError?: (error: unknown) => void;
+  fetch?: IFetchService;
 }) => {
   const queryClient = useQueryClient();
-
+  const fetch = options?.fetch;
   return useMutation({
     mutationFn: async (data: {
       listId: string;
@@ -148,7 +157,8 @@ export const useUpdateTodoList = (options?: {
       priority?: 'high' | 'medium' | 'low';
     }): Promise<TodoList> => {
       try {
-        const response = await fetch('/api/todo-lists', {
+        const fetcher = fetch ?? resolveService<IFetchService>('fetch');
+        const response = await fetcher.fetch('/api/todo-lists', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
@@ -188,13 +198,15 @@ export const useUpdateTodoList = (options?: {
 export const useDeleteTodoList = (options?: {
   onSuccess?: () => void;
   onError?: (error: unknown) => void;
+  fetch?: IFetchService;
 }) => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (listId: string): Promise<void> => {
       try {
-        const response = await fetch('/api/todo-lists', {
+        const fetcher = options?.fetch ?? resolveService<IFetchService>('fetch');
+        const response = await fetcher.fetch('/api/todo-lists', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ listId }),
@@ -233,6 +245,7 @@ export const useCreateTodoItem = (
   options?: {
     onSuccess?: (data: Todo) => void;
     onError?: (error: unknown) => void;
+    fetch?: IFetchService;
   },
 ) => {
   const queryClient = useQueryClient();

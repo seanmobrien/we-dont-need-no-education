@@ -1,19 +1,26 @@
-import type { NextAuthConfig, Session } from '@compliance-theater/types/next-auth';
-import { extractToken, KnownScopeValues, KnownScopeIndex } from './utilities/extract-token';
+import type { Session } from '@compliance-theater/types/next-auth';
+import { Awaitable } from '@compliance-theater/types/auth-core/types';
+import { asNextRequest } from '@compliance-theater/types/lib/nextjs/guards';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 import { log } from '@compliance-theater/logger/core';
+import { extractToken, KnownScopeValues, KnownScopeIndex } from './utilities/extract-token';
 
-type AuthorizedCallback = NonNullable<
-  NonNullable<NextAuthConfig['callbacks']>['authorized']
->;
+type AuthorizedCallback = (params: {
+  /** The request to be authorized. */
+  request: Request;
+  /** The authenticated user or token, if any. */
+  auth: Session | null
+}) => Awaitable<boolean | Response | undefined>;
+
 type AuthorizedParams = Parameters<AuthorizedCallback>[0];
 
 export const authorized = async ({
   auth,
-  request,
+  request: requestFromProps,
 }: AuthorizedParams & {
   auth: Session | null;
 }) => {
+  const request = asNextRequest(requestFromProps);
   if (request) {
     const { nextUrl } = request;
     const publicFolders = ['/static/', '/.well-known/'];

@@ -1,6 +1,32 @@
 import React from 'react';
 import { render, screen, fireEvent } from '../../../shared/test-utils';
 import { useRouter } from 'next/navigation';
+
+// Explicit factories prevent Jest from loading these modules, which transitively
+// import @compliance-theater/send-api-request → next/server (requires the
+// `Request` global not available in jsdom). lib/api/client.ts is a barrel
+// re-exporting both; mocking the leaves is sufficient.
+jest.mock('@/lib/api/email/client', () => ({
+  getEmail: jest.fn(),
+  getEmailList: jest.fn(),
+  getEmailStats: jest.fn(),
+  getEmailSearchResults: jest.fn(),
+  createEmailRecord: jest.fn(),
+  updateEmailRecord: jest.fn(),
+  writeEmailRecord: jest.fn(),
+  deleteEmailRecord: jest.fn(),
+}));
+jest.mock('@/lib/api/email/properties/client', () => ({
+  getEmailHeaders: jest.fn(),
+  getKeyPoints: jest.fn(),
+  getCallToAction: jest.fn(),
+  getCallToActionResponse: jest.fn(),
+  getComplianceScores: jest.fn(),
+  getSentimentAnalysis: jest.fn(),
+  getViolationDetails: jest.fn(),
+  getNotes: jest.fn(),
+}));
+
 import EmailList from '../../../../components/email-message/list';
 import siteMap from '../../../../lib/site-util/url-builder';
 

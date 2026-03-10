@@ -9,11 +9,16 @@ export const KnownScopeIndex = {
     ToolRead: 0,
     ToolReadWrite: 1,
 } as const;
-
+/**
+ * Simplified request type supporting only the properties needed for token extraction.
+ */
+type RequestHeadersOnly = Request | {
+    headers: Headers | Record<string, string>
+};
 const REQUEST_DECODED_TOKEN: unique symbol = Symbol.for(
     '@/no-education/api/auth/decoded-token',
 );
-type RequestWithToken = Request & {
+type RequestWithToken = RequestHeadersOnly & {
     [REQUEST_DECODED_TOKEN]?: JWT;
 };
 
@@ -24,7 +29,7 @@ export const SessionTokenKey = (): string => {
     );
 };
 
-export const extractToken = async (req: Request): Promise<JWT | null> => {
+export const extractToken = async (req: RequestHeadersOnly): Promise<JWT | null> => {
     const check = (req as RequestWithToken)?.[REQUEST_DECODED_TOKEN];
     if (check) {
         return check;
@@ -33,7 +38,7 @@ export const extractToken = async (req: Request): Promise<JWT | null> => {
     try {
         const shh = env('AUTH_SECRET');
         const ret =
-            (req as RequestWithToken)?.[REQUEST_DECODED_TOKEN] ??
+            check ??
             (await getToken({
                 req: req,
                 secret: shh,

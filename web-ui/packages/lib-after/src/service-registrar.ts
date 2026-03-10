@@ -1,14 +1,20 @@
 import { IServiceRegistrar, type IServiceContainer, asFunction, asClass } from '@compliance-theater/types/dependency-injection';
-import AfterManager from './after-manager';
-import { AppStartupManager } from "./app-startup";
 
 export class ServiceRegistrar implements IServiceRegistrar {
-    constructor() { }
+  constructor() { }
 
-    register(container: IServiceContainer): void {
-        container.register('after', asFunction(AfterManager.getInstance));
-        container.register('start', asClass(AppStartupManager));
+  register(container: IServiceContainer): void {
+    if (process.env.NEXTJS_RUNTIME === 'node') {
+      const AfterManager = require('./after-manager');
+      container.register('after', asFunction(AfterManager.getInstance));
+      const { AppStartupManager } = require("./app-startup");
+      container.register('start', asClass(AppStartupManager));
+    } else {
+      const { NoopAfterManager, NoopAppStartupManager } = require('./noop-implementations');
+      container.register('after', asFunction(NoopAfterManager));
+      container.register('start', asFunction(NoopAppStartupManager));
     }
+  }
 }
 
 export default ServiceRegistrar;

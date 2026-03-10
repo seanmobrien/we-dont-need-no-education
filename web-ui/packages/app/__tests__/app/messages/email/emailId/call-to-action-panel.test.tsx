@@ -1,7 +1,11 @@
 import { render, screen, waitFor } from '../../../../shared/test-utils';
 
-// Mock the API client
-jest.mock('../../../../../lib/api/email/properties/client');
+// Mock the API client — explicit factory prevents Jest from loading the real
+// module, which transitively imports next/server (requires the `Request` global
+// not available in jsdom).
+jest.mock('../../../../../lib/api/email/properties/client', () => ({
+  getCallToActionResponse: jest.fn(),
+}));
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useParams: () => ({ emailId: 'test-email-id' }),

@@ -16,10 +16,14 @@ import {
   QueryClientProvider,
   useQueryClient,
 } from '@tanstack/react-query';
-jest.mock('@compliance-theater/fetch', () => ({
-  fetch: jest.fn(),
-}));
-import { fetch } from '@compliance-theater/fetch';
+jest.mock('@compliance-theater/types/dependency-injection', () => {
+  const actual = jest.requireActual('@compliance-theater/types/dependency-injection');
+  return {
+    ...actual,
+    resolveService: jest.fn(),
+  };
+});
+import { resolveService } from '@compliance-theater/types/dependency-injection';
 
 // Load the real hooks inside isolated modules after unmocking the global mock
 const loadHooks = () => {
@@ -31,9 +35,15 @@ const loadHooks = () => {
 };
 
 describe('use-todo real implementation', () => {
-  let mockFetch: jest.Mock;
+  const originalGlobalFetch = global.fetch;
+  let mockServiceFetch: jest.Mock;
+  let mockGlobalFetch: jest.Mock;
+
   beforeEach(() => {
-    mockFetch = fetch as jest.Mock;
+    mockServiceFetch = jest.fn();
+    mockGlobalFetch = jest.fn();
+    (resolveService as jest.Mock).mockReturnValue({ fetch: mockServiceFetch });
+    global.fetch = mockGlobalFetch as unknown as typeof global.fetch;
   });
   // Create a test query client and wrapper
   const TestWrapper = ({
@@ -56,10 +66,9 @@ describe('use-todo real implementation', () => {
   };
 
   afterEach(() => {
-    // jest.restoreAllMocks();
-    // jest.resetModules();
     // Reset the shared test QueryClient so each test gets a fresh cache
     testQueryClient = undefined;
+    global.fetch = originalGlobalFetch;
   });
 
   it('useTodoLists returns data on success', async () => {
@@ -67,7 +76,7 @@ describe('use-todo real implementation', () => {
     const { useTodoLists } = hooks;
 
     const mockData = [{ id: 'l1', title: 'List 1' }];
-    mockFetch.mockResolvedValue(jsonResponse({ data: mockData }));
+    mockServiceFetch.mockResolvedValue(jsonResponse({ data: mockData }));
 
     const { result } = renderHook(() => useTodoLists(), {
       wrapper: TestWrapper,
@@ -75,7 +84,7 @@ describe('use-todo real implementation', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toEqual(mockData);
-    expect(mockFetch.mock.calls[0][0]).toBe('/api/todo-lists');
+    expect(mockServiceFetch.mock.calls[0][0]).toBe('/api/todo-lists');
   }, 10000);
 
   it('useTodoLists surfaces error on failure', async () => {
@@ -83,7 +92,7 @@ describe('use-todo real implementation', () => {
     const hooks = loadHooks();
     const { useTodoLists } = hooks;
 
-    mockFetch.mockResolvedValueOnce(jsonResponse({ error: 'bad' }, 500));
+    mockServiceFetch.mockResolvedValueOnce(jsonResponse({ error: 'bad' }, 500));
 
     const { result } = renderHook(() => useTodoLists(), {
       wrapper: TestWrapper,
@@ -111,7 +120,7 @@ describe('use-todo real implementation', () => {
     const { useTodoList } = hooks;
 
     const payload = { id: 'list-1', title: 'T1', todos: [] };
-    mockFetch.mockResolvedValueOnce(jsonResponse({ data: payload }));
+    mockServiceFetch.mockResolvedValueOnce(jsonResponse({ data: payload }));
 
     const { result } = renderHook(() => useTodoList('list-1'), {
       wrapper: TestWrapper,
@@ -134,7 +143,7 @@ describe('use-todo real implementation', () => {
 
     // create list
     const created = { id: 'new', title: 'New List' };
-    mockFetch.mockResolvedValue(jsonResponse({ data: created }));
+    mockServiceFetch.mockResolvedValue(jsonResponse({ data: created }));
     const { result: createResult } = renderHook(() => useCreateTodoList(), {
       wrapper: TestWrapper,
     });
@@ -146,7 +155,7 @@ describe('use-todo real implementation', () => {
 
     // update list
     const updated = { id: 'new', title: 'Updated' };
-    mockFetch.mockResolvedValue(jsonResponse({ data: updated }));
+    mockServiceFetch.mockResolvedValue(jsonResponse({ data: updated }));
     const { result: updateResult } = renderHook(() => useUpdateTodoList(), {
       wrapper: TestWrapper,
     });
@@ -160,7 +169,7 @@ describe('use-todo real implementation', () => {
     });
 
     // delete list
-    mockFetch.mockResolvedValue(jsonResponse({ data: {} }));
+    mockServiceFetch.mockResolvedValue(jsonResponse({ data: {} }));
     const { result: deleteResult } = renderHook(() => useDeleteTodoList(), {
       wrapper: TestWrapper,
     });
@@ -171,7 +180,7 @@ describe('use-todo real implementation', () => {
 
     // create item
     const createdItem = { id: 'i1', title: 'Item 1' };
-    mockFetch.mockResolvedValue(jsonResponse({ data: createdItem }));
+    mockGlobalFetch.mockResolvedValue(jsonResponse({ data: createdItem }));
     const { result: createItemResult } = renderHook(
       () => useCreateTodoItem('list-1'),
       {
@@ -188,7 +197,7 @@ describe('use-todo real implementation', () => {
 
     // update item
     const updatedItem = { id: 'i1', title: 'Item 1 updated' };
-    mockFetch.mockResolvedValue(jsonResponse({ data: updatedItem }));
+    mockGlobalFetch.mockResolvedValue(jsonResponse({ data: updatedItem }));
     const { result: updateItemResult } = renderHook(
       () => useUpdateTodoItem('list-1'),
       {
@@ -205,7 +214,7 @@ describe('use-todo real implementation', () => {
     });
 
     // delete item
-    mockFetch.mockResolvedValue(jsonResponse({ data: {} }));
+    mockGlobalFetch.mockResolvedValue(jsonResponse({ data: {} }));
     const { result: deleteItemResult } = renderHook(
       () => useDeleteTodoItem('list-1'),
       {
@@ -256,7 +265,7 @@ describe('use-todo real implementation', () => {
     );
 
     // First, server success -> final state should be completed true
-    mockFetch.mockResolvedValueOnce(
+    mockGlobalFetch.mockResolvedValueOnce(
       jsonResponse({ data: { id: 't1', completed: true } }),
     );
 
@@ -298,7 +307,7 @@ describe('use-todo real implementation', () => {
       },
     );
 
-    mockFetch.mockResolvedValueOnce(jsonResponse({ error: 'fail' }, 500));
+    mockGlobalFetch.mockResolvedValueOnce(jsonResponse({ error: 'fail' }, 500));
     const { result: toggleResultFail } = renderHook(
       () => useToggleTodo(listId),
       {

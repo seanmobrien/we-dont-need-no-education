@@ -6,6 +6,20 @@ import {
   hideConsoleOutput,
 } from '../../shared/test-utils';
 
+// Explicit factory prevents Jest from loading the real module, which transitively
+// imports @compliance-theater/send-api-request → next/server (requires the
+// `Request` global not available in jsdom).
+jest.mock('@/lib/api/email/client', () => ({
+  getEmail: jest.fn(),
+  getEmailList: jest.fn(),
+  getEmailStats: jest.fn(),
+  getEmailSearchResults: jest.fn(),
+  createEmailRecord: jest.fn(),
+  updateEmailRecord: jest.fn(),
+  writeEmailRecord: jest.fn(),
+  deleteEmailRecord: jest.fn(),
+}));
+
 let fetchMock = jest.fn();
 
 jest.mock('@/lib/fetch-service', () => ({

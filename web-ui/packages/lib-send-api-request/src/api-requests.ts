@@ -69,6 +69,7 @@ export const sendApiRequest = <T>({
           typeof input === 'string' ? input : JSON.stringify(input);
       }
       // Send all of this off to the fetch API to do its thing
+      // TODO: Send through fetchmanager or react-query instead of raw fetch to get retries, caching, etc.
       const response = await fetch(String(url), request);
       if (!response.ok) {
         let errorMessage = `Api failure: ${response.statusText}`;
@@ -76,9 +77,8 @@ export const sendApiRequest = <T>({
         const errorBody = await response.text();
         try {
           errorData = JSON.parse(errorBody);
-          errorMessage += ` - ${
-            errorData.message || JSON.stringify(errorData)
-          }`;
+          errorMessage += ` - ${errorData.message || JSON.stringify(errorData)
+            }`;
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
           errorData = errorBody;

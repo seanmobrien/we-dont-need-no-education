@@ -1,7 +1,43 @@
 jest.mock('@compliance-theater/send-api-request');
 jest.mock('../../../lib/site-util/url-builder');
 
-import {
+if (typeof globalThis.Request === 'undefined') {
+  class RequestShim {
+    readonly url: string;
+
+    constructor(input?: string | { url?: string }) {
+      this.url = typeof input === 'string'
+        ? input
+        : input?.url ?? 'http://localhost/';
+    }
+  }
+
+  Object.assign(globalThis, {
+    Request: RequestShim,
+  });
+}
+
+if (typeof globalThis.Response === 'undefined') {
+  class ResponseShim { }
+  Object.assign(globalThis, { Response: ResponseShim });
+}
+
+if (typeof globalThis.Headers === 'undefined') {
+  class HeadersShim {
+    private readonly map = new Map<string, string>();
+
+    set(name: string, value: string): void {
+      this.map.set(name.toLowerCase(), value);
+    }
+
+    get(name: string): string | null {
+      return this.map.get(name.toLowerCase()) ?? null;
+    }
+  }
+  Object.assign(globalThis, { Headers: HeadersShim });
+}
+
+const {
   getEmailList,
   getEmail,
   createEmailRecord,
@@ -9,10 +45,10 @@ import {
   deleteEmailRecord,
   getEmailStats,
   getEmailSearchResults,
-} from '../../../lib/api/client';
-import { apiRequestHelperFactory } from '@compliance-theater/send-api-request';
-import siteMap from '../../../lib/site-util/url-builder';
-import { ContactSummary } from '../../../data-models/api/contact';
+} = require('../../../lib/api/client') as typeof import('../../../lib/api/client');
+const { apiRequestHelperFactory } = require('@compliance-theater/send-api-request') as typeof import('@compliance-theater/send-api-request');
+const siteMap = require('../../../lib/site-util/url-builder').default as typeof import('../../../lib/site-util/url-builder').default;
+import type { ContactSummary } from '../../../data-models/api/contact';
 
 const apiHelper = {
   get: jest.fn(),

@@ -1,16 +1,52 @@
 jest.mock('@compliance-theater/send-api-request');
 jest.mock('../../../../../../lib/site-util/url-builder');
 
-import {
+if (typeof globalThis.Request === 'undefined') {
+  class RequestShim {
+    readonly url: string;
+
+    constructor(input?: string | { url?: string }) {
+      this.url = typeof input === 'string'
+        ? input
+        : input?.url ?? 'http://localhost/';
+    }
+  }
+
+  Object.assign(globalThis, {
+    Request: RequestShim,
+  });
+}
+
+if (typeof globalThis.Response === 'undefined') {
+  class ResponseShim { }
+  Object.assign(globalThis, { Response: ResponseShim });
+}
+
+if (typeof globalThis.Headers === 'undefined') {
+  class HeadersShim {
+    private readonly map = new Map<string, string>();
+
+    set(name: string, value: string): void {
+      this.map.set(name.toLowerCase(), value);
+    }
+
+    get(name: string): string | null {
+      return this.map.get(name.toLowerCase()) ?? null;
+    }
+  }
+  Object.assign(globalThis, { Headers: HeadersShim });
+}
+
+const {
   searchEmails,
   loadEmail,
   queueEmailImport,
-} from '../../../../../../lib/api/email/import/google';
-import {
+} = require('../../../../../../lib/api/email/import/google') as typeof import('../../../../../../lib/api/email/import/google');
+const {
   sendApiRequest,
   apiRequestHelperFactory,
-} from '@compliance-theater/send-api-request';
-import siteMap from '../../../../../../lib/site-util/url-builder';
+} = require('@compliance-theater/send-api-request') as typeof import('@compliance-theater/send-api-request');
+const siteMap = require('../../../../../../lib/site-util/url-builder').default as typeof import('../../../../../../lib/site-util/url-builder').default;
 
 const apiHelper = {
   get: jest

@@ -12,14 +12,18 @@ import type { Awaitable, Profile } from '@compliance-theater/types/auth-core/typ
 import NextAuth, { type NextAuthResult } from '@compliance-theater/types/next-auth'; // Added NextAuthConfig
 import type { Adapter, AdapterSession, AdapterUser } from '@compliance-theater/types/auth-core/adapters';
 import type { CredentialInput, Provider } from '@compliance-theater/types/auth-core/providers';
-import type { authorized as AuthorizedFn } from './lib/authorized';
 import { isRunningOnEdge, env } from '@compliance-theater/env';
 import { logEvent } from '@compliance-theater/logger';
 
 import { setupKeyCloakProvider } from './lib/keycloak-provider';
 import type { JWT } from '@compliance-theater/types/next-auth/jwt';
-import { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
-import { LikeNextResponse } from '@compliance-theater/types/lib/nextjs/types/like-nextresponse';
+
+type AuthorizedFn = (params: {
+  /** The request to be authorized. */
+  request: Request;
+  /** The authenticated user or token, if any. */
+  auth: Session | null;
+}) => Awaitable<boolean | Response | undefined>;
 
 type DynamicImports = {
   drizzleAdapter: {
@@ -127,7 +131,7 @@ type DynamicImports = {
     redirect: {
       redirect: (params: { url: string; baseUrl: string }) => Awaitable<string>;
     };
-    authorized: typeof AuthorizedFn;
+    authorized: AuthorizedFn;
   };
 };
 
@@ -252,16 +256,12 @@ const nextAuthResult: NextAuthResult = NextAuth(async () => {
   } as NextAuthConfig;
 });
 
-export type NextAuthHandlers = {
-  GET: (req: LikeNextRequest) => Promise<LikeNextResponse<unknown>>;
-  POST: (req: LikeNextRequest) => Promise<LikeNextResponse<unknown>>;
-}
-
+export type NextAuthHandlers = NextAuthResult['handlers'];
 export type NextAuthAuth = NextAuthResult['auth'];
 export type NextAuthSignIn = NextAuthResult['signIn'];
 export type NextAuthSignOut = NextAuthResult['signOut'];
 
-export const handlers: NextAuthHandlers = nextAuthResult.handlers as NextAuthHandlers;
+export const handlers: NextAuthHandlers = nextAuthResult.handlers;
 export const auth: NextAuthAuth = nextAuthResult.auth;
 export const signIn: NextAuthSignIn = nextAuthResult.signIn;
 export const signOut: NextAuthSignOut = nextAuthResult.signOut;

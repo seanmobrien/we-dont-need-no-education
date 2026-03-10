@@ -11,6 +11,40 @@
       "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./dependency-injection": {
+      "types": "./dist/dependency-injection/index.browser.d.ts",
+      "workspace-source": "./src/dependency-injection/index.ts",
+      "browser": "./dist/dependency-injection/index.browser.js",
+      "node": "./dist/dependency-injection/index.node.js",
+      "default": "./dist/dependency-injection/index.browser.js"
+    },
+    "./dependency-injection/browser": {
+      "types": "./dist/dependency-injection/index.browser.d.ts",
+      "workspace-source": "./src/dependency-injection/index.browser.ts",
+      "default": "./dist/dependency-injection/index.browser.js"
+    },
+    "./dependency-injection/node": {
+      "types": "./dist/dependency-injection/index.node.d.ts",
+      "workspace-source": "./src/dependency-injection/index.node.ts",
+      "default": "./dist/dependency-injection/index.node.js"
+    },
+    "./dependency-injection/container": {
+      "types": "./dist/dependency-injection/container.browser.d.ts",
+      "workspace-source": "./src/dependency-injection/container.ts",
+      "browser": "./dist/dependency-injection/container.browser.js",
+      "node": "./dist/dependency-injection/container.node.js",
+      "default": "./dist/dependency-injection/container.browser.js"
+    },
+    "./dependency-injection/container/browser": {
+      "types": "./dist/dependency-injection/container.browser.d.ts",
+      "workspace-source": "./src/dependency-injection/container.browser.ts",
+      "default": "./dist/dependency-injection/container.browser.js"
+    },
+    "./dependency-injection/container/node": {
+      "types": "./dist/dependency-injection/container.node.d.ts",
+      "workspace-source": "./src/dependency-injection/container.node.ts",
+      "default": "./dist/dependency-injection/container.node.js"
+    },
     "./*": {
       "types": "./dist/*.d.ts",
       "workspace-source": "./src/*.ts",

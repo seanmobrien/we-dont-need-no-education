@@ -28,16 +28,19 @@
 			"**/.turbo/**": true,
 			"**/coverage/**": true,
 			"**/dist/**": true,
-			"**/node_modules/**": true,
+			"**/node_modules/**/*": true,
 			"**/packages/__mocks__/**": true,
 			"**/packages/__tests__/**": true,
 			"**/Thumbs.db": true,
-			"**/tsconfig.tsbuildinfo": true
+			"**/tsconfig.tsbuildinfo": true,
+			"node_modules": true
 		},
 		"files.watcherExclude": {
-			"/.next/": true,
-			"/dist/": true,
-			"/node_modules/": true
+			"**/.next/**": true,
+			"**/*.workspace/**": true,
+			"**/dist/**": true,
+			"**/node_modules/**": true,
+			"**/out/**": true
 		}
 	}
 }

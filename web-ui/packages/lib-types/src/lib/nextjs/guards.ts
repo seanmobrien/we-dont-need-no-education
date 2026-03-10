@@ -1,5 +1,8 @@
+/* global Request */
+
 import type { NextApiRequest, NextApiResponse } from 'next';
-import type { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
+import type { NextResponse } from 'next/server';
 import type { LikeNextRequest } from './types/like-nextrequest';
 import type { LikeNextResponse } from './types/like-nextresponse';
 
@@ -26,6 +29,17 @@ export const isNextRequest = (req: unknown): req is NextRequest =>
   typeof req.headers === 'object' &&
   'nextUrl' in req &&
   typeof req.nextUrl === 'object';
+
+export const asNextRequest = (req: Request | null | undefined):
+  NextRequest | undefined => {
+  if (!req) {
+    return undefined;
+  }
+  if (isNextRequest(req)) {
+    return req;
+  }
+  return new NextRequest(req);
+};
 
 export const isLikeNextRequest = (req: unknown): req is LikeNextRequest =>
   isNextRequest(req) || isNextApiRequest(req);
