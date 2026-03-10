@@ -36,49 +36,5 @@
     "submodules/**/*.*",
     ".next",
     "dist"
-  ],
-  "references": [
-    {
-      "path": "../lib-logger"
-    },
-    {
-      "path": "../lib-env"
-    },
-    {
-      "path": "../lib-typescript"
-    },
-    {
-      "path": "../lib-redis"
-    },
-    {
-      "path": "../lib-after"
-    },
-    {
-      "path": "../lib-database"
-    },
-    {
-      "path": "../lib-auth"
-    },
-    {
-      "path": "../lib-nextjs"
-    },
-    {
-      "path": "../lib-react"
-    },
-    {
-      "path": "../lib-send-api-request"
-    },
-    {
-      "path": "../lib-themes"
-    },
-    {
-      "path": "../lib-types"
-    },
-    {
-      "path": "../lib-feature-flags"
-    },
-    {
-      "path": "../../submodules/json-viewer/packages"
-    }
   ]
 }
