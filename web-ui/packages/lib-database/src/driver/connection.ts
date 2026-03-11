@@ -1,5 +1,3 @@
-/* global setTimeout */
-
 import { env } from '@compliance-theater/env';
 import { LoggedError } from '@compliance-theater/logger';
 import type { PostgresSql } from './postgres';

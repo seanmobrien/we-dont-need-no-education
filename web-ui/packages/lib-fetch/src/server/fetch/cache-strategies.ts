@@ -1,5 +1,3 @@
-/* global Response, Buffer */
-
 import { makeResponse, makeStreamResponse, nodeStreamToReadableStream } from '../response';
 import type { CacheStrategyDeps, CachedValue } from './fetch-types';
 

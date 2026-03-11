@@ -1,5 +1,3 @@
-/* global Headers */
-
 import type { IncomingMessage, OutgoingMessage, ServerResponse } from 'http';
 import { isNextApiRequest, isNextApiResponse, isNextRequest, isNextResponse } from './guards';
 import type { LikeNextRequest } from './types/like-nextrequest';

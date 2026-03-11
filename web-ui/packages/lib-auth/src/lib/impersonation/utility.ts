@@ -1,5 +1,3 @@
-/* global URL, process */
-
 import { env } from '@compliance-theater/env';
 import type { AdminTokenConfig } from './impersonation.types';
 import { log } from '@compliance-theater/logger';

@@ -1,5 +1,3 @@
-/* global process */
-
 import { ErrorReporterConfig, ErrorReportResult } from '../types';
 import { ReportActionStrategy } from './report-action-strategy';
 import { ConsoleReportingStrategy } from './console-strategy';

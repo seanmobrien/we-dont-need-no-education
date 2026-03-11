@@ -1,4 +1,4 @@
-/* global Headers, URLSearchParams, URL, Buffer, AbortController, BodyInit, RequestCache */
+/* global AbortController, BodyInit, RequestCache */
 
 import got, {
   Response as GotResponse,

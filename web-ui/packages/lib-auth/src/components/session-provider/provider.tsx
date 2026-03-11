@@ -1,5 +1,3 @@
-/* global process, window, TextEncoder */
-
 "use client";
 
 import React, {

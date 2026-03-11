@@ -1,4 +1,4 @@
-/* global CryptoKey, crypto, btoa */
+/* global CryptoKey, crypto */
 
 import { log, SingletonProvider } from '@compliance-theater/logger';
 

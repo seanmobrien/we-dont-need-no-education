@@ -1,5 +1,3 @@
-/* global URL, process, require, URLSearchParams */
-
 /**
  * @fileoverview SystemTokenStore - Singleton for managing shared admin tokens across impersonation instances
  *

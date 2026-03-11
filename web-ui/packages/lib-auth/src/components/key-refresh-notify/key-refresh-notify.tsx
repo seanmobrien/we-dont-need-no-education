@@ -1,5 +1,3 @@
-/* global window */
-
 "use client";
 
 import { useEffect, useState } from "react";

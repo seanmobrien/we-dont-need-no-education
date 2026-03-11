@@ -1,5 +1,3 @@
-/* global process, URLSearchParams, console */
-
 import type { JWT } from '@compliance-theater/types/next-auth/jwt';
 import { env } from '@compliance-theater/env';
 import { resolveFetchService } from './utilities/fetch-service';

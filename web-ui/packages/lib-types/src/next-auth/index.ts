@@ -1,5 +1,3 @@
-/* global Request, Response */
-
 import type { NextAuthResult as BaseNextAuthResult } from 'next-auth';
 import * as next_auth from 'next-auth';
 

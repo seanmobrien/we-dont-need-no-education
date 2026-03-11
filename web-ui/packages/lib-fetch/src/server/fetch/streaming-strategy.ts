@@ -1,5 +1,3 @@
-/* global Response */
-
 import { makeStreamResponse, nodeStreamToReadableStream } from '../response';
 import type { Readable } from 'stream';
 

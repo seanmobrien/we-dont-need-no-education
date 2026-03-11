@@ -1,5 +1,3 @@
-/* global Response, Buffer */
-
 /**
  * @fileoverview Streaming response detection and handling
  *

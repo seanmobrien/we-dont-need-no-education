@@ -1,5 +1,3 @@
-/* global Request */
-
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { NextRequest } from 'next/server';
 import type { NextResponse } from 'next/server';

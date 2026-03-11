@@ -1,5 +1,3 @@
-/* global Response, URL */
-
 import { NextResponse } from 'next/server';
 import { SessionTokenKey } from '../utilities/session-token-key';
 import { env } from '@compliance-theater/env';

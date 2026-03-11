@@ -1,5 +1,3 @@
-/* global Request, Response, process, URL */
-
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@compliance-theater/env';
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';

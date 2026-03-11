@@ -1,5 +1,3 @@
-/* global process, URL */
-
 import {
     decodeJwt,
     jwtVerify,

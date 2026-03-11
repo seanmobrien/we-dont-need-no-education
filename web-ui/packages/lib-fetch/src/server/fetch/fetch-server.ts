@@ -1,5 +1,3 @@
-/* global Headers, URLSearchParams, URL, Buffer, Response */
-
 import got, {
     type OptionsInit,
     type OptionsOfBufferResponseBody,

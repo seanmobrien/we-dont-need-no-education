@@ -1,5 +1,3 @@
-/* global process, console */
-
 import { getStackTrace } from './get-stack-trace';
 
 // When we're running on node we can process.emitWarning

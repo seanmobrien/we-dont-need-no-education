@@ -1,4 +1,4 @@
-/* global window, navigator, alert, setTimeout, caches, console */
+/* global alert */
 
 /**
  * Error recovery strategies for different types of errors

@@ -1,6 +1,4 @@
 
-/* global NodeJS, setTimeout, clearTimeout */
-
 import { CircuitBreakerConfig } from './types';
 
 export enum CircuitBreakerState {

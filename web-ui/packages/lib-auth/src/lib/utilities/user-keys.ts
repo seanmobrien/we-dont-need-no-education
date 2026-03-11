@@ -1,4 +1,4 @@
-/* global IDBDatabase, indexedDB, IDBOpenDBRequest, CryptoKey, window, crypto, btoa, TextEncoder */
+/* global IDBDatabase, indexedDB, IDBOpenDBRequest, CryptoKey, crypto */
 
 import { LoggedError } from '@compliance-theater/logger';
 

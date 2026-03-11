@@ -1,5 +1,3 @@
-/* global Buffer */
-
 /**
  * @fileoverview Strongly-typed interface for message structure preservation
  *

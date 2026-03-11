@@ -1,5 +1,3 @@
-/* global URL, Request */
-
 import type { NextApiRequest } from 'next';
 import type { NextRequest } from 'next/server';
 

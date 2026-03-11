@@ -1,5 +1,3 @@
-/* global setTimeout */
-
 /**
  * FetchConfig - Simplified with AutoRefreshFeatureFlag Pattern
  *

@@ -1,5 +1,3 @@
-/* global URLSearchParams */
-
 /**
  * @fileoverview Authorization Service for Keycloak
  *

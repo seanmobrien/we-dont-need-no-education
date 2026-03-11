@@ -1,5 +1,3 @@
-/* global NodeJS, setTimeout, clearTimeout */
-
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';

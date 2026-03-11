@@ -1,5 +1,3 @@
-/* global setTimeout */
-
 import { log } from './core';
 import { safeSerialize } from './safe-serialize';
 import { TimeoutError } from './timeout-error';

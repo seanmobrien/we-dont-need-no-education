@@ -1,5 +1,3 @@
-/* global window */
-
 import { ErrorReport, ErrorReportResult, ErrorSeverity } from '../types';
 import { ReportActionStrategy } from './report-action-strategy';
 

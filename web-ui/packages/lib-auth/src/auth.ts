@@ -1,5 +1,3 @@
-/* global process, window */
-
 import type {
   Account,
   User,

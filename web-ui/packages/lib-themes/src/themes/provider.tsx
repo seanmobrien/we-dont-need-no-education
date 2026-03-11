@@ -1,5 +1,3 @@
-/* global localStorage, document */
-
 "use client";
 import React, {
   createContext,
@@ -47,17 +45,18 @@ export const ThemeProvider = ({
 
   // Update CSS data-theme attribute when theme changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      document.documentElement.setAttribute("data-theme", currentTheme);
-      document.documentElement.setAttribute(
-        "data-toolpad-color-scheme",
-        currentTheme,
-      );
-      document.documentElement.setAttribute(
-        "data-mui-color-scheme",
-        currentTheme,
-      );
+    if (typeof window === "undefined") {
+      return;
     }
+
+    const documentElement = window.document?.documentElement;
+    if (!documentElement) {
+      return;
+    }
+
+    documentElement.setAttribute("data-theme", currentTheme);
+    documentElement.setAttribute("data-toolpad-color-scheme", currentTheme);
+    documentElement.setAttribute("data-mui-color-scheme", currentTheme);
   }, [currentTheme]);
 
   const setTheme = useCallback(

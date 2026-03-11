@@ -1,5 +1,3 @@
-/* global URL */
-
 import { OAuth2Client } from 'google-auth-library';
 import { ICredential, CredentialOptions } from './_types';
 import { env } from '@compliance-theater/env';

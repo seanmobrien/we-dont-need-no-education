@@ -1,4 +1,4 @@
-/* global Headers, RequestInit, fetch */
+/* global RequestInit, fetch */
 
 import { log } from '@compliance-theater/logger';
 import {

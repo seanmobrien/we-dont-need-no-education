@@ -1,5 +1,3 @@
-/* global setTimeout, clearTimeout */
-
 import { log, LoggedError, singletonProviderFactory } from '@compliance-theater/logger';
 import type { IAfterManager, TAfterHandler } from '@compliance-theater/types/after';
 

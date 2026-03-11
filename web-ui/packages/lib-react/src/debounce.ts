@@ -1,5 +1,3 @@
-/* global NodeJS, clearTimeout, setTimeout */
-
 import { log, LoggedError } from '@compliance-theater/logger';
 import { isError } from './utility-methods';
 

@@ -1,5 +1,3 @@
-/* global URL, process, require */
-
 /**
  * @fileoverview Impersonation via Keycloak Admin REST API + Authorization Code flow using third-party libraries
  *

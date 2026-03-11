@@ -1,5 +1,3 @@
-/* global process, URL */
-
 /**
  * @fileoverview Server-side environment variable configuration and validation
  *

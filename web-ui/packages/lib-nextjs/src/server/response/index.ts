@@ -1,4 +1,4 @@
-/* global TextEncoder, Response, Buffer, ReadableStream, Headers, TextDecoder, Blob, NodeJS, process, ResponseInit, require */
+/* global ReadableStream, Blob, ResponseInit */
 
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
 import { isAbortError } from '../../utilities/is-abort-error';

@@ -1,4 +1,4 @@
-/* global RequestInfo, URL, RequestInit, Response */
+/* global RequestInit */
 
 import type { IFetchService } from '@compliance-theater/types/lib/fetch';
 

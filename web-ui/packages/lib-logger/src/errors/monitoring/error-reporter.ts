@@ -1,5 +1,3 @@
-/* global process, ErrorEvent, PromiseRejectionEvent, console, window, navigator, btoa, localStorage */
-
 import { log } from '../../core';
 import { safeSerialize } from '../../safe-serialize';
 import { LoggedError } from '../logged-error/logged-error-class';

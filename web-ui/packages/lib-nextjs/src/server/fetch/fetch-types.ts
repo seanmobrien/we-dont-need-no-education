@@ -1,4 +1,4 @@
-/* global Buffer, Response, URL, Request, BodyInit, RequestCache, RequestCredentials, Headers, RequestMode, RequestPriority, RequestRedirect, ReferrerPolicy, AbortSignal */
+/* global BodyInit, RequestCache, RequestCredentials, RequestMode, RequestPriority, RequestRedirect, ReferrerPolicy, AbortSignal */
 
 /**
  * @fileoverview Shared type definitions for fetch strategy pattern implementation

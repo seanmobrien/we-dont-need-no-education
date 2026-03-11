@@ -1,4 +1,4 @@
-/* global Headers, RequestInit */
+/* global RequestInit */
 
 import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 
