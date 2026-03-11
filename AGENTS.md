@@ -1,10 +1,17 @@
 # Agent Instructions
 
-Use the canonical LLM policy first:
+This is the canonical policy entry point for this repository.
+
+## Resolution Model
+- Prefer nearest-ancestor `AGENTS.md` from the current working directory.
+- Use this root file as the baseline policy.
+- Layer scope-specific guidance from child folders when present.
+- Stop traversal at the current Git repository root.
+
+## Canonical Policy
 - `.github/instructions/llm-tooling-policy.md`
 
-Then load scope-specific guidance as needed:
-- Repo router: `.github/instructions/copilot-instructions.md`
-- Web UI: `web-ui/.github/instructions/copilot-instructions.md`
-- TypeScript/React: `web-ui/.github/instructions/typescript-react.instructions.md`
-- Java: `.github/instructions/java.md`
+## Scope Guidance
+- Repository router: `.github/instructions/copilot-instructions.md`
+- Web UI shim: `web-ui/AGENTS.md`
+- Java/backend: `.github/instructions/java.md`

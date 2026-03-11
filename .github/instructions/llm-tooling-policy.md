@@ -29,7 +29,7 @@ This is the canonical cross-model policy for code assistants in this repository.
 
 ## Where To Load Deeper Guidance
 - Repo-level routing: `.github/instructions/copilot-instructions.md`
-- Web UI specifics: `web-ui/.github/instructions/copilot-instructions.md`
+- Web UI entry point: `web-ui/AGENTS.md`
 - TypeScript/React standards: `web-ui/.github/instructions/typescript-react.instructions.md`
 - Java/backend standards: `.github/instructions/java.md`
 

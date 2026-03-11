@@ -5,5 +5,5 @@ Canonical policy:
 
 Repository routing and domain docs:
 - `.github/instructions/copilot-instructions.md`
-- `web-ui/.github/instructions/copilot-instructions.md`
+- `web-ui/AGENTS.md`
 - `.github/instructions/java.md`

@@ -4,7 +4,7 @@ Load the canonical policy first:
 - `./llm-tooling-policy.md`
 
 Then load folder-specific guidance:
-- Web UI: `./web-ui/copilot-instructions.md`
+- Web UI: `../../web-ui/AGENTS.md`
 - Java/backend: `./java.md`
 
 Repository docs:
