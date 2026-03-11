@@ -25,22 +25,5 @@
     "**/__tests__/**",
     "**/__mocks__/**",
     "dist"
-  ],
-  "references": [
-    {
-      "path": "../lib-after"
-    },
-    {
-      "path": "../lib-env"
-    },
-    {
-      "path": "../lib-logger"
-    },
-    {
-      "path": "../lib-typescript"
-    },
-    {
-      "path": "../lib-types"
-    }
   ]
 }

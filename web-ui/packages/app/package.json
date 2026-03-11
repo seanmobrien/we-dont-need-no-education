@@ -8,7 +8,7 @@
     "dev": "next dev",
     "build": "next typegen && cross-env NODE_OPTIONS='--max-old-space-size=4096' tsc -p tsconfig.json --noEmit",
     "build:typescript": "echo 'Building Web Application...' && next typegen && cross-env NODE_OPTIONS='--max-old-space-size=4096' tsc -p tsconfig.json --noEmit && printf '\u001b[1;32mBuild complete: Web Application.\u001b[0m\n' || (printf '\u001b[31mBuild failed: Web Application.\u001b[0m\n' >&2; exit 1)",
-    "build:publish": "cross-env NODE_OPTIONS='--max-old-space-size=4096' next build",
+    "build:publish": "cross-env NODE_OPTIONS='--max-old-space-size=4096' WORKSPACE_SOURCE_IMPORTS=1 next build",
     "build:debug": "next typegen && cross-env NODE_OPTIONS='--max-old-space-size=4096' next build --profile --debug",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo",
     "debug": "cross-env NODE_OPTIONS='--inspect' next dev",

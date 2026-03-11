@@ -70,6 +70,7 @@
     "jest-environment-jsdom": "^30.0.5",
     "jest-mock-extended": "^4.0.0-beta1",
     "jsdom": "^26.1.0",
+    "next": "15.5.12",
     "postcss": "^8.5.3",
     "rimraf": "^6.1.2",
     "turbo": "^2.8.3",
@@ -110,5 +111,8 @@
     "react-native": "^0.84.0",
     "zod": "3.25.76",
     "zodex": "^3.0.0"
+  },
+  "resolutions": {
+    "next": "15.5.12"
   }
 }

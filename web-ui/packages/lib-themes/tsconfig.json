@@ -30,13 +30,5 @@
     "**/__tests__/**",
     "**/__mocks__/**",
     "dist"
-  ],
-  "references": [
-    {
-      "path": "../lib-logger"
-    },
-    {
-      "path": "../lib-types"
-    }
   ]
 }

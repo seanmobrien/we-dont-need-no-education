@@ -38,8 +38,15 @@
     "@compliance-theater/types": "workspace:*",
     "@compliance-theater/typescript": "workspace:*",
     "@opentelemetry/api": "1.9.0",
-    "@opentelemetry/api-logs": "0.57.2",
+    "@opentelemetry/api-logs": "0.57.2"
+  },
+  "peerDependencies": {
     "next": "^15.5.12"
+  },
+  "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@swc/core": "^1.13.5",
@@ -50,7 +57,6 @@
     "@types/react-dom": "19.2.3",
     "babel-plugin-react-compiler": "^1.0.0",
     "jest": "^30.0.5",
-    "next": "^15.5.12",
     "react-native": "^0.84.0",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3"

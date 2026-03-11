@@ -22,7 +22,7 @@ This platform combines a modern web interface with sophisticated AI-powered back
 
 ### Monorepo Structure
 
-This project uses a traditional monorepo structure with [Turborepo](https://turbo.build/) for efficient build orchestration. The Node.js frontend lives under `web-ui/` as a self-contained monorepo, while the Java backend is in `chat/`, maintaining clear separation between the two solutions. See [MONOREPO_GUIDE.md](./MONOREPO_GUIDE.md) for detailed migration information.
+This project uses a traditional monorepo structure with [Turborepo](https://turbo.build/) for efficient build orchestration. The Node.js frontend lives under `web-ui/` as a self-contained monorepo, while the Java backend is in `chat/`, maintaining clear separation between the two solutions. See [MONOREPO_GUIDE.md](/MONOREPO_GUIDE.md) for detailed migration information.
 
 ```
 ├── web-ui/              # Node.js monorepo (self-contained)

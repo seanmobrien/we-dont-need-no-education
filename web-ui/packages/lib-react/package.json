@@ -8,10 +8,12 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*",
       "default": "./dist/*.js"
     }
   },
@@ -37,14 +39,17 @@
     "@compliance-theater/types": "workspace:*",
     "@compliance-theater/typescript": "workspace:*",
     "@opentelemetry/api": "1.9.0",
-    "@opentelemetry/api-logs": "0.57.2",
-    "next": "^15.5.12"
+    "@opentelemetry/api-logs": "0.57.2"
   },
   "peerDependencies": {
+    "next": "^15.5.12",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    },
     "react": {
       "optional": true
     },
@@ -61,7 +66,6 @@
     "@types/react-dom": "19.2.3",
     "babel-plugin-react-compiler": "^1.0.0",
     "jest": "^30.0.5",
-    "next": "^15.5.12",
     "react-native": "^0.84.0",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3"

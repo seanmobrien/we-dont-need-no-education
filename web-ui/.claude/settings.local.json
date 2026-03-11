@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(yarn jest __tests__/nextjs/as-next-request.test.ts)",
+      "Bash(node ../../.yarn/releases/yarn-4.12.0.cjs test .*",
+      "Bash(node ../../.yarn/releases/yarn-4.12.0.cjs test __tests__/components/email-message/email-viewer.test.tsx --no-coverage)",
+      "Bash(node ../../.yarn/releases/yarn-4.12.0.cjs test __tests__/components/email-message/list/email-list.test.tsx --no-coverage)",
+      "Bash(node ../../.yarn/releases/yarn-4.12.0.cjs test \"__tests__/lib/components/mui/data-grid/selectForGrid.test.ts\" --no-coverage)"
+    ]
+  }
+}

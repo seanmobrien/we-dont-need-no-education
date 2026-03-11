@@ -24,6 +24,5 @@
     "**/__tests__/**",
     "**/__mocks__/**",
     "dist"
-  ],
-  "references": []
+  ]
 }

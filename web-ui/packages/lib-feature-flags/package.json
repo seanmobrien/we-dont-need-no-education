@@ -8,10 +8,12 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
+      "workspace-source": "./src/*",
       "default": "./dist/*.js"
     }
   },
@@ -59,8 +61,7 @@
     "flagsmith": "^9.3.2",
     "flagsmith-nodejs": "^6.2.0",
     "lru-cache": "^11.0.2",
-    "mitt": "^3.0.1",
-    "next": "^15.5.12"
+    "mitt": "^3.0.1"
   },
   "peerDependencies": {
     "react": "19.2.4",
