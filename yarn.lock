@@ -1223,7 +1223,6 @@ __metadata:
     react-native: "npm:^0.84.0"
     react-resizable: "npm:^3.0.5"
     rimraf: "npm:^6.1.2"
-    semanticencoding: "workspace:*"
     ts-node: "npm:^10.9.1"
     ts-pattern: "npm:^5.7.1"
     typescript: "npm:^5.9.3"
@@ -4874,7 +4873,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@semanticencoding/monorepo@workspace:*, @semanticencoding/monorepo@workspace:web-ui/submodules/sce":
+"@semanticencoding/monorepo@workspace:web-ui/submodules/sce":
   version: 0.0.0-use.local
   resolution: "@semanticencoding/monorepo@workspace:web-ui/submodules/sce"
   dependencies:
@@ -7531,7 +7530,6 @@ __metadata:
     "@playwright/test": "npm:^1.55.0"
     "@redis/client": "npm:>=5.5.6"
     "@semanticencoding/core": "workspace:*"
-    "@semanticencoding/monorepo": "workspace:*"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
     "@tanstack/react-query": "npm:5.90.21"
@@ -7570,7 +7568,6 @@ __metadata:
     react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     rimraf: "npm:^6.1.2"
-    semanticencoding: "workspace:*"
     turbo: "npm:^2.8.3"
     typescript: "npm:^5.9.3"
     undici: "npm:^7.16.0"
@@ -15156,7 +15153,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semanticencoding@workspace:*, semanticencoding@workspace:web-ui/submodules/sce/packages/semanticencoding/ts":
+"semanticencoding@workspace:web-ui/submodules/sce/packages/semanticencoding/ts":
   version: 0.0.0-use.local
   resolution: "semanticencoding@workspace:web-ui/submodules/sce/packages/semanticencoding/ts"
   dependencies:
