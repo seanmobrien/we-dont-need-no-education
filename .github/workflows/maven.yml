@@ -96,6 +96,8 @@ jobs:
         working-directory: ./
         run: |
           set -euo pipefail
+          node web-ui/submodules/sce/.yarn/releases/yarn-4.12.0.cjs install --immutable
+          node web-ui/.yarn/releases/yarn-4.12.0.cjs install --immutable
           node .yarn/releases/yarn-4.12.0.cjs install --immutable
         shell: bash
 
