@@ -69,9 +69,7 @@ jobs:
 
       - name: Run yarn install
         working-directory: ./web-ui
-        run: |
-          set -euo pipefail
-          node .yarn/releases/yarn-4.12.0.cjs install --immutable
+        run: node .yarn/releases/yarn-4.12.0.cjs install --immutable
         shell: bash
 
       # NOTE: Turbo lint tool depends on typescript build, so this will do both lint and typescript validation.
