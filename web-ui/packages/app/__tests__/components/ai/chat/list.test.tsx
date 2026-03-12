@@ -1,6 +1,11 @@
-import { render, screen, waitFor } from '@/__tests__/test-utils';
-import ChatList from '@/components/ai/chat/list';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+import { render, screen, waitFor } from '../../../shared/test-utils';
+import ChatList from '../../../../components/ai/chat/list';
+
+const fetchMock = jest.fn();
+
+jest.mock('../../../../lib/fetch-service', () => ({
+  resolveFetchService: jest.fn(() => fetchMock),
+}));
 
 // Mock the router
 const mockPush = jest.fn();
@@ -16,21 +21,29 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock the ServerBoundDataGrid component to avoid validation issues
-jest.mock('@/components/mui/data-grid/server-bound-data-grid', () => ({
-  ServerBoundDataGrid: ({ url, columns, onRowDoubleClick, ...props }: any) => (
-    <div data-testid="server-bound-data-grid" data-url={url} role="grid">
-      <div>Mock Data Grid</div>
-      {columns.map((col: any, index: number) => (
-        <div key={index} data-testid={`column-${col.field}`}>
-          {col.headerName}
-        </div>
-      ))}
-    </div>
-  ),
-}));
+jest.mock(
+  '../../../../components/mui/data-grid/server-bound-data-grid',
+  () => ({
+    ServerBoundDataGrid: ({
+      url,
+      columns,
+      onRowDoubleClick,
+      ...props
+    }: any) => (
+      <div data-testid="server-bound-data-grid" data-url={url} role="grid">
+        <div>Mock Data Grid</div>
+        {columns.map((col: any, index: number) => (
+          <div key={index} data-testid={`column-${col.field}`}>
+            {col.headerName}
+          </div>
+        ))}
+      </div>
+    ),
+  }),
+);
 
 // Mock the siteMap
-jest.mock('@/lib/site-util/url-builder', () => ({
+jest.mock('../../../../lib/site-util/url-builder', () => ({
   __esModule: true,
   default: {
     api: {
@@ -49,7 +62,7 @@ describe('ChatList', () => {
 
   beforeEach(() => {
     // No need to set global.fetch as it's already mocked in jest.setup.ts
-    (fetch as jest.Mock).mockClear();
+    fetchMock.mockClear();
   });
 
   it('should render initially without errors', () => {

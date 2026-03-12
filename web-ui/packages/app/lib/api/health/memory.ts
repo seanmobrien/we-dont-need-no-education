@@ -4,7 +4,7 @@ import type {
   HealthStatus,
   MemoryHealthCheckResponse,
 } from '@/lib/ai/mem0/types/health-check';
-import { globalRequiredSingletonAsync } from '@compliance-theater/typescript/singleton-provider';
+import { globalRequiredSingletonAsync } from '@compliance-theater/logger/singleton-provider';
 import { wellKnownFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
 import type { AutoRefreshFeatureFlag } from '@compliance-theater/feature-flags/types';
 import type { KnownFeatureType } from '@compliance-theater/feature-flags/known-feature';
@@ -25,11 +25,11 @@ export class MemoryHealthCache extends InMemoryCache<MemoryHealthCheckResponse> 
   constructor(config?: {
     ttlMs?: number | AutoRefreshFeatureFlag<'health_memory_cache_ttl'>;
     errorTtlMs?:
-      | number
-      | AutoRefreshFeatureFlag<'health_memory_cache_error_ttl'>;
+    | number
+    | AutoRefreshFeatureFlag<'health_memory_cache_error_ttl'>;
     warningTtlMs?:
-      | number
-      | AutoRefreshFeatureFlag<'health_memory_cache_warning_ttl'>;
+    | number
+    | AutoRefreshFeatureFlag<'health_memory_cache_warning_ttl'>;
   }) {
     // Handle both number and AutoRefreshFeatureFlag for each TTL
     const getTtlValue = (

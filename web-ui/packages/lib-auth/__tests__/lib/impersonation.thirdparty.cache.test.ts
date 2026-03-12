@@ -8,8 +8,9 @@
  * - Verifies refresh_token grant path avoids headless login
  * - Verifies expired cached token falls back to login and persists rotated token
  */
-import { createMockTracer } from '@/__tests__/shared/setup/jest.mock-tracing';
-import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
+import { createMockTracer } from '../shared/setup/jest.mock-tracing';
+//'@/__tests__/shared/setup/jest.mock-tracing';
+import { withJestTestExtensions } from '../shared/jest.test-extensions';
 // Helpers to craft minimal JWT strings with exp claim
 const b64url = (obj: unknown) =>
   Buffer.from(JSON.stringify(obj), 'utf8')
@@ -72,7 +73,7 @@ const mockEncrypt = jest.fn(async (s: string) => `enc:${s}`);
 const mockDecrypt = jest.fn(async (s: string) =>
   s.startsWith('enc:') ? s.slice(4) : s,
 );
-jest.mock('@/lib/site-util/auth/crypto-service', () => ({
+jest.mock('../../src/lib/utilities/crypto-service', () => ({  
   CryptoService: jest.fn().mockImplementation(() => ({
     encrypt: mockEncrypt,
     decrypt: mockDecrypt,
@@ -99,7 +100,7 @@ const MockKcAdminCtor = jest.fn().mockImplementation(() => {
   };
   return lastKcAdminInstance;
 });
-jest.mock('@/lib/auth/keycloak-factories', () => ({
+jest.mock('@compliance-theater/auth/lib/keycloak-factories', () => ({
   keycloakAdminClientFactory: jest.fn().mockImplementation(async () => {
     if (!lastKcAdminInstance) {
       lastKcAdminInstance = MockKcAdminCtor();
@@ -173,7 +174,7 @@ describe('ImpersonationThirdParty - offline token cache lifecycle', () => {
 
     const {
       ImpersonationThirdParty,
-    } = require('@/lib/auth/impersonation/impersonation.thirdparty');
+    } = require('@compliance-theater/auth/lib/impersonation/impersonation.thirdparty');
     const svc = await ImpersonationThirdParty.fromRequest({
       session: {
         id: 1,

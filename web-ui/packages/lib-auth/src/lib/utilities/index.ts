@@ -7,4 +7,17 @@ export * from './_guards';
 export * from './_types';
 export * from './crypto-service';
 export * from './keycloak-token-exchange';
-export * from '../utilities';
+
+export type {
+  KnownScope,
+} from './extract-token';
+
+export {
+  KnownScopeIndex,
+  KnownScopeValues,
+  extractToken,
+  SessionTokenKey
+} from './extract-token';
+export {
+  decodeToken
+} from './decode-token';

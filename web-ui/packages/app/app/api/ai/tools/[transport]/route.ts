@@ -7,48 +7,7 @@ import { KnownScopeIndex, KnownScopeValues } from '@compliance-theater/auth/lib/
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
 import { ApiRequestError } from '@compliance-theater/send-api-request';
 import type { NextRequest } from 'next/server';
-// tool imports
-import {
-  searchCaseFile,
-  searchCaseFileConfig,
-} from '@/lib/ai/tools/searchCaseFile';
-import {
-  searchPolicyStore,
-  searchPolicyStoreConfig,
-} from '@/lib/ai/tools/searchPolicyStore';
-import {
-  amendCaseRecord,
-  amendCaseRecordConfig,
-} from '@/lib/ai/tools/amend-case-record';
-import {
-  getMultipleCaseFileDocuments,
-  getMultipleCaseFileDocumentsConfig,
-} from '@/lib/ai/tools/getCaseFileDocument/get-casefile-document';
-import {
-  getCaseFileDocumentIndex,
-  getCaseFileDocumentIndexConfig,
-} from '@/lib/ai/tools/getCaseFileDocument/get-casefile-document-index';
-import {
-  SEQUENTIAL_THINKING_TOOL_NAME,
-  sequentialThinkingCallback,
-  sequentialThinkingCallbackConfig,
-} from '@/lib/ai/tools/sequentialthinking/tool-callback';
-import {
-  pingPongToolCallback,
-  pingPongToolConfig,
-} from '@/lib/ai/tools/ping-pong';
 import { isAbortError } from '@compliance-theater/react';
-// Todo tool imports
-import {
-  createTodoCallback,
-  createTodoConfig,
-  getTodosCallback,
-  getTodosConfig,
-  updateTodoCallback,
-  updateTodoConfig,
-  toggleTodoCallback,
-  toggleTodoConfig,
-} from '@/lib/ai/tools/todo';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { FirstParameter } from '@compliance-theater/typescript';
 import { wellKnownFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
@@ -59,6 +18,10 @@ import {
 } from '@compliance-theater/auth/lib/resources/resource-service';
 import { authorizationService } from '@compliance-theater/auth/lib/resources/authorization-service';
 import { getAccessToken } from '@compliance-theater/auth/lib/access-token';
+import {
+  registerAppMcpTools,
+  type MinimalMcpToolServer,
+} from '@/lib/ai/tools/mcp-tool-registry';
 
 type McpConfig = Exclude<Parameters<typeof createMcpHandler>[2], undefined>;
 type OnEventHandler = Exclude<McpConfig['onEvent'], undefined>;
@@ -95,9 +58,9 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
                 try {
                   // clear runtime callback reference
                   (t as { onerror?: unknown }).onerror = undefined;
-                } catch {}
+                } catch { }
               }
-            } catch {}
+            } catch { }
             try {
               const t = transport as Record<string, unknown>;
               if (typeof t['close'] === 'function') {
@@ -105,18 +68,18 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
               } else if (typeof t['destroy'] === 'function') {
                 (t['destroy'] as (...a: unknown[]) => unknown)();
               }
-            } catch {}
+            } catch { }
           }
           const srvClose =
             serverObj && typeof serverObj['close'] === 'function'
               ? (serverObj['close'] as (...a: unknown[]) => unknown)
               : s && typeof s['close'] === 'function'
-              ? (s['close'] as (...a: unknown[]) => unknown)
-              : undefined;
+                ? (s['close'] as (...a: unknown[]) => unknown)
+                : undefined;
           if (typeof srvClose === 'function') {
             try {
               srvClose.call(serverObj ?? s);
-            } catch {}
+            } catch { }
           }
         } catch {
           /* swallow cleanup errors */
@@ -163,9 +126,9 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
               if ('onerror' in t) {
                 try {
                   (t as { onerror?: unknown }).onerror = undefined;
-                } catch {}
+                } catch { }
               }
-            } catch {}
+            } catch { }
             try {
               const t = transport as Record<string, unknown>;
               if (typeof t['close'] === 'function') {
@@ -173,18 +136,18 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
               } else if (typeof t['destroy'] === 'function') {
                 (t['destroy'] as (...a: unknown[]) => unknown)();
               }
-            } catch {}
+            } catch { }
           }
           const srvClose =
             serverObj && typeof serverObj['close'] === 'function'
               ? (serverObj['close'] as (...a: unknown[]) => unknown)
               : s && typeof s['close'] === 'function'
-              ? (s['close'] as (...a: unknown[]) => unknown)
-              : undefined;
+                ? (s['close'] as (...a: unknown[]) => unknown)
+                : undefined;
           if (typeof srvClose === 'function') {
             try {
               srvClose.call(serverObj ?? s);
-            } catch {}
+            } catch { }
           }
         } catch {
           /* swallow cleanup errors */
@@ -199,9 +162,8 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
         );
         ret = {
           role: 'assistant',
-          content: `An error occurred while processing your request: ${
-            error instanceof Error ? error.message : String(error)
-          }. Please try again later.`,
+          content: `An error occurred while processing your request: ${error instanceof Error ? error.message : String(error)
+            }. Please try again later.`,
         };
       }
       return ret;
@@ -216,9 +178,8 @@ const makeErrorHandler = (server: McpServer, dscr: string) => {
       );
       return {
         role: 'assistant',
-        content: `A critical error occurred while processing your request: ${
-          e instanceof Error ? e.message : String(e)
-        }. Please try again later.`,
+        content: `A critical error occurred while processing your request: ${e instanceof Error ? e.message : String(e)
+          }. Please try again later.`,
       };
     }
   };
@@ -250,9 +211,9 @@ const checkAccess = async (props: NextRequest | CheckAccessProps) => {
     'req' in props
       ? props
       : {
-          req: props,
-          readWrite: false,
-        };
+        req: props,
+        readWrite: false,
+      };
   const { req: requestFromProps, readWrite: readWriteAccess } = reqFromProps;
 
   const findResource = async () => {
@@ -353,45 +314,7 @@ const handler = wrapRouteRequest(
           })
         );
         log((l) => l.info('=== Registering MCP tools ==='));
-        server.registerTool(
-          'playPingPong',
-          pingPongToolConfig,
-          pingPongToolCallback
-        );
-        server.registerTool(
-          'searchPolicyStore',
-          searchPolicyStoreConfig,
-          searchPolicyStore
-        );
-        server.registerTool(
-          'searchCaseFile',
-          searchCaseFileConfig,
-          searchCaseFile
-        );
-        server.registerTool(
-          'getMultipleCaseFileDocuments',
-          getMultipleCaseFileDocumentsConfig,
-          getMultipleCaseFileDocuments
-        );
-        server.registerTool(
-          'getCaseFileDocumentIndex',
-          getCaseFileDocumentIndexConfig,
-          getCaseFileDocumentIndex
-        );
-        server.registerTool(
-          'amendCaseFileDocument',
-          amendCaseRecordConfig,
-          amendCaseRecord
-        );
-        server.registerTool(
-          SEQUENTIAL_THINKING_TOOL_NAME,
-          sequentialThinkingCallbackConfig,
-          sequentialThinkingCallback
-        );
-        server.registerTool('createTodo', createTodoConfig, createTodoCallback);
-        server.registerTool('getTodos', getTodosConfig, getTodosCallback);
-        server.registerTool('updateTodo', updateTodoConfig, updateTodoCallback);
-        server.registerTool('toggleTodo', toggleTodoConfig, toggleTodoCallback);
+        registerAppMcpTools(server as MinimalMcpToolServer);
         server.server.onerror = makeErrorHandler(server, 'server');
       },
       {},

@@ -1,11 +1,10 @@
-import type { NextRequest } from 'next/server';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 
 /**
  * Case File Resource Management Module
  *
  * @module lib/auth/resources/case-file/case-file-resource
  */
-declare module '@/lib/auth/resources/case-file/case-file-resource' {
   /**
    * Represents a case file resource in Keycloak
    */
@@ -81,7 +80,7 @@ declare module '@/lib/auth/resources/case-file/case-file-resource' {
    * ```
    */
   export function checkCaseFileAccess(
-    req: NextRequest,
+    req: LikeNextRequest,
     userId: number,
     scope: CaseFileScope
   ): Promise<boolean>;
@@ -106,4 +105,3 @@ declare module '@/lib/auth/resources/case-file/case-file-resource' {
    * ```
    */
   export function getCaseFileResourceId(userId: number): Promise<string | null>;
-}

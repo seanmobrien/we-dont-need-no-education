@@ -1,5 +1,5 @@
 import type { LanguageModelV2Middleware } from '@ai-sdk/provider';
-import { LanguageModel } from 'ai';
+import { LanguageModel } from '@compliance-theater/types/ai-sdk';
 
 export interface RateLimitedRequest {
   id: string;

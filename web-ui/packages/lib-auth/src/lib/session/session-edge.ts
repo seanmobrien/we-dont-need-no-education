@@ -1,11 +1,13 @@
+/* global TextEncoder */
+
 /**
  * Edge-compatible Session management strategy
  * JWT-based session handling for client-side support.
- * @module @/lib/auth/session-edge
+ * @module @compliance-theater/auth/session-edge
  */
 
-import type { JWT } from '@auth/core/jwt';
-import type { Session } from '@auth/core/types';
+import type { JWT } from '@compliance-theater/types/next-auth/jwt';
+import type { Session } from '@compliance-theater/types/next-auth';
 import { setupSession } from './shared';
 const hash = async (input: string): Promise<string> => {
   const enc = new TextEncoder();

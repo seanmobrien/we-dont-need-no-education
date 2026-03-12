@@ -8,8 +8,8 @@
 import {
   adminBaseFromIssuer,
   defaultConfigFromEnv,
-} from '@/lib/auth/impersonation/utility';
-import type { AdminTokenConfig } from '@/lib/auth/impersonation/impersonation.types';
+} from '../../../src/lib/impersonation/utility';
+import type { AdminTokenConfig } from '../../../src/lib/impersonation/impersonation.types';
 import { type ILogger, log } from '@compliance-theater/logger';
 // Mock the dependencies
 

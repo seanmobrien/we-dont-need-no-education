@@ -9,7 +9,7 @@ import { useCallback, useState } from 'react';
 import { signResponse } from '@/lib/ai/client/confirmation';
 import { LoggedError } from '@compliance-theater/logger';
 import { useNotifications } from '@toolpad/core/useNotifications';
-import { DynamicToolUIPart, ToolUIPart, UITools } from 'ai';
+import { DynamicToolUIPart, ToolUIPart, UITools } from '@compliance-theater/types/ai-sdk';
 
 const ShowToolCall = ({
   toolName,

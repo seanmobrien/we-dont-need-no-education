@@ -10,7 +10,7 @@ import {
   UIMessage,
   UIMessagePart,
   UITools,
-} from 'ai';
+} from '@compliance-theater/types/ai-sdk';
 import { VirtualItem } from '@tanstack/react-virtual';
 import MuiMarkdown from 'mui-markdown';
 import ToolInovocation from './tool-invocation';

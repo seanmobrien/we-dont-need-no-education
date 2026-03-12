@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { PageContainer } from '@toolpad/core/PageContainer';
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider } from '@compliance-theater/types/next-auth/react';
 import { auth } from '@compliance-theater/auth';
 
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';

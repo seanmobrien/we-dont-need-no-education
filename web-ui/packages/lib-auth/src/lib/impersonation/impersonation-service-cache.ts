@@ -1,3 +1,5 @@
+/* global NodeJS, setInterval, clearInterval */
+
 /**
  * @fileoverview User-scoped impersonation service cache for maintaining persistent service instances
  *

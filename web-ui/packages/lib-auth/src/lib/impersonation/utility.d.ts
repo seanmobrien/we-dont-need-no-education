@@ -1,10 +1,8 @@
 /**
  * Impersonation utility functions
- * @module @/lib/auth/impersonation/utility
+ * @module @compliance-theater/auth/lib/impersonation/utility
  */
 import type { AdminTokenConfig } from './impersonation.types';
-
-declare module '@/lib/auth/impersonation/utility' {
   /**
    * Checks if the current request is an impersonation request.
    *
@@ -100,5 +98,3 @@ declare module '@/lib/auth/impersonation/utility' {
    * @see {@link AdminTokenConfig} for complete configuration structure
    */
   export function defaultConfigFromEnv(): AdminTokenConfig;
-
-}

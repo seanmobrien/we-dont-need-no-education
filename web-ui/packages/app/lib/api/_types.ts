@@ -1,7 +1,7 @@
 import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import { PartialExceptFor } from '@compliance-theater/typescript';
 import { TransformedFullQueryResults } from '@compliance-theater/database/driver';
-import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
+import { PgTable, PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 
 /**
  * Configuration interface for BaseDrizzleRepository

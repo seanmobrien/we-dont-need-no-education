@@ -1,8 +1,11 @@
 export type {
-  SessionContextType,
-  KeyValidationStatus,
   SessionResponse,
 } from './types';
+export type {
+  SessionContextType,
+  KeyValidationStatus,
+} from '@compliance-theater/types/components/auth/session-context-type';
 export { SessionProvider } from './provider';
-export { useSession } from './hooks';
+export { SessionContext } from '@compliance-theater/types/components/auth/session-context';
+export { useSession } from '@compliance-theater/types/components/auth/session-context';
 export { ValidKeyValidationStatusValues } from './values';

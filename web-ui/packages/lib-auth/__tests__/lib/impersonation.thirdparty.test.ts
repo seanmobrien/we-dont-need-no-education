@@ -3,7 +3,7 @@
  */
 
 
-import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
+import { withJestTestExtensions } from '../shared/jest.test-extensions';
 import type { Got } from 'got';
 import got from 'got';
 
@@ -52,7 +52,7 @@ jest.mock('openid-client', () => {
 let kcAdminMock: any = null;
 
 // Minimal Keycloak Admin Client mock (captures last created instance)
-jest.mock('@/lib/auth/keycloak-factories', () => {
+jest.mock('@compliance-theater/auth/lib/keycloak-factories', () => {
   kcAdminMock = {
     setAccessToken: jest.fn(),
     users: {
@@ -67,7 +67,7 @@ jest.mock('@/lib/auth/keycloak-factories', () => {
 });
 
 // Mock CryptoService for token encryption/decryption
-jest.mock('@/lib/site-util/auth/crypto-service', () => ({
+jest.mock('../../src/lib/utilities/crypto-service', () => ({
   CryptoService: jest.fn().mockImplementation(() => ({
     encrypt: jest.fn(async (data: string) => `encrypted:${data}`),
     decrypt: jest.fn(async (data: string) => data.replace('encrypted:', '')),
@@ -189,7 +189,7 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
 
     const {
       ImpersonationThirdParty,
-    } = require('@/lib/auth/impersonation/impersonation.thirdparty');
+    } = require('@compliance-theater/auth/lib/impersonation/impersonation.thirdparty');
     // Ensure admin client finds the target user by email (configure captured instance)
     (kcAdminMock.users.find as jest.Mock).mockResolvedValue([
       { id: 'target-user-id' },
@@ -228,7 +228,7 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
 
     const {
       ImpersonationThirdParty,
-    } = require('@/lib/auth/impersonation/impersonation.thirdparty');
+    } = require('@compliance-theater/auth/lib/impersonation/impersonation.thirdparty');
     // Create service, then set admin users.find to return empty -> user not found
     const svc = await ImpersonationThirdParty.fromRequest({
       session: mockSession,

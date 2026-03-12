@@ -12,13 +12,13 @@ import DraftsIcon from '@mui/icons-material/Drafts';
 import ChatIcon from '@mui/icons-material/Chat';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import ChecklistIcon from '@mui/icons-material/Checklist';
-import { NavigationItem, NavigationPageItem } from '@toolpad/core/AppProvider';
+import { NavigationItem, NavigationPageItem, AppTheme } from '@toolpad/core/AppProvider';
 import KeyIcon from '@mui/icons-material/Key';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import CallToActionIcon from '@mui/icons-material/CallToAction';
 import ReplyIcon from '@mui/icons-material/Reply';
 import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
-import type { Session } from '@auth/core/types';
+import type { Session } from '@compliance-theater/types/auth-core/types';
 import { EmailContextProvider } from '@/components/email-message/email-context';
 import { useCallback, useMemo } from 'react';
 import { useParams, usePathname } from 'next/navigation';
@@ -195,7 +195,7 @@ export const EmailDashboardLayout = ({
     <EmailContextProvider>
       <ServerSafeErrorManager />
       <NextAppProvider
-        theme={theme}
+        theme={theme as AppTheme}
         navigation={dashboardNavigation}
         branding={Branding}
         session={session ?? null}

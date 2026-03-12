@@ -8,32 +8,10 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./themes": {
-      "types": "./dist/themes/index.d.ts",
-      "workspace-source": "./src/themes/index.ts",
-      "default": "./dist/themes/index.js"
-    },
-    "./styles": {
-      "types": "./dist/styles/index.d.ts",
-      "workspace-source": "./src/styles/index.ts",
-      "default": "./dist/styles/index.js"
-    },
-    "./provider": {
-      "types": "./dist/themes/provider.d.ts",
-      "workspace-source": "./src/themes/provider.ts",
-      "default": "./dist/themes/provider.js"
-    },
-    "./components/theme-selector": {
-      "types": "./dist/themes/theme-selector.d.ts",
-      "workspace-source": "./src/themes/theme-selector.tsx",
-      "default": "./dist/themes/theme-selector.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },
@@ -42,31 +20,53 @@
   ],
   "engines": {
     "node": ">=22.0.0",
-    "yarn": ">=1.22.0"
+    "yarn": ">=4.12.0"
   },
   "scripts": {
-    "build": "yarn workspace @compliance-theater/themes run build:typescript",
-    "build:typescript": "echo 'Building lib/themes...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/themes.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/themes.\u001b[0m\n' >&2; exit 1)",
-    "build:publish": "yarn workspace @compliance-theater/themes run build && yarn workspace @compliance-theater/themes pack --out ./dist/@compliance-theater-themes.tgz",
+    "add": "yarn workspace @compliance-theater/themes add ",
+    "build": "yarn run build:typescript",
+    "build:typescript": "echo 'Building @compliance-theater/themes...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/themes.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/themes.\u001b[0m\n' >&2; exit 1)",
+    "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-themes.tgz",
     "test": "jest",
-    "lint": "echo 'Linting lib-themes...'",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    "@compliance-theater/logger": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/node": "^24.0.0",
-    "@types/react": "^19.0.0",
-    "jest": "^30.0.5",
-    "rimraf": "^6.1.2",
-    "ts-jest": "^29.3.4",
-    "typescript": "^5"
-  },
-  "peerDependencies": {
+    "@compliance-theater/logger": "workspace:*",
+    "@compliance-theater/types": "workspace:*",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/api-logs": "0.57.2"
+  },
+  "peerDependencies": {
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.0.5",
+    "@swc/core": "^1.13.5",
+    "@swc/jest": "^0.2.39",
+    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/react": "^16.3.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "25.2.3",
+    "@types/react": "19.2.4",
+    "@types/react-dom": "19.2.3",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "jest": "^30.0.5",
+    "react-native": "^0.84.0",
+    "rimraf": "^6.1.2",
+    "typescript": "^5.9.3"
   }
 }

@@ -1,22 +1,25 @@
+/* global process, window */
+
 import type {
   Account,
-  Profile,
   User,
-  Awaitable,
   DefaultSession,
   Session,
-  AuthConfig,
-} from '@auth/core/types';
+  NextAuthConfig,
+} from '@compliance-theater/types/next-auth';
+import type { Awaitable, Profile } from '@compliance-theater/types/auth-core/types';
 
-import NextAuth, { type NextAuthResult } from 'next-auth'; // Added NextAuthConfig
-import type { Adapter, AdapterSession, AdapterUser } from '@auth/core/adapters';
-import type { CredentialInput, Provider } from '@auth/core/providers';
+import NextAuth, { type NextAuthResult } from '@compliance-theater/types/next-auth'; // Added NextAuthConfig
+import type { Adapter, AdapterSession, AdapterUser } from '@compliance-theater/types/auth-core/adapters';
+import type { CredentialInput, Provider } from '@compliance-theater/types/auth-core/providers';
+import type { authorized as AuthorizedFn } from './lib/authorized';
 import { isRunningOnEdge, env } from '@compliance-theater/env';
 import { logEvent } from '@compliance-theater/logger';
 
 import { setupKeyCloakProvider } from './lib/keycloak-provider';
-import { authorized } from './lib/authorized';
-import type { JWT } from '@auth/core/jwt';
+import type { JWT } from '@compliance-theater/types/next-auth/jwt';
+import { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
+import { LikeNextResponse } from '@compliance-theater/types/lib/nextjs/types/like-nextresponse';
 
 type DynamicImports = {
   drizzleAdapter: {
@@ -42,7 +45,6 @@ type DynamicImports = {
            * :::
            */
           // Using any for library compatibility
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           newSession: any;
           trigger?: 'update';
         },
@@ -119,13 +121,13 @@ type DynamicImports = {
          * ⚠ Note, you should validate this data before using it.
          */
         // Using any for library compatibility
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         session?: any;
       }) => Awaitable<JWT | null>;
     };
     redirect: {
       redirect: (params: { url: string; baseUrl: string }) => Awaitable<string>;
     };
+    authorized: typeof AuthorizedFn;
   };
 };
 
@@ -147,7 +149,6 @@ const nextAuthResult: NextAuthResult = NextAuth(async () => {
   // Added NextAuthConfig return type
   let adapter: Adapter | undefined;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let signInImpl: any;
 
   // Skip database adapter during build process, on edge, or client-side (which should never happen)
@@ -157,6 +158,7 @@ const nextAuthResult: NextAuthResult = NextAuth(async () => {
     !isRunningOnEdge() &&
     process.env.NEXT_PHASE !== 'phase-production-build'
   ) {
+
     if (!dynamicImports.drizzleAdapter) {
       dynamicImports.drizzleAdapter = await import(
         './lib/drizzle-adapter'
@@ -217,11 +219,15 @@ const nextAuthResult: NextAuthResult = NextAuth(async () => {
       throw new Error('Failed to load redirect callback');
     }
   }
+  if (!dynamicImports.auth.authorized) {
+    dynamicImports.auth.authorized = (await import('./lib/authorized')).authorized;
+  }
+
   const redirect = dynamicImports.auth.redirect.redirect;
   return {
     adapter,
     callbacks: {
-      authorized,
+      authorized: dynamicImports.auth.authorized,
       signIn: signInImpl,
       jwt,
       session,
@@ -232,6 +238,7 @@ const nextAuthResult: NextAuthResult = NextAuth(async () => {
       signIn: '/auth/signin',
     },
     session: {
+      user: { id: '123' } as User,
       strategy: 'jwt',
       maxAge: 30 * 60, // 30 minutes
       updateAge: 5 * 60, // 5 minutes
@@ -242,10 +249,19 @@ const nextAuthResult: NextAuthResult = NextAuth(async () => {
       brandColor: '#1898a8', // Custom brand color
     },
     trustHost: env('NEXTAUTH_TRUST_HOST'),
-  } satisfies AuthConfig;
+  } as NextAuthConfig;
 });
 
-export const handlers = nextAuthResult.handlers;
-export const auth: NextAuthResult['auth'] = nextAuthResult.auth;
-export const signIn: NextAuthResult['signIn'] = nextAuthResult.signIn;
-export const signOut: NextAuthResult['signOut'] = nextAuthResult.signOut;
+export type NextAuthHandlers = {
+  GET: (req: LikeNextRequest) => Promise<LikeNextResponse<unknown>>;
+  POST: (req: LikeNextRequest) => Promise<LikeNextResponse<unknown>>;
+}
+
+export type NextAuthAuth = NextAuthResult['auth'];
+export type NextAuthSignIn = NextAuthResult['signIn'];
+export type NextAuthSignOut = NextAuthResult['signOut'];
+
+export const handlers: NextAuthHandlers = nextAuthResult.handlers as NextAuthHandlers;
+export const auth: NextAuthAuth = nextAuthResult.auth;
+export const signIn: NextAuthSignIn = nextAuthResult.signIn;
+export const signOut: NextAuthSignOut = nextAuthResult.signOut;

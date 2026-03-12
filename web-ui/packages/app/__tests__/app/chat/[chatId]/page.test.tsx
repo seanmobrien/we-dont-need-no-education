@@ -1,26 +1,30 @@
 /* @jest-environment node */
 
-import React from 'react';
-import { withJestTestExtensions } from '@/__tests__/shared/jest.test-extensions';
-
-/**
- * NOTE: Global test environment mocks are defined in __tests__/jest.setup.ts.
- * We intentionally DO NOT re-mock modules already covered there (auth, drizzle, etc.).
- * Instead we retrieve and manipulate their existing jest mocks to avoid divergence.
- */
-
 // ---------------- Core Dependency Mocks (only those NOT globally mocked) ----------------
-
 const unauthorizedMock = jest.fn(() => {
   throw new Error('UNAUTHORIZED');
 });
 const notFoundMock = jest.fn(() => {
   throw new Error('NOT_FOUND');
 });
+
 jest.mock('next/navigation', () => ({
   unauthorized: () => unauthorizedMock(),
   notFound: () => notFoundMock(),
 }));
+jest.mock('next/navigation', () => ({
+  unauthorized: () => unauthorizedMock(),
+  notFound: () => notFoundMock(),
+}));
+
+import React from 'react';
+import { withJestTestExtensions } from '../../../shared/jest.test-extensions';
+
+/**
+ * NOTE: Global test environment mocks are defined in __tests__/jest.setup.ts.
+ * We intentionally DO NOT re-mock modules already covered there (auth, drizzle, etc.).
+ * Instead we retrieve and manipulate their existing jest mocks to avoid divergence.
+ */
 
 // Use the globally mocked auth (from jest.setup.ts) and override implementation per test via helper
 // import { auth as authMockOriginal } from '@compliance-theater/auth';
@@ -36,11 +40,20 @@ const setSession = (userId: number | null) => {
 
 const setChatFindFirst = (value: unknown) => {
   const db = withJestTestExtensions().makeMockDb();
-  (db.query.chats.findFirst as jest.Mock).mockResolvedValueOnce(value);
+  const query = (
+    db as unknown as {
+      query: {
+        chats: {
+          findFirst: jest.Mock;
+        };
+      };
+    }
+  ).query;
+  query.chats.findFirst.mockResolvedValueOnce(value);
 };
 
 const isUserAuthorizedMock = jest.fn();
-jest.mock('@/lib/site-util/auth', () => ({
+jest.mock('@compliance-theater/auth/lib/utilities', () => ({
   isUserAuthorized: (args: { signedInUserId: number; ownerUserId: number }) =>
     isUserAuthorizedMock(args),
 }));
@@ -64,7 +77,7 @@ interface MockChatHistoryProps {
   chatId: string;
   title?: string;
 }
-jest.mock('@/components/ai/chat/history', () => {
+jest.mock('../../../../components/ai/chat/history', () => {
   const ChatHistory = (props: MockChatHistoryProps) => {
     return <div data-testid="chat-history" {...props} />;
   };
@@ -122,25 +135,15 @@ let getChatDetails: (args: {
   userId: number;
 }) => Promise<{ ok: boolean; title?: string }>;
 beforeAll(async () => {
-  const mod = await import('@/app/messages/chat/[chatId]/page');
+  const mod = await import('../../../../app/messages/chat/[chatId]/page');
   ChatDetailPage = mod.default; // ChatDetailPage is the default export
-  const lib = await import('@/lib/ai/chat/history');
+  const lib = await import('../../../../lib/ai/chat/history');
   getChatDetails = lib.getChatDetails; // getChatDetails is a named export
 });
 
 // ---------------- Tests: Page Wrapper ----------------
 
 describe('ChatDetailPage', () => {
-  beforeEach(() => {
-    /*
-    unauthorizedMock.mockClear();
-    notFoundMock.mockClear();
-    // authMock.mockReset();
-    drizDbWithInitMock.mockReset();
-    isUserAuthorizedMock.mockReset();
-    */
-  });
-
   test('unauthorized when no session', async () => {
     setSession(null);
     await expect(

@@ -1,21 +1,22 @@
- 
+
 /**
  * @fileoverview Tests for UserKeyManager enhancements
  *
  * Tests the new validation methods added to UserKeyManager
  * including server key validation and local key checks.
  *
- * @module __tests__/lib/site-util/auth/user-keys.test.ts
+ * @module __tests__/lib/utilities/user-keys.test.ts
  */
 
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '../../shared/test-utils';
+// '@/__tests__/shared/test-utils';
 import {
   validateUserKeysAgainstServer,
   hasValidLocalKeys,
   generateUserKeyPair,
   getUserPublicKey,
   getUserPrivateKey,
-} from '@/lib/site-util/auth/user-keys';
+} from '../../../src/lib/utilities/user-keys';
 
 // Mock Web Crypto API
 const mockCryptoSubtle = {
@@ -77,7 +78,7 @@ Object.defineProperty(window, 'indexedDB', {
 
 // Define it as a let so that someone -could- reassign it, even though
 // we don't...
- 
+
 let requestIndex = 0;
 const mockConsole = hideConsoleOutput();
 describe('UserKeyManager Enhancements', () => {

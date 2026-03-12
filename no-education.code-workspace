@@ -1,0 +1,40 @@
+{
+	"folders": [
+		{
+			"path": "web-ui"
+		},
+		{
+			"path": ".github"
+		}
+	],
+	"settings": {
+		"testing.automaticallyOpenTestResults": "neverOpen",
+		"jest.runMode": "on-demand",
+		"jest.outputConfig": {
+			"revealOn": "demand",
+			"revealWithFocus": "none",
+			"clearOnRun": "both"
+		},
+		"files.exclude": {
+			".yarn-cache": true,
+			"**/.DS_Store": true,
+			"**/.git": true,
+			"**/.hg": true,
+			"**/.next/**": true,
+			"**/.svn": true,
+			"**/.turbo/**": true,
+			"**/coverage/**": true,
+			"**/dist/**": true,
+			"**/node_modules/**": true,
+			"**/packages/__mocks__/**": true,
+			"**/packages/__tests__/**": true,
+			"**/Thumbs.db": true,
+			"**/tsconfig.tsbuildinfo": true
+		},
+		"files.watcherExclude": {
+			"/.next/": true,
+			"/dist/": true,
+			"/node_modules/": true
+		}
+	}
+}

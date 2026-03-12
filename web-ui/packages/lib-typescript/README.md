@@ -13,7 +13,6 @@ This package provides a collection of TypeScript utility types, type guards, gen
 - **Record Decorators**: Utilities for working with TypeScript records
 - **Dual Key Map**: Specialized bi-directional map data structure
 - **Abortable Promise**: Promise wrapper with abort support
-- **Singleton Provider**: Type-safe singleton pattern implementation
 - **Zod Integration**: Utilities for converting Zod schemas to JSON structures
 
 ## Usage
@@ -56,19 +55,6 @@ map.set("key1", 1, { value: "data" });
 const data = map.get("key1", 1); // { value: 'data' }
 ```
 
-### Singleton Provider
-
-```typescript
-import { SingletonProvider } from "@compliance-theater/typescript/singleton-provider";
-
-class MyService {}
-
-const service = SingletonProvider.Instance.getSingletonOrCreate(
-  "my-service-key",
-  () => new MyService()
-);
-```
-
 ## API
 
 ### Main Exports
@@ -79,7 +65,6 @@ const service = SingletonProvider.Instance.getSingletonOrCreate(
 - `record-decorators`: Record manipulation utilities
 - `dual-key-map`: Bi-directional map implementation
 - `abortable-promise`: Promise with abort capability
-- `singleton-provider`: Singleton pattern utilities
 - `zod-to-json-structure`: Zod schema conversion
 
 ## Development

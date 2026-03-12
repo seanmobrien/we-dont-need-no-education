@@ -1,9 +1,7 @@
 /**
  * Impersonation type definitions
- * @module @/lib/auth/impersonation/impersonation.types
+ * @module @compliance-theater/auth/lib/impersonation/impersonation.types
  */
-
-declare module '@/lib/auth/impersonation/impersonation.types' {
   /**
    * Impersonation session types.
    */
@@ -12,4 +10,3 @@ declare module '@/lib/auth/impersonation/impersonation.types' {
     impersonatorId: string;
     timestamp: number;
   };
-}

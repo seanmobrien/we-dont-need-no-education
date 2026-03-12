@@ -2,20 +2,18 @@
   "extends": "../../tsconfig.next.json",
   "compilerOptions": {
     "noEmit": true,
+    "rootDir": "./",
     "baseUrl": ".",
-    "customConditions": [
-      "workspace-source"
-    ],
     "paths": {
       "@/*": [
         "./*"
-      ],
-      "next": [
-        "../../node_modules/next"
-      ],
-      "next/*": [
-        "../../node_modules/next/*"
-      ]
+      ] // ,
+      // "next": [
+      //   "../../node_modules/next"
+      // ],
+      // "next/*": [
+      //   "../../node_modules/next/*"
+      // ]
     },
     // Explicit types prevent accidental inclusion of @types packages (for
     // example mocha) that collide with jest globals in the monorepo.
@@ -32,14 +30,18 @@
     "**/*.tsx",
     "./*.ts",
     "next-env.d.ts",
-    ".next/types/**/*.ts",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
+    "tests",
+    "**/__tests__/**",
+    "**/__mocks__/**",
     "node_modules",
     ".upstream/**/*.*",
     "**/.upstream/**/*.*",
     "submodules/**/*.*",
-    ".next"
+    ".next",
+    "dist"
   ],
   "references": [
     {
@@ -77,6 +79,15 @@
     },
     {
       "path": "../lib-types"
+    },
+    {
+      "path": "../lib-feature-flags"
+    },
+    {
+      "path": "../../submodules/json-viewer/packages"
+    },
+    {
+      "path": "../../submodules/sce/packages/core/ts"
     }
   ]
 }

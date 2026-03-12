@@ -1,11 +1,8 @@
 /**
  * Impersonation service factory
- * @module @/lib/auth/impersonation/impersonation-factory
+ * @module @compliance-theater/auth/lib/impersonation/impersonation-factory
  */
-
-declare module '@/lib/auth/impersonation/impersonation-factory' {
   /**
    * Creates an impersonation service instance.
    */
   export function createImpersonationService(): unknown;
-}

@@ -1,3 +1,5 @@
+/* global Buffer, Response, URL, Request, BodyInit, RequestCache, RequestCredentials, Headers, RequestMode, RequestPriority, RequestRedirect, ReferrerPolicy, AbortSignal */
+
 /**
  * @fileoverview Shared type definitions for fetch strategy pattern implementation
  *
@@ -10,7 +12,7 @@
 
 import { EnhancedFetchConfig } from '@compliance-theater/feature-flags/types';
 import type { LRUCache } from 'lru-cache';
-import type { RedisClientType } from 'redis';
+import type { RedisClientType } from '@compliance-theater/redis';
 
 export type FetchConfig = {
   fetch_concurrency?: number;
@@ -127,7 +129,6 @@ export interface BufferingStrategyDeps {
     alreadyBufferedChunks: Buffer[],
   ) => Promise<void>;
   /** Function to get Redis client for caching */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getRedisClient: () => Promise<any>;
   /** Fetch configuration */
   fetchConfig: () => Required<FetchConfig>;

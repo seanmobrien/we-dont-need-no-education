@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { jest } from '@jest/globals';
+// import { jest } from '@jest/globals';
 import type { JWTPayload } from 'jose';
 
 // Mock jose using the __mocks__ folder
@@ -12,17 +12,30 @@ jest.mock('jose');
 import { decodeJwt, jwtVerify, createRemoteJWKSet } from 'jose';
 
 // Mock LRU cache
-const mockGet = jest.fn();
-const mockSet = jest.fn();
-jest.mock('lru-cache', () => ({
-  LRUCache: jest.fn().mockImplementation(() => ({
-    get: mockGet,
-    set: mockSet,
-  })),
-}));
+jest.mock('lru-cache', () => {
+  const mockGet = jest.fn();
+  const mockSet = jest.fn();
+
+  return {
+    LRUCache: jest.fn().mockImplementation(() => ({
+      get: mockGet,
+      set: mockSet,
+    })),
+    __mockGet: mockGet,
+    __mockSet: mockSet,
+  };
+});
+
+const {
+  __mockGet: mockGet,
+  __mockSet: mockSet,
+} = jest.requireMock('lru-cache') as {
+  __mockGet: jest.Mock;
+  __mockSet: jest.Mock;
+};
 
 // Import after mocks are set
-import { decodeToken } from '@/lib/auth/utilities';
+import { decodeToken } from '../../src/lib/utilities';
 
 describe('decodeToken', () => {
   const validToken = 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjM0In0.signature';

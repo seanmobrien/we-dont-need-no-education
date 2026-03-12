@@ -2,10 +2,8 @@ import type { ServiceInstanceOverloads } from '@compliance-theater/typescript';
 
 /**
  * Resource Service module declaration
- * @module @/lib/auth/resources/resource-service
+ * @module @compliance-theater/auth/lib/resources/resource-service
  */
-
-declare module '@/lib/auth/resources/resource-service' {
   /**
    * Service for managing Keycloak resources
    */
@@ -67,4 +65,3 @@ declare module '@/lib/auth/resources/resource-service' {
    * Singleton instance of ResourceService
    */
   export const resourceService: ServiceInstanceOverloads<ResourceService>;
-}

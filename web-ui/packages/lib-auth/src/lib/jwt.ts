@@ -1,8 +1,8 @@
-import type { JWT } from '@auth/core/jwt';
-import type { Account } from '@auth/core/types';
-import type { AdapterUser } from '@auth/core/adapters';
+import type { JWT } from '@compliance-theater/types/next-auth/jwt';
+import type { Account } from '@compliance-theater/types/auth-core/types';
+import type { AdapterUser } from '@compliance-theater/types/auth-core/adapters';
 import { log } from '@compliance-theater/logger';
-import { decodeToken } from './utilities';
+import { decodeToken } from './utilities/decode-token';
 import type { NextAuthUserWithAccountId } from './types';
 
 /**
@@ -77,7 +77,10 @@ export const jwt = async ({
     //
     // Note: `account_id` is treated as non-sensitive application metadata.
     if ('account_id' in user && !!user.account_id) {
-      token.account_id = user.account_id;
+      token.account_id =
+        typeof user.account_id === 'number'
+          ? user.account_id
+          : Number(user.account_id);
     }
 
     if (account?.access_token) {

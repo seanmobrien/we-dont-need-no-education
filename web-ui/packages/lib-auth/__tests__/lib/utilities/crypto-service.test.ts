@@ -1,4 +1,4 @@
-import { CryptoService } from '@/lib/site-util/auth/crypto-service';
+import { CryptoService } from '../../../src/lib/utilities/crypto-service';
 import { generateKeyPairSync } from 'node:crypto';
 
 /**

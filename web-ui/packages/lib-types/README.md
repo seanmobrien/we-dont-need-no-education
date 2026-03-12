@@ -30,7 +30,7 @@ import {
   AiModelType, 
   AiLanguageModelType,
   AiProviderType 
-} from '@compliance-theater/types/ai/core';
+} from '@compliance-theater/types/lib/ai/core';
 ```
 
 ### Importing Chat Types
@@ -41,7 +41,7 @@ import {
   ChatTurn,
   ChatDetails,
   RetryErrorInfo
-} from '@compliance-theater/types/ai/chat';
+} from '@compliance-theater/types/lib/ai/chat';
 ```
 
 ### Using Type Guards
@@ -51,7 +51,7 @@ import {
   isAiModelType,
   isAiLanguageModelType,
   isAnnotatedErrorMessage
-} from '@compliance-theater/types/ai/core';
+} from '@compliance-theater/types/lib/ai/core';
 ```
 
 ## Development

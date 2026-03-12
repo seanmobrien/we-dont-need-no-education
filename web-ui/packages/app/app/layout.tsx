@@ -14,7 +14,7 @@ import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 import { Suspense} from 'react';
 // import { cookies } from 'next/headers';
 import { FlagProvider } from '@compliance-theater/feature-flags/components/flag-provider';
-import { state } from '@/lib/site-util/app-startup';
+import { state } from '@compliance-theater/after/app-startup-state';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',

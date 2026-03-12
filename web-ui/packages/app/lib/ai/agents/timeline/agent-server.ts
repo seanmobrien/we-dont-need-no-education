@@ -10,7 +10,8 @@ import {
   GlobalMetadata,
   SerializedTimelineAgent,
 } from './types';
-import { type AiLanguageModelType, generateChatId } from '@/lib/ai/core';
+import type { AiLanguageModelType } from '@compliance-theater/types/lib/ai/core';
+import { generateChatId } from '@compliance-theater/types/lib/ai/core/chat-ids';
 import { drizDb } from '@compliance-theater/database/orm';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { NextRequest } from 'next/server';
@@ -292,8 +293,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     });
     if (!callToActionRecord) {
       throw new Error(
-        `Failed to find call to action record for document ${
-          this.propertyId ?? 'null'
+        `Failed to find call to action record for document ${this.propertyId ?? 'null'
         }`
       );
     }

@@ -4,7 +4,7 @@
  * Tests the key validation workflow including timing checks,
  * key comparison, and synchronization operations.
  *
- * @module __tests__/lib/site-util/auth/key-validation.test.ts
+ * @module __tests__/lib/utilities/key-validation.test.ts
  */
 
 import {
@@ -14,8 +14,8 @@ import {
   synchronizeKeys,
   performKeyValidationWorkflow,
   KEY_VALIDATION_INTERVAL,
-} from '@/lib/site-util/auth/key-validation';
-import { SingletonProvider } from '@compliance-theater/typescript';
+} from '../../../src/lib/utilities/key-validation';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 
 // Mock localStorage
 const mockLocalStorage = {

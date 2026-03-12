@@ -1,6 +1,4 @@
 import type { SessionExt } from './_types';
-
-declare module '@/lib/site-util/auth/_guards' {
   /**
    * Type guard to check if a session object is a SessionExt
    *
@@ -22,4 +20,3 @@ declare module '@/lib/site-util/auth/_guards' {
    * ```
    */
   export function isSessionExt(session: unknown): session is SessionExt;
-}

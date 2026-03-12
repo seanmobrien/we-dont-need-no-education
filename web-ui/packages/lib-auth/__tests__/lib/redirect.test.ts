@@ -1,4 +1,4 @@
-import { redirect } from '@/lib/auth/redirect';
+import { redirect } from '../../src/lib/redirect';
 
 /**
  * Tests for the redirect utility function that provides secure OAuth redirect URL handling.

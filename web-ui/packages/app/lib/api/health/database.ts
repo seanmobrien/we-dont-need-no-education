@@ -1,10 +1,8 @@
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { sql } from '@compliance-theater/database/orm';
-import { LoggedError } from '@compliance-theater/logger';
+import { LoggedError, SingletonProvider, globalRequiredSingleton } from '@compliance-theater/logger';
 import InMemoryCache from '@/lib/api/health/base-cache';
-import { globalRequiredSingleton } from '@compliance-theater/typescript/singleton-provider';
 import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 
 export class DatabaseHealthCache extends InMemoryCache<{
   status: 'healthy' | 'warning' | 'error';
@@ -73,7 +71,7 @@ export const checkDatabaseHealth = async (): Promise<{
     const ok = { status: 'healthy' } as const;
     try {
       cache.set(ok);
-    } catch {}
+    } catch { }
     return ok;
   } catch (err) {
     // Log structured error for debugging/monitoring and return error state.
@@ -86,7 +84,7 @@ export const checkDatabaseHealth = async (): Promise<{
     const bad = { status: 'error' } as const;
     try {
       cache.set(bad);
-    } catch {}
+    } catch { }
     return bad;
   }
 };

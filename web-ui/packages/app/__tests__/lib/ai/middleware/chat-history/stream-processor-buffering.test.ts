@@ -3,13 +3,13 @@
  * @fileoverview Unit tests for StreamProcessor buffering logic and PassthroughStreamProcessor
  */
 
-import { PassthroughStreamProcessor } from '@/lib/ai/middleware/chat-history/passthrough-processor';
-import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
-import { ensureCreateResult } from '@/lib/ai/middleware/chat-history/stream-handler-result';
+import { PassthroughStreamProcessor } from '../../../../../lib/ai/middleware/chat-history/passthrough-processor';
+import type { StreamHandlerContext } from '../../../../../lib/ai/middleware/chat-history/types';
+import { ensureCreateResult } from '../../../../../lib/ai/middleware/chat-history/stream-handler-result';
 import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 
 // Mock dependencies
-jest.mock('@/lib/ai/middleware/chat-history/instrumentation', () => ({
+jest.mock('../../../../../lib/ai/middleware/chat-history/instrumentation', () => ({
   instrumentStreamChunk: jest.fn((type, context, operation) => operation()),
 }));
 

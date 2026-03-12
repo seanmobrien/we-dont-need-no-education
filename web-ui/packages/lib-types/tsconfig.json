@@ -4,6 +4,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "composite": true,
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "declaration": true,
     "declarationMap": true,
     "baseUrl": ".",
@@ -20,6 +21,8 @@
   ],
   "exclude": [
     "node_modules",
+    "**/__tests__/**",
+    "**/__mocks__/**",
     "dist"
   ],
   "references": []

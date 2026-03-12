@@ -10,8 +10,8 @@ import {
   selectForGrid,
 } from '@/lib/components/mui/data-grid/server';
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
-import { and, eq } from 'drizzle-orm';
-import { PgColumn } from 'drizzle-orm/pg-core';
+import { and, eq } from '@compliance-theater/database/drizzle-orm';
+import { PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,

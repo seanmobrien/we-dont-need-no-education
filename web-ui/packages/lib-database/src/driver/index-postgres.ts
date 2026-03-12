@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { pgDb, pgDbWithInit } from './connection';
 import { isDbError } from './_guards';
 import { CommandMeta, IResultset } from './types';
@@ -44,9 +42,9 @@ const asRecord = <
 ): TResult =>
   Array.isArray(result)
     ? result.reduce((acc, cur, idx) => {
-        acc[`column${idx}`] = cur;
-        return acc;
-      }, {} as TResult)
+      acc[`column${idx}`] = cur;
+      return acc;
+    }, {} as TResult)
     : (result as unknown as TResult);
 
 const applyTransform = <ResultType extends object>(
@@ -112,8 +110,7 @@ type RecordsetInitWithTransformProps<
 };
 
 class RecordsetInitPropsBaseImpl<T extends readonly any[]>
-  implements RecordsetBaseInitProps<T>
-{
+  implements RecordsetBaseInitProps<T> {
   readonly statement: string;
   readonly command: CommandMeta;
   readonly fields: ColumnList<keyof T>;
@@ -132,8 +129,7 @@ class RecordsetInitPropsBaseImpl<T extends readonly any[]>
 }
 class RecordsetInitPropsImpl<T extends readonly any[]>
   extends RecordsetInitPropsBaseImpl<T>
-  implements RecordsetBaseInitProps<T>
-{
+  implements RecordsetBaseInitProps<T> {
   readonly count: number | undefined;
   readonly records: ArrayLike<T | Array<any>> | undefined;
 
@@ -166,15 +162,14 @@ class RecordsetInitPropsImpl<T extends readonly any[]>
   }
 }
 class RecordsetInitWithTransformPropsImpl<
-    T extends readonly any[],
-    TOtherRecord extends ExcludeExactMatch<
-      Record<string, unknown>,
-      T
-    > = ExcludeExactMatch<Record<string, unknown>, T>
-  >
+  T extends readonly any[],
+  TOtherRecord extends ExcludeExactMatch<
+    Record<string, unknown>,
+    T
+  > = ExcludeExactMatch<Record<string, unknown>, T>
+>
   extends RecordsetInitPropsBaseImpl<T>
-  implements RecordsetInitWithTransformProps<T, TOtherRecord>
-{
+  implements RecordsetInitWithTransformProps<T, TOtherRecord> {
   readonly records: ArrayLike<TOtherRecord & Array<any>>;
   readonly transform: (x: TOtherRecord) => T;
 
@@ -213,8 +208,7 @@ const isRecordsetInitWithTransformProps = <
 
 export class Resultset<T extends readonly any[] = readonly any[]>
   extends Array<any>
-  implements IResultset<T>
-{
+  implements IResultset<T> {
   static isResultset<TRow extends readonly any[] = readonly any[]>(
     check: unknown
   ): check is IResultset<TRow> {
@@ -256,8 +250,6 @@ export class Resultset<T extends readonly any[] = readonly any[]>
     }
     // No go
     return false;
-
-    return true;
   }
   static #makeRecordFromArray<TRecord extends readonly any[]>(
     result: TRecord | any[],
@@ -514,11 +506,3 @@ export type DbQueryFunction<
 // Update module exports to use module.exports format and provide a getter for sql
 
 export const sql = () => pgDb();
-
-/*
-Object.defineProperty(module.exports, 'sql', {
-  enumerable: true,
-  configurable: true,
-  get: deprecate(() => pgDb(), "The `sql` export is deprecated. Use `pgDb()` instead; or better yet upgrade to drizzle.", 'DEP001'),
-});
-*/

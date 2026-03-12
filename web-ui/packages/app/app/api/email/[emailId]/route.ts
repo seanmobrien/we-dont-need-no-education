@@ -5,7 +5,7 @@ import {
 } from '@compliance-theater/nextjs/server/utils';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { extractParams } from '@compliance-theater/nextjs/server/utils';
-import { eq } from 'drizzle-orm';
+import { eq } from '@compliance-theater/database/drizzle-orm';
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
 import {
   checkCaseFileAuthorization,
@@ -180,7 +180,7 @@ export const DELETE = wrapRouteRequest(
     withParams: {
       params: Promise<{ emailId: string }>;
     }
-  ): Promise<NextResponse> => {
+  ): Promise<Response> => {
     const { emailId } = await extractEmailId(withParams);
     if (!emailId) {
       return NextResponse.json(
@@ -195,7 +195,7 @@ export const DELETE = wrapRouteRequest(
     });
     if (!authCheck.authorized) {
       return (
-        authCheck.response ??
+        (authCheck.response as Response | undefined) ??
         unauthorizedServiceResponse({ req, scopes: ['case-file:write'] })
       );
     }

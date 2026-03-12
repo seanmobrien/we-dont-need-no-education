@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import { styled } from '@mui/material/styles';
-import type { DockPosition } from './types';
+import type { DockPosition } from '@compliance-theater/types/components/ai/chat-panel/types';
 
 /**
  * Docking zone data

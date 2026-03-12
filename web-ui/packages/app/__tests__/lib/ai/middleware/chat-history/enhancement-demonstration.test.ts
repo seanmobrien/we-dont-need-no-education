@@ -7,7 +7,7 @@
  * new messages that weren't included in previous conversation turns.
  */
 
-import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
+import { getNewMessages } from '../../../../../lib/ai/middleware/chat-history/utility';
 import { LanguageModelV2Message } from '@ai-sdk/provider';
 //import { schema } from '@compliance-theater/database/orm';
 import { schema } from '@compliance-theater/database/orm';

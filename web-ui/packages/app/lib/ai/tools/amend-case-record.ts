@@ -19,7 +19,7 @@ import {
   keyPointsDetails,
   violationDetails,
 } from '@compliance-theater/database/schema';
-import { eq } from 'drizzle-orm';
+import { eq } from '@compliance-theater/database/drizzle-orm';
 import { toolCallbackResultFactory } from './utility';
 import { newUuid } from '@compliance-theater/typescript';
 import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';

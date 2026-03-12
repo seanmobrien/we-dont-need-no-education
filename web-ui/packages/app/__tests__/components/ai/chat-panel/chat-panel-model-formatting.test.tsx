@@ -3,9 +3,9 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
-import '@testing-library/jest-dom';
-import ChatPanel from '@/components/ai/chat-panel/chat-panel';
+import { render, screen, fireEvent, waitFor } from '../../../shared/test-utils';
+import '../../../shared/test-utils';
+import ChatPanel from '../../../../components/ai/chat-panel/chat-panel';
 
 // Mock the useChat hook from @ai-sdk/react
 const mockSendMessage = jest.fn();
@@ -28,13 +28,13 @@ jest.mock('@compliance-theater/logger', () => ({
   log: () => () => {},
 }));
 
-jest.mock('@/lib/components/ai/chat-fetch-wrapper', () => ({
+jest.mock('../../../../lib/components/ai/chat-fetch-wrapper', () => ({
   useChatFetchWrapper: () => ({
     chatFetch: fetch,
   }),
 }));
 
-jest.mock('@/lib/ai/core/chat-ids', () => ({
+jest.mock('@compliance-theater/types/lib/ai/core/chat-ids', () => ({
   splitIds: (id: string) => [id.split(':')[0], id.split(':')[1]],
   generateChatId: () => ({ id: 'mock-id' }),
 }));

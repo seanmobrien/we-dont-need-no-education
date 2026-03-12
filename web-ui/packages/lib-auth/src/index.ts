@@ -1,21 +1,20 @@
 // Main auth configuration and handlers
 export { handlers, auth, signIn, signOut, providerMap } from './auth';
-
-// Include NextAuth/Auth.js module augmentations
-import type {} from './types/auth';
-import type {} from './types/nextauth';
+export type { Session } from '@compliance-theater/types';
 
 // Export all public auth-library types
-export * from './lib';
-export type * from './components';
-
-// Re-export commonly used types from next-auth
+export {
+    setupSession,
+} from './lib/session/shared';
+export { refreshAccessToken } from './lib/refresh-token';
 export type {
-  Session,
-  User,
-  Account,
-  Profile,
-  AuthConfig,
-} from '@auth/core/types';
-export type { JWT } from '@auth/core/jwt';
-export type { Adapter } from '@auth/core/adapters';
+    SessionContextType,
+    KeyValidationStatus,
+    SessionResponse,
+} from './components/session-provider/types';
+export { SessionProvider } from './components/session-provider/provider';
+export { useSession } from './components/session-provider/hooks';
+export { KeyRefreshNotify } from './components/key-refresh-notify';
+
+
+

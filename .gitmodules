@@ -1,3 +1,7 @@
 [submodule "web-ui/submodules/sce"]
 	path = web-ui/submodules/sce
 	url = https://github.com/SemanticEncoding/sce
+[submodule "web-ui/submodules/json-viewer"]
+	path = web-ui/submodules/json-viewer/packages
+	url = git@github.com:seanmobrien/json-viewer.git
+	branch = hotfix/mui-upgrade

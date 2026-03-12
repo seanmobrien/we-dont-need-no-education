@@ -1,3 +1,5 @@
+/* global URLSearchParams */
+
 /**
  * @fileoverview Authorization Service for Keycloak
  *
@@ -10,12 +12,13 @@
 
 import { env } from '@compliance-theater/env';
 import { fetch } from '@compliance-theater/nextjs/server';
-import { LoggedError, log } from '@compliance-theater/logger';
-import { decodeToken } from '../utilities';
 import {
-  serviceInstanceOverloadsFactory,
+  LoggedError,
+  log,
   SingletonProvider,
-} from '@compliance-theater/typescript';
+} from '@compliance-theater/logger';
+import { serviceInstanceOverloadsFactory } from '@compliance-theater/typescript';
+import { decodeToken } from '../utilities';
 import type {
   ResourceEntitlement,
   CheckAccessResult,
@@ -28,7 +31,7 @@ import { normalizedAccessToken } from '../access-token';
  * Service for handling authorization checks
  */
 export class AuthorizationService {
-  private constructor() {}
+  private constructor() { }
 
   /**
    * Gets the singleton instance of AuthorizationService
@@ -240,7 +243,6 @@ export class AuthorizationService {
       const decodedToken = await decodeToken(accessToken);
 
       const permissions =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (decodedToken as any).authorization?.permissions || [];
       return permissions;
     } catch (error) {

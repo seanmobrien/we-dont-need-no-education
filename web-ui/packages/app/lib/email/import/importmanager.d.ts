@@ -2,7 +2,7 @@
  * Email import manager for orchestrating multi-stage import process
  * @module @/lib/email/import/importmanager
  */
-import type { NextRequest } from 'next/server';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import type {
   ImportResponse,
   ImportSourceMessage,
@@ -51,7 +51,7 @@ declare module '@/lib/email/import/importmanager' {
      */
     runImportStage(
       target: ImportSourceMessage,
-      options: { req: NextRequest },
+      options: { req: LikeNextRequest },
     ): Promise<ImportSourceMessage>;
 
     /**
@@ -67,12 +67,12 @@ declare module '@/lib/email/import/importmanager' {
      * 7. Marks as completed
      *
      * @param emailId - The provider email ID to import
-     * @param options - Options object containing the Next.js request
+     * @param options - Options object containing the LikeNextRequest
      * @returns Import response indicating success/failure with optional data or error
      */
     importEmail(
       emailId: string,
-      options: { req: NextRequest },
+      options: { req: LikeNextRequest },
     ): Promise<ImportResponse>;
   }
 }

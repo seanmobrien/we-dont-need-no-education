@@ -15,21 +15,35 @@ permissions:
 
 on:
   push:
-    branches: ['main']
+    branches: ["main"]
   pull_request:
-    branches: ['main']
+    branches: ["main"]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_API: ${{ secrets.TURBO_API }}
+      TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Initialize git submodules for web-ui
+        run: |
+          set -euo pipefail
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule sync --recursive
+          git submodule update --init --recursive --jobs 4
+          git submodule status --recursive
+        shell: bash
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: "21"
+          distribution: "temurin"
           cache: maven
 
       - name: Build with Maven
@@ -42,47 +56,75 @@ jobs:
           AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
           AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY }}
           REST_SERVICE_ROOT_URL: ${{ secrets.REST_SERVICE_ROOT_URL }}
-          MY_ENV_VAR: 'http://localhost:3000'
-          POSTGRES_CONNECTION_URL: 'postgresql://bunkdb.postgres.database.azure.com/sue_plsas?sslmode=require'
-          POSTGRES_CONNECTION_USER: 'someuser'
-          POSTGRES_CONNECTION_PW: 'not for real'
-          UNIT_TESTING: '1'
+          MY_ENV_VAR: "http://localhost:3000"
+          POSTGRES_CONNECTION_URL: "postgresql://bunkdb.postgres.database.azure.com/sue_plsas?sslmode=require"
+          POSTGRES_CONNECTION_USER: "someuser"
+          POSTGRES_CONNECTION_PW: "not for real"
+          UNIT_TESTING: "1"
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: '25.x'
+          node-version: "25.x"
           cache: yarn
-          cache-dependency-path: 'web-ui/yarn.lock'
+          cache-dependency-path: "yarn.lock"
+
+      - name: Restore Turbo and Yarn caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo/cache
+            .yarn/cache
+            .yarn/install-state.gz
+          key: ${{ runner.os }}-turbo-yarn-${{ hashFiles('yarn.lock', 'turbo.json', '.gitmodules', '**/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-yarn-
 
       - name: Setup kernel for react native, increase watchers
         run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
         shell: bash
-        working-directory: ./web-ui
+        working-directory: ./
 
       - name: Enable Corepack and Yarn 4.12.0
         run: |
           corepack enable
           corepack prepare yarn@4.12.0 --activate
         shell: bash
-        working-directory: ./web-ui
+        working-directory: ./
 
       - name: Run yarn install
-        working-directory: ./web-ui
-        run: node .yarn/releases/yarn-4.12.0.cjs install --immutable
+        working-directory: ./
+        run: |
+          set -euo pipefail
+          node .yarn/releases/yarn-4.12.0.cjs install --immutable
+          cd web-ui/submodules/sce
+          node .yarn/releases/yarn-4.12.0.cjs install --immutable
+          cd ../json-viewer/packages
+          node .yarn/releases/yarn-4.12.0.cjs install --immutable
         shell: bash
 
       # NOTE: Turbo lint tool depends on typescript build, so this will do both lint and typescript validation.
       - name: Run typescript compile and yarn lint
-        working-directory: ./web-ui
+        working-directory: ./
         run: node .yarn/releases/yarn-4.12.0.cjs lint
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+          TURBO_API: ${{ secrets.TURBO_API }}
+          TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
         # continue-on-error: true
         shell: bash
 
       - name: Run yarn test
-        working-directory: ./web-ui
+        working-directory: ./
         run: xvfb-run --server-args="-screen 0 1024x768x24" node .yarn/releases/yarn-4.12.0.cjs test $YARN_TEST_OPTIONS
-        shell: bash      
+        shell: bash
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+          TURBO_API: ${{ secrets.TURBO_API }}
+          TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
+
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     # - name: Update dependency graph
     #  uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6

@@ -8,8 +8,10 @@ import type {
   AiSearchResultEnvelope,
 } from './types';
 import { LoggedError, log, logEvent } from '@compliance-theater/logger';
-import { fetch } from '@compliance-theater/nextjs/server/fetch';
+import { resolveFetchService } from '@/lib/fetch-service';
 import { performance } from 'perf_hooks';
+
+const fetch = resolveFetchService();
 
 type SearchMeta = {
   attributes: Array<{ key: string; value: unknown }>;
@@ -68,7 +70,7 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
       const { code, message } = json.error;
       throw new Error(
         `Error in search response: ${message || '[no message]'}` +
-          ` (code: ${code || '[no code]'})\nRaw: ${JSON.stringify(json)}`
+        ` (code: ${code || '[no code]'})\nRaw: ${JSON.stringify(json)}`
       );
     }
 
@@ -139,8 +141,8 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
     embeddingServiceOrOptions?:
       | IEmbeddingService
       | {
-          embeddingService?: IEmbeddingService;
-        }
+        embeddingService?: IEmbeddingService;
+      }
   ) {
     if (!embeddingServiceOrOptions) {
       this.embeddingService = new EmbeddingService();
@@ -206,7 +208,7 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
       vectorQueries: [vectorBlock],
       top: topK,
       queryType: 'semantic',
-      semanticConfiguration: 'semantic-search-config',
+      semanticConfiguration: 'default',
       select: 'content,id,metadata',
       ...(options?.count ? { count: true } : {}),
       ...(page > 1 ? { skip: (page - 1) * topK } : {}),

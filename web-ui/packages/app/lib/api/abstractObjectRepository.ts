@@ -5,8 +5,8 @@ import type {
   TransformedFullQueryResults,
   DbQueryFunction,
 } from '@compliance-theater/database/driver';
-import { ValidationError } from '../react-util';
-import { DataIntegrityError } from '../react-util/errors/data-integrity-error';
+import { ValidationError } from '@compliance-theater/logger/errors/validation-error';
+import { DataIntegrityError } from '@compliance-theater/logger/errors/data-integrity-error';
 import { LoggedError } from '@compliance-theater/logger';
 import { RecordToObjectImpl, RecordToSummaryImpl } from './_types';
 import { GridFilterModel, GridSortModel } from '@mui/x-data-grid-pro';

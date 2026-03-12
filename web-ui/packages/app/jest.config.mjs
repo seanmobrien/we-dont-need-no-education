@@ -5,6 +5,7 @@ const config = {
   displayName: "Web UI: app",
   setupFilesAfterEnv: [
     ...(baseConfig.setupFilesAfterEnv ?? []),
+    '@testing-library/jest-dom',
     '<rootDir>/__tests__/setup/jest.mock-appstartup.ts',
     '<rootDir>/__tests__/shared/jest.test-extensions.ts',
     '<rootDir>/__tests__/setup/jest.mock-health.ts',
@@ -18,18 +19,22 @@ const config = {
     '<rootDir>/__tests__/setup/jest.setup.ts',
   ], // Setup file for global imports
   moduleNameMapper: {
+    // '^../../__mocks__/service-cradle$': '<rootDir>/__mocks__/shared/service-cradle.ts',
     ...(baseConfig.moduleNameMapper ?? {}),
+    '^react$': '<rootDir>/node_modules/react/index.js',
+    '^react-dom$': '<rootDir>/node_modules/react-dom/index.js',
+    '^react/jsx-runtime$': '<rootDir>/node_modules/react/jsx-runtime.js',
+    '^react/jsx-dev-runtime$': '<rootDir>/node_modules/react/jsx-dev-runtime.js',
+    '^@tanstack/react-query$':
+      '<rootDir>/node_modules/@tanstack/react-query/build/modern/index.cjs',
+    '^@tanstack/query-core$':
+      '<rootDir>/node_modules/@tanstack/query-core/build/modern/index.cjs',
+    '^@/__tests__/test-utils$': '<rootDir>/__tests__/shared/test-utils.tsx',
+    '^@/__tests__/test-utils-server$': '<rootDir>/__tests__/shared/test-utils-server.ts',
     '^next-auth/providers/keycloak$': '<rootDir>/__mocks__/shared/keycloak-provider.js',
-    '^@/auth$': '<rootDir>/../lib-auth/src/auth.ts',
-    '^@/components/auth/session-provider$': '<rootDir>/../lib-auth/src/components/session-provider/index.ts',
-    '^@/lib/auth/impersonation/impersonation-factory$': '<rootDir>/../lib-auth/src/lib/impersonation/impersonation-factory.ts',
-    '^@/lib/auth/impersonation$': '<rootDir>/../lib-auth/src/lib/impersonation/index.ts',
-    '^@/lib/auth/resources/case-file/case-file-middleware$': '<rootDir>/../lib-auth/src/lib/resources/case-file/case-file-middleware.ts',
-    '^@/lib/auth/resources/case-file$': '<rootDir>/../lib-auth/src/lib/resources/case-file/index.ts',
-    '^@/lib/site-util/auth$': '<rootDir>/../lib-auth/src/lib/utilities/index.ts',
-    '^@compliance-theater/auth/components/session-provider/(.*)$': '<rootDir>/../lib-auth/src/components/session-provider/$1',
-    '^@compliance-theater/auth/components/key-refresh-notify/(.*)$': '<rootDir>/../lib-auth/src/components/key-refresh-notify/$1',
-    '^@/(.*)$': '<rootDir>/$1', // Alias for module imports    
+    '^next/navigation$': '<rootDir>/__mocks__/shared/next-navigation.ts',
+    '^@semanticencoding/core$': '<rootDir>/../../submodules/sce/packages/core/ts/src/index.ts',
+    '^@/(.*)$': '<rootDir>/$1', // Alias for module-level (app) imports.   
   },
 };
 

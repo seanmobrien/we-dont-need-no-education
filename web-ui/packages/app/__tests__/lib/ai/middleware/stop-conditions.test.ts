@@ -1,5 +1,5 @@
 
-import { StopConditionLibrary } from "@/lib/ai/middleware/stop-conditions";
+import { StopConditionLibrary } from "../../../../lib/ai/middleware/stop-conditions";
 
 describe('StopConditionLibrary', () => {
   describe('noToolsPending', () => {

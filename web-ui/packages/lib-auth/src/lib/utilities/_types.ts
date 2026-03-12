@@ -1,6 +1,6 @@
 import type { OAuth2Client } from 'google-auth-library';
 import type { NextApiRequest } from 'next';
-import type { Session } from '@auth/core/types';
+import type { Session } from '@compliance-theater/types/next-auth';
 import type { NextRequest } from 'next/server';
 
 export type IServerSessionTokens = {

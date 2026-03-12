@@ -6,28 +6,46 @@
  * Jest tests for the cacheWithRedis middleware basic functionality
  */
 
-// Mock the Redis client module first
-const mockRedisClient = {
-  connect: jest.fn().mockResolvedValue(undefined),
-  quit: jest.fn().mockResolvedValue(undefined),
-  get: jest.fn().mockResolvedValue(null),
-  set: jest.fn().mockResolvedValue('OK'),
-  setEx: jest.fn().mockResolvedValue('OK'),
-  del: jest.fn().mockResolvedValue(1),
-  flushDb: jest.fn().mockResolvedValue('OK'),
-  on: jest.fn(),
-};
-
 jest.mock('@compliance-theater/redis', () => ({
-  getRedisClient: jest.fn().mockResolvedValue(mockRedisClient),
-  closeRedisClient: jest.fn().mockResolvedValue(undefined),
+  ...(() => {
+    const mockRedisClient = {
+      connect: jest.fn().mockResolvedValue(undefined),
+      quit: jest.fn().mockResolvedValue(undefined),
+      get: jest.fn().mockResolvedValue(null),
+      set: jest.fn().mockResolvedValue('OK'),
+      setEx: jest.fn().mockResolvedValue('OK'),
+      del: jest.fn().mockResolvedValue(1),
+      flushDb: jest.fn().mockResolvedValue('OK'),
+      on: jest.fn(),
+    };
+    return {
+      __mockRedisClient: mockRedisClient,
+      getRedisClient: jest.fn().mockResolvedValue(mockRedisClient),
+      closeRedisClient: jest.fn().mockResolvedValue(undefined),
+    };
+  })(),
 }));
 
 import { openai } from '@ai-sdk/openai';
-import { generateText, wrapLanguageModel } from 'ai';
-import { cacheWithRedis } from '@/lib/ai/middleware/cacheWithRedis/cacheWithRedis';
-import { metricsCollector } from '@/lib/ai/middleware/cacheWithRedis/metrics';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { generateText, wrapLanguageModel } from '@compliance-theater/types/ai-sdk';
+import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
+import { metricsCollector } from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
+import { hideConsoleOutput } from '../../../shared/test-utils';
+
+const { __mockRedisClient: mockRedisClient } = jest.requireMock(
+  '@compliance-theater/redis',
+) as {
+  __mockRedisClient: {
+    get: jest.Mock;
+    setEx: jest.Mock;
+    set: jest.Mock;
+    del: jest.Mock;
+    flushDb: jest.Mock;
+    connect: jest.Mock;
+    quit: jest.Mock;
+    on: jest.Mock;
+  };
+};
 
 // Mock the openai model to return consistent responses for testing
 jest.mock('@ai-sdk/openai', () => ({

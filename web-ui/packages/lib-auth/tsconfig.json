@@ -4,6 +4,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "composite": true,
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "declaration": true,
     "declarationMap": true,
     "baseUrl": ".",
@@ -12,7 +13,6 @@
       "jest"
     ],
     "noEmit": false,
-    "skipLibCheck": true,
     "jsx": "react-jsx"
   },
   "include": [
@@ -22,14 +22,34 @@
   ],
   "exclude": [
     "node_modules",
+    "**/__tests__/**",
+    "**/__mocks__/**",
     "dist"
   ],
   "references": [
-    { "path": "../lib-logger" },
-    { "path": "../lib-env" },
-    { "path": "../lib-typescript" },
-    { "path": "../lib-database" },
-    { "path": "../lib-nextjs" },
-    { "path": "../lib-react" }
+    {
+      "path": "../lib-types"
+    },
+    {
+      "path": "../lib-logger"
+    },
+    {
+      "path": "../lib-env"
+    },
+    {
+      "path": "../lib-typescript"
+    },
+    {
+      "path": "../lib-database"
+    },
+    {
+      "path": "../lib-nextjs"
+    },
+    {
+      "path": "../lib-react"
+    },
+    {
+      "path": "../lib-redis"
+    }
   ]
 }

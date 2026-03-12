@@ -10,6 +10,12 @@ This repository contains a comprehensive AI-powered advocacy platform designed t
 - **chat**: Ensure Java code follows Maven compilation standards with `mvn compile`
 - All code should maintain existing formatting and style patterns
 
+### Test Mock Reset Rules
+
+- Do not use `jest.clearAllMocks()` or `jest.resetAllMocks()` as a blanket reset strategy.
+- Prefer targeted resets such as `mockFn.mockClear()` / `mockFn.mockReset()` for only the mocks used by the suite.
+- Reuse preconfigured global mocks from Jest setup files instead of globally clearing all mock state.
+
 ### Development Flow
 
 **Frontend (Next.js/TypeScript)**:
@@ -34,6 +40,10 @@ This repository contains a comprehensive AI-powered advocacy platform designed t
 - `chat/`: Java 21 backend with Maven multi-module architecture, LangChain4j integration
 - `db/`: PostgreSQL database schema and migration files
 - `.github/copilot-instructions.md`: Comprehensive development guidelines (this file)
+
+## Monorepo Structure
+- All code is organized in a monorepo with clear package boundaries:
+- See [MONOREPO_GUIDE.md](../MONOREPO_GUIDE.md) for detailed structure and conventions.
 
 ## Key Technologies
 

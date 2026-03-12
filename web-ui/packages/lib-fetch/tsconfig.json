@@ -1,0 +1,39 @@
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
+        "composite": true,
+        "declaration": true,
+        "declarationMap": true,
+        "baseUrl": ".",
+        "noEmit": false,
+        "types": [
+            "node",
+            "jest"
+        ]
+    },
+    "include": [
+        "src/**/*.d.ts",
+        "src/**/*.ts",
+        "src/**/*.tsx"
+    ],
+    "exclude": [
+        "node_modules",
+        "**/__tests__/**",
+        "**/__mocks__/**",
+        "dist"
+    ],
+    "references": [
+        {
+            "path": "../lib-redis"
+        },
+        {
+            "path": "../lib-types"
+        },
+        {
+            "path": "../lib-typescript"
+        }
+    ]
+}

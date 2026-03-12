@@ -9,10 +9,10 @@
  * @since 2025-07-19
  */
 
-import { render, screen } from '@/__tests__/test-utils';
+import { render, screen } from '../../../shared/test-utils';
 import React from 'react';
 
-jest.mock('@/components/error-boundaries/ServerSafeErrorManager', () => ({
+jest.mock('../../../../components/error-boundaries/ServerSafeErrorManager', () => ({
   __esModule: true,
   default: jest.fn(() => <div>Mocked ServerSafeErrorManager</div>),
 }));
@@ -48,7 +48,7 @@ jest.mock('@compliance-theater/themes', () => {
 });
 
 // Mock EmailContextProvider
-jest.mock('@/components/email-message/email-context', () => ({
+jest.mock('../../../../components/email-message/email-context', () => ({
   EmailContextProvider: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="email-context-provider">{children}</div>
   ),
@@ -147,15 +147,15 @@ jest.mock(
   }),
 );
 
-jest.mock('@/components/email-message/dashboard-layout/branding', () => ({
+jest.mock('../../../../components/email-message/dashboard-layout/branding', () => ({
   Branding: {
     title: 'Mystery Compliance Theater 2000',
     logo: <span data-testid="branding-logo">Logo</span>,
   },
 }));
 
-import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
-import type { Session } from '@auth/core/types';
+import { EmailDashboardLayout } from '../../../../components/email-message/dashboard-layout/email-dashboard-layout';
+import type { Session } from '@compliance-theater/types/auth-core/types';
 import { usePathname } from 'next/navigation';
 import { ThemeSelector } from '@compliance-theater/themes';
 

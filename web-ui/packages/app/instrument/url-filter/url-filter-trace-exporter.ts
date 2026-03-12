@@ -1,14 +1,13 @@
 import type { ReadableSpan, SpanExporter } from '@opentelemetry/sdk-trace-base';
 import type { ExportResult } from '@opentelemetry/core';
 import type { AttributeValue } from '@opentelemetry/api';
-import { log } from '@compliance-theater/logger';
+import {
+  log,
+  globalRequiredSingleton,
+} from '@compliance-theater/logger';
 import { UrlFilterEngine } from './url-filter-engine';
 import { UrlFilterOptions } from './url-filter-rules';
 import { LRUCache } from 'lru-cache';
-import {
-  globalRequiredSingleton,
-  globalSingleton,
-} from '@compliance-theater/typescript/singleton-provider';
 import { env } from '@compliance-theater/env';
 
 /*
@@ -29,8 +28,7 @@ const getFilteredSpansCache = () => {
 
 export class UrlFilteredSpanExporter
   extends UrlFilterEngine
-  implements SpanExporter
-{
+  implements SpanExporter {
   readonly #inner: SpanExporter;
   readonly #cache: LRUCache<string, boolean>;
 

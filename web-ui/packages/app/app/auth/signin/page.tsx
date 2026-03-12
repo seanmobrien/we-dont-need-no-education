@@ -4,7 +4,7 @@ import {
   SignInPage,
   type AuthProvider,
 } from '@toolpad/core/SignInPage';
-import { AuthError } from '@auth/core/errors';
+import { AuthError } from '@compliance-theater/types/auth-core/errors';
 import Image from 'next/image';
 import { providerMap, signIn } from '@compliance-theater/auth';
 import { NextAppProvider } from '@toolpad/core/nextjs';

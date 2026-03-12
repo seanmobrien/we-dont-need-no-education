@@ -3,20 +3,11 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "composite": true,
     "declaration": true,
     "declarationMap": true,
     "baseUrl": ".",
-    "paths": {
-      "@compliance-theater/after": ["../lib-after/dist"],
-      "@compliance-theater/after/*": ["../lib-after/dist/*"],
-      "@compliance-theater/env": ["../lib-env/dist"],
-      "@compliance-theater/env/*": ["../lib-env/dist/*"],
-      "@compliance-theater/logger": ["../lib-logger/dist"],
-      "@compliance-theater/logger/*": ["../lib-logger/dist/*"],
-      "@compliance-theater/typescript": ["../lib-typescript/dist"],
-      "@compliance-theater/typescript/*": ["../lib-typescript/dist/*"]
-    },
     "types": [
       "node",
       "jest"
@@ -30,12 +21,25 @@
   ],
   "exclude": [
     "node_modules",
+    "**/__tests__/**",
+    "**/__mocks__/**",
     "dist"
   ],
   "references": [
-    { "path": "../lib-after" },
-    { "path": "../lib-env" },
-    { "path": "../lib-logger" },
-    { "path": "../lib-typescript" }
+    {
+      "path": "../lib-after"
+    },
+    {
+      "path": "../lib-env"
+    },
+    {
+      "path": "../lib-logger"
+    },
+    {
+      "path": "../lib-typescript"
+    },
+    {
+      "path": "../lib-types"
+    }
   ]
 }

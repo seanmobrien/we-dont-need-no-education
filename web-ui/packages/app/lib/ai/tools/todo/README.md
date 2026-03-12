@@ -13,14 +13,12 @@ The Todo List MCP provides a simple, in-memory task management system that can b
 ### Components
 
 1. **TodoManager** (`todo-manager.ts`)
-
    - Singleton class managing an in-memory todo list
    - Provides CRUD operations for todo items
    - Each todo has: id, title, description, completed status, timestamps, **and optional userId**
    - Each todo list has: id, title, description, status, priority, todos array, timestamps, **and optional userId**
 
 2. **Tool Callbacks** (`tool-callback.ts`)
-
    - Five tool implementations that wrap TodoManager operations
    - Proper error handling and logging
    - Zod schema validation for inputs/outputs
@@ -44,7 +42,7 @@ All todo lists and items are automatically scoped to the signed-in user via sess
 
 ### Implementation Details
 
-The system uses Next.js authentication (`auth()` from `@/auth`) to automatically:
+The system uses Next.js authentication (`auth()` from `@compliance-theater/auth/auth`) to automatically:
 
 1. Extract the current user's ID from the session
 2. Apply userId filtering to all list and item queries

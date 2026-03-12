@@ -2,7 +2,7 @@
 import {
   buildAttachmentOrEmailFilter,
   buildQueryFilter,
-} from '@/lib/components/mui/data-grid/queryHelpers/postgres';
+} from '../../../../../lib/components/mui/data-grid/queryHelpers/postgres';
 import { GridFilterModel } from '@mui/x-data-grid-pro';
 import { sqlNeonAdapter } from '@compliance-theater/database/driver';
 

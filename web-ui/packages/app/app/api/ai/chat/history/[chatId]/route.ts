@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@compliance-theater/auth';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { schema } from '@compliance-theater/database/orm';
-import { eq, and } from 'drizzle-orm';
+import { eq, and } from '@compliance-theater/database/drizzle-orm';
 import { LoggedError } from '@compliance-theater/logger';
 import type { ChatDetails, ChatTurn } from '@/lib/ai/chat';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';

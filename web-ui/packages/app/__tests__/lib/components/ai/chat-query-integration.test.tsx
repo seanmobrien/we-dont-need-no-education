@@ -4,9 +4,15 @@
 
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import React from 'react';
-import { renderHook } from '@/__tests__/test-utils';
-import { useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+import { renderHook } from '../../../shared/test-utils';
+import { useChatFetchWrapper } from '../../../../lib/components/ai/chat-fetch-wrapper';
+import { resolveFetchService } from '../../../../lib/fetch-service';
+
+const fetchMock = jest.fn();
+
+jest.mock('../../../../lib/fetch-service', () => ({
+  resolveFetchService: jest.fn(),
+}));
 
 // Polyfill ReadableStream for Node.js test environment
 if (!globalThis.ReadableStream) {
@@ -25,7 +31,7 @@ jest.mock('@compliance-theater/env', () => ({
 }));
 
 // Mock the hash function
-jest.mock('@/lib/ai/core/chat-ids', () => ({
+jest.mock('@compliance-theater/types/lib/ai/core/chat-ids', () => ({
   notCryptoSafeKeyHash: jest.fn(
     (input: string) => `hash-${input.slice(0, 10)}`,
   ),
@@ -71,8 +77,9 @@ const createTestWrapper = () => {
 
 describe('TanStack React Query Chat Integration', () => {
   beforeEach(() => {
+    (resolveFetchService as unknown as jest.Mock).mockReturnValue(fetchMock);
     // Clear mocks - fetch is already mocked in jest.setup.ts
-    (fetch as jest.Mock).mockClear();
+    fetchMock.mockClear();
   });
 
   describe('useChatFetchWrapper', () => {
@@ -88,9 +95,7 @@ describe('TanStack React Query Chat Integration', () => {
 
     it('should create chatFetch function that makes requests', async () => {
       const mockResponseData = { message: 'success' };
-      (fetch as jest.Mock).mockResolvedValueOnce(
-        mockResponse(mockResponseData),
-      );
+      fetchMock.mockResolvedValueOnce(mockResponse(mockResponseData));
 
       const { result } = renderHook(() => useChatFetchWrapper(), {
         wrapper: createTestWrapper(),

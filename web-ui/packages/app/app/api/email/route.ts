@@ -13,7 +13,7 @@ import {
   wrapRouteRequest,
 } from '@compliance-theater/nextjs/server/utils';
 import { drizDbWithInit, schema } from '@compliance-theater/database/orm';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray } from '@compliance-theater/database/drizzle-orm';
 // count_kpi import removed; not used in this route currently
 import {
   DrizzleSelectQuery,

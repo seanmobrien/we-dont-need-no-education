@@ -1,5 +1,5 @@
-import { renderHook, act } from '@testing-library/react';
-import { useMousePosition } from '@/lib/hooks/use-mouse-position';
+import { renderHook, act } from '../../shared/test-utils';
+import { useMousePosition } from '../../../lib/hooks/use-mouse-position';
 
 describe('useMousePosition', () => {
   it('initializes with default position (0, 0)', () => {

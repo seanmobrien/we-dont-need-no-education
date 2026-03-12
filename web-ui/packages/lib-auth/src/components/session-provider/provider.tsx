@@ -1,51 +1,53 @@
-'use client';
+/* global process, window, TextEncoder */
+
+"use client";
 
 import React, {
-  createContext,
   PropsWithChildren,
   useCallback,
   useEffect,
   useState,
   useRef,
-} from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+} from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   SessionContextType,
   SessionResponse,
   KeyValidationStatus,
-} from './types';
+} from "./types";
 import {
   isKeyValidationDue,
   performKeyValidationWorkflow,
   updateKeyValidationTimestamp,
-} from '../../lib/utilities/key-validation';
+} from "../../lib/utilities/key-validation";
 import {
   getUserPublicKey,
   generateUserKeyPair,
   getUserPublicKeyForServer,
-} from '../../lib/utilities/user-keys';
-import { fetch } from '@compliance-theater/nextjs/fetch';
-import { Session } from '@auth/core/types';
-import { useNotifications } from '@toolpad/core';
-import { LoggedError } from '@compliance-theater/logger';
-import { InvalidGrantError } from '../../lib/errors';
+} from "../../lib/utilities/user-keys";
+import { resolveFetchService } from "../../lib/utilities/fetch-service";
+import { AuthSession as Session } from "@compliance-theater/types/lib/auth/session";
+import { useNotifications } from "@toolpad/core";
+import { LoggedError } from "@compliance-theater/logger";
+import { InvalidGrantError } from "@compliance-theater/logger/errors/invalid-grant-error";
 
-export const SessionContext = createContext<SessionContextType<object> | null>(
-  null,
-);
-const SESSION_QUERY_KEY = ['auth-session'] as const;
+import { SessionContext } from "@compliance-theater/types/components/auth/session-context";
+
+const fetch = resolveFetchService();
+
+const SESSION_QUERY_KEY = ["auth-session"] as const;
 const SESSION_WITH_KEYS_QUERY_KEY = [
   ...SESSION_QUERY_KEY,
-  'with-keys',
+  "with-keys",
 ] as const;
 type SessionQueryKey =
   | typeof SESSION_QUERY_KEY
   | typeof SESSION_WITH_KEYS_QUERY_KEY;
 
 const mutationFn = async ({ publicKey }: { publicKey: string }) => {
-  const res = await fetch('/api/auth/keys', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const res = await fetch("/api/auth/keys", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ publicKey }),
   });
 
@@ -56,7 +58,7 @@ const mutationFn = async ({ publicKey }: { publicKey: string }) => {
   const result = await res.json();
 
   if (!result.success) {
-    throw new Error(result.error || 'Key upload was not successful');
+    throw new Error(result.error || "Key upload was not successful");
   }
 
   return result;
@@ -64,14 +66,14 @@ const mutationFn = async ({ publicKey }: { publicKey: string }) => {
 
 const queryFn = async ({ queryKey }: { queryKey: SessionQueryKey }) => {
   const url =
-    queryKey.length > 1 && queryKey[1] === 'with-keys'
-      ? '/api/auth/session?get-keys=true'
-      : '/api/auth/session';
+    queryKey.length > 1 && queryKey[1] === "with-keys"
+      ? "/api/auth/session?get-keys=true"
+      : "/api/auth/session";
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error('Failed to fetch session', {
+    throw new Error("Failed to fetch session", {
       cause: {
-        name: 'FetchError',
+        name: "FetchError",
         status: res.status,
         statusText: res.statusText,
       },
@@ -80,66 +82,110 @@ const queryFn = async ({ queryKey }: { queryKey: SessionQueryKey }) => {
   return (await res.json()) as SessionResponse<Session>;
 };
 
-const NOTIFICATION_KEY_USERHASH_COMPUTE = 'userhash-compute';
-const errorMessage = 'Error computing user hash';
+const NOTIFICATION_KEY_USERHASH_COMPUTE = "userhash-compute";
+const errorMessage = "Error computing user hash";
+
+const isBuilding = (): boolean => {
+  if (typeof process === "undefined" || typeof process.env !== "object") {
+    return false;
+  }
+  return (
+    !!process.env.NEXT_PHASE && process.env.NEXT_PHASE.indexOf("-build") > 0
+  );
+};
+
+const isMissingQueryClientError = (error: unknown): boolean => {
+  return error instanceof Error && error.message.includes("No QueryClient set");
+};
 
 export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
   children,
 }) => {
   // Key validation state
   const [keyValidationStatus, setKeyValidationStatus] =
-    useState<KeyValidationStatus>('unknown');
+    useState<KeyValidationStatus>("unknown");
   const [lastValidated, setLastValidated] = useState<Date>();
   const [validationError, setValidationError] = useState<string>();
   const notifications = useNotifications();
 
   // Prevent unnecessary re-renders by tracking previous values
   const previousSessionStatus = useRef<
-    'loading' | 'processing' | 'authenticated' | 'unauthenticated'
-  >('loading');
-  const previousKeyValidationStatus = useRef<KeyValidationStatus>('unknown');
+    "loading" | "processing" | "authenticated" | "unauthenticated"
+  >("loading");
+  const previousKeyValidationStatus = useRef<KeyValidationStatus>("unknown");
   const [userHash, setUserHash] = useState<string | null>();
 
   // Session query - fetch with keys when validation is due
   const shouldGetKeys = isKeyValidationDue();
 
-  const { data, isLoading, isFetching, refetch } = useQuery<
-    SessionResponse<Session>,
-    Error,
-    SessionResponse<Session>,
-    SessionQueryKey
-  >({
-    queryKey: shouldGetKeys ? SESSION_WITH_KEYS_QUERY_KEY : SESSION_QUERY_KEY,
-    queryFn,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: 5 * 60 * 1000, // SWR-style refresh every 5 min
-    refetchOnWindowFocus: true,
-    refetchOnMount: false,
-  });
+  let data: SessionResponse<Session> | undefined = undefined;
+  let isLoading = false;
+  let isFetching = false;
+  let refetch: () => unknown = () => undefined;
 
-  // Check for fatal session errors
-  if (data?.data?.error === 'RefreshAccessTokenError') {
-    throw new InvalidGrantError('Session refresh failed');
+  try {
+    const queryResult = useQuery<
+      SessionResponse<Session>,
+      Error,
+      SessionResponse<Session>,
+      SessionQueryKey
+    >({
+      queryKey: shouldGetKeys ? SESSION_WITH_KEYS_QUERY_KEY : SESSION_QUERY_KEY,
+      queryFn,
+      staleTime: 5 * 60 * 1000,
+      refetchInterval: 5 * 60 * 1000,
+      refetchOnWindowFocus: true,
+      refetchOnMount: false,
+    });
+    data = queryResult.data;
+    isLoading = queryResult.isLoading;
+    isFetching = queryResult.isFetching;
+    refetch = queryResult.refetch;
+  } catch (error) {
+    if (!(isBuilding() && isMissingQueryClientError(error))) {
+      throw error;
+    }
   }
 
-  const { mutateAsync } = useMutation({
-    mutationKey: ['upload-public-key'],
-    scope: {
-      id: 'upload-public-key',
-    },
-    mutationFn: mutationFn,
-    onError: (error) => {
-      setKeyValidationStatus('failed');
-      setValidationError(
-        error instanceof Error ? error.message : 'Failed to upload public key',
-      );
-    },
-    onSuccess: () => {
-      setKeyValidationStatus('synchronized');
-      setLastValidated(new Date());
-      updateKeyValidationTimestamp();
-    },
-  });
+  // Check for fatal session errors
+  if (
+    (data?.data as { error?: string } | null | undefined)?.error ===
+    "RefreshAccessTokenError"
+  ) {
+    throw new InvalidGrantError("Session refresh failed");
+  }
+
+  let mutateAsync: (args: {
+    publicKey: string;
+  }) => Promise<unknown> = async () => undefined;
+
+  try {
+    const mutation = useMutation({
+      mutationKey: ["upload-public-key"],
+      scope: {
+        id: "upload-public-key",
+      },
+      mutationFn: mutationFn,
+      onError: (error: Error) => {
+        setKeyValidationStatus("failed");
+        setValidationError(
+          error instanceof Error
+            ? error.message
+            : "Failed to upload public key",
+        );
+      },
+      onSuccess: () => {
+        setKeyValidationStatus("synchronized");
+        setLastValidated(new Date());
+        updateKeyValidationTimestamp();
+      },
+    });
+    mutateAsync = mutation.mutateAsync;
+  } catch (error) {
+    if (!(isBuilding() && isMissingQueryClientError(error))) {
+      throw error;
+    }
+  }
   useEffect(() => {
     let cancelled = false;
     const unmountedEffect = () => {
@@ -147,7 +193,7 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
     };
     // compute user hash
     // no-op on server or if crypto not available
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       return unmountedEffect;
     }
     if (!window.crypto || !window.crypto.subtle) {
@@ -167,12 +213,12 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
     const computeHash = async () => {
       const enc = new TextEncoder();
       const data = enc.encode(input);
-      const digest = await window.crypto.subtle.digest('SHA-256', data);
+      const digest = await window.crypto.subtle.digest("SHA-256", data);
       // convert to hex string
       const hashArray = Array.from(new Uint8Array(digest));
       const hashHex = hashArray
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
       // attach to response for downstream usage
       return hashHex;
     };
@@ -186,13 +232,13 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
       })
       .catch((err) => {
         LoggedError.isTurtlesAllTheWayDownBaby(err, {
-          source: 'UserHashCompute',
+          source: "UserHashCompute",
           log: true,
         });
         if (cancelled) return;
         // show notification of failure
         notifications.show(errorMessage, {
-          severity: 'error',
+          severity: "error",
           key: NOTIFICATION_KEY_USERHASH_COMPUTE,
           autoHideDuration: 60000, // 60 seconds
         });
@@ -204,7 +250,7 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
   // Key validation logic
   const performKeyValidation = useCallback(
     async (publicKeys: string[]) => {
-      setKeyValidationStatus('validating');
+      setKeyValidationStatus("validating");
       setValidationError(undefined);
 
       try {
@@ -219,20 +265,20 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
 
         if (result.validated) {
           if (result.synchronized) {
-            setKeyValidationStatus('synchronized');
+            setKeyValidationStatus("synchronized");
           } else {
-            setKeyValidationStatus('valid');
+            setKeyValidationStatus("valid");
           }
           setLastValidated(new Date());
           updateKeyValidationTimestamp();
         } else {
-          setKeyValidationStatus('failed');
+          setKeyValidationStatus("failed");
           setValidationError(result.error);
         }
       } catch (error) {
-        setKeyValidationStatus('failed');
+        setKeyValidationStatus("failed");
         setValidationError(
-          error instanceof Error ? error.message : 'Key validation failed',
+          error instanceof Error ? error.message : "Key validation failed",
         );
       }
     },
@@ -240,15 +286,15 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
   );
 
   // Trigger key validation when public keys are available and validation is due
-  const dataStatus = data?.status ?? 'unauthenticated';
-  const dataKeys = (data?.publicKeys ?? []).join(',');
+  const dataStatus = data?.status ?? "unauthenticated";
+  const dataKeys = (data?.publicKeys ?? []).join(",");
 
   useEffect(() => {
     if (
-      dataStatus === 'authenticated' &&
+      dataStatus === "authenticated" &&
       data?.publicKeys &&
       isKeyValidationDue() &&
-      keyValidationStatus === 'unknown'
+      keyValidationStatus === "unknown"
     ) {
       performKeyValidation(data.publicKeys);
     }
@@ -262,27 +308,27 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
 
   // Reset key validation status when user logs out
   useEffect(() => {
-    if (dataStatus === 'unauthenticated') {
-      setKeyValidationStatus('unknown');
+    if (dataStatus === "unauthenticated") {
+      setKeyValidationStatus("unknown");
       setLastValidated(undefined);
       setValidationError(undefined);
     }
   }, [dataStatus]);
 
   // Determine current session status
-  const currentStatus: 'loading' | 'authenticated' | 'unauthenticated' =
+  const currentStatus: "loading" | "authenticated" | "unauthenticated" =
     isLoading
-      ? 'loading'
-      : dataStatus === 'authenticated'
-        ? keyValidationStatus === 'validating' ||
-          keyValidationStatus === 'synchronizing' ||
+      ? "loading"
+      : dataStatus === "authenticated"
+        ? keyValidationStatus === "validating" ||
+          keyValidationStatus === "synchronizing" ||
           userHash === undefined
-          ? 'loading'
-          : 'authenticated'
-        : (dataStatus ?? 'unauthenticated');
+          ? "loading"
+          : "authenticated"
+        : (dataStatus ?? "unauthenticated");
 
   // Create context value, only updating if values actually changed
-  const contextValue: SessionContextType<object> = {
+  const contextValue: SessionContextType<Session> = {
     status: currentStatus,
     data: data?.data ?? null,
     isFetching,

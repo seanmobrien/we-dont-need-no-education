@@ -1,3 +1,5 @@
+/* global URLSearchParams */
+
 /**
  * @fileoverview Generic Resource Service for Keycloak Authorization Services
  *
@@ -10,9 +12,8 @@
 
 import { env } from '@compliance-theater/env';
 import { fetch } from '@compliance-theater/nextjs/server';
-import { LoggedError } from '@compliance-theater/logger';
+import { LoggedError, SingletonProvider } from '@compliance-theater/logger';
 import { LRUCache } from 'lru-cache';
-import { SingletonProvider } from '@compliance-theater/typescript';
 import { serviceInstanceOverloadsFactory } from '@compliance-theater/typescript';
 
 /**
@@ -148,15 +149,14 @@ export class ResourceService {
    * @returns The resource if found, null if no match is found.  Throws an error if the request fails.
    */
   public async findAuthorizedResource<
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     TResource extends BasicResourceRecord<any>,
     TAttributes extends TResource extends BasicResourceRecord<
       infer TInferAttributes
     >
-      ? TInferAttributes
-      : never = TResource extends BasicResourceRecord<infer TInferAttributes>
-      ? TInferAttributes
-      : never,
+    ? TInferAttributes
+    : never = TResource extends BasicResourceRecord<infer TInferAttributes>
+    ? TInferAttributes
+    : never,
   >(name: string): Promise<BasicResourceRecord<TAttributes> | null> {
     try {
       const pat = await this.getProtectionApiToken();
@@ -204,13 +204,12 @@ export class ResourceService {
    * @returns The resource if found, null if no match is found.  Throws an error if the request fails.
    */
   public async getAuthorizedResource<
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     TResource extends BasicResourceRecord<any>,
     TAttributes extends TResource extends BasicResourceRecord<
       infer TInferAttributes
     >
-      ? TInferAttributes
-      : never,
+    ? TInferAttributes
+    : never,
   >(id: string): Promise<BasicResourceRecord<TAttributes> | null> {
     try {
       const pat = await this.getProtectionApiToken();

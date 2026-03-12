@@ -13,9 +13,8 @@ import type {
   UserToolProviderCache,
   UserToolProviderCacheConfig,
 } from '../types';
-import { log, LoggedError } from '@compliance-theater/logger';
+import { log, LoggedError, globalRequiredSingleton } from '@compliance-theater/logger';
 import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
-import { globalRequiredSingleton } from '@compliance-theater/typescript';
 
 /**
  * Cache for maintaining ToolProviderSet instances per user across HTTP requests.
@@ -85,13 +84,13 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
       // Only include non-auth headers in hash to avoid session token changes
       headers: config.headers
         ? Object.fromEntries(
-            Object.entries(config.headers).filter(
-              ([key]) =>
-                !key.toLowerCase().includes('auth') &&
-                !key.toLowerCase().includes('cookie') &&
-                key !== 'x-chat-history-id'
-            )
+          Object.entries(config.headers).filter(
+            ([key]) =>
+              !key.toLowerCase().includes('auth') &&
+              !key.toLowerCase().includes('cookie') &&
+              key !== 'x-chat-history-id'
           )
+        )
         : {},
     });
 

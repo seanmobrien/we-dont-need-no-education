@@ -1,4 +1,4 @@
-import { type streamText, type ToolSet, type UIMessage } from 'ai';
+import { type streamText, type ToolSet, type UIMessage } from '@compliance-theater/types/ai-sdk';
 import { LoggedError, log } from '@compliance-theater/logger';
 
 type StreamTextResult<TOOLS extends ToolSet, NEVER> = ReturnType<

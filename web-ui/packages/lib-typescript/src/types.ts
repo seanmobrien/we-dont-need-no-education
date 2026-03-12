@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 /**
  * @module types
  * This module provides various utility types for TypeScript, including:
@@ -115,8 +113,8 @@ export type PartialExceptFor<T, K extends keyof T> = Partial<T> &
  */
 export type KebabToCamelCase<S extends string> =
   S extends `${infer T}-${infer U}`
-    ? `${T}${Capitalize<KebabToCamelCase<U>>}`
-    : S;
+  ? `${T}${Capitalize<KebabToCamelCase<U>>}`
+  : S;
 
 /**
  * Simple utility type for declaring keys of other types.
@@ -363,5 +361,6 @@ export type ExcludeExactMatch<T, U> = T extends U ? never : T;
 export type IsNotNull<K> = K extends null
   ? never
   : K extends undefined
-    ? never
-    : K;
+  ? never
+  : K;
+

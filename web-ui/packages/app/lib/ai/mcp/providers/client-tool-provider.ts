@@ -64,7 +64,7 @@
  *   uniform with potential asynchronous providers while avoiding complexity.
  */
 
-import { ToolSet } from 'ai';
+import { ToolSet } from '@compliance-theater/types/ai-sdk';
 import { ConnectableToolProvider, MCPClient } from '../types';
 import z from 'zod';
 import EventEmitter from '@protobufjs/eventemitter';

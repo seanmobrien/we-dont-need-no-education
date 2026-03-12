@@ -8,39 +8,56 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*.ts",
       "default": "./dist/*.js"
     }
   },
   "engines": {
     "node": ">=22.0.0",
-    "yarn": ">=1.22.0"
+    "yarn": ">=4.12.0"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "yarn workspace @compliance-theater/env run build:typescript",
+    "add": "yarn workspace @compliance-theater/env add ",
+    "build": "yarn run build:typescript",
     "build:typescript": "echo 'Building @compliance-theater/env...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/env.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/env.\u001b[0m\n' >&2; exit 1)",
-    "build:publish": "yarn workspace @compliance-theater/env run build && yarn workspace @compliance-theater/env pack --out ./dist/@compliance-theater-env.tgz",
+    "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-env.tgz",
     "test": "jest",
-    "lint": "echo 'Linting lib-env...'",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@compliance-theater/logger": "workspace:*",
-    "zod": "^3.24.1"
+    "@compliance-theater/types": "workspace:*",
+    "@opentelemetry/api": "1.9.0",
+    "@opentelemetry/api-logs": "0.57.2",
+    "react-native": "^0.84.0",
+    "zod": "3.25.76"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@playwright/test": "^1.55.0",
+    "@swc/core": "^1.13.5",
+    "@swc/jest": "^0.2.39",
+    "@types/jest": "^30.0.0",
+    "@types/node": "25.2.3",
+    "@types/react": "19.2.4",
+    "@types/react-dom": "19.2.3",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "canvas": "^3.2.0",
+    "cross-env": "^10.0.0",
+    "dotenv": "^16.5.0",
+    "eslint": "^9.39.3",
+    "eslint-config-next": "15.5.12",
+    "eslint-config-prettier": "^10.1.5",
     "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
+    "postcss": "^8.5.3",
     "rimraf": "^6.1.2",
-    "ts-jest": "^29.3.4",
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }

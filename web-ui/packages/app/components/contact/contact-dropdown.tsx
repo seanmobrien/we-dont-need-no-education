@@ -5,7 +5,7 @@ import { Contact, ContactSummary } from '@/data-models/api/contact';
 import { createContactSummary } from '@/data-models/api';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { css, SerializedStyles } from '@emotion/react';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+import { resolveFetchService } from '@/lib/fetch-service';
 
 interface ContactDropdownProps {
   displayValue?: 'name' | 'email' | 'both';
@@ -23,6 +23,7 @@ const dropdownStyles = {
 };
 
 const emptyContact = createContactSummary();
+const fetch = resolveFetchService();
 
 const ContactDropdown = ({
   displayValue = 'name',

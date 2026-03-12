@@ -7,7 +7,7 @@ import type {
 import { LoggedError, log } from '@compliance-theater/logger';
 import type { ChatHistoryContext } from './types';
 import { enqueueStream, ProcessingQueue } from './processing-queue';
-import { JSONValue, simulateReadableStream, wrapLanguageModel } from 'ai';
+import { JSONValue, simulateReadableStream, wrapLanguageModel } from '@compliance-theater/types/ai-sdk';
 import { MiddlewareStateManager } from '../state-management';
 import { ToolMap } from '../../services/model-stats/tool-map';
 import { createToolOptimizingMiddleware } from '../tool-optimizing-middleware';

@@ -1,8 +1,8 @@
-import { jwt } from '@/lib/auth/jwt';
-import { JWT } from '@auth/core/jwt';
+import { jwt } from '../../src/lib/jwt';
+import type { JWT } from '@compliance-theater/types/auth-core/jwt';
 
 // Mock dependencies
-jest.mock('@/lib/auth/utilities', () => ({
+jest.mock('@compliance-theater/auth/lib/utilities', () => ({
   decodeToken: jest.fn(),
 }));
 

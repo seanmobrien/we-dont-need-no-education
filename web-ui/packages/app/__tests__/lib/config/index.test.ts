@@ -15,16 +15,16 @@ import {
   withIgnorePacks,
   withStripRscPrefixPlugin,
   withBundleAnalyzer,
-} from '@/lib/config';
+} from '../../../lib/config';
 
 // Import individual modules for more focused testing
-import { StripRscPrefixPlugin } from '@/lib/config/strip-rsc-prefix-plugin';
+import { StripRscPrefixPlugin } from '../../../lib/config/strip-rsc-prefix-plugin';
 import { WebpackConfigContext } from 'next/dist/server/config-shared';
-import { withTypescriptConfig } from '@/lib/config/typescript-config';
+import { withTypescriptConfig } from '../../../lib/config/typescript-config';
 import {
   withReactConfig,
   withReactConfigFactory,
-} from '@/lib/config/react-config';
+} from '../../../lib/config/react-config';
 
 describe('lib/config/index.ts', () => {
   describe('exports', () => {

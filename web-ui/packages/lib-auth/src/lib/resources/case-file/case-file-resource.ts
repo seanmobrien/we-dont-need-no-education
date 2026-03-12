@@ -1,6 +1,6 @@
 import { env } from '@compliance-theater/env';
 import { log, LoggedError, createSafeAsyncWrapper } from '@compliance-theater/logger';
-import type { NextRequest } from 'next/server';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import { getRequestTokens } from '../../access-token';
 import { resourceService } from '../resource-service';
 import { authorizationService } from '../authorization-service'; 
@@ -106,7 +106,7 @@ const createCaseFileResource = (
 export const checkCaseFileAccess = createSafeAsyncWrapper(
   'checkCaseFileAccess',
   async (
-    req: NextRequest | undefined,
+    req: LikeNextRequest | undefined,
     userIdOrScope: number | CaseFileScope,
     caseScope?: CaseFileScope
   ): Promise<boolean> => {

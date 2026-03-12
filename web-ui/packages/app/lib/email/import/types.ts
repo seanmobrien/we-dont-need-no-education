@@ -6,8 +6,7 @@ import { ContactRepository } from '@/lib/api/contacts/database';
 import { EmailRepository } from '@/lib/api/email/database';
 import { StagedAttachmentRepository } from '@/lib/api/email/import/staged-attachment';
 import { ThreadRepository } from '@/lib/api/thread/database';
-import { NextApiRequest } from 'next';
-import { NextRequest } from 'next/server';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 
 /**
  * Represents the context for processing a specific stage in the import process.
@@ -79,7 +78,7 @@ export type TransactionalImportStageManager = {
  * Represents the context for processing a specific stage in the import process.
  */
 export type AdditionalStageOptions = {
-  req: NextRequest | NextApiRequest;
+  req: LikeNextRequest;
   threadRepository?: ThreadRepository;
   emailRepository?: EmailRepository;
   contactRepository?: ContactRepository;

@@ -1,4 +1,6 @@
-import { SingletonProvider } from '@compliance-theater/typescript';
+/* global Headers, RequestInit */
+
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 export interface RequestArgs {

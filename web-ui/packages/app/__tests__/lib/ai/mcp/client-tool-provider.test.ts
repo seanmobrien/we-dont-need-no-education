@@ -1,10 +1,10 @@
 /* @jest-environment node */
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+import { setupImpersonationMock } from '../../../jest.mock-impersonation';
 
 setupImpersonationMock();
 
-import { clientToolProviderFactory } from '@/lib/ai/mcp/providers';
+import { clientToolProviderFactory } from '../../../../lib/ai/mcp/providers';
 
 describe('clientToolProviderFactory', () => {
   let provider: ReturnType<typeof clientToolProviderFactory>;

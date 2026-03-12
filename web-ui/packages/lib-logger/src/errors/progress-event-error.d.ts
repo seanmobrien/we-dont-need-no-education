@@ -1,11 +1,11 @@
-import { SafeProgressEvent } from '../utilities/error-guards';
-import { ErrorContext, IContextEnricher } from '../types';
+import type { SafeProgressEvent } from './utilities/safe-progress-event';
+import type { ErrorContext, IContextEnricher } from './types';
 
-export declare class ProgressEventError<
-    TEventTarget extends EventTarget = XMLHttpRequest,
-  >
-  implements Error, IContextEnricher
-{
+
+export class ProgressEventError<
+  TEventTarget extends EventTarget = XMLHttpRequest,
+>
+  implements Error, IContextEnricher {
   name: string;
   message: string;
   lengthComputable: boolean;

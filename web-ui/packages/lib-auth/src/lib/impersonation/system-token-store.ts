@@ -1,3 +1,5 @@
+/* global URL, process, require, URLSearchParams */
+
 /**
  * @fileoverview SystemTokenStore - Singleton for managing shared admin tokens across impersonation instances
  *
@@ -26,11 +28,8 @@
  * @version 2.0.0
  */
 
-/* eslint-disable @typescript-eslint/no-require-imports */
-/* eslint-disable @typescript-eslint/no-unsafe-function-type */
-
 import { CookieJar } from 'tough-cookie';
-import { log, LoggedError } from '@compliance-theater/logger';
+import { log, LoggedError, SingletonProvider } from '@compliance-theater/logger';
 import { got } from 'got';
 import { parse as parseHtml } from 'node-html-parser';
 import { createInstrumentedSpan } from '@compliance-theater/nextjs/server/utils';
@@ -46,7 +45,6 @@ import type {
   FormLoginResult,
 } from './impersonation.types';
 import { defaultConfigFromEnv } from './utility';
-import { SingletonProvider } from '@compliance-theater/typescript';
 
 let openIdClientModule: {
   discovery: Function;
@@ -1280,8 +1278,7 @@ export class SystemTokenStore {
         const finalUrl =
           codeUrl ??
           new URL(
-            `${
-              this.config.redirectUri
+            `${this.config.redirectUri
             }?code=admin-code&state=${encodeURIComponent(state)}`
           );
 

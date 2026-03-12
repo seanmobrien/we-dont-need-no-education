@@ -1,5 +1,5 @@
 import { LoggedError } from '@compliance-theater/logger';
-import { UIDataTypes, UIMessagePart, UITools } from 'ai';
+import { UIDataTypes, UIMessagePart, UITools } from '@compliance-theater/types/ai-sdk';
 import { promptTokensEstimate } from 'openai-chat-tokens';
 import { LanguageModelV2Prompt } from '@ai-sdk/provider';
 import {

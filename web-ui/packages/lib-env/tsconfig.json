@@ -3,6 +3,7 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "composite": true,
     "declaration": true,
     "declarationMap": true,
@@ -19,7 +20,15 @@
   "exclude": [
     "node_modules",
     "dist",
-    "**/*.test.ts",
-    "**/__tests__/**"
+    "**/__tests__/**",
+    "**/__mocks__/**"
+  ],
+  "references": [
+    {
+      "path": "../lib-logger"
+    },
+    {
+      "path": "../lib-types"
+    }
   ]
 }

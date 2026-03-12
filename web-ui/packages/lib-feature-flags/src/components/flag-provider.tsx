@@ -1,18 +1,21 @@
-'use client';
+/* global NodeJS, clearTimeout, setTimeout */
 
-import { useMemo, useState, useEffect, useRef } from 'react';
+"use client";
+
+import { useMemo, useState, useEffect, useRef } from "react";
+import type React from "react";
 import {
   FeatureFlagsApi,
   AllFeatureFlagsDefault,
   KnownFeatureType,
   KnownFeatureValueType,
-} from '../index';
-import { getAllFeatureFlags } from '../client';
-import FeatureFlagsContext from '../context';
-import { useFlagsmithLoading } from 'flagsmith/react';
-import { useSession } from '@compliance-theater/auth/components/session-provider/index';
-import type { Session } from '@auth/core/types';
-import { errorReporter } from '@/lib/error-monitoring/error-reporter';
+} from "../index";
+import { getAllFeatureFlags } from "../client";
+import FeatureFlagsContext from "../context";
+import { useFlagsmithLoading } from "flagsmith/react";
+import { useSession } from "@compliance-theater/types/components/auth/session-context";
+import type { Session } from "@compliance-theater/types";
+import { errorReporter } from "@compliance-theater/logger/errors/monitoring/error-reporter";
 
 const defaultFlags = AllFeatureFlagsDefault;
 
@@ -28,7 +31,7 @@ export const FlagProvider = ({ children }: { children: React.ReactNode }) => {
   const hasLoadedRef = useRef<number>(0);
   // This means feature flags won't work on anon pages, but I think we're OK without
   // toggling the home and privacy pages
-  const sessionLoaded = status === 'authenticated';
+  const sessionLoaded = status === "authenticated";
   useEffect(() => {
     let isSubscribed = true;
     let timeoutId: NodeJS.Timeout | null = null;
@@ -45,7 +48,9 @@ export const FlagProvider = ({ children }: { children: React.ReactNode }) => {
           timeoutId = setTimeout(loadFlags, 3 * 60 * 1000); // 3 minutes
         }
       } catch (error) {
-        errorReporter((r: { reportError: (error: unknown) => void }) => r.reportError(error));
+        errorReporter((r: { reportError: (error: unknown) => void }) =>
+          r.reportError(error),
+        );
         if (isSubscribed && !timeoutId) {
           timeoutId = setTimeout(loadFlags, 30 * 1000); // 30 seconds
         }

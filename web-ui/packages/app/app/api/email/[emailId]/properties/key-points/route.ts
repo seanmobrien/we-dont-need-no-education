@@ -9,7 +9,7 @@ import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { schema } from '@compliance-theater/database/orm';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
-import { PgColumn } from 'drizzle-orm/pg-core';
+import { PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 import {
   checkCaseFileAuthorization,
   CaseFileScope,

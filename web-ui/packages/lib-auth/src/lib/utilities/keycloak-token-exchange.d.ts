@@ -1,45 +1,6 @@
-import { NextApiRequest } from 'next';
-import { NextRequest } from 'next/server';
-
-declare module '@/lib/site-util/auth/keycloak-token-exchange' {
-  /**
-   * Configuration for Keycloak token exchange operations
-   */
-  export interface KeycloakConfig {
-    issuer: string;
-    clientId: string;
-    clientSecret: string;
-  }
-
-  /**
-   * Parameters for token exchange request
-   */
-  export interface TokenExchangeParams {
-    subjectToken: string;
-    audience?: string;
-    requestedTokenType?: string;
-    scope?: string;
-  }
-
-  /**
-   * Response from Keycloak token exchange
-   */
-  export interface TokenExchangeResponse {
-    access_token: string;
-    refresh_token?: string;
-    token_type: string;
-    expires_in?: number;
-    scope?: string;
-  }
-
-  /**
-   * Google tokens extracted from token exchange response
-   */
-  export interface GoogleTokens {
-    refresh_token: string;
-    access_token: string;
-  }
-
+import type { NextApiRequest } from 'next';
+import type { NextRequest } from 'next/server';
+import type { KeycloakConfig, TokenExchangeParams, TokenExchangeResponse, GoogleTokens } from './token-exchange-types';
   /**
    * Comprehensive error class for token exchange operations
    */
@@ -125,4 +86,3 @@ declare module '@/lib/site-util/auth/keycloak-token-exchange' {
   export function getGoogleTokensFromKeycloak(
     req: NextRequest | NextApiRequest,
   ): Promise<GoogleTokens>;
-}

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ColumnList, ResultMeta } from 'postgres';
 
 export type CommandMeta = ResultMeta<number>['command'];

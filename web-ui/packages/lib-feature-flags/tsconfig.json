@@ -5,6 +5,7 @@
     "rootDir": "./src",
     "composite": true,
     "declaration": true,
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "declarationMap": true,
     "baseUrl": ".",
     "paths": {},
@@ -27,6 +28,8 @@
   "exclude": [
     "node_modules",
     "dist",
+    "**/__tests__/**",
+    "**/__mocks__/**",
     "src/**/*.d.ts"
   ],
   "references": [
@@ -44,6 +47,9 @@
     },
     {
       "path": "../lib-react"
+    },
+    {
+      "path": "../lib-types"
     }
   ]
 }

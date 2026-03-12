@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import { CaseFileScope } from './case-file-resource';
 
 /**
@@ -6,7 +7,6 @@ import { CaseFileScope } from './case-file-resource';
  *
  * @module lib/auth/resources/case-file/case-file-middleware
  */
-declare module '@/lib/auth/resources/case-file/case-file-middleware' {
   /**
    * Options for case file authorization middleware
    */
@@ -66,10 +66,8 @@ declare module '@/lib/auth/resources/case-file/case-file-middleware' {
    * ```
    */
   export function checkCaseFileAuthorization(
-    req: NextRequest,
+    req: LikeNextRequest,
     caseFileDocumentId: string | number,
     options: CaseFileAuthOptions,
   ): Promise<AuthCheckResult>;
 
-
-}

@@ -22,19 +22,17 @@ import type {
  *
  * @module lib/auth/resources/case-file
  */
-declare module '@/lib/auth/resources/case-file' {
-  export {
-    ensureCaseFileResource,
-    checkCaseFileAccess,
-    getCaseFileResourceId,
-    CaseFileScope,
-    type CaseFileResource,
-    getUserIdFromEmailId,
-    getUserIdFromUnitId,
-    getKeycloakUserIdFromUserId,
-    getAccessibleUserIds,
-    checkCaseFileAuthorization,
-    CaseFileAuthOptions,
-    AuthCheckResult,
-  };
-}
+export {
+  ensureCaseFileResource,
+  checkCaseFileAccess,
+  getCaseFileResourceId,
+  CaseFileScope,
+  type CaseFileResource,
+  getUserIdFromEmailId,
+  getUserIdFromUnitId,
+  getKeycloakUserIdFromUserId,
+  getAccessibleUserIds,
+  checkCaseFileAuthorization,
+  CaseFileAuthOptions,
+  AuthCheckResult,
+};

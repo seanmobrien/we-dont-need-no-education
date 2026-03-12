@@ -7,7 +7,7 @@
  * - Displays tool name
  * - Shows input parameters (functionCall) with inline display for primitives, json-viewer for complex objects
  * - Shows output/return value (toolResult) with inline display for primitives, json-viewer for complex objects
- * - Uses @textea/json-viewer for JSON data visualization
+ * - Uses @compliance-theater/json-viewer for JSON data visualization
  * - Matches existing UI styling
  */
 
@@ -23,7 +23,7 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import Paper from '@mui/material/Paper';
-import { JsonViewer } from '@textea/json-viewer';
+import { JsonViewer } from '@compliance-theater/json-viewer';
 import type { ChatMessage } from '@/lib/ai/chat/types';
 
 interface ToolDetailsDialogProps {

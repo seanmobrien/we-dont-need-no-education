@@ -1,0 +1,1 @@
+export const JsonViewer = jest.fn((_props: any) => (<div mock-for='jsonviewer'>MockedJsonViewer</div>));

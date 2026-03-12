@@ -1,4 +1,4 @@
-import { generateObject, UIMessage } from 'ai';
+import { generateObject, UIMessage } from '@compliance-theater/types/ai-sdk';
 import {
   LanguageModelV2Prompt,
   LanguageModelV2Message,
@@ -13,7 +13,7 @@ import { appMeters, hashUserId } from '@/lib/site-util/metrics';
 import { createAgentHistoryContext } from '../middleware/chat-history/create-chat-history-context';
 import z from 'zod';
 import { DatabaseType, DbTransactionType, drizDbWithInit, schema } from '@compliance-theater/database/orm';
-import { and, eq, not } from 'drizzle-orm';
+import { and, eq, not } from '@compliance-theater/database/drizzle-orm';
 import { AttributeValue } from '@opentelemetry/api';
 import { isKeyOf } from '@compliance-theater/typescript';
 import { countTokens } from '../core/count-tokens';
@@ -22,7 +22,7 @@ import {
   ChatToolType,
 } from '@compliance-theater/database/orm';
 import { ToolMap } from '../services/model-stats/tool-map';
-// import { sql } from 'drizzle-orm';
+// import { sql } from '@compliance-theater/database/drizzle-orm';
 
 /**
  * Create a chat_tool_calls record for a specific tool call

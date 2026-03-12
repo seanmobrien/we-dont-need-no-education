@@ -21,6 +21,6 @@ export const withWorkspaceSourceImports: NextConfigPlugin = <
         ...(config.resolve.conditionNames ?? ['...']),
       ];
       return config;
-    }) as NextConfig['webpack'],
+    }) satisfies NextConfig['webpack'],
   } as TArg;
 };

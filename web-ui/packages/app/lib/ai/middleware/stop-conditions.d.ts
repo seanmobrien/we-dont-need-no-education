@@ -1,4 +1,4 @@
-import { StopCondition } from "ai";
+import { StopCondition } from "@compliance-theater/types/ai-sdk";
 import { ToolSet } from "./types";
 
 /**

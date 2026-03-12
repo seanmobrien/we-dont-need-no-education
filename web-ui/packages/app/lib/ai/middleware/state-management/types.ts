@@ -3,7 +3,7 @@ import type {
   LanguageModelV2CallOptions,
   SharedV2ProviderOptions,
 } from '@ai-sdk/provider';
-import { JSONValue } from 'ai';
+import { JSONValue } from '@compliance-theater/types/ai-sdk';
 
 export const STATE_PROTOCOL = {
   COLLECT: '__COLLECT_MIDDLEWARE_STATE__',

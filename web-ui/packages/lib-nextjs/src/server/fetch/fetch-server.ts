@@ -1,3 +1,5 @@
+/* global Headers, URLSearchParams, URL, Buffer, AbortController, BodyInit, RequestCache */
+
 import got, {
   Response as GotResponse,
   OptionsInit,
@@ -20,9 +22,8 @@ import {
   FETCH_MANAGER_SINGLETON_KEY,
 } from './fetch-config';
 import type { FetchConfig as IFetchConfig } from './fetch-types';
-import { LoggedError, log, safeSerialize } from '@compliance-theater/logger';
+import { LoggedError, log, safeSerialize, SingletonProvider } from '@compliance-theater/logger';
 import { createInstrumentedSpan } from '../utils';
-import { SingletonProvider } from '@compliance-theater/typescript/singleton-provider';
 import { CacheStrategies } from './cache-strategies';
 import { StreamingStrategy } from './streaming-strategy';
 import { BufferingStrategy } from './buffering-strategy';
@@ -82,8 +83,7 @@ const mergeHeaders = (
 ) => {
   if (!source) return;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const getMatchingKey = (obj: Record<string, any>, key: string) => {
+  const getMatchingKey = (obj: Record<string, unknown>, key: string) => {
     const lower = key.toLowerCase();
     return Object.keys(obj).find((k) => k.toLowerCase() === lower) || key;
   };
@@ -200,9 +200,9 @@ export const normalizeRequestInit = ({
     init.timeout =
       typeof initTimeout === 'number'
         ? {
-            connect: initTimeout,
-            socket: initTimeout,
-          }
+          connect: initTimeout,
+          socket: initTimeout,
+        }
         : initTimeout;
   }
   if (typeof requestInfo === 'string') {
@@ -254,8 +254,7 @@ export const normalizeRequestInit = ({
   const headers: Record<string, string | string[] | undefined> = {};
 
   if (defaults?.headers) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mergeHeaders(headers, defaults.headers as any);
+    mergeHeaders(headers, defaults.headers as Record<string, string | string[]>);
   }
 
   if (init.headers) {
@@ -267,7 +266,7 @@ export const normalizeRequestInit = ({
   const cleanOptions: OptionsInit = {};
   for (const [k, v] of Object.entries(options)) {
     const key = k as keyof OptionsInit;
-    if (!!v) {
+    if (v) {
       (cleanOptions as Record<typeof key, OptionsInit[keyof OptionsInit]>)[
         key
       ] = v;
@@ -548,12 +547,19 @@ export class FetchManager implements ServerFetchManager {
     // otherwise, do got stream
     await this.semManager.sem.acquire();
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stream = got.stream(normalizedUrl, options as any);
+      const streamOptions: Omit<OptionsInit, 'isStream'> & {
+        isStream: true;
+      } = {
+        ...options,
+        isStream: true,
+      };
+      const stream = got.stream(normalizedUrl, streamOptions);
       const releaseOnce = () => {
         try {
           this.semManager.sem.release();
-        } catch {}
+        } catch {
+          // ignore release race during stream shutdown
+        }
       };
       stream.on('end', releaseOnce);
       stream.on('error', releaseOnce);
@@ -578,27 +584,55 @@ export class FetchManager implements ServerFetchManager {
   async #doDomFetch(url: string, normalInit: OptionsInit) {
     const domFetch = globalThis.fetch;
     if (typeof domFetch === 'function') {
+      const normalizeDomHeaders = (
+        source: OptionsInit['headers'],
+      ): Headers | undefined => {
+        if (!source) {
+          return undefined;
+        }
+        const headers = new Headers();
+        if (source instanceof Headers) {
+          source.forEach((value, key) => headers.set(key, value));
+          return headers;
+        }
+        if (Array.isArray(source)) {
+          source.forEach(([key, value]) => {
+            headers.set(key, Array.isArray(value) ? value.join(', ') : value);
+          });
+          return headers;
+        }
+        Object.entries(source).forEach(([key, value]) => {
+          if (typeof value === 'undefined') {
+            return;
+          }
+          headers.set(key, Array.isArray(value) ? value.join(', ') : value);
+        });
+        return headers;
+      };
+
       const controller = new AbortController();
       // If we were provided a signal then forward it to the controller
       const signal = normalInit.signal;
       if (signal) {
         signal.addEventListener('abort', controller.abort);
       }
-      normalInit.signal = controller.signal;
-      const domReq = domFetch(
-        url,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        normalInit as any,
-      );
+      const domInit: globalThis.RequestInit = {
+        method: normalInit.method,
+        headers: normalizeDomHeaders(normalInit.headers),
+        body: normalInit.body as BodyInit | null | undefined,
+        cache: normalInit.cache as RequestCache | undefined,
+        signal: controller.signal,
+      };
+      const domReq = domFetch(url, domInit);
       // the only timeout we handle here is request timeout
       return normalInit.timeout?.request
         ? withTimeout(domReq, normalInit.timeout.request).then((x) => {
-            if (x.timedOut) {
-              controller.abort();
-              throw new TimeoutError();
-            }
-            return x.value;
-          })
+          if (x.timedOut) {
+            controller.abort();
+            throw new TimeoutError();
+          }
+          return x.value;
+        })
         : domReq;
     }
     throw new Error('No fetch implementation found');

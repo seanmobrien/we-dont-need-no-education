@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { googleProviderFactory } from './_googleProviderFactory';
 import { isError, LoggedError } from '@compliance-theater/logger';
 import { auth } from '@compliance-theater/auth';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import {
   GmailEmailMessageHeader,
   GmailEmailMessagePart,
@@ -357,14 +358,14 @@ const getCurrentState = async ({
 
 interface GetImportMessageSourceOverloads {
   (params: {
-    req: NextRequest | NextApiRequest;
+    req: LikeNextRequest | NextApiRequest;
     provider?: string;
     emailId?: string;
     refresh?: boolean;
     errorFilter: ErrorFilter;
   }): Promise<NextResponse | ImportSourceMessage | null>;
   (params: {
-    req: NextRequest | NextApiRequest;
+    req: LikeNextRequest | NextApiRequest;
     provider?: string;
     emailId?: string;
     refresh?: boolean;
@@ -393,7 +394,7 @@ export const getImportMessageSource: GetImportMessageSourceOverloads = async ({
   refresh = false,
   errorFilter,
 }: {
-  req: NextRequest | NextApiRequest;
+  req: LikeNextRequest | NextApiRequest;
   provider?: string;
   emailId?: string;
   refresh?: boolean;

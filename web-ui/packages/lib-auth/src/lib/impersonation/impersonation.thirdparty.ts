@@ -1,3 +1,5 @@
+/* global URL, process, require */
+
 /**
  * @fileoverview Impersonation via Keycloak Admin REST API + Authorization Code flow using third-party libraries
  *
@@ -17,7 +19,7 @@ import type {
 } from './impersonation.types';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { SystemTokenStore } from './system-token-store';
-import type { Session, User } from '@auth/core/types';
+import type { Session, User } from '@compliance-theater/types/next-auth';
 import { keycloakAdminClientFactory } from '../keycloak-factories';
 import type { KeycloakAdminClient } from '../keycloak-factories';
 interface TokenResponse {
@@ -66,15 +68,10 @@ const adminBaseFromIssuer = (
 };
 
 let openIdClientModule: {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   discovery: Function;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   buildAuthorizationUrl: Function;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   authorizationCodeGrant: Function;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   randomState: Function;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   randomNonce: Function;
 } | null = null;
 //type Configuration as OIDCConfiguration
@@ -90,7 +87,6 @@ const getOpenIdClientModule = () => {
     randomState,
     randomNonce,
   } =
-    /*eslint-disable-next-line @typescript-eslint/no-require-imports*/
     require('openid-client');
   openIdClientModule = {
     discovery,
@@ -128,7 +124,6 @@ export class ImpersonationThirdParty implements ImpersonationService {
   private readonly userContext: UserContext;
   private readonly config: ThirdPartyConfig;
   private kcAdmin?: KeycloakAdminClient;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private oidcConfig?: any;
   private cookieJar?: CookieJar;
   private cachedToken?: string;
@@ -289,7 +284,9 @@ export class ImpersonationThirdParty implements ImpersonationService {
           } finally {
             try {
               span.end();
-            } catch {}
+            } catch {
+              void 0;
+            }
           }
         }
         span.setAttribute('impersonation.userId', this.userContext.userId);
@@ -370,7 +367,9 @@ export class ImpersonationThirdParty implements ImpersonationService {
               try {
                 span.recordException(secondErr as Error);
                 span.setStatus({ code: SpanStatusCode.ERROR });
-              } catch {}
+              } catch {
+                void 0;
+              }
               throw secondErr;
             }
           }

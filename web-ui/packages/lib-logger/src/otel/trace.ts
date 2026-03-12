@@ -1,3 +1,5 @@
+/* global process */
+
 export { tracer } from './metrics-recorder';
 
 // OTEL Configuration

@@ -1,14 +1,12 @@
 /**
  * Keycloak factory functions
- * @module @/lib/auth/keycloak-factories
+ * @module @compliance-theater/auth/lib/keycloak-factories
  *
  * This declaration file exposes a minimal, documented surface for creating and
  * interacting with a configured Keycloak Admin client. The runtime implementation
  * wraps the upstream Keycloak Admin SDK and normalizes the interface used across
  * the codebase so callers can rely on a small, well-documented subset of APIs.
  */
-
-declare module '@/lib/auth/keycloak-factories' {
   /**
    * Supported HTTP methods used when constructing Keycloak API requests.
    */
@@ -208,4 +206,3 @@ declare module '@/lib/auth/keycloak-factories' {
   export function keycloakAdminClientFactory(
     config: ConnectionConfig,
   ): KeycloakAdminClient;
-}

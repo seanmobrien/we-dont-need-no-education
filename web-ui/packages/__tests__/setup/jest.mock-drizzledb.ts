@@ -1,8 +1,7 @@
 import dotenv from 'dotenv';
 import { mockDeep } from 'jest-mock-extended';
-import type { DbDatabaseType } from '@compliance-theater/database/orm';
-import postgres from 'postgres';
-import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from '@compliance-theater/database/postgres';
+import { drizzle } from '@compliance-theater/database/drizzle-orm/postgres-js';
 import { schema } from '@compliance-theater/database/orm';
 import { withJestTestExtensions } from '../jest.test-extensions';
 import {
@@ -83,7 +82,12 @@ export class MockQueryBuilder implements IMockQueryBuilder {
   }
 }
 
-type DatabaseType = DbDatabaseType;
+type DatabaseType = DatabaseMockType;
+type QueryTable = {
+  findMany: jest.Mock;
+  findFirst: jest.Mock;
+};
+type QueryMap = Record<string, QueryTable | undefined>;
 const mockDbFactory = (): DatabaseMockType => {
   const db = mockDeep<DatabaseType>() as unknown as DatabaseMockType;
   const qb = db as unknown as IMockQueryBuilder;
@@ -274,11 +278,14 @@ const mockDbFactory = (): DatabaseMockType => {
         );
       }
     });
+    if (!schema) {
+      return;
+    }
     Array.from(
       Object.keys(schema) as (keyof typeof schema)[]
     ).forEach((sc) => {
       if (
-        !isKeyOf(sc, schema) || 
+        !isKeyOf(sc, schema) ||
         (typeof schema[sc] !== 'object' || !schema[sc])
       ) {
         return;
@@ -289,16 +296,17 @@ const mockDbFactory = (): DatabaseMockType => {
       }
       if (!schemaEntry.modelName) {
         return;
-      }      
+      }
 
-      const tableKey = sc as keyof typeof db.query;
-      let tbl = db.query[tableKey];
+      const tableKey = String(sc);
+      const query = (db.query as QueryMap);
+      let tbl = query[tableKey];
       if (!tbl) {
         tbl = {
           findMany: jest.fn(() => Promise.resolve([])),
           findFirst: jest.fn(() => Promise.resolve(null)),
-        } as unknown as (typeof db.query)[typeof tableKey];
-        db.query[tableKey] = tbl;
+        };
+        query[tableKey] = tbl;
       }
       if (!jest.isMockFunction(tbl.findMany)) {
         tbl.findMany = jest.fn();
@@ -411,7 +419,10 @@ export const makeMockDb = (): DatabaseType => {
   // The mock will be reset between test files by Jest's resetMocks option
 
   // Ensure the query structure is properly mocked with the expected methods
-  if (mockDb.query && mockDb.query.documentUnits) {
+  if (
+    mockDb.query &&
+    (mockDb.query as QueryMap).documentUnits
+  ) {
     // Set default behaviors - tests can override these
 
     if (!(mockDb.$count as jest.Mock).getMockImplementation()) {
@@ -430,9 +441,13 @@ const makeRecursiveMock = jest
 jest.mock('@compliance-theater/database/orm', () => {
   let actualSchema: Record<string, unknown> = {};
   try {
-    actualSchema = jest.requireActual('@compliance-theater/database/schema');
+    actualSchema = jest.requireActual('@compliance-theater/database/orm/schema');
   } catch {
-    actualSchema = {};
+    try {
+      actualSchema = jest.requireActual('@compliance-theater/database/orm');
+    } catch {
+      actualSchema = {};
+    }
   }
   const schemaExport =
     (actualSchema as { schema?: unknown }).schema ??
@@ -498,10 +513,10 @@ jest.mock('@compliance-theater/database', () => {
   };
 });
 beforeAll(() => {
-  withJestTestExtensions().makeMockDb = makeMockDb as () => DatabaseMockType;
+  withJestTestExtensions().makeMockDb = makeMockDb;
 });
 beforeEach(() => {
-  withJestTestExtensions().makeMockDb = makeMockDb as () => DatabaseMockType;
+  withJestTestExtensions().makeMockDb = makeMockDb;
 });
 
 afterEach(() => {

@@ -4,7 +4,7 @@ import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queu
 import { rateLimitMetrics } from '@/lib/ai/middleware/key-rate-limiter/metrics';
 import { isModelAvailable } from '@/lib/ai/aiModelFactory';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
-import { convertToModelMessages, generateText, UIMessage } from 'ai';
+import { convertToModelMessages, generateText, UIMessage } from '@compliance-theater/types/ai-sdk';
 import type { LanguageModelV2 } from '@ai-sdk/provider';
 import type {
   RateLimitedRequest,

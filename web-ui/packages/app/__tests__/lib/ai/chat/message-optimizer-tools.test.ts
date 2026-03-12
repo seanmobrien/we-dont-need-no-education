@@ -5,26 +5,32 @@
 jest.unmock('@opentelemetry/api');
 jest.unmock('@opentelemetry/sdk-trace-base');
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+jest.mock('../../../../lib/ai/aiModelFactory');
+jest.mock('@compliance-theater/types/ai-sdk/ai', () => ({
+  ...jest.requireActual('@compliance-theater/types/ai-sdk/ai'),
+  generateText: jest.fn(),
+  generateObject: jest.fn(),
+}));
+jest.mock('@compliance-theater/types/ai-sdk', () => ({
+  ...jest.requireActual('@compliance-theater/types/ai-sdk'),
+  ...jest.requireMock('@compliance-theater/types/ai-sdk/ai'),
+}));
+
+import { setupImpersonationMock } from '../../../jest.mock-impersonation';
 setupImpersonationMock();
 
-import { UIMessage } from 'ai';
+import { UIMessage } from '@compliance-theater/types/ai-sdk';
 import {
   optimizeMessagesWithToolSummarization,
   cacheManager,
   extractToolCallIds,
   hasToolCalls,
-} from '@/lib/ai/chat/message-optimizer-tools';
-import { aiModelFactory } from '@/lib/ai/aiModelFactory';
-import { generateText, generateObject } from 'ai';
+} from '../../../../lib/ai/chat/message-optimizer-tools';
+import { aiModelFactory } from '../../../../lib/ai/aiModelFactory';
+import { generateText, generateObject } from '@compliance-theater/types/ai-sdk';
 
 // Mock dependencies
-jest.mock('@/lib/ai/aiModelFactory');
-jest.mock('ai', () => ({
-  ...jest.requireActual('ai'),
-  generateText: jest.fn(),
-  generateObject: jest.fn(),
-}));
+
 jest.mock('@compliance-theater/database', () => ({
   drizDbWithInit: jest.fn(() => ({
     transaction: jest.fn((callback) =>
@@ -41,7 +47,7 @@ jest.mock('@compliance-theater/database', () => ({
     chatToolCalls: { chatToolCallId: 'chatToolCallId' },
   },
 }));
-jest.mock('@/lib/ai/services/model-stats/tool-map', () => ({
+jest.mock('../../../../lib/ai/services/model-stats/tool-map', () => ({
   ToolMap: {
     getInstance: jest.fn(() =>
       Promise.resolve({

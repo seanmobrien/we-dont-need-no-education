@@ -2,8 +2,8 @@
  * @jest-environment node
  */
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { setupImpersonationMock } from '../../../../jest.mock-impersonation';
+import { hideConsoleOutput } from '../../../../shared/test-utils';
 
 setupImpersonationMock();
 
@@ -13,23 +13,29 @@ setupImpersonationMock();
 
 // Mock fetch module BEFORE importing SUTs so the implementation is captured.
 const fetchMock = jest.fn();
-jest.mock('@compliance-theater/nextjs/server/fetch', () => ({
-  fetch: (...args: unknown[]) => fetchMock(...args),
+jest.mock('../../../../../lib/fetch-service', () => ({
+  resolveFetchService: jest.fn(
+    () =>
+      (...args: unknown[]) =>
+        (globalThis.fetch as unknown as (...args: unknown[]) => unknown)(
+          ...args,
+        ),
+  ),
 }));
 
-import { hybridDocumentSearchFactory } from '@/lib/ai/services/search/HybridDocumentSearch';
-import { hybridPolicySearchFactory } from '@/lib/ai/services/search/HybridPolicySearch';
-import { HybridSearchClient } from '@/lib/ai/services/search/HybridSearchBase';
+import { hybridDocumentSearchFactory } from '../../../../../lib/ai/services/search/HybridDocumentSearch';
+import { hybridPolicySearchFactory } from '../../../../../lib/ai/services/search/HybridPolicySearch';
+import { HybridSearchClient } from '../../../../../lib/ai/services/search/HybridSearchBase';
 
 // Minimal option types (avoid deep imports of tool unions if not needed for shapes)
 import type {
   HybridSearchPayload,
   AiSearchResultEnvelope,
-} from '@/lib/ai/services/search/types';
+} from '../../../../../lib/ai/services/search/types';
 import type {
   CaseFileSearchOptions,
   PolicySearchOptions,
-} from '@/lib/ai/tools/types';
+} from '../../../../../lib/ai/tools/types';
 
 // Build a concrete test subclass to expose protected static parsing helpers.
 interface TestOptions {
@@ -146,6 +152,8 @@ describe('HybridSearchClient tests', () => {
 
   describe('HybridDocumentSearch.hybridSearch', () => {
     beforeEach(() => {
+      (globalThis as { fetch?: typeof fetch }).fetch =
+        fetchMock as unknown as typeof fetch;
       fetchMock.mockReset();
     });
 
@@ -199,6 +207,8 @@ describe('HybridSearchClient tests', () => {
 
   describe('HybridPolicySearch.hybridSearch', () => {
     beforeEach(() => {
+      (globalThis as { fetch?: typeof fetch }).fetch =
+        fetchMock as unknown as typeof fetch;
       fetchMock.mockReset();
     });
 
@@ -218,6 +228,12 @@ describe('HybridSearchClient tests', () => {
   });
 
   describe('HybridSearchClient.hybridSearch error handling', () => {
+    beforeEach(() => {
+      (globalThis as { fetch?: typeof fetch }).fetch =
+        fetchMock as unknown as typeof fetch;
+      fetchMock.mockReset();
+    });
+
     test('wraps and rethrows fetch/network errors', async () => {
       mockConsole.setup();
       const embeddingService = makeEmbeddingService();

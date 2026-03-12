@@ -34,7 +34,7 @@
  *
  * @module ai/mcp/cache/types
  */
-import { ToolSet } from 'ai';
+import { ToolSet } from '@compliance-theater/types/ai-sdk';
 
 declare module 'ai/mcp/cache/types' {
   /**

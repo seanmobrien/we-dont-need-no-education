@@ -1,9 +1,11 @@
+/* global Request */
+
 import type { ImpersonationService } from './impersonation.types';
 import { ImpersonationThirdParty } from './impersonation.thirdparty';
 import { ImpersonationServiceCache } from './impersonation-service-cache';
 import { auth } from '../../auth';
 import { log } from '@compliance-theater/logger';
-import type { User } from '@auth/core/types';
+import type { User } from '@compliance-theater/types/next-auth';
 
 /**
  * Strategy selection:

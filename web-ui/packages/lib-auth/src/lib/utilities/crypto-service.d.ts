@@ -1,4 +1,3 @@
-declare module '@/lib/site-util/auth/crypto-service' {
   /**
    * Module: CryptoService
    *
@@ -113,4 +112,3 @@ declare module '@/lib/site-util/auth/crypto-service' {
    * Default export of CryptoService class
    */
   export default CryptoService;
-}

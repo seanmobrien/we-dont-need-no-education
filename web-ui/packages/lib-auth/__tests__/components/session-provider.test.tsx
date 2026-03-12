@@ -1,19 +1,19 @@
-import { render, screen } from '@testing-library/react';
-import { SessionProvider } from '@/components/auth/session-provider/provider';
-import { useQuery } from '@tanstack/react-query';
-import React from 'react';
+import { render, screen } from "../shared/test-utils";
+import { SessionProvider } from "../../src/components/session-provider/provider";
+import { useQuery } from "@tanstack/react-query";
+import React from "react";
 
 // Mock dependencies
-jest.mock('@tanstack/react-query', () => ({
+jest.mock("@tanstack/react-query", () => ({
   useQuery: jest.fn(),
   useMutation: jest.fn(() => ({ mutateAsync: jest.fn() })),
 }));
 
-jest.mock('@toolpad/core', () => ({
+jest.mock("@toolpad/core", () => ({
   useNotifications: jest.fn(() => ({ show: jest.fn() })),
 }));
 
-jest.mock('@/lib/site-util/auth/key-validation', () => ({
+jest.mock("../../src/lib/utilities/key-validation", () => ({
   isKeyValidationDue: jest.fn(() => false),
 }));
 
@@ -39,23 +39,23 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-describe('SessionProvider', () => {
-  it('should throw InvalidGrantError when session has RefreshAccessTokenError', () => {
+describe("SessionProvider", () => {
+  it("should throw InvalidGrantError when session has RefreshAccessTokenError", () => {
     // Mock useQuery to return session with error
     (useQuery as jest.Mock).mockReturnValue({
       data: {
         data: {
-          error: 'RefreshAccessTokenError',
-          user: { name: 'Test User' },
+          error: "RefreshAccessTokenError",
+          user: { name: "Test User" },
         },
       },
       isLoading: false,
-      status: 'success',
+      status: "success",
     });
 
     // Console error is expected when throwing in render
     const consoleSpy = jest
-      .spyOn(console, 'error')
+      .spyOn(console, "error")
       .mockImplementation(() => {});
 
     render(
@@ -66,22 +66,22 @@ describe('SessionProvider', () => {
       </ErrorBoundary>,
     );
 
-    expect(screen.getByTestId('error-boundary')).toHaveTextContent(
-      'InvalidGrantError',
+    expect(screen.getByTestId("error-boundary")).toHaveTextContent(
+      "InvalidGrantError",
     );
 
     consoleSpy.mockRestore();
   });
 
-  it('should render children when session is valid', () => {
+  it("should render children when session is valid", () => {
     (useQuery as jest.Mock).mockReturnValue({
       data: {
         data: {
-          user: { name: 'Test User' },
+          user: { name: "Test User" },
         },
       },
       isLoading: false,
-      status: 'success',
+      status: "success",
     });
 
     render(
@@ -92,6 +92,6 @@ describe('SessionProvider', () => {
       </ErrorBoundary>,
     );
 
-    expect(screen.getByTestId('child')).toBeInTheDocument();
+    expect(screen.getByTestId("child")).toBeInTheDocument();
   });
 });

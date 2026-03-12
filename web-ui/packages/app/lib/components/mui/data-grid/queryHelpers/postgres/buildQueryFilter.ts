@@ -5,12 +5,12 @@ import {
   SqlDb,
   unwrapAdapter,
 } from '@compliance-theater/database/driver';
-import { isLikeNextRequest } from '@compliance-theater/nextjs/guards';
-import { LikeNextRequest } from '@compliance-theater/nextjs/types';
+import { isLikeNextRequest } from '@compliance-theater/types/lib/nextjs/guards';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import { columnMapFactory } from '../utility';
 import { BuildQueryFilterProps, BuildItemFilterProps } from './types';
 import { isGridFilterModel } from './guards';
-import { isTruthy } from '@compliance-theater/react/utility-methods';
+import { isTruthy } from '@compliance-theater/types';
 
 export const buildAttachmentOrEmailFilter = ({
   attachments,

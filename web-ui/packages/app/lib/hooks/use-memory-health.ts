@@ -32,7 +32,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { fetch } from '@compliance-theater/nextjs/fetch';
+import { resolveFetchService } from '@/lib/fetch-service';
 import { LoggedError } from '@compliance-theater/logger';
 import type {
   MemoryStatusHookResult,
@@ -41,6 +41,8 @@ import type {
 } from '@/lib/hooks/types';
 import { useFlagState } from '@compliance-theater/feature-flags';
 import { useCallback } from 'react';
+
+const fetch = resolveFetchService();
 
 /**
  * Fetches memory health status from the API health endpoint

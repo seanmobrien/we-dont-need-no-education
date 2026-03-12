@@ -1,9 +1,9 @@
-import { eq, lte, gte, and, or, isNull } from 'drizzle-orm';
 import {
   DatabaseType,
   schema,
   type UserPublicKeysType,
   drizDbWithInit,
+  sql,
 } from '@compliance-theater/database/orm';
 import { auth } from '../../auth';
 
@@ -26,7 +26,7 @@ export const getActiveUserPublicKeys = async ({
         ? new Date(effectiveDate)
         : effectiveDate;
   let userId: number | undefined;
-  if (userIdFromProps) {
+  if (userIdFromProps !== undefined) {
     userId = userIdFromProps;
   } else {
     const session = await auth();
@@ -46,14 +46,12 @@ export const getActiveUserPublicKeys = async ({
     .select()
     .from(schema.userPublicKeys)
     .where(
-      and(
-        eq(schema.userPublicKeys.userId, userId),
-        lte(schema.userPublicKeys.effectiveDate, date.toISOString()),
-        or(
-          isNull(schema.userPublicKeys.expirationDate),
-          gte(schema.userPublicKeys.expirationDate, date.toISOString()),
-        ),
-      ),
+      sql`${schema.userPublicKeys.userId} = ${userId}
+        and ${schema.userPublicKeys.effectiveDate} <= ${date.toISOString()}
+        and (
+          ${schema.userPublicKeys.expirationDate} is null
+          or ${schema.userPublicKeys.expirationDate} >= ${date.toISOString()}
+        )`,
     );
   return keys.map((k: UserPublicKeysType) => k.publicKey);
 };

@@ -1,9 +1,7 @@
 import type { OAuth2Client } from 'google-auth-library';
 import type { NextApiRequest } from 'next';
-import type { Session } from '@auth/core/types';
+import type { Session } from '@compliance-theater/types/next-auth';
 import type { NextRequest } from 'next/server';
-
-declare module '@/lib/site-util/auth/_types' {
   /**
    * Server-side session tokens with promise-based access
    *
@@ -79,7 +77,7 @@ declare module '@/lib/site-util/auth/_types' {
     /** User identifier associated with this credential */
     userId: number;
     /** OAuth2 refresh token for obtaining new access tokens */
-    refresh_token: string;
+    refresh_token?: string;
     /** OAuth2 access token for API requests */
     access_token: string;
     /** Configured OAuth2 client instance */
@@ -132,4 +130,3 @@ declare module '@/lib/site-util/auth/_types' {
      */
     getCredential(options: CredentialOptions): Promise<ICredential>;
   };
-}

@@ -1,8 +1,8 @@
 import React from 'react';
-import { act, render, screen, waitFor } from '@/__tests__/test-utils';
-import { CustomEmailPageItem } from '@/components/email-message/dashboard-layout/custom-email-page-item';
+import { act, render, screen, waitFor } from '../../../shared/test-utils';
+import { CustomEmailPageItem } from '../../../../components/email-message/dashboard-layout/custom-email-page-item';
 import type { NavigationPageItem } from '@toolpad/core/AppProvider';
-import siteBuilder from '@/lib/site-util/url-builder';
+import siteBuilder from '../../../../lib/site-util/url-builder';
 import { Route } from 'next';
 
 const makeItem = (
@@ -19,7 +19,7 @@ const makeItem = (
 });
 
 // Mock the siteBuilder utility to produce consistent hrefs
-jest.mock('@/lib/site-util/url-builder', () => ({
+jest.mock('../../../../lib/site-util/url-builder', () => ({
   __esModule: true,
   default: {
     messages: {

@@ -68,6 +68,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Initialize git submodules for web-ui
+        run: |
+          set -euo pipefail
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+          git submodule sync --recursive
+          git submodule update --init --recursive --jobs 4
+          git submodule status --recursive
+        shell: bash
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -80,10 +89,10 @@ jobs:
         with:
           node-version: "24.x"
           cache: yarn
-          cache-dependency-path: 'web-ui/yarn.lock'
+          cache-dependency-path: "yarn.lock"
 
       - name: Enable Corepack and activate Yarn 4.12.0
-        working-directory: ./web-ui
+        working-directory: ./
         run: |
           corepack enable
           corepack prepare yarn@4.12.0 --activate
@@ -91,6 +100,8 @@ jobs:
         shell: bash
 
       - name: Run yarn install
-        working-directory: ./web-ui
-        run: yarn install --immutable
+        working-directory: ./
+        run: |
+          set -euo pipefail
+          node .yarn/releases/yarn-4.12.0.cjs install --immutable
         shell: bash

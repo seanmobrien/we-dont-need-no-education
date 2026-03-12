@@ -9,10 +9,10 @@
  * - Proper drizzle query construction and data transformation
  */
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+import { setupImpersonationMock } from '../../../../../jest.mock-impersonation';
 setupImpersonationMock();
 
-import { GET } from '@/app/api/ai/chat/history/[chatId]/route';
+import { GET } from '../../../../../../app/api/ai/chat/history/[chatId]/route';
 import { NextRequest } from 'next/server';
 
 // Define mocks before they are used
@@ -24,7 +24,7 @@ const mockDbLeftJoin = jest.fn();
 const mockDbOrderBy = jest.fn();
 
 // Mock modules
-jest.mock('@/auth', () => ({
+jest.mock('@compliance-theater/auth', () => ({
   auth: jest.fn(),
 }));
 
@@ -69,12 +69,12 @@ jest.mock('@compliance-theater/database/orm', () => ({
   },
 }));
 
-jest.mock('drizzle-orm', () => ({
+jest.mock('@compliance-theater/database/drizzle-orm', () => ({
   eq: jest.fn(),
   and: jest.fn(),
 }));
 
-jest.mock('@/lib/react-util', () => ({
+jest.mock('../../../../../../lib/react-util', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
@@ -83,8 +83,8 @@ jest.mock('@/lib/react-util', () => ({
 // Import mocked dependencies
 import { auth } from '@compliance-theater/auth';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
-import { eq, and } from 'drizzle-orm';
-import { hideConsoleOutput } from '@/__tests__/test-utils-server';
+import { eq, and } from '@compliance-theater/database/drizzle-orm';
+import { hideConsoleOutput } from '../../../../../shared/test-utils';
 
 const mockConsole = hideConsoleOutput();
 

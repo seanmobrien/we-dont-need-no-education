@@ -12,18 +12,18 @@ jest.unmock('@opentelemetry/sdk-trace-base');
  * @module __tests__/lib/ai/middleware/chat-history/types.test.ts
  */
 
-import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+import { setupImpersonationMock } from '../../../../jest.mock-impersonation';
 
 setupImpersonationMock();
 
-import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
+import { createUserChatHistoryContext } from '../../../../../lib/ai/middleware/chat-history/create-chat-history-context';
 import type {
   ChatHistoryContext,
   QueuedTask,
   FlushContext,
   FlushResult,
   FlushConfig,
-} from '@/lib/ai/middleware/chat-history/types';
+} from '../../../../../lib/ai/middleware/chat-history/types';
 import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 
 describe('Chat History Types', () => {

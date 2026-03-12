@@ -19,7 +19,7 @@ import { useTodoList, useToggleTodo } from '@/lib/hooks/use-todo';
 import type { Todo } from '@/data-models/api/todo';
 import 'react-resizable/css/styles.css';
 import { ClientWrapper } from '@compliance-theater/react';
-import { useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
+import { useChatPanelContext } from '@compliance-theater/types/components/ai/chat-panel/chat-panel-context';
 
 export interface FloatingTodoDialogProps {
   listId: string | null;
@@ -41,7 +41,8 @@ export const FloatingTodoDialog: React.FC<FloatingTodoDialogProps> = ({
   onClose,
 }) => {
   const [size, setSize] = useState({ width: 400, height: 500 });
-  const { lastCompletionTime } = useChatPanelContext({ required: false });
+  const { lastCompletionTime } =
+    useChatPanelContext({ required: false }) ?? {};
 
   const { data: list, isLoading, error, refetch } = useTodoList(listId);
   const { mutate: toggleTodo } = useToggleTodo(listId || '');

@@ -1,19 +1,27 @@
+// const tanstackReactQueryPath = '../../node_modules/@tanstack/react-query'
+
+const ignorePatterns = [
+  "/[^/]+\\.worktrees/",
+  'node_modules/(?!(@compliance-theater)/)',
+  "/\\.next/",
+  "/\\.turbo/",
+  "/dist/",
+  'web-ui/__tests__/shared',
+  'web-ui/__mocks__/shared',
+];
 /** @type {import('jest').Config} */
 const config = {
-  projects: ['<rootDir>/packages/*/jest.config.mjs'],
-  coverageDirectory: '<rootDir>/coverage',
-  collectCoverageFrom: [
-    'packages/**/*.{ts,tsx}',
-    '!**/*.d.ts',
-    '!**/node_modules/**',
-    '!**/__tests__/**',
-    '!**/tests/**',
-    '!**/.next/**',
-    '!**/__mocks__/**',
-    '!**/dist/**',
-    '!**/.upstream/**',
-    '!**/(rsc)/**',
+  displayName: "Monorepo Root",
+  projects: [
+    "./packages/*/jest.config.mjs",
+    "./submodules/*/packages/**/jest.config.cjs"
   ],
+  transformIgnorePatterns: [
+    'node_modules/(?!(@compliance-theater)/)'
+  ],
+  // Keep Jest from indexing mirrored worktree snapshots (and other generated dirs)
+  modulePathIgnorePatterns: ignorePatterns,
+  watchPathIgnorePatterns: ignorePatterns
 };
 
 export default config;

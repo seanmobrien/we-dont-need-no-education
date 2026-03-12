@@ -2,6 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
+    "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
     "rootDir": "./src",
     "composite": true,
     "declaration": true,
@@ -20,11 +21,22 @@
   ],
   "exclude": [
     "node_modules",
+    "**/__tests__/**",
+    "**/__mocks__/**",
     "dist"
   ],
   "references": [
-    { "path": "../lib-logger" },
-    { "path": "../lib-env" },
-    { "path": "../lib-typescript" }
+    {
+      "path": "../lib-logger"
+    },
+    {
+      "path": "../lib-env"
+    },
+    {
+      "path": "../lib-typescript"
+    },
+    {
+      "path": "../lib-types"
+    }
   ]
 }

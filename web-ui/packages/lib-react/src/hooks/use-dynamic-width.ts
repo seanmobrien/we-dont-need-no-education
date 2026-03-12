@@ -1,6 +1,8 @@
+/* global HTMLElement, ResizeObserver */
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type RefObject } from 'react';
 
 /**
  * React hook that returns the current width of a referenced container element.
@@ -17,7 +19,7 @@ import { useState, useEffect } from 'react';
  * const width = useDynamicWidth(containerRef);
  */
 export const useDynamicWidth = (
-  containerRef: React.RefObject<HTMLElement | null>,
+  containerRef: RefObject<HTMLElement | null>,
 ) => {
   const [containerWidth, setContainerWidth] = useState(400);
 

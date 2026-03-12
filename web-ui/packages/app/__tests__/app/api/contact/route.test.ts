@@ -4,12 +4,12 @@
 
 jest.mock('@compliance-theater/database/driver');
 jest.mock('@compliance-theater/logger');
-jest.mock('@/data-models/api');
+jest.mock('../../../../data-models/api');
 
 import { NextRequest } from 'next/server';
-import { POST, GET } from '@/app/api/contact/route';
+import { POST, GET } from '../../../../app/api/contact/route';
 import { query, queryExt } from '@compliance-theater/database/driver';
-import { globalContactCache } from '@/data-models/api';
+import { globalContactCache } from '../../../../data-models/api';
 
 describe('Contact API Routes', () => {
   afterEach(() => {

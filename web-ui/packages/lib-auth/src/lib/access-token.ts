@@ -1,7 +1,8 @@
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '../auth';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { log } from '@compliance-theater/logger';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import type {
   NormalizedAccessToken,
   NormalizeAccessTokenOptions,
@@ -13,7 +14,7 @@ import { LoggedError } from '@compliance-theater/logger';
 
 const accessTokenOnRequest: unique symbol = Symbol();
 
-type RequestWithAccessToken = NextRequest & {
+type RequestWithAccessToken = LikeNextRequest & {
   [accessTokenOnRequest]?: RequestWithAccessTokenCache;
 };
 
@@ -24,7 +25,7 @@ type AuthSessionLike = {
 } | null;
 
 export const withRequestTokens = (
-  req: NextRequest | undefined,
+  req: LikeNextRequest | undefined,
   value?: RequestWithAccessTokenCache
 ): RequestWithAccessTokenCache | undefined => {
   if (!req) {
@@ -61,18 +62,17 @@ export const withRequestTokens = (
 };
 
 export const withRequestAccessToken: RequestWithAccessTokenOverloads = (
-  req: NextRequest | undefined,
+  req: LikeNextRequest | undefined,
   value?: RequestWithAccessTokenCache
 ): // Any necessary to support the interface pattern
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 any => withRequestTokens(req, value)?.access_token;
 
-export const withRequestProviderAccountId = (req: NextRequest | undefined) =>
+export const withRequestProviderAccountId = (req: LikeNextRequest | undefined) =>
   withRequestTokens(req)?.providerAccountId;
 
-export const getRequestTokens = async (req: NextRequest | undefined) => {
+export const getRequestTokens = async (req: LikeNextRequest | undefined) => {
   const ret = withRequestTokens(req);
-  if (!!ret) {
+  if (ret) {
     return ret;
   }
   let session: AuthSessionLike = null;
@@ -119,17 +119,17 @@ export const getRequestTokens = async (req: NextRequest | undefined) => {
   return token;
 };
 
-export const getAccessToken = async (req: NextRequest | undefined) =>
+export const getAccessToken = async (req: LikeNextRequest | undefined) =>
   (await getRequestTokens(req))?.access_token;
 
-export const getProviderAccountId = async (req: NextRequest | undefined) =>
+export const getProviderAccountId = async (req: LikeNextRequest | undefined) =>
   (await getRequestTokens(req))?.providerAccountId;
 
 export const getValidatedAccessToken = async ({
   req,
   source,
 }: {
-  req: NextRequest | undefined;
+  req: LikeNextRequest | undefined;
   source?: string;
 }): Promise<{ token: string } | { error: NextResponse }> => {
   const accessToken = await getAccessToken(req);
@@ -147,7 +147,7 @@ export const getValidatedAccessToken = async ({
   return { token: accessToken };
 };
 export const normalizedAccessToken: AccessTokenOrRequestOverloadsExt = async (
-  userAccessToken: string | NextRequest | undefined,
+  userAccessToken: string | LikeNextRequest | undefined,
   options?: NormalizeAccessTokenOptions
 ): Promise<NormalizedAccessToken | undefined> => {
   const { skipUserId = false } = options ?? {};

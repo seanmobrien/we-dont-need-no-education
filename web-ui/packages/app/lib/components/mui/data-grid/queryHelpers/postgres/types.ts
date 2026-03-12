@@ -1,10 +1,10 @@
-import type { LikeNextRequest } from '@compliance-theater/nextjs/types';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import type {
   GridFilterModel,
   GridFilterItem,
   GridSortModel,
 } from '@mui/x-data-grid-pro';
-import type { Sql } from 'postgres';
+import type { Sql } from '@compliance-theater/database/postgres';
 import type { ISqlNeonAdapter, SqlDb } from '@compliance-theater/database/driver';
 
 /**

@@ -1,8 +1,8 @@
 import {
   isUserAuthorized,
   isSessionActive,
-} from '@/lib/site-util/auth/security';
-import type { Session } from '@auth/core/types';
+} from '../../../src/lib/utilities/security';
+import type { Session } from '@compliance-theater/types/auth-core/types';
 
 describe('isUserAuthorized', () => {
   test('returns false if either id missing', async () => {
