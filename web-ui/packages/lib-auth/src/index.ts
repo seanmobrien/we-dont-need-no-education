@@ -15,6 +15,7 @@ export type {
 export { SessionProvider } from './components/session-provider/provider';
 export { useSession } from './components/session-provider/hooks';
 export { KeyRefreshNotify } from './components/key-refresh-notify';
+export { default as ServiceRegistrar } from './service-registrar';
 
 
 

@@ -161,7 +161,7 @@ export const addDocumentRelations = async ({
                 .limit(1)
                 .execute();
               if (exists && exists.length > 0) {
-                log((l) =>
+                log((l: import('@compliance-theater/logger').ILogger) =>
                   l.warn(
                     'Document relationship already exists - skipping',
                     {

@@ -27,7 +27,7 @@
   "scripts": {
     "add": "yarn workspace @compliance-theater/feature-flags add ",
     "build": "yarn run build:typescript",
-    "build:typescript": "echo 'Building @compliance-theater/feature-flags...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/feature-flags.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/feature-flags.\u001b[0m\n' >&2; exit 1)",
+    "build:typescript": "echo 'Building @compliance-theater/feature-flags...' && tsc -b tsconfig.json && echo '\u001b[1;32mBuild complete: @compliance-theater/feature-flags.\u001b[0m\n' || (echo '\u001b[31mBuild failed: @compliance-theater/feature-flags.\u001b[0m\n' >&2; exit 1)",
     "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-feature-flags.tgz",
     "test": "jest",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",

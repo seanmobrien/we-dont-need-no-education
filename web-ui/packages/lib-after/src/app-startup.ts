@@ -1,4 +1,5 @@
 import { log, safeSerialize, LoggedError, singletonProviderFactory } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 import AfterManager from './index';
 import {
   setState as setAppStartupState,
@@ -122,7 +123,7 @@ export class AppStartup {
         }
       } catch (e) {
         // Log but don't fail - module may not be available in all environments
-        log((l) =>
+        log((l: ILogger) =>
           l.debug(`Could not load initializer from ${modulePath}: ${safeSerialize(e)}`)
         );
       }
@@ -196,7 +197,7 @@ export class AppStartup {
             );
             setAppStartupState('done');
           } catch (e) {
-            log((l) =>
+            log((l: ILogger) =>
               l.error(`Failed to teardown app startup ${safeSerialize(e)}`)
             );
             setAppStartupState('done');
@@ -234,7 +235,7 @@ export class AppStartup {
       // Subscribe to process exit to handle app state teardown
       AfterManager.processExit(() =>
         instance.teardown().catch((e) => {
-          log((l) =>
+          log((l: ILogger) =>
             l.error(`Failed to teardown app state: ${safeSerialize(e)}`)
           );
           return;
@@ -242,7 +243,7 @@ export class AppStartup {
       );
       // Initialize app startup
       instance.initialize().then(() => {
-        log((l) => l.info('App startup successfully completed.'));
+        log((l: ILogger) => l.info('App startup successfully completed.'));
       });
       return instance;
     })! satisfies AppStartup;

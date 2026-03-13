@@ -4,6 +4,7 @@ import { CommandMeta, IResultset } from './types';
 import { isTypeBranded, TypeBrandSymbol } from './type-branding';
 import { ExcludeExactMatch } from '@compliance-theater/typescript';
 import { log } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 import {
   PostgresSql,
   PostgresRowList as RowList,
@@ -277,13 +278,13 @@ export class Resultset<T extends readonly any[] = readonly any[]>
     transform?: (source: TSource) => TRecord
   ): TRecord => {
     if (Array.isArray(result)) {
-      log((l) => l.warn('Make sure transformed arrays actually work'));
+      log((l: ILogger) => l.warn('Make sure transformed arrays actually work'));
       return Resultset.#makeRecordFromArray<TRecord>(result, fields);
     }
     if (transform) {
       return transform(result);
     }
-    log((l) => l.warn('This almost definitly absolutely wont work'));
+    log((l: ILogger) => l.warn('This almost definitly absolutely wont work'));
     return result as unknown as TRecord;
   };
 

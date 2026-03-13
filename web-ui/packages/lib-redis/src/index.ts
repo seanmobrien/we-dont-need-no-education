@@ -2,6 +2,7 @@ import { SingletonProvider } from '@compliance-theater/logger/singleton-provider
 import { createClient, type RedisClientType } from '@redis/client';
 import { env } from '@compliance-theater/env';
 import { LoggedError, log } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 import AfterManager from '@compliance-theater/after';
 
 export type { RedisClientType };
@@ -47,7 +48,7 @@ export const getRedisClient = async (
     client.quit = async (fromInternal?: symbol) => {
       if (!client) {
         if (!promiseQuit) {
-          log((l) =>
+          log((l: ILogger) =>
             l.error(
               'Null client but no quit promise found - no wait context available.',
             ),
@@ -117,13 +118,13 @@ export const getRedisClient = async (
         });
       })
       .on('connect', () => {
-        log((l) => l.info('Redis client connected'));
+        log((l: ILogger) => l.info('Redis client connected'));
       })
       .on('reconnecting', () => {
-        log((l) => l.warn('Redis client reconnecting'));
+        log((l: ILogger) => l.warn('Redis client reconnecting'));
       })
       .on('ready', () => {
-        log((l) => l.info('Redis client ready'));
+        log((l: ILogger) => l.info('Redis client ready'));
       });
 
     return client.connect();

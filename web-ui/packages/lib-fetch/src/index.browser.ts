@@ -19,6 +19,8 @@ export const fetchServiceFactory: () => IFetchService = () => ({
     fetch,
 });
 
+export { default as ServiceRegistrar } from './service-registrar.browser';
+
 // This package is a foundational dependency; register immediately for downstream services.
 registerFetchService(runtimeFetch);
 

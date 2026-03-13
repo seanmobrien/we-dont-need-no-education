@@ -219,7 +219,7 @@ class EmailStageManager extends TransactionalStateManagerBase {
     part: gmail_v1.Schema$MessagePart;
     expectedMimeType?: string;
   }): Array<gmail_v1.Schema$MessagePart> {
-    const items = [];
+    const items: Array<gmail_v1.Schema$MessagePart> = [];
     if (
       part.mimeType === expectedMimeType ||
       part.headers?.findIndex(

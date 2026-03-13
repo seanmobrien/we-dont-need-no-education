@@ -1,6 +1,7 @@
 /* global ReadableStream, Blob, ResponseInit */
 
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 import { isAbortError } from '../../utilities/is-abort-error';
 import { isRunningOnServer } from '@compliance-theater/env';
 import type { Readable as ReadableType } from 'node:stream';
@@ -410,7 +411,7 @@ export const makeJsonResponse = (
     }
   } catch (_error) {
     // fallback to fetchresponse below
-    log((l) =>
+    log((l: ILogger) =>
       l.warn('cannot use NextResponse from the edge: ', safeSerialize(_error))
     );
   }

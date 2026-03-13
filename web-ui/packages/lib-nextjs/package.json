@@ -10,6 +10,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./server/di-bootstrap-accessor": {
+      "types": "./dist/server/di-bootstrap-accessor.d.ts",
+      "workspace-source": "./src/server/di-bootstrap-accessor.ts",
+      "default": "./dist/server/di-bootstrap-accessor.js"
+    },
     "./*": {
       "types": "./dist/*.d.ts",
       "default": "./dist/*.js"
@@ -25,7 +30,7 @@
   "scripts": {
     "add": "yarn workspace @compliance-theater/nextjs add ",
     "build": "yarn run build:typescript",
-    "build:typescript": "echo 'Building @compliance-theater/nextjs...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/nextjs.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/nextjs.\u001b[0m\n' >&2; exit 1)",
+    "build:typescript": "echo 'Building @compliance-theater/nextjs...' && tsc -b tsconfig.json && echo '\u001b[1;32mBuild complete: @compliance-theater/nextjs.\u001b[0m\n' || (echo '\u001b[31mBuild failed: @compliance-theater/nextjs.\u001b[0m\n' >&2; exit 1)",
     "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-nextjs.tgz",
     "test": "jest --passWithNoTests",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",

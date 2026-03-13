@@ -71,11 +71,11 @@ export const tokenExchangeService: ITokenExchangeService = {
         ),
     getGoogleTokensFromKeycloak: async (req) =>
         getGoogleTokensFromKeycloak(req as NextRequest | NextApiRequest),
-};
+} satisfies ITokenExchangeService;
 
 registerServices({
-    'auth-session-service': asValue(authSessionService),
-    'impersonation-service': asValue(impersonationService),
-    'access-token-service': asValue(accessTokenService),
-    'token-exchange-service': asValue(tokenExchangeService),
+    session: asValue(authSessionService),
+    impersonation: asValue(impersonationService),
+    accessTokens: asValue(accessTokenService),
+    exchangeTokens: asValue(tokenExchangeService),
 });

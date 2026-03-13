@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { isError } from '../utility-methods';
 import { log, LoggedError } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 
 type UseInEffectRecordResolver = {
   resolve: (value: unknown) => void;
@@ -29,7 +30,7 @@ export const useInEffect = () => {
     const { current: thisQueue } = refQueue;
     thisQueue.mountedEffects += 1;
     if (thisQueue.mountedEffects > 1) {
-      log((l) =>
+      log((l: ILogger) =>
         l.warn(`useInEffect: Multiple mounts detected, this is not expected.`, {
           mountedEffects: thisQueue.mountedEffects,
         })

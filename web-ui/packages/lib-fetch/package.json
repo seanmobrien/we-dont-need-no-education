@@ -23,6 +23,23 @@
       "workspace-source": "./src/index.node.ts",
       "default": "./dist/index.node.js"
     },
+    "./service-registrar": {
+      "types": "./dist/service-registrar.d.ts",
+      "workspace-source": "./src/service-registrar.ts",
+      "browser": "./dist/service-registrar.browser.js",
+      "node": "./dist/service-registrar.node.js",
+      "default": "./dist/service-registrar.browser.js"
+    },
+    "./service-registrar/browser": {
+      "types": "./dist/service-registrar.browser.d.ts",
+      "workspace-source": "./src/service-registrar.browser.ts",
+      "default": "./dist/service-registrar.browser.js"
+    },
+    "./service-registrar/node": {
+      "types": "./dist/service-registrar.node.d.ts",
+      "workspace-source": "./src/service-registrar.node.ts",
+      "default": "./dist/service-registrar.node.js"
+    },
     "./*": {
       "types": "./dist/*.d.ts",
       "workspace-source": "./src/*.ts",
@@ -39,7 +56,7 @@
   "scripts": {
     "add": "yarn workspace @compliance-theater/fetch add ",
     "build": "yarn run build:typescript",
-    "build:typescript": "echo 'Building @compliance-theater/fetch...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/fetch.\u001b[0m\\n' || (printf '\u001b[31mBuild failed: @compliance-theater/fetch.\u001b[0m\\n' >&2; exit 1)",
+    "build:typescript": "echo 'Building @compliance-theater/fetch...' && tsc -b tsconfig.json && echo '\u001b[1;32mBuild complete: @compliance-theater/fetch.\u001b[0m\\n' || (echo '\u001b[31mBuild failed: @compliance-theater/fetch.\u001b[0m\\n' >&2; exit 1)",
     "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-fetch.tgz",
     "test": "jest",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",

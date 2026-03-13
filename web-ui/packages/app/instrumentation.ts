@@ -1,3 +1,5 @@
+import { ensureServerDiBootstrap } from '@/lib/bootstrap/di/server';
+
 const REGISTERED_KEY = Symbol.for('@noeducation/instrumentation/registered');
 
 type GlobalWithInstrumentationFlag = typeof globalThis & {
@@ -27,6 +29,7 @@ export const register = async () => {
     if (typeof window === 'undefined') {
       // This is a server-side environment (Node.js or edge runtime)
       if (process.env.NEXT_RUNTIME === 'nodejs') {
+        ensureServerDiBootstrap();
         const { default: instrumentServer } = await import('@/instrument/node');
         instrumentServer();
       } else {

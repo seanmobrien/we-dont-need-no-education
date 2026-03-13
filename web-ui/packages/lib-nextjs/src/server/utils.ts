@@ -1,6 +1,7 @@
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@compliance-theater/env';
 import { log, safeSerialize, LoggedError } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 import type { NextRequest } from 'next/server';
 import {
   SpanKind,
@@ -19,6 +20,7 @@ import { WrappedResponseContext } from './types';
 import { isPromise } from '@compliance-theater/typescript';
 import { resolveService } from '@compliance-theater/types/dependency-injection/container';
 import type { IAppStartupManager } from '@compliance-theater/types/after';
+import { runServerRequestBootstrap } from './di-bootstrap-accessor';
 export {
   createSafeAsyncWrapper,
   createSafeErrorHandler,
@@ -86,6 +88,8 @@ export const wrapRouteRequest = <
       parentCtx,
       async (span) => {
         try {
+          await runServerRequestBootstrap();
+
           if (
             buildFallback !== EnableOnBuild &&
             process.env.NEXT_PHASE === 'phase-production-build'
@@ -106,7 +110,7 @@ export const wrapRouteRequest = <
               try {
                 const startupService = resolveService<IAppStartupManager>('startup');
                 if (!startupService) {
-                  log((l) =>
+                  log((l: ILogger) =>
                     l.warn(
                       'App startup manager not found in container; assuming startup complete.',
                     ),
@@ -144,7 +148,7 @@ export const wrapRouteRequest = <
             const url = (req as unknown as Request)?.url ?? '<no-req>';
             span.setAttribute('request.url', url);
             span.setAttribute('route.params', safeSerialize(extractedParams));
-            log((l) =>
+            log((l: ILogger) =>
               l.info(`Processing route request [${url}]`, {
                 args: JSON.stringify(extractedParams),
               }),
@@ -485,7 +489,7 @@ export const reportEvent = async ({
       }
 
       // Log the event for server-side observability
-      log((l) =>
+      log((l: ILogger) =>
         l.silly(`Client event captured: ${eventName}`, {
           method: eventData.method,
           success: eventData.success,

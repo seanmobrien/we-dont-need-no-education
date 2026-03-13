@@ -763,7 +763,7 @@ const result = await generateText({
 
 - **Workspace README**: [../../README.md](../../README.md) - Monorepo workspace information and commands
 - **Root README**: [../../../README.md](../../../README.md) - Repository overview and architecture
-- **Monorepo Guide**: [../../../MONOREPO_GUIDE.md](../../../MONOREPO_GUIDE.md) - Detailed monorepo migration guide
+- **Monorepo Guide**: [../../../docs/MONOREPO_GUIDE.md](../../../docs/MONOREPO_GUIDE.md) - Detailed monorepo migration guide
 - **Java Backend**: [../../../chat/README.md](../../../chat/README.md) - Evidence analysis and AI processing backend
 
 ## License

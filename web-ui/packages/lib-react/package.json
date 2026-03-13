@@ -28,7 +28,7 @@
     "add": "yarn workspace @compliance-theater/react add ",
     "build": "yarn run build:typescript",
     "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-react.tgz",
-    "build:typescript": "echo 'Building @compliance-theater/react...' && tsc -b tsconfig.json && printf '\\u001b[1;32mBuild complete: @compliance-theater/react.\\u001b[0m\\n' || (printf '\\u001b[31mBuild failed: @compliance-theater/react.\\u001b[0m\\n' >&2; exit 1)",
+    "build:typescript": "echo 'Building @compliance-theater/react...' && tsc -b tsconfig.json && echo '\\u001b[1;32mBuild complete: @compliance-theater/react.\\u001b[0m\\n' || (echo '\\u001b[31mBuild failed: @compliance-theater/react.\\u001b[0m\\n' >&2; exit 1)",
     "test": "jest",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"

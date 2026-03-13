@@ -218,7 +218,7 @@ const checkAccess = async (props: NextRequest | CheckAccessProps) => {
 
   const findResource = async () => {
     let toolResourceRecord: BasicResourceRecord | null = null;
-    const rs = resourceService();
+    const rs = resourceService((service) => service);
     try {
       toolResourceRecord = await rs.getAuthorizedResource(TOOL_RESOURCE_ID);
       if (!toolResourceRecord) {

@@ -5,3 +5,4 @@ export * from './utils';
 export type { ServerErrorResponseType } from './types';
 export * from './unauthorized-service-response';
 export * from './app-startup-accessor';
+export * from './di-bootstrap-accessor';

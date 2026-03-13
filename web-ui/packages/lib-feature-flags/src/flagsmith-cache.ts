@@ -8,6 +8,7 @@ import {
 import { LRUCache } from 'lru-cache';
 import { getRedisClient } from '@compliance-theater/redis';
 import { LoggedError, log } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 import type { LruCacheConfig, RedisCacheConfig } from '@compliance-theater/react';
 
 type Flag = Flags['flags'][string];
@@ -61,7 +62,7 @@ export class FlagsmithRedisCache implements FlagsmithCache {
         return createNormalizedResult(JSON.parse(data));
       }
       if (typeof data !== 'object') {
-        log((l) =>
+        log((l: ILogger) =>
           l.warn(
             `FlagsmithRedisCache::get - Unexpected data type from cache: ${typeof data}`
           )

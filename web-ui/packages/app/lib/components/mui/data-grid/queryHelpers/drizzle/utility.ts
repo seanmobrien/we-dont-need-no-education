@@ -26,6 +26,7 @@ export const getEmailColumn = <
   columnName: keyof TSchema | Omit<string, keyof TSchema>;
   table: TSchema;
 }): PgColumn | undefined => {
+  const tableRecord = table as Record<string, unknown>;
   switch (columnName) {
     case 'email_id':
       return schema.documentUnits.emailId as unknown as PgColumn;
@@ -70,12 +71,12 @@ export const getEmailColumn = <
     default:
       // First try no normalization
       if (isKeyOf(columnName, table)) {
-        return table[columnName] as PgColumn;
+        return tableRecord[String(columnName)] as PgColumn;
       }
       // Then try snake-to-camel case
       const camelCase = toCamelCase(String(columnName));
       if (isKeyOf(camelCase, table)) {
-        return table[camelCase] as PgColumn;
+        return tableRecord[camelCase] as PgColumn;
       }
       return undefined;
   }

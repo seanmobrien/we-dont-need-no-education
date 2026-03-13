@@ -1,7 +1,8 @@
 import type { IFetchService } from '@compliance-theater/types/lib/fetch';
 import {
     asFunction,
-    registerServices,
+    getServiceContainer,
+    type IServiceContainer,
     resolveService,
 } from '@compliance-theater/types/dependency-injection';
 import type { ISingletonProvider } from '@compliance-theater/types/lib/logger/singleton-provider';
@@ -43,7 +44,16 @@ export const createFetchServiceFactory = (
 };
 
 export const registerFetchService = (runtimeFetch: RuntimeFetch): void => {
-    registerServices({
-        'fetch-service': asFunction(createFetchServiceFactory(runtimeFetch)),
-    });
+    registerFetchServiceIntoContainer(getServiceContainer(), runtimeFetch);
+};
+
+export const registerFetchServiceIntoContainer = (
+    container: IServiceContainer,
+    runtimeFetch: RuntimeFetch,
+): void => {
+    if (container.has('fetch')) {
+        return;
+    }
+
+    container.register('fetch', asFunction(createFetchServiceFactory(runtimeFetch)));
 };

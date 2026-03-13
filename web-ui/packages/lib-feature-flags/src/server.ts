@@ -15,6 +15,7 @@ import {
 
 import { env } from '@compliance-theater/env';
 import { LoggedError, log, globalSingleton } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 import { extractFlagValue } from './util';
 
 import { FlagsmithRedisCache } from './flagsmith-cache';
@@ -144,7 +145,7 @@ const identify = async ({
     if (flagsmith) {
       return await flagsmith.getIdentityFlags(userId);
     }
-    log((l) =>
+    log((l: ILogger) =>
       l.warn('[Flagsmith::identify] Flagsmith server instance not available.')
     );
   } catch (error) {

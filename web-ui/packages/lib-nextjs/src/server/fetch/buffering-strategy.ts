@@ -15,6 +15,7 @@
  */
 
 import { LoggedError, log } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 import {
   makeResponse,
   makeStreamResponse,
@@ -92,7 +93,7 @@ export class BufferingStrategy {
       if (bufferedBytes + b.length > this.deps.config.maxResponseSize) {
         if (!sizeExceeded) {
           sizeExceeded = true;
-          log((l) =>
+          log((l: ILogger) =>
             l.warn(
               `[buffering-strategy] Response size exceeded limit (${this.deps.config.maxResponseSize} bytes), switching to streaming: ${url}`
             )
