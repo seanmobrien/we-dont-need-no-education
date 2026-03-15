@@ -25,16 +25,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/gateway@npm:2.0.57":
-  version: 2.0.57
-  resolution: "@ai-sdk/gateway@npm:2.0.57"
+"@ai-sdk/gateway@npm:2.0.58":
+  version: 2.0.58
+  resolution: "@ai-sdk/gateway@npm:2.0.58"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.1"
     "@ai-sdk/provider-utils": "npm:3.0.22"
     "@vercel/oidc": "npm:3.1.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10/2467ac37a77056e6f903cc8657be9a5a67f50836f1b9a12304e222b82e2c450123dcb4442925f21e853ce60bd85a6ac8ca75d30fed11bbef154910f28cb9cc73
+  checksum: 10/ad37b7b5455ef032aab8558ae5d558793884177beae5879beeea8dc71a3e83fb7b53440ff4e42aac1575fbee3b92c9e132b6379054f11d9dca56a00c4b5f7951
   languageName: node
   linkType: hard
 
@@ -120,11 +120,11 @@ __metadata:
   linkType: hard
 
 "@ai-sdk/react@npm:^2.0.23":
-  version: 2.0.154
-  resolution: "@ai-sdk/react@npm:2.0.154"
+  version: 2.0.156
+  resolution: "@ai-sdk/react@npm:2.0.156"
   dependencies:
     "@ai-sdk/provider-utils": "npm:3.0.22"
-    ai: "npm:5.0.152"
+    ai: "npm:5.0.154"
     swr: "npm:^2.2.5"
     throttleit: "npm:2.1.0"
   peerDependencies:
@@ -133,7 +133,7 @@ __metadata:
   peerDependenciesMeta:
     zod:
       optional: true
-  checksum: 10/1ac0ad1994d013549c6e2072bcdb0a78756cd959b56d24bcc9f4a39718aca3ed66170bf8dc8e32725a132e702f680cb82aecd4a3cef582c1c6f4c536a2086e18
+  checksum: 10/c30e8158ad4ab601e4a4a3506e26a352c964bd449589a84783aaf13776f53deb32a7920a72f60d36dca0c7e653657d894917b6b18fdfebff81b71e688f254331
   languageName: node
   linkType: hard
 
@@ -883,6 +883,9 @@ __metadata:
     "@opentelemetry/api-logs": "npm:0.57.2"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^6.6.4"
+    "@testing-library/react": "npm:^16.3.0"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:25.2.3"
     "@types/react": "npm:19.2.4"
@@ -890,9 +893,25 @@ __metadata:
     babel-plugin-react-compiler: "npm:^1.0.0"
     jest: "npm:^30.0.5"
     prexit: "npm:^2.3.0"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
+  peerDependencies:
+    next: ^15.5.12
+    react: 19.2.4
+    react-dom: 19.2.4
+    zod: 3.25.76
+  peerDependenciesMeta:
+    next:
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+    zod:
+      optional: true
   languageName: unknown
   linkType: soft
 
@@ -964,6 +983,7 @@ __metadata:
     "@tanstack/react-query": "npm:5.90.21"
     "@tanstack/react-query-devtools": "npm:5.91.3"
     "@tanstack/react-virtual": "npm:^3.13.12"
+    "@testing-library/dom": "npm:^10.4.1"
     "@testing-library/jest-dom": "npm:^6.6.4"
     "@testing-library/react": "npm:^16.3.0"
     "@toolpad/core": "npm:^0.15.0"
@@ -978,6 +998,7 @@ __metadata:
     babel-plugin-react-compiler: "npm:^1.0.0"
     canvas: "npm:^3.2.0"
     cross-env: "npm:^10.0.0"
+    crypto: "npm:^1.0.1"
     dotenv: "npm:^16.5.0"
     drizzle-orm: "npm:^0.44.1"
     eslint: "npm:^9.39.3"
@@ -1016,6 +1037,7 @@ __metadata:
     rimraf: "npm:^6.1.2"
     ts-node: "npm:^10.9.1"
     ts-pattern: "npm:^5.7.1"
+    tslib: "npm:^2.0.0"
     typescript: "npm:^5.9.3"
     uuid: "npm:^11.1.0"
     web-streams-polyfill: "npm:^4.2.0"
@@ -1028,7 +1050,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@compliance-theater/auth@workspace:packages/lib-auth"
   dependencies:
-    "@auth/drizzle-adapter": "npm:^1.4.1"
     "@compliance-theater/database": "workspace:*"
     "@compliance-theater/env": "workspace:*"
     "@compliance-theater/logger": "workspace:*"
@@ -1050,7 +1071,9 @@ __metadata:
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
     "@tanstack/react-query": "npm:5.90.21"
+    "@testing-library/dom": "npm:^10.4.1"
     "@testing-library/jest-dom": "npm:^6.6.4"
+    "@testing-library/react": "npm:^16.3.0"
     "@toolpad/core": "npm:^0.15.0"
     "@types/jest": "npm:^30.0.0"
     "@types/react": "npm:19.2.4"
@@ -1061,23 +1084,39 @@ __metadata:
     jest: "npm:^30.0.5"
     jose: "npm:^6.1.3"
     lru-cache: "npm:^11.0.2"
-    next-auth: "npm:^5.0.0-beta.30"
     node-html-parser: "npm:^7.0.1"
     openid-client: "npm:^6.8.0"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     rimraf: "npm:^6.1.2"
     tough-cookie: "npm:^6.0.0"
     typescript: "npm:^5.9.3"
   peerDependencies:
+    "@auth/core": 0.41.1
+    "@auth/drizzle-adapter": ^1.4.1
+    crypto: ^1.0.1
     next: ^15.5.12
+    next-auth: ^5.0.0-beta.30
     react: 19.2.4
     react-dom: 19.2.4
+    zod: 3.25.76
   peerDependenciesMeta:
+    "@auth/core":
+      optional: true
+    "@auth/drizzle-adapter":
+      optional: true
+    crypto:
+      optional: true
     next:
+      optional: true
+    next-auth:
       optional: true
     react:
       optional: true
     react-dom:
+      optional: true
+    zod:
       optional: true
   languageName: unknown
   linkType: soft
@@ -1096,6 +1135,9 @@ __metadata:
     "@opentelemetry/api-logs": "npm:0.57.2"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^6.6.4"
+    "@testing-library/react": "npm:^16.3.0"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:25.2.3"
     "@types/react": "npm:19.2.4"
@@ -1106,9 +1148,25 @@ __metadata:
     jest: "npm:^30.0.5"
     pg: "npm:>=8"
     postgres: "npm:^3.4.5"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
+  peerDependencies:
+    next: ^15.5.12
+    react: 19.2.4
+    react-dom: 19.2.4
+    zod: 3.25.76
+  peerDependenciesMeta:
+    next:
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+    zod:
+      optional: true
   languageName: unknown
   linkType: soft
 
@@ -1123,6 +1181,9 @@ __metadata:
     "@playwright/test": "npm:^1.55.0"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^6.6.4"
+    "@testing-library/react": "npm:^16.3.0"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:25.2.3"
     "@types/react": "npm:19.2.4"
@@ -1137,10 +1198,24 @@ __metadata:
     jest: "npm:^30.0.5"
     jest-environment-jsdom: "npm:^30.0.5"
     postcss: "npm:^8.5.3"
-    react-native: "npm:^0.84.0"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
-    zod: "npm:3.25.76"
+  peerDependencies:
+    next: ^15.5.12
+    react: 19.2.4
+    react-dom: 19.2.4
+    zod: 3.25.76
+  peerDependenciesMeta:
+    next:
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+    zod:
+      optional: true
   languageName: unknown
   linkType: soft
 
@@ -1158,6 +1233,7 @@ __metadata:
     "@opentelemetry/api-logs": "npm:0.57.2"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
+    "@testing-library/dom": "npm:^10.4.1"
     "@testing-library/jest-dom": "npm:^6.6.4"
     "@testing-library/react": "npm:^16.3.0"
     "@types/jest": "npm:^30.0.0"
@@ -1171,16 +1247,24 @@ __metadata:
     jest: "npm:^30.0.5"
     lru-cache: "npm:^11.0.2"
     mitt: "npm:^3.0.1"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
   peerDependencies:
+    next: ^15.5.12
     react: 19.2.4
     react-dom: 19.2.4
+    zod: 3.25.76
   peerDependenciesMeta:
+    next:
+      optional: true
     react:
       optional: true
     react-dom:
+      optional: true
+    zod:
       optional: true
   languageName: unknown
   linkType: soft
@@ -1194,13 +1278,32 @@ __metadata:
     "@compliance-theater/typescript": "workspace:*"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^6.6.4"
+    "@testing-library/react": "npm:^16.3.0"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:25.2.3"
     got: "npm:^14.4.9"
     jest: "npm:^30.0.5"
     lru-cache: "npm:^11.0.2"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
+  peerDependencies:
+    next: ^15.5.12
+    react: 19.2.4
+    react-dom: 19.2.4
+    zod: 3.25.76
+  peerDependenciesMeta:
+    next:
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+    zod:
+      optional: true
   languageName: unknown
   linkType: soft
 
@@ -1216,6 +1319,8 @@ __metadata:
     "@rollup/plugin-node-resolve": "npm:^15.3.0"
     "@rollup/plugin-replace": "npm:^6.0.1"
     "@swc/core": "npm:^1.13.5"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^6.6.4"
     "@testing-library/react": "npm:^16.3.0"
     "@types/node": "npm:25.2.3"
     "@types/react": "npm:19.2.4"
@@ -1261,6 +1366,8 @@ __metadata:
     "@playwright/test": "npm:^1.55.0"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^6.6.4"
     "@testing-library/react": "npm:^16.3.0"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:25.2.3"
@@ -1279,16 +1386,24 @@ __metadata:
     pino: "npm:^9.6.0"
     pino-pretty: "npm:^13.0.0"
     postcss: "npm:^8.5.3"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
   peerDependencies:
+    next: ^15.5.12
     react: 19.2.4
     react-dom: 19.2.4
+    zod: 3.25.76
   peerDependenciesMeta:
+    next:
+      optional: true
     react:
       optional: true
     react-dom:
+      optional: true
+    zod:
       optional: true
   languageName: unknown
   linkType: soft
@@ -1310,6 +1425,9 @@ __metadata:
     "@opentelemetry/sdk-trace-base": "npm:1.30.1"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^6.6.4"
+    "@testing-library/react": "npm:^16.3.0"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:25.2.3"
     "@types/react": "npm:19.2.4"
@@ -1318,14 +1436,25 @@ __metadata:
     got: "npm:^14.4.9"
     jest: "npm:^30.0.5"
     lru-cache: "npm:^11.0.2"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     readable-web-to-node-stream: "npm:^5.0.0"
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
   peerDependencies:
     next: ^15.5.12
+    react: 19.2.4
+    react-dom: 19.2.4
+    zod: 3.25.76
   peerDependenciesMeta:
     next:
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+    zod:
       optional: true
   languageName: unknown
   linkType: soft
@@ -1342,12 +1471,17 @@ __metadata:
     "@opentelemetry/api-logs": "npm:0.57.2"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^6.6.4"
+    "@testing-library/react": "npm:^16.3.0"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:25.2.3"
     "@types/react": "npm:19.2.4"
     "@types/react-dom": "npm:19.2.3"
     babel-plugin-react-compiler: "npm:^1.0.0"
     jest: "npm:^30.0.5"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
@@ -1355,12 +1489,15 @@ __metadata:
     next: ^15.5.12
     react: 19.2.4
     react-dom: 19.2.4
+    zod: 3.25.76
   peerDependenciesMeta:
     next:
       optional: true
     react:
       optional: true
     react-dom:
+      optional: true
+    zod:
       optional: true
   languageName: unknown
   linkType: soft
@@ -1379,15 +1516,34 @@ __metadata:
     "@redis/client": "npm:>=5.5.6"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^6.6.4"
+    "@testing-library/react": "npm:^16.3.0"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:25.2.3"
     "@types/react": "npm:19.2.4"
     "@types/react-dom": "npm:19.2.3"
     babel-plugin-react-compiler: "npm:^1.0.0"
     jest: "npm:^30.0.5"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
+  peerDependencies:
+    next: ^15.5.12
+    react: 19.2.4
+    react-dom: 19.2.4
+    zod: 3.25.76
+  peerDependenciesMeta:
+    next:
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+    zod:
+      optional: true
   languageName: unknown
   linkType: soft
 
@@ -1404,19 +1560,33 @@ __metadata:
     "@opentelemetry/api-logs": "npm:0.57.2"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^6.6.4"
+    "@testing-library/react": "npm:^16.3.0"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:25.2.3"
     "@types/react": "npm:19.2.4"
     "@types/react-dom": "npm:19.2.3"
     babel-plugin-react-compiler: "npm:^1.0.0"
     jest: "npm:^30.0.5"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
   peerDependencies:
     next: ^15.5.12
+    react: 19.2.4
+    react-dom: 19.2.4
+    zod: 3.25.76
   peerDependenciesMeta:
     next:
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+    zod:
       optional: true
   languageName: unknown
   linkType: soft
@@ -1436,6 +1606,7 @@ __metadata:
     "@opentelemetry/api-logs": "npm:0.57.2"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
+    "@testing-library/dom": "npm:^10.4.1"
     "@testing-library/jest-dom": "npm:^6.6.4"
     "@testing-library/react": "npm:^16.3.0"
     "@types/jest": "npm:^30.0.0"
@@ -1444,16 +1615,24 @@ __metadata:
     "@types/react-dom": "npm:19.2.3"
     babel-plugin-react-compiler: "npm:^1.0.0"
     jest: "npm:^30.0.5"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
   peerDependencies:
+    next: ^15.5.12
     react: 19.2.4
     react-dom: 19.2.4
+    zod: 3.25.76
   peerDependenciesMeta:
+    next:
+      optional: true
     react:
       optional: true
     react-dom:
+      optional: true
+    zod:
       optional: true
   languageName: unknown
   linkType: soft
@@ -1462,34 +1641,47 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@compliance-theater/types@workspace:packages/lib-types"
   dependencies:
-    "@auth/core": "npm:0.41.1"
     "@jest/globals": "npm:^30.0.5"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^6.6.4"
+    "@testing-library/react": "npm:^16.3.0"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:25.2.3"
     "@types/react": "npm:19.2.4"
     "@types/react-dom": "npm:19.2.3"
-    ai: "npm:^5.0.23"
     awilix: "npm:^13.0.0"
     jest: "npm:^30.0.5"
-    next-auth: "npm:^5.0.0-beta.30"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     rimraf: "npm:^6.1.2"
     ts-node: "npm:^10.9.1"
     ts-pattern: "npm:^5.7.1"
     typescript: "npm:^5.9.3"
   peerDependencies:
+    "@auth/core": 0.41.1
+    ai: ^5.0.23
     next: ^15.5.12
+    next-auth: ^5.0.0-beta.30
     react: 19.2.4
     react-dom: 19.2.4
-    ts-pattern: ^5.5.2
+    zod: 3.25.76
   peerDependenciesMeta:
+    "@auth/core":
+      optional: true
+    ai:
+      optional: true
     next:
+      optional: true
+    next-auth:
       optional: true
     react:
       optional: true
     react-dom:
+      optional: true
+    zod:
       optional: true
   languageName: unknown
   linkType: soft
@@ -1504,17 +1696,36 @@ __metadata:
     "@opentelemetry/api-logs": "npm:0.57.2"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
+    "@testing-library/dom": "npm:^10.4.1"
+    "@testing-library/jest-dom": "npm:^6.6.4"
+    "@testing-library/react": "npm:^16.3.0"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:25.2.3"
     "@types/react": "npm:19.2.4"
     "@types/react-dom": "npm:19.2.3"
     babel-plugin-react-compiler: "npm:^1.0.0"
     jest: "npm:^30.0.5"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
     uuid: "npm:^11.1.0"
     zod: "npm:3.25.76"
+  peerDependencies:
+    next: ^15.5.12
+    react: 19.2.4
+    react-dom: 19.2.4
+    zod: 3.25.76
+  peerDependenciesMeta:
+    next:
+      optional: true
+    react:
+      optional: true
+    react-dom:
+      optional: true
+    zod:
+      optional: true
   languageName: unknown
   linkType: soft
 
@@ -1595,30 +1806,30 @@ __metadata:
   linkType: hard
 
 "@emnapi/core@npm:^1.4.3":
-  version: 1.8.1
-  resolution: "@emnapi/core@npm:1.8.1"
+  version: 1.9.0
+  resolution: "@emnapi/core@npm:1.9.0"
   dependencies:
-    "@emnapi/wasi-threads": "npm:1.1.0"
+    "@emnapi/wasi-threads": "npm:1.2.0"
     tslib: "npm:^2.4.0"
-  checksum: 10/904ea60c91fc7d8aeb4a8f2c433b8cfb47c50618f2b6f37429fc5093c857c6381c60628a5cfbc3a7b0d75b0a288f21d4ed2d4533e82f92c043801ef255fd6a5c
+  checksum: 10/52d8dc5ba0d6814c5061686b8286d84cc5349c8fc09de3a9c4175bc2369c2890b335f7b03e55bc19ce3033158962cd817522fcb3bdeb1feb9ba7a060d61b69ab
   languageName: node
   linkType: hard
 
 "@emnapi/runtime@npm:^1.4.3, @emnapi/runtime@npm:^1.7.0":
-  version: 1.8.1
-  resolution: "@emnapi/runtime@npm:1.8.1"
+  version: 1.9.0
+  resolution: "@emnapi/runtime@npm:1.9.0"
   dependencies:
     tslib: "npm:^2.4.0"
-  checksum: 10/26725e202d4baefdc4a6ba770f703dfc80825a27c27a08c22bac1e1ce6f8f75c47b4fe9424d9b63239463c33ef20b650f08d710da18dfa1164a95e5acb865dba
+  checksum: 10/d04a7e67676c2560d5394a01d63532af943760cf19cc8f375390a345aeab2b19e9ee35485b06b5c211df18f947fb14ac50658fca5c4067946f1e50af3490b3b5
   languageName: node
   linkType: hard
 
-"@emnapi/wasi-threads@npm:1.1.0":
-  version: 1.1.0
-  resolution: "@emnapi/wasi-threads@npm:1.1.0"
+"@emnapi/wasi-threads@npm:1.2.0":
+  version: 1.2.0
+  resolution: "@emnapi/wasi-threads@npm:1.2.0"
   dependencies:
     tslib: "npm:^2.4.0"
-  checksum: 10/0d557e75262d2f4c95cb2a456ba0785ef61f919ce488c1d76e5e3acfd26e00c753ef928cd80068363e0c166ba8cc0141305daf0f81aad5afcd421f38f11e0f4e
+  checksum: 10/c8e48c7200530744dc58170d2e25933b61433e4a0c50b4f192f5d8d4b065c7023dbfc48dac0afadbc29bd239013f2ae454c6e54e0ca6e8248402bf95c9e77e22
   languageName: node
   linkType: hard
 
@@ -3662,12 +3873,12 @@ __metadata:
   linkType: hard
 
 "@mui/x-data-grid-pro@npm:^8.3.1":
-  version: 8.27.4
-  resolution: "@mui/x-data-grid-pro@npm:8.27.4"
+  version: 8.27.5
+  resolution: "@mui/x-data-grid-pro@npm:8.27.5"
   dependencies:
     "@babel/runtime": "npm:^7.28.4"
     "@mui/utils": "npm:^7.3.5"
-    "@mui/x-data-grid": "npm:8.27.4"
+    "@mui/x-data-grid": "npm:8.27.5"
     "@mui/x-internals": "npm:8.26.0"
     "@mui/x-license": "npm:8.26.0"
     clsx: "npm:^2.1.1"
@@ -3684,13 +3895,13 @@ __metadata:
       optional: true
     "@emotion/styled":
       optional: true
-  checksum: 10/727908a90fa470a93e917d604895b63d7d575a083df22ce080f90617c317ee38f3eefabd3c7263e1e77fc07a4977af45fd02c1d517909a91e8cc783bd2c57773
+  checksum: 10/da7db5e1beb1d61ea73a7697af7412cf6262a4d8da5c64d26f38b6a9df79a6239bffccec7c6192eedcf7fcea91218ece15639c52bb125102a2a536127d340e25
   languageName: node
   linkType: hard
 
-"@mui/x-data-grid@npm:8.27.4, @mui/x-data-grid@npm:^8.2.0":
-  version: 8.27.4
-  resolution: "@mui/x-data-grid@npm:8.27.4"
+"@mui/x-data-grid@npm:8.27.5, @mui/x-data-grid@npm:^8.2.0":
+  version: 8.27.5
+  resolution: "@mui/x-data-grid@npm:8.27.5"
   dependencies:
     "@babel/runtime": "npm:^7.28.4"
     "@mui/utils": "npm:^7.3.5"
@@ -3711,7 +3922,7 @@ __metadata:
       optional: true
     "@emotion/styled":
       optional: true
-  checksum: 10/1b268e77b45174e40a8fa5ab88387ab70bfbc7c5cf9244feb8ebf2075a6175484c2a1f5b4b54833888af8920a782dae0af808017efabad3c39b8709ad068a150
+  checksum: 10/cecd948159d1b0c13020ebf806a762b00c91264f6bb90b599e40877c3f4b4bea236ea3e7e236c344e4493cd97464e4d4b9a5dc7988969c110cfd441a079da4e3
   languageName: node
   linkType: hard
 
@@ -5324,21 +5535,21 @@ __metadata:
   linkType: hard
 
 "@tanstack/react-virtual@npm:^3.13.12":
-  version: 3.13.21
-  resolution: "@tanstack/react-virtual@npm:3.13.21"
+  version: 3.13.22
+  resolution: "@tanstack/react-virtual@npm:3.13.22"
   dependencies:
-    "@tanstack/virtual-core": "npm:3.13.21"
+    "@tanstack/virtual-core": "npm:3.13.22"
   peerDependencies:
     react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
     react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
-  checksum: 10/c4dd558ab6a260fa959d35b736a9b42d32927ff90995a00bb4f8382cb28f84cbe9b2ea387e5631166df4b1f862ed13bd68c11208931fc9c73ee7950f9e5830ea
+  checksum: 10/f669a3c99cfd670223122797fce2f30f69bce56c4a751672569ca25d30af399bfd71b8c499f496a67cba8c2bdb8f1790d2b305ccc9357d3f8429e1afafd35da0
   languageName: node
   linkType: hard
 
-"@tanstack/virtual-core@npm:3.13.21":
-  version: 3.13.21
-  resolution: "@tanstack/virtual-core@npm:3.13.21"
-  checksum: 10/efd45e986dcfbd4aaa33537e255ccb3fc847b1a5eba1d7e73cd397f354b4622ecb824acb94f173dc3c8607e3094aa3a5b153e8a94d0839d0fa106f4f741d0c1f
+"@tanstack/virtual-core@npm:3.13.22":
+  version: 3.13.22
+  resolution: "@tanstack/virtual-core@npm:3.13.22"
+  checksum: 10/a9e60ca8d6dd9324fbf20d270a944a0d881b1950730b6cb281384425362e3372a4bf8f901d3fbeb5c66fdef6b4245c20bbd53c6bcaee9d17abb060248200615c
   languageName: node
   linkType: hard
 
@@ -5906,11 +6117,11 @@ __metadata:
   linkType: hard
 
 "@types/node@npm:*, @types/node@npm:>=13.7.0":
-  version: 25.4.0
-  resolution: "@types/node@npm:25.4.0"
+  version: 25.5.0
+  resolution: "@types/node@npm:25.5.0"
   dependencies:
     undici-types: "npm:~7.18.0"
-  checksum: 10/c8d55bdb395d56ad94d227724302b2615d6cd2d8a20f432a1ccf16bd4e537c61b062882e49dbd1fcfd845d91a18f62deb256ab07268c24549a4c7f740d74b903
+  checksum: 10/b1e8116bd8c9ff62e458b76d28a59cf7631537bb17e8961464bf754dd5b07b46f1620f568b2f89970505af9eef478dd74c614651b454c1ea95949ec472c64fcb
   languageName: node
   linkType: hard
 
@@ -6540,17 +6751,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:5.0.152, ai@npm:^5.0.23":
-  version: 5.0.152
-  resolution: "ai@npm:5.0.152"
+"ai@npm:5.0.154, ai@npm:^5.0.23":
+  version: 5.0.154
+  resolution: "ai@npm:5.0.154"
   dependencies:
-    "@ai-sdk/gateway": "npm:2.0.57"
+    "@ai-sdk/gateway": "npm:2.0.58"
     "@ai-sdk/provider": "npm:2.0.1"
     "@ai-sdk/provider-utils": "npm:3.0.22"
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10/47802b10705932d741a22bb09ce4d436324307d36519d06db0faf3aaeff4bb219c9ab2f3394ef0a5b47216837a171506ac23df2812db587a857269af118cdcd3
+  checksum: 10/cabebe31c9ab106484239d6be377d6e2b0c857550e1f6ac9000ca6279432455ce668e61a23ccf8ee7ebc51f938fe7d992cd9d992efaa2543aa6f2634f46e1e5b
   languageName: node
   linkType: hard
 
@@ -7101,11 +7312,11 @@ __metadata:
   linkType: hard
 
 "baseline-browser-mapping@npm:^2.9.0":
-  version: 2.10.0
-  resolution: "baseline-browser-mapping@npm:2.10.0"
+  version: 2.10.8
+  resolution: "baseline-browser-mapping@npm:2.10.8"
   bin:
     baseline-browser-mapping: dist/cli.cjs
-  checksum: 10/8145e076e4299f04c7a412e6ea63803e330153cd89c47b5303f9b56b58078f4c3d5a5b5332c1069da889e76facacca4d43f8940375f7e73ce0a4d96214332953
+  checksum: 10/820972372c87c65c2e665134d70aa44d5722492fb907aa79170fec84086a75de4675f6a7b717cf0a31b4c4f71cd0289b056b71e32007de97a37973a501d31dcb
   languageName: node
   linkType: hard
 
@@ -7381,9 +7592,9 @@ __metadata:
   linkType: hard
 
 "caniuse-lite@npm:^1.0.30001579, caniuse-lite@npm:^1.0.30001759":
-  version: 1.0.30001777
-  resolution: "caniuse-lite@npm:1.0.30001777"
-  checksum: 10/4f71c57ac7f46bd0c0b42bef212df28639652972e7cf6e3f40f902a87fa86d77217f76b1021dcef202ab6eb5958bad83cdcc81336a954fb4e857c2975ddb2569
+  version: 1.0.30001779
+  resolution: "caniuse-lite@npm:1.0.30001779"
+  checksum: 10/025b74d98d6bb05d3f95038ad7f9d621fab980768228c166f72bc012ee2f62e65dfc793fa64abab5de079bbfe7f2f831c30cfd22b82335e15107ef4deb27208e
   languageName: node
   linkType: hard
 
@@ -7681,6 +7892,7 @@ __metadata:
   resolution: "compliance-theater@workspace:."
   dependencies:
     "@auth/core": "npm:0.41.1"
+    "@auth/drizzle-adapter": "npm:^1.4.1"
     "@compliance-theater/after": "workspace:*"
     "@compliance-theater/app": "workspace:*"
     "@compliance-theater/auth": "workspace:*"
@@ -7717,9 +7929,11 @@ __metadata:
     "@types/react-dom": "npm:19.2.3"
     "@typescript-eslint/eslint-plugin": "npm:^8.46.4"
     "@typescript-eslint/parser": "npm:^8.46.4"
+    ai: "npm:^5.0.23"
     babel-plugin-react-compiler: "npm:^1.0.0"
     canvas: "npm:^3.2.0"
     cross-env: "npm:^10.0.0"
+    crypto: "npm:^1.0.1"
     dotenv: "npm:^16.5.0"
     drizzle-kit: "npm:^0.31.1"
     drizzle-orm: "npm:^0.44.1"
@@ -7733,7 +7947,7 @@ __metadata:
     jest-mock-extended: "npm:^4.0.0-beta1"
     jsdom: "npm:^26.1.0"
     mitt: "npm:^3.0.1"
-    next: "npm:15.5.12"
+    next: "npm:^15.5.12"
     pg: "npm:>=8"
     pino: "npm:^9.6.0"
     pino-pretty: "npm:^13.0.0"
@@ -7743,6 +7957,7 @@ __metadata:
     react-dom: "npm:19.2.4"
     react-native: "npm:^0.84.0"
     rimraf: "npm:^6.1.2"
+    ts-pattern: "npm:^5.7.1"
     turbo: "npm:^2.8.3"
     typescript: "npm:^5.9.3"
     undici: "npm:^7.16.0"
@@ -7923,6 +8138,13 @@ __metadata:
     shebang-command: "npm:^2.0.0"
     which: "npm:^2.0.1"
   checksum: 10/0d52657d7ae36eb130999dffff1168ec348687b48dd38e2ff59992ed916c88d328cf1d07ff4a4a10bc78de5e1c23f04b306d569e42f7a2293915c081e4dfee86
+  languageName: node
+  linkType: hard
+
+"crypto@npm:^1.0.1":
+  version: 1.0.1
+  resolution: "crypto@npm:1.0.1"
+  checksum: 10/087fe3165bd94c333a49e6ed66a0193911f63eac38a24f379b3001a5fe260a59c413646e53a0f67875ba13902b2686d81dc703cb2c147a4ec727dcdc04e5645e
   languageName: node
   linkType: hard
 
@@ -8427,9 +8649,9 @@ __metadata:
   linkType: hard
 
 "dayjs@npm:^1.11.19":
-  version: 1.11.19
-  resolution: "dayjs@npm:1.11.19"
-  checksum: 10/185b820d68492b83a3ce2b8ddc7543034edc1dfd1423183f6ae4707b29929a3cc56503a81826309279f9084680c15966b99456e74cf41f7d1f6a2f98f9c7196f
+  version: 1.11.20
+  resolution: "dayjs@npm:1.11.20"
+  checksum: 10/5347533f21a55b8bb1b1ef559be9b805514c3a8fb7e68b75fb7e73808131c59e70909c073aa44ce8a0d159195cd110cdd4081cf87ab96cb06fee3edacae791c6
   languageName: node
   linkType: hard
 
@@ -8876,9 +9098,9 @@ __metadata:
   linkType: hard
 
 "electron-to-chromium@npm:^1.5.263":
-  version: 1.5.307
-  resolution: "electron-to-chromium@npm:1.5.307"
-  checksum: 10/a72af3f89b83d81d151872c28a0886817b1da973e00629c0189c928ed46efa3e975c856969727bf6ebb32ec5ea8362c96e765f307260beaef3003d50fa5fbc11
+  version: 1.5.313
+  resolution: "electron-to-chromium@npm:1.5.313"
+  checksum: 10/cf23275f15a0bb53ed7811fe75715a4c4bea33cb552caf80f3caf28cb1b46b7299bbc014afc2d4d89d14254723625f1e94be7f4c5a584285f967124c44dcdea4
   languageName: node
   linkType: hard
 
@@ -9068,8 +9290,8 @@ __metadata:
   linkType: hard
 
 "es-iterator-helpers@npm:^1.2.1":
-  version: 1.3.0
-  resolution: "es-iterator-helpers@npm:1.3.0"
+  version: 1.3.1
+  resolution: "es-iterator-helpers@npm:1.3.1"
   dependencies:
     call-bind: "npm:^1.0.8"
     call-bound: "npm:^1.0.4"
@@ -9088,7 +9310,7 @@ __metadata:
     iterator.prototype: "npm:^1.1.5"
     math-intrinsics: "npm:^1.1.0"
     safe-array-concat: "npm:^1.1.3"
-  checksum: 10/aebccd4630c5c863efff19d05b019da9a381bd0da90cf676e1cf7c4ded215af5341adcd34a2efc8cc1aca27cdd70ff7fff508b0183d5363566cf288375a175a7
+  checksum: 10/38106c081426faa6a8c27f44ee653d81350944b449fad81caa032cc02c31280be11fd302d065da3b062534390040c58e8aab55ff897b5ef1ddf060079570c70d
   languageName: node
   linkType: hard
 
@@ -10014,25 +10236,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fast-xml-builder@npm:^1.1.1":
-  version: 1.1.1
-  resolution: "fast-xml-builder@npm:1.1.1"
+"fast-xml-builder@npm:^1.1.3":
+  version: 1.1.3
+  resolution: "fast-xml-builder@npm:1.1.3"
   dependencies:
     path-expression-matcher: "npm:^1.1.3"
-  checksum: 10/9e410f3d13d86ff398fdf712a71151c43c599a42d5cab64659172126b9f4f980135afc80c828026211fdfbcee525f2427d587af3190d0c8d03db5ba595bfade5
+  checksum: 10/125e9b05de57a0d9b5d1f6298a4195028a790f166124395473f28f5fc1c254b3b37eae3071a11841f53f44a610c776f86c790a05d2219dd3aaa1bc563e792377
   languageName: node
   linkType: hard
 
 "fast-xml-parser@npm:^5.0.7":
-  version: 5.5.2
-  resolution: "fast-xml-parser@npm:5.5.2"
+  version: 5.5.5
+  resolution: "fast-xml-parser@npm:5.5.5"
   dependencies:
-    fast-xml-builder: "npm:^1.1.1"
+    fast-xml-builder: "npm:^1.1.3"
     path-expression-matcher: "npm:^1.1.3"
     strnum: "npm:^2.1.2"
   bin:
     fxparser: src/cli/cli.js
-  checksum: 10/be33289fa1901c2aaab22a458592db696c6a0b46a41e10820e07770f16b36a740087a252562f868d4fab6484c56fabb40bc5a4904f4edee1f7472218b358fb2b
+  checksum: 10/2f13b9364d51cd3461f0bd7f6f271e1d68e87c044d4e6fc41a0bc5bfc3dc62965190c22a904175e6f825f94250c4a45acfdfb5eef1d5a631e072184b74e14df6
   languageName: node
   linkType: hard
 
@@ -10801,9 +11023,9 @@ __metadata:
   linkType: hard
 
 "hono@npm:^4.0.0":
-  version: 4.12.7
-  resolution: "hono@npm:4.12.7"
-  checksum: 10/fed37e612730491ba9456f8f68f1b8727a5298cd839fff9641a0b7a95b1e8567a05abb819d32621b40988f166b01140cf7d573c9218dee2741004f48e09564d5
+  version: 4.12.8
+  resolution: "hono@npm:4.12.8"
+  checksum: 10/f6cbb5cd6f24c1a8eac3bcda82481f2ef77d6f56b5754c9004a1be8f2672433a401cd670d62e7852f3065b6daf49e3f16ad9525c09f5cf40858a903b95404d74
   languageName: node
   linkType: hard
 
@@ -12604,7 +12826,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lru-cache@npm:11.2.6, lru-cache@npm:^11.0.0, lru-cache@npm:^11.0.2, lru-cache@npm:^11.1.0, lru-cache@npm:^11.2.1":
+"lru-cache@npm:11.2.6":
   version: 11.2.6
   resolution: "lru-cache@npm:11.2.6"
   checksum: 10/91222bbd59f793a0a0ad57789388f06b34ac9bb1613433c1d1810457d09db5cd3ec8943227ce2e1f5d6a0a15d6f1a9f129cb2c49ae9b6b10e82d4965fddecbef
@@ -12615,6 +12837,13 @@ __metadata:
   version: 10.4.3
   resolution: "lru-cache@npm:10.4.3"
   checksum: 10/e6e90267360476720fa8e83cc168aa2bf0311f3f2eea20a6ba78b90a885ae72071d9db132f40fda4129c803e7dcec3a6b6a6fbb44ca90b081630b810b5d6a41a
+  languageName: node
+  linkType: hard
+
+"lru-cache@npm:^11.0.0, lru-cache@npm:^11.0.2, lru-cache@npm:^11.1.0, lru-cache@npm:^11.2.1":
+  version: 11.2.7
+  resolution: "lru-cache@npm:11.2.7"
+  checksum: 10/fbff4b8dee8189dde9b52cdfb3ea89b4c9cec094c1538cd30d1f47299477ff312efdb35f7994477ec72328f8e754e232b26a143feda1bd1f79ff22da6664d2c5
   languageName: node
   linkType: hard
 
@@ -13359,7 +13588,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"next@npm:15.5.12":
+"next@npm:^15.5.12":
   version: 15.5.12
   resolution: "next@npm:15.5.12"
   dependencies:
@@ -15168,18 +15397,21 @@ __metadata:
   linkType: hard
 
 "rollup-plugin-dts@npm:^6.1.1":
-  version: 6.3.0
-  resolution: "rollup-plugin-dts@npm:6.3.0"
+  version: 6.4.0
+  resolution: "rollup-plugin-dts@npm:6.4.0"
   dependencies:
-    "@babel/code-frame": "npm:^7.27.1"
+    "@babel/code-frame": "npm:^7.29.0"
+    "@jridgewell/remapping": "npm:^2.3.5"
+    "@jridgewell/sourcemap-codec": "npm:^1.5.5"
+    convert-source-map: "npm:^2.0.0"
     magic-string: "npm:^0.30.21"
   peerDependencies:
     rollup: ^3.29.4 || ^4
-    typescript: ^4.5 || ^5.0
+    typescript: ^4.5 || ^5.0 || ^6.0
   dependenciesMeta:
     "@babel/code-frame":
       optional: true
-  checksum: 10/1b2b25126eee0c4e7f59d82ee5850b0c5779a1a0bb77d677798e20a3d29dba76d1a19a73300ed5b20aab02f6888ecc4209a95b07f6cc9c1b80af14bdcbeda5b9
+  checksum: 10/19a39cc19a4f67f4d6e0b8fee57baf1b6e669d05ab7a345cce3f8df1424d5cba33805dee0a1362ee29515ca8126b4441ef1c8bcb98935e751da8189f97d977a8
   languageName: node
   linkType: hard
 
@@ -16398,9 +16630,9 @@ __metadata:
   linkType: hard
 
 "tinyexec@npm:^1.0.1":
-  version: 1.0.2
-  resolution: "tinyexec@npm:1.0.2"
-  checksum: 10/cb709ed4240e873d3816e67f851d445f5676e0ae3a52931a60ff571d93d388da09108c8057b62351766133ee05ff3159dd56c3a0fbd39a5933c6639ce8771405
+  version: 1.0.4
+  resolution: "tinyexec@npm:1.0.4"
+  checksum: 10/ccebe4044eef6fa5050929df7862fda70b4fb700f15d94aef8ae6109b9d194dbc3a990125d99944fd25b90fe2115e1927f055b909a604c571a81b647ede5757a
   languageName: node
   linkType: hard
 
@@ -16531,11 +16763,11 @@ __metadata:
   linkType: hard
 
 "tough-cookie@npm:^6.0.0":
-  version: 6.0.0
-  resolution: "tough-cookie@npm:6.0.0"
+  version: 6.0.1
+  resolution: "tough-cookie@npm:6.0.1"
   dependencies:
     tldts: "npm:^7.0.5"
-  checksum: 10/1b0592241655912eb972e1c284ccf975af154576b8e9912cad4ed7b4b408a60ccfdad1bc53eef10d376f6a5ef9d84e2f8ea0b46c92263d52de855247ff100e27
+  checksum: 10/915b1167e0630598eb0644e8bc089ddc28a23bf05f3c329a4a0d879c6b9801a2603be65acb06b5d2dd0f589cabb06bb638837f8222dd82a7023655f07269451a
   languageName: node
   linkType: hard
 
@@ -16640,7 +16872,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^2.4.0, tslib@npm:^2.4.1, tslib@npm:^2.6.2, tslib@npm:^2.8.0, tslib@npm:^2.8.1":
+"tslib@npm:^2.0.0, tslib@npm:^2.4.0, tslib@npm:^2.4.1, tslib@npm:^2.6.2, tslib@npm:^2.8.0, tslib@npm:^2.8.1":
   version: 2.8.1
   resolution: "tslib@npm:2.8.1"
   checksum: 10/3e2e043d5c2316461cb54e5c7fe02c30ef6dccb3384717ca22ae5c6b5bc95232a6241df19c622d9c73b809bea33b187f6dbc73030963e29950c2141bc32a79f7
@@ -16656,58 +16888,58 @@ __metadata:
   languageName: node
   linkType: hard
 
-"turbo-darwin-64@npm:2.8.16":
-  version: 2.8.16
-  resolution: "turbo-darwin-64@npm:2.8.16"
+"turbo-darwin-64@npm:2.8.17":
+  version: 2.8.17
+  resolution: "turbo-darwin-64@npm:2.8.17"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"turbo-darwin-arm64@npm:2.8.16":
-  version: 2.8.16
-  resolution: "turbo-darwin-arm64@npm:2.8.16"
+"turbo-darwin-arm64@npm:2.8.17":
+  version: 2.8.17
+  resolution: "turbo-darwin-arm64@npm:2.8.17"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"turbo-linux-64@npm:2.8.16":
-  version: 2.8.16
-  resolution: "turbo-linux-64@npm:2.8.16"
+"turbo-linux-64@npm:2.8.17":
+  version: 2.8.17
+  resolution: "turbo-linux-64@npm:2.8.17"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"turbo-linux-arm64@npm:2.8.16":
-  version: 2.8.16
-  resolution: "turbo-linux-arm64@npm:2.8.16"
+"turbo-linux-arm64@npm:2.8.17":
+  version: 2.8.17
+  resolution: "turbo-linux-arm64@npm:2.8.17"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"turbo-windows-64@npm:2.8.16":
-  version: 2.8.16
-  resolution: "turbo-windows-64@npm:2.8.16"
+"turbo-windows-64@npm:2.8.17":
+  version: 2.8.17
+  resolution: "turbo-windows-64@npm:2.8.17"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"turbo-windows-arm64@npm:2.8.16":
-  version: 2.8.16
-  resolution: "turbo-windows-arm64@npm:2.8.16"
+"turbo-windows-arm64@npm:2.8.17":
+  version: 2.8.17
+  resolution: "turbo-windows-arm64@npm:2.8.17"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
 "turbo@npm:^2.8.3":
-  version: 2.8.16
-  resolution: "turbo@npm:2.8.16"
+  version: 2.8.17
+  resolution: "turbo@npm:2.8.17"
   dependencies:
-    turbo-darwin-64: "npm:2.8.16"
-    turbo-darwin-arm64: "npm:2.8.16"
-    turbo-linux-64: "npm:2.8.16"
-    turbo-linux-arm64: "npm:2.8.16"
-    turbo-windows-64: "npm:2.8.16"
-    turbo-windows-arm64: "npm:2.8.16"
+    turbo-darwin-64: "npm:2.8.17"
+    turbo-darwin-arm64: "npm:2.8.17"
+    turbo-linux-64: "npm:2.8.17"
+    turbo-linux-arm64: "npm:2.8.17"
+    turbo-windows-64: "npm:2.8.17"
+    turbo-windows-arm64: "npm:2.8.17"
   dependenciesMeta:
     turbo-darwin-64:
       optional: true
@@ -16723,7 +16955,7 @@ __metadata:
       optional: true
   bin:
     turbo: bin/turbo
-  checksum: 10/5ef7589969691169087e7009982afcd8e960524d6559d02ac93e82354c86363df828889b7132de56a4fade5c357e67111a14ac438eada1e677fc24a28d5e1cad
+  checksum: 10/65629a6b92a77e52053437379d380f9d746557aea02023798d48b7e855d734b731f85112754e06e9d6c767d0f9a012402ef82a547a1944a33fc1286bb30b1b27
   languageName: node
   linkType: hard
 
@@ -16875,9 +17107,9 @@ __metadata:
   linkType: hard
 
 "undici-types@npm:^6.19.8":
-  version: 6.23.0
-  resolution: "undici-types@npm:6.23.0"
-  checksum: 10/729e84c78a38c492285bd4b999a1db2cd3703118d55f18a49303d2c7db42ae81863a7c444f8823097c1cbc4a7544f28aed8cdacf218c35503a491a983f93b579
+  version: 6.24.1
+  resolution: "undici-types@npm:6.24.1"
+  checksum: 10/2106905444efeb289f68a2d891dc6a98e7c83da0717bda1f927ab81ab5ca21ea26db7e88b76fe2bbc904c769725a3c5e9ac69e87cc02666204227e07c2ee51b5
   languageName: node
   linkType: hard
 
@@ -16896,9 +17128,9 @@ __metadata:
   linkType: hard
 
 "undici@npm:^7.16.0":
-  version: 7.22.0
-  resolution: "undici@npm:7.22.0"
-  checksum: 10/a7a1813ba4b74c0d46cc8dd160386202c05699ffc487c5d882cf40e6d2435c8d6faff3b8f8675d09bd1ef0386e370675c26b59b9a8c8b3f17b9f82a42236a927
+  version: 7.24.3
+  resolution: "undici@npm:7.24.3"
+  checksum: 10/9fadddd1039b21d7022a17eeb1c132383b5570606f55e67d1d7752d3db768864674e734ddf477b1f1aac862a8f33e41d24b8d5396c398c29527f732bd19b4886
   languageName: node
   linkType: hard
 
