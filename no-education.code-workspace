@@ -11,6 +11,7 @@
 		}
 	],
 	"settings": {
+    	"typescript.tsserver.maxTsServerMemory": 4096,
 		"testing.automaticallyOpenTestResults": "neverOpen",
 		"jest.runMode": "on-demand",
 		"jest.outputConfig": {
@@ -19,7 +20,7 @@
 			"clearOnRun": "both"
 		},
 		"files.exclude": {
-			".yarn-cache": true,
+			"**/.yarn-cache/**": true,
 			"**/.DS_Store": true,
 			"**/.git": true,
 			"**/.hg": true,
@@ -33,14 +34,38 @@
 			"**/packages/__tests__/**": true,
 			"**/Thumbs.db": true,
 			"**/tsconfig.tsbuildinfo": true,
-			"node_modules": true
 		},
 		"files.watcherExclude": {
 			"**/.next/**": true,
 			"**/*.workspace/**": true,
+			"**/*.yarn-cache/**": true,
+			"**/coverage/**": true,
 			"**/dist/**": true,
 			"**/node_modules/**": true,
 			"**/out/**": true
-		}
+		},
+		"typescript.tsdk": "node_modules/typescript/lib",
+		"typescript.disableAutomaticTypeAcquisition": true,
+		"typescript.tsserver.watchOptions": {
+			"watchFile": "useFsEventsOnParentDirectory",
+			"watchDirectory": "useFsEvents",
+			"fallbackPolling": "dynamicPriority",
+			"excludeDirectories": [
+				"**/node_modules",
+				"**/.git",
+				"**/.next",
+				"**/.turbo",
+				"**/*.yarn-cache",
+				"**/out",
+				"**/dist",
+				"**/coverage",
+				"**/*.worktrees",
+				"**/attachments",
+				"**/backups"
+			]
+		},
+		"git.ignoredRepositories": [
+			".*\\.worktrees"
+		],
 	}
 }

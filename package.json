@@ -32,7 +32,9 @@
   "scripts": {
     "add": "yarn workspace compliance-theater add ",
     "preinstall": "node preinstall.js",
-    "link:clean": "bash scripts/clean-link.sh",
+    "link:clean": "node scripts/link-clean.mjs",
+    "link:clean:sh": "bash scripts/clean-link.sh",
+    "link:clean:ps1": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean-link.ps1",
     "changeset": "changeset",
     "changeset:status": "changeset status",
     "changeset:version": "changeset version",

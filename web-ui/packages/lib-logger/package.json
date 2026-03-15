@@ -28,6 +28,11 @@
       "workspace-source": "./src/service-registrar.node.ts",
       "default": "./dist/service-registrar.node.js"
     },
+    "./errors/logged-error": {
+      "types": "./dist/errors/logged-error/index.d.ts",
+      "workspace-source": "./src/errors/logged-error/index.ts",
+      "default": "./dist/errors/logged-error/index.js"
+    },
     "./*": {
       "types": "./dist/*.d.ts",
       "workspace-source": "./src/*",

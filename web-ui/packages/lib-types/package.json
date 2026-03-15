@@ -69,14 +69,14 @@
   },
   "dependencies": {
     "awilix": "^13.0.0",
+    "next": "^15.5.12",
+    "next-auth": "^5.0.0-beta.30",
     "react-native": "^0.84.0",
     "ts-pattern": "^5.7.1"
   },
   "peerDependencies": {
     "@auth/core": "0.41.1",
     "ai": "^5.0.23",
-    "next": "^15.5.12",
-    "next-auth": "^5.0.0-beta.30",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "3.25.76"

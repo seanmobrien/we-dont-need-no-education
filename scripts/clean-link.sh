@@ -20,6 +20,16 @@
 #   intermediate one.
 # - Validation is non-blocking per workspace: every state is checked and
 #   reported even if an earlier state fails.
+#
+# Intentional design decisions:
+# - The effective working directory is always the repository root, computed as
+#   the parent of this script's folder.
+# - json-viewer is intentionally excluded from the managed install states
+#   because workspace builds do not emit a dedicated yarn.lock for it.
+# - Each install/refresh/validate stage uses the Yarn release checked into the
+#   specific workspace being processed.
+# - Forwarded arguments are reserved for future options and are intentionally
+#   ignored by this script today.
 
 set -euo pipefail
 
@@ -115,10 +125,11 @@ ensure_install_state() {
   resolve_install_state "${state_id}"
 
   local workspace_name="${INSTALL_STATE_NAME["${state_id}"]}"
-  local workspace_path="${INSTALL_STATE_PATH["${state_id}"]}"
+  local workspace_path="${INSTALL_STATE_PATH["${state_id}"]}"  
   local yarn_binary="./.yarn/releases/yarn-4.12.0.cjs"
 
   pushd "${workspace_path}" >/dev/null
+  touch "yarn.lock" >/dev/null
   log_stage "install" "${workspace_name}" "running yarn install"
   "${yarn_binary}" install
 
@@ -207,12 +218,6 @@ find . -type f \( \
   -name "tsconfig.tsbuildinfo" -o \
   -name "npm-shrinkwrap.json" \
 \) -print -delete
-
-# Recreate empty yarn.lock files at workspace boundaries to ensure the install state is consistent with the expected file structure for each workspace
-touch \
-  ./web-ui/submodules/sce/yarn.lock \
-  ./web-ui/yarn.lock \
-  ./yarn.lock
 
 # Install dependencies and verify install state files for each workspace
 for state_id in "${INSTALL_STATE_IDS[@]}"; do
