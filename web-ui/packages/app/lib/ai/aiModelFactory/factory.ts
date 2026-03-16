@@ -25,8 +25,7 @@ import { tokenStatsLoggingOnlyMiddleware } from '../middleware/tokenStatsTrackin
 import { MiddlewareStateManager } from '../middleware/state-management';
 
 import {
-  isNotNull,
-  isPromise
+  isNotNull
 } from '@compliance-theater/typescript';
 import {
   globalRequiredSingleton,
