@@ -11,7 +11,7 @@
 		}
 	],
 	"settings": {
-    	"typescript.tsserver.maxTsServerMemory": 4096,
+		"typescript.tsserver.maxTsServerMemory": 4096,
 		"testing.automaticallyOpenTestResults": "neverOpen",
 		"jest.runMode": "on-demand",
 		"jest.outputConfig": {
@@ -67,5 +67,29 @@
 		"git.ignoredRepositories": [
 			".*\\.worktrees"
 		],
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"type": "node",
+				"request": "launch",
+				"name": "Yarn Debug",
+				"skipFiles": [
+					"<node_internals>/**"
+				],
+				"cwd": "${workspaceFolder}",
+				"runtimeExecutable": "yarn",
+				"runtimeArgs": [
+					"workspace",
+					"@compliance-theater/app",
+					"debug"
+				],
+				"console": "integratedTerminal",
+				"outFiles": [
+					"${workspaceFolder}/**/*.js"
+				]
+			}
+		]
 	}
 }
