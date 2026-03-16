@@ -100,7 +100,6 @@
     "@redis/client": ">=5.5.6",
     "@semanticencoding/core": "workspace:*",
     "ai": "^5.0.23",
-    "crypto": "^1.0.1",
     "drizzle-orm": "^0.44.1",
     "got": "^14.4.9",
     "mitt": "^3.0.1",

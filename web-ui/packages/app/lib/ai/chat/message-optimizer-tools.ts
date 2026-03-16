@@ -6,7 +6,7 @@ import {
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import { log, LoggedError } from '@compliance-theater/logger';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 // import { v4 as uuidv4 } from 'uuid';
 import { appMeters, hashUserId } from '@/lib/site-util/metrics';
 // import { ToolMap } from '../services/model-stats/tool-map';

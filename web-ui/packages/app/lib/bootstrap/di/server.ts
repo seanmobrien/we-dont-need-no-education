@@ -30,13 +30,6 @@ export const ensureServerDiBootstrap = (): void => {
   new AuthServiceRegistrar().register(container);
   new AfterServiceRegistrar().register(container);
 
-  if (!container.has('startup')) {
-    container.register(
-      'startup',
-      asFunction(() => new AppStartupManager(appStartupConfig)),
-    );
-  }
-
   globalWithBootstrap[DI_BOOTSTRAP_KEY] = true;
 };
 

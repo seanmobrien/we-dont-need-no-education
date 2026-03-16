@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import { Meter, metrics } from '@opentelemetry/api';
 
 export const SERVICE_NAME = 'WebUi';

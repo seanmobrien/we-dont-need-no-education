@@ -7,7 +7,7 @@
  * @version 1.0.0
  */
 
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import { ToolSet } from '@compliance-theater/types/ai-sdk';
 import { getRedisClient, RedisClientType } from '@compliance-theater/redis';
 import { log, LoggedError, SingletonProvider } from '@compliance-theater/logger';
