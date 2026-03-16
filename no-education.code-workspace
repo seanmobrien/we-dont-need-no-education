@@ -38,7 +38,7 @@
 		"files.watcherExclude": {
 			"**/.next/**": true,
 			"**/*.workspace/**": true,
-			"**/*.yarn-cache/**": true,
+			"**/.yarn-cache/**": true,
 			"**/coverage/**": true,
 			"**/dist/**": true,
 			"**/node_modules/**": true,
@@ -55,7 +55,7 @@
 				"**/.git",
 				"**/.next",
 				"**/.turbo",
-				"**/*.yarn-cache",
+				"**/.yarn-cache",
 				"**/out",
 				"**/dist",
 				"**/coverage",
