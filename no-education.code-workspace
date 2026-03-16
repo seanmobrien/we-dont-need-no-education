@@ -67,6 +67,9 @@
 		"git.ignoredRepositories": [
 			".*\\.worktrees"
 		],
+		"chat.tools.terminal.autoApprove": {
+			"ConvertFrom-Json": true
+		},
 	},
 	"launch": {
 		"version": "0.2.0",
