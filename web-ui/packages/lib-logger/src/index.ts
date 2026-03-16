@@ -80,7 +80,6 @@ export {
   globalSingletonAsync,
   globalRequiredSingletonAsync,
 } from './singleton-provider/index';
-export { default as ServiceRegistrar } from './service-registrar';
 
 export { PostgresError, isDrizzleError, errorFromCode } from './errors';
 export { ErrorReporter } from './errors/monitoring/error-reporter';
