@@ -5,7 +5,7 @@
  * Tests for the Todo Manager and Todo Tools
  */
 
-import { Session } from '@compliance-theater/auth';
+import { Session } from '@compliance-theater/auth/server';
 import { TodoManager, getTodoManager } from '../../../../lib/ai/tools/todo/todo-manager';
 import {
   createTodoCallback,
@@ -540,3 +540,4 @@ describe('Todo Tool Callbacks', () => {
     expect(result.structuredContent.result.isError).toBe(true);
   });
 });
+

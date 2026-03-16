@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { PageContainer } from '@toolpad/core/PageContainer';
 import { SessionProvider } from '@compliance-theater/types/next-auth/react';
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
 import Box from '@mui/material/Box';
@@ -28,3 +28,4 @@ const DashboardPage = async ({ children }: React.PropsWithChildren<object>) => {
 };
 
 export default DashboardPage;
+

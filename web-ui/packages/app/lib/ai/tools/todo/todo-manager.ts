@@ -1,4 +1,4 @@
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 import { Session } from '@compliance-theater/types/auth-core/types';
 import {
   log,
@@ -926,3 +926,4 @@ export const resetTodoManager = (): void => {
   SingletonProvider.Instance.delete('@noeducation/ai/TodoManager');
   log((l) => l.debug('TodoManager singleton reset'));
 };
+

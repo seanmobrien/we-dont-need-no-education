@@ -11,6 +11,21 @@
       "development": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "development": "./src/client.ts",
+      "default": "./dist/client.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "development": "./dist/server.js",
+      "default": "./dist/server.js"
+    },
+    "./next-auth": {
+      "types": "./dist/next-auth.d.ts",
+      "development": "./dist/next-auth.js",
+      "default": "./dist/next-auth.js"
+    },
     "./service-registrar/browser": {
       "types": "./dist/service-registrar.browser.d.ts",
       "development": "./src/service-registrar.browser.ts",

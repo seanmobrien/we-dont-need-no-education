@@ -81,7 +81,7 @@ jest.mock('../../../../../../lib/react-util', () => ({
 }));
 
 // Import mocked dependencies
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { eq, and } from '@compliance-theater/database/drizzle-orm';
 import { hideConsoleOutput } from '../../../../../shared/test-utils';

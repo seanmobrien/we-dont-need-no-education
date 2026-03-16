@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 
 import { ensureEdgeDiBootstrap } from '@/lib/bootstrap/di/browser';
 
@@ -14,3 +14,4 @@ export const middleware = async (...args: [NextRequest, ...unknown[]]) => {
   ensureEdgeDiBootstrap();
   return await (auth as unknown as (...innerArgs: [NextRequest, ...unknown[]]) => Promise<Response | undefined> | Response | undefined)(...args);
 };
+

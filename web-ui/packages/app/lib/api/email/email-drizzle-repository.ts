@@ -3,7 +3,7 @@ import { emails } from '@compliance-theater/database/schema';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { ValidationError } from '@compliance-theater/react/errors/validation-error';
 import { eq } from '@compliance-theater/database/drizzle-orm';
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 import {
   CaseFileScope,
   checkCaseFileAccess,
@@ -318,3 +318,4 @@ export class EmailDrizzleRepository
     }
   }
 }
+

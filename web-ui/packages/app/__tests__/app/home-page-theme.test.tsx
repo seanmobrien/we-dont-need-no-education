@@ -2,7 +2,7 @@ import { render, screen } from '../shared/test-utils';
 import { ThemeProvider } from '@compliance-theater/themes';
 import HomePage from '../../app/page';
 
-jest.mock('@compliance-theater/auth/components/session-provider/index', () => ({
+jest.mock('@compliance-theater/auth/client', () => ({
   SessionProvider: ({ children }: { children: unknown }) => children,
   useSession: jest.fn(() => ({
     data: null,

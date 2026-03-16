@@ -1,4 +1,4 @@
-import { handlers } from '@compliance-theater/auth';
+import { handlers } from '@compliance-theater/auth/server';
 import type { AuthNextRequest } from '@compliance-theater/types/next-auth';
 
 type AuthRouteHandler = (req: AuthNextRequest) => Promise<Response>;

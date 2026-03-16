@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 import { ChatPageClient } from './chat-page-client';
 
 const Page = async () => {
@@ -8,3 +8,4 @@ const Page = async () => {
 };
 
 export default Page;
+

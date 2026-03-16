@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 import { drizDb, schema } from '@compliance-theater/database/orm';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { z } from 'zod';
@@ -250,3 +250,4 @@ export const GET = wrapRouteRequest(async (): Promise<NextResponse> => {
     );
   }
 });
+

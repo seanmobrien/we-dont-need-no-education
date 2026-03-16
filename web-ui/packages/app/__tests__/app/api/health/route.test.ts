@@ -29,7 +29,7 @@ jest.mock('../../../../lib/ai/mcp/providers', () => ({
     [Symbol.dispose]: jest.fn(),
   }),
 }));
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 import { hideConsoleOutput } from '../../../shared/test-utils';
 import { GET } from '../../../../app/api/health/route';
 import { NextRequest } from 'next/server';
@@ -258,3 +258,4 @@ describe('app/api/health/route GET', () => {
     expect(mockHealthCheck).toHaveBeenCalledTimes(2);
   });
 });
+
