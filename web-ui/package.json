@@ -27,6 +27,7 @@
     "dev": "turbo run dev --filter='@compliance-theater/app...'",
     "debug": "turbo run debug --filter='@compliance-theater/app...'",
     "build": "turbo run build --filter='@compliance-theater/app...' --continue=dependencies-successful",
+    "build:debug": "yarn workspace @compliance-theater/app build:debug",
     "build:partial": "turbo run build --filter='@compliance-theater/app...' --continue=dependencies-successful",
     "build:typescript": "turbo run build:typescript --filter='@compliance-theater/app...' --continue=dependencies-successful",
     "build:typescript:partial": "turbo run build:typescript --filter='@compliance-theater/app...' --continue=dependencies-successful",

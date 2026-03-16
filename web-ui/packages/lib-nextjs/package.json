@@ -8,15 +8,17 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./server/di-bootstrap-accessor": {
       "types": "./dist/server/di-bootstrap-accessor.d.ts",
-      "workspace-source": "./src/server/di-bootstrap-accessor.ts",
+      "development": "./src/server/di-bootstrap-accessor.ts",
       "default": "./dist/server/di-bootstrap-accessor.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
+      "development": "./src/*",
       "default": "./dist/*.js"
     }
   },

@@ -40,7 +40,7 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "@compliance-theater/app#build": {
@@ -76,7 +76,7 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "@semanticencoding/monorepo#build": {
@@ -112,7 +112,7 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "build:typescript": {
@@ -148,7 +148,7 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "@compliance-theater/app#build:typescript": {
@@ -184,7 +184,7 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "@semanticencoding/monorepo#build:typescript": {
@@ -220,7 +220,7 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "build:publish": {
@@ -256,7 +256,7 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "@semanticencoding/monorepo#build:publish": {
@@ -292,7 +292,7 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
 

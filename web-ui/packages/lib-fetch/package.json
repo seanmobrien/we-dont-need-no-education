@@ -3,46 +3,37 @@
   "version": "0.1.0",
   "private": true,
   "description": "Runtime-aware fetch package for node and browser/edge",
-  "main": "./dist/index.browser.js",
-  "types": "./dist/index.browser.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.browser.d.ts",
-      "workspace-source": "./src/index.ts",
-      "browser": "./dist/index.browser.js",
-      "node": "./dist/index.node.js",
-      "default": "./dist/index.browser.js"
+      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
     },
     "./browser": {
       "types": "./dist/index.browser.d.ts",
-      "workspace-source": "./src/index.browser.ts",
+      "development": "./src/index.browser.ts",
       "default": "./dist/index.browser.js"
     },
     "./node": {
       "types": "./dist/index.node.d.ts",
-      "workspace-source": "./src/index.node.ts",
+      "development": "./src/index.node.ts",
       "default": "./dist/index.node.js"
-    },
-    "./service-registrar": {
-      "types": "./dist/service-registrar.d.ts",
-      "workspace-source": "./src/service-registrar.ts",
-      "browser": "./dist/service-registrar.browser.js",
-      "node": "./dist/service-registrar.node.js",
-      "default": "./dist/service-registrar.browser.js"
     },
     "./service-registrar/browser": {
       "types": "./dist/service-registrar.browser.d.ts",
-      "workspace-source": "./src/service-registrar.browser.ts",
+      "development": "./src/service-registrar.browser.ts",
       "default": "./dist/service-registrar.browser.js"
     },
     "./service-registrar/node": {
       "types": "./dist/service-registrar.node.d.ts",
-      "workspace-source": "./src/service-registrar.node.ts",
+      "development": "./src/service-registrar.node.ts",
       "default": "./dist/service-registrar.node.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*.ts",
+      "development": "./src/*",
       "default": "./dist/*.js"
     }
   },

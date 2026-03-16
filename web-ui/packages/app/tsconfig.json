@@ -6,7 +6,7 @@
     "rootDir": "./",
     "baseUrl": ".",
     "customConditions": [
-      "workspace-source"
+      "development"
     ],
     "paths": {
       "@/*": [
