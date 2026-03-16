@@ -38,17 +38,40 @@ const getWindowsShellCommand = () => {
 };
 
 const windowsShellCommand = getWindowsShellCommand();
-const shellCommand = windowsShellCommand ?? "bash";
-const shellArgs = windowsShellCommand
-  ? [
-      "-NoProfile",
-      "-ExecutionPolicy",
-      "Bypass",
-      "-File",
-      resolve(scriptDir, "clean-link.ps1"),
-      ...forwardedArgs,
-    ]
-  : [resolve(scriptDir, "clean-link.sh"), ...forwardedArgs];
+
+let shellCommand;
+let shellArgs;
+
+if (windowsShellCommand) {
+  shellCommand = windowsShellCommand;
+  shellArgs = [
+    "-NoProfile",
+    "-ExecutionPolicy",
+    "Bypass",
+    "-File",
+    resolve(scriptDir, "clean-link.ps1"),
+    ...forwardedArgs,
+  ];
+} else if (isWindows) {
+  // On Windows without PowerShell, explicitly probe for bash to avoid a confusing ENOENT error.
+  const bashProbe = spawnSync("bash", ["--version"], {
+    cwd: repoRoot,
+    stdio: "ignore",
+    shell: false,
+  });
+
+  if (!bashProbe.error && bashProbe.status === 0) {
+    shellCommand = "bash";
+    shellArgs = [resolve(scriptDir, "clean-link.sh"), ...forwardedArgs];
+  } else {
+    throw new Error(
+      "No suitable shell found. On Windows, install PowerShell ('pwsh') or Git Bash/WSL to run scripts/link-clean.mjs."
+    );
+  }
+} else {
+  shellCommand = "bash";
+  shellArgs = [resolve(scriptDir, "clean-link.sh"), ...forwardedArgs];
+}
 
 const result = spawnSync(shellCommand, shellArgs, {
   cwd: repoRoot,
