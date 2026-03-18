@@ -86,6 +86,16 @@ describe('parseResponseOptions', () => {
     expect(res.source).toBe('svc');
     expect(res.cause).toBe('Error');
   });
+
+  test('function arg falls through to empty object (line 28)', () => {
+    // normalizeArg with a function: not null, not string, not number,
+    // not Response, not Error, not plain object → returns {}
+    const fn = () => {};
+    const res = parseResponseOptions(fn as any);
+    // Falls through to return {} from normalizeArg → merged result has defaults
+    expect(res.status).toBe(500);
+    expect(res.message).toBe('An error occurred');
+  });
 });
 
 describe('errorResponseFactory', () => {

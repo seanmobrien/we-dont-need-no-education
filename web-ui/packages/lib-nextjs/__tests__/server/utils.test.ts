@@ -8,6 +8,7 @@ import {
   buildFallbackGrid,
   createInstrumentedSpan,
   reportEvent,
+  extractParams,
 } from '../../src/server/utils';
 import { errorResponseFactory } from '../../src/server/error-response';
 import { trace, context as otelContext, propagation } from '@opentelemetry/api';
@@ -590,6 +591,94 @@ describe('Server Utils', () => {
         expect.any(Object),
         expect.any(Function)
       );
+    });
+
+    test('returns 503 when startup manager is not registered (null from DI)', async () => {
+      const { resolveService } = require('@compliance-theater/types/dependency-injection/container');
+      // First call: resolveService('startup') returns null (no startup manager)
+      resolveService.mockImplementationOnce(() => null);
+
+      const handler = wrapRouteRequest(async (_req: Request) => {
+        return new Response('should not reach here');
+      });
+
+      const response = await handler({} as NextRequest);
+      expect(response!.status).toBe(503);
+      expect(response!.statusText).toBe('ERR-APP-SHUTDOWN');
+    });
+
+    test('returns 503 when startup state is "done" (app shutting down)', async () => {
+      const { resolveService } = require('@compliance-theater/types/dependency-injection/container');
+      resolveService.mockImplementationOnce(() => ({
+        getStartupState: jest.fn().mockResolvedValue('done'),
+      }));
+
+      const handler = wrapRouteRequest(async (_req: Request) => {
+        return new Response('should not reach here');
+      });
+
+      const response = await handler({} as NextRequest);
+      expect(response!.status).toBe(503);
+    });
+
+    test('async errorCallback is awaited (returns Promise)', async () => {
+      const asyncCallback = jest.fn().mockResolvedValue(undefined);
+
+      const handler = wrapRouteRequest(
+        async (_req: Request) => { throw new Error('async cb test'); },
+        { errorCallback: asyncCallback },
+      );
+
+      await handler({} as NextRequest);
+      expect(asyncCallback).toHaveBeenCalled();
+    });
+  });
+
+  describe('extractParams', () => {
+    test('throws when params is falsy', async () => {
+      await expect(extractParams({ params: undefined as any })).rejects.toThrow('No params found');
+      await expect(extractParams({ params: null as any })).rejects.toThrow('No params found');
+    });
+
+    test('awaits Promise params', async () => {
+      const params = { id: '42' };
+      const result = await extractParams({ params: Promise.resolve(params) });
+      expect(result).toEqual(params);
+    });
+
+    test('returns non-Promise params directly', async () => {
+      const params = { slug: 'test' };
+      const result = await extractParams({ params });
+      expect(result).toEqual(params);
+    });
+  });
+
+  describe('reportEvent - additional data fields', () => {
+    test('includes host in span attributes when provided', async () => {
+      await expect(
+        reportEvent({
+          eventName: 'host-event',
+          additionalData: { host: 'api.example.com', success: true },
+        }),
+      ).resolves.not.toThrow();
+    });
+
+    test('includes args_count in span attributes when provided', async () => {
+      await expect(
+        reportEvent({
+          eventName: 'args-event',
+          additionalData: { args_count: 3, success: true },
+        }),
+      ).resolves.not.toThrow();
+    });
+
+    test('includes both host and args_count', async () => {
+      await expect(
+        reportEvent({
+          eventName: 'full-event',
+          additionalData: { host: 'host', args_count: 5, success: true },
+        }),
+      ).resolves.not.toThrow();
     });
   });
 });
