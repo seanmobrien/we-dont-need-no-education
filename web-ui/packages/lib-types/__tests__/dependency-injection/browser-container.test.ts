@@ -1,15 +1,12 @@
-jest.mock('../../src/is-running-on', () => ({
-    isRunningOnServer: jest.fn().mockReturnValue(false),
-}));
-
-import { isRunningOnServer } from '../../src/is-running-on';
-
-jest.unmock('../../src/dependency-injection/container');
-jest.unmock('../../src/dependency-injection');
-
 import type { ServiceCradle } from '../../src/dependency-injection/service-cradle';
 
-import { resetRuntime, getServiceContainer, resolveService, asFunction, asValue } from '../../src/dependency-injection/container';
+import {
+    resetRuntime,
+    getServiceContainer,
+    resolveService,
+    asFunction,
+    asValue,
+} from '../../src/dependency-injection/index.browser';
 import type { BrowserResolverRecord } from '../../src/dependency-injection/types';
 
 const CONTAINER_SYMBOL = Symbol.for(

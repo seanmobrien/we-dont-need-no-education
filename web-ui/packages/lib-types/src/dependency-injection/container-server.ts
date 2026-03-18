@@ -46,10 +46,14 @@ export class ServiceContainerServer implements IServiceContainer {
     }
 
     has(name: string | number | symbol, resolver?: unknown): boolean {
-        if (!this.#container.hasRegistration(String(name))) {
+        const registrationName = String(name);
+        if (!this.#container.hasRegistration(registrationName)) {
             return false;
         }
-        return this.#container.registrations[name] === resolver;
+        if (resolver === undefined) {
+            return true;
+        }
+        return this.#container.registrations[registrationName] === resolver;
     }
 
     register<T>(

@@ -24,12 +24,13 @@ describe('container-browser', () => {
         class Example {
             readonly value = 7;
         }
+        const buildValue = (cradle: { prefix: string }) => `${cradle.prefix}-ok`;
 
         const classResolver = asClass(Example) as BrowserResolverRecord<Example> & {
             kind: string;
             tag?: unknown;
         };
-        const functionResolver = asFunction((cradle: { prefix: string }) => `${cradle.prefix}-ok`) as BrowserResolverRecord<string> & {
+        const functionResolver = asFunction(buildValue) as BrowserResolverRecord<string> & {
             kind: string;
         };
         const valueResolver = asValue('ready') as BrowserResolverRecord<string> & {
@@ -47,6 +48,9 @@ describe('container-browser', () => {
         expect(valueResolver.kind).toBe('value');
         expect(valueResolver.tag).toBe('ready');
         expect(valueResolver.resolve({})).toBe('ready');
+
+        expect(classResolver.is(asClass(Example))).toBe(true);
+        expect(functionResolver.is(asFunction(buildValue))).toBe(false);
     });
 
     it('supports lifetime transitions and ignores invalid lifetime values', () => {
@@ -170,6 +174,24 @@ describe('container-browser', () => {
         const transient1 = root.resolve('transient') as { id: number };
         const transient2 = root.resolve('transient') as { id: number };
         expect(transient1).not.toBe(transient2);
+    });
+
+    it('resolves cradle lookups for string keys and ignores non-string keys', () => {
+        const container = new BrowserServiceContainer();
+        const symbolKey = Symbol('ignored');
+        let symbolLookup: unknown;
+
+        container.register('dependency', asValue('ready'));
+        container.register(
+            'consumer',
+            asFunction((cradle: Record<string | symbol, unknown>) => {
+                symbolLookup = cradle[symbolKey];
+                return cradle.dependency;
+            })
+        );
+
+        expect(container.resolve('consumer')).toBe('ready');
+        expect(symbolLookup).toBeUndefined();
     });
 
     it('disposes registrations and scoped cache on async dispose', async () => {

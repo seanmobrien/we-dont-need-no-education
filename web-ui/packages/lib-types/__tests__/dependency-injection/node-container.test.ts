@@ -1,5 +1,8 @@
-import { asValue, getServiceContainer } from '../../src/dependency-injection';
-import { resetRuntime } from '../../src/dependency-injection/container';
+import {
+    asValue,
+    getServiceContainer,
+    resetRuntime,
+} from '../../src/dependency-injection';
 
 type MockResolver = { kind: 'value'; value: unknown };
 

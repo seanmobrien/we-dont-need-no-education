@@ -79,6 +79,11 @@ export const resolveService: <K extends keyof ServiceCradle>(
     name: K
 ) => ServiceCradle[K];
 
+/**
+ * Clears the shared root container for the active runtime.
+ */
+export const resetRuntime: () => void;
+
 // ── Re-exported Awilix Utilities ────────────────────────────────────────────
 
 /**

@@ -23,6 +23,7 @@ const runtimeModule = require(
 export const getServiceContainer = runtimeModule.getServiceContainer;
 export const registerServices = runtimeModule.registerServices;
 export const resolveService = runtimeModule.resolveService;
+export const resetRuntime = runtimeModule.resetRuntime;
 export const asClass = runtimeModule.asClass;
 export const asFunction = runtimeModule.asFunction;
 export const asValue = runtimeModule.asValue;

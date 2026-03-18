@@ -5,9 +5,22 @@ type MockContainer = {
 
 type MockRuntime = {
     createContainer: jest.Mock;
+    getServiceContainer: jest.Mock;
+    registerServices: jest.Mock;
+    resolveService: jest.Mock;
     asClass: jest.Mock;
     asFunction: jest.Mock;
     asValue: jest.Mock;
+    resetRuntime: jest.Mock;
+    Lifetime: {
+        SINGLETON: 'SINGLETON';
+        SCOPED: 'SCOPED';
+        TRANSIENT: 'TRANSIENT';
+    };
+    InjectionMode: {
+        PROXY: 'PROXY';
+        CLASSIC: 'CLASSIC';
+    };
 };
 
 const CONTAINER_SYMBOL = Symbol.for(
@@ -16,6 +29,9 @@ const CONTAINER_SYMBOL = Symbol.for(
 
 type TestGlobals = typeof globalThis & {
     [CONTAINER_SYMBOL]?: unknown;
+    window?: unknown;
+    self?: unknown;
+    EdgeRuntime?: unknown;
 };
 
 const cleanupRuntimeSymbols = (): void => {
@@ -23,10 +39,108 @@ const cleanupRuntimeSymbols = (): void => {
     delete g[CONTAINER_SYMBOL];
 };
 
-const loadContainerModule = ({
-    isServer,
+const createMockRuntimeModule = ({
+    container,
+    classType,
+    functionType,
+    valueType,
 }: {
-    isServer: boolean;
+    container: MockContainer;
+    classType: string;
+    functionType: string;
+    valueType: string;
+}): MockRuntime => {
+    const createContainer = jest.fn(() => container);
+    const getServiceContainer = jest.fn(() => {
+        const g = globalThis as TestGlobals;
+        if (!g[CONTAINER_SYMBOL]) {
+            g[CONTAINER_SYMBOL] = createContainer();
+        }
+        return g[CONTAINER_SYMBOL] as MockContainer;
+    });
+    const registerServices = jest.fn((
+        nameOrRegistrations: string | number | symbol | Record<string, unknown>,
+        resolver?: unknown,
+    ) => {
+        if (
+            typeof nameOrRegistrations === 'string'
+            || typeof nameOrRegistrations === 'number'
+            || typeof nameOrRegistrations === 'symbol'
+        ) {
+            if (resolver === undefined) {
+                throw new Error('Resolver must be provided when registering a single service.');
+            }
+            getServiceContainer().register(String(nameOrRegistrations), resolver);
+            return;
+        }
+
+        getServiceContainer().register(nameOrRegistrations);
+    });
+    const resolveService = jest.fn((name: string | number | symbol) =>
+        getServiceContainer().resolve(String(name))
+    );
+
+    return {
+        createContainer,
+        getServiceContainer,
+        registerServices,
+        resolveService,
+        asClass: jest.fn((...args: unknown[]) => ({ type: classType, args })),
+        asFunction: jest.fn((...args: unknown[]) => ({ type: functionType, args })),
+        asValue: jest.fn((...args: unknown[]) => ({ type: valueType, args })),
+        resetRuntime: jest.fn(() => cleanupRuntimeSymbols()),
+        Lifetime: {
+            SINGLETON: 'SINGLETON',
+            SCOPED: 'SCOPED',
+            TRANSIENT: 'TRANSIENT',
+        },
+        InjectionMode: {
+            PROXY: 'PROXY',
+            CLASSIC: 'CLASSIC',
+        },
+    };
+};
+
+const configureRuntimeGlobals = (runtime: 'node' | 'browser'): (() => void) => {
+    const g = globalThis as TestGlobals;
+    const previousWindow = g.window;
+    const previousSelf = g.self;
+    const previousEdgeRuntime = g.EdgeRuntime;
+
+    if (runtime === 'browser') {
+        g.window = {};
+    } else {
+        delete g.window;
+    }
+
+    delete g.self;
+    delete g.EdgeRuntime;
+
+    return () => {
+        if (previousWindow === undefined) {
+            delete g.window;
+        } else {
+            g.window = previousWindow;
+        }
+
+        if (previousSelf === undefined) {
+            delete g.self;
+        } else {
+            g.self = previousSelf;
+        }
+
+        if (previousEdgeRuntime === undefined) {
+            delete g.EdgeRuntime;
+        } else {
+            g.EdgeRuntime = previousEdgeRuntime;
+        }
+    };
+};
+
+const loadContainerModule = ({
+    runtimeName,
+}: {
+    runtimeName: 'node' | 'browser';
 }): {
     module: typeof import('../../src/dependency-injection/container');
     runtime: MockRuntime;
@@ -37,28 +151,30 @@ const loadContainerModule = ({
         register: jest.fn(),
         resolve: jest.fn((name: string) => `resolved:${name}`),
     };
-    const runtime: MockRuntime = {
-        createContainer: jest.fn(() => container),
-        asClass: jest.fn((...args: unknown[]) => ({ type: 'class', args })),
-        asFunction: jest.fn((...args: unknown[]) => ({ type: 'function', args })),
-        asValue: jest.fn((...args: unknown[]) => ({ type: 'value', args })),
-    };
-    const browserRuntime: MockRuntime = {
-        createContainer: jest.fn(() => container),
-        asClass: jest.fn((...args: unknown[]) => ({ type: 'browser-class', args })),
-        asFunction: jest.fn((...args: unknown[]) => ({ type: 'browser-function', args })),
-        asValue: jest.fn((...args: unknown[]) => ({ type: 'browser-value', args })),
-    };
+    const runtime = createMockRuntimeModule({
+        container,
+        classType: 'class',
+        functionType: 'function',
+        valueType: 'value',
+    });
+    const browserRuntime = createMockRuntimeModule({
+        container,
+        classType: 'browser-class',
+        functionType: 'browser-function',
+        valueType: 'browser-value',
+    });
 
     let imported: typeof import('../../src/dependency-injection/container');
-    jest.isolateModules(() => {
-        jest.doMock('../../src/is-running-on', () => ({
-            isRunningOnServer: jest.fn(() => isServer),
-        }));
-        jest.doMock('../../src/dependency-injection/container-server', () => runtime);
-        jest.doMock('../../src/dependency-injection/container-browser', () => browserRuntime);
-        imported = require('../../src/dependency-injection/container') as typeof import('../../src/dependency-injection/container');
-    });
+    const restoreGlobals = configureRuntimeGlobals(runtimeName);
+    try {
+        jest.isolateModules(() => {
+            jest.doMock('../../src/dependency-injection/container.node', () => runtime);
+            jest.doMock('../../src/dependency-injection/container.browser', () => browserRuntime);
+            imported = require('../../src/dependency-injection/container') as typeof import('../../src/dependency-injection/container');
+        });
+    } finally {
+        restoreGlobals();
+    }
 
     return {
         module: imported!,
@@ -78,20 +194,20 @@ describe('dependency-injection/container', () => {
         cleanupRuntimeSymbols();
     });
 
-    it('loads browser runtime via container shim and memoizes container', () => {
-        const { module, runtime, browserRuntime, container } = loadContainerModule({ isServer: true });
+    it('loads node runtime via container shim and memoizes container', () => {
+        const { module, runtime, browserRuntime, container } = loadContainerModule({ runtimeName: 'node' });
 
         const first = module.getServiceContainer();
         const second = module.getServiceContainer();
 
         expect(first).toBe(container);
         expect(second).toBe(container);
-        expect(browserRuntime.createContainer).toHaveBeenCalledTimes(1);
-        expect(runtime.createContainer).not.toHaveBeenCalled();
+        expect(runtime.createContainer).toHaveBeenCalledTimes(1);
+        expect(browserRuntime.createContainer).not.toHaveBeenCalled();
     });
 
-    it('loads browser runtime when not running on server', () => {
-        const { module, runtime, browserRuntime } = loadContainerModule({ isServer: false });
+    it('loads browser runtime when window is available', () => {
+        const { module, runtime, browserRuntime } = loadContainerModule({ runtimeName: 'browser' });
 
         module.getServiceContainer();
 
@@ -100,17 +216,18 @@ describe('dependency-injection/container', () => {
     });
 
     it('resets container cache using resetRuntime', () => {
-        const { module } = loadContainerModule({ isServer: true });
+        const { module, runtime } = loadContainerModule({ runtimeName: 'node' });
 
         module.getServiceContainer();
         expect((globalThis as TestGlobals)[CONTAINER_SYMBOL]).toBeDefined();
 
         module.resetRuntime();
+        expect(runtime.resetRuntime).toHaveBeenCalledTimes(1);
         expect((globalThis as TestGlobals)[CONTAINER_SYMBOL]).toBeUndefined();
     });
 
     it('registers services by name and map and resolves named services', () => {
-        const { module, container } = loadContainerModule({ isServer: true });
+        const { module, container } = loadContainerModule({ runtimeName: 'node' });
         const resolver = { resolve: () => 'x' };
         const symbolKey = Symbol('symbol-service');
 
@@ -134,31 +251,34 @@ describe('dependency-injection/container', () => {
     });
 
     it('throws when registering a single service without resolver', () => {
-        const { module } = loadContainerModule({ isServer: true });
+        const { module } = loadContainerModule({ runtimeName: 'node' });
 
         expect(() => module.registerServices('missing-resolver')).toThrow(
             'Resolver must be provided when registering a single service.'
         );
     });
 
-    it('delegates asClass/asFunction/asValue to active runtime', () => {
-        const { module, runtime } = loadContainerModule({ isServer: true });
+    it('delegates asClass/asFunction/asValue to node runtime', () => {
+        const { module, runtime, browserRuntime } = loadContainerModule({ runtimeName: 'node' });
 
         const classResult = module.asClass(class Example { }, { a: 1 });
         const functionResult = module.asFunction(() => 1);
         const valueResult = module.asValue('ok');
 
-        expect(classResult).toEqual({ type: 'browser-class', args: [expect.any(Function), { a: 1 }] });
-        expect(functionResult).toEqual({ type: 'browser-function', args: [expect.any(Function)] });
-        expect(valueResult).toEqual({ type: 'browser-value', args: ['ok'] });
+        expect(classResult).toEqual({ type: 'class', args: [expect.any(Function), { a: 1 }] });
+        expect(functionResult).toEqual({ type: 'function', args: [expect.any(Function)] });
+        expect(valueResult).toEqual({ type: 'value', args: ['ok'] });
 
-        expect(runtime.asClass).not.toHaveBeenCalled();
-        expect(runtime.asFunction).not.toHaveBeenCalled();
-        expect(runtime.asValue).not.toHaveBeenCalled();
+        expect(runtime.asClass).toHaveBeenCalledTimes(1);
+        expect(runtime.asFunction).toHaveBeenCalledTimes(1);
+        expect(runtime.asValue).toHaveBeenCalledTimes(1);
+        expect(browserRuntime.asClass).not.toHaveBeenCalled();
+        expect(browserRuntime.asFunction).not.toHaveBeenCalled();
+        expect(browserRuntime.asValue).not.toHaveBeenCalled();
     });
 
-    it('delegates asClass/asFunction/asValue to browser runtime when server is false', () => {
-        const { module, browserRuntime } = loadContainerModule({ isServer: false });
+    it('delegates asClass/asFunction/asValue to browser runtime when window is available', () => {
+        const { module, browserRuntime, runtime } = loadContainerModule({ runtimeName: 'browser' });
 
         const classResult = module.asClass(class Example { }, { b: 2 });
         const functionResult = module.asFunction(() => 2);
@@ -171,10 +291,13 @@ describe('dependency-injection/container', () => {
         expect(browserRuntime.asClass).toHaveBeenCalledTimes(1);
         expect(browserRuntime.asFunction).toHaveBeenCalledTimes(1);
         expect(browserRuntime.asValue).toHaveBeenCalledTimes(1);
+        expect(runtime.asClass).not.toHaveBeenCalled();
+        expect(runtime.asFunction).not.toHaveBeenCalled();
+        expect(runtime.asValue).not.toHaveBeenCalled();
     });
 
     it('exports stable lifetime and injection mode constants', () => {
-        const { module } = loadContainerModule({ isServer: true });
+        const { module } = loadContainerModule({ runtimeName: 'node' });
 
         expect(module.Lifetime).toEqual({
             SINGLETON: 'SINGLETON',
