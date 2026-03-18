@@ -2,6 +2,7 @@
 
 import { NextRequest } from 'next/server';
 import type { IUserSigningKeysService } from '@compliance-theater/types';
+import { getServiceContainer } from '@compliance-theater/types/dependency-injection';
 import { ApiRequestError } from '@compliance-theater/send-api-request';
 
 import { POST, GET } from '../../../../../app/api/auth/keys/route';
@@ -17,8 +18,9 @@ describe('/api/auth/keys route wrappers', () => {
   };
 
   beforeEach(() => {
-    signingKeysService = withJestTestExtensions()
-      .mockServices.userSigningKeys as jest.Mocked<IUserSigningKeysService>;
+    signingKeysService = getServiceContainer().resolve<IUserSigningKeysService>(
+      'userSigningKeys',
+    ) as jest.Mocked<IUserSigningKeysService>;
   });
 
   describe('POST', () => {
