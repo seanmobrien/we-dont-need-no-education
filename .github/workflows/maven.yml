@@ -173,8 +173,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p $GITHUB_WORKSPACE/artifacts/web-ui
-          cp -r ./apps/web-ui/packages/app/.next $GITHUB_WORKSPACE/artifacts/web-ui/
-          cp -r ./apps/web-ui/packages/app/public $GITHUB_WORKSPACE/artifacts/web-ui/
+          find . -type d \( -name ".next" \) -print
+          cp -r ./web-ui/packages/app/.next $GITHUB_WORKSPACE/artifacts/web-ui/
+          cp -r ./web-ui/packages/app/public $GITHUB_WORKSPACE/artifacts/web-ui/
 
       - name: Upload website build artifact
         if: github.event_name != 'pull_request'
