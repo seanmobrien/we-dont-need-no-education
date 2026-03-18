@@ -1,12 +1,8 @@
 # @format
 
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# This workflow builds the java-based components via Maven, then sets up a Node.js build environment and 
+# uses it to build and test the React-based web application. Finally, it runs Lighthouse CI to validate 
+# performance and accessibility of the web application.
 
 name: Java CI with Maven
 
@@ -106,7 +102,7 @@ jobs:
         working-directory: ./
 
       # NOTE: Turbo lint tool depends on typescript build, so this will do both lint and typescript validation.
-      - name: Lint source code
+      - name: Check types and verify no lint hiding in the seat cushions
         working-directory: ./
         run: node .yarn/releases/yarn-4.12.0.cjs lint
         env:
@@ -114,10 +110,9 @@ jobs:
           TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
           TURBO_API: ${{ secrets.TURBO_API }}
           TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
-        # continue-on-error: true
         shell: bash
 
-      - name: Run yarn test
+      - name: Run unit tests
         working-directory: ./
         run: xvfb-run --server-args="-screen 0 1024x768x24" npx turbo run test --filter='@compliance-theater/app...' -- $YARN_TEST_OPTIONS
         shell: bash
@@ -128,9 +123,8 @@ jobs:
           TURBO_API: ${{ secrets.TURBO_API }}
           TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
 
-      - name: Build Next.js app for Lighthouse
-        working-directory: ./
-        run: node .yarn/releases/yarn-4.12.0.cjs workspace compliance-theater build:publish --filter="@compliance-theater/app..."
+      - name: Build Next.js-based web application and publish build artifacts for Lighthouse CI
+        working-directory: ./        
         shell: bash
         env:
           YARN_IGNORE_PATH: 1
@@ -139,14 +133,30 @@ jobs:
           TURBO_API: ${{ secrets.TURBO_API }}
           TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
           NODE_OPTIONS: "--max-old-space-size=4096"
+        run: |
+         node .yarn/releases/yarn-4.12.0.cjs workspace compliance-theater build:publish --filter="@compliance-theater/app..."
+      
+      - name: Copy built website to artifacts
+        working-directory: ./        
+        shell: bash
+        run: |
+          mkdir -p $GITHUB_WORKSPACE/artifacts/web-ui
+          cp -r ./apps/web-ui/packages/app/.next $GITHUB_WORKSPACE/artifacts/web-ui/
+          cp -r ./apps/web-ui/packages/app/public $GITHUB_WORKSPACE/artifacts/web-ui/
 
-      - name: Run Lighthouse CI on Next.js web-ui
+      - name: Upload website build artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v5
+        with:
+          name: web-ui
+          path: $GITHUB_WORKSPACE/artifacts/web-ui
+
+      - name: Validate Lighthouse scores and publish artifacts
         uses: treosh/lighthouse-ci-action@v12
         with:
           configPath: ./lighthouserc.json
           uploadArtifacts: true
           temporaryPublicStorage: true
-
-    # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
-    # - name: Update dependency graph
-    #  uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6
+     
+      - name: Update dependency graph
+        uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6
