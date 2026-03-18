@@ -3,6 +3,7 @@ import type {
     IAuthSessionService,
     IImpersonationService,
     ITokenExchangeService,
+  IUserSigningKeysService,
 } from '../lib/auth';
 import type { IFetchService } from '../lib/fetch';
 
@@ -57,6 +58,7 @@ export interface ServiceCradle extends Record<string, unknown> {
   impersonation: IImpersonationService;
   accessTokens: IAccessTokenService;
   exchangeTokens: ITokenExchangeService;
+  userSigningKeys: IUserSigningKeysService;
   startup: IAppStartupManager;
   after: IAfterManager;
   singleton: ISingletonProvider;

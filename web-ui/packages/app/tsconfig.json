@@ -5,6 +5,7 @@
     "noImplicitAny": false,
     "rootDir": "./",
     "baseUrl": ".",
+    "composite": false,
     "customConditions": [
       "development"
     ],

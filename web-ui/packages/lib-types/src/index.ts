@@ -100,10 +100,15 @@ export type {
   StartupAccessorCallbackRegistration,
 } from './after';
 export type {
+  AuthenticatedUserLike,
   IAuthSessionService,
   IImpersonationService,
   IAccessTokenService,
   ITokenExchangeService,
+  IUserSigningKeysService,
+  UserSigningKeyRecord,
+  UserSigningKeyUploadRequest,
+  UserSigningKeyUploadResult,
 } from './lib/auth';
 export { type EmittingDispose, withEmittingDispose } from './with-emitting-dispose';
 

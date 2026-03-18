@@ -8,6 +8,7 @@ import type {
     IAuthSessionService,
     IImpersonationService,
     ITokenExchangeService,
+    IUserSigningKeysService,
 } from '@compliance-theater/types';
 
 import { session as sessionEdge } from './lib/session/session-edge';
@@ -32,6 +33,7 @@ import {
     getGoogleTokensFromKeycloak,
     keycloakTokenExchange,
 } from './lib/utilities/keycloak-token-exchange';
+import { userSigningKeysService } from './lib/server/user-signing-keys-service';
 import type { NextApiRequest } from 'next';
 import { NextRequest } from 'next/server';
 
@@ -75,6 +77,8 @@ export const tokenExchangeService: ITokenExchangeService = {
         getGoogleTokensFromKeycloak(req as NextRequest | NextApiRequest),
 };
 
+export const signingKeysService: IUserSigningKeysService = userSigningKeysService;
+
 export class ServiceRegistrar implements IServiceRegistrar {
     register(container: IServiceContainer): void {
         if (!container.has('session')) {
@@ -88,6 +92,9 @@ export class ServiceRegistrar implements IServiceRegistrar {
         }
         if (!container.has('exchangeTokens')) {
             container.register('exchangeTokens', asValue(tokenExchangeService));
+        }
+        if (!container.has('userSigningKeys')) {
+            container.register('userSigningKeys', asValue(signingKeysService));
         }
     }
 }
