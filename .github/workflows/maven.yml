@@ -29,7 +29,7 @@ jobs:
       TURBO_REMOTE_CACHE_SIGNATURE_KEY: ${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Initialize git submodules for web-ui
         run: |
@@ -39,10 +39,10 @@ jobs:
           git submodule update --init --recursive --jobs 4
           git submodule status --recursive
         shell: bash
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
         with:
-          java-version: "21"
+          java-version: "25"
           distribution: "temurin"
           cache: maven
 
@@ -63,14 +63,14 @@ jobs:
           UNIT_TESTING: "1"
 
       - name: Setup Node.js environment
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "25.x"
           cache: yarn
           cache-dependency-path: "yarn.lock"
 
       - name: Restore Turbo and Yarn caches
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             .turbo/cache
@@ -85,16 +85,10 @@ jobs:
         shell: bash
         working-directory: ./
 
-      - name: Enable Corepack and Yarn 4.12.0
+      - name: Install Yarn
         run: |
           corepack enable
           corepack prepare yarn@4.12.0 --activate
-        shell: bash
-        working-directory: ./
-
-      - name: Run yarn install
-        working-directory: ./
-        run: |
           set -euo pipefail
           (
             cd .
@@ -109,9 +103,10 @@ jobs:
             node .yarn/releases/yarn-4.12.0.cjs install --immutable
           )
         shell: bash
+        working-directory: ./
 
       # NOTE: Turbo lint tool depends on typescript build, so this will do both lint and typescript validation.
-      - name: Run typescript compile and yarn lint
+      - name: Lint source code
         working-directory: ./
         run: node .yarn/releases/yarn-4.12.0.cjs lint
         env:
@@ -127,6 +122,7 @@ jobs:
         run: xvfb-run --server-args="-screen 0 1024x768x24" npx turbo run test --filter='@compliance-theater/app...' -- $YARN_TEST_OPTIONS
         shell: bash
         env:
+          YARN_IGNORE_PATH: 1
           TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
           TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
           TURBO_API: ${{ secrets.TURBO_API }}
