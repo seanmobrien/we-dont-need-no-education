@@ -1,1 +1,1 @@
-export * from './next-auth';
+export * from './auth';
