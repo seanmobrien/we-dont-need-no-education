@@ -75,7 +75,6 @@
     "@opentelemetry/api": "1.9.0",
     "@opentelemetry/api-logs": "0.57.2",
     "@redis/client": ">=5.5.6",
-    "@tanstack/react-query": "5.90.21",
     "@toolpad/core": "^0.15.0",
     "google-auth-library": "^9.15.1",
     "got": "^14.4.9",
@@ -88,6 +87,7 @@
   "peerDependencies": {
     "@auth/core": "0.41.1",
     "@auth/drizzle-adapter": "^1.4.1",
+    "@tanstack/react-query": "5.90.21",
     "next": "^15.5.12",
     "next-auth": "^5.0.0-beta.30",
     "react": "19.2.4",

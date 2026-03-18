@@ -82,7 +82,7 @@
 				"skipFiles": [
 					"<node_internals>/**"
 				],
-				"cwd": "${workspaceFolder}",
+				"cwd": "${workspaceFolder:web-ui}",
 				"runtimeExecutable": "yarn",
 				"runtimeArgs": [
 					"workspace",
@@ -90,8 +90,12 @@
 					"debug"
 				],
 				"console": "integratedTerminal",
+				"resolveSourceMapLocations": [
+					"${workspaceFolder:web-ui}/**",
+					"!**/node_modules/**"
+				],
 				"outFiles": [
-					"${workspaceFolder}/**/*.js"
+					"${workspaceFolder:web-ui}/packages/app/.next/**/*.js"
 				]
 			}
 		]
