@@ -4,7 +4,13 @@ import * as themeProviderExports from '../../src/themes/provider';
 import * as providerBarrelExports from '../../src/provider';
 import * as themeSelectorExports from '../../src/themes/theme-selector';
 import * as themeSelectorBarrelExports from '../../src/components/theme-selector';
-import { themes, themeDisplayNames } from '../../src/themes/definitions';
+import {
+    colorfulTheme,
+    darkTheme,
+    themeDisplayNames,
+    themes,
+} from '../../src/themes/definitions';
+import { cn, styles } from '../../src/styles/utility-classes';
 
 describe('theme exports', () => {
     it('re-exports provider from provider.ts', () => {
@@ -18,8 +24,13 @@ describe('theme exports', () => {
 
     it('re-exports key root symbols from src/index.ts', () => {
         expect(rootExports.ThemeProvider).toBe(themeProviderExports.ThemeProvider);
+        expect(rootExports.useTheme).toBe(themeProviderExports.useTheme);
         expect(rootExports.ThemeSelector).toBe(themeSelectorExports.ThemeSelector);
         expect(rootExports.themes).toBe(themes);
+        expect(rootExports.darkTheme).toBe(darkTheme);
+        expect(rootExports.colorfulTheme).toBe(colorfulTheme);
         expect(rootExports.themeDisplayNames).toBe(themeDisplayNames);
+        expect(rootExports.cn).toBe(cn);
+        expect(rootExports.styles).toBe(styles);
     });
 });

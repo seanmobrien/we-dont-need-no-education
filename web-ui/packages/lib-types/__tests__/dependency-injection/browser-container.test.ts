@@ -3,9 +3,12 @@ import type { ServiceCradle } from '../../src/dependency-injection/service-cradl
 import {
     resetRuntime,
     getServiceContainer,
+    registerServices,
     resolveService,
+    asClass,
     asFunction,
     asValue,
+    Lifetime,
 } from '../../src/dependency-injection/index.browser';
 import type { BrowserResolverRecord } from '../../src/dependency-injection/types';
 
@@ -87,5 +90,24 @@ describe('browser container', () => {
         expect(container.has('browser-has-service')).toBe(true);
         expect(container.has('browser-has-service', firstResolver)).toBe(false);
         expect(container.has('browser-has-service', secondResolver)).toBe(true);
+    });
+
+    it('re-exports registerServices, asClass, and Lifetime from the browser index', () => {
+        class BrowserExample {
+            readonly id = 7;
+        }
+
+        registerServices({
+            browserClass: asClass(BrowserExample),
+            browserLifetime: asValue(Lifetime.SINGLETON),
+        });
+
+        expect(resolveService('browserClass')).toBeInstanceOf(BrowserExample);
+        expect(resolveService('browserLifetime')).toBe('SINGLETON');
+        expect(Lifetime).toEqual({
+            SINGLETON: 'SINGLETON',
+            SCOPED: 'SCOPED',
+            TRANSIENT: 'TRANSIENT',
+        });
     });
 });
