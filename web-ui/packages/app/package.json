@@ -6,6 +6,7 @@
   "scripts": {
     "add": "yarn workspace @compliance-theater/app add -D ",
     "dev": "cross-env DEVELOPMENT_SOURCE_IMPORTS=1 next dev",
+    "start": "next start",
     "build": "next typegen && cross-env NODE_OPTIONS='--max-old-space-size=4096' tsc -p tsconfig.json --noEmit",
     "build:typescript": "echo 'Building Web Application...' && next typegen && cross-env NODE_OPTIONS='--max-old-space-size=4096' tsc -p tsconfig.json --noEmit && echo '\u001b[1;32mBuild complete: Web Application.\u001b[0m\n' || (echo '\u001b[31mBuild failed: Web Application.\u001b[0m\n' >&2; exit 1)",
     "build:publish": "cross-env NODE_OPTIONS='--max-old-space-size=4096' next build",
