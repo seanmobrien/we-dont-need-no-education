@@ -18,6 +18,8 @@
         <project.build.version>1.0.1-SNAPSHOT</project.build.version>
         <jakartaee-api.version>10.0.0</jakartaee-api.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
+        <!-- Default empty value so @{argLine} resolves safely when no plugin (e.g. jacoco) sets it -->
+        <argLine></argLine>
     </properties>
 
     <dependencyManagement>
