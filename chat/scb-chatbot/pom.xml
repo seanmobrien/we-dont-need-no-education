@@ -16,8 +16,8 @@
     <version>1.0.1-SNAPSHOT</version>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>        
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>        
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -162,7 +162,7 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.5.3</version>                
                 <configuration>
-                    <argLine> -javaagent:${org.mockito:mockito-core:jar}</argLine>
+                    <argLine>-Dnet.bytebuddy.experimental=true -javaagent:${org.mockito:mockito-core:jar}</argLine>
                     <!--<argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>-->
                 </configuration>
 			</plugin>
