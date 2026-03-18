@@ -1,5 +1,3 @@
-/* global RequestInit */
-
 import type { IFetchService } from '@compliance-theater/types/lib/fetch';
 
 import { fetch as browserFetch } from './fetch';

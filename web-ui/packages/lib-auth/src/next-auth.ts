@@ -97,9 +97,14 @@ const nextAuthResult: NextAuthResult = NextAuth({
 	trustHost: env('NEXTAUTH_TRUST_HOST'),
 });
 
-export const handlers = nextAuthResult.handlers;
-export const auth = nextAuthResult.auth;
-export const signIn = nextAuthResult.signIn;
-export const signOut = nextAuthResult.signOut;
+export type NextAuthHandlers = NextAuthResult['handlers'];
+export type NextAuthAuth = NextAuthResult['auth'];
+export type NextAuthSignIn = NextAuthResult['signIn'];
+export type NextAuthSignOut = NextAuthResult['signOut'];
+
+export const handlers: NextAuthHandlers = nextAuthResult.handlers;
+export const auth: NextAuthAuth = nextAuthResult.auth;
+export const signIn: NextAuthSignIn = nextAuthResult.signIn;
+export const signOut: NextAuthSignOut = nextAuthResult.signOut;
 
 export type { Session };
