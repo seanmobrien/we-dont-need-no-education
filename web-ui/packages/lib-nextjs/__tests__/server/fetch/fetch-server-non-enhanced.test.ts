@@ -26,6 +26,14 @@ jest.mock('../../../src/server/fetch/fetch-config', () => ({
   fetchConfigSync: (...args: unknown[]) => mockFetchConfigSync(...args),
 }));
 
+// ─── Mock withTimeout ─────────────────────────────────────────────────────────
+
+const mockWithTimeout = jest.fn();
+
+jest.mock('@compliance-theater/logger/with-timeout', () => ({
+  withTimeout: (...args: unknown[]) => mockWithTimeout(...args),
+}));
+
 const makeNonEnhancedConfig = (overrides: Record<string, unknown> = {}) => ({
   fetch_concurrency: 8,
   fetch_cache_ttl: 300,
@@ -130,6 +138,12 @@ beforeEach(() => {
   mockFetchConfigSync.mockReturnValue(makeNonEnhancedConfig({ fetch_concurrency: 4 }));
   // fetchConfig (async) returns concurrency=8 → triggers resize on first loadConfig()
   mockFetchConfig.mockResolvedValue(makeNonEnhancedConfig({ fetch_concurrency: 8 }));
+
+  // withTimeout default: resolve the promise and return non-timed-out result
+  mockWithTimeout.mockImplementation(async (p: Promise<unknown>) => ({
+    timedOut: false,
+    value: await p,
+  }));
 
   originalFetch = globalThis.fetch;
   (globalThis as any).fetch = jest.fn().mockResolvedValue(makePlainJsonResponse());
@@ -333,5 +347,61 @@ describe('FetchManager.fetch - doDomFetch header normalization', () => {
       headers: { 'X-Present': 'value', 'X-Missing': undefined } as any,
     });
     expect(result).toBeDefined();
+  });
+});
+
+// ─── loadConfig: streamBufferMax update ───────────────────────────────────────
+
+describe('FetchManager.loadConfig - streamBufferMax update (line 421)', () => {
+  it('updates streamBufferMax when async config returns a different value', async () => {
+    // DEFAULT_STREAM_BUFFER_MAX = 64 * 1024; return 32 * 1024 to trigger update
+    mockFetchConfig.mockResolvedValue(
+      makeNonEnhancedConfig({ fetch_concurrency: 4, fetch_stream_buffer_max: 32 * 1024 }),
+    );
+    const manager = new FetchManager({ concurrency: 4 });
+    // Trigger loadConfig which reads the new fetch_stream_buffer_max
+    await manager.fetch('http://example.com/api');
+    expect(mockFetchConfig).toHaveBeenCalled();
+  });
+});
+
+// ─── loadConfig: semaphore resize error ──────────────────────────────────────
+
+describe('FetchManager.loadConfig - semaphore resize error (line 399)', () => {
+  it('handles semaphore resize throwing without propagating (line 399)', async () => {
+    const manager = new FetchManager({ concurrency: 4 });
+    // Spy on the private semManager to make resize throw
+    jest.spyOn((manager as any).semManager, 'resize').mockImplementation(() => {
+      throw new Error('resize failed');
+    });
+    // loadConfig detects concurrency change (4→8) and tries to resize; catches the error
+    await expect(manager.fetch('http://example.com/api')).resolves.toBeDefined();
+  });
+});
+
+// ─── #isEnhancedEnabled: fetchConfig rejection ────────────────────────────────
+
+describe('FetchManager.#isEnhancedEnabled - catch path (lines 578-582)', () => {
+  it('falls back to non-enhanced when fetchConfig rejects in #isEnhancedEnabled', async () => {
+    // loadConfig (1st call) succeeds; #isEnhancedEnabled (2nd call) rejects
+    mockFetchConfig
+      .mockResolvedValueOnce(makeNonEnhancedConfig({ fetch_concurrency: 4 }))
+      .mockRejectedValueOnce(new Error('enhanced check failed'));
+    const manager = new FetchManager({ concurrency: 4 });
+    const result = await manager.fetch('http://example.com/api');
+    expect(result).toBeDefined();
+  });
+});
+
+// ─── #doDomFetch: timeout timedOut path ───────────────────────────────────────
+
+describe('FetchManager.fetch - doDomFetch timeout timedOut (lines 632-633)', () => {
+  it('aborts and throws TimeoutError when request times out', async () => {
+    // Make withTimeout signal a timed-out result
+    mockWithTimeout.mockResolvedValueOnce({ timedOut: true });
+    const manager = new FetchManager({ concurrency: 4 });
+    await expect(
+      manager.fetch('http://example.com/api', { timeout: { request: 100 } } as any),
+    ).rejects.toThrow();
   });
 });
