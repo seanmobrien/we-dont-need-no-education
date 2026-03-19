@@ -87,28 +87,16 @@
     "tough-cookie": "^6.0.0"
   },
   "peerDependencies": {
-    "@auth/core": "0.41.1",
-    "@auth/drizzle-adapter": "^1.4.1",
     "next": "^15.5.12",
-    "next-auth": "^5.0.0-beta.30",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "3.25.76"
   },
   "peerDependenciesMeta": {
-    "@auth/core": {
-      "optional": true
-    },
-    "@auth/drizzle-adapter": {
-      "optional": true
-    },
     "crypto": {
       "optional": true
     },
     "next": {
-      "optional": true
-    },
-    "next-auth": {
       "optional": true
     },
     "react": {
@@ -142,7 +130,6 @@
     "google-auth-library": "^9.15.1",
     "got": "^14.4.9",
     "jest": "^30.0.5",
-    "next-auth": "^5.0.0-beta.30",
     "node-html-parser": "^7.0.1",
     "openid-client": "^6.8.0",
     "react": "19.2.4",

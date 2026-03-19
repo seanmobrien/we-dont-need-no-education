@@ -1,5 +1,5 @@
-import type { Provider } from '@auth/core/providers';
-import KeyCloak, { KeycloakProfile } from 'next-auth/providers/keycloak';
+import type { Provider } from '@compliance-theater/auth-compat';
+import { createKeycloakProvider } from '@compliance-theater/auth-compat/runtime';
 import { env } from '@compliance-theater/env';
 
 export const setupKeyCloakProvider = (): Provider[] => {
@@ -17,6 +17,6 @@ export const setupKeyCloakProvider = (): Provider[] => {
     },
     allowDangerousEmailAccountLinking: true,
   };
-  const keycloak = KeyCloak<KeycloakProfile>(providerArgs);
+  const keycloak = createKeycloakProvider(providerArgs);
   return [keycloak];
 };

@@ -4,8 +4,7 @@
  * @module @compliance-theater/auth/session-edge
  */
 
-import type { JWT } from 'next-auth/jwt';
-import type { Session } from 'next-auth';
+import type { JWT, Session } from '@compliance-theater/auth-compat';
 import { setupSession } from './shared';
 const hash = async (input: string): Promise<string> => {
   const enc = new TextEncoder();

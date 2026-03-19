@@ -38,7 +38,7 @@
     "lint": "eslint src __tests__ --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@auth/core": "0.41.1",
     "@auth/drizzle-adapter": "^1.4.1",
     "next-auth": "^5.0.0-beta.30"
@@ -55,15 +55,12 @@
     }
   },
   "devDependencies": {
-    "@auth/core": "0.41.1",
-    "@auth/drizzle-adapter": "^1.4.1",
     "@swc/core": "^1.13.5",
     "@swc/jest": "^0.2.39",
     "@types/jest": "^30.0.0",
     "@types/node": "25.2.3",
     "jest": "^30.0.5",
     "jest-environment-node": "^30.0.5",
-    "next-auth": "^5.0.0-beta.30",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3"
   }

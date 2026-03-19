@@ -1,9 +1,3 @@
-// Include @auth/core and next-auth module augmentations
-import type { } from './types/auth/core/index';
-import type { } from './types/auth/core/jwt';
-import type { } from './types/auth/core/types';
-import type { } from './types/next-auth';
-
 export { ValidKeyValidationStatusValues } from './components/auth/key-validation-status';
 export type { KeyValidationStatus } from './components/auth/key-validation-status';
 export type { SessionContextType } from './components/auth/session-context-type';

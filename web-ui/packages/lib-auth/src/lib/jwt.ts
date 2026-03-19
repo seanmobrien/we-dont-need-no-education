@@ -1,6 +1,4 @@
-import type { JWT } from 'next-auth/jwt';
-import type { Account } from '@auth/core/types';
-import type { AdapterUser } from '@auth/core/adapters';
+import type { JWT, Account, AdapterUser } from '@compliance-theater/auth-compat';
 import { log } from '@compliance-theater/logger';
 import { decodeToken } from './utilities/decode-token';
 import type { NextAuthUserWithAccountId } from './types';

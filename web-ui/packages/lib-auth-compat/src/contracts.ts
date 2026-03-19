@@ -55,12 +55,7 @@ export type Session = DefaultSession & {
   resource_access?: Record<string, string[]>;
   error?: string;
   permissions?: Record<string, string[]>;
-  user?: DefaultSession['user'] & {
-    id?: string;
-    account_id?: number;
-    subject?: string;
-    hash?: string;
-  };
+  user?: DefaultSession['user'] & User;
 };
 
 // ─── JWT ──────────────────────────────────────────────────────────────────────
@@ -110,15 +105,25 @@ export interface AuthConfig {
 
 export type NextAuthHandlerRecord =
   | ((req: Request) => Promise<Response>)
-  | ((req?: Request) => Promise<Response | unknown>);
+  | ((req?: Request) => Promise<Response>);
 
 export type NextAuthHandlers = Record<'GET' | 'POST', NextAuthHandlerRecord>;
 
 export interface NextAuthResult {
   handlers: NextAuthHandlers;
-  auth: (...args: unknown[]) => unknown;
-  signIn: (...args: unknown[]) => Promise<void>;
-  signOut: (...args: unknown[]) => Promise<void>;
+  auth: (...args: unknown[]) => Awaitable<Session | null>;
+  signIn: <R extends boolean = true>(
+    provider?: string,
+    options?: FormData | ({
+      redirectTo?: string;
+      redirect?: R;
+    } & Record<string, unknown>),
+    authorizationParams?: string[][] | Record<string, string> | string | URLSearchParams,
+  ) => Promise<R extends false ? unknown : never>;
+  signOut: <R extends boolean = true>(options?: {
+    redirectTo?: string;
+    redirect?: R;
+  }) => Promise<R extends false ? unknown : never>;
 }
 
 // ─── Adapter (from @auth/core/adapters) ──────────────────────────────────────
@@ -153,12 +158,14 @@ export type VerificationToken = {
 // ─── Provider / CredentialInput (simplified – no @auth/core peer required) ────
 
 /** Simplified shape of an @auth/core provider configuration object. */
-export type Provider = {
+type ProviderConfig = {
   id: string;
-  name?: string;
-  type?: string;
+  name: string;
+  type: string;
   [key: string]: unknown;
 };
+
+export type Provider = ProviderConfig | (() => ProviderConfig);
 
 /** Simplified shape of a credential input field used in Credentials providers. */
 export type CredentialInput = {

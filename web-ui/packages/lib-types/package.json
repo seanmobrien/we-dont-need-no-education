@@ -21,11 +21,6 @@
       "development": "./src/dependency-injection/container.ts",
       "default": "./dist/dependency-injection/container.js"
     },
-    "./next-auth/jwt": {
-      "types": "./dist/next-auth/jwt.d.ts",
-      "development": "./dist/next-auth/jwt.js",
-      "default": "./dist/next-auth/jwt.js"
-    },
     "./*": {
       "types": "./dist/*.d.ts",
       "development": "./src/*",
@@ -52,28 +47,20 @@
     "@compliance-theater/auth-compat": "workspace:*",
     "awilix": "^13.0.0",
     "next": "^15.5.12",
-    "next-auth": "^5.0.0-beta.30",
     "react-native": "^0.84.0",
     "ts-pattern": "^5.7.1"
   },
   "peerDependencies": {
-    "@auth/core": "0.41.1",
     "ai": "^5.0.23",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "3.25.76"
   },
   "peerDependenciesMeta": {
-    "@auth/core": {
-      "optional": true
-    },
     "ai": {
       "optional": true
     },
     "next": {
-      "optional": true
-    },
-    "next-auth": {
       "optional": true
     },
     "react": {

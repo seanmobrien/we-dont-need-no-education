@@ -7,13 +7,17 @@ import type {
   Adapter,
   AuthConfig,
   NextAuthResult,
+  Awaitable,
+  Provider,
 } from './contracts';
 
 // ─── Lazy peer loaders ────────────────────────────────────────────────────────
 
 type NextAuthModule = {
-  default: (config: AuthConfig) => NextAuthResult;
+  default: (config: AuthConfig | ((request: Request | undefined) => Awaitable<AuthConfig>)) => NextAuthResult;
 };
+
+type KeycloakProviderFactory = (options?: Record<string, unknown>) => Provider;
 
 type NextAuthReactModule = {
   useSession: () => {
@@ -59,6 +63,7 @@ let cachedNextAuthReact: NextAuthReactModule | undefined;
 let cachedNextAuthJwt: NextAuthJwtModule | undefined;
 let cachedAuthCore: AuthCoreModule | undefined;
 let cachedDrizzleAdapter: DrizzleAdapterModule | undefined;
+let cachedKeycloakProvider: KeycloakProviderFactory | undefined;
 
 const loadNextAuth = (): NextAuthModule => {
   if (cachedNextAuth) return cachedNextAuth;
@@ -115,16 +120,43 @@ const loadDrizzleAdapter = (): DrizzleAdapterModule => {
   }
 };
 
+const loadKeycloakProvider = (): KeycloakProviderFactory => {
+  if (cachedKeycloakProvider) return cachedKeycloakProvider;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const keycloakModule = require('next-auth/providers/keycloak') as {
+      default?: KeycloakProviderFactory;
+    };
+
+    if (!keycloakModule.default) {
+      throw new TypeError('next-auth/providers/keycloak did not expose a default export');
+    }
+
+    cachedKeycloakProvider = keycloakModule.default;
+    return cachedKeycloakProvider;
+  } catch (error) {
+    throw new MissingNextAuthPeerError(error);
+  }
+};
+
 // ─── Public runtime API ───────────────────────────────────────────────────────
 
 /**
  * Initialises NextAuth with the provided config.
  * Lazily loads `next-auth` at call time.
  */
-export const createNextAuth = (config: AuthConfig): NextAuthResult => {
+export const createNextAuth = (
+  config: AuthConfig | ((request: Request | undefined) => Awaitable<AuthConfig>),
+): NextAuthResult => {
   const mod = loadNextAuth();
   return mod.default(config);
 };
+
+/**
+ * `Keycloak` provider factory from `next-auth/providers/keycloak`.
+ */
+export const createKeycloakProvider = (options: Record<string, unknown>): Provider =>
+  loadKeycloakProvider()(options);
 
 /**
  * Returns the `next-auth/react` `useSession` hook.

@@ -1,7 +1,6 @@
 import type { Session } from '@compliance-theater/types';
-import type { Awaitable } from '@auth/core/types';
-
-import NextAuth, { type NextAuthResult } from 'next-auth';
+import type { Awaitable, NextAuthResult } from '@compliance-theater/auth-compat';
+import { createNextAuth } from '@compliance-theater/auth-compat/runtime';
 import { asNextRequest } from '@compliance-theater/types/lib/nextjs/guards';
 import { env } from '@compliance-theater/env';
 import { log } from '@compliance-theater/logger/core';
@@ -81,7 +80,7 @@ export const providerMap = providers.map((provider) => {
 	return { id: provider.id, name: provider.name };
 });
 
-const nextAuthResult: NextAuthResult = NextAuth({
+const nextAuthResult: NextAuthResult = createNextAuth({
 	callbacks: {
 		authorized,
 	},
