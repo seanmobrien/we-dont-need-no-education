@@ -19,6 +19,8 @@
     "web-ui/packages/lib-nextjs",
     "web-ui/packages/lib-react",
     "web-ui/packages/lib-redis",
+    "web-ui/packages/lib-react-query-compat",
+    "web-ui/packages/lib-auth-compat",
     "web-ui/packages/lib-auth",
     "web-ui/packages/lib-send-api-request",
     "web-ui/packages/lib-themes",

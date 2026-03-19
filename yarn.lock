@@ -1147,6 +1147,7 @@ __metadata:
     "@compliance-theater/logger": "workspace:*"
     "@compliance-theater/nextjs": "workspace:*"
     "@compliance-theater/react": "workspace:*"
+    "@compliance-theater/react-query-compat": "workspace:*"
     "@compliance-theater/redis": "workspace:*"
     "@compliance-theater/send-api-request": "workspace:*"
     "@compliance-theater/themes": "workspace:*"
@@ -1189,7 +1190,6 @@ __metadata:
     "@semanticencoding/core": "workspace:*"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
-    "@tanstack/react-query": "npm:5.90.21"
     "@tanstack/react-query-devtools": "npm:5.91.3"
     "@tanstack/react-virtual": "npm:^3.13.12"
     "@testing-library/dom": "npm:^10.4.1"
@@ -1254,6 +1254,32 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@compliance-theater/auth-compat@workspace:*, @compliance-theater/auth-compat@workspace:web-ui/packages/lib-auth-compat":
+  version: 0.0.0-use.local
+  resolution: "@compliance-theater/auth-compat@workspace:web-ui/packages/lib-auth-compat"
+  dependencies:
+    "@swc/core": "npm:^1.13.5"
+    "@swc/jest": "npm:^0.2.39"
+    "@types/jest": "npm:^30.0.0"
+    "@types/node": "npm:25.2.3"
+    jest: "npm:^30.0.5"
+    jest-environment-node: "npm:^30.0.5"
+    rimraf: "npm:^6.1.2"
+    typescript: "npm:^5.9.3"
+  peerDependencies:
+    "@auth/core": 0.41.1
+    "@auth/drizzle-adapter": ^1.4.1
+    next-auth: ^5.0.0-beta.30
+  peerDependenciesMeta:
+    "@auth/core":
+      optional: true
+    "@auth/drizzle-adapter":
+      optional: true
+    next-auth:
+      optional: true
+  languageName: unknown
+  linkType: soft
+
 "@compliance-theater/auth@workspace:*, @compliance-theater/auth@workspace:web-ui/packages/lib-auth":
   version: 0.0.0-use.local
   resolution: "@compliance-theater/auth@workspace:web-ui/packages/lib-auth"
@@ -1263,6 +1289,7 @@ __metadata:
     "@compliance-theater/logger": "workspace:*"
     "@compliance-theater/nextjs": "workspace:*"
     "@compliance-theater/react": "workspace:*"
+    "@compliance-theater/react-query-compat": "workspace:*"
     "@compliance-theater/redis": "workspace:*"
     "@compliance-theater/types": "workspace:*"
     "@compliance-theater/typescript": "workspace:*"
@@ -1278,7 +1305,6 @@ __metadata:
     "@redis/client": "npm:>=5.5.6"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
-    "@tanstack/react-query": "npm:5.90.21"
     "@testing-library/dom": "npm:^10.4.1"
     "@testing-library/jest-dom": "npm:^6.6.4"
     "@testing-library/react": "npm:^16.3.0"
@@ -1303,7 +1329,6 @@ __metadata:
   peerDependencies:
     "@auth/core": 0.41.1
     "@auth/drizzle-adapter": ^1.4.1
-    "@tanstack/react-query": 5.90.21
     next: ^15.5.12
     next-auth: ^5.0.0-beta.30
     react: 19.2.4
@@ -1667,6 +1692,34 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@compliance-theater/react-query-compat@workspace:*, @compliance-theater/react-query-compat@workspace:web-ui/packages/lib-react-query-compat":
+  version: 0.0.0-use.local
+  resolution: "@compliance-theater/react-query-compat@workspace:web-ui/packages/lib-react-query-compat"
+  dependencies:
+    "@swc/core": "npm:^1.13.5"
+    "@swc/jest": "npm:^0.2.39"
+    "@types/jest": "npm:^30.0.0"
+    "@types/node": "npm:25.2.3"
+    "@types/react": "npm:19.2.4"
+    "@types/react-dom": "npm:19.2.3"
+    babel-plugin-react-compiler: "npm:^1.0.0"
+    eslint: "npm:^9.39.3"
+    jest: "npm:^30.0.5"
+    jest-environment-jsdom: "npm:^30.0.5"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
+    rimraf: "npm:^6.1.2"
+    typescript: "npm:^5.9.3"
+  peerDependencies:
+    "@tanstack/react-query": 5.90.21
+    react: 19.2.4
+    react-dom: 19.2.4
+  peerDependenciesMeta:
+    "@tanstack/react-query":
+      optional: true
+  languageName: unknown
+  linkType: soft
+
 "@compliance-theater/react@workspace:*, @compliance-theater/react@workspace:web-ui/packages/lib-react":
   version: 0.0.0-use.local
   resolution: "@compliance-theater/react@workspace:web-ui/packages/lib-react"
@@ -1849,6 +1902,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@compliance-theater/types@workspace:web-ui/packages/lib-types"
   dependencies:
+    "@compliance-theater/auth-compat": "workspace:*"
     "@jest/globals": "npm:^30.0.5"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
@@ -7762,6 +7816,7 @@ __metadata:
     "@compliance-theater/logger": "workspace:*"
     "@compliance-theater/nextjs": "workspace:*"
     "@compliance-theater/react": "workspace:*"
+    "@compliance-theater/react-query-compat": "workspace:*"
     "@compliance-theater/redis": "workspace:*"
     "@compliance-theater/send-api-request": "workspace:*"
     "@compliance-theater/themes": "workspace:*"
