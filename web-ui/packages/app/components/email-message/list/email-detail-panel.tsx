@@ -37,7 +37,7 @@ import {
   getNotes,
 } from '@/lib/api/email/properties/client';
 import { LoggedError } from '@compliance-theater/logger';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@compliance-theater/react-query-compat/runtime';
 import { dataGridQueryClient } from '@/lib/components/mui/data-grid/query-client';
 
 interface EmailDetailPanelProps {

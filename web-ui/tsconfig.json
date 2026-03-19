@@ -51,6 +51,9 @@
             "path": "packages/lib-react"
         },
         {
+            "path": "packages/lib-react-query-compat"
+        },
+        {
             "path": "packages/lib-send-api-request"
         },
         {

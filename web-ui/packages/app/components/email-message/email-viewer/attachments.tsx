@@ -13,7 +13,7 @@ import AttachFileIcon from '@mui/icons-material/AttachFile';
 import DownloadIcon from '@mui/icons-material/GetApp';
 import { useEmailAttachmentsQuery } from "./hooks";
 import { LoadingAttachments } from "./loading";
-import { QueryErrorResetBoundary } from "@tanstack/react-query";
+import { QueryErrorResetBoundary } from "@compliance-theater/react-query-compat/runtime";
 import { ErrorBoundary } from "react-error-boundary";
 import React from "react";
 import { RenderFallbackFromBoundary } from "../../error-boundaries/render-fallback-from-boundary";

@@ -11,13 +11,13 @@ process.env.AUTH_KEYCLOAK_CLIENT_SECRET = 'test-secret';
 process.env.NEXTAUTH_SECRET = 'test-nextauth-secret';
 
 // Mock dependencies
-jest.mock('@compliance-theater/types/next-auth/jwt');
+jest.mock('@compliance-theater/auth-compat/runtime');
 
 import {
   KeycloakTokenExchange,
   TokenExchangeError,
 } from '../../../src/lib/utilities/keycloak-token-exchange';
-import { getToken } from '@compliance-theater/types/next-auth/jwt';
+import { getToken } from '@compliance-theater/auth-compat/runtime';
 import { resolveService } from '@compliance-theater/types/dependency-injection';
 
 const mockedGetToken = getToken as jest.MockedFunction<typeof getToken>;

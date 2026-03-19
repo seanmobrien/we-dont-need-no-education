@@ -1,4 +1,4 @@
-import type { JWT } from '@compliance-theater/types/next-auth/jwt';
+import type { JWT } from 'next-auth/jwt';
 import { env } from '@compliance-theater/env';
 import { resolveFetchService } from './utilities/fetch-service';
 import { InvalidGrantError } from "@compliance-theater/logger/errors/invalid-grant-error";

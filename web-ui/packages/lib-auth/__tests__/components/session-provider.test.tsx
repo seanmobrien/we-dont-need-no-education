@@ -1,12 +1,19 @@
 import { render, screen } from "../shared/test-utils";
 import { SessionProvider } from "../../src/components/session-provider/provider";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@compliance-theater/react-query-compat/runtime";
 import React from "react";
 
-// Mock dependencies
-jest.mock("@tanstack/react-query", () => ({
+// Mock dependencies — mock @tanstack/react-query which compat/runtime loads lazily
+jest.mock("@compliance-theater/react-query-compat/runtime", () => ({
   useQuery: jest.fn(),
   useMutation: jest.fn(() => ({ mutateAsync: jest.fn() })),
+  QueryClient: jest.fn().mockImplementation(() => ({
+    defaultOptions: {},
+    getQueryCache: jest.fn(() => ({ subscribe: jest.fn(), getAll: jest.fn(() => []) })),
+    getMutationCache: jest.fn(() => ({ subscribe: jest.fn(), getAll: jest.fn(() => []) })),
+    setDefaultOptions: jest.fn(),
+  })),
+  QueryClientProvider: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
 }));
 
 jest.mock("@toolpad/core", () => ({

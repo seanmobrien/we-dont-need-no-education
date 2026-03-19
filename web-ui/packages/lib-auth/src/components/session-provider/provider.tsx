@@ -7,7 +7,7 @@ import React, {
   useState,
   useRef,
 } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@compliance-theater/react-query-compat/runtime";
 import type {
   SessionContextType,
   SessionResponse,

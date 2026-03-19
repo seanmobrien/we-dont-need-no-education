@@ -18,7 +18,7 @@ import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import CallToActionIcon from '@mui/icons-material/CallToAction';
 import ReplyIcon from '@mui/icons-material/Reply';
 import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
-import type { Session } from '@compliance-theater/types/auth-core/types';
+import type { Session } from '@compliance-theater/auth-compat';
 import { EmailContextProvider } from '@/components/email-message/email-context';
 import { useCallback, useMemo } from 'react';
 import { useParams, usePathname } from 'next/navigation';

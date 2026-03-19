@@ -15,7 +15,7 @@ import {
   QueryClient,
   QueryClientProvider,
   useQueryClient,
-} from '@tanstack/react-query';
+} from '@compliance-theater/react-query-compat/runtime';
 jest.mock('@compliance-theater/types/dependency-injection', () => {
   const actual = jest.requireActual('@compliance-theater/types/dependency-injection');
   return {

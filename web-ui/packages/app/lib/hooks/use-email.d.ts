@@ -4,7 +4,7 @@
  */
 
 import type { EmailMessage } from '../../data-models';
-import type { UseQueryResult, UseMutationResult } from '@tanstack/react-query';
+import type { UseQueryResult, UseMutationResult } from '@compliance-theater/react-query-compat';
 
 declare module '@/lib/hooks/use-email' {
   /**

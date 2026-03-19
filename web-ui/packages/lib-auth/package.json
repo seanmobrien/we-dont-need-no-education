@@ -59,11 +59,13 @@
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
+    "@compliance-theater/auth-compat": "workspace:*",
     "@compliance-theater/database": "workspace:*",
     "@compliance-theater/env": "workspace:*",
     "@compliance-theater/logger": "workspace:*",
     "@compliance-theater/nextjs": "workspace:*",
     "@compliance-theater/react": "workspace:*",
+    "@compliance-theater/react-query-compat": "workspace:*",
     "@compliance-theater/redis": "workspace:*",
     "@compliance-theater/types": "workspace:*",
     "@compliance-theater/typescript": "workspace:*",
@@ -87,7 +89,6 @@
   "peerDependencies": {
     "@auth/core": "0.41.1",
     "@auth/drizzle-adapter": "^1.4.1",
-    "@tanstack/react-query": "5.90.21",
     "next": "^15.5.12",
     "next-auth": "^5.0.0-beta.30",
     "react": "19.2.4",
@@ -130,7 +131,6 @@
     "@mui/material": "^7.3.6",
     "@swc/core": "^1.13.5",
     "@swc/jest": "^0.2.39",
-    "@tanstack/react-query": "5.90.21",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
@@ -142,6 +142,7 @@
     "google-auth-library": "^9.15.1",
     "got": "^14.4.9",
     "jest": "^30.0.5",
+    "next-auth": "^5.0.0-beta.30",
     "node-html-parser": "^7.0.1",
     "openid-client": "^6.8.0",
     "react": "19.2.4",

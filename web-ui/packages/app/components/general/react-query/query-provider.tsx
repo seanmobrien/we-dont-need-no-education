@@ -1,5 +1,5 @@
 'use client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@compliance-theater/react-query-compat/runtime';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import type { FC, ReactNode } from 'react';
 import React from 'react';

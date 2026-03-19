@@ -24,7 +24,7 @@ import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/c
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
-import type { User } from '@compliance-theater/types/auth-core/types';
+import type { User } from '@compliance-theater/auth-compat';
 import { wrapMemoryMiddleware } from '@/lib/ai/middleware/memory-middleware';
 import { streamingMessageResponse } from '@/lib/ai/chat/streamed-result';
 

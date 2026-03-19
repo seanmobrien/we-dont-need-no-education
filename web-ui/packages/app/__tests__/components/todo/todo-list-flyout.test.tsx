@@ -11,7 +11,7 @@ import {
   act,
 } from '../../shared/test-utils';
 import { TodoListFlyout } from '../../../components/todo/todo-list-flyout';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@compliance-theater/react-query-compat/runtime';
 
 // Mock the useTodoLists hook
 jest.mock('../../../lib/hooks/use-todo', () => ({

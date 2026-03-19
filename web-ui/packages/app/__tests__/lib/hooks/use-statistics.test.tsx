@@ -2,7 +2,7 @@ import {
   QueryClient,
   QueryClientProvider,
   UseQueryResult,
-} from '@tanstack/react-query';
+} from '@compliance-theater/react-query-compat/runtime';
 import type { ModelStat, QueueInfo } from '../../../types/statistics';
 import { act, renderHook, waitFor } from '../../shared/test-utils';
 import { RefObject } from 'react';

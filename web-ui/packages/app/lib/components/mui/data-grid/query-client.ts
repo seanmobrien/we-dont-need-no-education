@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient } from '@compliance-theater/react-query-compat/runtime';
 
 /**
  * Create a QueryClient instance with default options for data grid queries.

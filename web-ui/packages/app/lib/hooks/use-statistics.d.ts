@@ -8,7 +8,7 @@ import type {
   QueueInfo,
   QueueSummary,
 } from '../../types/statistics';
-import type { UseQueryResult } from '@tanstack/react-query';
+import type { UseQueryResult } from '@compliance-theater/react-query-compat';
 
 declare module '@/lib/hooks/use-statistics' {
   /**

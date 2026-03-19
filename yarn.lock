@@ -1258,12 +1258,15 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@compliance-theater/auth-compat@workspace:web-ui/packages/lib-auth-compat"
   dependencies:
+    "@auth/core": "npm:0.41.1"
+    "@auth/drizzle-adapter": "npm:^1.4.1"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
     "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:25.2.3"
     jest: "npm:^30.0.5"
     jest-environment-node: "npm:^30.0.5"
+    next-auth: "npm:^5.0.0-beta.30"
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
   peerDependencies:

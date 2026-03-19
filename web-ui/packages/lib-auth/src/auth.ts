@@ -4,17 +4,17 @@ import type {
   DefaultSession,
   Session,
   NextAuthConfig,
-} from '@compliance-theater/types/next-auth';
-import type { Awaitable, Profile } from '@compliance-theater/types/auth-core/types';
+} from 'next-auth';
+import type { Awaitable, Profile } from '@auth/core/types';
 
-import NextAuth, { type NextAuthResult } from '@compliance-theater/types/next-auth'; // Added NextAuthConfig
-import type { Adapter, AdapterSession, AdapterUser } from '@compliance-theater/types/auth-core/adapters';
-import type { CredentialInput, Provider } from '@compliance-theater/types/auth-core/providers';
+import NextAuth, { type NextAuthResult } from 'next-auth';
+import type { Adapter, AdapterSession, AdapterUser } from '@auth/core/adapters';
+import type { CredentialInput, Provider } from '@auth/core/providers';
 import { isRunningOnEdge, env } from '@compliance-theater/env';
 import { logEvent } from '@compliance-theater/logger';
 
 import { setupKeyCloakProvider } from './lib/keycloak-provider';
-import type { JWT } from '@compliance-theater/types/next-auth/jwt';
+import type { JWT } from 'next-auth/jwt';
 
 type AuthorizedFn = (params: {
   /** The request to be authorized. */

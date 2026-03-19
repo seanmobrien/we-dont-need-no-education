@@ -1,4 +1,4 @@
-import type { Session, User } from '@compliance-theater/types/next-auth';
+import type { Session, User } from '@compliance-theater/auth-compat';
 
 export const isUserAuthorized = ({
   signedInUserId,

@@ -1,7 +1,7 @@
 import type { Session } from '@compliance-theater/types';
-import type { Awaitable } from '@compliance-theater/types/auth-core/types';
-import type { NextAuthResult } from '@compliance-theater/types/next-auth';
-import NextAuth from '@compliance-theater/types/next-auth';
+import type { Awaitable } from '@auth/core/types';
+
+import NextAuth, { type NextAuthResult } from 'next-auth';
 import { asNextRequest } from '@compliance-theater/types/lib/nextjs/guards';
 import { env } from '@compliance-theater/env';
 import { log } from '@compliance-theater/logger/core';

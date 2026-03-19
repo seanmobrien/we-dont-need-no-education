@@ -2,7 +2,7 @@
  * Tests for TanStack React Query integration with chat panel
  */
 
-import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
+import { QueryClientProvider, QueryClient } from '@compliance-theater/react-query-compat/runtime';
 import React from 'react';
 import { renderHook } from '../../../shared/test-utils';
 import { useChatFetchWrapper } from '../../../../lib/components/ai/chat-fetch-wrapper';

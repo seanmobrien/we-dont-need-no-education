@@ -1,5 +1,5 @@
 import { auth } from '@compliance-theater/auth/server';
-import { Session } from '@compliance-theater/types/auth-core/types';
+import type { Session } from '@compliance-theater/auth-compat';
 import {
   log,
   logEvent,

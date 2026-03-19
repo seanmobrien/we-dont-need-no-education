@@ -2,7 +2,7 @@
 
 import { getAppInsights } from '@/instrument/browser';
 import { useSession } from '@compliance-theater/auth/client';
-import type { Session } from '@compliance-theater/types/auth-core/types';
+import type { Session } from '@compliance-theater/auth-compat';
 import {
   usePathname,
   useSearchParams,

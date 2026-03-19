@@ -1,7 +1,7 @@
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
 import { log } from '@compliance-theater/logger';
 import { schema, drizDbWithInit } from '@compliance-theater/database/orm';
-import { Adapter, AdapterAccount } from '@compliance-theater/types/auth-core/adapters';
+import { Adapter, AdapterAccount } from '@auth/core/adapters';
 import { and, sql } from '@compliance-theater/database/drizzle-orm';
 
 export const setupDrizzleAdapter = (): Promise<Adapter> =>

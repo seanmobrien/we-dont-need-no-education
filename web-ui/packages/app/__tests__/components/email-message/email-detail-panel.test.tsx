@@ -12,7 +12,7 @@ import {
   act,
 } from '../../shared/test-utils';
 import type { EmailMessageSummary } from '@/data-models/api/email-message';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@compliance-theater/react-query-compat/runtime';
 import type { KeyPointsDetails } from '@/data-models/api';
 
 if (typeof globalThis.Request === 'undefined') {
@@ -72,7 +72,7 @@ jest.mock('next/server', () => {
 });
 
 jest.mock('@/lib/components/mui/data-grid/query-client', () => {
-  const { QueryClient } = jest.requireActual('@tanstack/react-query');
+  const { QueryClient } = jest.requireActual('@compliance-theater/react-query-compat/runtime');
   return {
     dataGridQueryClient: new QueryClient({
       defaultOptions: {

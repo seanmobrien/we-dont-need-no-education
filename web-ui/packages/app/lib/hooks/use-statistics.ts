@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@compliance-theater/react-query-compat/runtime';
 import type {
   ApiResponse,
   ModelStat,

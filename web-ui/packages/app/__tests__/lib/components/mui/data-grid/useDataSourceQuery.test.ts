@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '../../../../shared/test-utils';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@compliance-theater/react-query-compat/runtime';
 import { GridLogicOperator } from '@mui/x-data-grid-pro';
 import { useDataSource } from '../../../../../lib/components/mui/data-grid/useDataSource';
 import React, { useEffect } from 'react';

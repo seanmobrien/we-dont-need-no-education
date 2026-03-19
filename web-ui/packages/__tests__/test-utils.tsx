@@ -10,7 +10,7 @@ import "@testing-library/jest-dom";
 import Queries from "@testing-library/dom/types/queries";
 import React, { PropsWithChildren } from "react";
 import { act } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@compliance-theater/react-query-compat/runtime";
 import { SessionContext } from "@compliance-theater/types/components/auth/session-context";
 import { ChatPanelContext } from "@compliance-theater/types/components/ai/chat-panel/chat-panel-context";
 import type { ChatPanelContextValue } from "@compliance-theater/types/components/ai/chat-panel/types";

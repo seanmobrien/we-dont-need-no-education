@@ -1,6 +1,6 @@
 import { EmailMessage } from '@/data-models/api/email-message';
 import { PickField } from '@compliance-theater/typescript';
-import { UseSuspenseQueryResult } from '@tanstack/react-query';
+import { UseSuspenseQueryResult } from '@compliance-theater/react-query-compat';
 
 export interface EmailViewerProps {
   emailId: string;

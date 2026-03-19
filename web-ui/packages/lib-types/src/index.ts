@@ -1,4 +1,4 @@
-// Include NextAuth/Auth.js module augmentations
+// Include @auth/core and next-auth module augmentations
 import type { } from './types/auth/core/index';
 import type { } from './types/auth/core/jwt';
 import type { } from './types/auth/core/types';
@@ -42,15 +42,15 @@ export {
 export { getStackTrace } from "./get-stack-trace";
 export { deprecate } from "./deprecate";
 
-// Re-export commonly used types from next-auth
+// Re-export commonly used auth types from auth-compat
 export type {
   Session,
   User,
   Account,
   AuthConfig,
-} from './auth-core/types';
-export type { JWT } from './auth-core/jwt';
-export type { Adapter } from './auth-core/adapters';
+} from '@compliance-theater/auth-compat';
+export type { JWT } from '@compliance-theater/auth-compat';
+export type { Adapter } from '@compliance-theater/auth-compat';
 export type {
   MessagePartPreservationRules,
   MetadataPreservationOptions,

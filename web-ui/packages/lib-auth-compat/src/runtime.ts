@@ -46,6 +46,8 @@ type NextAuthJwtModule = {
 
 type AuthCoreModule = {
   Auth: (request: Request, config: AuthConfig) => Promise<Response>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  AuthError: new (...args: any[]) => Error & { type?: string };
 };
 
 type DrizzleAdapterModule = {
@@ -148,6 +150,17 @@ export const signOut = (...args: unknown[]): Promise<void> =>
 export const getSessionProvider = () => loadNextAuthReact().SessionProvider;
 
 /**
+ * A module-level `SessionProvider` function that delegates to the lazy-loaded
+ * `next-auth/react` `SessionProvider`. Safe to use in JSX.
+ */
+export const SessionProvider = (props: {
+  children?: unknown;
+  session?: unknown;
+  refetchInterval?: number;
+  refetchOnWindowFocus?: boolean;
+}) => loadNextAuthReact().SessionProvider({ ...props, children: props.children ?? null });
+
+/**
  * `getToken` from `next-auth/jwt`.
  */
 export const getToken = (
@@ -182,6 +195,29 @@ export const Auth = async (request: Request, config: AuthConfig): Promise<Respon
 export const createDrizzleAdapter = (db: unknown, options?: unknown): Adapter =>
   loadDrizzleAdapter().DrizzleAdapter(db, options);
 
+/**
+ * Returns the `AuthError` constructor from `@auth/core`.
+ * Use this when you need `instanceof` checks at runtime.
+ * @example
+ *   const AuthError = getAuthError();
+ *   if (error instanceof AuthError) { ... }
+ */
+export const getAuthError = () => loadAuthCore().AuthError;
+
+/**
+ * Returns true when `e` is an instance of `@auth/core`'s `AuthError`.
+ */
+export const isAuthError = (e: unknown): e is Error & { type?: string } => {
+  try {
+    return e instanceof loadAuthCore().AuthError;
+  } catch {
+    return false;
+  }
+};
+
+/** Alias for {@link createNextAuth} that matches the `next-auth` export name. */
+export const NextAuth = createNextAuth;
+
 export {
   MissingNextAuthPeerError,
   MissingAuthCorePeerError,
@@ -197,15 +233,19 @@ export type {
   AdapterSession,
   AdapterUser,
   AuthConfig,
+  AuthNextRequest,
   Account,
   Awaitable,
+  CredentialInput,
   DefaultSession,
   DefaultUser,
   JWT,
+  NextAuthConfig,
   NextAuthHandlerRecord,
   NextAuthHandlers,
   NextAuthResult,
   Profile,
+  Provider,
   Session,
   User,
   VerificationToken,

@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '../../shared/test-utils';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@compliance-theater/react-query-compat/runtime';
 import { FloatingTodoDialog } from '../../../components/todo/floating-todo-dialog';
 
 // Mock Draggable and ResizableBox components

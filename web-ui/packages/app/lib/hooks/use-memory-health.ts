@@ -31,7 +31,7 @@
  * ```
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@compliance-theater/react-query-compat/runtime';
 import { resolveFetchService } from '@/lib/fetch-service';
 import { LoggedError } from '@compliance-theater/logger';
 import type {

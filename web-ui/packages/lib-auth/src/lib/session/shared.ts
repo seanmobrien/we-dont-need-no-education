@@ -1,6 +1,6 @@
-import type { JWT } from '@compliance-theater/types/next-auth/jwt';
+import type { JWT } from 'next-auth/jwt';
 //import type { SessionWithAccountId } from '../types';
-import type { Session } from '@compliance-theater/types/auth-core/types';
+import type { Session } from '@auth/core/types';
 import { LoggedError } from '@compliance-theater/logger';
 import { decodeToken } from '../utilities/decode-token';
 

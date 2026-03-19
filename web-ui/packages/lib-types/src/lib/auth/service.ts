@@ -1,4 +1,4 @@
-import type { User } from '@compliance-theater/types/next-auth';
+import type { User } from '@compliance-theater/auth-compat';
 
 export type AuthenticatedUserLike = Pick<User, 'id'>;
 

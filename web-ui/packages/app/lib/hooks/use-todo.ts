@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@compliance-theater/react-query-compat/runtime';
 import type { Todo, TodoList, TodoListSummary } from '@/data-models/api/todo';
 import type { IFetchService } from '@compliance-theater/types/lib/fetch';
 import { resolveService } from '@compliance-theater/types/dependency-injection';

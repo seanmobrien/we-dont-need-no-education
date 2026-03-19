@@ -150,6 +150,35 @@ export type VerificationToken = {
   token: string;
 };
 
+// ─── Provider / CredentialInput (simplified – no @auth/core peer required) ────
+
+/** Simplified shape of an @auth/core provider configuration object. */
+export type Provider = {
+  id: string;
+  name?: string;
+  type?: string;
+  [key: string]: unknown;
+};
+
+/** Simplified shape of a credential input field used in Credentials providers. */
+export type CredentialInput = {
+  label?: string;
+  type?: string;
+  placeholder?: string;
+  [key: string]: unknown;
+};
+
+// ─── NextAuthConfig / AuthNextRequest ────────────────────────────────────────
+
+/** Alias for {@link AuthConfig} that matches the `next-auth` export name. */
+export type NextAuthConfig = AuthConfig;
+
+/**
+ * Simplified type for the first parameter of the NextAuth GET/POST handler.
+ * In practice this is a `NextRequest | Request | undefined`.
+ */
+export type AuthNextRequest = Request | undefined;
+
 export interface Adapter {
   createUser?: (user: Omit<AdapterUser, 'id'>) => Awaitable<AdapterUser>;
   getUser?: (id: string) => Awaitable<AdapterUser | null>;
