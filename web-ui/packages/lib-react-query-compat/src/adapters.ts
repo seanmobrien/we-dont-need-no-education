@@ -129,7 +129,7 @@ export const adaptQueryResult = <TData, TError>(
     error: null,
     isError: false,
     isFetching: result.isFetching,
-    isLoading: true,
+    isLoading: result.isLoading,
     isPending: true,
     isSuccess: false,
     refetch: result.refetch,

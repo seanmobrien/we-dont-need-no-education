@@ -122,7 +122,8 @@ export interface UseQueryPendingResult<TData = unknown> extends QueryResultBase 
   data: TData | undefined;
   error: null;
   isError: false;
-  isLoading: true;
+  /** true when actively fetching; false when query is disabled (enabled: false) */
+  isLoading: boolean;
   isPending: true;
   isSuccess: false;
   status: 'pending';
