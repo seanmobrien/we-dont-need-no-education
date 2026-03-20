@@ -3,7 +3,7 @@ import { SessionProvider } from "../../src/components/session-provider/provider"
 import { useQuery } from "@compliance-theater/react-query-compat/runtime";
 import React from "react";
 
-// Mock dependencies — mock @tanstack/react-query which compat/runtime loads lazily
+// Mock the compat runtime surface used by the provider under test.
 jest.mock("@compliance-theater/react-query-compat/runtime", () => ({
   useQuery: jest.fn(),
   useMutation: jest.fn(() => ({ mutateAsync: jest.fn() })),

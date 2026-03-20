@@ -3,7 +3,7 @@ export class MissingReactQueryPeerError extends Error {
 
   constructor(cause?: unknown) {
     super(
-      'React Query runtime is unavailable. Install @tanstack/react-query in the web-ui workspace root to use @compliance-theater/react-query-compat/runtime.',
+      'React Query runtime is unavailable. Install the TanStack React Query packages required by @compliance-theater/react-query-compat to use @compliance-theater/react-query-compat/runtime.',
     );
     this.name = 'MissingReactQueryPeerError';
     this.cause = cause;

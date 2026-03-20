@@ -1,6 +1,6 @@
 'use client';
 import { QueryClient, QueryClientProvider } from '@compliance-theater/react-query-compat/runtime';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { ReactQueryDevtools } from '@compliance-theater/react-query-compat/devtools';
 import type { FC, ReactNode } from 'react';
 import React from 'react';
 interface DataGridQueryProviderProps {
@@ -11,8 +11,8 @@ let queryClient: QueryClient | undefined = undefined;
 
 // Conditionally import the production devtools
 const ReactQueryDevtoolsProduction = React.lazy(() =>
-  import('@tanstack/react-query-devtools/production').then((d) => ({
-    default: d.ReactQueryDevtools,
+  import('@compliance-theater/react-query-compat/devtools/production').then((d) => ({
+    default: d.ReactQueryDevtoolsProduction,
   })),
 );
 

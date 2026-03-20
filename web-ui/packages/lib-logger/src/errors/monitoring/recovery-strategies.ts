@@ -224,7 +224,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         label: 'Clear Session',
         description: 'Your session has expired. Please sign in again.',
         action: async () => {
-          const { signOut } = await import('@compliance-theater/types/next-auth/react');
+          const { signOut } = await import('@compliance-theater/auth-compat/runtime');
           await signOut({ callbackUrl: '/auth/signin' });
         },
         automatic: false,

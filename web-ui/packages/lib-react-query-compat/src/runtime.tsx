@@ -15,6 +15,8 @@ import type {
   QueryClientConfig,
   QueryKey,
   QueryOptions,
+  ReactQueryDevtoolsPanelProps,
+  ReactQueryDevtoolsProps,
   StreamedQueryFn,
   StreamedQueryOptions,
   UseMutationResult,
@@ -45,7 +47,13 @@ type ReactQueryRuntime = {
   ) => StreamedQueryFn<TChunk>;
 };
 
+type ReactQueryDevtoolsRuntime = {
+  ReactQueryDevtools: (props: unknown) => ReactNode;
+  ReactQueryDevtoolsPanel: (props: unknown) => ReactNode;
+};
+
 let cachedRuntime: ReactQueryRuntime | undefined;
+let cachedDevtoolsRuntime: ReactQueryDevtoolsRuntime | null | undefined;
 const queryClientCache = new WeakMap<object, QueryClient>();
 
 const loadReactQueryRuntime = (): ReactQueryRuntime => {
@@ -58,6 +66,24 @@ const loadReactQueryRuntime = (): ReactQueryRuntime => {
     return cachedRuntime;
   } catch (error) {
     throw new MissingReactQueryPeerError(error);
+  }
+};
+
+const loadReactQueryDevtoolsRuntime = ():
+  | ReactQueryDevtoolsRuntime
+  | undefined => {
+  if (cachedDevtoolsRuntime !== undefined) {
+    return cachedDevtoolsRuntime ?? undefined;
+  }
+
+  try {
+    cachedDevtoolsRuntime = require(
+      '@tanstack/react-query-devtools'
+    ) as ReactQueryDevtoolsRuntime;
+    return cachedDevtoolsRuntime;
+  } catch {
+    cachedDevtoolsRuntime = null;
+    return undefined;
   }
 };
 
@@ -188,6 +214,42 @@ export const QueryErrorResetBoundary = ({
   return runtime.QueryErrorResetBoundary({ children });
 };
 
+export const ReactQueryDevtools = ({
+  client,
+  ...props
+}: ReactQueryDevtoolsProps) => {
+  const runtime = loadReactQueryDevtoolsRuntime();
+
+  if (!runtime) {
+    return null;
+  }
+
+  const runtimeClient = unwrapQueryClient(client);
+
+  return runtime.ReactQueryDevtools({
+    ...props,
+    ...(runtimeClient ? { client: runtimeClient } : {}),
+  });
+};
+
+export const ReactQueryDevtoolsPanel = ({
+  client,
+  ...props
+}: ReactQueryDevtoolsPanelProps) => {
+  const runtime = loadReactQueryDevtoolsRuntime();
+
+  if (!runtime) {
+    return null;
+  }
+
+  const runtimeClient = unwrapQueryClient(client);
+
+  return runtime.ReactQueryDevtoolsPanel({
+    ...props,
+    ...(runtimeClient ? { client: runtimeClient } : {}),
+  });
+};
+
 export const useQuery = <
   TQueryFnData = unknown,
   TError = Error,
@@ -255,10 +317,15 @@ export const streamedQuery = <TChunk,>(
 
 export { MissingReactQueryPeerError } from './errors';
 export type {
+  DevtoolsButtonPosition,
+  DevtoolsPosition,
+  DevtoolsTheme,
   MutationOptions,
   QueryClientConfig,
   QueryKey,
   QueryOptions,
+  ReactQueryDevtoolsPanelProps,
+  ReactQueryDevtoolsProps,
   StreamedQueryFn,
   StreamedQueryOptions,
   UseMutateFunction,

@@ -11,6 +11,16 @@
       "development": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./devtools": {
+      "types": "./dist/devtools.d.ts",
+      "development": "./src/devtools.tsx",
+      "default": "./dist/devtools.js"
+    },
+    "./devtools/production": {
+      "types": "./dist/devtools.production.d.ts",
+      "development": "./src/devtools.production.tsx",
+      "default": "./dist/devtools.production.js"
+    },
     "./runtime": {
       "types": "./dist/runtime.d.ts",
       "development": "./src/runtime.tsx",
@@ -38,13 +48,21 @@
     "lint": "yarn exec eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@tanstack/react-query": "5.90.21",
+    "@tanstack/react-query-devtools": "5.91.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "peerDependencies": {
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "peerDependenciesMeta": {
-    "@tanstack/react-query": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
       "optional": true
     }
   },

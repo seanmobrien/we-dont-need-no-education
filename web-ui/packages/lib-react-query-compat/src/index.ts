@@ -1,6 +1,9 @@
 export type {
   Awaitable,
   CancelQueryFilters,
+  DevtoolsButtonPosition,
+  DevtoolsPosition,
+  DevtoolsTheme,
   InvalidateQueryFilters,
   MutationOptions,
   MutateOptions,
@@ -12,6 +15,8 @@ export type {
   QueryObserverLike,
   QueryOptions,
   QueryState,
+  ReactQueryDevtoolsPanelProps,
+  ReactQueryDevtoolsProps,
   RemoveQueryFilters,
   RetryDelayValue,
   RetryValue,

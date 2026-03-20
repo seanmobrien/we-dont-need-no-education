@@ -49,6 +49,7 @@
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
+    "@compliance-theater/auth-compat": "workspace:*",
     "@compliance-theater/types": "workspace:*",
     "@opentelemetry/api": "1.9.0",
     "@opentelemetry/api-logs": "0.57.2",

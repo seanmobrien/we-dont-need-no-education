@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 export type QueryKey = readonly unknown[];
 
 export type RetryValue<TError> =
@@ -234,6 +236,35 @@ export interface QueryClient {
   fetchQuery<TData, TQueryKey extends QueryKey = QueryKey>(
     options: QueryOptions<TData, Error, TQueryKey>,
   ): Promise<TData>;
+}
+
+export type DevtoolsButtonPosition =
+  | 'top-left'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-right';
+
+export type DevtoolsPosition = 'top' | 'bottom' | 'left' | 'right';
+
+export type DevtoolsTheme = 'light' | 'dark' | 'system';
+
+export interface ReactQueryDevtoolsProps {
+  initialIsOpen?: boolean;
+  buttonPosition?: DevtoolsButtonPosition;
+  position?: DevtoolsPosition;
+  client?: QueryClient;
+  styleNonce?: string;
+  hideDisabledQueries?: boolean;
+  theme?: DevtoolsTheme;
+}
+
+export interface ReactQueryDevtoolsPanelProps {
+  client?: QueryClient;
+  styleNonce?: string;
+  style?: CSSProperties;
+  onClose?: () => unknown;
+  hideDisabledQueries?: boolean;
+  theme?: DevtoolsTheme;
 }
 
 export interface StreamedQueryOptions<TChunk> {

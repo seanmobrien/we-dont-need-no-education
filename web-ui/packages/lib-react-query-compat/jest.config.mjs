@@ -24,6 +24,8 @@ const config = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   moduleNameMapper: {
     '^@compliance-theater/react-query-compat$': '<rootDir>/src/index.ts',
+    '^@compliance-theater/react-query-compat/devtools$': '<rootDir>/src/devtools.tsx',
+    '^@compliance-theater/react-query-compat/devtools/production$': '<rootDir>/src/devtools.production.tsx',
     '^@compliance-theater/react-query-compat/runtime$': '<rootDir>/src/runtime.tsx',
     '^react$': '<rootDir>/../../node_modules/react/index.js',
     '^react-dom$': '<rootDir>/../../node_modules/react-dom/index.js',
