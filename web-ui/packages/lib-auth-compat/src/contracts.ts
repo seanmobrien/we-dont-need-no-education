@@ -4,6 +4,8 @@
  * need to install those packages to work with the shared surface area.
  */
 
+/* global FormData */
+
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
 export type Awaitable<T> = T | PromiseLike<T>;

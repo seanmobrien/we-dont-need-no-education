@@ -49,8 +49,7 @@ type NextAuthJwtModule = {
 };
 
 type AuthCoreModule = {
-  Auth: (request: Request, config: AuthConfig) => Promise<Response>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Auth: (request: Request, config: AuthConfig) => Promise<Response>;  
   AuthError: new (...args: any[]) => Error & { type?: string };
 };
 
@@ -68,7 +67,6 @@ let cachedKeycloakProvider: KeycloakProviderFactory | undefined;
 const loadNextAuth = (): NextAuthModule => {
   if (cachedNextAuth) return cachedNextAuth;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     cachedNextAuth = require('next-auth') as NextAuthModule;
     return cachedNextAuth;
   } catch (error) {
@@ -79,7 +77,6 @@ const loadNextAuth = (): NextAuthModule => {
 const loadNextAuthReact = (): NextAuthReactModule => {
   if (cachedNextAuthReact) return cachedNextAuthReact;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     cachedNextAuthReact = require('next-auth/react') as NextAuthReactModule;
     return cachedNextAuthReact;
   } catch (error) {
@@ -90,7 +87,6 @@ const loadNextAuthReact = (): NextAuthReactModule => {
 const loadNextAuthJwt = (): NextAuthJwtModule => {
   if (cachedNextAuthJwt) return cachedNextAuthJwt;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     cachedNextAuthJwt = require('next-auth/jwt') as NextAuthJwtModule;
     return cachedNextAuthJwt;
   } catch (error) {
@@ -101,7 +97,6 @@ const loadNextAuthJwt = (): NextAuthJwtModule => {
 const loadAuthCore = (): AuthCoreModule => {
   if (cachedAuthCore) return cachedAuthCore;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     cachedAuthCore = require('@auth/core') as AuthCoreModule;
     return cachedAuthCore;
   } catch (error) {
@@ -112,7 +107,6 @@ const loadAuthCore = (): AuthCoreModule => {
 const loadDrizzleAdapter = (): DrizzleAdapterModule => {
   if (cachedDrizzleAdapter) return cachedDrizzleAdapter;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     cachedDrizzleAdapter = require('@auth/drizzle-adapter') as DrizzleAdapterModule;
     return cachedDrizzleAdapter;
   } catch (error) {
@@ -123,7 +117,6 @@ const loadDrizzleAdapter = (): DrizzleAdapterModule => {
 const loadKeycloakProvider = (): KeycloakProviderFactory => {
   if (cachedKeycloakProvider) return cachedKeycloakProvider;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const keycloakModule = require('next-auth/providers/keycloak') as {
       default?: KeycloakProviderFactory;
     };
