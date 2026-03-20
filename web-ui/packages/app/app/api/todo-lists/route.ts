@@ -5,7 +5,7 @@ import {
   validateCreateTodoList,
   validateUpdateTodoList,
 } from '@/lib/api/todo/todo-validation';
-import { ValidationError } from '@compliance-theater/react/errors/validation-error';
+import { ValidationError } from '@compliance-theater/logger/errors/validation-error';
 
 export const dynamic = 'force-dynamic';
 

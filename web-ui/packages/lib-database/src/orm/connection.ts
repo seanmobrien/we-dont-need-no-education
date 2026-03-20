@@ -110,7 +110,7 @@ export const drizDbWithInit: DrizDbInitOverloads = <T>(
   const resolver = async (db: DbDatabaseType) => {
     if (cb) {
       const fnRet = cb(db);
-      const pRet = isPromise<T>(fnRet) ? await fnRet : fnRet;
+      const pRet = isPromise(fnRet) ? await fnRet : fnRet;
       return pRet;
     }
     return Promise.resolve(db) as T;

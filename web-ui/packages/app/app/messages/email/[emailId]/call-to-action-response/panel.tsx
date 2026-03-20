@@ -15,7 +15,7 @@ import Stack from '@mui/material/Stack';
 import Paper from '@mui/material/Paper';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@compliance-theater/react-query-compat/runtime';
 import {
   CallToActionResponseDetails,
   CallToActionDetails,

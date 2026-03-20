@@ -12,7 +12,7 @@ import { query } from '@compliance-theater/database/driver';
 import { NextRequest, NextResponse } from 'next/server';
 import { googleProviderFactory } from './_googleProviderFactory';
 import { isError, LoggedError } from '@compliance-theater/logger';
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import {
   GmailEmailMessageHeader,

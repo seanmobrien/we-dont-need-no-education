@@ -12,7 +12,7 @@ import {
   emailKeys,
 } from '../../../lib/hooks/use-email';
 import { getEmail, writeEmailRecord } from '../../../lib/api/client';
-import { UseMutateFunction } from '@tanstack/react-query';
+import { UseMutateFunction } from '@compliance-theater/react-query-compat/runtime';
 
 // Mock the API client functions
 jest.mock('../../../lib/api/client', () => ({

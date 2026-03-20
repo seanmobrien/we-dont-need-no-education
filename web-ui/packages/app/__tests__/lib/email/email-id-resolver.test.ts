@@ -106,7 +106,8 @@ describe('resolveEmailId', () => {
 
     mockDrizDb.mockResolvedValue(mockDb as any);
 
-    jest.restoreAllMocks();
+    // what the hey codex!  how many times can we say "don't blanket restore mocks"?!?!?
+    // jest.restoreAllMocks();
 
     const result = await resolveEmailId(documentId);
     expect(result).toBeNull();

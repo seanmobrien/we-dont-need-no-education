@@ -27,6 +27,10 @@ export const register = async () => {
     if (typeof window === 'undefined') {
       // This is a server-side environment (Node.js or edge runtime)
       if (process.env.NEXT_RUNTIME === 'nodejs') {
+        const { ensureServerDiBootstrap } = await import(
+          '@/lib/bootstrap/di/server'
+        );
+        ensureServerDiBootstrap();
         const { default: instrumentServer } = await import('@/instrument/node');
         instrumentServer();
       } else {

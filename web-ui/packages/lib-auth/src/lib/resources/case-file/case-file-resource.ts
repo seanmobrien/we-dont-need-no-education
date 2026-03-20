@@ -84,15 +84,15 @@ const findCaseFileResource = createSafeAsyncWrapper(
   async (userId: number): Promise<CaseFileResource | null> => {
     const resourceName = `case-file:${userId}`;
     const resource =
-      await resourceService().findAuthorizedResource<CaseFileResource>(
+      (await resourceService().findAuthorizedResource(
         resourceName
-      );
+      )) as CaseFileResource | null;
     if (!resource) {
       return null;
     }
     return {
-      scopes: ['openid'],
       ...resource,
+      scopes: resource.scopes ?? ['openid'],
     };
   },
   () => null

@@ -1,5 +1,4 @@
-import type { Session, User } from '@compliance-theater/types/next-auth';
-import type { JWT } from '@compliance-theater/types/next-auth/jwt';
+import type { Session, User, JWT } from '@compliance-theater/auth-compat';
 import type { LikeNextRequest } from '../nextjs/types/like-nextrequest';
 
 export type AuthSessionServiceProps = {

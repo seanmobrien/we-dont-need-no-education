@@ -7,7 +7,7 @@ import { KnownScopeIndex, KnownScopeValues } from '@compliance-theater/auth/lib/
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
 import { ApiRequestError } from '@compliance-theater/send-api-request';
 import type { NextRequest } from 'next/server';
-import { isAbortError } from '@compliance-theater/react';
+import { isAbortError } from '@compliance-theater/logger';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { FirstParameter } from '@compliance-theater/typescript';
 import { wellKnownFlag } from '@compliance-theater/feature-flags/feature-flag-with-refresh';
@@ -218,7 +218,7 @@ const checkAccess = async (props: NextRequest | CheckAccessProps) => {
 
   const findResource = async () => {
     let toolResourceRecord: BasicResourceRecord | null = null;
-    const rs = resourceService();
+    const rs = resourceService((service) => service);
     try {
       toolResourceRecord = await rs.getAuthorizedResource(TOOL_RESOURCE_ID);
       if (!toolResourceRecord) {

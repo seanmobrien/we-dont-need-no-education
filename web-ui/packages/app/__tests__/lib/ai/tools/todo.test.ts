@@ -5,7 +5,7 @@
  * Tests for the Todo Manager and Todo Tools
  */
 
-import { Session } from '@compliance-theater/auth';
+import { Session } from '@compliance-theater/auth/server';
 import { TodoManager, getTodoManager } from '../../../../lib/ai/tools/todo/todo-manager';
 import {
   createTodoCallback,
@@ -14,7 +14,7 @@ import {
   deleteTodoCallback,
   toggleTodoCallback,
 } from '../../../../lib/ai/tools/todo/tool-callback';
-import { isError } from '@compliance-theater/react';
+import { isError } from '@compliance-theater/logger';
 
 type SerializedTodo = {
   id: string;
@@ -540,3 +540,4 @@ describe('Todo Tool Callbacks', () => {
     expect(result.structuredContent.result.isError).toBe(true);
   });
 });
+

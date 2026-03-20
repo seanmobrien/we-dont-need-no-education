@@ -1,4 +1,4 @@
-import type { Session, User as NextAuthUser } from '@compliance-theater/types/next-auth';
+import type { Session, User as NextAuthUser } from '@compliance-theater/auth-compat';
 import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 
 type NextAuthUserWithAccountId = NextAuthUser;

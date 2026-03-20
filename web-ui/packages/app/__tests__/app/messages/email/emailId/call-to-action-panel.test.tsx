@@ -30,8 +30,8 @@ jest.mock('@mui/material/CircularProgress', () => {
 
 // Mock React Query useQuery hook
 const mockUseQuery = jest.fn();
-jest.mock('@tanstack/react-query', () => ({
-  ...jest.requireActual('@tanstack/react-query'),
+jest.mock('@compliance-theater/react-query-compat/runtime', () => ({
+  ...jest.requireActual('@compliance-theater/react-query-compat/runtime'),
   useQuery: () => mockUseQuery(),
 }));
 

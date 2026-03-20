@@ -4,6 +4,7 @@ import type {
     IAuthSessionService,
     IImpersonationService,
     ITokenExchangeService,
+    IUserSigningKeysService,
 } from '../lib/auth';
 import type {
     AwilixContainer,

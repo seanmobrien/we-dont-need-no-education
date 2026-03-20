@@ -60,7 +60,7 @@
 import { type ChatDetails } from '@/lib/ai/chat/types';
 import { LoggedError } from '@compliance-theater/logger';
 import { resolveFetchService } from '@/lib/fetch-service';
-import { useQuery, UseQueryResult } from '@tanstack/react-query';
+import { useQuery, UseQueryResult } from '@compliance-theater/react-query-compat/runtime';
 
 const fetch = resolveFetchService();
 

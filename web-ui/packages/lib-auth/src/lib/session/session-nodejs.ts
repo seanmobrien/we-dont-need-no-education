@@ -4,8 +4,7 @@
  * @module @compliance-theater/auth/session-nodejs
  */
 
-import type { JWT } from '@compliance-theater/types/next-auth/jwt';
-import type { Session } from '@compliance-theater/types/next-auth';
+import type { JWT, Session } from '@compliance-theater/auth-compat';
 import { setupSession } from './shared';
 import { log } from '@compliance-theater/logger/core';
 import { decodeToken } from '../utilities';

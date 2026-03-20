@@ -56,6 +56,7 @@ import {
     asFunction,
     asValue,
     createContainer,
+    ServiceContainerServer,
 } from '../../src/dependency-injection/container-server';
 
 describe('container-server', () => {
@@ -68,12 +69,13 @@ describe('container-server', () => {
     });
 
     it('creates awilix container with expected options', () => {
-        createContainer();
+        const container = createContainer();
 
         expect(mockAwilixCreateContainer).toHaveBeenCalledWith({
             injectionMode: 'CLASSIC',
             strict: true,
         });
+        expect(container).toBeInstanceOf(ServiceContainerServer);
     });
 
     it('registers by name with resolver object and resolves value', () => {

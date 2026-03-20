@@ -8,6 +8,7 @@
     "declaration": true,
     "declarationMap": true,
     "baseUrl": ".",
+    "noImplicitAny": false,
     "types": [
       "node",
       "jest"
@@ -31,6 +32,9 @@
       "path": "../lib-types"
     },
     {
+      "path": "../lib-auth-compat"
+    },
+    {
       "path": "../lib-logger"
     },
     {
@@ -47,6 +51,9 @@
     },
     {
       "path": "../lib-react"
+    },
+    {
+      "path": "../lib-react-query-compat"
     },
     {
       "path": "../lib-redis"

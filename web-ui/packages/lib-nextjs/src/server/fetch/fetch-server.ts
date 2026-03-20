@@ -23,6 +23,7 @@ import {
 } from './fetch-config';
 import type { FetchConfig as IFetchConfig } from './fetch-types';
 import { LoggedError, log, safeSerialize, SingletonProvider } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 import { createInstrumentedSpan } from '../utils';
 import { CacheStrategies } from './cache-strategies';
 import { StreamingStrategy } from './streaming-strategy';
@@ -223,7 +224,7 @@ export const normalizeRequestInit = ({
           ...init.timeout,
         };
       } else {
-        log((l) => l.warn(`Unrecognized timeout type: ${requestInfo.timeout}`));
+        log((l: ILogger) => l.warn(`Unrecognized timeout type: ${requestInfo.timeout}`));
       }
     }
     // Timeout has been normalized as timeout under init.timeout,
@@ -393,7 +394,7 @@ export class FetchManager implements ServerFetchManager {
       try {
         this.semManager.resize(newConcurrency);
         this.lastObservedConcurrency = newConcurrency;
-        log((l) => l.info(`[fetch] resized semaphore to ${newConcurrency}`));
+        log((l: ILogger) => l.info(`[fetch] resized semaphore to ${newConcurrency}`));
       } catch (err) {
         LoggedError.isTurtlesAllTheWayDownBaby(err, {
           source: 'fetch:resize',
@@ -427,7 +428,7 @@ export class FetchManager implements ServerFetchManager {
   [Symbol.dispose](): void {
     this.cache.clear();
     this.inflight.clear();
-    log((l) => l.info('[fetch] FetchManager disposed'));
+    log((l: ILogger) => l.info('[fetch] FetchManager disposed'));
   }
 
   private async doGotFetch(url: string, init?: RequestInit) {
@@ -445,7 +446,7 @@ export class FetchManager implements ServerFetchManager {
         responseType: 'buffer',
       },
     });
-    log((l) =>
+    log((l: ILogger) =>
       l.info(
         `GOT Fetch: About to read [${url}] using - ${safeSerialize(gotOptions, {
           maxObjectDepth: 4,

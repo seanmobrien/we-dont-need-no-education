@@ -4,9 +4,9 @@ import {
   SignInPage,
   type AuthProvider,
 } from '@toolpad/core/SignInPage';
-import { AuthError } from '@compliance-theater/types/auth-core/errors';
+import { isAuthError } from '@compliance-theater/auth-compat/runtime';
 import Image from 'next/image';
-import { providerMap, signIn } from '@compliance-theater/auth';
+import { providerMap, signIn } from '@compliance-theater/auth/server';
 import { NextAppProvider } from '@toolpad/core/nextjs';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { dumpError, LoggedError } from '@compliance-theater/logger';
@@ -61,7 +61,7 @@ const SignIn = async () => {
       }
       const le = LoggedError.isTurtlesAllTheWayDownBaby(error);
       // Handle Auth.js errors
-      if (error instanceof AuthError) {
+      if (isAuthError(error)) {
         return {
           error: error.message,
           type: error.type,
@@ -102,3 +102,4 @@ const SignIn = async () => {
 };
 
 export default SignIn;
+

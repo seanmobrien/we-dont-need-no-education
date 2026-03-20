@@ -10,6 +10,7 @@ export {
     getServiceContainer,
     registerServices,
     resolveService,
+    resetRuntime,
     asClass,
     asFunction,
     asValue,

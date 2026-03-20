@@ -3,7 +3,7 @@
  * @module components/chat/history/useChatHistory
  */
 import { type ChatDetails } from '../../../../lib/ai/chat/types';
-import { UseQueryResult } from '@tanstack/react-query';
+import { UseQueryResult } from '@compliance-theater/react-query-compat';
 
 declare module '@/components/ai/chat/history/useChatHistory' {
   /**

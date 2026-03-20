@@ -1,5 +1,5 @@
 import { refreshAccessToken } from '../../src/lib/refresh-token';
-import type { JWT } from '@compliance-theater/types/next-auth/jwt';
+import type { JWT } from '@compliance-theater/auth-compat';
 import { hideConsoleOutput } from '../shared/test-utils';
 import { resolveService } from '@compliance-theater/types/dependency-injection';
 import { IFetchService } from '@compliance-theater/types/lib/fetch';

@@ -3,10 +3,10 @@ import type { NextConfig } from 'next';
 import { withBundleAnalyzer } from './lib/config/bundle-analyzers';
 import { withIgnorePacks } from './lib/config/ignore-unsupported-packs-plugin';
 import { withStripRscPrefixPlugin } from './lib/config/strip-rsc-prefix-plugin';
-import { withEnsureChunkSymlinks, withReactConfigFactory, withTypescriptConfig, withWorkspaceSourceImports } from './lib/config';
+import { withDevelopmentSourceImports, withEnsureChunkSymlinks, withReactConfigFactory, withTypescriptConfig } from './lib/config';
 
 export const nextConfig: NextConfig = withStripRscPrefixPlugin(
-  withWorkspaceSourceImports(
+  withDevelopmentSourceImports(
     withIgnorePacks(
       withBundleAnalyzer(
         withReactConfigFactory()(

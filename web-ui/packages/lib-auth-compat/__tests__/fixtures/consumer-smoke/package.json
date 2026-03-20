@@ -1,0 +1,8 @@
+{
+  "name": "@compliance-theater/auth-compat-consumer-smoke",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "@compliance-theater/auth-compat": "workspace:*"
+  }
+}

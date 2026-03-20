@@ -1,0 +1,14 @@
+{
+  "extends": "../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@compliance-theater/auth-compat": ["../../../dist/index.d.ts"],
+      "@compliance-theater/auth-compat/runtime": ["../../../dist/runtime.d.ts"]
+    }
+  },
+  "include": ["./index.ts"],
+  "exclude": []
+}

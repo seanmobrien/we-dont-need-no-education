@@ -8,10 +8,17 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./server/di-bootstrap-accessor": {
+      "types": "./dist/server/di-bootstrap-accessor.d.ts",
+      "development": "./src/server/di-bootstrap-accessor.ts",
+      "default": "./dist/server/di-bootstrap-accessor.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
+      "development": "./src/*",
       "default": "./dist/*.js"
     }
   },
@@ -25,7 +32,7 @@
   "scripts": {
     "add": "yarn workspace @compliance-theater/nextjs add ",
     "build": "yarn run build:typescript",
-    "build:typescript": "echo 'Building @compliance-theater/nextjs...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/nextjs.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/nextjs.\u001b[0m\n' >&2; exit 1)",
+    "build:typescript": "echo 'Building @compliance-theater/nextjs...' && tsc -b tsconfig.json && echo '\u001b[1;32mBuild complete: @compliance-theater/nextjs.\u001b[0m\n' || (echo '\u001b[31mBuild failed: @compliance-theater/nextjs.\u001b[0m\n' >&2; exit 1)",
     "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-nextjs.tgz",
     "test": "jest --passWithNoTests",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
@@ -35,6 +42,9 @@
     "@opentelemetry/sdk-trace-base": "1.30.1",
     "@swc/core": "^1.13.5",
     "@swc/jest": "^0.2.39",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/react": "^16.3.0",
     "@types/jest": "^30.0.0",
     "@types/node": "25.2.3",
     "@types/react": "19.2.4",
@@ -42,6 +52,8 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "jest": "^30.0.5",
     "lru-cache": "^11.0.2",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "react-native": "^0.84.0",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3"
@@ -61,10 +73,22 @@
     "readable-web-to-node-stream": "^5.0.0"
   },
   "peerDependencies": {
-    "next": "^15.5.12"
+    "next": "^15.5.12",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "zod": "3.25.76"
   },
   "peerDependenciesMeta": {
     "next": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    },
+    "zod": {
       "optional": true
     }
   }

@@ -22,7 +22,7 @@ import {
 import { getCallToActionResponse } from '@/lib/api/email/properties/client';
 import { useParams } from 'next/navigation';
 import { EmailMasterPanel } from '@/components/mui/data-grid';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@compliance-theater/react-query-compat/runtime';
 
 // Stable CSS grid configurations
 const GRID_CONFIGS = {

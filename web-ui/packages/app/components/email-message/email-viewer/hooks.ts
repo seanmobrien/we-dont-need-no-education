@@ -2,7 +2,7 @@ import { EmailMessage } from '@/data-models/api';
 import { getEmail } from '@/lib/api/email/client';
 import { LoggedError } from '@compliance-theater/logger';
 import { resolveFetchService } from '@/lib/fetch-service';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@compliance-theater/react-query-compat/runtime';
 import { UseEmailApiQueryResult, TResponseMap, EmailAttachment } from './types';
 const fetch = resolveFetchService();
 

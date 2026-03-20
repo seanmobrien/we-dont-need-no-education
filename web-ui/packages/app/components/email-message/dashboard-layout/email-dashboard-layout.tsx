@@ -18,7 +18,7 @@ import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import CallToActionIcon from '@mui/icons-material/CallToAction';
 import ReplyIcon from '@mui/icons-material/Reply';
 import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
-import type { Session } from '@compliance-theater/types/auth-core/types';
+import type { Session } from '@compliance-theater/auth-compat';
 import { EmailContextProvider } from '@/components/email-message/email-context';
 import { useCallback, useMemo } from 'react';
 import { useParams, usePathname } from 'next/navigation';
@@ -29,7 +29,7 @@ import { CustomEmailPageItem } from './custom-email-page-item';
 import { EmailDashboardToolbarAction } from './email-dashboard-toolbar-action';
 import { Branding } from './branding';
 import { NotificationsProvider } from '@toolpad/core';
-import { KeyRefreshNotifyWrapper } from '@compliance-theater/auth/components/key-refresh-notify/wrapper';
+import { KeyRefreshNotifyWrapper } from '@compliance-theater/auth/client';
 import ServerSafeErrorManager from '@/components/error-boundaries/ServerSafeErrorManager';
 import { SiteRoute } from '@/lib/site-util/url-builder/_types';
 

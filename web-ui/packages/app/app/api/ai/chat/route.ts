@@ -12,7 +12,7 @@ import { getRetryErrorInfo } from '@/lib/ai/chat/error-helpers';
 import { getUserToolProviderCache } from '@/lib/ai/mcp/cache';
 import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
 import { env } from '@compliance-theater/env';
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 import { type NextRequest, NextResponse } from 'next/server';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { isTruthy } from '@compliance-theater/types';
@@ -24,7 +24,7 @@ import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/c
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
-import type { User } from '@compliance-theater/types/auth-core/types';
+import type { User } from '@compliance-theater/auth-compat';
 import { wrapMemoryMiddleware } from '@/lib/ai/middleware/memory-middleware';
 import { streamingMessageResponse } from '@/lib/ai/chat/streamed-result';
 
@@ -351,3 +351,4 @@ export const POST = (req: NextRequest) => {
     }
   )(req);
 };
+

@@ -30,6 +30,10 @@ describe('runtime fetch dispatch', () => {
             resolveService: jest.fn(() => ({
                 getOrCreate: () => serverFetch,
             })),
+            getServiceContainer: jest.fn(() => ({
+                has: jest.fn(() => false),
+                register: jest.fn(),
+            })),
         }));
         jest.doMock('../src/server/fetch', () => ({ fetch: serverFetch }));
         jest.doMock('../src/fetch', () => ({ fetch: browserFetch }));
@@ -57,6 +61,10 @@ describe('runtime fetch dispatch', () => {
             registerServices: jest.fn(),
             resolveService: jest.fn(() => ({
                 getOrCreate: () => browserFetch,
+            })),
+            getServiceContainer: jest.fn(() => ({
+                has: jest.fn(() => false),
+                register: jest.fn(),
             })),
         }));
         jest.doMock('../src/server/fetch', () => ({ fetch: serverFetch }));

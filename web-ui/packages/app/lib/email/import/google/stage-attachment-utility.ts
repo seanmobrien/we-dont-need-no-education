@@ -116,7 +116,7 @@ export const queueStagedAttachments = ({
   stagedMessageId,
   part: partFromProps,
 }: StageAttachmentProps): Array<Promise<AttachmentStagedResult>> => {
-  const partItems = [];
+  const partItems: Array<Promise<AttachmentStagedResult>> = [];
   if (partFromProps.filename && partFromProps.body?.attachmentId) {
     partItems.push(
       stageAttachment({ req, stagedMessageId, part: partFromProps }),

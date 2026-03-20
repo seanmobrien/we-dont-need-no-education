@@ -8,46 +8,22 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
+      "development": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./dependency-injection": {
-      "types": "./dist/dependency-injection/index.browser.d.ts",
-      "workspace-source": "./src/dependency-injection/index.ts",
-      "browser": "./dist/dependency-injection/index.browser.js",
-      "node": "./dist/dependency-injection/index.node.js",
-      "default": "./dist/dependency-injection/index.browser.js"
-    },
-    "./dependency-injection/browser": {
-      "types": "./dist/dependency-injection/index.browser.d.ts",
-      "workspace-source": "./src/dependency-injection/index.browser.ts",
-      "default": "./dist/dependency-injection/index.browser.js"
-    },
-    "./dependency-injection/node": {
-      "types": "./dist/dependency-injection/index.node.d.ts",
-      "workspace-source": "./src/dependency-injection/index.node.ts",
-      "default": "./dist/dependency-injection/index.node.js"
+      "types": "./dist/dependency-injection/index.d.ts",
+      "development": "./src/dependency-injection/index.ts",
+      "default": "./dist/dependency-injection/index.js"
     },
     "./dependency-injection/container": {
-      "types": "./dist/dependency-injection/container.browser.d.ts",
-      "workspace-source": "./src/dependency-injection/container.ts",
-      "browser": "./dist/dependency-injection/container.browser.js",
-      "node": "./dist/dependency-injection/container.node.js",
-      "default": "./dist/dependency-injection/container.browser.js"
-    },
-    "./dependency-injection/container/browser": {
-      "types": "./dist/dependency-injection/container.browser.d.ts",
-      "workspace-source": "./src/dependency-injection/container.browser.ts",
-      "default": "./dist/dependency-injection/container.browser.js"
-    },
-    "./dependency-injection/container/node": {
-      "types": "./dist/dependency-injection/container.node.d.ts",
-      "workspace-source": "./src/dependency-injection/container.node.ts",
-      "default": "./dist/dependency-injection/container.node.js"
+      "types": "./dist/dependency-injection/container.d.ts",
+      "development": "./src/dependency-injection/container.ts",
+      "default": "./dist/dependency-injection/container.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*.ts",
+      "development": "./src/*",
       "default": "./dist/*.js"
     }
   },
@@ -62,26 +38,28 @@
     "add": "yarn workspace @compliance-theater/types add ",
     "build": "yarn build:typescript",
     "build:publish": "yarn build && yarn pack --out ./dist/@compliance-theater-types.tgz",
-    "build:typescript": "echo 'Building lib/types...' && tsc -b tsconfig.json && printf '\\u001b[1;32mBuild complete: @compliance-theater/types.\\u001b[0m\\n' || (printf '\\u001b[31mBuild failed: @compliance-theater/types.\\u001b[0m\\n' >&2; exit 1)",
+    "build:typescript": "echo 'Building lib/types...' && tsc -b tsconfig.json && echo '\\u001b[1;32mBuild complete: @compliance-theater/types.\\u001b[0m\\n' || (echo '\\u001b[31mBuild failed: @compliance-theater/types.\\u001b[0m\\n' >&2; exit 1)",
     "test": "jest",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    "@auth/core": "0.41.1",
-    "ai": "^5.0.23",
+    "@compliance-theater/auth-compat": "workspace:*",
     "awilix": "^13.0.0",
-    "next-auth": "^5.0.0-beta.30",
+    "next": "^15.5.12",
     "react-native": "^0.84.0",
     "ts-pattern": "^5.7.1"
   },
   "peerDependencies": {
-    "next": "^15.5.12",
+    "ai": "^5.0.23",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "ts-pattern": "^5.5.2"
+    "zod": "3.25.76"
   },
   "peerDependenciesMeta": {
+    "ai": {
+      "optional": true
+    },
     "next": {
       "optional": true
     },
@@ -90,17 +68,25 @@
     },
     "react-dom": {
       "optional": true
+    },
+    "zod": {
+      "optional": true
     }
   },
   "devDependencies": {
     "@jest/globals": "^30.0.5",
     "@swc/core": "^1.13.5",
     "@swc/jest": "^0.2.39",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/react": "^16.3.0",
     "@types/jest": "^30.0.0",
     "@types/node": "25.2.3",
     "@types/react": "19.2.4",
     "@types/react-dom": "19.2.3",
     "jest": "^30.0.5",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "rimraf": "^6.1.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.9.3"

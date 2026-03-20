@@ -1,5 +1,4 @@
-import type { Session } from '@compliance-theater/types/next-auth';
-import { Awaitable } from '@compliance-theater/types/auth-core/types';
+import type { Session, Awaitable } from '@compliance-theater/auth-compat';
 import { asNextRequest } from '@compliance-theater/types/lib/nextjs/guards';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 import { log } from '@compliance-theater/logger/core';

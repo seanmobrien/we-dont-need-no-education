@@ -55,7 +55,6 @@ export class DataIntegrityError extends Error {
   }
 
   get message(): string {
-    const ret = super.message;
-    return ret ?? `Data Integrity issue detected on table ${this.#table}`;
+    return super.message;
   }
 }

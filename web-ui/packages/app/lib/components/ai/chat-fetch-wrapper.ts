@@ -2,8 +2,8 @@ import { notCryptoSafeKeyHash } from '@compliance-theater/types/lib/ai/core/chat
 import {
   QueryClient,
   useQueryClient,
-  experimental_streamedQuery as streamedQuery,
-} from '@tanstack/react-query';
+  streamedQuery,
+} from '@compliance-theater/react-query-compat/runtime';
 import { log } from '@compliance-theater/logger';
 import { useCallback } from 'react';
 import { env } from '@compliance-theater/env';

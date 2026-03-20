@@ -8,12 +8,12 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
+      "development": "./src/index.ts",
       "default": "./dist/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*",
+      "development": "./src/*",
       "default": "./dist/*.js"
     }
   },
@@ -28,7 +28,7 @@
     "add": "yarn workspace @compliance-theater/react add ",
     "build": "yarn run build:typescript",
     "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-react.tgz",
-    "build:typescript": "echo 'Building @compliance-theater/react...' && tsc -b tsconfig.json && printf '\\u001b[1;32mBuild complete: @compliance-theater/react.\\u001b[0m\\n' || (printf '\\u001b[31mBuild failed: @compliance-theater/react.\\u001b[0m\\n' >&2; exit 1)",
+    "build:typescript": "echo 'Building @compliance-theater/react...' && tsc -b tsconfig.json && echo '\\u001b[1;32mBuild complete: @compliance-theater/react.\\u001b[0m\\n' || (echo '\\u001b[31mBuild failed: @compliance-theater/react.\\u001b[0m\\n' >&2; exit 1)",
     "test": "jest",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"
@@ -44,7 +44,8 @@
   "peerDependencies": {
     "next": "^15.5.12",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "3.25.76"
   },
   "peerDependenciesMeta": {
     "next": {
@@ -55,17 +56,25 @@
     },
     "react-dom": {
       "optional": true
+    },
+    "zod": {
+      "optional": true
     }
   },
   "devDependencies": {
     "@swc/core": "^1.13.5",
     "@swc/jest": "^0.2.39",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/react": "^16.3.0",
     "@types/jest": "^30.0.0",
     "@types/node": "25.2.3",
     "@types/react": "19.2.4",
     "@types/react-dom": "19.2.3",
     "babel-plugin-react-compiler": "^1.0.0",
     "jest": "^30.0.5",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "react-native": "^0.84.0",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3"

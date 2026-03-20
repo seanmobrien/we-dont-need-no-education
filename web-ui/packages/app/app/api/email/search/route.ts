@@ -22,7 +22,7 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
     if (!queryParam || queryParam.length < 2) {
       return NextResponse.json([], { status: 200 });
     }
-    const whereClauses = [];
+    const whereClauses: string[] = [];
     if (queryParam) {
       whereClauses.push(
         "(e.subject ILIKE '%' || $1 || '%' OR sender.name ILIKE '%' || $1 || '%')",

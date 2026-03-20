@@ -1,6 +1,7 @@
 /* global RequestInit, fetch */
 
 import { log } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 import {
   AbortablePromise,
   ICancellablePromiseExt,
@@ -91,7 +92,7 @@ export const sendApiRequest = <T>({
         contentType && contentType.includes('application/json')
           ? await response.json()
           : await response.text();
-      log((l) =>
+      log((l: ILogger) =>
         l.verbose({
           source: `${area}.${action}`,
           message: `API request completed for [${url}]`,

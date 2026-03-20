@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import { getCacheConfig, validateCacheConfig } from './config';
 import { LoggedError } from '@compliance-theater/logger';
 

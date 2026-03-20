@@ -1,4 +1,4 @@
-import { ValidationError } from '@compliance-theater/react/errors';
+import { ValidationError } from '@compliance-theater/logger/errors';
 import { FirstParameter, newUuid } from '@compliance-theater/typescript';
 import { ObjectRepository } from '../_types';
 import {

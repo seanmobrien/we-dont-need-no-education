@@ -1,4 +1,4 @@
-import type { Session } from '@compliance-theater/types/next-auth';
+import type { Session } from '@compliance-theater/auth-compat';
   /**
    * Determines whether a signed-in user is authorized to access (read and/or write) another user's resources.
    *

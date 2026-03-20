@@ -8,12 +8,27 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "workspace-source": "./src/index.ts",
+      "development": "./src/index.ts",
       "default": "./dist/index.js"
+    },
+    "./service-registrar/browser": {
+      "types": "./dist/service-registrar.browser.d.ts",
+      "development": "./src/service-registrar.browser.ts",
+      "default": "./dist/service-registrar.browser.js"
+    },
+    "./service-registrar/node": {
+      "types": "./dist/service-registrar.node.d.ts",
+      "development": "./src/service-registrar.node.ts",
+      "default": "./dist/service-registrar.node.js"
+    },
+    "./errors/logged-error": {
+      "types": "./dist/errors/logged-error/index.d.ts",
+      "development": "./src/errors/logged-error/index.ts",
+      "default": "./dist/errors/logged-error/index.js"
     },
     "./*": {
       "types": "./dist/*.d.ts",
-      "workspace-source": "./src/*",
+      "development": "./src/*",
       "default": "./dist/*.js"
     }
   },
@@ -27,13 +42,14 @@
   "scripts": {
     "add": "yarn workspace @compliance-theater/logger add ",
     "build": "yarn run build:typescript",
-    "build:typescript": "echo 'Building @compliance-theater/logger...' && tsc -b tsconfig.json && printf '\u001b[1;32mBuild complete: @compliance-theater/logger.\u001b[0m\n' || (printf '\u001b[31mBuild failed: @compliance-theater/logger.\u001b[0m\n' >&2; exit 1)",
+    "build:typescript": "echo 'Building @compliance-theater/logger...' && tsc -b tsconfig.json && echo '\u001b[1;32mBuild complete: @compliance-theater/logger.\u001b[0m\n' || (echo '\u001b[31mBuild failed: @compliance-theater/logger.\u001b[0m\n' >&2; exit 1)",
     "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-logger.tgz",
     "test": "jest",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
+    "@compliance-theater/auth-compat": "workspace:*",
     "@compliance-theater/types": "workspace:*",
     "@opentelemetry/api": "1.9.0",
     "@opentelemetry/api-logs": "0.57.2",
@@ -43,14 +59,22 @@
     "react-native": "^0.84.0"
   },
   "peerDependencies": {
+    "next": "^15.5.12",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "3.25.76"
   },
   "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    },
     "react": {
       "optional": true
     },
     "react-dom": {
+      "optional": true
+    },
+    "zod": {
       "optional": true
     }
   },
@@ -58,6 +82,8 @@
     "@playwright/test": "^1.55.0",
     "@swc/core": "^1.13.5",
     "@swc/jest": "^0.2.39",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
     "@types/jest": "^30.0.0",
     "@types/node": "25.2.3",
@@ -73,6 +99,8 @@
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
     "postcss": "^8.5.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3"
   }

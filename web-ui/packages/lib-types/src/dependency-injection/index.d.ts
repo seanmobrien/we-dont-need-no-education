@@ -49,6 +49,7 @@ export {
     getServiceContainer,
     registerServices,
     resolveService,
+    resetRuntime,
 } from './container';
 
 // ── Re-exported Awilix Utilities ───────────────────────────────────────────

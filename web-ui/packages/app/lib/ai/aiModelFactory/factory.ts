@@ -25,8 +25,7 @@ import { tokenStatsLoggingOnlyMiddleware } from '../middleware/tokenStatsTrackin
 import { MiddlewareStateManager } from '../middleware/state-management';
 
 import {
-  isNotNull,
-  isPromise
+  isNotNull
 } from '@compliance-theater/typescript';
 import {
   globalRequiredSingleton,
@@ -373,11 +372,12 @@ export const getProviderRegistry = async () => {
         // on occasion.  At some point we'll need to track down that bug, bug for now
         // a little defensive programming will get us running and give us flexibility
         // to handle interface changes in the future.
-        if (isPromise(flag)) {
-          await flag.then(setupChangeEvent);
-        } else {
-          setupChangeEvent(flag);
-        }
+        const resolvedFlag = await Promise.resolve(
+          flag as
+            | AutoRefreshFeatureFlag<KnownFeatureType>
+            | Promise<AutoRefreshFeatureFlag<KnownFeatureType>>
+        );
+        setupChangeEvent(resolvedFlag);
       })
     );
     const providers: Record<string, ProviderV2> = {};

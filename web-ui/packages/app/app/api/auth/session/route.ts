@@ -9,7 +9,7 @@
  * is evaluated on each request.
  */
 
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { getActiveUserPublicKeys } from '@compliance-theater/auth/lib/utilities/user-keys-server';
 import { isSessionActive } from '@compliance-theater/auth/lib/utilities';
@@ -54,3 +54,4 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
     publicKeys: keys,
   });
 };
+

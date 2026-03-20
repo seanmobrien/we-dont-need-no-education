@@ -323,25 +323,6 @@ export class LoggedError extends Error {
         }
       }
     });
-    if (
-      isError(this[INNER_ERROR].cause) &&
-      (this[INNER_ERROR].cause.name === 'PostgresError'
-        || this[INNER_ERROR].cause.name === 'DrizzleError')
-    ) {
-      Object.entries(this[INNER_ERROR]).forEach(([key, value]) => {
-        try {
-          if (!(key in this) && !!value && typeof value !== 'function') {
-            if (typeof key === 'string' || typeof key === 'symbol') {
-              if (!this[key as string | symbol]) {
-                this[key as string | symbol] = value;
-              }
-            }
-          }
-        } catch {
-          // supress error on error
-        }
-      });
-    }
     this[brandLoggedError] = true;
   }
 
@@ -380,7 +361,7 @@ export class LoggedError extends Error {
   }
   // The stack trace of the error.
   get stack(): string {
-    return this[INNER_ERROR].stack ?? 'no stack trace available';
+    return this[INNER_ERROR].stack!;
   }
   // The error message.
   get message(): string {

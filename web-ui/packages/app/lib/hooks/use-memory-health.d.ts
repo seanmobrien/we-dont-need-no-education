@@ -4,7 +4,7 @@
  */
 
 declare module '@/lib/hooks/use-memory-health' {
-  import type { UseQueryResult } from '@tanstack/react-query';
+  import type { UseQueryResult } from '@compliance-theater/react-query-compat';
   import type { HealthCheckResult } from './types';
 
   /**

@@ -228,6 +228,10 @@ jobs:
             MEM0_UI_HOST=${{ vars.MEM0_UI_HOST }}
             MEM0_USERNAME=${{ vars.MEM0_USERNAME }}
             NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
+            TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}
+            TURBO_TEAM=${{ secrets.TURBO_TEAM }}
+            TURBO_API=${{ secrets.TURBO_API }}
+            TURBO_REMOTE_CACHE_SIGNATURE_KEY=${{ secrets.TURBO_REMOTE_CACHE_SIGNATURE_KEY }}
           secrets: |
             AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
             DATABASE_URL=${{ secrets.DATABASE_URL }}

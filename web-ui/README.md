@@ -71,7 +71,7 @@ As part of the ongoing monorepo refactoring, the following packages will be extr
 - **`data-models`** - TypeScript data models and type definitions
 - **`test-utils`** - Shared test utilities, mocks, and fixtures
 
-See [MONOREPO_GUIDE.md](../MONOREPO_GUIDE.md) for the complete refactoring plan.
+See [MONOREPO_GUIDE.md](../docs/MONOREPO_GUIDE.md) for the complete refactoring plan.
 
 ## Workspace Commands
 
@@ -119,7 +119,7 @@ yarn add -D package-name
 ## Links
 
 - **Main Application**: [packages/app/README.md](./packages/app/README.md)
-- **Monorepo Migration Guide**: [../MONOREPO_GUIDE.md](../MONOREPO_GUIDE.md)
+- **Monorepo Migration Guide**: [../docs/MONOREPO_GUIDE.md](../docs/MONOREPO_GUIDE.md)
 - **Root README**: [../README.md](../README.md)
 
 ## Contributing

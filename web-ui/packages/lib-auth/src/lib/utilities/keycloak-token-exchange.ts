@@ -1,6 +1,7 @@
 /* global AbortController */
 
-import { getToken } from '@compliance-theater/types/next-auth/jwt';
+import { getToken } from '@compliance-theater/auth-compat/runtime';
+import type { JWT } from '@compliance-theater/auth-compat';
 import { NextRequest } from 'next/server';
 import type { NextApiRequest } from 'next';
 import { env } from '@compliance-theater/env';
@@ -119,7 +120,7 @@ export class KeycloakTokenExchange {
       const token = await getToken({
         req: req as NextRequest,
         secret: process.env.NEXTAUTH_SECRET,
-      });
+      }) as JWT | null;
 
       if (!token) {
         throw new TokenExchangeError(

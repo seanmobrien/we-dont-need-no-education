@@ -17,5 +17,5 @@ export const resolveFetchService = (): FetchFn => {
         return globalThis.fetch.bind(globalThis) as FetchFn;
     }
 
-    throw new Error('fetch-service is not registered and global fetch is unavailable');
+    throw new Error('fetch is not registered and global fetch is unavailable');
 };

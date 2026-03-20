@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@compliance-theater/react-query-compat/runtime';
 import type { EmailMessage } from '@/data-models';
 import { getEmail, writeEmailRecord } from '@/lib/api/client';
 import { LoggedError } from '@compliance-theater/logger';

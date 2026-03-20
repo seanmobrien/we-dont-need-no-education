@@ -4,17 +4,21 @@ import type {
   DefaultSession,
   Session,
   NextAuthConfig,
-} from '@compliance-theater/types/next-auth';
-import type { Awaitable, Profile } from '@compliance-theater/types/auth-core/types';
-
-import NextAuth, { type NextAuthResult } from '@compliance-theater/types/next-auth'; // Added NextAuthConfig
-import type { Adapter, AdapterSession, AdapterUser } from '@compliance-theater/types/auth-core/adapters';
-import type { CredentialInput, Provider } from '@compliance-theater/types/auth-core/providers';
+  Awaitable,
+  Profile,
+  NextAuthResult,
+  Adapter,
+  AdapterSession,
+  AdapterUser,
+  CredentialInput,
+  Provider,
+  JWT,
+} from '@compliance-theater/auth-compat';
+import { createNextAuth } from '@compliance-theater/auth-compat/runtime';
 import { isRunningOnEdge, env } from '@compliance-theater/env';
 import { logEvent } from '@compliance-theater/logger';
 
 import { setupKeyCloakProvider } from './lib/keycloak-provider';
-import type { JWT } from '@compliance-theater/types/next-auth/jwt';
 
 type AuthorizedFn = (params: {
   /** The request to be authorized. */
@@ -147,7 +151,7 @@ export const providerMap = providers.map((provider) => {
   return { id: provider.id, name: provider.name };
 });
 
-const nextAuthResult: NextAuthResult = NextAuth(async () => {
+const nextAuthResult: NextAuthResult = createNextAuth(async () => {
   // Added NextAuthConfig return type
   let adapter: Adapter | undefined;
 

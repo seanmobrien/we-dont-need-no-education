@@ -1,12 +1,12 @@
-import { DrizzleAdapter } from '@auth/drizzle-adapter';
+import type { Adapter, AdapterAccount } from '@compliance-theater/auth-compat';
+import { createDrizzleAdapter } from '@compliance-theater/auth-compat/runtime';
 import { log } from '@compliance-theater/logger';
 import { schema, drizDbWithInit } from '@compliance-theater/database/orm';
-import { Adapter, AdapterAccount } from '@compliance-theater/types/auth-core/adapters';
 import { and, sql } from '@compliance-theater/database/drizzle-orm';
 
 export const setupDrizzleAdapter = (): Promise<Adapter> =>
   drizDbWithInit((db) => {
-    const ret = (DrizzleAdapter as any)(db, {
+    const ret = createDrizzleAdapter(db, {
       usersTable: schema.users as any,
       accountsTable: schema.accounts as any,
       sessionsTable: schema.sessions as any,
@@ -36,6 +36,5 @@ export const setupDrizzleAdapter = (): Promise<Adapter> =>
           ),
         });
     };
-
-    return ret as Adapter;
+    return ret;
   });

@@ -11,6 +11,7 @@ import { ThemeProvider as MuiThemeProvider } from "@mui/material/styles";
 import type { ThemeType, ThemeContextType } from "./types";
 import { themes } from "./definitions";
 import { log } from "@compliance-theater/logger";
+import type { ILogger } from "@compliance-theater/logger";
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
@@ -61,7 +62,7 @@ export const ThemeProvider = ({
 
   const setTheme = useCallback(
     (theme: ThemeType) => {
-      log((l) => l.debug(`setTheme called with: ${theme}`));
+      log((l: ILogger) => l.debug(`setTheme called with: ${theme}`));
       if (theme === currentTheme) {
         return; // Skip redundant updates
       }

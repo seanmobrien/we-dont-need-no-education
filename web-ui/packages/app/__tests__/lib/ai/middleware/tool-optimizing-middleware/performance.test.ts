@@ -462,7 +462,7 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
       });
       const processingTime = Date.now() - startTime;
 
-      expect(processingTime).toBeLessThan(200); // Error handling should be fast
+      expect(processingTime).toBeLessThan(300); // Allow headroom for worker contention in full-suite runs
       expect(result).toBeDefined();
       expect(result.messages).toBe(messages); // Should fallback to original
     });

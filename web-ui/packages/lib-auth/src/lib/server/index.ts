@@ -6,6 +6,7 @@ export * from '../index';
 // And layer server exports on top
 export * from './get-account-tokens';
 export * from './update-account-tokens';
+export * from './user-signing-keys-service';
 
 // Impersonation
 export * from '../impersonation';

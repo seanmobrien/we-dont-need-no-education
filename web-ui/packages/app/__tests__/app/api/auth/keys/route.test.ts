@@ -1,267 +1,109 @@
 /* @jest-environment node */
 
-/**
- *
- * @fileoverview Tests for the auth keys API endpoint
- *
- * Tests the POST and GET endpoints for managing user public keys,
- * including validation, authentication, and database operations.
- *
- * @module __tests__/app/api/auth/keys/route.test.ts
- */
-
-/*
-
-jest.mock('@compliance-theater/database/orm', () => {
-  const actualSchema = jest.requireActual('@compliance-theater/database/orm');
-  return {
-    ...actualSchema,
-    drizDb: jest.fn(),
-    schema: actualSchema.schema,
-  };
-});
-*/
-
-// jest.mock('@compliance-theater/logger');
-/*
-jest.mock('@/lib/react-util', () => ({
-  LoggedError: {
-    isTurtlesAllTheWayDownBaby: jest.fn((error) => error),
-  },
-}));
-*/
-
 import { NextRequest } from 'next/server';
-import { DbDatabaseType, drizDb } from '@compliance-theater/database/orm';
+import type { IUserSigningKeysService } from '@compliance-theater/types';
+import { getServiceContainer } from '@compliance-theater/types/dependency-injection';
+import { ApiRequestError } from '@compliance-theater/send-api-request';
+
 import { POST, GET } from '../../../../../app/api/auth/keys/route';
-import { hideConsoleOutput } from '../../../../shared/test-utils';
 import { withJestTestExtensions } from '../../../../shared/jest.test-extensions';
 
-/*
-// const mockAuth = auth as jest.MockedFunction<typeof auth>;
-const mockDrizDb = withJestTestExtensions
+describe('/api/auth/keys route wrappers', () => {
+  let signingKeysService: jest.Mocked<IUserSigningKeysService>;
 
-
-//drizDb as jest.MockedFunction<typeof drizDb>;
-
-// Mock database instance
-const mockDbInstance = {
-  query: {
-    userPublicKeys: {
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-    },
-  },
-  insert: jest.fn(),
-};
-
-mockDrizDb.mockReturnValue(mockDbInstance as any);
-*/
-
-
-describe('/api/auth/keys', () => {
-
-  let mockDbInstance: jest.Mocked<DbDatabaseType>;
-  const consoleSpy = hideConsoleOutput();
+  const createMockRequest = (body: unknown) => {
+    return {
+      json: jest.fn().mockResolvedValue(body),
+    } as unknown as NextRequest;
+  };
 
   beforeEach(() => {
-    mockDbInstance = drizDb() as jest.Mocked<DbDatabaseType>;
+    signingKeysService = getServiceContainer().resolve<IUserSigningKeysService>(
+      'userSigningKeys',
+    ) as jest.Mocked<IUserSigningKeysService>;
   });
 
-  describe('POST - Upload public key', () => {
-    // A proper RSA public key in SPKI format (base64 encoded) - valid 512-bit test key
-    const validPublicKey =
-      'MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBALWGOW2ovUQ2hlsk+LbLFV/q3tNF4vAnCvaBVqqLsVlaZ8ZcWlpr59aj2J0zFGpqLBWtjZl/FgXWWlZHMa+o73sCAwEAAQ==';
+  describe('POST', () => {
+    it('returns 401 when no authenticated user is present', async () => {
+      withJestTestExtensions().session = null;
 
-    const createMockRequest = (body: any) => {
-      return {
-        json: jest.fn().mockResolvedValue(body),
-      } as unknown as NextRequest;
-    };
+      const response = await POST(createMockRequest({ publicKey: 'key' }));
 
-    it('should successfully upload a new public key', async () => {
-      // Mock authenticated session
+      expect(response.status).toBe(401);
+      await expect(response.json()).resolves.toEqual({
+        success: false,
+        error: 'Authentication required',
+      });
+    });
+
+    it('delegates upload parsing and processing to the signing key service', async () => {
       withJestTestExtensions().session!.user!.id = String(123);
-
-      // Mock no existing key
-      (mockDbInstance.query.userPublicKeys.findFirst as jest.Mock).mockResolvedValue(null);
-
-      // Mock successful insertion - proper Drizzle chain: insert(table).values(data).returning(cols)
-      const returningMock = jest.fn().mockResolvedValue([
-        {
-          id: 1,
-          effectiveDate: '2024-01-01T00:00:00Z',
-          expirationDate: '2025-01-01T00:00:00Z',
-        },
-      ]);
-
-      const valuesMock = jest.fn().mockReturnValue({
-        returning: returningMock,
+      signingKeysService.getUploadRequest.mockResolvedValue({
+        userId: 123,
+        publicKey: 'uploaded-key',
+      });
+      signingKeysService.processKeyRequest.mockResolvedValue({
+        success: true,
+        message: 'Public key registered successfully',
+        keyId: 1,
+        effectiveDate: '2024-01-01T00:00:00Z',
+        expirationDate: '2025-01-01T00:00:00Z',
       });
 
-      // Mock insert as a function that accepts a table parameter and returns the values chain
-      mockDbInstance.insert.mockImplementation(() => ({
-        values: valuesMock,
-        // es-lint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any));
-
-      const request = createMockRequest({ publicKey: validPublicKey });
+      const request = createMockRequest({ publicKey: 'uploaded-key' });
       const response = await POST(request);
 
-      expect(response.status).toBe(200);
-
-      const responseData = await response.json();
-      expect(responseData).toMatchObject({
+      expect(signingKeysService.getUploadRequest).toHaveBeenCalledWith(
+        withJestTestExtensions().session!.user,
+        request,
+      );
+      expect(signingKeysService.processKeyRequest).toHaveBeenCalledWith({
+        userId: 123,
+        publicKey: 'uploaded-key',
+      });
+      await expect(response.json()).resolves.toMatchObject({
         success: true,
         message: 'Public key registered successfully',
         keyId: 1,
       });
     });
 
-    it('should return 401 when not authenticated', async () => {
+    it('returns service-provided ApiRequestError responses', async () => {
+      withJestTestExtensions().session!.user!.id = String(123);
+      signingKeysService.getUploadRequest.mockRejectedValue(
+        new ApiRequestError(
+          'Invalid request format',
+          Response.json(
+            { success: false, error: 'Invalid request format' },
+            { status: 400 },
+          ),
+        ),
+      );
+
+      const response = await POST(createMockRequest({}));
+
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toEqual({
+        success: false,
+        error: 'Invalid request format',
+      });
+    });
+  });
+
+  describe('GET', () => {
+    it('returns 401 when no authenticated user is present', async () => {
       withJestTestExtensions().session = null;
 
-      const request = createMockRequest({ publicKey: validPublicKey });
-      const response = await POST(request);
+      const response = await GET();
 
       expect(response.status).toBe(401);
-
-      const responseData = await response.json();
-      expect(responseData).toEqual({
+      await expect(response.json()).resolves.toEqual({
         success: false,
         error: 'Authentication required',
       });
     });
 
-    it('should return 400 for invalid request format', async () => {
-      withJestTestExtensions().session!.user!.id = String(123);
-
-      const request = createMockRequest({}); // Missing publicKey
-      const response = await POST(request);
-
-      expect(response.status).toBe(400);
-
-      const responseData = await response.json();
-      expect(responseData).toEqual({
-        success: false,
-        error: 'Invalid request format',
-      });
-    });
-
-    it('should return 400 for invalid user ID', async () => {
-      withJestTestExtensions().session!.user!.id = 'invalid-id';
-
-      const request = createMockRequest({ publicKey: validPublicKey });
-      const response = await POST(request);
-
-      expect(response.status).toBe(400);
-
-      const responseData = await response.json();
-      expect(responseData).toEqual({
-        success: false,
-        error: 'Invalid user ID',
-      });
-    });
-
-    it('should return 400 for invalid public key format', async () => {
-      withJestTestExtensions().session!.user!.id = String(123);
-
-      const request = createMockRequest({ publicKey: 'invalid-key' });
-      const response = await POST(request);
-
-      expect(response.status).toBe(400);
-
-      const responseData = await response.json();
-      expect(responseData).toEqual({
-        success: false,
-        error: 'Invalid public key format',
-      });
-    });
-
-    it('should return success when key already exists', async () => {
-      withJestTestExtensions().session!.user!.id = String(123);
-
-      // Mock existing key
-      (mockDbInstance.query.userPublicKeys.findFirst as jest.Mock).mockResolvedValue({
-        id: 1,
-        publicKey: validPublicKey,
-        userId: '123',
-      });
-
-      const request = createMockRequest({ publicKey: validPublicKey });
-      const response = await POST(request);
-
-      expect(response.status).toBe(200);
-
-      const responseData = await response.json();
-      expect(responseData).toMatchObject({
-        success: true,
-        message: 'Public key already registered',
-        keyId: 1,
-      });
-    });
-
-    it('should handle database errors gracefully', async () => {
-      consoleSpy.setup();
-      withJestTestExtensions().session!.user!.id = String(123);
-
-      // Mock database error
-      (mockDbInstance.query.userPublicKeys.findFirst as jest.Mock).mockRejectedValue(
-        new Error('Database connection failed'),
-      );
-
-      const request = createMockRequest({ publicKey: validPublicKey });
-      const response = await POST(request);
-
-      expect(response.status).toBe(500);
-
-      const responseData = await response.json();
-      expect(responseData).toEqual({
-        success: false,
-        error: 'Internal server error',
-      });
-    });
-
-    it('should handle custom expiration date', async () => {
-      withJestTestExtensions().session!.user!.id = String(123);
-
-      (mockDbInstance.query.userPublicKeys.findFirst as jest.Mock).mockResolvedValue(null);
-
-      const returningMock = jest.fn().mockResolvedValue([
-        {
-          id: 1,
-          effectiveDate: '2024-01-01T00:00:00Z',
-          expirationDate: '2024-06-01T00:00:00Z',
-        },
-      ]);
-
-      const valuesMock = jest.fn().mockReturnValue({
-        returning: returningMock,
-      });
-
-      (mockDbInstance.insert as jest.Mock).mockImplementation(() => ({
-        values: valuesMock,
-      }));
-
-      const customExpirationDate = '2024-06-01T00:00:00Z';
-      const request = createMockRequest({
-        publicKey: validPublicKey,
-        expirationDate: customExpirationDate,
-      });
-
-      const response = await POST(request);
-
-      expect(response.status).toBe(200);
-
-      const responseData = await response.json();
-      expect(responseData.expirationDate).toBe('2024-06-01T00:00:00Z');
-    });
-  });
-
-  describe('GET - Retrieve user public keys', () => {
-    it('should return user public keys when authenticated', async () => {
-      withJestTestExtensions().session!.user!.id = String(123);
-
+    it('delegates key lookup to the signing key service', async () => {
       const mockKeys = [
         {
           id: 1,
@@ -270,91 +112,41 @@ describe('/api/auth/keys', () => {
           expirationDate: '2025-01-01T00:00:00Z',
           createdAt: '2024-01-01T00:00:00Z',
         },
-        {
-          id: 2,
-          publicKey: 'key2',
-          effectiveDate: '2024-02-01T00:00:00Z',
-          expirationDate: null,
-          createdAt: '2024-02-01T00:00:00Z',
-        },
       ];
 
-      (mockDbInstance.query.userPublicKeys.findMany as jest.Mock).mockResolvedValue(mockKeys);
+      withJestTestExtensions().session!.user!.id = String(123);
+      signingKeysService.getKeys.mockResolvedValue(mockKeys);
 
       const response = await GET();
 
-      expect(response.status).toBe(200);
-
-      const responseData = await response.json();
-      expect(responseData).toEqual({
+      expect(signingKeysService.getKeys).toHaveBeenCalledWith(
+        withJestTestExtensions().session!.user,
+      );
+      await expect(response.json()).resolves.toEqual({
         success: true,
         keys: mockKeys,
-        count: 2,
+        count: 1,
       });
     });
 
-    it('should return 401 when not authenticated', async () => {
-      withJestTestExtensions().session = null;
-
-      const response = await GET();
-
-      expect(response.status).toBe(401);
-
-      const responseData = await response.json();
-      expect(responseData).toEqual({
-        success: false,
-        error: 'Authentication required',
-      });
-    });
-
-    it('should return 400 for invalid user ID', async () => {
-      withJestTestExtensions().session!.user!.id = 'invalid-id';
-
-      const response = await GET();
-
-      expect(response.status).toBe(400);
-
-      const responseData = await response.json();
-      expect(responseData).toEqual({
-        success: false,
-        error: 'Invalid user ID',
-      });
-    });
-
-    it('should return empty array when no keys exist', async () => {
+    it('returns service-provided ApiRequestError responses', async () => {
       withJestTestExtensions().session!.user!.id = String(123);
-
-      (mockDbInstance.query.userPublicKeys.findMany as jest.Mock).mockResolvedValue([]);
-
-      const response = await GET();
-
-      expect(response.status).toBe(200);
-
-      const responseData = await response.json();
-      expect(responseData).toEqual({
-        success: true,
-        keys: [],
-        count: 0,
-      });
-    });
-
-    it('should handle database errors gracefully', async () => {
-      consoleSpy.setup();
-
-      withJestTestExtensions().session!.user!.id = String(123);
-
-      (mockDbInstance.query.userPublicKeys.findMany as jest.Mock).mockRejectedValue(
-        new Error('Database connection failed'),
+      signingKeysService.getKeys.mockRejectedValue(
+        new ApiRequestError(
+          'Invalid user ID',
+          Response.json(
+            { success: false, error: 'Invalid user ID' },
+            { status: 400 },
+          ),
+        ),
       );
 
       const response = await GET();
 
-      expect(response.status).toBe(500);
-
-      const responseData = await response.json();
-      expect(responseData).toEqual({
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toEqual({
         success: false,
-        error: 'Internal server error',
+        error: 'Invalid user ID',
       });
     });
   });

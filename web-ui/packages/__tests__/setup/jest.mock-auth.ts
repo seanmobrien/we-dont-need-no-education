@@ -2,7 +2,7 @@
 import { withJestTestExtensions } from '../jest.test-extensions';
 
 
-jest.mock('@compliance-theater/types/auth-core/jwt', () => {
+jest.mock('@compliance-theater/auth-compat/runtime', () => {
   return {
     __esModule: true,
     getToken: jest.fn(),
@@ -14,13 +14,6 @@ jest.mock('@compliance-theater/types/auth-core/jwt', () => {
   };
 });
 
-jest.mock('@compliance-theater/types/next-auth/jwt', () => {
-  const theActualModule = jest.requireMock('@compliance-theater/types/auth-core/jwt');
-  return {
-    __esModule: true,
-    ...theActualModule,
-  };
-});
 
 
 jest.mock('@compliance-theater/auth/auth', () => {
@@ -54,7 +47,7 @@ jest.mock('@compliance-theater/auth', () => {
 });
 
 // import modules to pin the mocks above
-import { getToken } from '@compliance-theater/types/auth-core/jwt';
-import { getToken as getAnotherToken } from '@compliance-theater/types/next-auth/jwt';
+import { getToken } from '@compliance-theater/auth-compat/runtime';
+import { getToken as getAnotherToken } from '@compliance-theater/auth-compat/runtime';
 import { auth as moreAuth } from '@compliance-theater/auth/auth';
 import { auth } from '@compliance-theater/auth';

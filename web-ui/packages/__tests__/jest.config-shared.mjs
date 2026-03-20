@@ -14,9 +14,6 @@ const swcTransform = ['@swc/jest', {
     type: 'commonjs',
   },
 }];
-const tanstackReactQueryPath = '../../node_modules/@tanstack/react-query'
-
-
 /**
  * @template { ConfigType } TConfig
  * @typedef { keyof ConfigType } ConfigTypeKey
@@ -131,8 +128,6 @@ const config = {
     '^react-dom$': '<rootDir>/../../node_modules/react-dom/index.js',
     '^react/jsx-runtime$': '<rootDir>/../../node_modules/react/jsx-runtime.js',
     '^react/jsx-dev-runtime$': '<rootDir>/../../node_modules/react/jsx-dev-runtime.js',
-    // Map tanstack react-query to the resolved path to ensure consistent module resolution across packages and workspaces
-    // '^@tanstack/react-query$': tanstackReactQueryPath,
     // All material UI icons are served by a single mock
     '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx', // Mock all MUI icons to a singular mock    
     // Prexit module mock

@@ -1,7 +1,6 @@
-import { getToken, type JWT } from '@compliance-theater/types/next-auth/jwt';
-import { env } from '@compliance-theater/env';
-
-export const KnownScopeValues = ['mcp-tool:read', 'mcp-tool:write'] as const;
+import { getToken } from '@compliance-theater/auth-compat/runtime';
+import type { JWT } from '@compliance-theater/auth-compat';
+import { env } from '@compliance-theater/env';export const KnownScopeValues = ['mcp-tool:read', 'mcp-tool:write'] as const;
 export type KnownScope = (typeof KnownScopeValues)[number];
 export const KnownScopeIndex = {
     ToolRead: 0,
@@ -18,16 +17,12 @@ const REQUEST_DECODED_TOKEN: unique symbol = Symbol.for(
 );
 type RequestWithToken = RequestHeadersOnly & {
     [REQUEST_DECODED_TOKEN]?: JWT;
-};
-
-export const SessionTokenKey = (): string => {
+};export const SessionTokenKey = (): string => {
     const url = new URL(env('NEXT_PUBLIC_HOSTNAME'));
     return (
         (url.protocol === 'https:' ? '__Secure-' : '') + 'authjs.session-token'
     );
-};
-
-export const extractToken = async (req: RequestHeadersOnly): Promise<JWT | null> => {
+};export const extractToken = async (req: RequestHeadersOnly): Promise<JWT | null> => {
     const check = (req as RequestWithToken)?.[REQUEST_DECODED_TOKEN];
     if (check) {
         return check;
@@ -38,19 +33,19 @@ export const extractToken = async (req: RequestHeadersOnly): Promise<JWT | null>
         const ret =
             check ??
             (await getToken({
-                req: req,
+                req: req as Request,
                 secret: shh,
                 salt: sessionTokenKey,
             })) ??
             (await getToken({
-                req: req,
+                req: req as Request,
                 secret: shh,
                 salt: `bearer-token`,
             }));
         if (ret && req) {
-            (req as RequestWithToken)[REQUEST_DECODED_TOKEN] = ret;
+            (req as RequestWithToken)[REQUEST_DECODED_TOKEN] = ret as JWT;
         }
-        return ret;
+        return ret as JWT | null;
     } catch (error) {
         try {
             // Delay-load loggederror to prevent circular dependency

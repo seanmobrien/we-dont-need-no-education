@@ -18,7 +18,7 @@ import {
   useQueryClient,
   QueryClient,
   // QueryClient,
-} from '@tanstack/react-query';
+} from '@compliance-theater/react-query-compat/runtime';
 // import { has } from 'lodash';
 
 /**

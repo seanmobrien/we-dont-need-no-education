@@ -8,5 +8,5 @@ Then load folder-specific guidance:
 - Java/backend: `./java.md`
 
 Repository docs:
-- Monorepo structure: `../../MONOREPO_GUIDE.md`
+- Monorepo structure: `../../docs/MONOREPO_GUIDE.md`
 - Root overview: `../../README.md`

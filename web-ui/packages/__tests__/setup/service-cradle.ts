@@ -1,5 +1,6 @@
 import type { IAfterManager, IAppStartupManager, StartupAccessorCallbackRegistration } from "@compliance-theater/types/after";
 import type { IAccessTokenService, IAuthSessionService, IImpersonationService, ITokenExchangeService } from "@compliance-theater/types/lib/auth/services";
+import type { IUserSigningKeysService } from "@compliance-theater/types/lib/auth/service";
 import type { IFetchService } from "@compliance-theater/types/lib/fetch";
 import type { ISingletonProvider } from "@compliance-theater/types/lib/logger/singleton-provider";
 
@@ -11,6 +12,7 @@ export type {
     IAuthSessionService,
     IImpersonationService,
     ITokenExchangeService,
+    IUserSigningKeysService,
     IFetchService,
     ISingletonProvider,
 };
@@ -23,6 +25,7 @@ export interface ServiceCradle extends Record<string | number | symbol, unknown>
     impersonation: IImpersonationService;
     accessTokens: IAccessTokenService;
     exchangeTokens: ITokenExchangeService;
+    userSigningKeys: IUserSigningKeysService;
     startup: IAppStartupManager;
     after: IAfterManager;
     singleton: ISingletonProvider;
@@ -76,6 +79,20 @@ const mockTokenExchangeServiceFactory = (): ITokenExchangeService => ({
     getGoogleTokensFromKeycloak: jest.fn(async () => ({
         access_token: 'mock-google-access-token',
         refresh_token: 'mock-google-refresh-token',
+    })),
+});
+const mockUserSigningKeysServiceFactory = (): IUserSigningKeysService => ({
+    getKeys: jest.fn(async () => []),
+    getUploadRequest: jest.fn(async () => ({
+        userId: 123,
+        publicKey: 'mock-public-key',
+    })),
+    processKeyRequest: jest.fn(async () => ({
+        success: true,
+        message: 'Public key registered successfully',
+        keyId: 1,
+        effectiveDate: '2024-01-01T00:00:00.000Z',
+        expirationDate: '2025-01-01T00:00:00.000Z',
     })),
 });
 const mockAppStartupManagerFactory = (): IAppStartupManager => ({
@@ -174,6 +191,7 @@ const ServiceFactoryMap: Record<string, () => unknown> = {
     impersonation: mockImpersonationServiceFactory,
     accessTokens: mockAccessTokenServiceFactory,
     exchangeTokens: mockTokenExchangeServiceFactory,
+    userSigningKeys: mockUserSigningKeysServiceFactory,
     startup: mockAppStartupManagerFactory,
     after: mockAfterManagerFactory,
     singleton: mockSingletonProviderFactory

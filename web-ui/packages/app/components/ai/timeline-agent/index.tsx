@@ -33,7 +33,7 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import Refresh from '@mui/icons-material/Refresh';
 import Save from '@mui/icons-material/Save';
 import Upload from '@mui/icons-material/Upload';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation } from '@compliance-theater/react-query-compat/runtime';
 import { TimelineAgent } from '@/lib/ai/agents/timeline';
 import {
   TimelineSummary,

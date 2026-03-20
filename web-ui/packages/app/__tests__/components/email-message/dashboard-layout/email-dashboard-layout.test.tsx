@@ -155,7 +155,7 @@ jest.mock('../../../../components/email-message/dashboard-layout/branding', () =
 }));
 
 import { EmailDashboardLayout } from '../../../../components/email-message/dashboard-layout/email-dashboard-layout';
-import type { Session } from '@compliance-theater/types/auth-core/types';
+import type { Session } from '@compliance-theater/auth-compat';
 import { usePathname } from 'next/navigation';
 import { ThemeSelector } from '@compliance-theater/themes';
 

@@ -1,5 +1,3 @@
-/* global RequestInit */
-
 import type { IFetchService } from '@compliance-theater/types/lib/fetch';
 
 import { fetch as browserFetch } from './fetch';
@@ -18,6 +16,8 @@ export const fetch = createFetch({
 export const fetchServiceFactory: () => IFetchService = () => ({
     fetch,
 });
+
+export { default as ServiceRegistrar } from './service-registrar.browser';
 
 // This package is a foundational dependency; register immediately for downstream services.
 registerFetchService(runtimeFetch);

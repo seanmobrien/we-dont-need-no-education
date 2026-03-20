@@ -1,10 +1,9 @@
-import type { JWT } from '@compliance-theater/types/next-auth/jwt';
+import type { JWT, Session } from '@compliance-theater/auth-compat';
 //import type { SessionWithAccountId } from '../types';
-import type { Session } from '@compliance-theater/types/auth-core/types';
-type SessionWithAccountId = Session;
-
 import { LoggedError } from '@compliance-theater/logger';
 import { decodeToken } from '../utilities/decode-token';
+
+type SessionWithAccountId = Session;
 
 export const setupSession = async ({
   session: sessionFromProps,

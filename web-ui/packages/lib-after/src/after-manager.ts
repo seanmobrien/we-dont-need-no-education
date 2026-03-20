@@ -1,4 +1,5 @@
 import { log, LoggedError, singletonProviderFactory } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 import type { IAfterManager, TAfterHandler } from '@compliance-theater/types/after';
 
 const AFTER_MANAGER_KEY = Symbol.for('@noeducation/after-manager-instance');
@@ -191,7 +192,7 @@ export default class AfterManager implements IAfterManager {
         }
       }
       if (isBrandedObj || isBrandedArray) {
-        log((l) =>
+        log((l: ILogger) =>
           l.warn(
             `AfterManager ${signalName} timed out before all registered callbacks completed`,
           ),

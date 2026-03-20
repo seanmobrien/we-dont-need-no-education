@@ -1,0 +1,32 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"testing.automaticallyOpenTestResults": "neverOpen",
+		"typescript.tsdk": "node_modules/typescript/lib",
+		"typescript.disableAutomaticTypeAcquisition": true,
+		"typescript.tsserver.maxTsServerMemory": 4096,
+		"typescript.tsserver.watchOptions": {
+			"watchFile": "useFsEventsOnParentDirectory",
+			"watchDirectory": "useFsEvents",
+			"fallbackPolling": "dynamicPriority",
+			"excludeDirectories": [
+				"**/node_modules",
+				"**/.git",
+				"**/.next",
+				"**/.turbo",
+				"**/dist",
+				"**/coverage",
+				"**/*.worktrees",
+				"/attachments/**",
+				"/backups/**"
+			]
+		},
+		"git.ignoredRepositories": [
+			".*\\.worktrees"
+		]
+	}
+}

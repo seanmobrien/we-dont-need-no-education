@@ -8,13 +8,14 @@ import './globals.css';
 import QueryProvider from '@/components/general/react-query/query-provider';
 import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
-import { SessionProvider } from '@compliance-theater/auth/components/session-provider/index';
-import { KeyRefreshNotify } from '@compliance-theater/auth/components/key-refresh-notify/index';
+import { KeyRefreshNotify, SessionProvider } from '@compliance-theater/auth/client';
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 import { Suspense} from 'react';
 // import { cookies } from 'next/headers';
 import { FlagProvider } from '@compliance-theater/feature-flags/components/flag-provider';
 import { state } from '@compliance-theater/after/app-startup-state';
+import DiBootstrap from '@/components/general/di-bootstrap';
+import { ensureServerDiBootstrap } from '@/lib/bootstrap/di/server';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -45,6 +46,8 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  ensureServerDiBootstrap();
+
   // Guard against a shutdown app
   if (state() === 'done') {
     return (
@@ -74,6 +77,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <DiBootstrap />
         <InitColorSchemeScript defaultMode={themeName} />
         <QueryProvider>
           <SessionProvider>

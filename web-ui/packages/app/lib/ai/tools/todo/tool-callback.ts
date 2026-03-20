@@ -7,7 +7,7 @@ import { getTodoManager } from './todo-manager';
 import type { Todo, TodoList, TodoPriority, TodoStatus } from './types';
 import { SEQUENTIAL_THINKING_TOOL_NAME } from '@/lib/ai/tools/sequentialthinking/tool-callback';
 import z from 'zod';
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 
 // Zod schema for Todo serialization
 const TodoSchema = z.object({
@@ -589,3 +589,4 @@ export const toggleTodoConfig = {
     openWorldHint: false,
   },
 } as const;
+

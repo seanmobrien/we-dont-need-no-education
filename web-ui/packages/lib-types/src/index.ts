@@ -1,9 +1,3 @@
-// Include NextAuth/Auth.js module augmentations
-import type { } from './types/auth/core/index';
-import type { } from './types/auth/core/jwt';
-import type { } from './types/auth/core/types';
-import type { } from './types/next-auth';
-
 export { ValidKeyValidationStatusValues } from './components/auth/key-validation-status';
 export type { KeyValidationStatus } from './components/auth/key-validation-status';
 export type { SessionContextType } from './components/auth/session-context-type';
@@ -42,15 +36,15 @@ export {
 export { getStackTrace } from "./get-stack-trace";
 export { deprecate } from "./deprecate";
 
-// Re-export commonly used types from next-auth
+// Re-export commonly used auth types from auth-compat
 export type {
   Session,
   User,
   Account,
   AuthConfig,
-} from './auth-core/types';
-export type { JWT } from './auth-core/jwt';
-export type { Adapter } from './auth-core/adapters';
+} from '@compliance-theater/auth-compat';
+export type { JWT } from '@compliance-theater/auth-compat';
+export type { Adapter } from '@compliance-theater/auth-compat';
 export type {
   MessagePartPreservationRules,
   MetadataPreservationOptions,
@@ -100,10 +94,15 @@ export type {
   StartupAccessorCallbackRegistration,
 } from './after';
 export type {
+  AuthenticatedUserLike,
   IAuthSessionService,
   IImpersonationService,
   IAccessTokenService,
   ITokenExchangeService,
+  IUserSigningKeysService,
+  UserSigningKeyRecord,
+  UserSigningKeyUploadRequest,
+  UserSigningKeyUploadResult,
 } from './lib/auth';
 export { type EmittingDispose, withEmittingDispose } from './with-emitting-dispose';
 

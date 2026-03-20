@@ -10,7 +10,7 @@
 
 import type { ContactSummary } from '@/data-models/api/contact';
 import { query } from '@compliance-theater/database/driver';
-import { ValidationError } from '@compliance-theater/react/errors/validation-error';
+import { ValidationError } from '@compliance-theater/logger/errors/validation-error';
 
 /**
  * Maps a record to a summary object containing email details.

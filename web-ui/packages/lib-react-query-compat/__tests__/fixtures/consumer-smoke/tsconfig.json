@@ -1,0 +1,21 @@
+{
+  "extends": "../../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@compliance-theater/react-query-compat": [
+        "../../../dist/index.d.ts"
+      ],
+      "@compliance-theater/react-query-compat/runtime": [
+        "../../../dist/runtime.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "./index.tsx"
+  ],
+  "exclude": []
+}

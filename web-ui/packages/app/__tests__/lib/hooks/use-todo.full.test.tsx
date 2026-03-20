@@ -15,7 +15,7 @@ import {
   QueryClient,
   QueryClientProvider,
   useQueryClient,
-} from '@tanstack/react-query';
+} from '@compliance-theater/react-query-compat/runtime';
 jest.mock('@compliance-theater/types/dependency-injection', () => {
   const actual = jest.requireActual('@compliance-theater/types/dependency-injection');
   return {
@@ -28,7 +28,7 @@ import { resolveService } from '@compliance-theater/types/dependency-injection';
 // Load the real hooks inside isolated modules after unmocking the global mock
 const loadHooks = () => {
   // Load the real hooks module without isolating modules so it shares
-  // the same `@tanstack/react-query` instance used by the test wrapper.
+  // the same compat query runtime instance used by the test wrapper.
   jest.unmock('../../../lib/hooks/use-todo');
   const hooks = require('../../../lib/hooks/use-todo');
   return hooks;

@@ -2,7 +2,7 @@
 import React from 'react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
-import { QueryErrorResetBoundary } from '@tanstack/react-query';
+import { QueryErrorResetBoundary } from '@compliance-theater/react-query-compat/runtime';
 import { ErrorBoundary } from 'react-error-boundary';
 import { EmailViewerProps } from './types';
 import { LoadingEmail } from './loading';

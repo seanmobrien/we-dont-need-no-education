@@ -2,7 +2,7 @@ import { LanguageModelV2 } from '@ai-sdk/provider';
 import { v4 as uuidv4 } from 'uuid';
 import { getRedisClient } from '@compliance-theater/redis';
 import { countTokens } from '../../../core/count-tokens';
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 import { log } from '@compliance-theater/logger';
 import type {
   LanguageModelQueueOptions,
@@ -715,3 +715,4 @@ export class LanguageModelQueue {
     );
   }
 }
+

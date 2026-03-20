@@ -17,7 +17,7 @@ jest.mock('../../../components/contact/contact-dropdown', () => {
 import EmailForm from '../../../components/email-message/form';
 import { useEmail, useWriteEmail } from '../../../lib/hooks/use-email';
 import { EmailMessage } from '../../../data-models';
-import { asErrorLike } from '@compliance-theater/react';
+import { asErrorLike } from '@compliance-theater/logger/errors/error-like';
 import { render, screen, fireEvent, waitFor, hideConsoleOutput } from '../../shared/test-utils';
 
 // Mock the React Query hooks

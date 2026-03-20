@@ -2,8 +2,13 @@
   "extends": "../../tsconfig.next.json",
   "compilerOptions": {
     "noEmit": true,
+    "noImplicitAny": false,
     "rootDir": "./",
     "baseUrl": ".",
+    "composite": false,
+    "customConditions": [
+      "development"
+    ],
     "paths": {
       "@/*": [
         "./*"

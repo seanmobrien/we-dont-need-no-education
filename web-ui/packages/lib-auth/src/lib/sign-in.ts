@@ -15,10 +15,15 @@
  *   provider account object.
  */
 
-import { Account, Awaitable, Profile, User } from '@compliance-theater/types/auth-core/types';
+import type {
+  Account,
+  Awaitable,
+  Profile,
+  User,
+  CredentialInput,
+  AdapterUser,
+} from '@compliance-theater/auth-compat';
 import { log, logEvent, LoggedError } from '@compliance-theater/logger';
-import { CredentialInput } from '@compliance-theater/types/auth-core/providers';
-import { AdapterUser } from '@compliance-theater/types/auth-core/adapters';
 import { updateAccountTokens } from './server/update-account-tokens';
 /**
  * Persist token fields for an external OAuth account to the local `accounts`
@@ -47,18 +52,18 @@ const updateAccount = ({
 }: {
   user: User | AdapterUser;
   account: (Account | Record<string, unknown>) & {
-    access_token?: string;
-    refresh_token?: string;
-    expires_at?: number;
+    access_token?: string | null;
+    refresh_token?: string | null;
+    expires_at?: number | null;
     exp?: number;
-    id_token?: string;
+    id_token?: string | null;
   };
 }) =>
   updateAccountTokens(userId!, {
-    accessToken: account.access_token,
-    refreshToken: account.refresh_token,
-    idToken: account.id_token,
-    expiresAt: account.expires_at,
+    accessToken: account.access_token ?? undefined,
+    refreshToken: account.refresh_token ?? undefined,
+    idToken: account.id_token ?? undefined,
+    expiresAt: account.expires_at ?? undefined,
     exp: account.exp,
   });
 

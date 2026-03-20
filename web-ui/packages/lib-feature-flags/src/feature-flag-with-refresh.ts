@@ -1,6 +1,7 @@
 /* global AbortController */
 
 import { LoggedError } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 import { getFeatureFlag } from './server';
 import { log } from '@compliance-theater/logger/core';
 import { isKnownFeatureType } from './known-feature';
@@ -225,7 +226,7 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
           this._value = currentValue;
           this._lastRefreshedAt = now;
           valueUpdated = true;
-          log((l) =>
+          log((l: ILogger) =>
             l.verbose(
               `Feature flag "${this.key}" ${firstRefresh ? 'initial value loaded' : 'refreshed'
               } for user ${this.userId}. New value: ${safeSerialize(newValue)}`
@@ -306,7 +307,7 @@ class AutoRefreshFeatureFlagImpl<T extends KnownFeatureType>
     this._abortController?.abort();
     this._pendingRefresh = null;
 
-    log((l) =>
+    log((l: ILogger) =>
       l.debug(`Feature flag "${this.key}" disposed for user ${this.userId}`)
     );
   }

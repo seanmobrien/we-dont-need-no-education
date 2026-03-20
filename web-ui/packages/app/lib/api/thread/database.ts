@@ -1,6 +1,6 @@
 import { query, queryExt } from '@compliance-theater/database/driver';
-import { ValidationError } from '@compliance-theater/react/errors/validation-error';
-import { DataIntegrityError } from '@compliance-theater/react/errors/data-integrity-error';
+import { ValidationError } from '@compliance-theater/logger/errors/validation-error';
+import { DataIntegrityError } from '@compliance-theater/logger/errors/data-integrity-error';
 import { PartialExceptFor } from '@compliance-theater/typescript';
 import { log } from '@compliance-theater/logger';
 import type { PaginatedResultset, PaginationStats } from '@/data-models/_types';

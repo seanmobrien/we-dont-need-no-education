@@ -7,6 +7,7 @@
 
 import type { JSONRPCMessage } from '../../ai.sdk';
 import { SessionManager } from '../session/session-manager';
+import type { SpanState } from '../session/session-manager';
 import { MetricsRecorder, DEBUG_MODE } from '../metrics/otel-metrics';
 import { CounterManager } from '../metrics/counter-manager';
 import { log, LoggedError } from '@compliance-theater/logger';
@@ -41,7 +42,7 @@ export class MessageProcessor {
       messageMethod && this.#sessionManager.isToolCallMethod(messageMethod);
 
     // Create or update session for this message if it has an ID
-    let sessionState = undefined;
+    let sessionState: SpanState | undefined;
     if (messageId) {
       sessionState = this.#sessionManager.getOrCreateSession(message);
 

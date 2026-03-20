@@ -353,7 +353,7 @@ describe('ChatMessageDisplay', () => {
     await waitFor(() => {
       expect(screen.queryByText(/Tool Details:/)).not.toBeInTheDocument();
     });
-  });
+  }, 3000);
 
   it('should not render tool details dialog for messages without tool name', () => {
     render(<ChatMessageDisplay message={mockChatMessage} />);

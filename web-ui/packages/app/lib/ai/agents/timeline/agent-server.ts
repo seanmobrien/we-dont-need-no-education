@@ -22,7 +22,7 @@ import {
 } from '@/lib/ai/middleware/chat-history';
 import { LoggedError, log } from '@compliance-theater/logger';
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
-import { auth } from '@compliance-theater/auth';
+import { auth } from '@compliance-theater/auth/server';
 import { generateTextWithRetry } from '@/lib/ai/core/generate-text-with-retry';
 
 type InitializeProps = { req: NextRequest };
@@ -604,3 +604,4 @@ const TimelineAgentFactory = (
 
 export { TimelineAgentFactory };
 export { ServerTimelineAgent };
+

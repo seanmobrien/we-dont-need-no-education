@@ -222,7 +222,7 @@ export class ComplianceTimelineProcessor {
 
   private extractKeyFindings(action: TimelineEntry): string {
     // Extract key findings from the action
-    const findings = [];
+    const findings: string[] = [];
 
     if (action.complianceNotes && action.complianceNotes.length > 0) {
       findings.push(...action.complianceNotes);
@@ -237,7 +237,7 @@ export class ComplianceTimelineProcessor {
 
   private extractViolations(action: TimelineEntry): string {
     // Identify violations and challenges
-    const violations = [];
+    const violations: string[] = [];
 
     if (action.summary.toLowerCase().includes('delay')) {
       violations.push('Potential timeline violation');

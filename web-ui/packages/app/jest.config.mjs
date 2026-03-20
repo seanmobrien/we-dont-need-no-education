@@ -25,10 +25,6 @@ const config = {
     '^react-dom$': '<rootDir>/node_modules/react-dom/index.js',
     '^react/jsx-runtime$': '<rootDir>/node_modules/react/jsx-runtime.js',
     '^react/jsx-dev-runtime$': '<rootDir>/node_modules/react/jsx-dev-runtime.js',
-    '^@tanstack/react-query$':
-      '<rootDir>/node_modules/@tanstack/react-query/build/modern/index.cjs',
-    '^@tanstack/query-core$':
-      '<rootDir>/node_modules/@tanstack/query-core/build/modern/index.cjs',
     '^@/__tests__/test-utils$': '<rootDir>/__tests__/shared/test-utils.tsx',
     '^@/__tests__/test-utils-server$': '<rootDir>/__tests__/shared/test-utils-server.ts',
     '^next-auth/providers/keycloak$': '<rootDir>/__mocks__/shared/keycloak-provider.js',

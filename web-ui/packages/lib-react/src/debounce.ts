@@ -1,4 +1,5 @@
 import { log, LoggedError } from '@compliance-theater/logger';
+import type { ILogger } from '@compliance-theater/logger';
 import { isError } from './utility-methods';
 
 export const debounce = <R, T extends (...args: any[]) => R>(
@@ -61,7 +62,7 @@ export const debounce = <R, T extends (...args: any[]) => R>(
           log: true,
         });
       } else {
-        log((l) =>
+        log((l: ILogger) =>
           l.silly('Debounced function timed out or was deferred:', reason)
         );
       }
