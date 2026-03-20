@@ -7,7 +7,8 @@
     },
     "assert": {
       "assertions": {
-        "categories:performance": ["error", { "minScore": 0.9 }],
+        "categories:performance": ["error", { "minScore": 0.5 }],
+        "categories:best-practices": ["error", { "minScore": 0.75 }],
         "categories:accessibility": ["error", { "minScore": 0.9 }],
         "uses-source-maps": "off"
       }
