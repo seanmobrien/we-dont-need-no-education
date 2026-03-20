@@ -22,22 +22,19 @@ This platform combines a modern web interface with sophisticated AI-powered back
 
 ### Monorepo Structure
 
-This project uses a traditional monorepo structure with [Turborepo](https://turbo.build/) for efficient build orchestration. The Node.js frontend lives under `web-ui/` as a self-contained monorepo, while the Java backend is in `chat/`, maintaining clear separation between the two solutions. See [MONOREPO_GUIDE.md](/docs/MONOREPO_GUIDE.md) for detailed migration information.
+This project uses a traditional monorepo structure with [Turborepo](https://turbo.build/) for efficient build orchestration. The repo root is the single `compliance-theater` Yarn workspace entry point, while Node.js frontend packages live under `web-ui/packages/` and the Java backend is in `chat/`. See [MONOREPO_GUIDE.md](/docs/MONOREPO_GUIDE.md) for detailed information.
 
 ```
-├── web-ui/              # Node.js monorepo (self-contained)
+├── web-ui/              # Node.js frontend packages (sourced under repo root workspace)
 │   ├── packages/
 │   │   └── app/        # Main Next.js frontend application
-│   ├── package.json    # Web UI workspace configuration
-│   ├── turbo.json      # Build orchestration
-│   ├── jest.config.mjs # Test configuration
-│   └── yarn.lock       # Dependency lock file
+│   └── submodules/     # Git submodule dependencies
 ├── chat/               # Java backend with AI processing
 ├── db/                 # Database schema and migrations
-└── package.json        # Root (delegates to web-ui)
+├── turbo.json          # Build orchestration
+├── jest.config.mjs     # Test configuration (if present)
+└── package.json        # Repo root workspace (compliance-theater)
 ```
-
-**Note**: The monorepo migration is in progress. Core libraries (`lib/*`) will be extracted into standalone packages under `web-ui/packages/` for better modularity and reusability.
 
 ### Frontend (`/web-ui/packages/app/`)
 
@@ -74,7 +71,6 @@ This project uses a traditional monorepo structure with [Turborepo](https://turb
 ### Frontend Setup
 
 ```bash
-cd web-ui
 yarn install
 yarn dev
 ```

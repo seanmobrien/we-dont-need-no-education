@@ -13,10 +13,10 @@ This repository contains a comprehensive AI-powered advocacy platform designed t
 ### Development Flow
 
 **Frontend (Next.js/TypeScript)**:
-- Build: `cd web-ui && yarn build`
-- Development: `cd web-ui && yarn dev`
-- Test: `cd web-ui && yarn test`
-- Lint: `cd web-ui && yarn lint`
+- Build: `yarn build`
+- Development: `yarn dev`
+- Test: `yarn test`
+- Lint: `yarn lint`
 
 **Backend (Java/Maven)**:
 - Build: `cd chat && mvn compile`

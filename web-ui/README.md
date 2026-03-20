@@ -1,8 +1,10 @@
-# Web UI - Node.js Monorepo
+# Web UI - Node.js Frontend Packages
 
-Welcome to the Web UI workspace for the Title IX Victim Advocacy Platform. This is a self-contained Node.js monorepo that houses the frontend application and its supporting packages.
+This directory contains the Node.js frontend application and supporting packages for the Title IX Victim Advocacy Platform. All packages are managed from the repository root as part of the `compliance-theater` workspace.
 
 ## Quick Start
+
+Run the following commands from the **repository root**:
 
 ```bash
 # Install dependencies
@@ -33,10 +35,9 @@ This workspace contains the Next.js web application that provides an AI-powered 
 web-ui/
 ├── packages/
 │   └── app/              # Main Next.js application
-├── package.json          # Workspace configuration
-├── turbo.json           # Build orchestration
-├── jest.config.mjs      # Test configuration
-└── yarn.lock            # Dependency lock file
+├── tsconfig.base.json    # Shared TypeScript base config
+├── tsconfig.next.json    # Shared Next.js TypeScript config
+└── jest.config.mjs       # Shared test configuration
 ```
 
 ### Main Application
@@ -75,7 +76,7 @@ See [MONOREPO_GUIDE.md](../docs/MONOREPO_GUIDE.md) for the complete refactoring 
 
 ## Workspace Commands
 
-This workspace uses [Turborepo](https://turbo.build/) for efficient task orchestration:
+All commands are run from the **repository root**. This project uses [Turborepo](https://turbo.build/) for efficient task orchestration:
 
 - `yarn dev` - Start all packages in development mode
 - `yarn build` - Build all packages

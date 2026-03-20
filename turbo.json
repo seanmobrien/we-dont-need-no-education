@@ -1,6 +1,17 @@
 {
   "$schema": "https://turbo.build/schema.json",
 
+  "globalDependencies": [
+    "./tsconfig.json",
+    "./tsconfig.*.json",
+    "./*.mjs",
+    "./package.json",
+    "./web-ui/tsconfig.json",
+    "./web-ui/tsconfig.*.json",
+    "./web-ui/*.mjs",
+    "./web-ui/package.json"
+  ],
+
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -28,7 +39,9 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "WORKSPACE_SOURCE_IMPORTS",
+        "DEVELOPMENT_SOURCE_IMPORTS",
+        "YARN_IGNORE_PATH"
       ]
     },
     "@compliance-theater/app#build": {
@@ -62,7 +75,36 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "WORKSPACE_SOURCE_IMPORTS",
+        "DEVELOPMENT_SOURCE_IMPORTS",
+        "YARN_IGNORE_PATH"
+      ]
+    },
+    "@semanticencoding/monorepo#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/*.tsbuildinfo"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "YARN_IGNORE_PATH",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "build:typescript": {
@@ -91,7 +133,9 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "WORKSPACE_SOURCE_IMPORTS",
+        "DEVELOPMENT_SOURCE_IMPORTS",
+        "YARN_IGNORE_PATH"
       ]
     },
     "@compliance-theater/app#build:typescript": {
@@ -125,7 +169,36 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "WORKSPACE_SOURCE_IMPORTS",
+        "DEVELOPMENT_SOURCE_IMPORTS",
+        "YARN_IGNORE_PATH"
+      ]
+    },
+    "@semanticencoding/monorepo#build:typescript": {
+      "dependsOn": ["^build:typescript"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/*.tsbuildinfo"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "YARN_IGNORE_PATH",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "build:publish": {
@@ -154,7 +227,36 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "WORKSPACE_SOURCE_IMPORTS",
+        "DEVELOPMENT_SOURCE_IMPORTS",
+        "YARN_IGNORE_PATH"
+      ]
+    },
+    "@semanticencoding/monorepo#build:publish": {
+      "dependsOn": ["^build:publish"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/*.tsbuildinfo"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "YARN_IGNORE_PATH",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "build:clean": {

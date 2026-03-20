@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the monorepo refactoring of the Title IX Victim Advocacy Platform from a single `web-ui` application to a traditional monorepo structure with packages under `web-ui/packages/`. This maintains clear separation between the Node.js frontend (web-ui) and Java backend (chat) solutions, with web-ui as a fully self-contained monorepo.
+This document describes the monorepo structure of the Title IX Victim Advocacy Platform. The repo root is the single `compliance-theater` Yarn/Turborepo workspace entry point. Node.js frontend packages live under `web-ui/packages/` and submodules under `web-ui/submodules/`, while the Java backend is in `chat/`. The `web-ui/` directory is a source layout only—there is no nested package root there.
 
 ## Completed Work (Phase 1)
 
@@ -34,7 +34,7 @@ This document describes the monorepo refactoring of the Title IX Victim Advocacy
 
 ```txt
 /
-├── web-ui/                         # Node.js monorepo (self-contained)
+├── web-ui/                         # Node.js frontend packages (under repo root workspace)
 │   ├── packages/
 │   │   └── app/                    # Main Next.js application
 │   │   └── lib-after/              # Process exit and app startup support
@@ -55,12 +55,12 @@ This document describes the monorepo refactoring of the Title IX Victim Advocacy
 │   │        └─── packages/         # Submodule root for @seanmobrien/json-viewer - imported into workspace
 │   │   └── sce                     # Semantic Communication Engine - LLM prompting for 12 year olds
 │   │        └─── packages/         # Packages within SCE - imported into the workspace
-│   ├── package.json                # Workspace configuration
-│   ├── turbo.json                  # Build orchestration
-│   ├── jest.config.mjs             # Test configuration
-│   └── yarn.lock                   # Dependency lock file
+│   ├── tsconfig.base.json          # Shared TypeScript base config
+│   ├── tsconfig.next.json          # Shared Next.js TypeScript config
+│   └── jest.config.mjs             # Shared Jest config
 ├── chat/                           # Java backend (separate Maven project)
-└── package.json                    # Root (delegates to web-ui)
+├── turbo.json                      # Build orchestration (repo root)
+└── package.json                    # Repo root workspace (compliance-theater)
 ```
 
 ## Remaining Work
@@ -559,10 +559,9 @@ and `web-ui/packages/app/tsconfig.json`:
 }
 ```
 
-Then run:
+Then run from the repo root:
 
 ```bash
-cd web-ui
 yarn install
 ```
 
@@ -581,8 +580,7 @@ yarn build
 # Run tests
 yarn test
 
-# Or from workspace root:
-cd web-ui
+# Or from repo root:
 yarn build
 yarn test
 ```
@@ -601,9 +599,9 @@ import { specificFunction } from "@compliance-theater/[package-name]/submodule";
 
 ##### Step 11: Verify End-to-End
 
-1. **Build all packages**: `cd web-ui && yarn build`
-2. **Run all tests**: `cd web-ui && yarn test`
-3. **Start development server**: `cd web-ui && yarn dev`
+1. **Build all packages**: `yarn build`
+2. **Run all tests**: `yarn test`
+3. **Start development server**: `yarn dev`
 4. **Verify in browser/runtime**: Ensure your package works correctly when used
 
 #### Common Patterns and Best Practices

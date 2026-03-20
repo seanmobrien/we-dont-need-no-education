@@ -94,18 +94,7 @@ jobs:
           corepack enable
           corepack prepare yarn@4.12.0 --activate
           set -euo pipefail
-          (
-            cd .
-            node .yarn/releases/yarn-4.12.0.cjs install --immutable
-          )
-          (
-            cd web-ui
-            node .yarn/releases/yarn-4.12.0.cjs install --immutable
-          )
-          (
-            cd web-ui/submodules/sce
-            node .yarn/releases/yarn-4.12.0.cjs install --immutable
-          )
+          node .yarn/releases/yarn-4.12.0.cjs install --immutable
         shell: bash
         working-directory: ./
 
@@ -167,7 +156,7 @@ jobs:
           # Google auth
           AUTH_GOOGLE_ID: ${{ secrets.AUTH_GOOGLE_ID }}
         run: |
-         node .yarn/releases/yarn-4.12.0.cjs workspace compliance-theater build:publish --filter="@compliance-theater/app..."
+         node .yarn/releases/yarn-4.12.0.cjs build:publish
       
       - name: Copy built website to artifacts
         working-directory: ./        

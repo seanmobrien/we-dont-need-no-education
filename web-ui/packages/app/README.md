@@ -137,13 +137,8 @@ Database schema and migrations are maintained in `packages/lib-database/drizzle`
 ### Installation
 
 ```bash
-# From the workspace root (web-ui/)
-cd web-ui
+# From the repository root
 yarn install
-
-# Or run from repository root
-cd /path/to/repository
-yarn  # Installs all workspaces
 ```
 
 ### Environment Configuration
@@ -202,8 +197,7 @@ yarn drizzle-studio
 ### Development Server
 
 ```bash
-# From workspace root (recommended)
-cd web-ui
+# From repo root (recommended)
 yarn dev
 
 # Or from app directory
