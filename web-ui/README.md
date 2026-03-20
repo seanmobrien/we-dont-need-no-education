@@ -1,11 +1,11 @@
-# Web UI - Node.js Monorepo
+# Web UI Packages
 
-Welcome to the Web UI workspace for the Title IX Victim Advocacy Platform. This is a self-contained Node.js monorepo that houses the frontend application and its supporting packages.
+Welcome to the frontend package area for the Title IX Victim Advocacy Platform. The repository root is the single Yarn workspace root, and this directory houses the frontend application plus its supporting packages and shared frontend config.
 
 ## Quick Start
 
 ```bash
-# Install dependencies
+# Install dependencies from the repository root
 yarn install
 
 # Start development server
@@ -33,10 +33,9 @@ This workspace contains the Next.js web application that provides an AI-powered 
 web-ui/
 ├── packages/
 │   └── app/              # Main Next.js application
-├── package.json          # Workspace configuration
-├── turbo.json           # Build orchestration
-├── jest.config.mjs      # Test configuration
-└── yarn.lock            # Dependency lock file
+├── jest.config.mjs      # Frontend Jest project aggregator
+├── tsconfig*.json       # Frontend TypeScript config shims
+└── Dockerfile           # Frontend container build
 ```
 
 ### Main Application
@@ -103,7 +102,7 @@ yarn add -D package-name
 ## Technology Stack
 
 - **Build System**: Turborepo for monorepo orchestration
-- **Package Manager**: Yarn 1.22.x (workspaces)
+- **Package Manager**: Yarn 4.x (workspaces)
 - **Node.js**: v24.x (required)
 - **TypeScript**: 5.x
 - **Testing**: Jest + React Testing Library + Playwright
@@ -113,7 +112,7 @@ yarn add -D package-name
 
 - Each package should be independently buildable and testable
 - Packages reference each other using workspace protocol: `"@repo/package-name": "workspace:*"`
-- Shared configuration (tsconfig, jest, etc.) lives at the workspace root
+- Shared configuration is orchestrated from the repository root
 - Package-specific configuration extends from root configuration
 
 ## Links

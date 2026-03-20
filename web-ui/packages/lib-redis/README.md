@@ -110,14 +110,13 @@ The package uses environment variables from `@compliance-theater/env`:
 Run tests for this package:
 
 ```bash
-cd web-ui/packages/lib-redis
-yarn test
+yarn workspace @compliance-theater/redis test
 ```
 
-Or from the workspace root:
+Or from the repository root:
 
 ```bash
-cd web-ui
+cd /path/to/repository
 yarn test
 ```
 

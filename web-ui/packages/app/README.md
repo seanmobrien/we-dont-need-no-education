@@ -1,6 +1,6 @@
 # NoEducation Web UI
 
-> **Note**: This application is part of the `web-ui` monorepo workspace. For workspace-level commands and information about other packages, see the [workspace README](../../README.md).
+> **Note**: This application lives under `web-ui/`, but repository-level install and orchestration now happen from the repository root. For workspace-level commands and information about other packages, see the [workspace README](../../README.md).
 
 A modern, AI-powered evidence management and analysis platform built with Next.js 15, Material UI 7, and multiple AI providers. This application provides intelligent email processing, document analysis, and chat-based evidence exploration with advanced multi-provider AI integration.
 
@@ -128,7 +128,7 @@ Database schema and migrations are maintained in `packages/lib-database/drizzle`
 ### Prerequisites
 
 - Node.js 22.x (enforced by package.json engines)
-- Yarn 1.22+ (enforced by preinstall script)
+- Yarn 4.x (enforced by the repository root package manager setting)
 - PostgreSQL 14+ database
 - Google Cloud Console project (for Gmail integration)
 - Azure AD application (for enterprise auth)
@@ -137,13 +137,9 @@ Database schema and migrations are maintained in `packages/lib-database/drizzle`
 ### Installation
 
 ```bash
-# From the workspace root (web-ui/)
-cd web-ui
-yarn install
-
-# Or run from repository root
+# From the repository root
 cd /path/to/repository
-yarn  # Installs all workspaces
+yarn install
 ```
 
 ### Environment Configuration
@@ -186,29 +182,25 @@ GOOGLE_CLIENT_SECRET="your-google-client-secret"
 ### Database Setup
 
 ```bash
-# From the lib-database directory
-cd web-ui/packages/lib-database
-
 # Generate database schema
-yarn drizzle-generate
+yarn workspace @compliance-theater/database drizzle-generate
 
 # Run database migrations
-yarn drizzle-migrate
+yarn workspace @compliance-theater/database drizzle-migrate
 
 # Open Drizzle Studio (database viewer)
-yarn drizzle-studio
+yarn workspace @compliance-theater/database drizzle-studio
 ```
 
 ### Development Server
 
 ```bash
-# From workspace root (recommended)
-cd web-ui
+# From repository root (recommended)
+cd /path/to/repository
 yarn dev
 
-# Or from app directory
-cd web-ui/packages/app
-yarn dev
+# Or target just the app workspace from repository root
+yarn workspace @compliance-theater/app dev
 
 # Start in debug mode
 yarn debug

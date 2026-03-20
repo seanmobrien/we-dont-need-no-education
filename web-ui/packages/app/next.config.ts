@@ -12,8 +12,8 @@ export const nextConfig: NextConfig = withStripRscPrefixPlugin(
         withReactConfigFactory()(
           withTypescriptConfig(
             withEnsureChunkSymlinks({
-              // Keep tracing rooted at the workspace to avoid mis-detected lockfiles.
-              outputFileTracingRoot: path.join(__dirname, '..', '..'),
+              // Keep tracing rooted at the repository to avoid mis-detected lockfiles.
+              outputFileTracingRoot: path.join(__dirname, '..', '..', '..'),
               output: 'standalone',
               experimental: {
                 webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'INP', 'TTFB', 'FID'],
