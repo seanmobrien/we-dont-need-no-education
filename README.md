@@ -134,7 +134,7 @@ Create appropriate `.env` files with:
 ### Core Technologies
 
 - **Frontend**: Next.js, TypeScript, Material UI, TailwindCSS
-- **Backend**: Java 21, Maven, LangChain4j, Spring components
+- **Backend**: Java 25, Maven, LangChain4j, Spring components
 - **Database**: PostgreSQL, Drizzle ORM, HikariCP
 - **AI/ML**: Azure OpenAI, custom embedding models
 - **Infrastructure**: Redis, Docker support

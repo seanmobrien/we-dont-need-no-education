@@ -44,7 +44,7 @@ chat/
 ## Technology Stack
 
 ### Core Technologies
-- **Java 21**: Latest LTS version with modern language features
+- **Java 25**: Modern version with advanced language features
 - **Maven**: Multi-module project management and dependency resolution
 - **LangChain4j 1.0.0**: AI application framework for Java
 - **Azure OpenAI**: Cloud-based AI model access

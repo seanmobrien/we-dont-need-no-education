@@ -10,14 +10,16 @@
     <packaging>pom</packaging>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>        
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>        
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.groupId>com.obapps.schoolchatbot</project.build.groupId>
         <project.build.artifactId>com.obapps.schoolchatbot</project.build.artifactId>
         <project.build.version>1.0.1-SNAPSHOT</project.build.version>
         <jakartaee-api.version>10.0.0</jakartaee-api.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
+        <!-- Default empty value so @{argLine} resolves safely when no plugin (e.g. jacoco) sets it -->
+        <argLine></argLine>
     </properties>
 
     <dependencyManagement>
@@ -279,20 +281,14 @@
                     </execution>
                 </executions>
             </plugin>
-			<!-- 
-            <plugin>
+	            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.5.3</version>                
+				<version>3.5.3</version>
                 <configuration>
-                    <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+                    <argLine>@{argLine} -Dnet.bytebuddy.experimental=true -javaagent:${org.mockito:mockito-core:jar}</argLine>
                 </configuration>
 			</plugin>
-            <plugin>
-                <groupId>com.hubspot.maven.plugins</groupId>
-                <artifactId>prettier-maven-plugin</artifactId>
-                <version>0.8</version>
-            </plugin> -->
             
 		</plugins>
 	</build>
