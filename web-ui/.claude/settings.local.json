@@ -6,7 +6,10 @@
       "Bash(node ../../.yarn/releases/yarn-4.12.0.cjs test __tests__/components/email-message/list/email-list.test.tsx --no-coverage)",
       "Bash(node ../../.yarn/releases/yarn-4.12.0.cjs test \"__tests__/lib/components/mui/data-grid/selectForGrid.test.ts\" --no-coverage)",
       "Bash(npx jest:*)",
-      "Bash(yarn workspace:*)"
+      "Bash(yarn workspace:*)",
+      "Bash(node .yarn/releases/yarn-4.12.0.cjs jest --config packages/lib-logger/jest.config.mjs --testPathPatterns=\"errors/access-denied-error\" --coverage --coveragePathPattern=\"lib-logger/src/errors/access-denied-error\")",
+      "Bash(node -e \":*)",
+      "Bash(node .yarn/releases/yarn-4.12.0.cjs jest --config packages/lib-logger/jest.config.mjs --testPathPatterns=\"errors/\" --coverage --coveragePathPattern=\"lib-logger/src/errors\" --coverageReporters=text)"
     ]
   }
 }

@@ -14,7 +14,7 @@ import {
   deleteTodoCallback,
   toggleTodoCallback,
 } from '../../../../lib/ai/tools/todo/tool-callback';
-import { isError } from '@compliance-theater/react';
+import { isError } from '@compliance-theater/logger';
 
 type SerializedTodo = {
   id: string;

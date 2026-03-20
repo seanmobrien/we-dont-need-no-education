@@ -106,18 +106,6 @@ class ErrorLikeInstance implements ErrorLike {
     Column: 5 as const,
   } as const;
 
-  static extractFunctionFromStack(
-    stack: string | undefined,
-  ): string | undefined {
-    const stackLine = stack?.split('\n')?.at(1);
-    if (!stackLine) {
-      return undefined;
-    }
-    const match = ErrorLikeInstance.#extractStackFrameRegex.exec(stackLine);
-    return match
-      ? match[ErrorLikeInstance.#ExtractStackFrameGroups.Function]
-      : undefined;
-  }
   static extractSourceFromStack(stack: string | undefined): string | undefined {
     const stackLine = stack?.split('\n')?.at(1);
     if (!stackLine) {
