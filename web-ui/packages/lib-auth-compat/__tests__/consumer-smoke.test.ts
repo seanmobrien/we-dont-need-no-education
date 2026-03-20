@@ -13,8 +13,8 @@ const [spawnCmd, spawnArgs] =
     ? (['cmd', ['/c', 'yarn', 'tsc', '--noEmit']] as const)
     : (['yarn', ['tsc', '--noEmit']] as const);
 
-describe('consumer smoke compile', () => {
-  skip('skipping smoke test for consumer fixture until we have a better strategy for testing compatibility with different versions of next-auth and @auth/core', () => {
+skip('skipping smoke test for consumer fixture until we have a better strategy for testing compatibility with different versions of next-auth and @auth/core', () => {
+  describe('consumer smoke compile', () => {
     // The consumer fixture is meant to test compatibility with the lowest supported versions of next-auth and @auth/core, but we currently don't have a good strategy for testing against multiple versions of those packages. For now, we'll just skip this test to avoid it being a source of false positives.
     it('compiles a consumer fixture that only depends on auth-compat (no next-auth peer)', () => {
       expect(fixturePackageJson.dependencies ?? {}).not.toHaveProperty('next-auth');
