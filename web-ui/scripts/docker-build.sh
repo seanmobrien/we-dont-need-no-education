@@ -8,13 +8,14 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Script directory and project root
+# Script directory, repo root, and frontend root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+WEB_UI_ROOT="$REPO_ROOT/web-ui"
 
 # Paths
-ENV_LOCAL_PATH="$PROJECT_ROOT/packages/app/.env.local"
-SECRETS_DIR="$PROJECT_ROOT/secrets"
+ENV_LOCAL_PATH="$WEB_UI_ROOT/packages/app/.env.local"
+SECRETS_DIR="$REPO_ROOT/secrets"
 CONTAINER_NAME="web-ui-local"
 IMAGE_TAG="web-ui:localbuild"
 
@@ -144,7 +145,7 @@ function create_build_secrets() {
 
 # Ensure Next.js standalone build exists
 function ensure_standalone() {
-    local standalone_dir="$PROJECT_ROOT/packages/app/.next/standalone"
+    local standalone_dir="$WEB_UI_ROOT/packages/app/.next/standalone"
     if [ ! -d "$standalone_dir" ]; then
         echo -e "\n${RED}ERROR: Next.js standalone build not found.${NC}" >&2
         echo -e "${RED}Expected directory: $standalone_dir${NC}" >&2
@@ -157,7 +158,7 @@ function ensure_standalone() {
 function build_image() {
     echo -e "\n${YELLOW}[Building Docker Image]${NC}"
     
-    cd "$PROJECT_ROOT"
+    cd "$REPO_ROOT"
     
     # Verify standalone build exists before attempting to build the image
     # Umm...Why?
@@ -218,7 +219,7 @@ function build_image() {
         --label org.opencontainers.image.title="we-dont-need-no-education" \
         --label org.opencontainers.image.url="https://github.com/seanmobrien/we-dont-need-no-education" \
         $DOCKER_EXTRA_BUILD_ARGS \
-        --file ./Dockerfile \
+        --file ./web-ui/Dockerfile \
         -t "$IMAGE_TAG" \
         .
     

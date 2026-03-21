@@ -67,8 +67,8 @@ See [MONOREPO_STATUS.md] for more details.
 
 Each package extraction follows this pattern:
 
-1. Create `web-ui/web-ui/packages/[name]/` directory
-2. Move source files from `web-ui/web-ui/packages/app/lib/[name]`
+1. Create `web-ui/packages/[name]/` directory
+2. Move source files from `web-ui/packages/app/lib/[name]`
 3. Create package.json with proper exports
 4. Create tsconfig.json for TypeScript
 5. Set up package-specific jest.config.mjs
@@ -190,9 +190,9 @@ yarn test:e2e
 
 **Docker Builds**:
 
-- Main Dockerfile stays in `web-ui/packages/app/`
+- Main Dockerfile stays in `web-ui/`
 - Uses workspace dependencies via Yarn
-- Build context includes root for workspace resolution
+- Build context includes repo root for workspace resolution
 
 **GitHub Actions**:
 
