@@ -1,18 +1,28 @@
 {
   "$schema": "https://turbo.build/schema.json",
-
+  "globalDependencies": [
+    "./tsconfig.json",
+    "./tsconfig.*.json",
+    "./*.mjs",
+    "./package.json"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "inputs": [
-        "src/**",
-        "package.json",
-        "tsconfig.json",
-        "tsconfig.*",
-        "!dist/**",
-        "!.next/**",
-        "!coverage/**",
-        "!tsconfig.tsbuildinfo"
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/**",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/lcov-report/**"
       ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
@@ -20,6 +30,7 @@
         "AZURE_*",
         "NEXT_*",
         "NODE_ENV",
+        "YARN_IGNORE_PATH",
         "CRYPTO_*",
         "GOOGLE_*",
         "LOG_LEVEL_SERVER",
@@ -28,25 +39,26 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "FLAGSMITH_*",
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "@compliance-theater/app#build": {
       "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "app/**",
-        "components/**",
-        "lib/**",
-        "instrument/**",
-        "public/**",
-        "scripts/**",
-        "next.config.*",
-        "package.json",
-        "tsconfig.json",
-        "tsconfig.*",
-        "!coverage/**",
-        "!.next/cache/**"
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/**",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/lcov-report/**"
       ],
       "outputs": [],
       "env": [
@@ -54,6 +66,7 @@
         "AZURE_*",
         "NEXT_*",
         "NODE_ENV",
+        "YARN_IGNORE_PATH",
         "CRYPTO_*",
         "GOOGLE_*",
         "LOG_LEVEL_SERVER",
@@ -62,20 +75,63 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "FLAGSMITH_*",
+        "DEVELOPMENT_SOURCE_IMPORTS"
+      ]
+    },
+    "@semanticencoding/monorepo#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/**",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/lcov-report/**"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "YARN_IGNORE_PATH",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "FLAGSMITH_*",
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "build:typescript": {
       "dependsOn": ["^build:typescript"],
       "inputs": [
-        "src/**",
-        "package.json",
-        "tsconfig.json",
-        "tsconfig.*",
-        "!dist/**",
-        "!.next/**",
-        "!coverage/**",
-        "!tsconfig.tsbuildinfo"
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/**",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
       ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
@@ -83,6 +139,7 @@
         "AZURE_*",
         "NEXT_*",
         "NODE_ENV",
+        "YARN_IGNORE_PATH",
         "CRYPTO_*",
         "GOOGLE_*",
         "LOG_LEVEL_SERVER",
@@ -91,25 +148,26 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "FLAGSMITH_*",
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "@compliance-theater/app#build:typescript": {
-      "dependsOn": ["^@compliance-theater/app#build:typescript"],
+      "dependsOn": ["^build"],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "app/**",
-        "components/**",
-        "lib/**",
-        "instrument/**",
-        "public/**",
-        "scripts/**",
-        "next.config.*",
-        "package.json",
-        "tsconfig.json",
-        "tsconfig.*",
-        "!coverage/**",
-        "!.next/cache/**"
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/**",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/lcov-report/**"
       ],
       "outputs": [],
       "env": [
@@ -117,6 +175,7 @@
         "AZURE_*",
         "NEXT_*",
         "NODE_ENV",
+        "YARN_IGNORE_PATH",
         "CRYPTO_*",
         "GOOGLE_*",
         "LOG_LEVEL_SERVER",
@@ -125,20 +184,62 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "FLAGSMITH_*",
+        "DEVELOPMENT_SOURCE_IMPORTS"
+      ]
+    },
+    "@semanticencoding/monorepo#build:typescript": {
+      "dependsOn": ["^build:typescript"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/**",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/lcov-report/**"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "YARN_IGNORE_PATH",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "FLAGSMITH_*",
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
     "build:publish": {
       "dependsOn": ["^build:publish"],
       "inputs": [
-        "src/**",
-        "package.json",
-        "tsconfig.json",
-        "tsconfig.*",
-        "!dist/**",
-        "!.next/**",
-        "!coverage/**",
-        "!tsconfig.tsbuildinfo"
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/**",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/lcov-report/**"
       ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
@@ -146,6 +247,7 @@
         "AZURE_*",
         "NEXT_*",
         "NODE_ENV",
+        "YARN_IGNORE_PATH",
         "CRYPTO_*",
         "GOOGLE_*",
         "LOG_LEVEL_SERVER",
@@ -154,9 +256,47 @@
         "OTEL_*",
         "REDIS_*",
         "DATABASE_URL",
-        "WORKSPACE_SOURCE_IMPORTS"
+        "FLAGSMITH_*",
+        "DEVELOPMENT_SOURCE_IMPORTS"
       ]
     },
+    "@semanticencoding/monorepo#build:publish": {
+      "dependsOn": ["^build:publish"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/**",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/lcov-report/**"
+      ],
+      "outputs": [],
+      "env": [
+        "AUTH_*",
+        "AZURE_*",
+        "NEXT_*",
+        "NODE_ENV",
+        "YARN_IGNORE_PATH",
+        "CRYPTO_*",
+        "GOOGLE_*",
+        "LOG_LEVEL_SERVER",
+        "MEM0_*",
+        "OPENAI_*",
+        "OTEL_*",
+        "REDIS_*",
+        "DATABASE_URL",
+        "FLAGSMITH_*",
+        "DEVELOPMENT_SOURCE_IMPORTS"
+      ]
+    },
+
     "build:clean": {
       "dependsOn": ["^build:clean"],
       "cache": false,
@@ -180,18 +320,81 @@
     "test": {
       "dependsOn": ["^test"],
       "outputs": [],
-      "inputs": ["__tests__/**/*", "__tests__/*", "*.mjs"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/**",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
+      ]
     },
     "test:unit": {
       "dependsOn": ["^test:unit"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/**",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
+      ],
       "outputs": []
     },
     "test:e2e": {
       "dependsOn": ["^test:e2e"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/**",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
+      ],
       "cache": false
     },
     "lint": {
       "dependsOn": ["^lint"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/coverage/**",
+        "!**/test-results/**",
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/.yarn/**",
+        "!**/*.tsbuildinfo",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**",
+        "!**/.upstream/**",
+        "!**/*.log",
+        "!**/out/**",
+        "!**/out/**",
+        "!**/lcov-report/**"
+      ],
       "outputs": []
     }
   }

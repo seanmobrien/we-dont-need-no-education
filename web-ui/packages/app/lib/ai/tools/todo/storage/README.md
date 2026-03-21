@@ -150,8 +150,7 @@ todo:mapping:user:alice:task-456  -> "case-123-plan"
 Run the storage strategy tests:
 
 ```bash
-cd web-ui
-yarn test __tests__/lib/ai/tools/todo/storage.test.ts
+yarn workspace @compliance-theater/app test __tests__/lib/ai/tools/todo/storage.test.ts
 ```
 
 ## Migration

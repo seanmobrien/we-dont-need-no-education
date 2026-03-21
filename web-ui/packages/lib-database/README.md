@@ -151,17 +151,16 @@ Migration files are located in `/drizzle/`.
 To generate and apply migrations:
 
 ```bash
-# From the lib-database package
-cd web-ui/packages/lib-database
+cd /path/to/repository
 
 # Generate migration artifacts
-yarn drizzle-generate
+yarn workspace @compliance-theater/database drizzle-generate
 
 # Apply migrations
-yarn drizzle-migrate
+yarn workspace @compliance-theater/database drizzle-migrate
 
 # Open Drizzle Studio
-yarn drizzle-studio
+yarn workspace @compliance-theater/database drizzle-studio
 ```
 
 ## Dependencies

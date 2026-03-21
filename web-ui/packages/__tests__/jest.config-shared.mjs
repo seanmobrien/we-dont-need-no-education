@@ -124,10 +124,10 @@ const config = {
     // Instrumentation library mock
     '@/instrumentation(.*)$':
       '<rootDir>/__mocks__/shared/setup/instrumentation.ts', // Mock instrumentation module        
-    '^react$': '<rootDir>/../../node_modules/react/index.js',
-    '^react-dom$': '<rootDir>/../../node_modules/react-dom/index.js',
-    '^react/jsx-runtime$': '<rootDir>/../../node_modules/react/jsx-runtime.js',
-    '^react/jsx-dev-runtime$': '<rootDir>/../../node_modules/react/jsx-dev-runtime.js',
+    '^react$': '<rootDir>/../../../node_modules/react/index.js',
+    '^react-dom$': '<rootDir>/../../../node_modules/react-dom/index.js',
+    '^react/jsx-runtime$': '<rootDir>/../../../node_modules/react/jsx-runtime.js',
+    '^react/jsx-dev-runtime$': '<rootDir>/../../../node_modules/react/jsx-dev-runtime.js',
     // All material UI icons are served by a single mock
     '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx', // Mock all MUI icons to a singular mock    
     // Prexit module mock
