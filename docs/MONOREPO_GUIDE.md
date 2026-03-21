@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the monorepo refactoring of the Title IX Victim Advocacy Platform from a single `web-ui` application to a traditional monorepo structure with packages under `web-ui/packages/`. This maintains clear separation between the Node.js frontend (web-ui) and Java backend (chat) solutions, with web-ui as a fully self-contained monorepo.
+This document describes the monorepo refactoring of the Title IX Victim Advocacy Platform from a single `web-ui` application to a traditional monorepo structure with packages under `web-ui/packages/`. The repository root is the single Yarn workspace root, while the frontend packages remain grouped under `web-ui/` and the Java backend stays in `chat/`.
 
 ## Completed Work (Phase 1)
 
@@ -11,16 +11,16 @@ This document describes the monorepo refactoring of the Title IX Victim Advocacy
 1. **Workspace Structure**
 
    - Created root `packages.json` package.
-   - Created `web-ui/packages.json` workspace package.
+   - Created the frontend package layout under `web-ui/`.
    - Created `web-ui/packages/app` directory for monorepo web app bundle.
-   - Added Turborepo (`turbo@^2.3.3`) to `web-ui` for build orchestration.
+   - Added Turborepo (`turbo@^2.3.3`) for build orchestration from the repository root.
    - Created base typescript setup
      - `web-ui/tsconfig.base.json` contains baseline setup
      - `web-ui/tsconfig.next.json` extends baseline to support next.js
 
 2. **Build Orchestration**
 
-   - Created `web-ui/turbo.json` with task pipelines for:
+   - Created shared task pipelines for:
      - `build`: Builds packages with dependency order
      - `build:typescript`: Fast typescript-only checking
      - `build:clean`: Cleans project output
@@ -34,7 +34,7 @@ This document describes the monorepo refactoring of the Title IX Victim Advocacy
 
 ```txt
 /
-├── web-ui/                         # Node.js monorepo (self-contained)
+├── web-ui/                         # Frontend packages and shared frontend config
 │   ├── packages/
 │   │   └── app/                    # Main Next.js application
 │   │   └── lib-after/              # Process exit and app startup support
@@ -55,12 +55,10 @@ This document describes the monorepo refactoring of the Title IX Victim Advocacy
 │   │        └─── packages/         # Submodule root for @seanmobrien/json-viewer - imported into workspace
 │   │   └── sce                     # Semantic Communication Engine - LLM prompting for 12 year olds
 │   │        └─── packages/         # Packages within SCE - imported into the workspace
-│   ├── package.json                # Workspace configuration
-│   ├── turbo.json                  # Build orchestration
 │   ├── jest.config.mjs             # Test configuration
-│   └── yarn.lock                   # Dependency lock file
+│   └── Dockerfile                  # Frontend container build
 ├── chat/                           # Java backend (separate Maven project)
-└── package.json                    # Root (delegates to web-ui)
+└── package.json                    # Root workspace configuration and orchestration
 ```
 
 ## Remaining Work
@@ -69,8 +67,8 @@ See [MONOREPO_STATUS.md] for more details.
 
 Each package extraction follows this pattern:
 
-1. Create `web-ui/web-ui/packages/[name]/` directory
-2. Move source files from `web-ui/web-ui/packages/app/lib/[name]`
+1. Create `web-ui/packages/[name]/` directory
+2. Move source files from `web-ui/packages/app/lib/[name]`
 3. Create package.json with proper exports
 4. Create tsconfig.json for TypeScript
 5. Set up package-specific jest.config.mjs
@@ -192,9 +190,9 @@ yarn test:e2e
 
 **Docker Builds**:
 
-- Main Dockerfile stays in `web-ui/packages/app/`
+- Main Dockerfile stays in `web-ui/`
 - Uses workspace dependencies via Yarn
-- Build context includes root for workspace resolution
+- Build context includes repo root for workspace resolution
 
 **GitHub Actions**:
 
@@ -243,7 +241,7 @@ mkdir -p web-ui/packages/[package-name]/src
 
 # Create __tests__ directory and symlink to shared test configuration
 mkdir -p web-ui/packages/[package-name]/__tests__
-cd web-ui/packages/[package-name]/__tests__
+cd /path/to/repository/web-ui/packages/[package-name]/__tests__
 ln -sf ../../__tests__ shared
 
 # Create __mocks__ directory and symlink to shared mocks
@@ -562,7 +560,6 @@ and `web-ui/packages/app/tsconfig.json`:
 Then run:
 
 ```bash
-cd web-ui
 yarn install
 ```
 
@@ -574,15 +571,13 @@ yarn install
 ##### Step 9: Build and Test Your Package
 
 ```bash
-# Build the package
-cd web-ui/packages/[package-name]
-yarn build
+# Build the package from the repository root
+yarn workspace @compliance-theater/[package-name] build
 
 # Run tests
-yarn test
+yarn workspace @compliance-theater/[package-name] test
 
-# Or from workspace root:
-cd web-ui
+# Or run the full frontend build/test from the repository root:
 yarn build
 yarn test
 ```
@@ -601,9 +596,9 @@ import { specificFunction } from "@compliance-theater/[package-name]/submodule";
 
 ##### Step 11: Verify End-to-End
 
-1. **Build all packages**: `cd web-ui && yarn build`
-2. **Run all tests**: `cd web-ui && yarn test`
-3. **Start development server**: `cd web-ui && yarn dev`
+1. **Build all packages**: `yarn build`
+2. **Run all tests**: `yarn test`
+3. **Start development server**: `yarn dev`
 4. **Verify in browser/runtime**: Ensure your package works correctly when used
 
 #### Common Patterns and Best Practices
@@ -695,7 +690,7 @@ setupFilesAfterEnv: [
 
 ```bash
 # In your package directory
-cd web-ui/packages/[package-name]
+cd /path/to/repository/web-ui/packages/[package-name]
 mkdir -p __tests__ && cd __tests__ && ln -sf ../../__tests__ shared && cd ..
 mkdir -p __mocks__ && cd __mocks__ && ln -sf ../../__mocks__ shared && cd ..
 ```
@@ -779,7 +774,7 @@ Some packages carry peer dependencies that should not force version pinning on a
 ##### "Cannot find module '@compliance-theater/[package-name]'"
 
 1. Verify package is listed in `package.json` dependencies with `workspace:*`
-2. Run `yarn install` from workspace root
+2. Run `yarn install` from the repository root
 3. Check that `node_modules/@compliance-theater/[package-name]` exists as a symlink
 4. Verify the package `exports` map includes `default` and `workspace-source` entries
 5. Rebuild the package: `yarn build`

@@ -1,6 +1,6 @@
 packages:
-  - 'web-ui'
   - 'web-ui/packages/**'
-  - 'submodules/json-viewer'
-  - '!submodules/json-viewer/docs'
+  - 'web-ui/submodules/json-viewer/packages'
+  - '!web-ui/submodules/json-viewer/packages/docs'
+  - 'web-ui/submodules/sce'
   - 'web-ui/submodules/sce/packages/**/ts'

@@ -122,9 +122,9 @@ WORKDIR /app
 
 COPY --link=true --from=deps /app/ ./
 COPY --link=true --from=pruner /repo/out/full/ ./
-RUN rm -rf /app/submodules/sce/.yarn \
- && rm -rf /app/submodules/sce/yarn.lock \
- && rm -rf /app/submodules/sce/.yarnrc.yml;
+RUN rm -rf /app/web-ui/submodules/sce/.yarn \
+ && rm -rf /app/web-ui/submodules/sce/yarn.lock \
+ && rm -rf /app/web-ui/submodules/sce/.yarnrc.yml;
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
@@ -209,14 +209,14 @@ RUN --mount=type=secret,id=env_file \
     read_secret FLAGSMITH_SDK_KEY "$SECRETS/FLAGSMITH_SDK_KEY"; \
   fi; \
   set -a; [ -f "$TMP_ENV" ] && . "$TMP_ENV"; set +a; \
-  cp "$TMP_ENV" ./packages/app/.env.local; \
-  cp "$TMP_ENV" ./packages/app/.env.production.local;
+  cp "$TMP_ENV" ./web-ui/packages/app/.env.local; \
+  cp "$TMP_ENV" ./web-ui/packages/app/.env.production.local;
 
 FROM builder_root AS builder
 
-RUN node .yarn/releases/yarn-4.12.0.cjs workspace compliance-theater run build:publish --filter="@compliance-theater/app" && \
-  rm -f "$TMP_ENV" ./packages/app/.env.local ./packages/app/.env.production.local; \
-  if [ ! -d "./packages/app/.next/standalone" ]; then echo "Error: standalone build output missing" >&2; exit 1; fi
+RUN node .yarn/releases/yarn-4.12.0.cjs build:publish && \
+  rm -f "$TMP_ENV" ./web-ui/packages/app/.env.local ./web-ui/packages/app/.env.production.local; \
+  if [ ! -d "./web-ui/packages/app/.next/standalone" ]; then echo "Error: standalone build output missing" >&2; exit 1; fi
 
 FROM base AS runner
 
@@ -275,20 +275,20 @@ RUN addgroup --system --gid 1001 nodejs \
       pixman
 
 # Copy Next.js standalone output from the app workspace.
-# outputFileTracingRoot in next.config.ts is set to the workspace root (web-ui/), so the
+# outputFileTracingRoot in next.config.ts is set to the repository root, so the
 # standalone build preserves the monorepo path structure: server.js lands at
-# packages/app/server.js inside the standalone directory.
-COPY --link=true --from=builder /app/packages/app/.next/standalone /app
+# web-ui/packages/app/server.js inside the standalone directory.
+COPY --link=true --from=builder /app/web-ui/packages/app/.next/standalone /app
 # Static assets must mirror the app path within the standalone tree so the server can
 # resolve them via the default /_next/static route.
-COPY --link=true --from=builder /app/packages/app/.next/static /app/packages/app/.next/static
-# public/ must live alongside server.js (i.e. at /app/packages/app/public) because Next.js
+COPY --link=true --from=builder /app/web-ui/packages/app/.next/static /app/web-ui/packages/app/.next/static
+# public/ must live alongside server.js (i.e. at /app/web-ui/packages/app/public) because Next.js
 # standalone serves public assets relative to the directory from which server.js runs
-# (WORKDIR /app/packages/app at runtime).  A copy to /app/public would be unreachable.
-COPY --link=true --from=pruner /repo/packages/app/public /app/packages/app/public
+# (WORKDIR /app/web-ui/packages/app at runtime).  A copy to /app/public would be unreachable.
+COPY --link=true --from=pruner /repo/web-ui/packages/app/public /app/web-ui/packages/app/public
 # Copy startup and cron scripts from the app workspace.  rate-retry-client.sh is invoked
 # by the cron job configured below and expects to live at /app/scripts/.
-COPY --link=true --from=pruner /repo/packages/app/scripts /app/scripts
+COPY --link=true --from=pruner /repo/web-ui/packages/app/scripts /app/scripts
 
 # Set up cron and write runtime env file (pulling from secrets when env is unset)
 RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs \
@@ -298,7 +298,7 @@ RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.
   && chown -R nextjs:nodejs /app \
   && find /app/scripts -type f -name '*.sh' -exec chmod +x {} + || true;
 
-WORKDIR /app/packages/app
+WORKDIR /app/web-ui/packages/app
 
 EXPOSE 3000
 EXPOSE 9229

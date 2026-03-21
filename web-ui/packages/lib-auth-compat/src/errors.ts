@@ -3,7 +3,7 @@ export class MissingNextAuthPeerError extends Error {
 
   constructor(cause?: unknown) {
     super(
-      'next-auth runtime is unavailable. Install next-auth in the web-ui workspace root to use @compliance-theater/auth-compat/runtime.',
+      'next-auth runtime is unavailable. Install next-auth in the repository root to use @compliance-theater/auth-compat/runtime.',
     );
     this.name = 'MissingNextAuthPeerError';
     this.cause = cause;
@@ -21,7 +21,7 @@ export class MissingAuthCorePeerError extends Error {
 
   constructor(cause?: unknown) {
     super(
-      '@auth/core runtime is unavailable. Install @auth/core in the web-ui workspace root to use @compliance-theater/auth-compat/runtime.',
+      '@auth/core runtime is unavailable. Install @auth/core in the repository root to use @compliance-theater/auth-compat/runtime.',
     );
     this.name = 'MissingAuthCorePeerError';
     this.cause = cause;
@@ -39,7 +39,7 @@ export class MissingDrizzleAdapterPeerError extends Error {
 
   constructor(cause?: unknown) {
     super(
-      '@auth/drizzle-adapter runtime is unavailable. Install @auth/drizzle-adapter in the web-ui workspace root to use @compliance-theater/auth-compat/runtime.',
+      '@auth/drizzle-adapter runtime is unavailable. Install @auth/drizzle-adapter in the repository root to use @compliance-theater/auth-compat/runtime.',
     );
     this.name = 'MissingDrizzleAdapterPeerError';
     this.cause = cause;

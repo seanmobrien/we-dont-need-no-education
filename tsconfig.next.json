@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.base.json",
+  "noEmit": true,
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "ts-node"
+      },
+      {
+        "name": "next"
+      }
+    ]
+  }
+}

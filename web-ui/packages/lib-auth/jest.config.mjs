@@ -12,7 +12,7 @@ const config = {
     "^next-auth/providers/keycloak$": "<rootDir>/__mocks__/shared/keycloak-provider.js"
   },
   transformIgnorePatterns: [
-    '<rootDir>/../../node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client|jose|@compliance-theater)/)',
+    '<rootDir>/../../../node_modules/(?!(zodex|zod|got|react-error-boundary|openid-client|jose|@compliance-theater)/)',
     '<rootDir>/.next',
     '<rootDir>/.upstream',
     '.upstream',
