@@ -21,10 +21,22 @@
       "development": "./dist/server.js",
       "default": "./dist/server.js"
     },
-    "./next-auth": {
-      "types": "./dist/next-auth.d.ts",
-      "development": "./dist/next-auth.js",
-      "default": "./dist/next-auth.js"
+    "./auth": null,
+    "./next-auth": null,
+    "./auth.node": {
+      "types": "./dist/auth.node.d.ts",
+      "development": "./src/auth.node.ts",
+      "default": "./dist/auth.node.js"
+    },
+    "./auth.edge": {
+      "types": "./dist/auth.edge.d.ts",
+      "development": "./src/auth.edge.ts",
+      "default": "./dist/auth.edge.js"
+    },
+    "./middleware": {
+      "types": "./dist/middleware.d.ts",
+      "development": "./src/middleware.ts",
+      "default": "./dist/middleware.js"
     },
     "./service-registrar/browser": {
       "types": "./dist/service-registrar.browser.d.ts",

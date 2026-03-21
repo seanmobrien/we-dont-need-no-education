@@ -63,7 +63,7 @@ jest.mock('@compliance-theater/auth/lib/resources/case-file/index', () => ({
 }));
 
 // Mock auth
-jest.mock('@compliance-theater/auth/auth', () => ({
+jest.mock('@compliance-theater/auth/auth.node', () => ({
   auth: jest.fn().mockResolvedValue({ user: { id: '123' } }),
 }));
 

@@ -42,7 +42,7 @@ All todo lists and items are automatically scoped to the signed-in user via sess
 
 ### Implementation Details
 
-The system uses Next.js authentication (`auth()` from `@compliance-theater/auth/auth`) to automatically:
+The system uses Next.js authentication (`auth()` from `@compliance-theater/auth/auth.node`) to automatically:
 
 1. Extract the current user's ID from the session
 2. Apply userId filtering to all list and item queries

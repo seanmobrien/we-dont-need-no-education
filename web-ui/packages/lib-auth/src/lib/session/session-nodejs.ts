@@ -11,9 +11,17 @@ import { decodeToken } from '../utilities';
 import { getAccountTokens } from '../server/get-account-tokens';
 import { createHash } from 'crypto';
 import { LoggedError } from '@compliance-theater/logger';
+import { createCachedModuleLoader } from '../runtime-loader';
 
 const hashFromServer = async (input: string): Promise<string> =>
   createHash('sha256').update(input).digest('hex');
+
+const loadRefreshTokenModule = createCachedModuleLoader(() =>
+  import('../refresh-token')
+);
+const loadUpdateAccountTokensModule = createCachedModuleLoader(() =>
+  import('../server/update-account-tokens')
+);
 
 export const session = async ({
   session: sessionFromProps,
@@ -41,10 +49,8 @@ export const session = async ({
         log((l) =>
           l.info('Session callback: Token expired in DB, refreshing...')
         );
-        const { refreshAccessToken } = await import('../refresh-token');
-        const { updateAccountTokens } = await import(
-          '../server/update-account-tokens'
-        );
+        const { refreshAccessToken } = await loadRefreshTokenModule();
+        const { updateAccountTokens } = await loadUpdateAccountTokensModule();
 
         // Construct a temporary token object for refresh
         // Construct a temporary token object for refresh

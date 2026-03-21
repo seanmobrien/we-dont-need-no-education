@@ -4,7 +4,6 @@ import { auth } from '@compliance-theater/auth/server';
 import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
 import { LoggedError, log } from '@compliance-theater/logger';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
-// import { authOptions } from '@compliance-theater/auth/next-auth';
 
 export const dynamic = 'force-dynamic';
 

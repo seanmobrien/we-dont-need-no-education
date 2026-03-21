@@ -5,7 +5,7 @@ import {
   drizDbWithInit,
   sql,
 } from '@compliance-theater/database/orm';
-import { auth } from '../../auth';
+import { auth } from '../../auth.node';
 
 export const getActiveUserPublicKeys = async ({
   db: database,
@@ -37,7 +37,7 @@ export const getActiveUserPublicKeys = async ({
       typeof session.user.id === 'number'
         ? session.user.id
         : parseInt(session.user.id, 10);
-    if (isNaN(userId)) {
+    if (typeof userId !== 'number' || Number.isNaN(userId)) {
       throw new Error('Invalid user ID format');
     }
   } // Query userPublicKeys for keys where:
