@@ -151,6 +151,8 @@ Migration files are located in `/drizzle/`.
 To generate and apply migrations:
 
 ```bash
+cd /path/to/repository
+
 # Generate migration artifacts
 yarn workspace @compliance-theater/database drizzle-generate
 

@@ -144,7 +144,7 @@ yarn install
 
 ### Environment Configuration
 
-Create `.env.local` in the `web-ui/packages/app/` directory with required configuration:
+Create `.env.local` in the repository's `web-ui/packages/app/` directory with required configuration:
 
 ```bash
 # Database

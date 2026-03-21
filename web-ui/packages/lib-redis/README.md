@@ -110,6 +110,7 @@ The package uses environment variables from `@compliance-theater/env`:
 Run tests for this package:
 
 ```bash
+cd /path/to/repository
 yarn workspace @compliance-theater/redis test
 ```
 

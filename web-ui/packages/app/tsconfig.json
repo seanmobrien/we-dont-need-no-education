@@ -3,7 +3,8 @@
   "compilerOptions": {
     "noEmit": true,
     "noImplicitAny": false,
-    "rootDir": "./",
+    // Allow source imports from sibling frontend packages and submodules under web-ui/.
+    "rootDir": "../../",
     "baseUrl": ".",
     "composite": false,
     "customConditions": [
@@ -12,6 +13,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@semanticencoding/core": [
+        "../../submodules/sce/packages/core/ts/src/index.ts"
       ]
     },
     // Explicit types prevent accidental inclusion of @types packages (for

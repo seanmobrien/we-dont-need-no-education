@@ -241,7 +241,7 @@ mkdir -p web-ui/packages/[package-name]/src
 
 # Create __tests__ directory and symlink to shared test configuration
 mkdir -p web-ui/packages/[package-name]/__tests__
-cd web-ui/packages/[package-name]/__tests__
+cd /path/to/repository/web-ui/packages/[package-name]/__tests__
 ln -sf ../../__tests__ shared
 
 # Create __mocks__ directory and symlink to shared mocks
@@ -690,7 +690,7 @@ setupFilesAfterEnv: [
 
 ```bash
 # In your package directory
-cd web-ui/packages/[package-name]
+cd /path/to/repository/web-ui/packages/[package-name]
 mkdir -p __tests__ && cd __tests__ && ln -sf ../../__tests__ shared && cd ..
 mkdir -p __mocks__ && cd __mocks__ && ln -sf ../../__mocks__ shared && cd ..
 ```
