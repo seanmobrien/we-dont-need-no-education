@@ -6,13 +6,13 @@
       "dependsOn": ["^build"],
       "inputs": [
         "src/**",
-        "package.json",
-        "tsconfig.json",
+        "package.json",        
         "tsconfig.*",
-        "!dist/**",
-        "!.next/**",
-        "!coverage/**",
-        "!tsconfig.tsbuildinfo"
+        "!**/dist/**",
+        "!**/.next/**",
+        "!**/coverage/**",
+        "!**/tsconfig.tsbuildinfo",
+        "!**/.turbo/**"
       ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [

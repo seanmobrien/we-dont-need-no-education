@@ -14,7 +14,6 @@ export const nextConfig: NextConfig = withStripRscPrefixPlugin(
             withEnsureChunkSymlinks({
               // Keep tracing rooted at the workspace to avoid mis-detected lockfiles.
               outputFileTracingRoot: path.join(__dirname, '..', '..'),
-              output: 'standalone',
               experimental: {
                 webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'INP', 'TTFB', 'FID'],
               },

@@ -27,6 +27,8 @@ type AuthorizedFn = (params: {
   auth: Session | null;
 }) => Awaitable<boolean | Response | undefined>;
 
+type JwtFn = DynamicImports['auth']['jwt']['jwt'];
+
 type DynamicImports = {
   drizzleAdapter: {
     setupDrizzleAdapter: () => Promise<Adapter>;
@@ -141,6 +143,21 @@ const dynamicImports: DynamicImports = {
   auth: {},
 } as DynamicImports;
 
+const edgeJwtCallback: JwtFn = async ({ token, user }) => {
+  if (user?.id) {
+    token.id = user.id;
+  }
+
+  if (user && 'account_id' in user && !!user.account_id) {
+    token.account_id =
+      typeof user.account_id === 'number'
+        ? user.account_id
+        : Number(user.account_id);
+  }
+
+  return token;
+};
+
 const providers: Provider[] = [...setupKeyCloakProvider()];
 
 export const providerMap = providers.map((provider) => {
@@ -151,7 +168,7 @@ export const providerMap = providers.map((provider) => {
   return { id: provider.id, name: provider.name };
 });
 
-const nextAuthResult: NextAuthResult = createNextAuth(async () => {
+const nextAuthResult: NextAuthResult = createNextAuth(async (req) => {
   // Added NextAuthConfig return type
   let adapter: Adapter | undefined;
 
@@ -213,9 +230,15 @@ const nextAuthResult: NextAuthResult = createNextAuth(async () => {
   }
   const session = dynamicImports.auth.session.session;
   if (!dynamicImports.auth.jwt) {
-    dynamicImports.auth.jwt = await import('./lib/jwt');
-    if (!dynamicImports.auth.jwt.jwt) {
-      throw new Error('Failed to load jwt callback');
+    if (isRunningOnEdge()) {
+      dynamicImports.auth.jwt = {
+        jwt: edgeJwtCallback,
+      };
+    } else {
+      dynamicImports.auth.jwt = await import('./lib/jwt');
+      if (!dynamicImports.auth.jwt.jwt) {
+        throw new Error('Failed to load jwt callback');
+      }
     }
   }
   const jwt = dynamicImports.auth.jwt.jwt;
@@ -230,6 +253,7 @@ const nextAuthResult: NextAuthResult = createNextAuth(async () => {
   }
 
   const redirect = dynamicImports.auth.redirect.redirect;
+  const isLocalhost = req?.url && new URL(req.url).hostname === 'localhost' && env('NEXTAUTH_URL')?.includes('localhost');
   return {
     adapter,
     callbacks: {
@@ -254,7 +278,7 @@ const nextAuthResult: NextAuthResult = createNextAuth(async () => {
       logo: '/static/logo/logo-dark.png',
       brandColor: '#1898a8', // Custom brand color
     },
-    trustHost: env('NEXTAUTH_TRUST_HOST'),
+    trustHost: isLocalhost || env('NEXTAUTH_TRUST_HOST'),
   } as NextAuthConfig;
 });
 

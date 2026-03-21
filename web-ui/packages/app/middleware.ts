@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 
-import { auth } from '@compliance-theater/auth/next-auth';
+// import { auth } from '@compliance-theater/auth/next-auth';
+import { auth } from '@compliance-theater/auth/auth';
 
 import { ensureEdgeDiBootstrap } from '@/lib/bootstrap/di/browser';
 

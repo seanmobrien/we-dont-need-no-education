@@ -80,7 +80,7 @@ export const providerMap = providers.map((provider) => {
 	return { id: provider.id, name: provider.name };
 });
 
-const nextAuthResult: NextAuthResult = createNextAuth({
+const nextAuthResult: NextAuthResult = createNextAuth(async (req) => ({
 	callbacks: {
 		authorized,
 	},
@@ -93,8 +93,11 @@ const nextAuthResult: NextAuthResult = createNextAuth({
 		maxAge: 30 * 60,
 		updateAge: 5 * 60,
 	},
-	trustHost: env('NEXTAUTH_TRUST_HOST'),
-});
+	trustHost: (() => {
+		const isLocalhost = req?.url && new URL(req.url).hostname === 'localhost' && env('NEXTAUTH_URL')?.includes('localhost');
+		return isLocalhost || env('NEXTAUTH_TRUST_HOST');
+	})(),
+}));
 
 export type NextAuthHandlers = NextAuthResult['handlers'];
 export type NextAuthAuth = NextAuthResult['auth'];

@@ -700,9 +700,9 @@ mkdir -p __tests__ && cd __tests__ && ln -sf ../../__tests__ shared && cd ..
 mkdir -p __mocks__ && cd __mocks__ && ln -sf ../../__mocks__ shared && cd ..
 ```
 
-##### Package Naming Conventions
-
-- **Libraries**: `lib-[name]` (e.g., `lib-logger`, `lib-database`)
+- **Libraries**: `lib-[name]` (e.g., `lib-logger`, `lib-database`) — prefer the shortest clear name; drop `-util` suffixes when the purpose is unambiguous (e.g., `lib-react` not `lib-react-util`, `lib-nextjs` not `lib-nextjs-util`)
+- **Compatibility boundaries**: `lib-[domain]-compat` (e.g., `lib-auth-compat`, `lib-react-query-compat`) — see Compat Package Pattern above
+- **Foundational contracts**: `lib-types` — workspace-wide abstract types and DI contracts; all other packages may depend on this
 - **Features**: `[feature-name]` (e.g., `instrument`, `data-models`)
 - **Components**: `components` or `ui-components`
 - **Test Utilities**: `test-utils`
@@ -736,12 +736,43 @@ This organization makes it easy for consumers to find what they need.
 Follow this dependency order to avoid circular dependencies:
 
 1. **No dependencies**: `lib-logger`, `lib-env`, `lib-typescript`
-2. **Depends on (1)**: `lib-send-api-request`, `lib-redis-client`, `lib-database`
-3. **Depends on (2)**: `lib-site-util`, `lib-react-util`
-4. **Depends on (3)**: `lib-nextjs-util`, `lib-auth`
-5. **Feature packages**: `instrument`, `data-models`, `components`
+2. **Shared contracts**: `lib-types` (workspace-wide abstract type definitions and dependency injection contracts — foundational layer, no upstream workspace deps)
+3. **Depends on (1-2)**: `lib-send-api-request`, `lib-redis`, `lib-database`, `lib-fetch`
+4. **Depends on (1-3)**: `lib-site-util`, `lib-react`, `lib-themes`
+5. **Depends on (4)**: `lib-nextjs`, `lib-auth`, `lib-feature-flags`
+6. **Compatibility boundaries**: `lib-auth-compat`, `lib-react-query-compat` (peer-safe shims — see Compat Package Pattern below)
+7. **Feature packages**: `instrument`, `data-models`, `components`
 
 Always extract packages in this order during refactoring.
+
+##### Compat Package Pattern
+
+Some packages carry peer dependencies that should not force version pinning on all workspace consumers (e.g., `next-auth`, `@auth/core`, `@tanstack/react-query`). Rather than pulling those peers into a general-purpose library, create a dedicated `*-compat` package that:
+
+- Declares the peer as a `peerDependency` (not a hard dependency)
+- Re-exports types and adapters behind a stable internal API
+- Allows other workspace packages to consume the abstraction without taking on the peer dependency themselves
+
+**Naming convention**: `lib-[domain]-compat` (e.g., `lib-auth-compat`, `lib-react-query-compat`)
+
+**When to use**: When a package would otherwise force a specific version of a widely-used external library (React, Next.js, react-query, drizzle, etc.) onto all consumers. The compat package isolates that version contract to the packages that actually need it.
+
+```json
+// lib-auth-compat/package.json
+{
+  "name": "@compliance-theater/auth-compat",
+  "peerDependencies": {
+    "next-auth": "^5.0.0",
+    "@auth/core": "^0.37.0"
+  },
+  "peerDependenciesMeta": {
+    "next-auth": { "optional": true },
+    "@auth/core": { "optional": true }
+  }
+}
+```
+
+##### Package Naming Conventions (Revised)
 
 #### Troubleshooting
 
@@ -797,9 +828,9 @@ When creating a new package, verify:
 #### Additional Resources
 
 - **Existing Examples**: Review `lib-logger`, `lib-env`, `lib-typescript`, `lib-send-api-request` for reference implementations
-- **Turborepo**: https://turbo.build/repo/docs
-- **Yarn Workspaces**: https://classic.yarnpkg.com/en/docs/workspaces/
-- **TypeScript Project References**: https://www.typescriptlang.org/docs/handbook/project-references.html
+- **Turborepo**: [turbo.build/repo/docs](https://turbo.build/repo/docs)
+- **Yarn Workspaces**: [classic.yarnpkg.com/en/docs/workspaces](https://classic.yarnpkg.com/en/docs/workspaces/)
+- **TypeScript Project References**: [typescriptlang.org/docs/handbook/project-references](https://www.typescriptlang.org/docs/handbook/project-references.html)
 
 ### Making Changes
 
