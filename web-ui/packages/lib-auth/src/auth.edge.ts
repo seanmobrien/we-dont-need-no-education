@@ -80,7 +80,7 @@ export const providerMap = providers.map((provider) => {
   return { id: provider.id, name: provider.name };
 });
 
-const nextAuthResult: NextAuthResult = createNextAuth(async (req) => ({
+const nextAuthResult: NextAuthResult = createNextAuth(async (_req) => ({
   callbacks: {
     authorized,
   },
@@ -93,7 +93,7 @@ const nextAuthResult: NextAuthResult = createNextAuth(async (req) => ({
     maxAge: 30 * 60,
     updateAge: 5 * 60,
   },
-  trustHost: env('NEXTAUTH_TRUST_HOST') ?? true
+  trustHost: env('NEXTAUTH_TRUST_HOST'),
 }));
 
 export type NextAuthHandlers = NextAuthResult['handlers'];
