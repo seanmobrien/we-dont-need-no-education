@@ -38,8 +38,7 @@
     "@compliance-theater/logger": "workspace:*",
     "@opentelemetry/api": "1.9.0",
     "@opentelemetry/api-logs": "0.57.2",
-    "uuid": "^11.1.0",
-    "zod": "3.25.76"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@swc/core": "^1.13.5",
@@ -57,7 +56,8 @@
     "react-dom": "19.2.4",
     "react-native": "^0.84.0",
     "rimraf": "^6.1.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "zod": "3.25.76"
   },
   "peerDependencies": {
     "next": "^15.5.12",

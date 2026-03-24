@@ -1124,7 +1124,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@compliance-theater/app@workspace:*, @compliance-theater/app@workspace:web-ui/packages/app":
+"@compliance-theater/app@workspace:web-ui/packages/app":
   version: 0.0.0-use.local
   resolution: "@compliance-theater/app@workspace:web-ui/packages/app"
   dependencies:
@@ -1291,6 +1291,7 @@ __metadata:
     "@compliance-theater/react": "workspace:*"
     "@compliance-theater/react-query-compat": "workspace:*"
     "@compliance-theater/redis": "workspace:*"
+    "@compliance-theater/send-api-request": "workspace:*"
     "@compliance-theater/types": "workspace:*"
     "@compliance-theater/typescript": "workspace:*"
     "@emotion/cache": "npm:^11.14.0"
@@ -1327,11 +1328,29 @@ __metadata:
     tough-cookie: "npm:^6.0.0"
     typescript: "npm:^5.9.3"
   peerDependencies:
+    "@emotion/cache": ^11.14.0
+    "@emotion/react": ^11.14.0
+    "@emotion/styled": ^11.14.0
+    "@mui/icons-material": ^7.3.6
+    "@mui/material": ^7.3.6
+    "@toolpad/core": ^0.15.0
     next: ^15.5.12
     react: 19.2.4
     react-dom: 19.2.4
     zod: 3.25.76
   peerDependenciesMeta:
+    "@emotion/cache":
+      optional: true
+    "@emotion/react":
+      optional: true
+    "@emotion/styled":
+      optional: true
+    "@mui/icons-material":
+      optional: true
+    "@mui/material":
+      optional: true
+    "@toolpad/core":
+      optional: true
     crypto:
       optional: true
     next:
@@ -1877,11 +1896,23 @@ __metadata:
     rimraf: "npm:^6.1.2"
     typescript: "npm:^5.9.3"
   peerDependencies:
+    "@emotion/react": ^11.14.0
+    "@emotion/styled": ^11.14.0
+    "@mui/icons-material": ^7.3.6
+    "@mui/material": ^7.3.6
     next: ^15.5.12
     react: 19.2.4
     react-dom: 19.2.4
     zod: 3.25.76
   peerDependenciesMeta:
+    "@emotion/react":
+      optional: true
+    "@emotion/styled":
+      optional: true
+    "@mui/icons-material":
+      optional: true
+    "@mui/material":
+      optional: true
     next:
       optional: true
     react:
@@ -3716,7 +3747,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mui/system@npm:^7.0.0, @mui/system@npm:^7.3.6, @mui/system@npm:^7.3.9":
+"@mui/system@npm:^7.3.6":
   version: 7.3.9
   resolution: "@mui/system@npm:7.3.9"
   dependencies:
@@ -7778,22 +7809,6 @@ __metadata:
     "@auth/core": "npm:0.41.1"
     "@auth/drizzle-adapter": "npm:^1.4.1"
     "@changesets/cli": "npm:^2.29.8"
-    "@compliance-theater/after": "workspace:*"
-    "@compliance-theater/app": "workspace:*"
-    "@compliance-theater/auth": "workspace:*"
-    "@compliance-theater/database": "workspace:*"
-    "@compliance-theater/env": "workspace:*"
-    "@compliance-theater/feature-flags": "workspace:*"
-    "@compliance-theater/json-viewer": "workspace:*"
-    "@compliance-theater/logger": "workspace:*"
-    "@compliance-theater/nextjs": "workspace:*"
-    "@compliance-theater/react": "workspace:*"
-    "@compliance-theater/react-query-compat": "workspace:*"
-    "@compliance-theater/redis": "workspace:*"
-    "@compliance-theater/send-api-request": "workspace:*"
-    "@compliance-theater/themes": "workspace:*"
-    "@compliance-theater/types": "workspace:*"
-    "@compliance-theater/typescript": "workspace:*"
     "@eslint/eslintrc": "npm:^3"
     "@eslint/js": "npm:^9.39.1"
     "@jest/globals": "npm:^30.0.5"
@@ -7801,7 +7816,6 @@ __metadata:
     "@opentelemetry/api-logs": "npm:0.57.2"
     "@playwright/test": "npm:^1.55.0"
     "@redis/client": "npm:>=5.5.6"
-    "@semanticencoding/core": "workspace:*"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
     "@testing-library/dom": "npm:^10.4.1"
@@ -15457,6 +15471,8 @@ __metadata:
     "@types/node": "npm:25.2.3"
     typescript: "npm:^5.9.3"
     zod: "npm:3.25.76"
+  peerDependencies:
+    zod: 3.25.76
   bin:
     sce: ./dist/cli.js
     semanticencoding: ./dist/sce-mcp-server.js
