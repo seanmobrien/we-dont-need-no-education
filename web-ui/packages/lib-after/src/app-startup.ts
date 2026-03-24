@@ -291,8 +291,8 @@ export const createStartupAccessors = (config: AppStartupConfig = {}) => {
     () => {
       const instance = AppStartup.createInstance(config);
       registerServices({
-        'app-startup': asValue(instance),
-        'after': asFunction()
+        'startup': asValue(instance),
+        'after': asFunction(AfterManager.getInstance)
       })
       return instance;
     })!;

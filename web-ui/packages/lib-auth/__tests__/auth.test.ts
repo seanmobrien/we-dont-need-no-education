@@ -110,11 +110,11 @@ describe('auth.ts integration', () => {
     }));
 
     let authModule:
-      | typeof import('../src/auth')
+      | typeof import('../src/auth.node')
       | undefined;
 
     await jest.isolateModulesAsync(async () => {
-      authModule = jest.requireActual('../src/auth') as typeof import('../src/auth');
+      authModule = jest.requireActual('../src/auth.node') as typeof import('../src/auth.node');
     });
 
     if (!authModule?.buildNextAuthConfig) {

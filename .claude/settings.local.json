@@ -8,7 +8,11 @@
       "Bash(for pkg:*)",
       "Bash(do echo:*)",
       "Bash(__NEW_LINE_7a09a4326c6c883f__ cat:*)",
-      "Bash(/dev/null ls:*)"
+      "Bash(/dev/null ls:*)",
+      "Bash(for d:*)",
+      "Read(//d/repos/no-ed/**)",
+      "Bash(grep -E \"CLAUDE|AGENTS|\\\\.md$|\\\\.agent|\\\\.claude\")",
+      "Bash(done)"
     ]
   }
 }

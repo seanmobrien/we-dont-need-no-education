@@ -38,7 +38,7 @@
     "add": "yarn workspace @compliance-theater/after add ",
     "build": "yarn run build:typescript",
     "build:typescript": "echo 'Building @compliance-theater/after...' && tsc -b tsconfig.json && echo '\u001b[1;32mBuild complete: @compliance-theater/after.\u001b[0m\n' || (echo '\u001b[31mBuild failed: @compliance-theater/after.\u001b[0m\n' >&2; exit 1)",
-    "build:publish": "yarn run build && yarn pack --out ./dist/@compliance-theater-after.tgz",
+    "build:publish": "yarn run build",
     "test": "jest --passWithNoTests",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"

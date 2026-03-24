@@ -37,7 +37,7 @@
   "scripts": {
     "add": "yarn workspace @compliance-theater/types add ",
     "build": "yarn build:typescript",
-    "build:publish": "yarn build && yarn pack --out ./dist/@compliance-theater-types.tgz",
+    "build:publish": "yarn run build",
     "build:typescript": "echo 'Building lib/types...' && tsc -b tsconfig.json && echo '\\u001b[1;32mBuild complete: @compliance-theater/types.\\u001b[0m\\n' || (echo '\\u001b[31mBuild failed: @compliance-theater/types.\\u001b[0m\\n' >&2; exit 1)",
     "test": "jest",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",

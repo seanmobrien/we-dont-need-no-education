@@ -5,10 +5,10 @@ Load the canonical repository policy first:
 
 Then apply web-ui specifics:
 - `./typescript-react.instructions.md`
-- `./mcp.md`
-- `./mem0.md`
-- `./vercel-ai.md`
 
 Web UI references:
 - `../../README.md`
 - `../../packages/app/README.md`
+
+App-specific AI/integration docs (load when working in `packages/app`):
+- `../../packages/app/.github/instructions/copilot-instructions.md`

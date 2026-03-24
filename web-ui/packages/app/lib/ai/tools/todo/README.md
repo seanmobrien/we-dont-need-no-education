@@ -31,7 +31,7 @@ The Todo List MCP provides a simple, in-memory task management system that can b
 
 ## User Segmentation
 
-### Overview
+### Segmentation Overview
 
 All todo lists and items are automatically scoped to the signed-in user via session authentication:
 
@@ -170,7 +170,7 @@ Toggles the completion status (complete ↔ incomplete).
 
 When an AI assistant connects to the MCP endpoint at `/api/ai/tools/todo/[transport]`, it will have access to all five tools. The assistant can help users manage their todo list conversationally:
 
-```
+``` Prompt/Response
 User: "Create a todo to review the quarterly report"
 Assistant: [calls createTodo - userId auto-extracted from session]
           "I've created a todo for reviewing the quarterly report."

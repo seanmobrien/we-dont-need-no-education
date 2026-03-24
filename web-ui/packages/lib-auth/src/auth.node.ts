@@ -30,7 +30,6 @@ export const buildNextAuthConfig = async (req?: Request): Promise<NextAuthConfig
     isNodeServerRuntime,
   });
 
-  debugger;
   const isLocalhost = req?.url && new URL(req.url).hostname === 'localhost' && env('NEXTAUTH_URL')?.includes('localhost');
   return {
     adapter,
