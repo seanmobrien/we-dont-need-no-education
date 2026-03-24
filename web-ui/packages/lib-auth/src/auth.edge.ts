@@ -93,7 +93,7 @@ const nextAuthResult: NextAuthResult = createNextAuth(async (req) => ({
     maxAge: 30 * 60,
     updateAge: 5 * 60,
   },
-  trustHost: true
+  trustHost: env('NEXTAUTH_TRUST_HOST') ?? true
 }));
 
 export type NextAuthHandlers = NextAuthResult['handlers'];
