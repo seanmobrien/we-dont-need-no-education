@@ -141,13 +141,13 @@ export class AppStartup {
     }
 
     this.#pending = (async () => {
-      // Early-exit if we're building - no need to run initializers during build time
-      if (process.env.NEXT_PHASE === 'phase-production-build') {
-        setAppStartupState('ready');
-        return;
-      }
       setAppStartupState('initializing');
       try {
+        // Early-exit if we're building - no need to run initializers during build time
+        if (process.env.NEXT_PHASE === 'phase-production-build') {
+          setAppStartupState('ready');
+          return;
+        }
         // First, discover any late-bound initializers
         await this.#discoverInitializers();
 
