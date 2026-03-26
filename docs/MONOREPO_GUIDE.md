@@ -321,13 +321,7 @@ Create `web-ui/packages/[package-name]/tsconfig.json`:
 
 ```tsconfig.json
 {
-  "extends": "../../tsconfig.base.json",
-  "references": [
-    {
-    // Add TypeScript project references for workspace packages you depend on
-      "path": "../lib-types"
-    }
-  ]
+  "extends": "../../tsconfig.base.json",  
 }
 ```
 
@@ -752,13 +746,15 @@ Some packages carry peer dependencies that should not force version pinning on a
 
 **When to use**: When a package would otherwise force a specific version of a widely-used external library (React, Next.js, react-query, drizzle, etc.) onto all consumers. The compat package isolates that version contract to the packages that actually need it.
 
+Use the repo's current versions when documenting or creating a compat package. For this monorepo, the auth-related versions currently in use are:
+
 ```json
 // lib-auth-compat/package.json
 {
   "name": "@compliance-theater/auth-compat",
   "peerDependencies": {
-    "next-auth": "^5.0.0",
-    "@auth/core": "^0.37.0"
+    "next-auth": "^5.0.0-beta.30",
+    "@auth/core": "0.41.1"
   },
   "peerDependenciesMeta": {
     "next-auth": { "optional": true },

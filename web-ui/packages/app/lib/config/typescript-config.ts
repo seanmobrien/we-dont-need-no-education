@@ -42,10 +42,9 @@ export const withTypescriptConfig: NextConfigPlugin = (nextConfig) => {
   const outputFileTracingRoot =
     nextConfig.outputFileTracingRoot || path.resolve(process.cwd(), '../../..');
   */
- const outputFileTracingRoot = false;
   return {
     ...nextConfig,
-    outputFileTracingRoot, // Trace from repository root so hoisted deps are included
+    // outputFileTracingRoot, // Trace from repository root so hoisted deps are included
     typedRoutes: true, // Enable type checking for next/router usage
     webpack: (config, args) => {
       const updatedConfig = originalWebpack?.(config, args) ?? config;

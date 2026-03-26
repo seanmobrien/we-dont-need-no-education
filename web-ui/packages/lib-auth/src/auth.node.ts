@@ -55,7 +55,7 @@ export const buildNextAuthConfig = async (req?: Request): Promise<NextAuthConfig
       logo: '/static/logo/logo-dark.png',
       brandColor: '#1898a8',
     },
-    trustHost: env('NEXTAUTH_TRUST_HOST')
+    trustHost: isLocalhost || env('NEXTAUTH_TRUST_HOST')
   } as NextAuthConfig;
 };
 
