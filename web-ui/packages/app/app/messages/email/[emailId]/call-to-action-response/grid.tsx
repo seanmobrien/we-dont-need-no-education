@@ -9,7 +9,7 @@ import { ResponsiveActionPanel } from './panel';
 import { DataGridProProps } from '@mui/x-data-grid-pro';
 import { useCallback } from 'react';
 
-import type { GridColDef } from '@mui/x-data-grid/models/colDef';
+import type { GridColDef } from '@mui/x-data-grid-pro';
 
 const stableColumns: GridColDef[] = [
   {

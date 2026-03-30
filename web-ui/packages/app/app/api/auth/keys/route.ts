@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
-import { auth } from '@compliance-theater/auth/server';
+import { auth } from '@compliance-theater/auth/auth.node';
 import { getServiceContainer } from '@compliance-theater/types/dependency-injection/container';
 import type { IUserSigningKeysService } from '@compliance-theater/types';
 import { LoggedError } from '@compliance-theater/logger';
@@ -28,8 +28,8 @@ const authenticationRequiredResponse = (): NextResponse => {
   );
 };
 
-const getAuthenticatedUser = async () => {
-  const session = await auth();
+const getAuthenticatedUser = async (req?: NextRequest) => {
+  const session = await auth(req);
   if (!session?.user?.id) {
     throw new ApiRequestError(
       'Authentication required',
@@ -69,7 +69,7 @@ const handleRouteError = (
 export const POST = wrapRouteRequest(
   async (req: NextRequest): Promise<NextResponse> => {
     try {
-      const user = await getAuthenticatedUser();
+      const user = await getAuthenticatedUser(req);
       const service = getUserSigningKeysService();
       const uploadRequest = await service.getUploadRequest(user, req);
       const result = await service.processKeyRequest(uploadRequest);
@@ -90,9 +90,9 @@ export const POST = wrapRouteRequest(
  *
  * Retrieves all active public keys for the authenticated user
  */
-export const GET = wrapRouteRequest(async (): Promise<NextResponse> => {
+export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
   try {
-    const user = await getAuthenticatedUser();
+    const user = await getAuthenticatedUser(req);
     const userKeys = await getUserSigningKeysService().getKeys(user);
 
     return NextResponse.json({

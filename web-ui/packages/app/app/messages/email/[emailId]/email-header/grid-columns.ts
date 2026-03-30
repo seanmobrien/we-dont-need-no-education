@@ -1,4 +1,4 @@
-import type { GridColDef } from '@mui/x-data-grid/models/colDef';
+import type { GridColDef } from '@mui/x-data-grid-pro';
 
 const stableColumns: GridColDef[] = [
   { field: 'typeName', headerName: 'Header', editable: false, width: 200 },

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@compliance-theater/auth/server';
+import { auth } from '@compliance-theater/auth/auth.node';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { schema } from '@compliance-theater/database/orm';
 import { eq, and } from '@compliance-theater/database/drizzle-orm';
@@ -24,7 +24,7 @@ export const GET = wrapRouteRequest(
     const { chatId } = await params;
     try {
       // Validate session authentication
-      const session = await auth();
+      const session = await auth(req);
       if (!session) {
         return NextResponse.json(
           { error: 'Unauthorized - session required' },

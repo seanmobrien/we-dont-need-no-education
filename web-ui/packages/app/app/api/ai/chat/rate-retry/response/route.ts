@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
-import { auth } from '@compliance-theater/auth/server';
+import { auth } from '@compliance-theater/auth/auth.node';
 import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
 import { LoggedError, log } from '@compliance-theater/logger';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
@@ -11,7 +11,7 @@ export const GET = wrapRouteRequest(
   async (req: NextRequest) => {
     try {
       // Check authentication
-      const session = await auth();
+      const session = await auth(req);
       if (!session) {
         return NextResponse.json(
           { error: 'Authentication required' },
@@ -106,7 +106,7 @@ export const POST = wrapRouteRequest(
   async (req: NextRequest) => {
     try {
       // Check authentication
-      const session = await auth();
+      const session = await auth(req);
       if (!session) {
         return unauthorizedServiceResponse({ req, scopes: ['case-file:read'] });
       }

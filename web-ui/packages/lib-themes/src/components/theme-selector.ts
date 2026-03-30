@@ -1,1 +1,3 @@
-export * from '../themes/theme-selector';
+"use client";
+
+export { ThemeSelector } from '../themes/theme-selector';

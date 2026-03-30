@@ -12,7 +12,7 @@ import { getRetryErrorInfo } from '@/lib/ai/chat/error-helpers';
 import { getUserToolProviderCache } from '@/lib/ai/mcp/cache';
 import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
 import { env } from '@compliance-theater/env';
-import { auth } from '@compliance-theater/auth/server';
+import { auth } from '@compliance-theater/auth/auth.node';
 import { type NextRequest, NextResponse } from 'next/server';
 import { log, LoggedError } from '@compliance-theater/logger';
 import { isTruthy } from '@compliance-theater/types';
@@ -127,7 +127,7 @@ export const POST = (req: NextRequest) => {
 
   return wrapRouteRequest(
     async (req: NextRequest) => {
-      const session = await auth();
+      const session = await auth(req);
       if (
         !session ||
         !session.user ||

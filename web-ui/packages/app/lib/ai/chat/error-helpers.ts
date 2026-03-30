@@ -2,6 +2,13 @@ import { APICallError } from '@compliance-theater/types/ai-sdk';
 import { isError } from '@compliance-theater/logger';
 import type { RetryErrorInfo } from './types';
 
+type RetryableApiError = Error & {
+  statusCode?: number;
+  responseHeaders?: Record<string, string | undefined>;
+  lastError?: unknown;
+  error?: unknown;
+};
+
 /**
  * Extracts retry-related error information from a given error object.
  *
@@ -21,10 +28,12 @@ export const getRetryErrorInfo = (
   if (isError(error)) {
     // Also really need to be an APICallError
     if (APICallError.isInstance(error)) {
-      if (error.statusCode === 429) {
-        if (error.responseHeaders) {
+      const apiError = error as RetryableApiError;
+
+      if (apiError.statusCode === 429) {
+        if (apiError.responseHeaders) {
           const retryAfterHeader = parseInt(
-            error.responseHeaders['retry-after'] ?? '60',
+            apiError.responseHeaders['retry-after'] ?? '60',
           );
           const retryAfter = isNaN(retryAfterHeader) ? 60 : retryAfterHeader;
           return {

@@ -9,7 +9,7 @@
  * is evaluated on each request.
  */
 
-import { auth } from '@compliance-theater/auth/server';
+import { auth } from '@compliance-theater/auth/auth.node';
 import { NextRequest, NextResponse } from 'next/server';
 import { getActiveUserPublicKeys } from '@compliance-theater/auth/lib/utilities/user-keys-server';
 import { isSessionActive } from '@compliance-theater/auth/lib/utilities';
@@ -31,7 +31,7 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
   // (Next.js 14+ passes the request as a parameter, but for compatibility, use URL)
   const { nextUrl } = req;
 
-  const session = await auth();
+  const session = await auth(req);
   const isActiveSession = isSessionActive({ session });
   let keys: string[] | undefined = undefined;
   if (isActiveSession && nextUrl) {

@@ -2,6 +2,7 @@ import type { NextAuthConfig } from '@compliance-theater/auth-compat';
 
 describe('auth.ts integration', () => {
   const requestUrl = 'http://localhost:3000/api/auth/session';
+  const loopbackRequestUrl = 'http://127.0.0.1:3000/api/auth/session';
 
   const loadAuthConfig = async (runtime: 'edge' | 'node') => {
     jest.resetModules();
@@ -179,5 +180,95 @@ describe('auth.ts integration', () => {
       id: 'edge-user',
     });
     expect(mocks.jwtMock).not.toHaveBeenCalled();
+  });
+
+  it('trusts loopback hosts during local development', async () => {
+    jest.resetModules();
+
+    jest.doMock('@compliance-theater/auth-compat/runtime', () => ({
+      __esModule: true,
+      createNextAuth: () => ({
+        handlers: { GET: jest.fn(), POST: jest.fn() },
+        auth: jest.fn(),
+        signIn: jest.fn(),
+        signOut: jest.fn(),
+      }),
+    }));
+
+    jest.doMock('../src/lib/keycloak-provider', () => ({
+      __esModule: true,
+      setupKeyCloakProvider: () => [],
+    }));
+
+    jest.doMock('../src/lib/runtime-loader', () => {
+      const actual = jest.requireActual('../src/lib/runtime-loader');
+      return {
+        __esModule: true,
+        ...actual,
+        getRuntimeTarget: () => 'node',
+      };
+    });
+
+    jest.doMock('../src/lib/auth-callback-loaders', () => ({
+      __esModule: true,
+      authCallbackLoaderSpecs: {
+        drizzleAdapter: {
+          loaders: { node: async () => ({ setupDrizzleAdapter: async () => ({}) }) },
+          isValid: (value: { setupDrizzleAdapter?: unknown } | undefined) =>
+            typeof value?.setupDrizzleAdapter === 'function',
+        },
+        signIn: {
+          loaders: { node: async () => ({ signIn: async () => true }) },
+          isValid: (value: { signIn?: unknown } | undefined) =>
+            typeof value?.signIn === 'function',
+        },
+        session: {
+          loaders: { node: async () => ({ session: async ({ session }: { session: unknown }) => session }) },
+          isValid: (value: { session?: unknown } | undefined) =>
+            typeof value?.session === 'function',
+        },
+        jwt: {
+          loaders: { node: async () => ({ jwt: async ({ token }: { token: unknown }) => token }) },
+          isValid: (value: { jwt?: unknown } | undefined) =>
+            typeof value?.jwt === 'function',
+        },
+        redirect: {
+          loaders: { default: async () => ({ redirect: async ({ url }: { url: string }) => url }) },
+          isValid: (value: { redirect?: unknown } | undefined) =>
+            typeof value?.redirect === 'function',
+        },
+        authorized: {
+          loaders: { default: async () => ({ authorized: async () => true }) },
+          isValid: (value: { authorized?: unknown } | undefined) =>
+            typeof value?.authorized === 'function',
+        },
+      },
+    }));
+
+    jest.doMock('@compliance-theater/env', () => ({
+      __esModule: true,
+      env: (key: string) => {
+        if (key === 'NEXTAUTH_URL') return 'http://localhost:3000';
+        if (key === 'NEXTAUTH_TRUST_HOST') return false;
+        return undefined;
+      },
+      isRunningOnEdge: () => false,
+    }));
+
+    let authModule: typeof import('../src/auth.node') | undefined;
+
+    await jest.isolateModulesAsync(async () => {
+      authModule = jest.requireActual('../src/auth.node') as typeof import('../src/auth.node');
+    });
+
+    if (!authModule?.buildNextAuthConfig) {
+      throw new Error('Expected auth.ts to export buildNextAuthConfig');
+    }
+
+    const config = await authModule.buildNextAuthConfig({
+      url: loopbackRequestUrl,
+    } as Request);
+
+    expect(config.trustHost).toBe(true);
   });
 });

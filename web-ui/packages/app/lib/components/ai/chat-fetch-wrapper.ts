@@ -9,7 +9,6 @@ import { useCallback } from 'react';
 import { env } from '@compliance-theater/env';
 import { resolveFetchService } from '@/lib/fetch-service';
 
-const fetch = resolveFetchService();
 
 /**
  * Creates a simple fetch wrapper with basic retry logic and error handling
@@ -94,7 +93,8 @@ export const useChatFetchWrapper = (): {
     req: URL | RequestInfo;
     init?: RequestInit;
   }) {
-    const response = await fetch(req, init);
+    const fetchFn = resolveFetchService();
+    const response = await fetchFn(req, init);
     if (!response.ok) {
       throw new Error(`Network response was not ok: ${response.statusText}`, {
         cause: response,
@@ -171,8 +171,3 @@ export const useChatFetchWrapper = (): {
     queryClient,
   };
 };
-
-/**
- * Default chat fetch function with basic enhancements
- */
-// export const enhancedChatFetch = useChatFetchWrapper();

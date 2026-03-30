@@ -40,28 +40,19 @@
     "@opentelemetry/api-logs": "0.57.2"
   },
   "peerDependencies": {
+    "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
+    "@mui/material-nextjs": "^7.3.6",
+    "@mui/system": "^7.3.6",
     "next": "^15.5.12",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "3.25.76"
   },
   "peerDependenciesMeta": {
-    "@emotion/react": {
-      "optional": true
-    },
-    "@emotion/styled": {
-      "optional": true
-    },
-    "@mui/icons-material": {
-      "optional": true
-    },
-    "@mui/material": {
-      "optional": true
-    },
     "next": {
       "optional": true
     },
@@ -76,11 +67,7 @@
     }
   },
   "devDependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.0",
     "@jest/globals": "^30.0.5",
-    "@mui/icons-material": "^7.3.6",
-    "@mui/material": "^7.3.6",
     "@swc/core": "^1.13.5",
     "@swc/jest": "^0.2.39",
     "@testing-library/dom": "^10.4.1",

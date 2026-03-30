@@ -21,6 +21,8 @@ export const providerMap = providers.map((provider) => {
   return { id: provider.id, name: provider.name };
 });
 
+const localTrustedHosts = new Set(['localhost', '127.0.0.1', '::1']);
+
 export const buildNextAuthConfig = async (req?: Request): Promise<NextAuthConfig> => {
   const runtime = getRuntimeTarget();
   const isNodeServerRuntime =
@@ -30,7 +32,12 @@ export const buildNextAuthConfig = async (req?: Request): Promise<NextAuthConfig
     isNodeServerRuntime,
   });
 
-  const isLocalhost = req?.url && new URL(req.url).hostname === 'localhost' && env('NEXTAUTH_URL')?.includes('localhost');
+  const requestHostname = req?.url ? new URL(req.url).hostname : undefined;
+  const nextAuthUrl = env('NEXTAUTH_URL') ?? '';
+  const isLocalhost =
+    !!requestHostname &&
+    localTrustedHosts.has(requestHostname) &&
+    /localhost|127\.0\.0\.1|::1/.test(nextAuthUrl);
   return {
     adapter,
     callbacks: {

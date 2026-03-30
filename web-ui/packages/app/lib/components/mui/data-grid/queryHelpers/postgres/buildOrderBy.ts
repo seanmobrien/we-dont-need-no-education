@@ -1,4 +1,4 @@
-import { GridSortModel } from '@mui/x-data-grid';
+import { GridSortModel } from '@mui/x-data-grid-pro';
 import { isSqlNeonAdapter, unwrapAdapter, SqlDb } from '@compliance-theater/database/driver';
 import { isGridSortModel } from './guards';
 import { BuildOrderByProps } from './types';

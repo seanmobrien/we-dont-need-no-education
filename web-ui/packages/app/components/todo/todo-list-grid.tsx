@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useCallback, ElementType } from 'react';
-import { GridColDef } from '@mui/x-data-grid';
+import { GridColDef } from '@mui/x-data-grid-pro';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
