@@ -44,7 +44,7 @@ const proxyRequestToMem0 = async (
   request: NextRequest,
   context: RouteContext,
 ): Promise<NextResponse> => {
-  const sessionWrapper = { session: await auth(request) };
+  const sessionWrapper = { session: await auth() };
   if (!isSessionActive(sessionWrapper)) {
     return NextResponse.json(
       { error: 'Unauthorized', message: 'Active session required.' },

@@ -10,7 +10,7 @@ import { NextResponse } from 'next/server';
  * Wrapped for unified logging / error semantics.
  */
 export const GET = wrapRouteRequest(async (req: NextRequest) => {
-  const session = await auth(req);
+  const session = await auth();
   if (!session?.user) {
     return NextResponse.json(
       { status: 401, message: 'Unauthorized' },

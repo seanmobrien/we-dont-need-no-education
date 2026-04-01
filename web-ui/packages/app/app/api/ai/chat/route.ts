@@ -127,7 +127,7 @@ export const POST = (req: NextRequest) => {
 
   return wrapRouteRequest(
     async (req: NextRequest) => {
-      const session = await auth(req);
+      const session = await auth();
       if (
         !session ||
         !session.user ||

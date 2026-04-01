@@ -24,7 +24,7 @@ export const GET = wrapRouteRequest(
     const { chatId } = await params;
     try {
       // Validate session authentication
-      const session = await auth(req);
+      const session = await auth();
       if (!session) {
         return NextResponse.json(
           { error: 'Unauthorized - session required' },

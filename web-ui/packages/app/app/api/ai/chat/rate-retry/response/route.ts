@@ -11,7 +11,7 @@ export const GET = wrapRouteRequest(
   async (req: NextRequest) => {
     try {
       // Check authentication
-      const session = await auth(req);
+      const session = await auth();
       if (!session) {
         return NextResponse.json(
           { error: 'Authentication required' },
@@ -106,7 +106,7 @@ export const POST = wrapRouteRequest(
   async (req: NextRequest) => {
     try {
       // Check authentication
-      const session = await auth(req);
+      const session = await auth();
       if (!session) {
         return unauthorizedServiceResponse({ req, scopes: ['case-file:read'] });
       }

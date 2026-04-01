@@ -31,7 +31,6 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
   // (Next.js 14+ passes the request as a parameter, but for compatibility, use URL)
   const { nextUrl } = req;
 
-  // const session = await auth(req);
   const session = await auth();
   const isActiveSession = isSessionActive({ session });
   let keys: string[] | undefined = undefined;

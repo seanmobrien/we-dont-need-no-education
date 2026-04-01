@@ -28,8 +28,8 @@ const authenticationRequiredResponse = (): NextResponse => {
   );
 };
 
-const getAuthenticatedUser = async (req?: NextRequest) => {
-  const session = await auth(req);
+const getAuthenticatedUser = async () => {
+  const session = await auth();
   if (!session?.user?.id) {
     throw new ApiRequestError(
       'Authentication required',
@@ -69,7 +69,7 @@ const handleRouteError = (
 export const POST = wrapRouteRequest(
   async (req: NextRequest): Promise<NextResponse> => {
     try {
-      const user = await getAuthenticatedUser(req);
+      const user = await getAuthenticatedUser();
       const service = getUserSigningKeysService();
       const uploadRequest = await service.getUploadRequest(user, req);
       const result = await service.processKeyRequest(uploadRequest);
@@ -92,7 +92,7 @@ export const POST = wrapRouteRequest(
  */
 export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
   try {
-    const user = await getAuthenticatedUser(req);
+    const user = await getAuthenticatedUser();
     const userKeys = await getUserSigningKeysService().getKeys(user);
 
     return NextResponse.json({
