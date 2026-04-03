@@ -128,6 +128,7 @@ const config = {
     '^react-dom$': '<rootDir>/../../../node_modules/react-dom/index.js',
     '^react/jsx-runtime$': '<rootDir>/../../../node_modules/react/jsx-runtime.js',
     '^react/jsx-dev-runtime$': '<rootDir>/../../../node_modules/react/jsx-dev-runtime.js',
+    '^mui-markdown$': '<rootDir>/__mocks__/shared/mui-markdown.tsx',
     // All material UI icons are served by a single mock
     '^@mui/icons-material/(.*)$': '<rootDir>/__mocks__/shared/mui-icon-mock.tsx', // Mock all MUI icons to a singular mock    
     // Prexit module mock

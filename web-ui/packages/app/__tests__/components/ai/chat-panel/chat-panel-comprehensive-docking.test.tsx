@@ -559,17 +559,15 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         ];
 
         for (const position of positions) {
-          const { unmount, container } = render(
+          const { unmount } = render(
             <ChatPanelTestWrapper isDashboardLayout={true} />,
           );
 
-          // Scope queries to the most-recent render container to avoid stale elements
-          const menuButton = within(container).getByTestId('button-chat-menu');
+          const menuButton = screen.getByTestId('button-chat-menu');
           fireEvent.click(menuButton);
 
           await waitFor(() => {
-            const dockMenu = within(container).getByTestId('menu-item-dock');
-            fireEvent.mouseEnter(dockMenu);
+            fireEvent.mouseEnter(screen.getByTestId('menu-item-dock'));
           });
 
           const option = await screen.findByText(position);
