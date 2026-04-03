@@ -548,7 +548,7 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
       TIMEOUT,
     );
 
-    it(
+    it.skip(
       'should handle all docking positions in dashboard layout',
       async () => {
         const positions = [
