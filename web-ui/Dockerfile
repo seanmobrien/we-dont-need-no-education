@@ -122,9 +122,9 @@ WORKDIR /app
 
 COPY --link=true --from=deps /app/ ./
 COPY --link=true --from=pruner /repo/out/full/ ./
-RUN rm -rf /app/web-ui/submodules/sce/.yarn \
- && rm -rf /app/web-ui/submodules/sce/yarn.lock \
- && rm -rf /app/web-ui/submodules/sce/.yarnrc.yml;
+# RUN rm -rf /app/web-ui/submodules/sce/.yarn \
+#  && rm -rf /app/web-ui/submodules/sce/yarn.lock \
+#  && rm -rf /app/web-ui/submodules/sce/.yarnrc.yml;
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
@@ -148,7 +148,6 @@ ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
 ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
 ENV NEXT_PUBLIC_FLAGSMITH_API_URL=$NEXT_PUBLIC_FLAGSMITH_API_URL
 ENV NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID=$NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID
-# ENV NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=$NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 
 RUN --mount=type=secret,id=env_file \

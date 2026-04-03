@@ -59,3 +59,8 @@ node_modules
 **/.claude/**
 **/.agent/**
 **/.github/**
+
+# Submodule yarn files
+submodules/**/.yarn
+submodules/**/.yarnrc.yml
+submodules/**/yarn.lock
