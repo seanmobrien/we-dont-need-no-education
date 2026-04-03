@@ -339,7 +339,6 @@
     },
     "test:unit": {
       "dependsOn": ["^test:unit"],
-      "outputs": ["coverage/**", "!coverage/lcov-report/**"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "!**/coverage/**",

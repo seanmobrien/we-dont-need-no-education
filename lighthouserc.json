@@ -1,7 +1,9 @@
 {
   "ci": {
     "collect": {
-      "startServerCommand": "yarn workspace @compliance-theater/app start",
+      "startServerCommand": "node scripts/lighthouse-start.mjs",
+      "startServerReadyPattern": "LHCI_WARMUP_COMPLETE",
+      "startServerReadyTimeout": 120000,
       "url": ["http://localhost:3000/"],
       "numberOfRuns": 3
     },

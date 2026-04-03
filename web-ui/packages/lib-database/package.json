@@ -32,7 +32,8 @@
     "drizzle-generate": "drizzle-kit generate --config=drizzle.config.ts",
     "drizzle-migrate": "drizzle-kit migrate --config=drizzle.config.ts",
     "drizzle-studio": "drizzle-kit studio --config=drizzle.config.ts",
-    "test": "jest",
+    "test": "jest --coverage",
+    "test:unit": "jest",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf .next dist tsconfig.tsbuildinfo"
   },

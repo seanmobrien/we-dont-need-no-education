@@ -159,7 +159,7 @@ const config = {
     '/.upstream/',
   ],
   collectCoverageFrom: [
-    'src/**/*.ts',
+    'src/**/*.{ts,tsx}',
     '!src/**/*.d.ts',
     '!src/**/__tests__/**',
   ],

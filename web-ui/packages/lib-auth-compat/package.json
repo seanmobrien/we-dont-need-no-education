@@ -34,7 +34,8 @@
     "build": "yarn run build:typescript",
     "build:publish": "yarn run build",
     "build:typescript": "echo 'Building @compliance-theater/auth-compat...' && tsc -b tsconfig.json && echo '\u001b[1;32mBuild complete: @compliance-theater/auth-compat.\u001b[0m\n' || (echo '\u001b[31mBuild failed: @compliance-theater/auth-compat.\u001b[0m\n' >&2; exit 1)",
-    "test": "jest",
+    "test": "jest --coverage",
+    "test:unit": "jest",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
