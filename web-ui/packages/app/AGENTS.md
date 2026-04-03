@@ -6,3 +6,9 @@ Nearest parent baseline:
 Package-specific guidance:
 - `./README.md`
 - `./CLAUDE.md`
+
+AI/integration reference docs:
+
+- `./.github/instructions/mcp.md`
+- `./.github/instructions/mem0.md`
+- `./.github/instructions/vercel-ai.md`

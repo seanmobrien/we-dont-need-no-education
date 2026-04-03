@@ -1,4 +1,3 @@
-import path from 'path';
 import type { NextConfig } from 'next';
 import { withBundleAnalyzer } from './lib/config/bundle-analyzers';
 import { withIgnorePacks } from './lib/config/ignore-unsupported-packs-plugin';
@@ -12,9 +11,6 @@ export const nextConfig: NextConfig = withStripRscPrefixPlugin(
         withReactConfigFactory()(
           withTypescriptConfig(
             withEnsureChunkSymlinks({
-              // Keep tracing rooted at the repository to avoid mis-detected lockfiles.
-              outputFileTracingRoot: path.join(__dirname, '..', '..', '..'),
-              output: 'standalone',
               experimental: {
                 webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'INP', 'TTFB', 'FID'],
               },

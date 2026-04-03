@@ -16,7 +16,7 @@
  * @module __tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test
  */
 
-import { GridSortModel } from '@mui/x-data-grid';
+import { GridSortModel } from '@mui/x-data-grid-pro';
 import { asc, desc, SQL } from '@compliance-theater/database/drizzle-orm';
 import { PgColumn } from '@compliance-theater/database/drizzle-orm/pg-core';
 import {

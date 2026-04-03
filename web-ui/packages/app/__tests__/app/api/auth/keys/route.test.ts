@@ -93,8 +93,9 @@ describe('/api/auth/keys route wrappers', () => {
   describe('GET', () => {
     it('returns 401 when no authenticated user is present', async () => {
       withJestTestExtensions().session = null;
+      const request = createMockRequest(undefined);
 
-      const response = await GET();
+      const response = await GET(request);
 
       expect(response.status).toBe(401);
       await expect(response.json()).resolves.toEqual({
@@ -116,8 +117,9 @@ describe('/api/auth/keys route wrappers', () => {
 
       withJestTestExtensions().session!.user!.id = String(123);
       signingKeysService.getKeys.mockResolvedValue(mockKeys);
+      const request = createMockRequest(undefined);
 
-      const response = await GET();
+      const response = await GET(request);
 
       expect(signingKeysService.getKeys).toHaveBeenCalledWith(
         withJestTestExtensions().session!.user,
@@ -140,8 +142,9 @@ describe('/api/auth/keys route wrappers', () => {
           ),
         ),
       );
+      const request = createMockRequest(undefined);
 
-      const response = await GET();
+      const response = await GET(request);
 
       expect(response.status).toBe(400);
       await expect(response.json()).resolves.toEqual({

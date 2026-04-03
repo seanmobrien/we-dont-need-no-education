@@ -49,6 +49,7 @@ export const toTanstackQueryOptions = <
     queryFn: (context: TanstackQueryFunctionContext<TanstackQueryKey>) =>
       Promise.resolve(
         options.queryFn({
+          ...context,
           queryKey: context.queryKey as TQueryKey,
           signal: context.signal,
         }),

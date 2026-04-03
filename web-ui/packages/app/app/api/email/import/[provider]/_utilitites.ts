@@ -12,7 +12,7 @@ import { query } from '@compliance-theater/database/driver';
 import { NextRequest, NextResponse } from 'next/server';
 import { googleProviderFactory } from './_googleProviderFactory';
 import { isError, LoggedError } from '@compliance-theater/logger';
-import { auth } from '@compliance-theater/auth/server';
+import { auth } from '@compliance-theater/auth/auth.node';
 import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import {
   GmailEmailMessageHeader,
@@ -206,7 +206,7 @@ const getGmailMessage = async ({
   req: NextRequest | NextApiRequest;
 }): Promise<EmailAndUserId> => {
   try {
-    const session = await auth();
+    const session = await auth(req);
     if (!session || !session.user || !session.user.id) {
       throw new Error('Must be authenticated to call this API', {
         cause: 'unauthorized',
@@ -406,7 +406,7 @@ export const getImportMessageSource: GetImportMessageSourceOverloads = async ({
     (!!errorFilter ? response : null) as NextResponse & ImportSourceMessage;
   try {
     let source: GmailEmailImportSource | undefined = undefined;
-    const session = await auth();
+    const session = await auth(req);
     if (!session || !session.user || !session.user.id) {
       throw new Error('Must be authenticated to call this API', {
         cause: 'unauthorized',

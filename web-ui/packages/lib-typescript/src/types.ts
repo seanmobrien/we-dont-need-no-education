@@ -12,11 +12,11 @@ import type {
   KeysOfMethods as KeysOfMethodsBase,
   MethodsOf as MethodsOfBase,
   ReturnTypeOfMethods as ReturnTypeOfMethodsBase
-} from '@compliance-theater/types/types/typescript/parameters';
+} from '@compliance-theater/types/typescript/parameters';
 
 import type {
   IsNotNull as IsNotNullBase
-} from '@compliance-theater/types/types/typescript/is-not-null';
+} from '@compliance-theater/types/typescript/is-not-null';
 
 /**
  * Converts a union type `T` into a tuple type.

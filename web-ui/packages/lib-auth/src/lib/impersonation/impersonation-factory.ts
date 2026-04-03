@@ -1,7 +1,7 @@
 import type { ImpersonationService } from './impersonation.types';
 import { ImpersonationThirdParty } from './impersonation.thirdparty';
 import { ImpersonationServiceCache } from './impersonation-service-cache';
-import { auth } from '../../auth';
+import { auth } from '../../auth.node';
 import { log } from '@compliance-theater/logger';
 import type { User } from '@compliance-theater/auth-compat';
 

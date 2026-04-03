@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@compliance-theater/auth/server';
+import { auth } from '@compliance-theater/auth/auth.node';
 import { isSessionActive } from '@compliance-theater/auth/lib/utilities';
 import { memoryClientFactory } from '@/lib/ai/mem0';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server';

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@compliance-theater/auth/server';
+import { auth } from '@compliance-theater/auth/auth.node';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { schema } from '@compliance-theater/database/orm';
 import { eq, and } from '@compliance-theater/database/drizzle-orm';

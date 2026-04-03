@@ -37,10 +37,9 @@ class EnsureNextServerRuntimePlugin {
 }
 
 export const withTypescriptConfig: NextConfigPlugin = (nextConfig) => {
-  const originalWebpack = nextConfig.webpack;
+  const originalWebpack = nextConfig.webpack;  
   const outputFileTracingRoot =
     nextConfig.outputFileTracingRoot || path.resolve(process.cwd(), '../../..');
-
   return {
     ...nextConfig,
     outputFileTracingRoot, // Trace from repository root so hoisted deps are included

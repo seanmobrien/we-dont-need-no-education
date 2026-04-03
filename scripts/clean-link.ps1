@@ -281,7 +281,7 @@ function Remove-MatchingFiles {
 }
 
 Register-InstallState -StateId "repo-root" -StateName "Repository Root" -StatePath $RepoRoot
-Register-InstallState -StateId "web-ui" -StateName "Web UI" -StatePath (Join-Path $RepoRoot "web-ui")
+# Register-InstallState -StateId "web-ui" -StateName "Web UI" -StatePath (Join-Path $RepoRoot "web-ui")
 Register-InstallState -StateId "semantic-encoding" -StateName "Semantic Encoding" -StatePath (Join-Path $RepoRoot "web-ui\submodules\sce")
 
 Remove-MatchingDirectories -RootPath $RepoRoot -Names @("node_modules", "dist", "build", ".next")

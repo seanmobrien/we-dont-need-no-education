@@ -1,5 +1,5 @@
 // Main auth configuration and handlers
-export { handlers, auth, signIn, signOut, providerMap } from './auth';
+export { handlers, auth, signIn, signOut, providerMap } from './auth.node';
 export type { Session } from '@compliance-theater/types';
 
 export type {

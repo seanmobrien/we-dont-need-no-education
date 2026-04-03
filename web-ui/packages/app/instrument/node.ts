@@ -1,5 +1,5 @@
 // instrumentation.node.ts
-import { NodeSDK } from '@opentelemetry/sdk-node';
+import { NodeSDK, type NodeSDKConfiguration } from '@opentelemetry/sdk-node';
 import { Resource } from '@opentelemetry/resources';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
 import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
@@ -130,7 +130,7 @@ const instrumentServer = () => {
     urlFilter,
   );
 
-  const sdk = new NodeSDK({
+  const sdkConfig = {
     serviceName: config.serviceName,
     resource: new Resource({
       ...config.attributes,
@@ -140,10 +140,14 @@ const instrumentServer = () => {
       attributeCountLimit: 64,
       eventCountLimit: 256,
     },
-    spanProcessors: [new BatchSpanProcessor(traceExporter)],
+    spanProcessors: [
+      new BatchSpanProcessor(traceExporter) as unknown as NonNullable<
+        NodeSDKConfiguration['spanProcessors']
+      >[number],
+    ],
     metricReader: new PeriodicExportingMetricReader({
       exporter: metricExporter,
-    }),
+    }) as unknown as NodeSDKConfiguration['metricReader'],
     instrumentations: [
       new UndiciInstrumentation({}),
       new PinoInstrumentation({
@@ -199,7 +203,9 @@ const instrumentServer = () => {
         },
       }),
     ],
-  });
+  };
+
+  const sdk = new NodeSDK(sdkConfig as unknown as NodeSDKConfiguration);
 
   // Logger provider for OTel logs
   const loggerProvider = new LoggerProvider();

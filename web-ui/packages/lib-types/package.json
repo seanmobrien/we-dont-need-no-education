@@ -21,6 +21,16 @@
       "development": "./src/dependency-injection/container.ts",
       "default": "./dist/dependency-injection/container.js"
     },
+    "./typescript": {
+      "types": "./dist/types/typescript/index.d.ts",
+      "development": "./src/types/typescript/index.ts",
+      "default": "./dist/types/typescript/index.js"
+    },
+    "./typescript/*": {
+      "types": "./dist/types/typescript/*.d.ts",
+      "development": "./src/types/typescript/*",
+      "default": "./dist/types/typescript/*.js"
+    },
     "./*": {
       "types": "./dist/*.d.ts",
       "development": "./src/*",
@@ -37,13 +47,17 @@
   "scripts": {
     "add": "yarn workspace @compliance-theater/types add ",
     "build": "yarn build:typescript",
-    "build:publish": "yarn build && yarn pack --out ./dist/@compliance-theater-types.tgz",
+    "build:publish": "yarn run build",
     "build:typescript": "echo 'Building lib/types...' && tsc -b tsconfig.json && echo '\\u001b[1;32mBuild complete: @compliance-theater/types.\\u001b[0m\\n' || (echo '\\u001b[31mBuild failed: @compliance-theater/types.\\u001b[0m\\n' >&2; exit 1)",
-    "test": "jest",
+    "test": "jest --coverage",
+    "test:unit": "jest",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
+    "@ai-sdk/gateway": "2.0.65",
+    "@ai-sdk/provider": "2.0.1",
+    "@ai-sdk/provider-utils": "3.0.22",
     "@compliance-theater/auth-compat": "workspace:*",
     "awilix": "^13.0.0",
     "next": "^15.5.12",

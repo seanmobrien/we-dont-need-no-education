@@ -1,5 +1,5 @@
 'use client';
-import type { GridColDef } from '@mui/x-data-grid/models/colDef';
+import type { GridColDef } from '@mui/x-data-grid-pro';
 import { EmailPropertyDataGrid } from '@/components/mui/data-grid/email-properties/email-property-grid';
 import { SharedCellDefinitions } from '@/components/mui/data-grid';
 import { NotesPanel } from './panel';

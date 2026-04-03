@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useCallback, ElementType } from 'react';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGridPro, GridColDef } from '@mui/x-data-grid-pro';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -298,7 +298,7 @@ export default function TodoItemsGrid({ listId }: TodoItemsGridProps) {
             </Button>
           </Box>
         </Box>
-        <DataGrid
+          <DataGridPro
           rows={list.todos}
           columns={columns}
           loading={isLoading}

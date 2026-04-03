@@ -1,7 +1,6 @@
 import {
   IServiceRegistrar,
   type IServiceContainer,
-  asClass,
   asFunction,
 } from '@compliance-theater/types/dependency-injection';
 
@@ -14,7 +13,7 @@ export class ServiceRegistrar implements IServiceRegistrar {
       container.register('after', asFunction(AfterManager.getInstance));
     }
     if (!container.has('startup')) {
-      container.register('startup', asClass(AppStartupManager));
+      container.register('startup', asFunction(() => new AppStartupManager()));
     }
   }
 }

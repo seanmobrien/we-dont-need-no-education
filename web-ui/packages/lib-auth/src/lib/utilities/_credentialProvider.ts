@@ -3,7 +3,7 @@ import { ICredential, CredentialOptions } from './_types';
 import { env } from '@compliance-theater/env';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
-import { auth } from '../../auth';
+import { auth } from '../../auth.node';
 import {
   keycloakTokenExchange,
   TokenExchangeError,

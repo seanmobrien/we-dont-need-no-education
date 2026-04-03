@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
-import { auth } from '@compliance-theater/auth/server';
+import { auth } from '@compliance-theater/auth/auth.node';
 import { getServiceContainer } from '@compliance-theater/types/dependency-injection/container';
 import type { IUserSigningKeysService } from '@compliance-theater/types';
 import { LoggedError } from '@compliance-theater/logger';
@@ -90,7 +90,7 @@ export const POST = wrapRouteRequest(
  *
  * Retrieves all active public keys for the authenticated user
  */
-export const GET = wrapRouteRequest(async (): Promise<NextResponse> => {
+export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
   try {
     const user = await getAuthenticatedUser();
     const userKeys = await getUserSigningKeysService().getKeys(user);

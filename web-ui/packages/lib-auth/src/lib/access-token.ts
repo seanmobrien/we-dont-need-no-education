@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '../auth';
+import { auth } from '../auth.node';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { log } from '@compliance-theater/logger';
 import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';

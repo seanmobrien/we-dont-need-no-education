@@ -4,7 +4,7 @@ import {
   SharedCellDefinitions,
 } from '@/components/mui/data-grid';
 import renderProgress from '@/components/mui/data-grid/cellRenderers/progress/render';
-import type { GridColDef } from '@mui/x-data-grid/models/colDef';
+import type { GridColDef } from '@mui/x-data-grid-pro';
 import { KeyPointsPanel } from './panel';
 import { DataGridProProps } from '@mui/x-data-grid-pro';
 import { useCallback } from 'react';

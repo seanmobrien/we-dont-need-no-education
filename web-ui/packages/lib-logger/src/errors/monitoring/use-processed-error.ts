@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { log } from '../../core';
 import { LoggedError } from '../logged-error/logged-error-class';
 import { errorReporter } from './error-reporter';
@@ -7,7 +7,7 @@ import { ErrorReportResult, ErrorSeverity } from './types';
 
 export const useProcessedError = ({
   error,
-  resetAction,
+  resetAction: resetActionFromProps,
   errorBoundary = 'RootError',
 }: {
   error: Error | null;
@@ -16,6 +16,17 @@ export const useProcessedError = ({
 }) => {
   const [processedError, setProcessedError] =
     useState<ErrorReportResult | null>(null);
+  const resetAction = useCallback(() => {
+    if (resetActionFromProps) {
+      resetActionFromProps();
+    } else {
+      log((l) =>
+        l.warn(
+          'Reset action not provided for processed error, but error was reported'
+        )
+      );
+    } 
+  }, [resetActionFromProps]);
 
   useEffect(() => {
     // If there's no error, clear any processed error state and exit

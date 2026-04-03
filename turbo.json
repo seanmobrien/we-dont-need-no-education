@@ -241,7 +241,7 @@
         "!**/out/**",
         "!**/lcov-report/**"
       ],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
       "env": [
         "AUTH_*",
         "AZURE_*",
@@ -319,7 +319,7 @@
     },
     "test": {
       "dependsOn": ["^test"],
-      "outputs": [],
+      "outputs": ["coverage/**", "!coverage/lcov-report/**"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "!**/coverage/**",

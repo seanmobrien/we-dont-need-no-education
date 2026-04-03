@@ -16,7 +16,7 @@ jest.mock('@compliance-theater/auth-compat/runtime', () => {
 
 
 
-jest.mock('@compliance-theater/auth/auth', () => {
+jest.mock('@compliance-theater/auth/auth.node', () => {
   const authMock = jest.fn(() => withJestTestExtensions().session);
   const getHandlerMock = jest.fn();
   const postHandlerMock = jest.fn();
@@ -38,7 +38,7 @@ jest.mock('@compliance-theater/auth/auth', () => {
 
 jest.mock('@compliance-theater/auth', () => {
   const origAuthMock = jest.requireActual('@compliance-theater/auth');
-  const activeAuthMock = jest.requireMock('@compliance-theater/auth/auth');
+  const activeAuthMock = jest.requireMock('@compliance-theater/auth/auth.node');
   return {
     ...origAuthMock,
     __esModule: true,
@@ -49,5 +49,5 @@ jest.mock('@compliance-theater/auth', () => {
 // import modules to pin the mocks above
 import { getToken } from '@compliance-theater/auth-compat/runtime';
 import { getToken as getAnotherToken } from '@compliance-theater/auth-compat/runtime';
-import { auth as moreAuth } from '@compliance-theater/auth/auth';
+import { auth as moreAuth } from '@compliance-theater/auth/auth.node';
 import { auth } from '@compliance-theater/auth';

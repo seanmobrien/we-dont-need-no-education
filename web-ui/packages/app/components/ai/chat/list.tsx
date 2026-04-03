@@ -9,7 +9,7 @@ import type {
   GridCallbackDetails,
   GridColDef,
   GridRowParams,
-} from '@mui/x-data-grid/models';
+} from '@mui/x-data-grid-pro';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import siteBuilder from '@/lib/site-util/url-builder';
