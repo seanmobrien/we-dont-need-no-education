@@ -21,7 +21,7 @@ ARG MEM0_UI_HOST
 ARG MEM0_USERNAME
 ARG BUILD_CACHE
 
-FROM node:25-alpine AS base
+FROM node:25-bookworm AS base
 
 FROM base AS base_builder
 
@@ -50,20 +50,21 @@ ENV PYTHONUNBUFFERED=1
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 
 # Build deps needed for native modules during yarn install (canvas/sharp toolchain)
-RUN apk add --no-cache \
-    libc6-compat \
-    build-base \
-    cairo-dev \
-    pango-dev \
-    jpeg-dev \
-    giflib-dev \
-    fontconfig-dev \
-    freetype-dev \
-    python3-dev \
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    build-essential \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libjpeg62-turbo-dev \
+    libgif-dev \
+    libpixman-1-dev \
+    libfreetype6-dev \
+    libfontconfig1-dev \
+    pkg-config \
     python3 \
-    py3-pip \
-    pixman \
-  && ln -sf python3 /usr/bin/python
+    python3-dev \
+    python-is-python3 \
+  && rm -rf /var/lib/apt/lists/*
 
 FROM base AS pruner
 
@@ -78,6 +79,7 @@ COPY --link=true . .
 #   then produce a pruned workspace for the app package
 RUN npm install -g turbo@^2.8.3 && \
   turbo prune --scope=@compliance-theater/app --docker && \
+  node -e "const fs=require('fs'); for (const file of ['out/full/package.json','out/json/package.json']) { const pkg=JSON.parse(fs.readFileSync(file,'utf8')); if (pkg.scripts?.preinstall) { delete pkg.scripts.preinstall; if (Object.keys(pkg.scripts).length===0) delete pkg.scripts; } fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + '\n'); }" && \
   cp tsconfig.*.json out/full && \
   cp tsconfig.*.json out/json
 
@@ -96,7 +98,7 @@ RUN node .yarn/releases/yarn-4.12.0.cjs install
  # && cd /app
 
 # Build layer with pruned source
-FROM base AS builder_root
+FROM base_builder AS builder_root
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
@@ -170,22 +172,11 @@ RUN --mount=type=secret,id=env_file \
   TMP_ENV="$(mktemp)"; \
   add_var() { name="$1"; value="$2"; [ -n "$value" ] && printf "%s=%s\n" "$name" "$value" >> "$TMP_ENV"; }; \
   read_secret() { name="$1"; file="$2"; eval "current=\${$name:-}"; [ -z "$current" ] && current="$(cat "$file" 2>/dev/null || true)"; add_var "$name" "$current"; }; \
-  apk add --no-cache \
-      libc6-compat \
-      dcron \
-      curl \
-      build-base \
-      cairo-dev \
-      pango-dev \
-      jpeg-dev \
-      giflib-dev \
-      fontconfig-dev \
-      freetype-dev \
-      python3-dev \
-      python3 \
-      py3-pip \
-      pixman && \
-  ln -sf python3 /usr/bin/python && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+      cron \
+      curl && \
+    rm -rf /var/lib/apt/lists/* && \
   if [ -f "$SECRETS/env_file" ]; then \
     cp "$SECRETS/env_file" "$TMP_ENV"; \
   else \
@@ -259,19 +250,20 @@ ENV HOSTNAME="0.0.0.0"
 WORKDIR /app
 
 RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 --shell /bin/sh nextjs \
+  && adduser --system --uid 1001 --ingroup nodejs --shell /bin/sh nextjs \
   && mkdir -p /app/scripts \
-  && apk add --no-cache \
-      libc6-compat \
-      dcron \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends \
+      cron \
       curl \
-      cairo \
-      pango \
-      jpeg \
-      giflib \
-      fontconfig \
-      freetype \
-      pixman
+      libcairo2 \
+      libpango-1.0-0 \
+      libjpeg62-turbo \
+      libgif7 \
+      libfontconfig1 \
+      libfreetype6 \
+      libpixman-1-0 \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copy Next.js standalone output from the app workspace.
 # outputFileTracingRoot in next.config.ts is set to the repository root, so the
@@ -290,8 +282,9 @@ COPY --link=true --from=pruner /repo/web-ui/packages/app/public /app/web-ui/pack
 COPY --link=true --from=pruner /repo/web-ui/packages/app/scripts /app/scripts
 
 # Set up cron and write runtime env file (pulling from secrets when env is unset)
-RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs \
-  && crontab -u nextjs /etc/crontabs/nextjs \
+RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /tmp/nextjs.cron \
+  && crontab -u nextjs /tmp/nextjs.cron \
+  && rm -f /tmp/nextjs.cron \
   && mkdir -p /var/log \
   && chown nextjs:nodejs /var/log \
   && chown -R nextjs:nodejs /app \
@@ -302,4 +295,4 @@ WORKDIR /app/web-ui/packages/app
 EXPOSE 3000
 EXPOSE 9229
 
-CMD ["sh", "-c", "crond && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -c \"node --inspect-brk=0.0.0.0:9229 server.js\"; else su nextjs -c \"node server.js\"; fi"]
+CMD ["sh", "-c", "cron && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -s /bin/sh -c \"node --inspect-brk=0.0.0.0:9229 server.js\"; else su nextjs -s /bin/sh -c \"node server.js\"; fi"]
