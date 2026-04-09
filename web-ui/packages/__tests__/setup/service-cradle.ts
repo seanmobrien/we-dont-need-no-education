@@ -2,7 +2,7 @@ import type { IAfterManager, IAppStartupManager, StartupAccessorCallbackRegistra
 import type { IAccessTokenService, IAuthSessionService, IImpersonationService, ITokenExchangeService } from "@compliance-theater/types/lib/auth/services";
 import type { IUserSigningKeysService } from "@compliance-theater/types/lib/auth/service";
 import type { IFetchService } from "@compliance-theater/types/lib/fetch";
-import type { ISingletonProvider } from "@compliance-theater/types/lib/logger/singleton-provider";
+import type { ISingletonProvider } from "@compliance-theater/types/singleton-provider";
 
 export type {
     IAfterManager,

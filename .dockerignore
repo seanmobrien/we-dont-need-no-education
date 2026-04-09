@@ -16,6 +16,8 @@ coverage
 **/coverage
 out
 **/out
+*.tsbuildinfo
+**/*.tsbuildinfo
 
 chat/**/target
 web-ui/secrets

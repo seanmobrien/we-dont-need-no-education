@@ -1,4 +1,4 @@
-import { IsNotNull } from "src/types/is-not-null";
+import type { IsNotNull } from "../../types/typescript/is-not-null";
 
 export type ISingletonProvider = {
     get<T = unknown, S extends string | symbol = string>(symbol: S): T | undefined;

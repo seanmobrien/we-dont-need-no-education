@@ -1,4 +1,4 @@
-export type { ISingletonProvider } from "@compliance-theater/types/lib/logger/singleton-provider";
+export type { ISingletonProvider } from "@compliance-theater/types/singleton-provider";
 
 /**
  * Configuration options for singleton pattern implementations.

@@ -21,6 +21,16 @@
       "development": "./src/dependency-injection/container.ts",
       "default": "./dist/dependency-injection/container.js"
     },
+    "./singleton-provider": {
+      "types": "./dist/lib/logger/singleton-provider.d.ts",
+      "development": "./src/lib/logger/singleton-provider.ts",
+      "default": "./dist/lib/logger/singleton-provider.js"
+    },
+    "./types/*": {
+      "types": "./dist/types/*.d.ts",
+      "development": "./src/types/*",
+      "default": "./dist/types/*.js"
+    },
     "./typescript": {
       "types": "./dist/types/typescript/index.d.ts",
       "development": "./src/types/typescript/index.ts",
