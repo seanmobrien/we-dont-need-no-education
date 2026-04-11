@@ -132,7 +132,6 @@ COPY --link=true --from=pruner /repo/out/full/ ./
 # RUN rm -rf /app/web-ui/submodules/sce/.yarn \
 #  && rm -rf /app/web-ui/submodules/sce/yarn.lock \
 #  && rm -rf /app/web-ui/submodules/sce/.yarnrc.yml;
-
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT
@@ -159,7 +158,6 @@ ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 RUN --mount=type=secret,id=env_file \
   --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
   --mount=type=secret,id=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING \
-  --mount=type=secret,id=AZURE_MONITOR_CONNECTION_STRING \
   --mount=type=secret,id=REDIS_URL \
   --mount=type=secret,id=REDIS_PASSWORD \
   --mount=type=secret,id=DATABASE_URL \

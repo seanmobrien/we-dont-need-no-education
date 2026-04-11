@@ -26,6 +26,7 @@
       ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
+        "APPLICATIONINSIGHTS_*",
         "AUTH_*",
         "AZURE_*",
         "NEXT_*",
@@ -62,6 +63,7 @@
       ],
       "outputs": [],
       "env": [
+        "APPLICATIONINSIGHTS_*",
         "AUTH_*",
         "AZURE_*",
         "NEXT_*",
@@ -98,6 +100,7 @@
       ],
       "outputs": [],
       "env": [
+        "APPLICATIONINSIGHTS_*",
         "AUTH_*",
         "AZURE_*",
         "NEXT_*",
@@ -135,6 +138,7 @@
       ],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
       "env": [
+        "APPLICATIONINSIGHTS_*",
         "AUTH_*",
         "AZURE_*",
         "NEXT_*",
@@ -171,6 +175,7 @@
       ],
       "outputs": [],
       "env": [
+        "APPLICATIONINSIGHTS_*",
         "AUTH_*",
         "AZURE_*",
         "NEXT_*",
@@ -207,6 +212,7 @@
       ],
       "outputs": [],
       "env": [
+        "APPLICATIONINSIGHTS_*",
         "AUTH_*",
         "AZURE_*",
         "NEXT_*",
@@ -243,6 +249,7 @@
       ],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
       "env": [
+        "APPLICATIONINSIGHTS_*",
         "AUTH_*",
         "AZURE_*",
         "NEXT_*",
@@ -279,6 +286,7 @@
       ],
       "outputs": [],
       "env": [
+        "APPLICATIONINSIGHTS_*",
         "AUTH_*",
         "AZURE_*",
         "NEXT_*",
