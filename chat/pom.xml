@@ -188,7 +188,7 @@
             <dependency>
                 <groupId>org.postgresql</groupId>
                 <artifactId>postgresql</artifactId>
-                <version>42.7.7</version>
+                <version>42.7.11</version>
             </dependency>
             <dependency>
                 <groupId>com.zaxxer</groupId>
@@ -248,7 +248,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-transport-native-epoll</artifactId>
-                <version>4.1.118.Final</version>
+                <version>4.2.13.Final</version>
             </dependency>
             <dependency>
                 <groupId>io.netty</groupId>
