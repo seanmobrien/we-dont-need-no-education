@@ -16,6 +16,7 @@
   "scripts": {
     "add": "turbo run add --filter='@compliance-theater/*' ",
     "preinstall": "node preinstall.js",
+    "codex-install-mcp": "node scripts/codex-install-mcp.mjs",
     "link:clean": "node scripts/link-clean.mjs",
     "link:clean:sh": "bash scripts/clean-link.sh",
     "link:clean:ps1": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean-link.ps1",
