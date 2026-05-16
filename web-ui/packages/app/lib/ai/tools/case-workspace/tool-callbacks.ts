@@ -339,7 +339,7 @@ export const appendSessionLogCallback = async (input: {
   summary: string;
 }) => {
   const entry = await safeHandler(() => appendWorkspaceSessionLog(input));
-  return toolCallbackResultFactory(entry ?? null);
+  return toolCallbackResultFactory(entry);
 };
 
 export const appendSessionLogConfig = {
@@ -350,9 +350,7 @@ export const appendSessionLogConfig = {
     actor: z.enum(['system', 'model', 'user']).optional(),
     summary: z.string(),
   },
-  outputSchema: toolCallbackResultSchemaFactory(
-    sessionEntrySchema.nullable(),
-  ),
+  outputSchema: toolCallbackResultSchemaFactory(sessionEntrySchema),
 };
 
 export const compactWorkspaceCallback = async ({

@@ -415,11 +415,13 @@ export const appendSessionEntry = (
   summary: string,
   actor: WorkspaceSessionEntry['actor'] = 'model',
 ) => {
-  metadata.sessionLog.push({
+  const entry: WorkspaceSessionEntry = {
     timestamp: new Date().toISOString(),
     actor,
     summary,
-  });
+  };
+  metadata.sessionLog.push(entry);
+  return entry;
 };
 
 export const updateTasks = (

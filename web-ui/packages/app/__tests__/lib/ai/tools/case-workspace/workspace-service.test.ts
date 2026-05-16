@@ -92,8 +92,12 @@ describe('case workspace service', () => {
   });
 
   it('appends session log entries', async () => {
-    await appendWorkspaceSessionLog({
+    const entry = await appendWorkspaceSessionLog({
       caseId: 'CASE-004',
+      actor: 'model',
+      summary: 'Initialized workspace',
+    });
+    expect(entry).toMatchObject({
       actor: 'model',
       summary: 'Initialized workspace',
     });

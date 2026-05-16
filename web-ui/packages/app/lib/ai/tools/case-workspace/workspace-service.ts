@@ -280,9 +280,9 @@ export const appendWorkspaceSessionLog = async ({
   summary: string;
 }) => {
   const { metadata, paths } = await ensureWorkspace(caseId);
-  appendSessionEntry(metadata, summary, actor);
+  const entry = appendSessionEntry(metadata, summary, actor);
   await saveWorkspace(metadata, paths);
-  return metadata.sessionLog.at(-1);
+  return entry;
 };
 
 export const compactWorkspace = async (caseId: string) => {
