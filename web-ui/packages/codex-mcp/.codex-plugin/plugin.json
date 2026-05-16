@@ -4,11 +4,11 @@
   "description": "Rich education compliance analysis support for Codex, including authenticated MCP access to policy, evidence, and compliance workflows.",
   "author": {
     "name": "litbit",
-    "email": "seanmobrien@hotmail.com",
-    "url": "https://github.com/seanmobrien"
+    "email": "compliancetheater@gmail.com",
+    "url": "https://github.com/compliance-theater"
   },
-  "homepage": "https://github.com/seanmobrien/we-dont-need-no-education",
-  "repository": "https://github.com/seanmobrien/we-dont-need-no-education",
+  "homepage": "https://github.com/compliance-theater/compliance-theater",
+  "repository": "https://github.com/compliance-theater/compliance-theater",
   "license": "MIT",
   "keywords": [
     "mcp",

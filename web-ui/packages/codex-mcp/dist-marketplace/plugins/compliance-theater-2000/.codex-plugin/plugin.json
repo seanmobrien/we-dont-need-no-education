@@ -1,5 +1,5 @@
 {
-  "name": "Compliance Theater 2000",
+  "name": "compliance-theater-2000",
   "version": "0.1.0",
   "description": "Rich education compliance analysis support for Codex, including authenticated MCP access to policy, evidence, and compliance workflows.",
   "author": {
@@ -19,6 +19,25 @@
   ],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Compliance Theater 2000",
+    "shortDescription": "Compliance analysis and resources for education.",
+    "longDescription": "Rich education compliance analysis support for Codex, including authenticated MCP access to policy, evidence, and compliance workflows.",
+    "developerName": "litbit",
+    "category": "Productivity",
+    "capabilities": ["Interactive"],
+    "websiteURL": "https://full-ui.compliance-theater.obapps.net",
+    "privacyPolicyURL": "https://full-ui.compliance-theater.obapps.net/privacy",
+    "termsOfServiceURL": "https://full-ui.compliance-theater.obapps.net/terms",
+    "defaultPrompt": [
+      "List Compliance Theater 2000's available tools and resources.",
+      "Show me compliance resources.",
+      "Load case file document id <case_id> and summarize it.",
+      "Search for case documents matching <query> and open in browser."
+    ],
+    "brandColor": "#2563EB",
+    "screenshots": []
+  },
   "settings": [
     {
       "name": "targetServerUrl",

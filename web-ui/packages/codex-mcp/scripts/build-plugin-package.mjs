@@ -85,7 +85,10 @@ const writeMarketplace = async () => {
     ],
   };
 
-  const marketplaceFile = join(marketplaceRoot, ".agents", "plugins", "marketplace.json");
+  const marketplaceFile = join(
+    marketplaceRoot,
+    ".agents", "plugins", "marketplace.json",
+  );
   await mkdir(dirname(marketplaceFile), { recursive: true });
   await writeFile(
     marketplaceFile,
