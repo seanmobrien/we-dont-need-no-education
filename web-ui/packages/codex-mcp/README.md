@@ -15,10 +15,10 @@ Codex plugin for MCP authentication and resource access.
 From the monorepo root:
 
 ```sh
-pnpm turbo run build --filter=@compliance-theater/codex-mcp
-pnpm turbo run test --filter=@compliance-theater/codex-mcp
-pnpm turbo run lint --filter=@compliance-theater/codex-mcp
-pnpm turbo run build:publish --filter=@compliance-theater/codex-mcp
+yarn turbo run build --filter=@compliance-theater/codex-mcp
+yarn turbo run test --filter=@compliance-theater/codex-mcp
+yarn turbo run lint --filter=@compliance-theater/codex-mcp
+yarn turbo run build:publish --filter=@compliance-theater/codex-mcp
 ```
 
 This will build the plugin, run unit tests, lint, and copy all distributable files to `publish/` for standalone use.
@@ -27,10 +27,10 @@ This will build the plugin, run unit tests, lint, and copy all distributable fil
 
 ```sh
 cd web-ui/packages/codex-mcp
-pnpm install
-pnpm build
-pnpm test
-pnpm run build:publish
+yarn install
+yarn build
+yarn test
+yarn build:publish
 ```
 
 ## Install as a Codex Plugin
