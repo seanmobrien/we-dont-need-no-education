@@ -1,5 +1,4 @@
 import type {
-  User,
   NextAuthConfig,
   NextAuthResult,
   Provider,
@@ -52,7 +51,6 @@ export const buildNextAuthConfig = async (req?: Request): Promise<NextAuthConfig
       signIn: '/auth/signin',
     },
     session: {
-      user: { id: '123' } as User,
       strategy: 'jwt',
       maxAge: 30 * 60,
       updateAge: 5 * 60,

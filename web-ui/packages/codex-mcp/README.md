@@ -1,28 +1,52 @@
-# Compliance Theater 2000 Codex Plugin
 
-This folder contains a Codex plugin that connects Codex to an authenticated MCP server, with Compliance Theater's MCP SSE endpoint as the default target.
+# @compliance-theater/codex-mcp
 
-The plugin is built around OAuth-aware connection setup, token caching, and a lightweight JSON-RPC proxy that can launch a real MCP server command after it has acquired a usable bearer token.
+Codex plugin for MCP authentication and resource access.
 
-## Repository-First Install
+## Project Structure
 
-Use this repository folder as the plugin source directly, rather than copying plugin files into a second local plugins directory.
+- `src/` — Source code for plugin logic
+- `__tests__/` — Unit tests (Jest)
+- `.codex-plugin/` — Codex manifest and plugin metadata
+- `scripts/` — Helper scripts for install, auth, etc.
 
-Current plugin root in this repo:
+## Build, Test, and Publish
 
-- [web-ui/packages/plugin-codex](web-ui/packages/plugin-codex)
+From the monorepo root:
 
-### 1. Register the plugin in your Codex marketplace file
+```sh
+pnpm turbo run build --filter=@compliance-theater/codex-mcp
+pnpm turbo run test --filter=@compliance-theater/codex-mcp
+pnpm turbo run lint --filter=@compliance-theater/codex-mcp
+pnpm turbo run build:publish --filter=@compliance-theater/codex-mcp
+```
 
-Add an entry in your local marketplace JSON (for example, under your user-level Codex plugins marketplace file) that points to this repo path.
+This will build the plugin, run unit tests, lint, and copy all distributable files to `publish/` for standalone use.
 
-Example plugin entry:
+## Standalone Usage
 
+```sh
+cd web-ui/packages/codex-mcp
+pnpm install
+pnpm build
+pnpm test
+pnpm run build:publish
+```
+
+## Install as a Codex Plugin
+
+You can use this repository folder as the plugin source directly, or copy the contents of `publish/` to your Codex plugins directory.
+
+### Marketplace Entry Example
+
+Add an entry in your local marketplace JSON (for example, under your user-level Codex plugins marketplace file) that points to this repo path:
+
+```
 {
   "name": "compliance-theater-2000",
   "source": {
     "source": "local",
-    "path": "/absolute/path/to/we-dont-need-no-education/web-ui/packages/plugin-codex"
+    "path": "/absolute/path/to/we-dont-need-no-education/web-ui/packages/codex-mcp"
   },
   "policy": {
     "installation": "AVAILABLE",
@@ -30,34 +54,31 @@ Example plugin entry:
   },
   "category": "Productivity"
 }
+```
 
 Use an absolute path for reliability.
 
 On this repository checkout, the path would normally be:
 
-- /home/seanm/repos/we-dont-need-no-education/web-ui/packages/plugin-codex
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/codex-mcp`
 
-### 2. Configure the required runtime environment variables
+Or, if using the published output:
 
-Use these environment variable names:
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/codex-mcp/publish`
 
-- MCP_COMPLIANCE_THEATER_RESOURCE_MCP_COMMAND
-- MCP_COMPLIANCE_THEATER_RESOURCE_MCP_ARGS
+## Environment Variables
 
-Typical additional values:
+Set these environment variables as needed:
 
-- MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL
-- MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER
-- MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID
-- MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET
-- MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE
+- `MCP_COMPLIANCE_THEATER_RESOURCE_MCP_COMMAND`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_MCP_ARGS`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE`
 
-Defaults already cover common local values for:
-
-- issuer
-- client ID
-- OAuth scope
-- local SSE URL
+Defaults already cover common local values for issuer, client ID, OAuth scope, and local SSE URL.
 
 ### 3. Optional: symlink a stable local plugin path
 

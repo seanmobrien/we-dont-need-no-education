@@ -47,7 +47,7 @@
   "scripts": {
     "add": "yarn workspace @compliance-theater/fetch add ",
     "build": "yarn run build:typescript",
-    "build:typescript": "echo 'Building @compliance-theater/fetch...' && tsc -b tsconfig.json && echo '\u001b[1;32mBuild complete: @compliance-theater/fetch.\u001b[0m\\n' || (echo '\u001b[31mBuild failed: @compliance-theater/fetch.\u001b[0m\\n' >&2; exit 1)",
+    "build:typescript": "echo 'Building @compliance-theater/fetch...' && tsc -b tsconfig.json && echo '\u001b[1;32mBuild complete: @compliance-theater/fetch.\u001b[0m\n' || (echo '\u001b[31mBuild failed: @compliance-theater/fetch.\u001b[0m\\n' >&2; exit 1)",
     "build:publish": "yarn run build",
     "test": "jest --coverage",
     "test:unit": "jest",

@@ -218,7 +218,8 @@ describe('EmailViewer', () => {
     async () => {
       // Turn off console.error logging for this planned exception - keeps test output clean.
       consoleErrors.setup();
-      // Mock fetch to throw an error
+      // Return a client error response so query retries are disabled and
+      // the error boundary renders deterministically.
       fetchMock.mockImplementation((url: string) => {
         if (url.includes('/api/email/test-email-id/attachments')) {
           return Promise.resolve({
@@ -227,7 +228,12 @@ describe('EmailViewer', () => {
           });
         }
         if (url.includes('/api/email/test-email-id')) {
-          return Promise.reject(new Error('Network error'));
+          return Promise.resolve({
+            ok: false,
+            status: 400,
+            statusText: 'Bad Request',
+            json: () => Promise.resolve({}),
+          });
         }
         return Promise.reject(new Error('Unexpected URL'));
       });
@@ -251,7 +257,7 @@ describe('EmailViewer', () => {
     async () => {
       // Turn off console.error logging for this planned exception - keeps test output clean.
       consoleErrors.setup();
-      // Mock fetch to return 404 for email
+      // Return a 404 response to verify missing email handling without retry delays.
       fetchMock.mockImplementation((url: string) => {
         if (url.includes('/api/email/test-email-id/attachments')) {
           return Promise.resolve({
@@ -260,7 +266,12 @@ describe('EmailViewer', () => {
           });
         }
         if (url.includes('/api/email/test-email-id')) {
-          return Promise.reject(new Error('Email not found'));
+          return Promise.resolve({
+            ok: false,
+            status: 404,
+            statusText: 'Not Found',
+            json: () => Promise.resolve({}),
+          });
         }
         return Promise.reject(new Error('Unexpected URL'));
       });

@@ -6,6 +6,28 @@ import { useSuspenseQuery } from '@compliance-theater/react-query-compat/runtime
 import { UseEmailApiQueryResult, TResponseMap, EmailAttachment } from './types';
 const fetch = resolveFetchService();
 
+const getHttpStatusFromError = (error: unknown): number | undefined => {
+  if (!(error instanceof Error)) {
+    return undefined;
+  }
+
+  const cause = error.cause;
+  if (!cause || typeof cause !== 'object' || !('status' in cause)) {
+    return undefined;
+  }
+
+  const status = (cause as { status?: unknown }).status;
+  return typeof status === 'number' ? status : undefined;
+};
+
+const shouldRetryEmailApiError = (failureCount: number, error: unknown) => {
+  const status = getHttpStatusFromError(error);
+  if (typeof status === 'number' && status >= 400 && status < 500) {
+    return false;
+  }
+  return failureCount < 3;
+};
+
 export const emailMessageQuery = async ({
   queryKey,
 }: {
@@ -112,11 +134,16 @@ export const useEmailMessageQuery = ({
   const queryState = useSuspenseQuery({
     queryKey: ['email-message', emailId],
     queryFn: emailApiQuery<'email-message'>,
+    retry: shouldRetryEmailApiError,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
   const ret = {
-    ...{ ...queryState, data: undefined },
+    ...{
+      ...queryState,
+      data: undefined,
+      error: (queryState.error ?? null) as Error | null,
+    },
     email: queryState.data as EmailMessage | undefined,
   };
   return ret;
@@ -130,6 +157,7 @@ export const useEmailAttachmentsQuery = ({
   const ret = useSuspenseQuery({
     queryKey: ['email-attachment-list', emailId],
     queryFn: emailApiQuery<'email-attachment-list'>,
+    retry: shouldRetryEmailApiError,
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
   });
