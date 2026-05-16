@@ -61,7 +61,7 @@
         "!**/out/**",
         "!**/lcov-report/**"
       ],
-      "outputs": ["dist/**"],
+      "outputs": ["dist/**", "dist-marketplace/**"],
       "env": [
         "APPLICATIONINSIGHTS_*",
         "AUTH_*",
