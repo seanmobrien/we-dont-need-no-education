@@ -24,6 +24,52 @@ type AuthSessionLike = {
   } | null;
 } | null;
 
+const getHeader = (
+  headers: Headers | Record<string, string | string[] | undefined> | undefined,
+  name: string,
+): string | undefined => {
+  if (!headers) {
+    return undefined;
+  }
+  if (headers instanceof Headers) {
+    return headers.get(name) ?? undefined;
+  }
+
+  const lowerCaseName = name.toLowerCase();
+  const matchedEntry = Object.entries(headers).find(
+    ([key]) => key.toLowerCase() === lowerCaseName,
+  );
+  if (!matchedEntry) {
+    return undefined;
+  }
+
+  const value = matchedEntry[1];
+  return Array.isArray(value) ? value[0] : value;
+};
+
+const getAuthorizationBearerToken = (
+  req: LikeNextRequest | undefined,
+): string | undefined => {
+  if (!req) {
+    return undefined;
+  }
+
+  const authorizationHeader = getHeader(
+    req.headers as Headers | Record<string, string | string[] | undefined>,
+    'authorization',
+  )?.trim();
+  if (!authorizationHeader) {
+    return undefined;
+  }
+
+  const [scheme, token] = authorizationHeader.split(/\s+/, 2);
+  if (!scheme || !token || scheme.toLowerCase() !== 'bearer') {
+    return undefined;
+  }
+
+  return token;
+};
+
 export const withRequestTokens = (
   req: LikeNextRequest | undefined,
   value?: RequestWithAccessTokenCache
@@ -77,9 +123,15 @@ export const getRequestTokens = async (req: LikeNextRequest | undefined) => {
   }
   let session: AuthSessionLike = null;
   try {
-    session = (await auth()) as AuthSessionLike;
+    session = req
+      ? ((await auth(req as never)) as AuthSessionLike)
+      : ((await auth()) as AuthSessionLike);
   } catch {
-    session = null;
+    try {
+      session = (await auth()) as AuthSessionLike;
+    } catch {
+      session = null;
+    }
   }
   const sessionUserId = parseInt(String(session?.user?.id ?? '0'), 10);
   let token: RequestWithAccessTokenCache | undefined;
@@ -120,7 +172,7 @@ export const getRequestTokens = async (req: LikeNextRequest | undefined) => {
 };
 
 export const getAccessToken = async (req: LikeNextRequest | undefined) =>
-  (await getRequestTokens(req))?.access_token;
+  getAuthorizationBearerToken(req) ?? (await getRequestTokens(req))?.access_token;
 
 export const getProviderAccountId = async (req: LikeNextRequest | undefined) =>
   (await getRequestTokens(req))?.providerAccountId;
@@ -184,6 +236,13 @@ export const normalizedAccessToken: AccessTokenOrRequestOverloadsExt = async (
         };
       }
       // Otherwise pull token and user id from request with database fallback
+      const bearerTokenFromRequest = getAuthorizationBearerToken(userAccessToken);
+      if (bearerTokenFromRequest) {
+        return {
+          accessToken: bearerTokenFromRequest,
+          userId: 0,
+        };
+      }
       const { access_token, userId: userIdFromRequest } =
         (await getRequestTokens(userAccessToken)) ?? {};
       return access_token

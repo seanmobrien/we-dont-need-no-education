@@ -1,16 +1,16 @@
-'use server';
+'use client';
 
 import type { FallbackProps } from 'react-error-boundary';
 import { RenderErrorBoundaryFallback } from './render-fallback';
 
-export const RenderFallbackFromBoundary = async ({ error, resetErrorBoundary }: FallbackProps) => {
-  async function resetErrorBoundaryAction() {
-    'use server';
-    resetErrorBoundary();
-  }
-
-  return <RenderErrorBoundaryFallback 
-    resetErrorBoundaryAction={resetErrorBoundaryAction} 
-    error={error}
+export const RenderFallbackFromBoundary = ({
+  error,
+  resetErrorBoundary,
+}: FallbackProps) => {
+  return (
+    <RenderErrorBoundaryFallback
+      resetErrorBoundaryAction={resetErrorBoundary}
+      error={error}
     />
+  );
 };
