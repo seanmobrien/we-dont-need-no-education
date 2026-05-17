@@ -1,0 +1,13 @@
+diff --git a/build/index.js b/build/index.js
+--- a/build/index.js
++++ b/build/index.js
+@@ -101,6 +101,9 @@
+   clearAllMocks() {
+     this._mockState = new WeakMap();
+   }
++  clearMocksOnScope(_global) {
++    this.clearAllMocks();
++  }
+   resetAllMocks() {
+     this._mockConfigRegistry = new WeakMap();
+     this._mockState = new WeakMap();

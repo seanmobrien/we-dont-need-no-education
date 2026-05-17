@@ -5410,12 +5410,12 @@ __metadata:
     "@changesets/cli": "npm:^2.29.7"
     "@swc/core": "npm:^1.13.5"
     "@swc/jest": "npm:^0.2.39"
-    "@types/jest": "npm:^29.5.3"
+    "@types/jest": "npm:^30.0.0"
     "@types/node": "npm:^24.10.1"
     "@typescript-eslint/eslint-plugin": "npm:^8.46.4"
     "@typescript-eslint/parser": "npm:^8.46.4"
     eslint: "npm:^9.39.1"
-    jest: "npm:^29.6.1"
+    jest: "npm:30.0.5"
     rimraf: "npm:^6.1.0"
     ts-node: "npm:^10.9.1"
     typescript: "npm:^5.9.3"
@@ -6259,7 +6259,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jest@npm:^29.0.0, @types/jest@npm:^29.5.3":
+"@types/jest@npm:^29.0.0":
   version: 29.5.14
   resolution: "@types/jest@npm:29.5.14"
   dependencies:
@@ -12409,14 +12409,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jest-mock@npm:30.2.0":
-  version: 30.2.0
-  resolution: "jest-mock@npm:30.2.0"
+"jest-mock@npm:30.0.5":
+  version: 30.0.5
+  resolution: "jest-mock@npm:30.0.5"
   dependencies:
-    "@jest/types": "npm:30.2.0"
+    "@jest/types": "npm:30.0.5"
     "@types/node": "npm:*"
-    jest-util: "npm:30.2.0"
-  checksum: 10/cde9b56805f90bf811a9231873ee88a0fb83bf4bf50972ae76960725da65220fcb119688f2e90e1ef33fbfd662194858d7f43809d881f1c41bb55d94e62adeab
+    jest-util: "npm:30.0.5"
+  checksum: 10/a20386a9e4019c8e2957b95232a85dda6b705d810c2f9267278b40369db247bc311f84eeed72e13b227e15f40d554bd9fd66fafb4adb629dd37c9c14087a4106
+  languageName: node
+  linkType: hard
+
+"jest-mock@patch:jest-mock@npm%3A30.0.5#./patches/jest-mock-npm-30.0.5.patch::locator=compliance-theater%40workspace%3A.":
+  version: 30.0.5
+  resolution: "jest-mock@patch:jest-mock@npm%3A30.0.5#./patches/jest-mock-npm-30.0.5.patch::version=30.0.5&hash=342ea1&locator=compliance-theater%40workspace%3A."
+  dependencies:
+    "@jest/types": "npm:30.0.5"
+    "@types/node": "npm:*"
+    jest-util: "npm:30.0.5"
+  checksum: 10/293dbb802653a7be67d99aab7857d01150f1079327d671644186d5c42da718aac9c98d5f344b674ba0a1343f074f8d77994337e1f6e40892d7b1c95420ad5ec3
   languageName: node
   linkType: hard
 
