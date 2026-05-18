@@ -1,7 +1,6 @@
 import { auth } from '@compliance-theater/auth/auth.node';
 import { checkChatHealth } from '@/lib/api/health/chat';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server';
-import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 /**
@@ -9,7 +8,7 @@ import { NextResponse } from 'next/server';
  * Returns a structured snapshot of subsystem statuses.
  * Wrapped for unified logging / error semantics.
  */
-export const GET = wrapRouteRequest(async (req: NextRequest) => {
+export const GET = wrapRouteRequest(async () => {
   const session = await auth();
   if (!session?.user) {
     return NextResponse.json(
@@ -30,4 +29,3 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
     { status: 200 },
   );
 });
-

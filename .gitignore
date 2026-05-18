@@ -93,6 +93,8 @@ web-ui/packages/__mocks__/**/*.jsx.map
 *.lilith
 logs
 attachments
+!web-ui/packages/app/__tests__/app/api/email/\[emailId\]/attachments/
+!web-ui/packages/app/__tests__/app/api/email/\[emailId\]/attachments/route.test.ts
 db/backups/prod_current_nodropdb.sql
 db/backups/prod_current.sql
 secrets
