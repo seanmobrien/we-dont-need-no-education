@@ -17,8 +17,9 @@ export function parseNumber(value, fallback, minimum = 0) {
 }
 
 export function tokenExpiresAt(token, fallbackMs = 300000) {
-  if (token.expires_at) {
-    return Number(token.expires_at);
+  const explicit = normalizeEpochMs(token.expires_at_ms ?? token.expires_at);
+  if (explicit) {
+    return explicit;
   }
   if (token.expires_in) {
     return Date.now() + Number(token.expires_in) * 1000;
@@ -30,7 +31,7 @@ export function isUsableCachedToken(token, skewMs = 60000) {
   if (!token?.access_token) {
     return false;
   }
-  return Number(token.expires_at || 0) - skewMs > Date.now();
+  return tokenExpiresAt(token, 0) - skewMs > Date.now();
 }
 
 export async function readCachedTokenFile(tokenCachePath, { skewMs = 60000, logger = () => {} } = {}) {
@@ -50,6 +51,7 @@ export async function writeCachedTokenFile(tokenCachePath, token, { fallbackMs =
   const cached = {
     ...token,
     expires_at: tokenExpiresAt(token, fallbackMs),
+    expires_at_iso: new Date(tokenExpiresAt(token, fallbackMs)).toISOString(),
     cached_at: Date.now()
   };
   await mkdir(dirname(tokenCachePath), { recursive: true });
@@ -273,4 +275,12 @@ export async function readRpcResult(reader, expectedId, timeoutMs = 30000) {
       }
     }
   }
+}
+
+function normalizeEpochMs(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+  return parsed < 10_000_000_000 ? parsed * 1000 : parsed;
 }
