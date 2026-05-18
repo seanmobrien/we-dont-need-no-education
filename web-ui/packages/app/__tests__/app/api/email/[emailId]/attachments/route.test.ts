@@ -26,16 +26,15 @@ jest.mock('@compliance-theater/nextjs/server/unauthorized-service-response', () 
   unauthorizedServiceResponse: jest.fn(),
 }));
 
-jest.mock('@/lib/api/document-unit', () => ({
-  DocumentUnitRepository: jest.fn().mockImplementation(() => ({
-    SasKey: '?mock-sas-key',
-  })),
+jest.mock('@/lib/api/attachment', () => ({
+  getSasKey: jest.fn(() => '?mock-sas-key'),
 }));
 
 import { GET } from '../../../../../../app/api/email/[emailId]/attachments/route';
 import { checkCaseFileAuthorization } from '@compliance-theater/auth/lib/resources/case-file/index';
 import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server/unauthorized-service-response';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
+import { getSasKey } from '@/lib/api/attachment';
 
 type MockDb = {
   select: jest.Mock;
@@ -59,6 +58,8 @@ describe('GET /api/email/[emailId]/attachments', () => {
     (checkCaseFileAuthorization as jest.Mock).mockReset();
     (unauthorizedServiceResponse as jest.Mock).mockReset();
     (drizDbWithInit as jest.Mock).mockReset();
+    (getSasKey as jest.Mock).mockReset();
+    (getSasKey as jest.Mock).mockReturnValue('?mock-sas-key');
   });
 
   it('returns attachment list with generated hrefDocument and hrefApi when authorized', async () => {
@@ -89,6 +90,7 @@ describe('GET /api/email/[emailId]/attachments', () => {
         hrefApi: 'https://example.test/api/attachment/44',
       },
     ]);
+    expect(getSasKey).toHaveBeenCalled();
   });
 
   it('returns authorization response when authorization fails with response', async () => {

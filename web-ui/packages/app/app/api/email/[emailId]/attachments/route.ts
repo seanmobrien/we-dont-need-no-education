@@ -12,7 +12,7 @@ import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { schema } from '@compliance-theater/database/orm';
 import { eq, and } from '@compliance-theater/database/drizzle-orm';
 import { env } from '@compliance-theater/env';
-import { DocumentUnitRepository } from '@/lib/api/document-unit';
+import { getSasKey } from '@/lib/api/attachment';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +32,6 @@ export const GET = wrapRouteRequest(
     }
 
     const db = await drizDbWithInit();
-    const repository = new DocumentUnitRepository({ generateDownloadKey: true });
 
     // Query document units for attachments related to this email
     const documentUnits = await db
@@ -58,9 +57,11 @@ export const GET = wrapRouteRequest(
         ),
       );
 
+    // Get SAS key once for all attachments
+    const sasKey = getSasKey();
+
     // Map to the expected format with hrefDocument
     const attachments = documentUnits.map((record) => {
-      const sasKey = repository['SasKey']; // Access private property via bracket notation
       return {
         unitId: record.unitId,
         attachmentId: record.attachmentId,
