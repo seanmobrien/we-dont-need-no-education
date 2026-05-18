@@ -1,46 +1,40 @@
 #!/usr/bin/env node
-import { spawn } from "node:child_process";
 import { randomInt } from "node:crypto";
-import { createInterface } from "node:readline";
-import { join } from "node:path";
-import { homedir } from "node:os";
+import { appendFileSync, mkdirSync } from "node:fs";
 import { rm } from "node:fs/promises";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
+import { createInterface } from "node:readline";
 import {
+  connectSse,
   fetchWithPolicy,
   parseNumber,
   readCachedTokenFile,
+  readRpcResult,
+  rpc,
   sleep,
+  tokenExpiresAt,
   warnIfInsecureUrl,
   writeCachedTokenFile
 } from "./runtime-utils.mjs";
 
 const PREFIX = "MCP_COMPLIANCE_THEATER_RESOURCE_";
 const env = process.env;
-let nextProxyId = randomInt(1_000_000, 9_000_000);
-const clientRequests = new Set();
-const proxyRequests = new Map();
-let child;
 let registeredClient;
-let shuttingDown = false;
+let logWriteFailed = false;
+let remote;
+let remoteQueue = Promise.resolve();
 
 const helperTools = [
   {
     name: "mcp_resource_auth_list_abilities",
-    description: "List tools exposed by the authenticated MCP server, plus resource and resource template counts.",
-    inputSchema: {
-      type: "object",
-      properties: {},
-      additionalProperties: false
-    }
+    description: "List tools exposed by Compliance Theater 2000, plus resource and resource template counts.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false }
   },
   {
     name: "mcp_resource_auth_list_resources",
-    description: "Return a directory-style listing of resources and resource templates exposed by the authenticated MCP server.",
-    inputSchema: {
-      type: "object",
-      properties: {},
-      additionalProperties: false
-    }
+    description: "Return a directory-style listing of resources and resource templates exposed by Compliance Theater 2000.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false }
   },
   {
     name: "mcp_resource_auth_manage_auth",
@@ -60,10 +54,6 @@ const helperTools = [
   }
 ];
 
-function log(message) {
-  console.error(`[mcp-resource-auth] ${message}`);
-}
-
 function key(name) {
   return `${PREFIX}${name}`;
 }
@@ -81,20 +71,62 @@ function resolveValue(value) {
   return value;
 }
 
-function required(name) {
-  const value = optional(name);
-  if (!value || value.startsWith("[TODO:")) {
-    throw new Error(`Missing required environment variable ${key(name)}`);
-  }
-  return value;
-}
-
 function optional(name) {
   const value = resolveValue(env[key(name)]);
   if (!value || value.startsWith("[TODO:")) {
     return undefined;
   }
   return value;
+}
+
+function required(name) {
+  const value = optional(name);
+  if (!value) {
+    throw new Error(`Missing required environment variable ${key(name)}`);
+  }
+  return value;
+}
+
+function logFilePath() {
+  return optional("LOG_FILE") ||
+    join(homedir(), ".codex", "mcp-resource-auth", "compliance-theater-wrapper.log");
+}
+
+function redact(value) {
+  if (Array.isArray(value)) {
+    return value.map(redact);
+  }
+  if (!value || typeof value !== "object") {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([name, item]) => [
+      name,
+      /token|secret|password|authorization|credential/i.test(name) ? "[redacted]" : redact(item)
+    ])
+  );
+}
+
+function log(message, details) {
+  console.error(`[mcp-resource-auth] ${message}`);
+  const payload = {
+    timestamp: new Date().toISOString(),
+    pid: process.pid,
+    message,
+    ...(details ? { details: redact(details) } : {})
+  };
+
+  const path = logFilePath();
+  try {
+    mkdirSync(dirname(path), { recursive: true });
+    appendFileSync(path, `${JSON.stringify(payload)}\n`, "utf8");
+  } catch (error) {
+    if (!logWriteFailed) {
+      logWriteFailed = true;
+      console.error(`[mcp-resource-auth] could not write log file ${path}: ${error.message}`);
+    }
+  }
 }
 
 function cachePath() {
@@ -151,14 +183,14 @@ function metadataCandidates() {
   warnIfInsecureUrl(issuer, log, "OAuth issuer");
   const url = new URL(issuer);
   const issuerPath = url.pathname === "/" ? "" : url.pathname.replace(/\/+$/, "");
-
   return [
     `${url.origin}/.well-known/oauth-authorization-server${issuerPath}`,
     `${issuer}/.well-known/oauth-authorization-server`
   ];
 }
 
-async function fetchJson(url, options = {}) {
+async function fetchJsonResponse(url, options = {}) {
+  const startedAt = Date.now();
   const response = await fetchWithPolicy(url, {
     ...options,
     timeoutMs: httpTimeoutMs(),
@@ -173,12 +205,20 @@ async function fetchJson(url, options = {}) {
   } catch {
     body = {};
   }
+  log("HTTP request completed", {
+    url,
+    method: options.method || "GET",
+    status: response.status,
+    durationMs: Date.now() - startedAt
+  });
+  return { response, body, url };
+}
 
+async function fetchJson(url, options = {}) {
+  const { response, body } = await fetchJsonResponse(url, options);
   if (!response.ok) {
-    const error = body.error || body.error_description || `HTTP ${response.status}`;
-    throw new Error(String(error));
+    throw new Error(String(body.error || body.error_description || `HTTP ${response.status}`));
   }
-
   return body;
 }
 
@@ -208,12 +248,9 @@ function tokenAuthHeaders(metadata) {
   const clientId = optional("CLIENT_ID");
   const clientSecret = optional("CLIENT_SECRET");
   const methods = metadata.token_endpoint_auth_methods_supported || ["client_secret_basic"];
-
   if (clientId && clientSecret && methods.includes("client_secret_basic")) {
-    const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-    return { Authorization: `Basic ${basic}` };
+    return { Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}` };
   }
-
   return {};
 }
 
@@ -221,11 +258,9 @@ function addClientAuth(body, metadata) {
   const clientId = optional("CLIENT_ID") || registeredClient?.client_id;
   const clientSecret = optional("CLIENT_SECRET") || registeredClient?.client_secret;
   const methods = metadata.token_endpoint_auth_methods_supported || ["client_secret_basic"];
-
   if (clientId && !body.has("client_id")) {
     body.set("client_id", clientId);
   }
-
   if (clientSecret && methods.includes("client_secret_post")) {
     body.set("client_secret", clientSecret);
   }
@@ -241,11 +276,9 @@ async function tokenRequest(metadata, body) {
     },
     body
   });
-
   if (!token.access_token) {
     throw new Error("token endpoint response did not include access_token");
   }
-
   return token;
 }
 
@@ -254,47 +287,32 @@ async function refreshToken(metadata) {
   if (!refresh) {
     return undefined;
   }
-
-  const body = new URLSearchParams({
-    grant_type: "refresh_token",
-    refresh_token: refresh
-  });
-
+  const body = new URLSearchParams({ grant_type: "refresh_token", refresh_token: refresh });
   const scope = optional("OAUTH_SCOPE");
   if (scope) {
     body.set("scope", scope);
   }
-
   log("requesting access token with refresh_token grant");
   return tokenRequest(metadata, body);
 }
 
 async function clientCredentials(metadata) {
-  if (!hasGrant(metadata, "client_credentials")) {
+  if (!hasGrant(metadata, "client_credentials") || !optional("CLIENT_ID") || !optional("CLIENT_SECRET")) {
     return undefined;
   }
-  if (!optional("CLIENT_ID") || !optional("CLIENT_SECRET")) {
-    return undefined;
-  }
-
   const body = new URLSearchParams({ grant_type: "client_credentials" });
   const scope = optional("OAUTH_SCOPE");
   if (scope) {
     body.set("scope", scope);
   }
-
   log("requesting access token with client_credentials grant");
   return tokenRequest(metadata, body);
 }
 
 async function passwordGrant(metadata) {
-  if (!hasGrant(metadata, "password")) {
+  if (!hasGrant(metadata, "password") || !optional("USERNAME") || !optional("PASSWORD")) {
     return undefined;
   }
-  if (!optional("USERNAME") || !optional("PASSWORD")) {
-    return undefined;
-  }
-
   const body = new URLSearchParams({
     grant_type: "password",
     username: optional("USERNAME"),
@@ -304,7 +322,6 @@ async function passwordGrant(metadata) {
   if (scope) {
     body.set("scope", scope);
   }
-
   log("requesting access token with password grant");
   return tokenRequest(metadata, body);
 }
@@ -321,22 +338,19 @@ async function registerClient(metadata) {
   }
 
   const scope = optional("OAUTH_SCOPE");
-  const response = await fetchJson(metadata.registration_endpoint, {
+  registeredClient = await fetchJson(metadata.registration_endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      client_name: "MCP Resource Auth",
+      client_name: "Compliance Theater 2000 Codex Plugin",
       grant_types: ["urn:ietf:params:oauth:grant-type:device_code"],
       token_endpoint_auth_method: "none",
       ...(scope ? { scope } : {})
     })
   });
-
-  if (!response.client_id) {
+  if (!registeredClient.client_id) {
     throw new Error("dynamic client registration response did not include client_id");
   }
-
-  registeredClient = response;
   log("dynamically registered OAuth client");
   return registeredClient;
 }
@@ -379,7 +393,6 @@ async function deviceAuthorization(metadata) {
 
   while (Date.now() < stopAt) {
     await sleep(intervalMs);
-
     try {
       return await tokenRequest(
         metadata,
@@ -394,12 +407,9 @@ async function deviceAuthorization(metadata) {
       if (message.includes("slow_down")) {
         intervalMs += 5000;
         log(`slowing device authorization polling to ${intervalMs}ms`);
-        continue;
+      } else if (!message.includes("authorization_pending")) {
+        throw error;
       }
-      if (message.includes("authorization_pending")) {
-        continue;
-      }
-      throw error;
     }
   }
 
@@ -427,9 +437,7 @@ async function acquireToken() {
 
   if (!token) {
     const grants = metadata.grant_types_supported || ["authorization_code"];
-    throw new Error(
-      `No supported OAuth flow could be selected. Server grants: ${grants.join(", ")}`
-    );
+    throw new Error(`No supported OAuth flow could be selected. Server grants: ${grants.join(", ")}`);
   }
 
   const acquired = { ...token, metadata };
@@ -437,65 +445,114 @@ async function acquireToken() {
   return acquired;
 }
 
-function parseArgs() {
-  const raw = required("MCP_ARGS");
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || !parsed.every((item) => typeof item === "string")) {
-      throw new Error("must be a JSON array of strings");
-    }
-    return parsed;
-  } catch (error) {
-    throw new Error(`${key("MCP_ARGS")} ${error.message}`);
-  }
-}
-
 function sendToClient(message) {
+  log("sending message to client", summarizeMessage(message));
   process.stdout.write(`${JSON.stringify(message)}\n`);
 }
 
-function sendToChild(message) {
-  if (!child?.stdin || child.stdin.destroyed || !child.stdin.writable) {
-    throw new Error("MCP child process is not available");
-  }
-  child.stdin.write(`${JSON.stringify(message)}\n`);
-}
-
 function errorResponse(id, code, message) {
-  return {
-    jsonrpc: "2.0",
-    id,
-    error: { code, message }
-  };
+  return { jsonrpc: "2.0", id, error: { code, message } };
 }
 
 function textToolResult(text) {
+  return { content: [{ type: "text", text }] };
+}
+
+function summarizeMessage(message) {
+  if (!message || typeof message !== "object") {
+    return { type: typeof message };
+  }
+  const params = message.params && typeof message.params === "object" ? message.params : {};
   return {
-    content: [{ type: "text", text }]
+    id: message.id,
+    method: message.method,
+    hasError: Boolean(message.error),
+    errorMessage: message.error?.message,
+    toolName: params.name,
+    action: params.arguments?.action,
+    resultKeys: message.result && typeof message.result === "object" ? Object.keys(message.result) : undefined,
+    paramKeys: Object.keys(params)
   };
 }
 
-function proxyRequest(method, params = {}) {
-  const id = nextProxyId++;
-  return new Promise((resolve, reject) => {
-    const timeoutMs = proxyRequestTimeoutMs();
-    const timeoutHandle = setTimeout(() => {
-      if (proxyRequests.delete(id)) {
-        reject(new Error(`${method} timed out after ${timeoutMs}ms`));
-      }
-    }, timeoutMs);
-    timeoutHandle.unref();
+async function connectRemote() {
+  if (remote) {
+    return remote;
+  }
 
-    proxyRequests.set(id, { resolve, reject, timeoutHandle });
-
-    try {
-      sendToChild({ jsonrpc: "2.0", id, method, params });
-    } catch (error) {
-      clearTimeout(timeoutHandle);
-      proxyRequests.delete(id);
-      reject(error);
-    }
+  const token = await acquireToken();
+  const sseUrl = required("SERVER_URL");
+  warnIfInsecureUrl(sseUrl, log, "Target server URL");
+  log("connecting remote MCP SSE", { sseUrl });
+  remote = await connectSse({
+    sseUrl,
+    accessToken: token.access_token,
+    timeoutMs: proxyRequestTimeoutMs(),
+    httpTimeoutMs: httpTimeoutMs(),
+    httpRetries: httpRetryCount(),
+    httpRetryBaseMs: httpRetryBaseMs(),
+    logger: log
   });
+  remote.accessToken = token.access_token;
+  remote.nextId = randomInt(100_000, 999_999);
+  await rawRemoteRequest(remote, "initialize", {
+    protocolVersion: "2024-11-05",
+    capabilities: {},
+    clientInfo: { name: "compliance-theater-2000-codex-plugin", version: "0.1.0" }
+  });
+  await remoteNotification("notifications/initialized");
+  log("remote MCP initialized", { endpoint: remote.endpoint });
+  return remote;
+}
+
+async function remoteNotification(method, params = {}) {
+  const connection = remote || await connectRemote();
+  await postRemoteJson(connection, { jsonrpc: "2.0", method, params });
+}
+
+async function postRemoteJson(connection, message) {
+  const response = await fetchWithPolicy(connection.endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${connection.accessToken}`
+    },
+    body: JSON.stringify(message),
+    timeoutMs: httpTimeoutMs(),
+    retries: httpRetryCount(),
+    retryBaseMs: httpRetryBaseMs(),
+    logger: log
+  });
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(`Remote MCP ${message.method} failed with HTTP ${response.status}: ${text.slice(0, 1000)}`);
+  }
+}
+
+function remoteRequest(method, params = {}) {
+  remoteQueue = remoteQueue.then(async () => {
+    const connection = remote || await connectRemote();
+    return rawRemoteRequest(connection, method, params);
+  });
+  return remoteQueue;
+}
+
+async function rawRemoteRequest(connection, method, params = {}) {
+  const id = connection.nextId++;
+  log("remote request started", { id, method, paramKeys: Object.keys(params || {}) });
+  await rpc(connection.endpoint, connection.accessToken, id, method, params, {
+    timeoutMs: httpTimeoutMs(),
+    retries: httpRetryCount(),
+    retryBaseMs: httpRetryBaseMs(),
+    logger: log
+  });
+  const result = await readRpcResult(connection.reader, id, proxyRequestTimeoutMs());
+  log("remote request completed", {
+    id,
+    method,
+    resultKeys: result && typeof result === "object" ? Object.keys(result) : []
+  });
+  return result || {};
 }
 
 function isUnsupportedMethod(error) {
@@ -508,7 +565,7 @@ async function collectPaginated(method, keyName) {
   do {
     let result;
     try {
-      result = await proxyRequest(method, cursor ? { cursor } : {});
+      result = await remoteRequest(method, cursor ? { cursor } : {});
     } catch (error) {
       if (isUnsupportedMethod(error)) {
         return [];
@@ -522,8 +579,8 @@ async function collectPaginated(method, keyName) {
 }
 
 async function listTools() {
-  const tools = await collectPaginated("tools/list", "tools");
-  return [...tools, ...helperTools];
+  const result = await remoteRequest("tools/list");
+  return [...(result.tools || []), ...helperTools];
 }
 
 async function listResources() {
@@ -544,16 +601,12 @@ function formatAbilities(tools, resources, templates) {
     lines.push(`- ${tool.name}: ${tool.description || "No description"}`);
     lines.push(`  inputSchema: ${formatSchema(tool.inputSchema)}`);
   }
-
   lines.push("");
   lines.push(`Resources: ${resources.length}`);
   lines.push(`Resource templates: ${templates.length}`);
-  if (templates.length) {
-    for (const template of templates) {
-      lines.push(`- ${template.uriTemplate}: ${template.name || template.description || "Template"}`);
-    }
+  for (const template of templates) {
+    lines.push(`- ${template.uriTemplate}: ${template.name || template.description || "Template"}`);
   }
-
   return lines.join("\n");
 }
 
@@ -569,11 +622,9 @@ function resourcePath(resource) {
 function formatResourceDirectory(resources, templates) {
   const lines = ["Resources:"];
   const sorted = [...resources].sort((a, b) => resourcePath(a).localeCompare(resourcePath(b)));
-
   if (!sorted.length) {
     lines.push("- No concrete resources exposed.");
   }
-
   for (const resource of sorted) {
     const name = resource.name ? ` (${resource.name})` : "";
     const mime = resource.mimeType ? ` [${resource.mimeType}]` : "";
@@ -582,7 +633,6 @@ function formatResourceDirectory(resources, templates) {
       lines.push(`  ${resource.description}`);
     }
   }
-
   lines.push("");
   lines.push("Resource templates:");
   if (!templates.length) {
@@ -595,13 +645,16 @@ function formatResourceDirectory(resources, templates) {
       lines.push(`  ${template.description}`);
     }
   }
-
   return lines.join("\n");
 }
 
 function sessionEndpointUrl() {
-  const baseUrl = required("SERVER_URL");
-  const parsed = new URL(baseUrl);
+  const explicit = optional("SESSION_STATUS_URL");
+  if (explicit) {
+    warnIfInsecureUrl(explicit, log, "Session status URL");
+    return explicit;
+  }
+  const parsed = new URL(required("SERVER_URL"));
   parsed.pathname = "/api/auth/session";
   parsed.search = "";
   parsed.hash = "";
@@ -612,14 +665,12 @@ async function clearCachedToken() {
   if (optional("DISABLE_TOKEN_CACHE") === "1") {
     return "Token cache is disabled by MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE=1.";
   }
-
-  const path = cachePath();
   try {
-    await rm(path);
-    return `Removed cached token file: ${path}`;
+    await rm(cachePath());
+    return `Removed cached token file: ${cachePath()}`;
   } catch (error) {
     if (error?.code === "ENOENT") {
-      return `No cached token file found at: ${path}`;
+      return `No cached token file found at: ${cachePath()}`;
     }
     throw error;
   }
@@ -628,48 +679,33 @@ async function clearCachedToken() {
 async function currentAccessToken() {
   const explicit = optional("ACCESS_TOKEN");
   if (explicit) {
-    return {
-      token: explicit,
-      source: "env:ACCESS_TOKEN"
-    };
+    return { token: explicit, source: "env:ACCESS_TOKEN" };
   }
-
   const cached = await readCachedToken();
-  if (cached?.access_token) {
-    return {
-      token: cached.access_token,
-      source: "cached-token"
-    };
-  }
-
-  return undefined;
+  return cached?.access_token ? { token: cached.access_token, source: "cached-token", cached } : undefined;
 }
 
 function roleSummary(resourceAccess) {
   if (!resourceAccess || typeof resourceAccess !== "object") {
     return "none";
   }
-  const entries = Object.entries(resourceAccess)
-    .map(([resourceName, details]) => {
-      const roles = Array.isArray(details?.roles) ? details.roles : [];
-      return `${resourceName}: ${roles.join(", ") || "(no roles)"}`;
-    });
+  const entries = Object.entries(resourceAccess).map(([resourceName, details]) => {
+    const roles = Array.isArray(details) ? details : Array.isArray(details?.roles) ? details.roles : [];
+    return `${resourceName}: ${roles.join(", ") || "(no roles)"}`;
+  });
   return entries.length ? entries.join("\n") : "none";
 }
 
 async function fetchSessionForToken(accessToken) {
   const url = sessionEndpointUrl();
+  const startedAt = Date.now();
   const response = await fetchWithPolicy(url, {
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${accessToken}`
-    },
+    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
     timeoutMs: httpTimeoutMs(),
     retries: httpRetryCount(),
     retryBaseMs: httpRetryBaseMs(),
     logger: log
   });
-
   const text = await response.text();
   let body;
   try {
@@ -677,41 +713,93 @@ async function fetchSessionForToken(accessToken) {
   } catch {
     body = {};
   }
-
-  return {
-    response,
-    body,
-    url
-  };
+  log("session status request completed", { url, status: response.status, durationMs: Date.now() - startedAt });
+  return { response, body, url };
 }
 
-function formatSessionStatus(statusBody, context) {
-  const status = statusBody?.status || "unauthenticated";
-  const sessionData = statusBody?.data;
-  if (status !== "authenticated" || !sessionData?.user) {
-    return [
-      `Auth status: unauthenticated (${context})`,
-      "Session endpoint indicates this token is not authenticated."
-    ].join("\n");
-  }
+async function metadataForToken(tokenInfo) {
+  return tokenInfo?.cached?.metadata || discoverMetadata();
+}
 
-  const user = sessionData.user || {};
-  const scope = statusBody?.scope || sessionData?.scope || "(not provided)";
+async function fetchUserInfoForToken(accessToken, metadata) {
+  if (!metadata?.userinfo_endpoint) {
+    return undefined;
+  }
+  return fetchJsonResponse(metadata.userinfo_endpoint, {
+    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` }
+  });
+}
+
+function tokenExpiryLine(tokenInfo) {
+  const cached = tokenInfo?.cached;
+  if (!cached) {
+    return "- expires: (not provided)";
+  }
+  const expiresAt = tokenExpiresAt(cached, 0);
+  return expiresAt > 0 ? `- expires: ${new Date(expiresAt).toISOString()}` : "- expires: (not provided)";
+}
+
+function formatSessionReadiness(sessionResult) {
+  if (!sessionResult) {
+    return ["App session:", "- status: not checked", "- detail: no session endpoint is configured"];
+  }
+  const { response, body, url } = sessionResult;
+  if (response.ok) {
+    return ["App session:", `- status: ${body?.status || "unknown"}`, `- endpoint: ${url}`];
+  }
+  return ["App session:", "- status: invalid", `- endpoint: ${url}`, `- HTTP: ${response.status}`, `- response: ${JSON.stringify(body)}`];
+}
+
+function formatUserInfoStatus(userInfo, context, tokenInfo, sessionResult) {
   return [
     `Auth status: authenticated (${context})`,
-    `Session endpoint: ${sessionData.expires ? "valid" : "no expiry supplied"}`,
+    "OAuth userinfo endpoint: verified",
     "",
     "User:",
-    `- name: ${user.name || "(unknown)"}`,
-    `- email: ${user.email || "(unknown)"}`,
-    `- id: ${user.id || "(unknown)"}`,
-    `- hash: ${user.hash || "(not provided)"}`,
-    `- expires: ${sessionData.expires || "(not provided)"}`,
-    `- scope: ${scope}`,
+    `- name: ${userInfo.name || "(unknown)"}`,
+    `- email: ${userInfo.email || "(unknown)"}`,
+    `- id: ${userInfo.sub || userInfo.id || "(unknown)"}`,
+    `- username: ${userInfo.preferred_username || "(not provided)"}`,
+    tokenExpiryLine(tokenInfo),
+    "",
+    ...formatSessionReadiness(sessionResult),
     "",
     "Permissions:",
-    roleSummary(sessionData.resource_access)
+    roleSummary(userInfo.resource_access)
   ].join("\n");
+}
+
+async function verifiedAuthStatus(accessToken, context, tokenInfo = {}) {
+  let userInfoResult;
+  try {
+    userInfoResult = await fetchUserInfoForToken(accessToken, await metadataForToken(tokenInfo));
+  } catch (error) {
+    userInfoResult = { error };
+  }
+
+  const sessionResult = await fetchSessionForToken(accessToken).catch((error) => ({ error }));
+  if (userInfoResult?.response?.ok) {
+    return formatUserInfoStatus(userInfoResult.body, context, tokenInfo, sessionResult.response ? sessionResult : undefined);
+  }
+  if (userInfoResult?.response?.status === 401 || userInfoResult?.response?.status === 403) {
+    return `Auth status: token unauthenticated (${context})\nOAuth userinfo endpoint rejected token at ${userInfoResult.url} with HTTP ${userInfoResult.response.status}.`;
+  }
+
+  const lines = [`Auth status: unknown (${context})`];
+  if (userInfoResult?.response) {
+    lines.push(`OAuth userinfo endpoint ${userInfoResult.url} returned HTTP ${userInfoResult.response.status}.`);
+    lines.push(`Response: ${JSON.stringify(userInfoResult.body)}`);
+  } else if (userInfoResult?.error) {
+    lines.push(`OAuth userinfo verification failed: ${userInfoResult.error.message}`);
+  } else {
+    lines.push("OAuth metadata did not provide a userinfo endpoint.");
+  }
+  if (sessionResult?.response) {
+    lines.push(...formatSessionReadiness(sessionResult));
+  } else if (sessionResult?.error) {
+    lines.push(`App session check failed: ${sessionResult.error.message}`);
+  }
+  return lines.join("\n");
 }
 
 async function authStatusSummary() {
@@ -719,24 +807,7 @@ async function authStatusSummary() {
   if (!tokenInfo?.token) {
     return "Auth status: unauthenticated (no cached or configured access token).";
   }
-
-  const { response, body, url } = await fetchSessionForToken(tokenInfo.token);
-  if (response.status === 401 || response.status === 403) {
-    return [
-      `Auth status: cached token unauthenticated (${tokenInfo.source})`,
-      `Session endpoint rejected token at ${url} with HTTP ${response.status}.`
-    ].join("\n");
-  }
-
-  if (!response.ok) {
-    return [
-      `Auth status: unknown (${tokenInfo.source})`,
-      `Session endpoint ${url} returned HTTP ${response.status}.`,
-      `Response: ${JSON.stringify(body)}`
-    ].join("\n");
-  }
-
-  return formatSessionStatus(body, tokenInfo.source);
+  return verifiedAuthStatus(tokenInfo.token, tokenInfo.source, tokenInfo);
 }
 
 async function loginAndSummarizeStatus() {
@@ -745,31 +816,16 @@ async function loginAndSummarizeStatus() {
   if (!token?.access_token) {
     throw new Error("Login flow did not return an access token.");
   }
-
   const acquired = { ...token, metadata };
   await writeCachedToken(acquired);
-
-  const { response, body, url } = await fetchSessionForToken(acquired.access_token);
-  if (!response.ok) {
-    return [
-      "Auth login completed, but session verification failed.",
-      `Session endpoint ${url} returned HTTP ${response.status}.`,
-      `Response: ${JSON.stringify(body)}`
-    ].join("\n");
-  }
-
-  return [
-    "Login successful. Cached new access token.",
-    "",
-    formatSessionStatus(body, "new-login")
-  ].join("\n");
+  return ["Login successful. Cached new access token.", "", await verifiedAuthStatus(acquired.access_token, "new-login", { cached: acquired })].join("\n");
 }
 
 async function callHelperTool(id, name, args = {}) {
   try {
     if (name === "mcp_resource_auth_list_abilities") {
       const [tools, resources, templates] = await Promise.all([
-        listTools(),
+        listTools().catch(() => helperTools),
         listResources().catch(() => []),
         listResourceTemplates().catch(() => [])
       ]);
@@ -787,26 +843,15 @@ async function callHelperTool(id, name, args = {}) {
     }
 
     if (name === "mcp_resource_auth_manage_auth") {
-      const action = args?.action;
-      if (action === "clear-cache") {
-        const message = await clearCachedToken();
-        sendToClient({ jsonrpc: "2.0", id, result: textToolResult(message) });
-        return;
+      if (args?.action === "clear-cache") {
+        sendToClient({ jsonrpc: "2.0", id, result: textToolResult(await clearCachedToken()) });
+      } else if (args?.action === "status") {
+        sendToClient({ jsonrpc: "2.0", id, result: textToolResult(await authStatusSummary()) });
+      } else if (args?.action === "login") {
+        sendToClient({ jsonrpc: "2.0", id, result: textToolResult(await loginAndSummarizeStatus()) });
+      } else {
+        sendToClient(errorResponse(id, -32602, "action must be one of: status, clear-cache, login"));
       }
-
-      if (action === "status") {
-        const message = await authStatusSummary();
-        sendToClient({ jsonrpc: "2.0", id, result: textToolResult(message) });
-        return;
-      }
-
-      if (action === "login") {
-        const message = await loginAndSummarizeStatus();
-        sendToClient({ jsonrpc: "2.0", id, result: textToolResult(message) });
-        return;
-      }
-
-      sendToClient(errorResponse(id, -32602, "action must be one of: status, clear-cache, login"));
       return;
     }
 
@@ -816,15 +861,41 @@ async function callHelperTool(id, name, args = {}) {
   }
 }
 
-async function handleClientRequest(message) {
-  if (message.method === "tools/list") {
-    try {
-      const result = await proxyRequest("tools/list", message.params || {});
-      const tools = [...(result.tools || []), ...helperTools];
-      sendToClient({ jsonrpc: "2.0", id: message.id, result: { ...result, tools } });
-    } catch (error) {
-      sendToClient(errorResponse(message.id, -32000, error.message));
+function localInitializeResult(params = {}) {
+  return {
+    protocolVersion: params.protocolVersion || "2024-11-05",
+    capabilities: {
+      tools: {},
+      resources: {},
+      prompts: {}
+    },
+    serverInfo: {
+      name: "compliance-theater-2000",
+      version: "0.1.0"
     }
+  };
+}
+
+async function handleClientRequest(message) {
+  log("handling client request", summarizeMessage(message));
+
+  if (message.method === "initialize") {
+    sendToClient({ jsonrpc: "2.0", id: message.id, result: localInitializeResult(message.params) });
+    return;
+  }
+
+  if (message.method === "notifications/initialized") {
+    return;
+  }
+
+  if (message.method === "tools/list") {
+    let tools = [...helperTools];
+    try {
+      tools = await listTools();
+    } catch (error) {
+      log(`remote tools/list failed: ${error.message}`);
+    }
+    sendToClient({ jsonrpc: "2.0", id: message.id, result: { tools } });
     return;
   }
 
@@ -836,56 +907,17 @@ async function handleClientRequest(message) {
     }
   }
 
-  if (message.id !== undefined) {
-    clientRequests.add(message.id);
-  }
-  sendToChild(message);
-}
-
-function handleChildMessage(message) {
-  if (message.id !== undefined && proxyRequests.has(message.id)) {
-    const pending = proxyRequests.get(message.id);
-    proxyRequests.delete(message.id);
-    clearTimeout(pending.timeoutHandle);
-    if (message.error) {
-      pending.reject(new Error(message.error.message || "MCP child request failed"));
-    } else {
-      pending.resolve(message.result || {});
-    }
+  if (message.id === undefined) {
+    remoteNotification(message.method, message.params || {}).catch((error) => log(`remote notification failed: ${error.message}`));
     return;
   }
 
-  if (message.id !== undefined && clientRequests.has(message.id)) {
-    clientRequests.delete(message.id);
+  try {
+    const result = await remoteRequest(message.method, message.params || {});
+    sendToClient({ jsonrpc: "2.0", id: message.id, result });
+  } catch (error) {
+    sendToClient(errorResponse(message.id, -32000, error.message));
   }
-  sendToClient(message);
-}
-
-function failPendingRequests(message) {
-  for (const [id, pending] of proxyRequests) {
-    clearTimeout(pending.timeoutHandle);
-    pending.reject(new Error(message));
-  }
-  proxyRequests.clear();
-
-  for (const id of clientRequests) {
-    sendToClient(errorResponse(id, -32000, message));
-  }
-  clientRequests.clear();
-}
-
-function shutdown(reason) {
-  if (shuttingDown) {
-    return;
-  }
-
-  shuttingDown = true;
-  failPendingRequests(reason);
-  if (child && child.exitCode === null && !child.killed) {
-    child.kill();
-    return;
-  }
-  process.exit(0);
 }
 
 function bindJsonLines(stream, onMessage, source) {
@@ -895,7 +927,9 @@ function bindJsonLines(stream, onMessage, source) {
       return;
     }
     try {
-      onMessage(JSON.parse(line));
+      const message = JSON.parse(line);
+      log(`received ${source} message`, summarizeMessage(message));
+      onMessage(message);
     } catch (error) {
       log(`could not parse ${source} JSON message: ${error.message}`);
     }
@@ -903,26 +937,17 @@ function bindJsonLines(stream, onMessage, source) {
 }
 
 async function main() {
-  const token = await acquireToken();
-  const command = required("MCP_COMMAND");
-  const args = parseArgs();
-  const childTokenEnv = optional("CHILD_ACCESS_TOKEN_ENV") || key("ACCESS_TOKEN");
-  const childEnv = {
-    ...env,
-    [key("ACCESS_TOKEN")]: token.access_token,
-    [key("OAUTH_METADATA_JSON")]: token.metadata ? JSON.stringify(token.metadata) : "",
-    [childTokenEnv]: token.access_token
-  };
-
-  log(`starting MCP server command: ${command}`);
-  child = spawn(command, args, {
-    env: childEnv,
-    stdio: ["pipe", "pipe", "inherit"],
-    shell: process.platform === "win32"
+  log("wrapper starting", { cwd: process.cwd(), node: process.version, argv: process.argv });
+  log("resolved wrapper configuration", {
+    serverUrl: optional("SERVER_URL"),
+    authIssuer: optional("AUTH_ISSUER"),
+    sessionStatusUrl: sessionEndpointUrl(),
+    tokenCachePath: cachePath(),
+    logFile: logFilePath()
   });
 
-  process.on("SIGINT", () => shutdown("Received SIGINT"));
-  process.on("SIGTERM", () => shutdown("Received SIGTERM"));
+  process.on("SIGINT", () => process.exit(0));
+  process.on("SIGTERM", () => process.exit(0));
 
   bindJsonLines(process.stdin, (message) => {
     handleClientRequest(message).catch((error) => {
@@ -933,28 +958,9 @@ async function main() {
       }
     });
   }, "client");
-
-  bindJsonLines(child.stdout, handleChildMessage, "child");
-
-  child.on("error", (error) => {
-    failPendingRequests(`MCP child process failed: ${error.message}`);
-    process.exit(1);
-  });
-
-  child.on("exit", (code, signal) => {
-    const message = signal ?
-      `MCP child exited due to ${signal}` :
-      `MCP child exited with code ${code ?? 0}`;
-    failPendingRequests(message);
-    if (shuttingDown) {
-      process.exit(0);
-      return;
-    }
-    process.exit(code ?? (signal ? 1 : 0));
-  });
 }
 
 main().catch((error) => {
-  log(error.message);
+  log("wrapper startup failed", { message: error.message, stack: error.stack });
   process.exit(1);
 });

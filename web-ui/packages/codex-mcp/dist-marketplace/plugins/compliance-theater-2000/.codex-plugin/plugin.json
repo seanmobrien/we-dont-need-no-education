@@ -32,8 +32,7 @@
     "defaultPrompt": [
       "List Compliance Theater 2000's available tools and resources.",
       "Show me compliance resources.",
-      "Load case file document id <case_id> and summarize it.",
-      "Search for case documents matching <query> and open in browser."
+      "Load case file document id <case_id> and summarize it."
     ],
     "brandColor": "#2563EB",
     "screenshots": []
@@ -85,20 +84,20 @@
       "env": "MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE"
     },
     {
-      "name": "mcpCommand",
-      "label": "MCP command",
-      "description": "Command that starts the real MCP server.",
+      "name": "sessionStatusUrl",
+      "label": "Session status URL",
+      "description": "Optional app endpoint used as a secondary bearer-token status check. Leave blank to use OAuth userinfo.",
       "type": "string",
-      "required": true,
-      "env": "MCP_COMPLIANCE_THEATER_RESOURCE_MCP_COMMAND"
+      "required": false,
+      "env": "MCP_COMPLIANCE_THEATER_RESOURCE_SESSION_STATUS_URL"
     },
     {
-      "name": "mcpArgs",
-      "label": "MCP args",
-      "description": "JSON array of arguments for the real MCP server command.",
+      "name": "logFile",
+      "label": "Wrapper log file",
+      "description": "Optional path for MCP wrapper diagnostics. Defaults to ~/.codex/mcp-resource-auth/compliance-theater-wrapper.log.",
       "type": "string",
-      "required": true,
-      "env": "MCP_COMPLIANCE_THEATER_RESOURCE_MCP_ARGS"
+      "required": false,
+      "env": "MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE"
     }
   ]
 }
