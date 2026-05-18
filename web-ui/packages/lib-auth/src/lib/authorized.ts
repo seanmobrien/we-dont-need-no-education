@@ -13,6 +13,12 @@ type AuthorizedCallback = (params: {
 
 type AuthorizedParams = Parameters<AuthorizedCallback>[0];
 
+const toEpochMilliseconds = (epochTimeSecondsOrMilliseconds: number): number => {
+  return epochTimeSecondsOrMilliseconds > 1_000_000_000_000
+    ? epochTimeSecondsOrMilliseconds
+    : epochTimeSecondsOrMilliseconds * 1000;
+};
+
 export const authorized = async ({
   auth,
   request: requestFromProps,
@@ -55,10 +61,11 @@ export const authorized = async ({
     const token = await extractToken(request);
     if (token) {
       if (token.exp) {
-        if (Date.now() > token.exp) {
+        const expiresAt = toEpochMilliseconds(token.exp);
+        if (Date.now() > expiresAt) {
           log((l) =>
             l.warn('Token has expired', {
-              expiresAt: token.exp,
+              expiresAt,
               now: Date.now(),
               token,
             })

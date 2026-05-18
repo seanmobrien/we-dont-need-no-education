@@ -80,8 +80,13 @@ COPY --link=true . .
 RUN npm install -g turbo@^2.8.3 && \
   turbo prune --scope=@compliance-theater/app --docker && \
   node -e "const fs=require('fs'); for (const file of ['out/full/package.json','out/json/package.json']) { const pkg=JSON.parse(fs.readFileSync(file,'utf8')); if (pkg.scripts?.preinstall) { delete pkg.scripts.preinstall; if (Object.keys(pkg.scripts).length===0) delete pkg.scripts; } fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + '\n'); }" && \
+  find out/full out/json -name '*.tsbuildinfo' -delete && \
   cp tsconfig.*.json out/full && \
-  cp tsconfig.*.json out/json
+  cp tsconfig.*.json out/json && \
+  mkdir -p out/full/web-ui out/json/web-ui && \
+  cp web-ui/tsconfig.*.json out/full/web-ui && \
+  cp web-ui/tsconfig.*.json out/json/web-ui && \
+  cp -R web-ui/eslint-rules out/full/web-ui/
 
 # Dependencies layer uses pruned workspace
 FROM base_builder AS deps
@@ -127,7 +132,6 @@ COPY --link=true --from=pruner /repo/out/full/ ./
 # RUN rm -rf /app/web-ui/submodules/sce/.yarn \
 #  && rm -rf /app/web-ui/submodules/sce/yarn.lock \
 #  && rm -rf /app/web-ui/submodules/sce/.yarnrc.yml;
-
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 ENV AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT
@@ -142,7 +146,6 @@ ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
 ENV MEM0_API_HOST=$MEM0_API_HOST
 ENV MEM0_UI_HOST=$MEM0_UI_HOST
 ENV MEM0_USERNAME=$MEM0_USERNAME
-ENV FOR_STANDALONE=1
 ENV IS_BUILDING=1
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
@@ -155,7 +158,6 @@ ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 RUN --mount=type=secret,id=env_file \
   --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE \
   --mount=type=secret,id=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING \
-  --mount=type=secret,id=AZURE_MONITOR_CONNECTION_STRING \
   --mount=type=secret,id=REDIS_URL \
   --mount=type=secret,id=REDIS_PASSWORD \
   --mount=type=secret,id=DATABASE_URL \
@@ -205,8 +207,7 @@ RUN --mount=type=secret,id=env_file \
 FROM builder_root AS builder
 
 RUN node .yarn/releases/yarn-4.12.0.cjs build:publish && \
-  rm -f "$TMP_ENV" ./web-ui/packages/app/.env.local ./web-ui/packages/app/.env.production.local; \
-  if [ ! -d "./web-ui/packages/app/.next/standalone" ]; then echo "Error: standalone build output missing" >&2; exit 1; fi
+  rm -f "$TMP_ENV" ./web-ui/packages/app/.env.local ./web-ui/packages/app/.env.production.local
 
 FROM base AS runner
 
@@ -252,6 +253,7 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 --ingroup nodejs --shell /bin/sh nextjs \
   && mkdir -p /app/scripts \
+  && chown -R nextjs:nodejs /app \
   && apt-get update \
   && apt-get install -y --no-install-recommends \
       cron \
@@ -265,34 +267,26 @@ RUN addgroup --system --gid 1001 nodejs \
       libpixman-1-0 \
   && rm -rf /var/lib/apt/lists/*
 
-# Copy Next.js standalone output from the app workspace.
-# outputFileTracingRoot in next.config.ts is set to the repository root, so the
-# standalone build preserves the monorepo path structure: server.js lands at
-# web-ui/packages/app/server.js inside the standalone directory.
-COPY --link=true --from=builder /app/web-ui/packages/app/.next/standalone /app
-# Static assets must mirror the app path within the standalone tree so the server can
-# resolve them via the default /_next/static route.
-COPY --link=true --from=builder /app/web-ui/packages/app/.next/static /app/web-ui/packages/app/.next/static
-# public/ must live alongside server.js (i.e. at /app/web-ui/packages/app/public) because Next.js
-# standalone serves public assets relative to the directory from which server.js runs
-# (WORKDIR /app/web-ui/packages/app at runtime).  A copy to /app/public would be unreachable.
-COPY --link=true --from=pruner /repo/web-ui/packages/app/public /app/web-ui/packages/app/public
+# Copy the pruned monorepo runtime plus built assets and root node_modules so the
+# app can be launched with `next start` rather than relying on standalone output.
+COPY --link=true --from=builder /app/node_modules /app/node_modules
+COPY --link=true --from=builder /app/web-ui /app/web-ui
 # Copy startup and cron scripts from the app workspace.  rate-retry-client.sh is invoked
 # by the cron job configured below and expects to live at /app/scripts/.
 COPY --link=true --from=pruner /repo/web-ui/packages/app/scripts /app/scripts
 
 # Set up cron and write runtime env file (pulling from secrets when env is unset)
-RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /tmp/nextjs.cron \
-  && crontab -u nextjs /tmp/nextjs.cron \
-  && rm -f /tmp/nextjs.cron \
-  && mkdir -p /var/log \
-  && chown nextjs:nodejs /var/log \
-  && chown -R nextjs:nodejs /app \
-  && find /app/scripts -type f -name '*.sh' -exec chmod +x {} + || true;
+RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /tmp/nextjs.cron 
+RUN crontab -u nextjs /tmp/nextjs.cron 
+RUN  rm -f /tmp/nextjs.cron 
+RUN mkdir -p /var/log 
+RUN chown nextjs:nodejs /var/log 
+#RUN chown -R nextjs:nodejs /app 
+RUN find /app/scripts -type f -name '*.sh' -exec chmod +x {} + || true;
 
 WORKDIR /app/web-ui/packages/app
 
 EXPOSE 3000
 EXPOSE 9229
 
-CMD ["sh", "-c", "cron && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -s /bin/sh -c \"node --inspect-brk=0.0.0.0:9229 server.js\"; else su nextjs -s /bin/sh -c \"node server.js\"; fi"]
+CMD ["sh", "-c", "cron && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -s /bin/sh -c \"node --inspect-brk=0.0.0.0:9229 ../../../node_modules/next/dist/bin/next start -p 3000 -H 0.0.0.0\"; else su nextjs -s /bin/sh -c \"node ../../../node_modules/next/dist/bin/next start -p 3000 -H 0.0.0.0\"; fi"]

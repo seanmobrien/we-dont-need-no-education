@@ -321,7 +321,7 @@ Create `web-ui/packages/[package-name]/tsconfig.json`:
 
 ```tsconfig.json
 {
-  "extends": "../../tsconfig.base.json",  
+  "extends": "../../../tsconfig.base.json",  
 }
 ```
 

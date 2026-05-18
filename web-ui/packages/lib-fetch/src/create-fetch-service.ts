@@ -5,7 +5,7 @@ import {
     type IServiceContainer,
     resolveService,
 } from '@compliance-theater/types/dependency-injection';
-import type { ISingletonProvider } from '@compliance-theater/types/lib/logger/singleton-provider';
+import type { ISingletonProvider } from '@compliance-theater/types/singleton-provider';
 
 export type RuntimeFetch = IFetchService['fetch'];
 

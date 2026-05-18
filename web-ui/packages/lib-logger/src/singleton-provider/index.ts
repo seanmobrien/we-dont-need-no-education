@@ -46,7 +46,7 @@
  * @version 1.0.0
  */
 
-import type { ISingletonProvider } from "@compliance-theater/types/lib/logger/singleton-provider";
+import type { ISingletonProvider } from "@compliance-theater/types/singleton-provider";
 export type { ISingletonProvider };
 
 import { SingletonProvider } from "./provider";
