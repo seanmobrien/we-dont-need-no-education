@@ -1,4 +1,4 @@
-export { buildAttachmentDownloadUrl } from './download-url-builder';
+export { buildAttachmentDownloadUrl, getSasKey } from './download-url-builder';
 /*
 
 const attachmentSummaryRecordMap = (record: Record<string, unknown>) => ({

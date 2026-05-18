@@ -17,7 +17,14 @@ interface AttachmentDownloadUrlBuilderOverloads {
 }
 
 let _sasKey: string | undefined = undefined;
-const getSasKey = (): string => {
+
+/**
+ * Generates a SAS (Shared Access Signature) key for Azure Blob Storage access.
+ * The key is cached and reused for the lifetime of the module.
+ * 
+ * @returns A SAS query string starting with '?' for appending to blob URLs
+ */
+export const getSasKey = (): string => {
   if (_sasKey === undefined) {
     const sasOptions = {
       services: AccountSASServices.parse('b').toString(), // blobs, tables, queues, files
