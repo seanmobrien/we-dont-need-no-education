@@ -9,7 +9,7 @@ import {
   ErrorSeverity,
 } from '@compliance-theater/logger/errors/monitoring/error-reporter';
 
-export const DefaultErrorFallbackRender = ({
+const DefaultErrorFallbackContent = ({
   error,
   resetErrorBoundary, 
 }: FallbackProps): ReactNode => {
@@ -44,7 +44,19 @@ export const DefaultErrorFallbackRender = ({
         resetErrorBoundaryAction={resetAction}
         />
     )
-    : (<></>);  
+    : (<></>);
+};
+
+export const DefaultErrorFallbackRender = ({
+  error,
+  resetErrorBoundary,
+}: FallbackProps): ReactNode => {
+  return (
+    <DefaultErrorFallbackContent
+      error={error}
+      resetErrorBoundary={resetErrorBoundary}
+    />
+  );
 };
 
 type DefaultErrorBoundaryProps = PropsWithChildren<Omit<ErrorBoundaryProps, 'fallback' | 'FallbackComponent' | 'resetErrorBoundary'>>

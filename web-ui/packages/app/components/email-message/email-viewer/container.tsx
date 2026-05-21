@@ -16,7 +16,7 @@ const EmailViewer: React.FC<EmailViewerProps> = ({ emailId }) => {
         <QueryErrorResetBoundary>
           {({ reset }) => (
             <ErrorBoundary
-              fallbackRender={RenderFallbackFromBoundary}
+              FallbackComponent={RenderFallbackFromBoundary}
               onReset={reset}
             >
               <React.Suspense fallback={<LoadingEmail />}>

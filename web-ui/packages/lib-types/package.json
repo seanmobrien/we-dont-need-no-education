@@ -76,8 +76,6 @@
   },
   "peerDependencies": {
     "ai": "^5.0.23",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
     "zod": "3.25.76"
   },
   "peerDependenciesMeta": {
@@ -109,8 +107,6 @@
     "@types/react": "19.2.4",
     "@types/react-dom": "19.2.3",
     "jest": "^30.0.5",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
     "rimraf": "^6.1.2",
     "ts-node": "^10.9.1",
     "typescript": "^5.9.3"

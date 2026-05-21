@@ -157,12 +157,17 @@ export const ChatWindow = ({
         }}
       >
         {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+          const message = items[virtualRow.index];
+          if (!message) {
+            return null;
+          }
+
           const {
             parts = [],
             role,
             id: messageId,
             // createdAt,
-          } = items[virtualRow.index];
+          } = message;
 
           return (
             <ChatMessageV2

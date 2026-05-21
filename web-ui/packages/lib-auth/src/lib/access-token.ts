@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '../auth.node';
 import { drizDbWithInit } from '@compliance-theater/database/orm';
 import { log } from '@compliance-theater/logger';
+import { extractToken } from './utilities/extract-token';
 import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 import type {
   NormalizedAccessToken,
@@ -11,6 +12,7 @@ import type {
   AccessTokenOrRequestOverloadsExt,
 } from './types';
 import { LoggedError } from '@compliance-theater/logger';
+import type { JWT } from '@compliance-theater/auth-compat';
 
 const accessTokenOnRequest: unique symbol = Symbol();
 
@@ -21,8 +23,141 @@ type RequestWithAccessToken = LikeNextRequest & {
 type AuthSessionLike = {
   user?: {
     id?: string | number | null;
+    account_id?: string | number | null;
+    accountId?: string | number | null;
+    subject?: string | null;
   } | null;
 } | null;
+
+type ResolvedSessionIdentity = {
+  userId: number;
+  providerAccountId?: string;
+};
+
+const resolveSessionUserId = (session: AuthSessionLike): number => {
+  const candidates = [
+    session?.user?.account_id,
+    session?.user?.accountId,
+    session?.user?.id,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed =
+      typeof candidate === 'number'
+        ? candidate
+        : parseInt(String(candidate ?? ''), 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return 0;
+};
+
+const resolveSessionIdentity = (
+  session: AuthSessionLike,
+): ResolvedSessionIdentity => {
+  const userId = resolveSessionUserId(session);
+  const nonNumericId = session?.user?.id;
+  const providerAccountIdCandidates = [
+    session?.user?.subject,
+    typeof nonNumericId === 'string' && nonNumericId.trim().length > 0
+      ? nonNumericId
+      : undefined,
+  ];
+  const providerAccountId = providerAccountIdCandidates.find(
+    (candidate) =>
+      typeof candidate === 'string' && candidate.trim().length > 0,
+  ) ?? undefined;
+
+  return {
+    userId,
+    providerAccountId,
+  };
+};
+
+const resolveTokenIdentity = (
+  token: JWT | null | undefined,
+): ResolvedSessionIdentity => {
+  const accountIdCandidate = (token as { account_id?: unknown } | undefined)
+    ?.account_id;
+  const idCandidate = (token as { id?: unknown } | undefined)?.id;
+  const userIdCandidates = [accountIdCandidate, idCandidate];
+
+  let userId = 0;
+  for (const candidate of userIdCandidates) {
+    const parsed =
+      typeof candidate === 'number'
+        ? candidate
+        : parseInt(String(candidate ?? ''), 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      userId = parsed;
+      break;
+    }
+  }
+
+  const subFromToken =
+    (token as { subject?: unknown } | undefined)?.subject ??
+    (token as { sub?: unknown } | undefined)?.sub;
+  const providerAccountId =
+    typeof subFromToken === 'string' && subFromToken.trim().length > 0
+      ? subFromToken
+      : typeof idCandidate === 'string' && idCandidate.trim().length > 0
+        ? idCandidate
+        : undefined;
+
+  return {
+    userId,
+    providerAccountId,
+  };
+};
+
+const mapAccountRecordToRequestTokens = (
+  accountRecord:
+    | {
+        accessToken: string | null;
+        refreshToken: string | null;
+        idToken: string | null;
+        expiresAt: number | string | null;
+        refreshExpiresAt: number | string | null;
+        providerAccountId: string;
+        userId?: number;
+      }
+    | undefined,
+  fallbackUserId = 0,
+): RequestWithAccessTokenCache | undefined => {
+  if (
+    !accountRecord ||
+    !accountRecord.accessToken ||
+    !accountRecord.providerAccountId
+  ) {
+    return undefined;
+  }
+
+  const resolvedUserId =
+    typeof accountRecord.userId === 'number' &&
+    isFinite(accountRecord.userId) &&
+    accountRecord.userId > 0
+      ? accountRecord.userId
+      : fallbackUserId;
+  if (!resolvedUserId || !isFinite(resolvedUserId) || resolvedUserId <= 0) {
+    return undefined;
+  }
+
+  return {
+    access_token: accountRecord.accessToken,
+    refresh_token: accountRecord.refreshToken ?? undefined,
+    id_token: accountRecord.idToken ?? undefined,
+    expires_at: accountRecord.expiresAt
+      ? Number(accountRecord.expiresAt)
+      : Date.now(),
+    refresh_expires_at: accountRecord.refreshExpiresAt
+      ? Number(accountRecord.refreshExpiresAt)
+      : Date.now(),
+    providerAccountId: accountRecord.providerAccountId,
+    userId: resolvedUserId,
+  };
+};
 
 const getHeader = (
   headers: Headers | Record<string, string | string[] | undefined> | undefined,
@@ -133,39 +268,88 @@ export const getRequestTokens = async (req: LikeNextRequest | undefined) => {
       session = null;
     }
   }
-  const sessionUserId = parseInt(String(session?.user?.id ?? '0'), 10);
+  const sessionIdentity = resolveSessionIdentity(session);
   let token: RequestWithAccessTokenCache | undefined;
-  if (!isNaN(sessionUserId) && sessionUserId > 0) {
+  if (!isNaN(sessionIdentity.userId) && sessionIdentity.userId > 0) {
     const data = await drizDbWithInit(async (db) => {
       const accountRecord = await db.query.accounts.findFirst({
         where: (accounts, { eq, and }) =>
           and(
-            eq(accounts.userId, sessionUserId),
+            eq(accounts.userId, sessionIdentity.userId),
             eq(accounts.provider, 'keycloak')
           ),
       });
-      return accountRecord &&
-        accountRecord.accessToken &&
-        accountRecord.providerAccountId
-        ? {
-            access_token: accountRecord.accessToken,
-            refresh_token: accountRecord.refreshToken ?? undefined,
-            id_token: accountRecord.idToken ?? undefined,
-            expires_at: accountRecord.expiresAt
-              ? Number(accountRecord.expiresAt)
-              : Date.now(),
-            refresh_expires_at: accountRecord.refreshExpiresAt
-              ? Number(accountRecord.refreshExpiresAt)
-              : Date.now(),
-            providerAccountId: accountRecord.providerAccountId,
-            userId: sessionUserId,
-          }
-        : undefined;
+      return mapAccountRecordToRequestTokens(
+        accountRecord,
+        sessionIdentity.userId,
+      );
     });
     if (data) {
       // Save tokens and provider account id in request
       withRequestTokens(req, data);
       token = data;
+    }
+  }
+  if (!token && sessionIdentity.providerAccountId) {
+    const data = await drizDbWithInit(async (db) => {
+      const accountRecord = await db.query.accounts.findFirst({
+        where: (accounts, { eq, and }) =>
+          and(
+            eq(accounts.providerAccountId, sessionIdentity.providerAccountId!),
+            eq(accounts.provider, 'keycloak')
+          ),
+      });
+      return mapAccountRecordToRequestTokens(accountRecord);
+    });
+    if (data) {
+      withRequestTokens(req, data);
+      token = data;
+    }
+  }
+  if (!token && req) {
+    let extracted: JWT | null = null;
+    try {
+      extracted = await extractToken(req as unknown as Request);
+    } catch {
+      extracted = null;
+    }
+
+    const tokenIdentity = resolveTokenIdentity(extracted);
+    if (!isNaN(tokenIdentity.userId) && tokenIdentity.userId > 0) {
+      const data = await drizDbWithInit(async (db) => {
+        const accountRecord = await db.query.accounts.findFirst({
+          where: (accounts, { eq, and }) =>
+            and(
+              eq(accounts.userId, tokenIdentity.userId),
+              eq(accounts.provider, 'keycloak')
+            ),
+        });
+        return mapAccountRecordToRequestTokens(
+          accountRecord,
+          tokenIdentity.userId,
+        );
+      });
+      if (data) {
+        withRequestTokens(req, data);
+        token = data;
+      }
+    }
+
+    if (!token && tokenIdentity.providerAccountId) {
+      const data = await drizDbWithInit(async (db) => {
+        const accountRecord = await db.query.accounts.findFirst({
+          where: (accounts, { eq, and }) =>
+            and(
+              eq(accounts.providerAccountId, tokenIdentity.providerAccountId!),
+              eq(accounts.provider, 'keycloak')
+            ),
+        });
+        return mapAccountRecordToRequestTokens(accountRecord);
+      });
+      if (data) {
+        withRequestTokens(req, data);
+        token = data;
+      }
     }
   }
   return token;
@@ -214,20 +398,15 @@ export const normalizedAccessToken: AccessTokenOrRequestOverloadsExt = async (
         if (skipUserId === true) {
           thisUserId = 0;
         } else {
-          let userIdFromSession: string | null = null;
+          let userIdFromSession: number = 0;
           try {
             const fromSession = (await auth()) as AuthSessionLike;
-            const idFromSession = fromSession?.user?.id;
-            userIdFromSession =
-              typeof idFromSession === 'number'
-                ? String(idFromSession)
-                : idFromSession ?? null;
+            userIdFromSession = resolveSessionUserId(fromSession);
           } catch {
-            userIdFromSession = null;
+            userIdFromSession = 0;
           }
-          const parsedUserId = parseInt(userIdFromSession ?? '', 10);
-          thisUserId = !isNaN(parsedUserId) && isFinite(parsedUserId)
-            ? parsedUserId
+          thisUserId = !isNaN(userIdFromSession) && isFinite(userIdFromSession)
+            ? userIdFromSession
             : 0;
         }
         return {

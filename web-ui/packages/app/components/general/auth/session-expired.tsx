@@ -14,7 +14,9 @@ import { useTheme } from '@mui/material/styles';
 
 const handleClose = () => false;
 const handleLogin = () => {
-  signIn();
+  signIn(undefined, {
+    callbackUrl: window.location.href,
+  });
 };
 
 export function SessionExpiredDialog() {
