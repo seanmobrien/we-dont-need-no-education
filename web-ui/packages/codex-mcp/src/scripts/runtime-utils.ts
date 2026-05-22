@@ -33,6 +33,21 @@ export function isUsableCachedToken(token: any, skewMs = 60000) {
   return Number(token.expires_at || 0) - skewMs > Date.now();
 }
 
+export function isUsableCachedAppSession(token: any, skewMs = 60000) {
+  const session = token?.app_session;
+  if (!session?.token || !session?.cookie_name) {
+    return false;
+  }
+  return Number(session.expires_at || 0) - skewMs > Date.now();
+}
+
+export function appSessionCookieHeader(session: any) {
+  if (!session?.token || !session?.cookie_name) {
+    return undefined;
+  }
+  return `${session.cookie_name}=${session.token}`;
+}
+
 export async function readCachedTokenFile(tokenCachePath: string, { skewMs = 60000, logger = () => {} } = {}) {
   try {
     const cached = JSON.parse(await readFile(tokenCachePath, "utf8"));

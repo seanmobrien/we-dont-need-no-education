@@ -84,9 +84,17 @@
       "env": "MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE"
     },
     {
+      "name": "wrapUrl",
+      "label": "Session wrap URL",
+      "description": "Optional app endpoint that exchanges the Keycloak bearer token for an Auth.js session token.",
+      "type": "string",
+      "required": false,
+      "env": "MCP_COMPLIANCE_THEATER_RESOURCE_WRAP_URL"
+    },
+    {
       "name": "sessionStatusUrl",
       "label": "Session status URL",
-      "description": "Optional app endpoint used as a secondary bearer-token status check. Leave blank to use OAuth userinfo.",
+      "description": "Optional app endpoint used to verify the wrapped Auth.js session. Leave blank to derive /api/auth/session from the target server URL.",
       "type": "string",
       "required": false,
       "env": "MCP_COMPLIANCE_THEATER_RESOURCE_SESSION_STATUS_URL"

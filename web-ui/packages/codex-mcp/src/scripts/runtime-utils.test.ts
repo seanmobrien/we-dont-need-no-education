@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  appSessionCookieHeader,
   backoffDelayMs,
   // fetchWithPolicy, // Not ported
   isAuthenticatedSessionResult,
+  isUsableCachedAppSession,
   isUsableCachedToken,
   parseNumber,
   // resolveEndpoint, // Not ported
@@ -30,6 +32,37 @@ test("isUsableCachedToken honors the expiry skew", () => {
     isUsableCachedToken({ access_token: "token", expires_at: Date.now() + 30000 }, 60000),
     false
   );
+});
+
+test("isUsableCachedAppSession requires a current wrapped session cookie", () => {
+  assert.equal(
+    isUsableCachedAppSession({
+      app_session: {
+        token: "wrapped",
+        cookie_name: "authjs.session-token",
+        expires_at: Date.now() + 120000
+      }
+    }, 60000),
+    true
+  );
+  assert.equal(
+    isUsableCachedAppSession({
+      app_session: {
+        token: "wrapped",
+        cookie_name: "authjs.session-token",
+        expires_at: Date.now() + 30000
+      }
+    }, 60000),
+    false
+  );
+});
+
+test("appSessionCookieHeader formats the wrapped Auth.js cookie", () => {
+  assert.equal(
+    appSessionCookieHeader({ token: "wrapped", cookie_name: "authjs.session-token" }),
+    "authjs.session-token=wrapped"
+  );
+  assert.equal(appSessionCookieHeader({ token: "wrapped" }), undefined);
 });
 
 test("isAuthenticatedSessionResult requires an authenticated app session body", () => {

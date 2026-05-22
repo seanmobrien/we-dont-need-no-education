@@ -6,9 +6,11 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 import {
+  appSessionCookieHeader,
   connectSse,
   fetchWithPolicy,
   isAuthenticatedSessionResult,
+  isUsableCachedAppSession,
   parseNumber,
   readCachedTokenFile,
   readRpcResult,
@@ -140,7 +142,7 @@ function tokenSkewMs() {
 }
 
 function httpTimeoutMs() {
-  return parseNumber(optional("HTTP_TIMEOUT_MS"), 15000, 1000);
+  return parseNumber(optional("HTTP_TIMEOUT_MS"), 360000, 1000);
 }
 
 function httpRetryCount() {
@@ -152,7 +154,7 @@ function httpRetryBaseMs() {
 }
 
 function proxyRequestTimeoutMs() {
-  return parseNumber(optional("PROXY_REQUEST_TIMEOUT_MS"), 30000, 1000);
+  return parseNumber(optional("PROXY_REQUEST_TIMEOUT_MS"), 360000, 1000);
 }
 
 async function readCachedToken() {
@@ -482,12 +484,15 @@ async function connectRemote() {
   }
 
   const token = await acquireToken();
+  const appSession = await acquireAppSession(token);
+  const sessionCookie = appSessionCookieHeader(appSession);
   const sseUrl = required("SERVER_URL");
   warnIfInsecureUrl(sseUrl, log, "Target server URL");
   log("connecting remote MCP SSE", { sseUrl });
   remote = await connectSse({
     sseUrl,
     accessToken: token.access_token,
+    sessionCookie,
     timeoutMs: proxyRequestTimeoutMs(),
     httpTimeoutMs: httpTimeoutMs(),
     httpRetries: httpRetryCount(),
@@ -495,6 +500,8 @@ async function connectRemote() {
     logger: log
   });
   remote.accessToken = token.access_token;
+  remote.appSession = appSession;
+  remote.sessionCookie = sessionCookie;
   remote.nextId = randomInt(100_000, 999_999);
   await rawRemoteRequest(remote, "initialize", {
     protocolVersion: "2024-11-05",
@@ -516,7 +523,9 @@ async function postRemoteJson(connection, message) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${connection.accessToken}`
+      ...(connection.sessionCookie
+        ? { Cookie: connection.sessionCookie }
+        : { Authorization: `Bearer ${connection.accessToken}` })
     },
     body: JSON.stringify(message),
     timeoutMs: httpTimeoutMs(),
@@ -545,7 +554,8 @@ async function rawRemoteRequest(connection, method, params = {}) {
     timeoutMs: httpTimeoutMs(),
     retries: httpRetryCount(),
     retryBaseMs: httpRetryBaseMs(),
-    logger: log
+    logger: log,
+    sessionCookie: connection.sessionCookie
   });
   const result = await readRpcResult(connection.reader, id, proxyRequestTimeoutMs());
   log("remote request completed", {
@@ -662,6 +672,19 @@ function sessionEndpointUrl() {
   return parsed.toString();
 }
 
+function wrapEndpointUrl() {
+  const explicit = optional("WRAP_URL");
+  if (explicit) {
+    warnIfInsecureUrl(explicit, log, "Session wrap URL");
+    return explicit;
+  }
+  const parsed = new URL(required("SERVER_URL"));
+  parsed.pathname = "/api/auth/wrap";
+  parsed.search = "";
+  parsed.hash = "";
+  return parsed.toString();
+}
+
 async function clearCachedToken() {
   if (optional("DISABLE_TOKEN_CACHE") === "1") {
     return "Token cache is disabled by MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE=1.";
@@ -697,11 +720,14 @@ function roleSummary(resourceAccess) {
   return entries.length ? entries.join("\n") : "none";
 }
 
-async function fetchSessionForToken(accessToken) {
+async function fetchSessionForAppSession(appSession) {
   const url = sessionEndpointUrl();
   const startedAt = Date.now();
   const response = await fetchWithPolicy(url, {
-    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` },
+    headers: {
+      Accept: "application/json",
+      Cookie: appSessionCookieHeader(appSession)
+    },
     timeoutMs: httpTimeoutMs(),
     retries: httpRetryCount(),
     retryBaseMs: httpRetryBaseMs(),
@@ -770,6 +796,65 @@ function formatUserInfoStatus(userInfo, context, tokenInfo, sessionResult) {
   ].join("\n");
 }
 
+function parseFutureExpiry(value, label) {
+  const expiresAt = Date.parse(value);
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
+    throw new Error(`Wrap response did not include a future ${label}.`);
+  }
+  return expiresAt;
+}
+
+function appSessionFromWrapResponse(body) {
+  if (!body?.success || !body.token || !body.cookieName || !body.expiresAt) {
+    throw new Error("Wrap response did not include a wrapped app session token.");
+  }
+
+  return {
+    token: body.token,
+    cookie_name: body.cookieName,
+    expires_at: parseFutureExpiry(body.expiresAt, "session expiry"),
+    expires_at_iso: body.expiresAt,
+    source_token_expires_at: body.sourceTokenExpiresAt || undefined,
+    session_expires_at: body.sessionExpiresAt || undefined,
+    wrapped_at: Date.now()
+  };
+}
+
+function shouldPersistDerivedSession(token) {
+  return Boolean(token?.metadata || token?.cached_at);
+}
+
+async function wrapAccessToken(token) {
+  const url = wrapEndpointUrl();
+  log("requesting wrapped app session", { url });
+  const body = await fetchJson(url, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token.access_token}`
+    }
+  });
+  const appSession = appSessionFromWrapResponse(body);
+  const tokenWithAppSession = { ...token, app_session: appSession };
+  if (shouldPersistDerivedSession(token)) {
+    await writeCachedToken(tokenWithAppSession);
+  }
+  log("wrapped app session acquired", {
+    url,
+    cookieName: appSession.cookie_name,
+    expiresAt: appSession.expires_at_iso
+  });
+  return appSession;
+}
+
+async function acquireAppSession(token) {
+  if (isUsableCachedAppSession(token, tokenSkewMs())) {
+    log("using cached wrapped app session");
+    return token.app_session;
+  }
+  return wrapAccessToken(token);
+}
+
 function formatSessionStatus(sessionResult, context, tokenInfo, userInfoResult) {
   const session = sessionResult.body?.data || {};
   const user = session.user || {};
@@ -805,7 +890,15 @@ async function verifiedAuthStatus(accessToken, context, tokenInfo = {}) {
     userInfoResult = { error };
   }
 
-  const sessionResult = await fetchSessionForToken(accessToken).catch((error) => ({ error }));
+  let appSession;
+  try {
+    appSession = await acquireAppSession(tokenInfo.cached || { access_token: accessToken });
+  } catch (error) {
+    appSession = { error };
+  }
+  const sessionResult = appSession?.token
+    ? await fetchSessionForAppSession(appSession).catch((error) => ({ error }))
+    : { error: appSession.error };
   if (userInfoResult?.response?.ok) {
     return formatUserInfoStatus(userInfoResult.body, context, tokenInfo, sessionResult.response ? sessionResult : undefined);
   }
@@ -973,6 +1066,7 @@ async function main() {
   log("resolved wrapper configuration", {
     serverUrl: optional("SERVER_URL"),
     authIssuer: optional("AUTH_ISSUER"),
+    wrapUrl: wrapEndpointUrl(),
     sessionStatusUrl: sessionEndpointUrl(),
     tokenCachePath: cachePath(),
     logFile: logFilePath()

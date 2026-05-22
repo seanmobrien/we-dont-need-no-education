@@ -149,6 +149,8 @@ Useful optional inputs include:
 - `MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_REFRESH_TOKEN`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_WRAP_URL`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_SESSION_STATUS_URL`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS`
@@ -167,7 +169,7 @@ The wrapper adds two convenience tools on top of whatever the child MCP server e
   Returns a directory-style listing of resources and resource templates.
 - `mcp_resource_auth_manage_auth`
   Manages auth state with action-based operations:
-  - `status`: inspects auth state and calls `/api/auth/session` with the bearer token.
+  - `status`: inspects auth state, wraps the Keycloak bearer token when needed, and calls `/api/auth/session` with the app session cookie.
   - `clear-cache`: deletes the local cached token file.
   - `login`: runs an interactive login flow and caches a fresh token.
 

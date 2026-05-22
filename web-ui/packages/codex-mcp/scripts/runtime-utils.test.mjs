@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  appSessionCookieHeader,
   backoffDelayMs,
   fetchWithPolicy,
   isAuthenticatedSessionResult,
+  isUsableCachedAppSession,
   isUsableCachedToken,
   parseNumber,
+  rpc,
   resolveEndpoint,
   warnIfInsecureUrl
 } from "./runtime-utils.mjs";
@@ -47,6 +50,37 @@ test("warnIfInsecureUrl flags remote http URLs but ignores localhost", () => {
   assert.deepEqual(messages, ["OAuth issuer is using insecure HTTP: http://example.com/service"]);
 });
 
+test("isUsableCachedAppSession requires a current wrapped session cookie", () => {
+  assert.equal(
+    isUsableCachedAppSession({
+      app_session: {
+        token: "wrapped",
+        cookie_name: "authjs.session-token",
+        expires_at: Date.now() + 120000
+      }
+    }, 60000),
+    true
+  );
+  assert.equal(
+    isUsableCachedAppSession({
+      app_session: {
+        token: "wrapped",
+        cookie_name: "authjs.session-token",
+        expires_at: Date.now() + 30000
+      }
+    }, 60000),
+    false
+  );
+});
+
+test("appSessionCookieHeader formats the wrapped Auth.js cookie", () => {
+  assert.equal(
+    appSessionCookieHeader({ token: "wrapped", cookie_name: "authjs.session-token" }),
+    "authjs.session-token=wrapped"
+  );
+  assert.equal(appSessionCookieHeader({ token: "wrapped" }), undefined);
+});
+
 test("isAuthenticatedSessionResult requires an authenticated app session body", () => {
   assert.equal(
     isAuthenticatedSessionResult({ response: { ok: true }, body: { status: "authenticated" } }),
@@ -80,6 +114,28 @@ test("fetchWithPolicy retries retryable responses", async () => {
 
     assert.equal(calls, 2);
     assert.equal(response.status, 200);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test("rpc prefers the wrapped session cookie over the bearer token", async () => {
+  const originalFetch = global.fetch;
+  let sentHeaders;
+
+  global.fetch = async (_url, options) => {
+    sentHeaders = options.headers;
+    return new Response("{}", { status: 200 });
+  };
+
+  try {
+    await rpc("https://example.com/messages", "keycloak-token", 1, "tools/list", {}, {
+      sessionCookie: "authjs.session-token=wrapped-token",
+      timeoutMs: 1000
+    });
+
+    assert.equal(sentHeaders.Cookie, "authjs.session-token=wrapped-token");
+    assert.equal(sentHeaders.Authorization, undefined);
   } finally {
     global.fetch = originalFetch;
   }

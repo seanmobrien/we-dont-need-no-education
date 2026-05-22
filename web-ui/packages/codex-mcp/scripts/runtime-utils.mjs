@@ -34,6 +34,21 @@ export function isUsableCachedToken(token, skewMs = 60000) {
   return tokenExpiresAt(token, 0) - skewMs > Date.now();
 }
 
+export function isUsableCachedAppSession(token, skewMs = 60000) {
+  const session = token?.app_session;
+  if (!session?.token || !session?.cookie_name) {
+    return false;
+  }
+  return tokenExpiresAt(session, 0) - skewMs > Date.now();
+}
+
+export function appSessionCookieHeader(session) {
+  if (!session?.token || !session?.cookie_name) {
+    return undefined;
+  }
+  return `${session.cookie_name}=${session.token}`;
+}
+
 export async function readCachedTokenFile(tokenCachePath, { skewMs = 60000, logger = () => {} } = {}) {
   try {
     const cached = JSON.parse(await readFile(tokenCachePath, "utf8"));
@@ -144,6 +159,13 @@ export function resolveEndpoint(endpoint, baseUrl) {
   return new URL(endpoint, baseUrl).toString();
 }
 
+function requestAuthHeaders(accessToken, sessionCookie) {
+  if (sessionCookie) {
+    return { Cookie: sessionCookie };
+  }
+  return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+}
+
 async function readWithTimeout(reader, timeoutMs, errorMessage) {
   let timeoutHandle;
   try {
@@ -161,6 +183,7 @@ async function readWithTimeout(reader, timeoutMs, errorMessage) {
 export async function connectSse({
   sseUrl,
   accessToken,
+  sessionCookie,
   timeoutMs = 30000,
   httpTimeoutMs = 15000,
   httpRetries = 1,
@@ -171,7 +194,7 @@ export async function connectSse({
   const response = await fetchWithPolicy(sseUrl, {
     headers: {
       Accept: "text/event-stream",
-      Authorization: `Bearer ${accessToken}`
+      ...requestAuthHeaders(accessToken, sessionCookie)
     },
     timeoutMs: httpTimeoutMs,
     retries: httpRetries,
@@ -219,14 +242,15 @@ export async function rpc(endpoint, accessToken, id, method, params, {
   timeoutMs = 15000,
   retries = 0,
   retryBaseMs = 500,
-  logger = () => {}
+  logger = () => {},
+  sessionCookie
 } = {}) {
   logger(`RPC send ${method}`);
   const response = await fetchWithPolicy(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken}`
+      ...requestAuthHeaders(accessToken, sessionCookie)
     },
     body: JSON.stringify({ jsonrpc: "2.0", id, method, params }),
     timeoutMs,

@@ -37,7 +37,7 @@ The wrapper uses RFC 8414 authorization server discovery:
 
 Typical variables:
 
-- `MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL`: Base URL for the upstream service or remote MCP endpoint.
+- `MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL`: Base URL for the upstream service or remote MCP endpoint. The wrapper derives `/api/auth/wrap` and `/api/auth/session` from this URL unless overridden.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER`: OAuth authorization server issuer URL.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID`: OAuth public client identifier.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE`: Space-delimited scopes requested for resource access.
@@ -55,6 +55,8 @@ The plugin manifest exposes the target server URL, authorization issuer, client 
 Optional advanced overrides:
 
 - `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL`: Explicit RFC 8414 metadata URL when the standard well-known URL cannot be derived.
+- `MCP_COMPLIANCE_THEATER_RESOURCE_WRAP_URL`: Optional app endpoint that exchanges the Keycloak bearer token for a wrapped Auth.js session token.
+- `MCP_COMPLIANCE_THEATER_RESOURCE_SESSION_STATUS_URL`: Optional app endpoint that verifies the wrapped Auth.js session cookie.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET`: Optional OAuth client secret for confidential clients.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_USERNAME`: Optional username for the OAuth password grant.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_PASSWORD`: Optional password for the OAuth password grant.
@@ -63,16 +65,17 @@ Optional advanced overrides:
 - `MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH`: Optional path for the token cache file.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE`: Set to `1` to disable token persistence.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_EXPIRY_SKEW_SECONDS`: Optional cache expiry skew. Defaults to `60`.
-- `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS`: Optional outbound HTTP timeout in milliseconds. Defaults to `15000`.
+- `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS`: Optional outbound HTTP timeout in milliseconds. Defaults to `360000`.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_COUNT`: Optional retry count for retryable HTTP failures. Defaults to `2`.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_BASE_MS`: Optional exponential backoff base in milliseconds. Defaults to `500`.
-- `MCP_COMPLIANCE_THEATER_RESOURCE_PROXY_REQUEST_TIMEOUT_MS`: Optional timeout for child MCP JSON-RPC calls. Defaults to `30000`.
+- `MCP_COMPLIANCE_THEATER_RESOURCE_PROXY_REQUEST_TIMEOUT_MS`: Optional timeout for child MCP JSON-RPC calls. Defaults to `360000`.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_DEVICE_CODE_TIMEOUT_SECONDS`: Optional upper bound for device-code polling. Defaults to `900`.
 
 Supported dynamic flows:
 
 - Existing access token: inject it directly into the child MCP server.
-- Cached access token: reuse a previously acquired token until it is close to expiry.
+- Cached access token: reuse a previously acquired Keycloak token until it is close to expiry.
+- Wrapped app session: exchange the current Keycloak token through `/api/auth/wrap`, cache the returned Auth.js session token and expiry, and send it as the app session cookie until it expires.
 - Refresh token: use the discovered `token_endpoint`.
 - Client credentials: use when `client_credentials` is advertised and client credentials are available.
 - Password grant: use when `password` is advertised and username/password are configured through environment variables or secure settings.
