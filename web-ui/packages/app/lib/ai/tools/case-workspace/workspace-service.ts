@@ -32,6 +32,31 @@ type WorkspaceFileKey =
   | 'sessionLog'
   | 'metadata';
 
+const caseMutationLocks = new Map<string, Promise<void>>();
+
+const withCaseMutationLock = async <T>(
+  caseId: string,
+  operation: () => Promise<T>,
+): Promise<T> => {
+  const previousLock = caseMutationLocks.get(caseId) ?? Promise.resolve();
+  let releaseLock: () => void = () => {};
+  const currentLock = new Promise<void>((resolve) => {
+    releaseLock = resolve;
+  });
+  const lockQueue = previousLock.then(() => currentLock);
+  caseMutationLocks.set(caseId, lockQueue);
+
+  await previousLock;
+  try {
+    return await operation();
+  } finally {
+    releaseLock();
+    if (caseMutationLocks.get(caseId) === lockQueue) {
+      caseMutationLocks.delete(caseId);
+    }
+  }
+};
+
 const ensureWorkspace = async (caseId: string) => {
   const { metadata, paths } = await loadWorkspace(caseId);
   await saveWorkspace(metadata, paths);
@@ -88,26 +113,28 @@ export const appendWorkspaceTask = async ({
   relatedQuestionIds?: string[];
   tags?: string[];
 }) => {
-  const { metadata, paths } = await ensureWorkspace(caseId);
-  const now = new Date().toISOString();
-  const task: WorkspaceTask = {
-    taskId: generateTaskId(),
-    caseId,
-    title,
-    description,
-    status,
-    priority,
-    owner,
-    relatedDocumentIds,
-    relatedQuestionIds,
-    createdAt: now,
-    updatedAt: now,
-    tags,
-  };
-  upsertTask(metadata, task);
-  appendSessionEntry(metadata, `Added task ${task.taskId}: ${title}`);
-  await saveWorkspace(metadata, paths);
-  return task;
+  return withCaseMutationLock(caseId, async () => {
+    const { metadata, paths } = await ensureWorkspace(caseId);
+    const now = new Date().toISOString();
+    const task: WorkspaceTask = {
+      taskId: generateTaskId(),
+      caseId,
+      title,
+      description,
+      status,
+      priority,
+      owner,
+      relatedDocumentIds,
+      relatedQuestionIds,
+      createdAt: now,
+      updatedAt: now,
+      tags,
+    };
+    upsertTask(metadata, task);
+    appendSessionEntry(metadata, `Added task ${task.taskId}: ${title}`);
+    await saveWorkspace(metadata, paths);
+    return task;
+  });
 };
 
 export const updateWorkspaceTaskStatus = async ({
@@ -121,26 +148,28 @@ export const updateWorkspaceTaskStatus = async ({
   status: TaskStatus;
   blockedReason?: string;
 }) => {
-  const { metadata, paths } = await ensureWorkspace(caseId);
-  const targetId = normalizeTaskId(taskId);
-  const task = metadata.tasks.find(
-    (t) => normalizeTaskId(t.taskId) === targetId,
-  );
-  if (!task) {
-    throw new Error(`Task not found: ${taskId}`);
-  }
-  task.status = status;
-  task.blockedReason = status === 'blocked' ? blockedReason : undefined;
-  const now = new Date().toISOString();
-  if (status === 'done') {
-    task.completedAt = now;
-  } else {
-    task.completedAt = undefined;
-  }
-  task.updatedAt = now;
-  appendSessionEntry(metadata, `Updated task ${task.taskId} -> ${status}`);
-  await saveWorkspace(metadata, paths);
-  return task;
+  return withCaseMutationLock(caseId, async () => {
+    const { metadata, paths } = await ensureWorkspace(caseId);
+    const targetId = normalizeTaskId(taskId);
+    const task = metadata.tasks.find(
+      (t) => normalizeTaskId(t.taskId) === targetId,
+    );
+    if (!task) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+    task.status = status;
+    task.blockedReason = status === 'blocked' ? blockedReason : undefined;
+    const now = new Date().toISOString();
+    if (status === 'done') {
+      task.completedAt = now;
+    } else {
+      task.completedAt = undefined;
+    }
+    task.updatedAt = now;
+    appendSessionEntry(metadata, `Updated task ${task.taskId} -> ${status}`);
+    await saveWorkspace(metadata, paths);
+    return task;
+  });
 };
 
 export const updateWorkspaceTaskDetails = async ({
@@ -160,23 +189,25 @@ export const updateWorkspaceTaskDetails = async ({
   owner?: WorkspaceTask['owner'];
   tags?: string[];
 }) => {
-  const { metadata, paths } = await ensureWorkspace(caseId);
-  const targetId = normalizeTaskId(taskId);
-  const task = metadata.tasks.find(
-    (t) => normalizeTaskId(t.taskId) === targetId,
-  );
-  if (!task) {
-    throw new Error(`Task not found: ${taskId}`);
-  }
-  if (title) task.title = title;
-  if (description !== undefined) task.description = description;
-  if (priority) task.priority = priority;
-  if (owner) task.owner = owner;
-  if (tags) task.tags = tags;
-  task.updatedAt = new Date().toISOString();
-  appendSessionEntry(metadata, `Updated task ${task.taskId} details`);
-  await saveWorkspace(metadata, paths);
-  return task;
+  return withCaseMutationLock(caseId, async () => {
+    const { metadata, paths } = await ensureWorkspace(caseId);
+    const targetId = normalizeTaskId(taskId);
+    const task = metadata.tasks.find(
+      (t) => normalizeTaskId(t.taskId) === targetId,
+    );
+    if (!task) {
+      throw new Error(`Task not found: ${taskId}`);
+    }
+    if (title) task.title = title;
+    if (description !== undefined) task.description = description;
+    if (priority) task.priority = priority;
+    if (owner) task.owner = owner;
+    if (tags) task.tags = tags;
+    task.updatedAt = new Date().toISOString();
+    appendSessionEntry(metadata, `Updated task ${task.taskId} details`);
+    await saveWorkspace(metadata, paths);
+    return task;
+  });
 };
 
 export const upsertWorkspaceDocumentSummary = async (
@@ -185,29 +216,31 @@ export const upsertWorkspaceDocumentSummary = async (
     lastRefreshedAt?: string;
   },
 ) => {
-  const { metadata, paths } = await ensureWorkspace(caseId);
-  const now = new Date().toISOString();
-  const existingIndex = metadata.documentSummaries.findIndex(
-    (d) => d.documentId === summary.documentId,
-  );
-  const record: WorkspaceDocumentSummary = {
-    ...generateDocumentSummary(summary.documentId, caseId),
-    ...summary,
-    caseId,
-    lastRefreshedAt: summary.lastRefreshedAt ?? now,
-    updatedAt: now,
-  };
-  if (existingIndex >= 0) {
-    metadata.documentSummaries[existingIndex] = record;
-  } else {
-    metadata.documentSummaries.push(record);
-  }
-  appendSessionEntry(
-    metadata,
-    `Updated document summary for ${summary.documentId}`,
-  );
-  await saveWorkspace(metadata, paths);
-  return record;
+  return withCaseMutationLock(caseId, async () => {
+    const { metadata, paths } = await ensureWorkspace(caseId);
+    const now = new Date().toISOString();
+    const existingIndex = metadata.documentSummaries.findIndex(
+      (d) => d.documentId === summary.documentId,
+    );
+    const record: WorkspaceDocumentSummary = {
+      ...generateDocumentSummary(summary.documentId, caseId),
+      ...summary,
+      caseId,
+      lastRefreshedAt: summary.lastRefreshedAt ?? now,
+      updatedAt: now,
+    };
+    if (existingIndex >= 0) {
+      metadata.documentSummaries[existingIndex] = record;
+    } else {
+      metadata.documentSummaries.push(record);
+    }
+    appendSessionEntry(
+      metadata,
+      `Updated document summary for ${summary.documentId}`,
+    );
+    await saveWorkspace(metadata, paths);
+    return record;
+  });
 };
 
 export const addWorkspaceQuestion = async ({
@@ -225,23 +258,25 @@ export const addWorkspaceQuestion = async ({
   relatedDocumentIds?: string[];
   notes?: string;
 }) => {
-  const { metadata, paths } = await ensureWorkspace(caseId);
-  const now = new Date().toISOString();
-  const questionRecord: WorkspaceQuestion = {
-    questionId: generateQuestionId(),
-    caseId,
-    question,
-    type,
-    status,
-    relatedDocumentIds,
-    notes,
-    createdAt: now,
-    updatedAt: now,
-  };
-  metadata.questions.push(questionRecord);
-  appendSessionEntry(metadata, `Added question ${questionRecord.questionId}`);
-  await saveWorkspace(metadata, paths);
-  return questionRecord;
+  return withCaseMutationLock(caseId, async () => {
+    const { metadata, paths } = await ensureWorkspace(caseId);
+    const now = new Date().toISOString();
+    const questionRecord: WorkspaceQuestion = {
+      questionId: generateQuestionId(),
+      caseId,
+      question,
+      type,
+      status,
+      relatedDocumentIds,
+      notes,
+      createdAt: now,
+      updatedAt: now,
+    };
+    metadata.questions.push(questionRecord);
+    appendSessionEntry(metadata, `Added question ${questionRecord.questionId}`);
+    await saveWorkspace(metadata, paths);
+    return questionRecord;
+  });
 };
 
 export const updateWorkspaceQuestionStatus = async ({
@@ -255,23 +290,25 @@ export const updateWorkspaceQuestionStatus = async ({
   status: WorkspaceQuestion['status'];
   notes?: string;
 }) => {
-  const { metadata, paths } = await ensureWorkspace(caseId);
-  const target = metadata.questions.find((q) => q.questionId === questionId);
-  if (!target) {
-    throw new Error(`Question not found: ${questionId}`);
-  }
-  target.status = status;
-  target.notes = notes ?? target.notes;
-  const now = new Date().toISOString();
-  target.updatedAt = now;
-  if (status === 'resolved') {
-    target.resolvedAt = now;
-  } else {
-    target.resolvedAt = undefined;
-  }
-  appendSessionEntry(metadata, `Updated question ${questionId} -> ${status}`);
-  await saveWorkspace(metadata, paths);
-  return target;
+  return withCaseMutationLock(caseId, async () => {
+    const { metadata, paths } = await ensureWorkspace(caseId);
+    const target = metadata.questions.find((q) => q.questionId === questionId);
+    if (!target) {
+      throw new Error(`Question not found: ${questionId}`);
+    }
+    target.status = status;
+    target.notes = notes ?? target.notes;
+    const now = new Date().toISOString();
+    target.updatedAt = now;
+    if (status === 'resolved') {
+      target.resolvedAt = now;
+    } else {
+      target.resolvedAt = undefined;
+    }
+    appendSessionEntry(metadata, `Updated question ${questionId} -> ${status}`);
+    await saveWorkspace(metadata, paths);
+    return target;
+  });
 };
 
 export const appendWorkspaceSessionLog = async ({
@@ -283,29 +320,33 @@ export const appendWorkspaceSessionLog = async ({
   actor?: WorkspaceSessionEntry['actor'];
   summary: string;
 }) => {
-  const { metadata, paths } = await ensureWorkspace(caseId);
-  const entry = appendSessionEntry(metadata, summary, actor);
-  await saveWorkspace(metadata, paths);
-  return entry;
+  return withCaseMutationLock(caseId, async () => {
+    const { metadata, paths } = await ensureWorkspace(caseId);
+    const entry = appendSessionEntry(metadata, summary, actor);
+    await saveWorkspace(metadata, paths);
+    return entry;
+  });
 };
 
 export const compactWorkspace = async (caseId: string) => {
-  const { metadata, paths } = await ensureWorkspace(caseId);
-  const uniqueTasks = dedupeById(metadata.tasks, (t) =>
-    normalizeTaskId(t.taskId),
-  );
-  const uniqueQuestions = dedupeById(metadata.questions, (q) => q.questionId);
-  const uniqueDocs = dedupeById(
-    metadata.documentSummaries,
-    (d) => d.documentId,
-  );
-  updateTasks(metadata, uniqueTasks);
-  updateQuestions(metadata, uniqueQuestions);
-  updateDocumentSummaries(metadata, uniqueDocs);
-  appendSessionEntry(metadata, 'Compacted workspace metadata', 'system');
-  metadata.lastCompacted = new Date().toISOString();
-  await saveWorkspace(metadata, paths);
-  return summarizeWorkspace(metadata);
+  return withCaseMutationLock(caseId, async () => {
+    const { metadata, paths } = await ensureWorkspace(caseId);
+    const uniqueTasks = dedupeById(metadata.tasks, (t) =>
+      normalizeTaskId(t.taskId),
+    );
+    const uniqueQuestions = dedupeById(metadata.questions, (q) => q.questionId);
+    const uniqueDocs = dedupeById(
+      metadata.documentSummaries,
+      (d) => d.documentId,
+    );
+    updateTasks(metadata, uniqueTasks);
+    updateQuestions(metadata, uniqueQuestions);
+    updateDocumentSummaries(metadata, uniqueDocs);
+    appendSessionEntry(metadata, 'Compacted workspace metadata', 'system');
+    metadata.lastCompacted = new Date().toISOString();
+    await saveWorkspace(metadata, paths);
+    return summarizeWorkspace(metadata);
+  });
 };
 
 const dedupeById = <T>(items: T[], getId: (item: T) => string): T[] => {

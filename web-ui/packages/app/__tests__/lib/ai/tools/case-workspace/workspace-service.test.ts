@@ -104,4 +104,20 @@ describe('case workspace service', () => {
     const logFile = await readWorkspaceFile('CASE-004', 'sessionLog');
     expect(logFile.content).toContain('Initialized workspace');
   });
+
+  it('serializes concurrent mutations per case to avoid lost updates', async () => {
+    await Promise.all([
+      appendWorkspaceTask({
+        caseId: 'CASE-005',
+        title: 'First concurrent task',
+      }),
+      appendWorkspaceTask({
+        caseId: 'CASE-005',
+        title: 'Second concurrent task',
+      }),
+    ]);
+
+    const summary = await getCaseWorkspaceSummary('CASE-005');
+    expect(summary.taskCounts.inbox).toBe(2);
+  });
 });
