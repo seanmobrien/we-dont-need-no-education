@@ -5,7 +5,7 @@ This module provides a semi-persistent case workspace for operational state that
 ## Storage Model
 
 - Base path: `CASE_WORKSPACE_ROOT` env var (defaults to `<repo>/cases`)
-- Layout: `/cases/{caseId}/workspace/{overview,tasks,document-summaries,open-questions,timeline-notes,session-log,metadata.json}`
+- Layout: `<CASE_WORKSPACE_ROOT>/{caseId}/workspace/{overview,tasks,document-summaries,open-questions,timeline-notes,session-log,metadata.json}`
 - Markdown files are regenerated from `metadata.json` on each write to keep projections consistent.
 
 ## Available Tools

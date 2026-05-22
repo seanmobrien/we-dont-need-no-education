@@ -62,7 +62,6 @@ export const resolveWorkspacePaths = (caseId: string): WorkspacePaths => {
   const safeCaseId = cleanCaseId(caseId);
   const baseDir = path.join(
     getWorkspaceRoot(),
-    'cases',
     safeCaseId,
     'workspace',
   );
