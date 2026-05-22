@@ -264,6 +264,8 @@ export const updateWorkspaceQuestionStatus = async ({
   target.updatedAt = now;
   if (status === 'resolved') {
     target.resolvedAt = now;
+  } else {
+    target.resolvedAt = undefined;
   }
   appendSessionEntry(metadata, `Updated question ${questionId} -> ${status}`);
   await saveWorkspace(metadata, paths);
