@@ -244,4 +244,27 @@ describe('access-token', () => {
 
     expect(extractToken).toHaveBeenCalledWith(request);
   });
+
+  it('reuses an extracted wrapped Auth.js access token before DB lookup', async () => {
+    (auth as jest.Mock).mockRejectedValue(new Error('request session unavailable'));
+    (extractToken as jest.Mock).mockResolvedValue({
+      sub: 'wrapped-provider-subject',
+      access_token: 'wrapped-keycloak-access-token',
+      exp: Math.floor(Date.now() / 1000) + 300,
+    });
+
+    const request = new Request('http://localhost/api/email/test-id');
+
+    await expect(getAccessToken(request as never)).resolves.toBe(
+      'wrapped-keycloak-access-token',
+    );
+
+    await expect(normalizedAccessToken(request as never)).resolves.toEqual({
+      accessToken: 'wrapped-keycloak-access-token',
+      userId: 0,
+    });
+
+    expect(extractToken).toHaveBeenCalledWith(request);
+    expect(drizDbWithInit).not.toHaveBeenCalled();
+  });
 });
