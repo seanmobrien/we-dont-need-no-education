@@ -134,6 +134,8 @@ export const updateWorkspaceTaskStatus = async ({
   const now = new Date().toISOString();
   if (status === 'done') {
     task.completedAt = now;
+  } else {
+    task.completedAt = undefined;
   }
   task.updatedAt = now;
   appendSessionEntry(metadata, `Updated task ${task.taskId} -> ${status}`);
