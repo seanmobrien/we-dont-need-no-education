@@ -110,22 +110,36 @@ const workspaceFileNames: WorkspaceFileName[] = [
   'metadata',
 ];
 
-const safeHandler = async <T>(fn: () => Promise<T>) => {
+const safeHandler = async <T, TResult = T>(
+  fn: () => Promise<T>,
+  onSuccess?: (value: T) => TResult,
+  onError?: (error: Error) => TResult,
+) => {
   try {
-    return await fn();
+    const value = await fn();
+    return onSuccess ? onSuccess(value) : ((value as unknown) as TResult);
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       source: 'case-workspace-tools',
       log: true,
     });
-    throw error instanceof Error ? error : new Error(String(error));
+    const normalizedError =
+      error instanceof Error ? error : new Error(String(error));
+
+    if (onError) {
+      return onError(normalizedError);
+    }
+
+    throw normalizedError;
   }
 };
 
-export const getCaseWorkspace = async ({ caseId }: { caseId: string }) => {
-  const summary = await safeHandler(() => getCaseWorkspaceSummary(caseId));
-  return toolCallbackResultFactory(summary);
-};
+export const getCaseWorkspace = async ({ caseId }: { caseId: string }) =>
+  safeHandler(
+    () => getCaseWorkspaceSummary(caseId),
+    (summary) => toolCallbackResultFactory(summary),
+    (error) => toolCallbackResultFactory(error),
+  );
 
 export const getCaseWorkspaceConfig = {
   description:
