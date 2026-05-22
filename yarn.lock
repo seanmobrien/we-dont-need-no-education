@@ -1513,6 +1513,8 @@ __metadata:
     husky: "npm:9.1.7"
     jsdom: "npm:^26.1.0"
     pinst: "npm:^3.0.0"
+    react: "npm:19.2.4"
+    react-dom: "npm:19.2.4"
     rollup: "npm:^4.28.1"
     rollup-plugin-dts: "npm:^6.1.1"
     rollup-plugin-swc3: "npm:^0.12.1"
@@ -1525,6 +1527,8 @@ __metadata:
     "@emotion/react": ^11
     "@emotion/styled": ^11
     "@mui/material": ^6 || ^7 || ^8
+    react: ^17 || ^18 || ^19
+    react-dom: ^17 || ^18 || ^19
   languageName: unknown
   linkType: soft
 
