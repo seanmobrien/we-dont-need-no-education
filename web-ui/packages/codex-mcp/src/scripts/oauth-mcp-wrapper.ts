@@ -1070,7 +1070,13 @@ async function wrapAccessToken(token: CachedToken): Promise<AppSession> {
   const appSession = appSessionFromWrapResponse(body);
   const tokenWithAppSession = { ...token, app_session: appSession };
   if (shouldPersistDerivedSession(token)) {
-    await writeCachedToken(tokenWithAppSession);
+    try {
+      await writeCachedToken(tokenWithAppSession);
+    } catch (error) {
+      log("could not persist wrapped app session; continuing with in-memory session", {
+        message: asError(error).message
+      });
+    }
   }
   log("wrapped app session acquired", {
     url,
