@@ -5,10 +5,10 @@ Codex plugin for MCP authentication and resource access.
 
 ## Project Structure
 
-- `src/` — Source code for plugin logic
+- `src/` — Canonical plugin source tree, including manifest, MCP config, runtime scripts, and skills
 - `__tests__/` — Unit tests (Jest)
-- `.codex-plugin/` — Codex manifest and plugin metadata
-- `scripts/` — Helper scripts for install, auth, etc.
+- `scripts/` — Package build tooling
+- `dist/` — Install-ready plugin output generated from `src/`
 
 ## Build, Test, and Publish
 
@@ -94,15 +94,15 @@ If your Codex setup prefers a single plugins directory, create a symlink that po
 ## What This Plugin Is
 
 - A Codex plugin definition in `.codex-plugin/plugin.json`.
-- A local MCP server entrypoint in `.mcp.json` that launches `scripts/oauth-mcp-wrapper.mjs`.
+- A local MCP server entrypoint in `.mcp.json` that launches deployed `scripts/oauth-mcp-wrapper.mjs`.
 - An OAuth wrapper that discovers authorization metadata, acquires tokens, starts the child MCP server, and forwards JSON-RPC messages.
 - A small runtime utility layer for retries, token cache management, SSE connection setup, and JSON-RPC over SSE.
 - Smoke-test scripts for listing authenticated tools and resources from an SSE MCP endpoint.
-- A bundled skill under `skills/mcp-resource-auth/` that tells Codex when and how to use the authenticated MCP server.
+- A bundled skill under deployed `skills/compliance-theater/` that tells Codex when and how to use the authenticated MCP server.
 
 ## Authenticated Connection Model
 
-The most important behavior in this folder lives in `scripts/oauth-mcp-wrapper.mjs`.
+The most important behavior in this package lives in source file `src/scripts/oauth-mcp-wrapper.mjs`. The build copies it to deployed path `dist/scripts/oauth-mcp-wrapper.mjs`.
 
 It supports authenticated MCP connections with this flow:
 
@@ -161,7 +161,18 @@ Useful optional inputs include:
 
 ## Helper Tools Added By The Wrapper
 
-The wrapper adds two convenience tools on top of whatever the child MCP server exposes:
+The wrapper exposes an allowlisted native plugin tool surface over the authenticated upstream MCP server:
+
+- `searchPolicyStore`, `searchCaseFile`, `getMultipleCaseFileDocuments`, `getCaseFileDocumentIndex`, `amendCaseFileDocument`
+- `sequentialthinking`, `createTodo`, `getTodos`, `updateTodo`, `toggleTodo`
+- `getCaseWorkspace`, `readWorkspaceFile`, `appendWorkspaceTask`, `updateWorkspaceTaskStatus`, `updateWorkspaceTaskDetails`
+- `upsertWorkspaceDocumentSummary`, `addOpenQuestion`, `updateOpenQuestionStatus`, `appendWorkspaceSessionLog`, `compactWorkspace`
+
+The wrapper also adds app-session-backed memory API tools that call the configured app host:
+
+- `listMemories`, `createMemory`, `getMemoryCategories`, `getMemory`, `updateMemory`, `searchMemories`, `getRelatedMemories`
+
+The wrapper adds convenience tools alongside those native tools:
 
 - `mcp_resource_auth_list_abilities`
   Returns a text summary of tool names, descriptions, schemas, and resource counts.
@@ -184,7 +195,7 @@ These are implemented in the wrapper itself and are useful even when the remote 
 
 ## Runtime Utilities
 
-`scripts/runtime-utils.mjs` provides the shared mechanics used by both the wrapper and the smoke scripts:
+`src/scripts/runtime-utils.mjs` provides the shared mechanics used by both the wrapper and the smoke scripts:
 
 - token expiry calculation and skew-aware cache reuse
 - secure token cache writes under `~/.codex/mcp-resource-auth/` by default
@@ -193,15 +204,15 @@ These are implemented in the wrapper itself and are useful even when the remote 
 - SSE connection setup using `Authorization: Bearer ...`
 - simple JSON-RPC request/response helpers over SSE
 
-The accompanying `scripts/runtime-utils.test.mjs` covers the retry policy, endpoint resolution, insecure URL warnings, and cache-expiry behavior.
+The accompanying `src/scripts/runtime-utils.test.mjs` covers the retry policy, endpoint resolution, insecure URL warnings, and cache-expiry behavior.
 
 ## Smoke Scripts
 
 This folder includes two small validation scripts:
 
-- `scripts/smoke-list-abilities-sse.mjs`
+- `src/scripts/smoke-list-abilities-sse.mjs`
   Acquires or reuses a token, connects to the SSE endpoint, initializes MCP, and lists tools.
-- `scripts/smoke-list-resources-sse.mjs`
+- `src/scripts/smoke-list-resources-sse.mjs`
   Reuses a cached token, connects to the SSE endpoint, and prints resource and resource-template listings.
 
 These scripts are useful for confirming that:
@@ -213,7 +224,7 @@ These scripts are useful for confirming that:
 
 ## Bundled Skill
 
-`skills/mcp-resource-auth/SKILL.md` tells Codex how to use this plugin responsibly.
+`src/skills/compliance-theater/SKILL.md` is the source skill file that tells Codex how to use this plugin responsibly.
 
 The skill emphasizes:
 
@@ -251,7 +262,7 @@ export MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID="codex"
 export MCP_COMPLIANCE_THEATER_RESOURCE_MCP_COMMAND="node"
 export MCP_COMPLIANCE_THEATER_RESOURCE_MCP_ARGS='["./path/to/real-mcp-server.mjs"]'
 
-node ./scripts/oauth-mcp-wrapper.mjs
+node ./src/scripts/oauth-mcp-wrapper.mjs
 ```
 
 The wrapper will then acquire a bearer token if needed, start the real MCP server, and proxy Codex traffic through an authenticated connection.

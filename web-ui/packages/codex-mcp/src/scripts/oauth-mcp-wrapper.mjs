@@ -28,6 +28,123 @@ let logWriteFailed = false;
 let remote;
 let remoteQueue = Promise.resolve();
 
+const exposedRemoteToolNames = new Set([
+  "searchPolicyStore",
+  "searchCaseFile",
+  "getMultipleCaseFileDocuments",
+  "getCaseFileDocumentIndex",
+  "amendCaseFileDocument",
+  "sequentialthinking",
+  "createTodo",
+  "getTodos",
+  "updateTodo",
+  "toggleTodo",
+  "getCaseWorkspace",
+  "readWorkspaceFile",
+  "appendWorkspaceTask",
+  "updateWorkspaceTaskStatus",
+  "updateWorkspaceTaskDetails",
+  "upsertWorkspaceDocumentSummary",
+  "addOpenQuestion",
+  "updateOpenQuestionStatus",
+  "appendWorkspaceSessionLog",
+  "compactWorkspace"
+]);
+
+const memoryTools = [
+  {
+    name: "listMemories",
+    description: "List memories for the authenticated Compliance Theater app session.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        app_id: { type: "string", description: "Optional memory app UUID filter." },
+        from_date: { type: "integer", description: "Only return memories created after this Unix timestamp." },
+        to_date: { type: "integer", description: "Only return memories created before this Unix timestamp." },
+        categories: { type: "string", description: "Optional category filter." },
+        search_query: { type: "string", description: "Optional search text filter." },
+        sort_column: { type: "string", description: "Sort by memory, categories, app_name, or created_at." },
+        sort_direction: { type: "string", enum: ["asc", "desc"], description: "Sort order." },
+        page: { type: "integer", minimum: 1, default: 1, description: "Page number." },
+        size: { type: "integer", minimum: 1, maximum: 100, default: 50, description: "Page size." }
+      },
+      additionalProperties: false
+    }
+  },
+  {
+    name: "createMemory",
+    description: "Create a memory for the authenticated Compliance Theater app session.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "Memory text to store." },
+        metadata: { type: "object", additionalProperties: true, description: "Optional memory metadata." },
+        infer: { type: "boolean", default: true, description: "Whether the memory service should infer memories." },
+        app: { type: "string", default: "openmemory", description: "Memory app name." }
+      },
+      required: ["text"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "getMemoryCategories",
+    description: "Get the available memory categories for the authenticated Compliance Theater app session.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false }
+  },
+  {
+    name: "getMemory",
+    description: "Get a memory by its ID.",
+    inputSchema: {
+      type: "object",
+      properties: { memory_id: { type: "string", description: "Memory UUID." } },
+      required: ["memory_id"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "updateMemory",
+    description: "Update a memory by its ID.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        memory_id: { type: "string", description: "Memory UUID." },
+        memory_content: { type: "string", description: "Replacement memory content." }
+      },
+      required: ["memory_id", "memory_content"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "searchMemories",
+    description: "Search memories for the authenticated Compliance Theater app session.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Memory search query." },
+        numberOfHits: { type: "integer", minimum: 1, default: 10, description: "Maximum search hits." },
+        page: { type: "integer", minimum: 1, default: 1, description: "Result page." },
+        filters: { type: "object", additionalProperties: true, description: "Optional memory search filters." }
+      },
+      required: ["query"],
+      additionalProperties: false
+    }
+  },
+  {
+    name: "getRelatedMemories",
+    description: "List memories related to a source memory ID.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        memory_id: { type: "string", description: "Memory UUID." },
+        page: { type: "integer", minimum: 1, default: 1, description: "Page number." },
+        size: { type: "integer", minimum: 1, maximum: 100, default: 50, description: "Page size." }
+      },
+      required: ["memory_id"],
+      additionalProperties: false
+    }
+  }
+];
+
 const helperTools = [
   {
     name: "mcp_resource_auth_list_abilities",
@@ -54,7 +171,8 @@ const helperTools = [
       required: ["action"],
       additionalProperties: false
     }
-  }
+  },
+  ...memoryTools
 ];
 
 function key(name) {
@@ -461,6 +579,13 @@ function textToolResult(text) {
   return { content: [{ type: "text", text }] };
 }
 
+function jsonToolResult(value) {
+  return {
+    content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
+    structuredContent: { result: value }
+  };
+}
+
 function summarizeMessage(message) {
   if (!message || typeof message !== "object") {
     return { type: typeof message };
@@ -484,8 +609,14 @@ async function connectRemote() {
   }
 
   const token = await acquireToken();
-  const appSession = await acquireAppSession(token);
-  const sessionCookie = appSessionCookieHeader(appSession);
+  let appSession;
+  let sessionCookie;
+  try {
+    appSession = await acquireAppSession(token);
+    sessionCookie = appSessionCookieHeader(appSession);
+  } catch (error) {
+    log(`wrapped app session unavailable for MCP transport; falling back to source bearer: ${error.message}`);
+  }
   const sseUrl = required("SERVER_URL");
   warnIfInsecureUrl(sseUrl, log, "Target server URL");
   log("connecting remote MCP SSE", { sseUrl });
@@ -591,7 +722,8 @@ async function collectPaginated(method, keyName) {
 
 async function listTools() {
   const result = await remoteRequest("tools/list");
-  return [...(result.tools || []), ...helperTools];
+  const exposedTools = (result.tools || []).filter((tool) => exposedRemoteToolNames.has(tool.name));
+  return [...exposedTools, ...helperTools];
 }
 
 async function listResources() {
@@ -683,6 +815,23 @@ function wrapEndpointUrl() {
   parsed.search = "";
   parsed.hash = "";
   return parsed.toString();
+}
+
+function appEndpointUrl(pathname, query = {}) {
+  const parsed = new URL(required("SERVER_URL"));
+  parsed.pathname = pathname;
+  parsed.search = "";
+  parsed.hash = "";
+  for (const [name, value] of Object.entries(query)) {
+    if (value !== undefined && value !== null && value !== "") {
+      parsed.searchParams.set(name, String(value));
+    }
+  }
+  return parsed.toString();
+}
+
+function memoryEndpointUrl(pathname, query) {
+  return appEndpointUrl(`/api/memory/${pathname.replace(/^\/+/, "")}`, query);
 }
 
 async function clearCachedToken() {
@@ -855,6 +1004,87 @@ async function acquireAppSession(token) {
   return wrapAccessToken(token);
 }
 
+function requiredToolArgument(args, name) {
+  const value = args?.[name];
+  if (value === undefined || value === null || value === "") {
+    throw new Error(`${name} is required.`);
+  }
+  return value;
+}
+
+async function memoryApiRequest(method, url, body) {
+  const token = await acquireToken();
+  const appSession = await acquireAppSession(token);
+  const responseResult = await fetchJsonResponse(url, {
+    method,
+    headers: {
+      Accept: "application/json",
+      Cookie: appSessionCookieHeader(appSession),
+      ...(body === undefined ? {} : { "Content-Type": "application/json" })
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) })
+  });
+  if (!responseResult.response.ok) {
+    const detail = responseResult.body?.message || responseResult.body?.error || `HTTP ${responseResult.response.status}`;
+    throw new Error(`Memory API ${method} ${url} failed: ${detail}`);
+  }
+  return responseResult.body;
+}
+
+async function callMemoryTool(name, args = {}) {
+  switch (name) {
+    case "listMemories":
+      return memoryApiRequest("GET", memoryEndpointUrl("memories/", {
+        app_id: args.app_id,
+        from_date: args.from_date,
+        to_date: args.to_date,
+        categories: args.categories,
+        search_query: args.search_query,
+        sort_column: args.sort_column,
+        sort_direction: args.sort_direction,
+        page: args.page,
+        size: args.size
+      }));
+    case "createMemory":
+      return memoryApiRequest("POST", memoryEndpointUrl("memories/"), {
+        text: requiredToolArgument(args, "text"),
+        ...(args.metadata === undefined ? {} : { metadata: args.metadata }),
+        ...(args.infer === undefined ? {} : { infer: args.infer }),
+        ...(args.app === undefined ? {} : { app: args.app })
+      });
+    case "getMemoryCategories":
+      return memoryApiRequest("GET", memoryEndpointUrl("memories/categories"));
+    case "getMemory":
+      return memoryApiRequest(
+        "GET",
+        memoryEndpointUrl(`memories/${encodeURIComponent(requiredToolArgument(args, "memory_id"))}`)
+      );
+    case "updateMemory":
+      return memoryApiRequest(
+        "PUT",
+        memoryEndpointUrl(`memories/${encodeURIComponent(requiredToolArgument(args, "memory_id"))}`),
+        { memory_content: requiredToolArgument(args, "memory_content") }
+      );
+    case "searchMemories":
+      return memoryApiRequest("POST", memoryEndpointUrl("memories/search"), {
+        query: requiredToolArgument(args, "query"),
+        ...(args.numberOfHits === undefined ? {} : { numberOfHits: args.numberOfHits }),
+        ...(args.page === undefined ? {} : { page: args.page }),
+        ...(args.filters === undefined ? {} : { filters: args.filters })
+      });
+    case "getRelatedMemories":
+      return memoryApiRequest(
+        "GET",
+        memoryEndpointUrl(`memories/${encodeURIComponent(requiredToolArgument(args, "memory_id"))}/related`, {
+          page: args.page,
+          size: args.size
+        })
+      );
+    default:
+      throw new Error(`Unknown memory tool ${name}`);
+  }
+}
+
 function formatSessionStatus(sessionResult, context, tokenInfo, userInfoResult) {
   const session = sessionResult.body?.data || {};
   const user = session.user || {};
@@ -948,6 +1178,11 @@ async function loginAndSummarizeStatus() {
 
 async function callHelperTool(id, name, args = {}) {
   try {
+    if (memoryTools.some((tool) => tool.name === name)) {
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callMemoryTool(name, args)) });
+      return;
+    }
+
     if (name === "mcp_resource_auth_list_abilities") {
       const [tools, resources, templates] = await Promise.all([
         listTools().catch(() => helperTools),
@@ -1028,6 +1263,10 @@ async function handleClientRequest(message) {
     const name = message.params?.name;
     if (helperTools.some((tool) => tool.name === name)) {
       await callHelperTool(message.id, name, message.params?.arguments || {});
+      return;
+    }
+    if (!exposedRemoteToolNames.has(name)) {
+      sendToClient(errorResponse(message.id, -32601, `Tool ${name || "(missing)"} is not exposed by this plugin.`));
       return;
     }
   }

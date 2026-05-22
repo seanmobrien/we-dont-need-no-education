@@ -13,8 +13,8 @@ const requiredPaths = [
   "src/.codex-plugin",
   "src/.mcp.json",
   "src/skills",
-  "scripts/oauth-mcp-wrapper.mjs",
-  "scripts/runtime-utils.mjs",
+  "src/scripts/oauth-mcp-wrapper.mjs",
+  "src/scripts/runtime-utils.mjs",
 ];
 
 const run = (command, args) =>
@@ -50,15 +50,15 @@ const copyRuntimeScripts = async () => {
   await rm(scriptsDist, { recursive: true, force: true });
   await mkdir(scriptsDist, { recursive: true });
 
-  const entries = await readdir(join(packageRoot, "scripts"), { withFileTypes: true });
+  const sourceScripts = join(packageRoot, "src", "scripts");
+  const entries = await readdir(sourceScripts, { withFileTypes: true });
   for (const entry of entries) {
     if (
       entry.isFile() &&
       entry.name.endsWith(".mjs") &&
-      entry.name !== "build-plugin-package.mjs" &&
       !entry.name.endsWith(".test.mjs")
     ) {
-      await cp(join(packageRoot, "scripts", entry.name), join(scriptsDist, entry.name));
+      await cp(join(sourceScripts, entry.name), join(scriptsDist, entry.name));
     }
   }
 };

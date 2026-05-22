@@ -10,7 +10,7 @@ Use this skill when a task depends on tools or resources exposed by the plugin's
 ## Workflow
 
 1. Confirm the server configuration in `../../.mcp.json` has been customized for the target MCP server and OAuth issuer.
-2. Let `../../src/scripts/oauth-mcp-wrapper.ts` discover login requirements from RFC 8414 metadata before the MCP server starts.
+2. Let `../../scripts/oauth-mcp-wrapper.mjs` discover login requirements from RFC 8414 metadata before the MCP server starts.
 3. Check whether the required environment variables are present before invoking tools. Never print secret values.
 4. Prefer MCP tools and resources over web search or local guesses when the requested context is available from the server.
 5. Use the `mcp_resource_auth_list_abilities` helper action when the user asks what the server can do.
@@ -23,6 +23,22 @@ Use this skill when a task depends on tools or resources exposed by the plugin's
 9. Read the specific resource URI that best matches the user's request.
 10. If resource templates are exposed, use the narrowest template that answers the request.
 11. Summarize what was read or called and cite the MCP resource URI, template name, or tool name in the response.
+
+## Native Plugin Tools
+
+Prefer the installed plugin tools directly. The wrapper hides the upstream MCP transport, OAuth/device login, wrapped app session, and token-cache details.
+
+The plugin exposes these upstream Compliance Theater MCP tools:
+
+- Policy and case records: `searchPolicyStore`, `searchCaseFile`, `getMultipleCaseFileDocuments`, `getCaseFileDocumentIndex`, `amendCaseFileDocument`
+- Reasoning and todos: `sequentialthinking`, `createTodo`, `getTodos`, `updateTodo`, `toggleTodo`
+- Case workspaces: `getCaseWorkspace`, `readWorkspaceFile`, `appendWorkspaceTask`, `updateWorkspaceTaskStatus`, `updateWorkspaceTaskDetails`, `upsertWorkspaceDocumentSummary`, `addOpenQuestion`, `updateOpenQuestionStatus`, `appendWorkspaceSessionLog`, `compactWorkspace`
+
+The wrapper also exposes memory API tools backed by the configured app host:
+
+- `listMemories`, `createMemory`, `getMemoryCategories`, `getMemory`, `updateMemory`, `searchMemories`, `getRelatedMemories`
+
+Use `mcp_resource_auth_manage_auth` for login, status, and cache maintenance when authentication needs attention. Do not call or describe backend endpoints unless the user is debugging the plugin itself.
 
 ## Authentication Pattern
 
