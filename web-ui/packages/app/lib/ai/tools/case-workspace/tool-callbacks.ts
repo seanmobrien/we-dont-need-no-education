@@ -1,6 +1,10 @@
 import z from 'zod';
 import { LoggedError } from '@compliance-theater/logger';
 import {
+  checkCaseFileAuthorization,
+  CaseFileScope,
+} from '@compliance-theater/auth/lib/resources/case-file/index';
+import {
   toolCallbackResultFactory,
   toolCallbackResultSchemaFactory,
 } from '../utility';
@@ -134,9 +138,29 @@ const safeHandler = async <T, TResult = T>(
   }
 };
 
+const assertCaseWorkspaceReadAccess = async (caseId: string) => {
+  const authCheck = await checkCaseFileAuthorization(undefined, caseId, {
+    requiredScope: CaseFileScope.READ,
+  });
+
+  if (typeof authCheck === 'boolean') {
+    if (!authCheck) {
+      throw new Error('Access denied');
+    }
+    return;
+  }
+
+  if (!authCheck.authorized) {
+    throw new Error('Access denied');
+  }
+};
+
 export const getCaseWorkspace = async ({ caseId }: { caseId: string }) =>
   safeHandler(
-    () => getCaseWorkspaceSummary(caseId),
+    async () => {
+      await assertCaseWorkspaceReadAccess(caseId);
+      return getCaseWorkspaceSummary(caseId);
+    },
     (summary) => toolCallbackResultFactory(summary),
     (error) => toolCallbackResultFactory(error),
   );
