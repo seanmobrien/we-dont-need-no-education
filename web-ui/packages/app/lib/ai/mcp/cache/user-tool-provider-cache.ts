@@ -76,11 +76,13 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
     writeEnabled: boolean;
     memoryDisabled: boolean;
     headers?: Record<string, string>;
+    toolCacheSalt?: string;
   }): string {
     // Create a stable hash of the configuration
     const configString = JSON.stringify({
       writeEnabled: config.writeEnabled,
       memoryDisabled: config.memoryDisabled,
+      toolCacheSalt: config.toolCacheSalt ?? '',
       // Only include non-auth headers in hash to avoid session token changes
       headers: config.headers
         ? Object.fromEntries(
@@ -114,6 +116,7 @@ class UserToolProviderCacheImpl implements UserToolProviderCache {
       writeEnabled: boolean;
       memoryDisabled: boolean;
       headers?: Record<string, string>;
+      toolCacheSalt?: string;
     },
     factory: () => Promise<ToolProviderSet>
   ): Promise<ToolProviderSet> {
@@ -402,6 +405,7 @@ const getInstanceInternal = async (
           writeEnabled: boolean;
           memoryDisabled: boolean;
           headers?: Record<string, string>;
+          toolCacheSalt?: string;
         },
         factory: () => Promise<ToolProviderSet>
       ) => factory(),

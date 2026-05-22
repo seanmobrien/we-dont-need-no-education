@@ -19,9 +19,10 @@ Use this skill when a task depends on tools or resources exposed by the plugin's
    - `action: "status"` to inspect current auth state and user/session details.
    - `action: "login"` to trigger interactive login and cache a fresh token.
    - `action: "clear-cache"` to remove the local cached token.
-8. Read the specific resource URI that best matches the user's request.
-9. If resource templates are exposed, use the narrowest template that answers the request.
-10. Summarize what was read or called and cite the MCP resource URI, template name, or tool name in the response.
+8. When device authorization returns a verification URL or user code, relay it to the user immediately and ask them to complete authentication before waiting for the login result.
+9. Read the specific resource URI that best matches the user's request.
+10. If resource templates are exposed, use the narrowest template that answers the request.
+11. Summarize what was read or called and cite the MCP resource URI, template name, or tool name in the response.
 
 ## Authentication Pattern
 
@@ -76,7 +77,7 @@ Supported dynamic flows:
 - Client credentials: use when `client_credentials` is advertised and client credentials are available.
 - Password grant: use when `password` is advertised and username/password are configured through environment variables or secure settings.
 - Dynamic client registration: use when `registration_endpoint` is advertised and no client id is configured.
-- Device authorization: use when `device_authorization_endpoint` is advertised and a client id is available or was dynamically registered. User-code instructions are written to stderr so MCP stdout remains clean.
+- Device authorization: use when `device_authorization_endpoint` is advertised and a client id is available or was dynamically registered. User-code instructions are written to stderr so MCP stdout remains clean. When the wrapper prints a verification URL or user code, tell the user what to open or enter and ask them to authenticate before continuing to poll or concluding the login timed out.
 
 If credentials are missing, ask the user to configure them in their shell, Codex environment, or plugin installation flow. Do not ask the user to paste secrets into chat unless there is no safer option.
 

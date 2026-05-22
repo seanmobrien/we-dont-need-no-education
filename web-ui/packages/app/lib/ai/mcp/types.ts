@@ -17,6 +17,7 @@ export type ToolProviderFactoryOptions = {
   url: string;
   headers?: () => Promise<Record<string, string>>;
   allowWrite?: boolean;
+  cacheKeySalt?: string;
   req?: Request;
   impersonation?: ImpersonationService;
   sse?: boolean;
@@ -74,6 +75,7 @@ export type UserToolProviderCache = {
       writeEnabled: boolean;
       memoryDisabled: boolean;
       headers?: Record<string, string>;
+      toolCacheSalt?: string;
     },
     factory: () => Promise<ToolProviderSet>,
   ): Promise<ToolProviderSet>;

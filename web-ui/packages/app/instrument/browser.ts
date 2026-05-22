@@ -38,6 +38,36 @@ const getClickPlugin = () => {
 
 let unsubscribeSendCustomEvent: (() => void) | undefined;
 
+type ConnectionStringDiagnostics = {
+  present: boolean;
+  length: number;
+  hasInstrumentationKey: boolean;
+  hasIngestionEndpoint: boolean;
+  instrumentationKeyLength: number;
+};
+
+const getConnectionStringDiagnostics = (
+  connectionString?: string,
+): ConnectionStringDiagnostics => {
+  const value = connectionString ?? '';
+  const segments = value.split(';');
+  const instrumentationKeySegment = segments.find((segment) =>
+    segment.startsWith('InstrumentationKey='),
+  );
+
+  return {
+    present: value.length > 0,
+    length: value.length,
+    hasInstrumentationKey: Boolean(instrumentationKeySegment),
+    hasIngestionEndpoint: segments.some((segment) =>
+      segment.startsWith('IngestionEndpoint='),
+    ),
+    instrumentationKeyLength: instrumentationKeySegment
+      ? instrumentationKeySegment.replace('InstrumentationKey=', '').length
+      : 0,
+  };
+};
+
 const ensureSendCustomEventListener = () => {
   if (unsubscribeSendCustomEvent) return;
 
@@ -60,8 +90,16 @@ const ensureSendCustomEventListener = () => {
 };
 
 const getAppInsights = () => {
+  const connectionString = env('NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING');
+
+  if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+    console.info('[otel] Browser App Insights connection string diagnostics', {
+      diagnostics: getConnectionStringDiagnostics(connectionString),
+    });
+  }
+
   if (
-    env('NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING') &&
+    connectionString &&
     typeof window !== 'undefined' &&
     (!appInsightState.appInsightInstance ||
       !appInsightState.appInsightInstance?.core?.isInitialized)
@@ -71,37 +109,46 @@ const getAppInsights = () => {
 
     const callback = new ClickCallbackProcessor();
 
-    appInsightState.appInsightInstance ??= new ApplicationInsights({
-      config: {
-        appId: config.serviceName,
-        connectionString: env('NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING'),
-        enableDebug: true,
-        enableAutoRouteTracking: true,
-        enableAjaxErrorStatusText: true,
-        enableAjaxPerfTracking: true,
-        disableAjaxTracking: false,
-        distributedTracingMode: DistributedTracingModes.AI_AND_W3C,
-        autoTrackPageVisitTime: true,
-        enableUnhandledPromiseRejectionTracking: true,
-        enableCorsCorrelation: true,
-        enableRequestHeaderTracking: true,
-        enableResponseHeaderTracking: true,
-        extensions: [appInsightState.reactPlugin, appInsightState.clickPlugin],
-        extensionConfig: {
-          [appInsightState.reactPlugin.identifier]: { history: null },
-          [appInsightState.clickPlugin.identifier]: {
-            autoCapture: true,
-            contentName: callback.contentName.bind(callback),
-            pageName: callback.pageName.bind(callback),
-            clickEvents: true,
-            dropInvalidEvents: false,
-            urlCollectQuery: false,
-            useDefaultContentNameOrId: false,
+    try {
+      appInsightState.appInsightInstance ??= new ApplicationInsights({
+        config: {
+          appId: config.serviceName,
+          connectionString,
+          enableDebug: true,
+          enableAutoRouteTracking: true,
+          enableAjaxErrorStatusText: true,
+          enableAjaxPerfTracking: true,
+          disableAjaxTracking: false,
+          distributedTracingMode: DistributedTracingModes.AI_AND_W3C,
+          autoTrackPageVisitTime: true,
+          enableUnhandledPromiseRejectionTracking: true,
+          enableCorsCorrelation: true,
+          enableRequestHeaderTracking: true,
+          enableResponseHeaderTracking: true,
+          extensions: [appInsightState.reactPlugin, appInsightState.clickPlugin],
+          extensionConfig: {
+            [appInsightState.reactPlugin.identifier]: { history: null },
+            [appInsightState.clickPlugin.identifier]: {
+              autoCapture: true,
+              contentName: callback.contentName.bind(callback),
+              pageName: callback.pageName.bind(callback),
+              clickEvents: true,
+              dropInvalidEvents: false,
+              urlCollectQuery: false,
+              useDefaultContentNameOrId: false,
+            },
           },
         },
-      },
-    });
-    appInsightState.appInsightInstance.loadAppInsights();
+      });
+      appInsightState.appInsightInstance.loadAppInsights();
+    } catch (error) {
+      console.error('[otel] Browser App Insights initialization failed', {
+        diagnostics: getConnectionStringDiagnostics(connectionString),
+        error,
+      });
+      appInsightState.appInsightInstance = undefined;
+      return appInsightState.appInsightInstance;
+    }
 
     // Add telemetry initializers once
     if (!appInsightState.initializersAdded) {

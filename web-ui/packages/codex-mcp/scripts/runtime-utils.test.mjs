@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   backoffDelayMs,
   fetchWithPolicy,
+  isAuthenticatedSessionResult,
   isUsableCachedToken,
   parseNumber,
   resolveEndpoint,
@@ -44,6 +45,21 @@ test("warnIfInsecureUrl flags remote http URLs but ignores localhost", () => {
   warnIfInsecureUrl("http://localhost:3000/service", (message) => messages.push(message), "OAuth issuer");
 
   assert.deepEqual(messages, ["OAuth issuer is using insecure HTTP: http://example.com/service"]);
+});
+
+test("isAuthenticatedSessionResult requires an authenticated app session body", () => {
+  assert.equal(
+    isAuthenticatedSessionResult({ response: { ok: true }, body: { status: "authenticated" } }),
+    true
+  );
+  assert.equal(
+    isAuthenticatedSessionResult({ response: { ok: true }, body: { status: "unauthenticated" } }),
+    false
+  );
+  assert.equal(
+    isAuthenticatedSessionResult({ response: { ok: false }, body: { status: "authenticated" } }),
+    false
+  );
 });
 
 test("fetchWithPolicy retries retryable responses", async () => {

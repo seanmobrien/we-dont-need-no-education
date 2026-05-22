@@ -8,6 +8,7 @@ import { createInterface } from "node:readline";
 import {
   connectSse,
   fetchWithPolicy,
+  isAuthenticatedSessionResult,
   parseNumber,
   readCachedTokenFile,
   readRpcResult,
@@ -769,6 +770,33 @@ function formatUserInfoStatus(userInfo, context, tokenInfo, sessionResult) {
   ].join("\n");
 }
 
+function formatSessionStatus(sessionResult, context, tokenInfo, userInfoResult) {
+  const session = sessionResult.body?.data || {};
+  const user = session.user || {};
+  const lines = [
+    `Auth status: authenticated (${context})`,
+    "App session endpoint: verified",
+    "",
+    "User:",
+    `- name: ${user.name || "(unknown)"}`,
+    `- email: ${user.email || "(unknown)"}`,
+    `- id: ${user.id || user.subject || "(unknown)"}`,
+    tokenExpiryLine(tokenInfo),
+    "",
+    ...formatSessionReadiness(sessionResult)
+  ];
+
+  if (userInfoResult?.response) {
+    lines.push(
+      "",
+      "OAuth userinfo:",
+      `- endpoint: ${userInfoResult.url}`,
+      `- HTTP: ${userInfoResult.response.status}`
+    );
+  }
+  return lines.join("\n");
+}
+
 async function verifiedAuthStatus(accessToken, context, tokenInfo = {}) {
   let userInfoResult;
   try {
@@ -781,11 +809,15 @@ async function verifiedAuthStatus(accessToken, context, tokenInfo = {}) {
   if (userInfoResult?.response?.ok) {
     return formatUserInfoStatus(userInfoResult.body, context, tokenInfo, sessionResult.response ? sessionResult : undefined);
   }
-  if (userInfoResult?.response?.status === 401 || userInfoResult?.response?.status === 403) {
-    return `Auth status: token unauthenticated (${context})\nOAuth userinfo endpoint rejected token at ${userInfoResult.url} with HTTP ${userInfoResult.response.status}.`;
+  if (isAuthenticatedSessionResult(sessionResult)) {
+    return formatSessionStatus(sessionResult, context, tokenInfo, userInfoResult);
   }
 
-  const lines = [`Auth status: unknown (${context})`];
+  const userInfoRejected = userInfoResult?.response?.status === 401;
+  const sessionRejected = sessionResult?.response?.status === 401 || sessionResult?.response?.status === 403;
+  const lines = [
+    `${userInfoRejected || sessionRejected ? "Auth status: token unauthenticated" : "Auth status: unknown"} (${context})`
+  ];
   if (userInfoResult?.response) {
     lines.push(`OAuth userinfo endpoint ${userInfoResult.url} returned HTTP ${userInfoResult.response.status}.`);
     lines.push(`Response: ${JSON.stringify(userInfoResult.body)}`);

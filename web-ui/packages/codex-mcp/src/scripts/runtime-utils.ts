@@ -74,6 +74,10 @@ export function shouldRetryError(error: any) {
   return String(error?.message || "").toLowerCase().includes("fetch failed");
 }
 
+export function isAuthenticatedSessionResult(sessionResult: any) {
+  return Boolean(sessionResult?.response?.ok && sessionResult?.body?.status === "authenticated");
+}
+
 function timeoutError(timeoutMs: number) {
   const error = new Error(`Request timed out after ${timeoutMs}ms`);
   (error as any).code = "ABORT_ERR";

@@ -459,11 +459,6 @@
       "persistent": false,
       "outputs": []
     },
-    "dev": {
-      "cache": false,
-      "dependsOn": ["^dev"],
-      "persistent": true
-    },
     "debug": {
       "cache": false,
       "dependsOn": ["^debug"],

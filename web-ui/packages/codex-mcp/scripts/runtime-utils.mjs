@@ -136,6 +136,10 @@ export function warnIfInsecureUrl(urlString, logger = () => {}, label = "URL") {
   }
 }
 
+export function isAuthenticatedSessionResult(sessionResult) {
+  return Boolean(sessionResult?.response?.ok && sessionResult?.body?.status === "authenticated");
+}
+
 export function resolveEndpoint(endpoint, baseUrl) {
   return new URL(endpoint, baseUrl).toString();
 }

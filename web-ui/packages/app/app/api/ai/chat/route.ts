@@ -27,6 +27,7 @@ import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
 import type { User } from '@compliance-theater/auth-compat';
 import { wrapMemoryMiddleware } from '@/lib/ai/middleware/memory-middleware';
 import { streamingMessageResponse } from '@/lib/ai/chat/streamed-result';
+import { APP_MCP_TOOL_REGISTRY_CACHE_SALT } from '@/lib/ai/tools/mcp-tool-registry';
 
 // Allow streaming responses up to 360 seconds
 //const maxDuration = 60 * 1000 * 360;
@@ -73,6 +74,7 @@ const toolProviderFactory = async ({
       {
         writeEnabled,
         memoryDisabled,
+        toolCacheSalt: APP_MCP_TOOL_REGISTRY_CACHE_SALT,
       },
       () =>
         setupDefaultTools({

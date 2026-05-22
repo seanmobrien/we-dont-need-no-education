@@ -37,6 +37,28 @@ import {
     toggleTodoCallback,
     toggleTodoConfig,
 } from '@/lib/ai/tools/todo';
+import {
+    addOpenQuestionCallback,
+    addOpenQuestionConfig,
+    appendSessionLogCallback,
+    appendSessionLogConfig,
+    appendTaskCallback,
+    appendTaskConfig,
+    compactWorkspaceCallback,
+    compactWorkspaceConfig,
+    getCaseWorkspace,
+    getCaseWorkspaceConfig,
+    readWorkspaceFileCallback,
+    readWorkspaceFileConfig,
+    updateOpenQuestionStatusCallback,
+    updateOpenQuestionStatusConfig,
+    updateTaskDetailsCallback,
+    updateTaskDetailsConfig,
+    updateTaskStatusCallback,
+    updateTaskStatusConfig,
+    upsertDocumentSummaryCallback,
+    upsertDocumentSummaryConfig,
+} from '@/lib/ai/tools/case-workspace/tool-callbacks';
 
 export type MinimalRegisterTool = (
     name: string,
@@ -54,6 +76,19 @@ type ToolDefinition = {
     name: string;
     config: unknown;
     handler: ToolHandler;
+};
+
+const getToolDescription = (config: unknown): string => {
+    if (
+        typeof config === 'object' &&
+        config !== null &&
+        'description' in config &&
+        typeof (config as { description?: unknown }).description === 'string'
+    ) {
+        return (config as { description: string }).description;
+    }
+
+    return '';
 };
 
 const toolDefinitions: ToolDefinition[] = [
@@ -112,7 +147,61 @@ const toolDefinitions: ToolDefinition[] = [
         config: toggleTodoConfig,
         handler: toggleTodoCallback as ToolHandler,
     },
+    {
+        name: 'getCaseWorkspace',
+        config: getCaseWorkspaceConfig,
+        handler: getCaseWorkspace as ToolHandler,
+    },
+    {
+        name: 'readWorkspaceFile',
+        config: readWorkspaceFileConfig,
+        handler: readWorkspaceFileCallback as ToolHandler,
+    },
+    {
+        name: 'appendWorkspaceTask',
+        config: appendTaskConfig,
+        handler: appendTaskCallback as ToolHandler,
+    },
+    {
+        name: 'updateWorkspaceTaskStatus',
+        config: updateTaskStatusConfig,
+        handler: updateTaskStatusCallback as ToolHandler,
+    },
+    {
+        name: 'updateWorkspaceTaskDetails',
+        config: updateTaskDetailsConfig,
+        handler: updateTaskDetailsCallback as ToolHandler,
+    },
+    {
+        name: 'upsertWorkspaceDocumentSummary',
+        config: upsertDocumentSummaryConfig,
+        handler: upsertDocumentSummaryCallback as ToolHandler,
+    },
+    {
+        name: 'addOpenQuestion',
+        config: addOpenQuestionConfig,
+        handler: addOpenQuestionCallback as ToolHandler,
+    },
+    {
+        name: 'updateOpenQuestionStatus',
+        config: updateOpenQuestionStatusConfig,
+        handler: updateOpenQuestionStatusCallback as ToolHandler,
+    },
+    {
+        name: 'appendWorkspaceSessionLog',
+        config: appendSessionLogConfig,
+        handler: appendSessionLogCallback as ToolHandler,
+    },
+    {
+        name: 'compactWorkspace',
+        config: compactWorkspaceConfig,
+        handler: compactWorkspaceCallback as ToolHandler,
+    },
 ];
+
+export const APP_MCP_TOOL_REGISTRY_CACHE_SALT = toolDefinitions
+    .map((tool) => `${tool.name}:${getToolDescription(tool.config)}`)
+    .join('|');
 
 export const registerAppMcpTools = (server: MinimalMcpToolServer): void => {
     for (const tool of toolDefinitions) {

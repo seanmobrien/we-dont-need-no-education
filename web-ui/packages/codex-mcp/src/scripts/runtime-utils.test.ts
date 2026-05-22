@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   backoffDelayMs,
   // fetchWithPolicy, // Not ported
+  isAuthenticatedSessionResult,
   isUsableCachedToken,
   parseNumber,
   // resolveEndpoint, // Not ported
@@ -27,6 +28,21 @@ test("isUsableCachedToken honors the expiry skew", () => {
   );
   assert.equal(
     isUsableCachedToken({ access_token: "token", expires_at: Date.now() + 30000 }, 60000),
+    false
+  );
+});
+
+test("isAuthenticatedSessionResult requires an authenticated app session body", () => {
+  assert.equal(
+    isAuthenticatedSessionResult({ response: { ok: true }, body: { status: "authenticated" } }),
+    true
+  );
+  assert.equal(
+    isAuthenticatedSessionResult({ response: { ok: true }, body: { status: "unauthenticated" } }),
+    false
+  );
+  assert.equal(
+    isAuthenticatedSessionResult({ response: { ok: false }, body: { status: "authenticated" } }),
     false
   );
 });

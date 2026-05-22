@@ -38,7 +38,8 @@ export const ChatMessageV2: React.FC<ChatMessageV2Props> = ({
   onMeasureElement,
   addToolResult,
 }) => {
-  const { parts = [], role, id: messageId, createdAt } = message;
+  const { parts, role, id: messageId, createdAt } = message;
+  const messageParts = Array.isArray(parts) ? parts : [];
   const isUser = role === 'user';
 
   const measureElementCallback = useCallback(
@@ -102,7 +103,7 @@ export const ChatMessageV2: React.FC<ChatMessageV2Props> = ({
           {!isUser && <Avatar sx={stableSx.avatar}>A</Avatar>}
           <Paper elevation={6} sx={stableSx.paper}>
             <Box>
-              {parts
+              {messageParts
                 .map((part: UIMessagePart<UIDataTypes, UITools>) => {
                   return part.type === 'text' ? (
                     <MuiMarkdown
