@@ -112,6 +112,42 @@ const resolveTokenIdentity = (
   };
 };
 
+const mapExtractedTokenToRequestTokens = (
+  token: JWT | null | undefined,
+): RequestWithAccessTokenCache | undefined => {
+  const accessToken =
+    typeof token?.access_token === 'string' && token.access_token.trim().length > 0
+      ? token.access_token
+      : undefined;
+  if (!accessToken) {
+    return undefined;
+  }
+
+  const { userId, providerAccountId } = resolveTokenIdentity(token);
+  if (!providerAccountId) {
+    return undefined;
+  }
+
+  const expiresAtCandidate =
+    typeof token?.expires_at === 'number'
+      ? token.expires_at
+      : typeof token?.exp === 'number'
+        ? token.exp
+        : undefined;
+
+  return {
+    access_token: accessToken,
+    refresh_token:
+      typeof token?.refresh_token === 'string' ? token.refresh_token : undefined,
+    id_token:
+      typeof token?.idToken === 'string' ? token.idToken : undefined,
+    expires_at: expiresAtCandidate,
+    refresh_expires_at: undefined,
+    providerAccountId,
+    userId,
+  };
+};
+
 const mapAccountRecordToRequestTokens = (
   accountRecord:
     | {
@@ -217,8 +253,8 @@ export const withRequestTokens = (
     if (!value.providerAccountId) {
       throw new Error('providerAccountId is required');
     }
-    if (!value.userId) {
-      throw new Error('userId is required');
+    if (!isFinite(value.userId) || value.userId < 0) {
+      throw new Error('userId must be a non-negative finite number');
     }
     if (!value.access_token) {
       throw new Error('token is required');
@@ -314,8 +350,14 @@ export const getRequestTokens = async (req: LikeNextRequest | undefined) => {
       extracted = null;
     }
 
+    const directExtractedToken = mapExtractedTokenToRequestTokens(extracted);
+    if (directExtractedToken) {
+      withRequestTokens(req, directExtractedToken);
+      token = directExtractedToken;
+    }
+
     const tokenIdentity = resolveTokenIdentity(extracted);
-    if (!isNaN(tokenIdentity.userId) && tokenIdentity.userId > 0) {
+    if (!token && !isNaN(tokenIdentity.userId) && tokenIdentity.userId > 0) {
       const data = await drizDbWithInit(async (db) => {
         const accountRecord = await db.query.accounts.findFirst({
           where: (accounts, { eq, and }) =>

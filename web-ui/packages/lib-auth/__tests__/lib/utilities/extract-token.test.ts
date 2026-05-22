@@ -26,7 +26,10 @@ jest.mock('../../../src/lib/utilities/decode-token', () => ({
 
 import { getToken } from '@compliance-theater/auth-compat/runtime';
 
-import { extractToken } from '../../../src/lib/utilities/extract-token';
+import {
+  extractToken,
+  extractTokenDetails,
+} from '../../../src/lib/utilities/extract-token';
 import { decodeToken } from '../../../src/lib/utilities/decode-token';
 
 describe('extractToken', () => {
@@ -61,6 +64,27 @@ describe('extractToken', () => {
     expect(getToken).not.toHaveBeenCalled();
   });
 
+  it('reports a verified bearer token source before Auth.js token parsing', async () => {
+    const verifiedPayload = {
+      sub: 'device-user',
+      exp: Math.floor(Date.now() / 1000) + 300,
+    };
+    (decodeToken as jest.Mock).mockResolvedValue(verifiedPayload);
+
+    const request = new Request('http://localhost/api/device', {
+      headers: {
+        authorization: 'Bearer device.access.token',
+      },
+    });
+
+    await expect(extractTokenDetails(request)).resolves.toEqual({
+      source: 'verified-bearer',
+      token: verifiedPayload,
+      bearerToken: 'device.access.token',
+      verifiedBearerToken: 'device.access.token',
+    });
+  });
+
   it('falls back to Auth.js token parsing when bearer verification fails', async () => {
     const authJsToken = {
       sub: 'authjs-user',
@@ -84,5 +108,28 @@ describe('extractToken', () => {
       verify: true,
     });
     expect(getToken).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports an Auth.js token source when bearer verification fails', async () => {
+    const authJsToken = {
+      sub: 'authjs-user',
+      exp: Math.floor(Date.now() / 1000) + 300,
+    };
+    (decodeToken as jest.Mock).mockRejectedValue(new Error('bad signature'));
+    (getToken as jest.Mock)
+      .mockResolvedValueOnce(authJsToken)
+      .mockResolvedValueOnce(null);
+
+    const request = new Request('http://localhost/api/device', {
+      headers: {
+        authorization: 'Bearer app.issued.token',
+      },
+    });
+
+    await expect(extractTokenDetails(request)).resolves.toEqual({
+      source: 'authjs',
+      token: authJsToken,
+      bearerToken: 'app.issued.token',
+    });
   });
 });

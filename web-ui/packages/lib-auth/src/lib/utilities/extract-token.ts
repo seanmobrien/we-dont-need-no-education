@@ -19,8 +19,20 @@ type RequestHeadersOnly = Request | {
 const REQUEST_DECODED_TOKEN: unique symbol = Symbol.for(
     '@/no-education/api/auth/decoded-token',
 );
+const REQUEST_TOKEN_DETAILS: unique symbol = Symbol.for(
+    '@/no-education/api/auth/token-details',
+);
+
+export type ExtractedRequestToken = {
+    source: 'verified-bearer' | 'authjs' | 'none';
+    token: JWT | null;
+    bearerToken?: string;
+    verifiedBearerToken?: string;
+};
+
 type RequestWithToken = RequestHeadersOnly & {
     [REQUEST_DECODED_TOKEN]?: JWT;
+    [REQUEST_TOKEN_DETAILS]?: ExtractedRequestToken;
 };
 
 const loadLoggerModule = createCachedModuleLoader(() =>
@@ -64,11 +76,23 @@ const extractAuthorizationBearerToken = (
     return token;
 };
 
-export const extractToken = async (req: RequestHeadersOnly): Promise<JWT | null> => {
-    const check = (req as RequestWithToken)?.[REQUEST_DECODED_TOKEN];
-    if (check) {
-        return check;
+export const extractTokenDetails = async (
+    req: RequestHeadersOnly,
+): Promise<ExtractedRequestToken> => {
+    const cachedToken = (req as RequestWithToken)?.[REQUEST_DECODED_TOKEN];
+    const cachedDetails = (req as RequestWithToken)?.[REQUEST_TOKEN_DETAILS];
+    if (cachedDetails) {
+        return cachedDetails;
     }
+    if (cachedToken) {
+        const details = {
+            source: 'authjs',
+            token: cachedToken,
+        } as const;
+        (req as RequestWithToken)[REQUEST_TOKEN_DETAILS] = details;
+        return details;
+    }
+
     const sessionTokenKey = SessionTokenKey();
     try {
         const bearerToken = extractAuthorizationBearerToken(req);
@@ -81,8 +105,19 @@ export const extractToken = async (req: RequestHeadersOnly): Promise<JWT | null>
                 if (req) {
                     (req as RequestWithToken)[REQUEST_DECODED_TOKEN] =
                         verifiedBearerToken as JWT;
+                    (req as RequestWithToken)[REQUEST_TOKEN_DETAILS] = {
+                        source: 'verified-bearer',
+                        token: verifiedBearerToken as JWT,
+                        bearerToken,
+                        verifiedBearerToken: bearerToken,
+                    };
                 }
-                return verifiedBearerToken as JWT;
+                return {
+                    source: 'verified-bearer',
+                    token: verifiedBearerToken as JWT,
+                    bearerToken,
+                    verifiedBearerToken: bearerToken,
+                };
             } catch {
                 // Fall through to Auth.js token parsing to preserve support for
                 // app-issued bearer/session tokens alongside external OIDC tokens.
@@ -91,7 +126,6 @@ export const extractToken = async (req: RequestHeadersOnly): Promise<JWT | null>
 
         const shh = env('AUTH_SECRET');
         const ret =
-            check ??
             (await getToken({
                 req: req as Request,
                 secret: shh,
@@ -104,8 +138,23 @@ export const extractToken = async (req: RequestHeadersOnly): Promise<JWT | null>
             }));
         if (ret && req) {
             (req as RequestWithToken)[REQUEST_DECODED_TOKEN] = ret as JWT;
+            (req as RequestWithToken)[REQUEST_TOKEN_DETAILS] = {
+                source: 'authjs',
+                token: ret as JWT,
+                bearerToken,
+            };
         }
-        return ret as JWT | null;
+        return ret
+            ? {
+                source: 'authjs',
+                token: ret as JWT,
+                bearerToken,
+            }
+            : {
+                source: 'none',
+                token: null,
+                bearerToken,
+            };
     } catch (error) {
         try {
             // Delay-load loggederror to prevent circular dependency
@@ -119,6 +168,14 @@ export const extractToken = async (req: RequestHeadersOnly): Promise<JWT | null>
             console.info(e);
         }
 
-        return null;
+        return {
+            source: 'none',
+            token: null,
+        };
     }
+};
+
+export const extractToken = async (req: RequestHeadersOnly): Promise<JWT | null> => {
+    const details = await extractTokenDetails(req);
+    return details.token;
 };
