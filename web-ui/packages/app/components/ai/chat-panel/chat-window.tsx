@@ -128,7 +128,8 @@ export const ChatWindow = ({
     getItemKey,
   });
 
-  const items = [...messages].reverse(); // For inverted render
+  // Memoize reversed messages to ensure stable array per render
+  const items = React.useMemo(() => [...messages].reverse(), [messages]); // For inverted render
 
   return (
     <Box

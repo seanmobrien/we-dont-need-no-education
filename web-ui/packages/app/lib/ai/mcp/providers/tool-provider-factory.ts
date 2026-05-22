@@ -242,9 +242,18 @@ export const toolProviderFactory = async ({
         ? (allTools as ToolSet)
         : Object.entries(allTools).reduce((acc, [toolName, tool]) => {
           // Filter out tools that require write access when in read-only mode
-          if ((tool.description?.indexOf('Write access') ?? -1) === -1) {
-            (acc as { [key: string]: typeof tool })[toolName] = tool;
+          if ((tool.description?.indexOf('Write access') ?? -1) !== -1) {
+            log((l) =>
+              l.trace('Filtering MCP tool from read-only provider', {
+                toolName,
+                providerUrl: options.url,
+                reason: 'write_access_marker',
+              }),
+            );
+            return acc;
           }
+
+          (acc as { [key: string]: typeof tool })[toolName] = tool;
           return acc;
         }, {} as ToolSet);
 

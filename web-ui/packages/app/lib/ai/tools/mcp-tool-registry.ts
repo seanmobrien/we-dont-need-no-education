@@ -78,6 +78,19 @@ type ToolDefinition = {
     handler: ToolHandler;
 };
 
+const getToolDescription = (config: unknown): string => {
+    if (
+        typeof config === 'object' &&
+        config !== null &&
+        'description' in config &&
+        typeof (config as { description?: unknown }).description === 'string'
+    ) {
+        return (config as { description: string }).description;
+    }
+
+    return '';
+};
+
 const toolDefinitions: ToolDefinition[] = [
     {
         name: 'playPingPong',
@@ -185,6 +198,10 @@ const toolDefinitions: ToolDefinition[] = [
         handler: compactWorkspaceCallback as ToolHandler,
     },
 ];
+
+export const APP_MCP_TOOL_REGISTRY_CACHE_SALT = toolDefinitions
+    .map((tool) => `${tool.name}:${getToolDescription(tool.config)}`)
+    .join('|');
 
 export const registerAppMcpTools = (server: MinimalMcpToolServer): void => {
     for (const tool of toolDefinitions) {
