@@ -327,8 +327,18 @@ export const persistWorkspace = async (
       'timelineNotes',
     );
   }
-  const metaBody = JSON.stringify(metadata, null, 2);
-  await writeFileWithMetadata(paths.metadata, metaBody, metadata, 'metadata');
+  metadata.files.metadata = {
+    ...metadata.files.metadata,
+    path: paths.metadata,
+    updatedAt: updatedTimestamp,
+  };
+  const metaBodyForChecksum = JSON.stringify(metadata, null, 2);
+  metadata.files.metadata.checksum = crypto
+    .createHash('sha256')
+    .update(metaBodyForChecksum)
+    .digest('hex');
+  const finalMetaBody = JSON.stringify(metadata, null, 2);
+  await fs.writeFile(paths.metadata, finalMetaBody, 'utf-8');
   return metadata;
 };
 
