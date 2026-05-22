@@ -4,11 +4,60 @@ import { dirname } from "node:path";
 const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
 const RETRYABLE_ERROR_CODES = new Set(["ABORT_ERR", "ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "EAI_AGAIN"]);
 
-export function sleep(ms) {
+export type Logger = (message: string, details?: unknown) => void;
+
+export type Token = {
+  access_token?: string;
+  expires_at?: number | string;
+  expires_at_ms?: number | string;
+  expires_at_iso?: string;
+  expires_in?: number | string;
+  cached_at?: number;
+  app_session?: AppSession;
+  [key: string]: unknown;
+};
+
+export type AppSession = {
+  token?: string;
+  cookie_name?: string;
+  expires_at?: number | string;
+  expires_at_ms?: number | string;
+  expires_at_iso?: string;
+  expires_in?: number | string;
+  [key: string]: unknown;
+};
+
+export type JsonRpcParams = Record<string, unknown>;
+
+export type RpcReader = ReadableStreamDefaultReader<Uint8Array>;
+
+export type FetchPolicyOptions = RequestInit & {
+  timeoutMs?: number;
+  retries?: number;
+  retryBaseMs?: number;
+  logger?: Logger;
+};
+
+type RetriableError = Error & {
+  code?: string;
+  cause?: { code?: string };
+};
+
+type SessionResult = {
+  response?: Pick<Response, "ok">;
+  body?: { status?: string };
+};
+
+export type SseConnection = {
+  endpoint: string;
+  reader: RpcReader;
+};
+
+export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function parseNumber(value, fallback, minimum = 0) {
+export function parseNumber(value: unknown, fallback: number, minimum = 0): number {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) {
     return fallback;
@@ -16,7 +65,7 @@ export function parseNumber(value, fallback, minimum = 0) {
   return Math.max(parsed, minimum);
 }
 
-export function tokenExpiresAt(token, fallbackMs = 300000) {
+export function tokenExpiresAt(token: Token | AppSession, fallbackMs = 300000): number {
   const explicit = normalizeEpochMs(token.expires_at_ms ?? token.expires_at);
   if (explicit) {
     return explicit;
@@ -27,14 +76,14 @@ export function tokenExpiresAt(token, fallbackMs = 300000) {
   return Date.now() + fallbackMs;
 }
 
-export function isUsableCachedToken(token, skewMs = 60000) {
+export function isUsableCachedToken(token?: Token, skewMs = 60000): boolean {
   if (!token?.access_token) {
     return false;
   }
   return tokenExpiresAt(token, 0) - skewMs > Date.now();
 }
 
-export function isUsableCachedAppSession(token, skewMs = 60000) {
+export function isUsableCachedAppSession(token?: Token, skewMs = 60000): boolean {
   const session = token?.app_session;
   if (!session?.token || !session?.cookie_name) {
     return false;
@@ -42,16 +91,19 @@ export function isUsableCachedAppSession(token, skewMs = 60000) {
   return tokenExpiresAt(session, 0) - skewMs > Date.now();
 }
 
-export function appSessionCookieHeader(session) {
+export function appSessionCookieHeader(session?: AppSession): string | undefined {
   if (!session?.token || !session?.cookie_name) {
     return undefined;
   }
   return `${session.cookie_name}=${session.token}`;
 }
 
-export async function readCachedTokenFile(tokenCachePath, { skewMs = 60000, logger = () => {} } = {}) {
+export async function readCachedTokenFile(
+  tokenCachePath: string,
+  { skewMs = 60000, logger = () => {} }: { skewMs?: number; logger?: Logger } = {}
+): Promise<Token | undefined> {
   try {
-    const cached = JSON.parse(await readFile(tokenCachePath, "utf8"));
+    const cached = JSON.parse(await readFile(tokenCachePath, "utf8")) as Token;
     if (isUsableCachedToken(cached, skewMs)) {
       logger(`using cached access token from ${tokenCachePath}`);
       return cached;
@@ -62,7 +114,11 @@ export async function readCachedTokenFile(tokenCachePath, { skewMs = 60000, logg
   return undefined;
 }
 
-export async function writeCachedTokenFile(tokenCachePath, token, { fallbackMs = 300000, logger = () => {} } = {}) {
+export async function writeCachedTokenFile(
+  tokenCachePath: string,
+  token: Token,
+  { fallbackMs = 300000, logger = () => {} }: { fallbackMs?: number; logger?: Logger } = {}
+): Promise<Token> {
   const cached = {
     ...token,
     expires_at: tokenExpiresAt(token, fallbackMs),
@@ -75,29 +131,30 @@ export async function writeCachedTokenFile(tokenCachePath, token, { fallbackMs =
   return cached;
 }
 
-export function backoffDelayMs(attempt, retryBaseMs) {
+export function backoffDelayMs(attempt: number, retryBaseMs: number): number {
   return retryBaseMs * (2 ** attempt);
 }
 
-export function shouldRetryStatus(status) {
+export function shouldRetryStatus(status: number): boolean {
   return RETRYABLE_STATUS_CODES.has(status);
 }
 
-export function shouldRetryError(error) {
-  const code = error?.code || error?.cause?.code;
-  if (RETRYABLE_ERROR_CODES.has(code)) {
+export function shouldRetryError(error: unknown): boolean {
+  const retriable = error as RetriableError | undefined;
+  const code = retriable?.code || retriable?.cause?.code;
+  if (code && RETRYABLE_ERROR_CODES.has(code)) {
     return true;
   }
-  return String(error?.message || "").toLowerCase().includes("fetch failed");
+  return String(retriable?.message || "").toLowerCase().includes("fetch failed");
 }
 
-function timeoutError(timeoutMs) {
-  const error = new Error(`Request timed out after ${timeoutMs}ms`);
+function timeoutError(timeoutMs: number): RetriableError {
+  const error = new Error(`Request timed out after ${timeoutMs}ms`) as RetriableError;
   error.code = "ABORT_ERR";
   return error;
 }
 
-export async function fetchWithPolicy(url, options = {}) {
+export async function fetchWithPolicy(url: string | URL, options: FetchPolicyOptions = {}): Promise<Response> {
   const {
     timeoutMs = 15000,
     retries = 0,
@@ -121,13 +178,14 @@ export async function fetchWithPolicy(url, options = {}) {
       logger(`retrying ${url} after HTTP ${response.status} in ${waitMs}ms`);
       await sleep(waitMs);
     } catch (error) {
-      const normalizedError = error?.name === "AbortError" ? timeoutError(timeoutMs) : error;
+      const caught = error as Error;
+      const normalizedError = caught?.name === "AbortError" ? timeoutError(timeoutMs) : caught;
       if (attempt >= retries || !shouldRetryError(normalizedError)) {
         throw normalizedError;
       }
 
       const waitMs = backoffDelayMs(attempt, retryBaseMs);
-      logger(`retrying ${url} after ${normalizedError.message} in ${waitMs}ms`);
+      logger(`retrying ${url} after ${normalizedError.message || "request error"} in ${waitMs}ms`);
       await sleep(waitMs);
     } finally {
       clearTimeout(timeoutHandle);
@@ -135,12 +193,12 @@ export async function fetchWithPolicy(url, options = {}) {
   }
 }
 
-function isLoopbackHost(hostname) {
+function isLoopbackHost(hostname?: string): boolean {
   const normalized = String(hostname || "").replace(/^\[|\]$/g, "");
   return normalized === "localhost" || normalized === "127.0.0.1" || normalized === "::1";
 }
 
-export function warnIfInsecureUrl(urlString, logger = () => {}, label = "URL") {
+export function warnIfInsecureUrl(urlString: string, logger: Logger = () => {}, label = "URL"): void {
   try {
     const parsed = new URL(urlString);
     if (parsed.protocol === "http:" && !isLoopbackHost(parsed.hostname)) {
@@ -151,27 +209,31 @@ export function warnIfInsecureUrl(urlString, logger = () => {}, label = "URL") {
   }
 }
 
-export function isAuthenticatedSessionResult(sessionResult) {
+export function isAuthenticatedSessionResult(sessionResult?: SessionResult): boolean {
   return Boolean(sessionResult?.response?.ok && sessionResult?.body?.status === "authenticated");
 }
 
-export function resolveEndpoint(endpoint, baseUrl) {
+export function resolveEndpoint(endpoint: string, baseUrl: string): string {
   return new URL(endpoint, baseUrl).toString();
 }
 
-function requestAuthHeaders(accessToken, sessionCookie) {
+function requestAuthHeaders(accessToken?: string, sessionCookie?: string): HeadersInit {
   if (sessionCookie) {
     return { Cookie: sessionCookie };
   }
   return accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
 }
 
-async function readWithTimeout(reader, timeoutMs, errorMessage) {
-  let timeoutHandle;
+async function readWithTimeout(
+  reader: RpcReader,
+  timeoutMs: number,
+  errorMessage: string
+): Promise<ReadableStreamReadResult<Uint8Array>> {
+  let timeoutHandle: NodeJS.Timeout | undefined;
   try {
     return await Promise.race([
       reader.read(),
-      new Promise((_, reject) => {
+      new Promise<never>((_, reject) => {
         timeoutHandle = setTimeout(() => reject(new Error(errorMessage)), timeoutMs);
       })
     ]);
@@ -189,7 +251,16 @@ export async function connectSse({
   httpRetries = 1,
   httpRetryBaseMs = 500,
   logger = () => {}
-}) {
+}: {
+  sseUrl: string;
+  accessToken?: string;
+  sessionCookie?: string;
+  timeoutMs?: number;
+  httpTimeoutMs?: number;
+  httpRetries?: number;
+  httpRetryBaseMs?: number;
+  logger?: Logger;
+}): Promise<SseConnection> {
   logger(`connecting SSE: ${sseUrl}`);
   const response = await fetchWithPolicy(sseUrl, {
     headers: {
@@ -238,13 +309,26 @@ export async function connectSse({
   }
 }
 
-export async function rpc(endpoint, accessToken, id, method, params, {
+export async function rpc(
+  endpoint: string,
+  accessToken: string | undefined,
+  id: string | number,
+  method: string,
+  params: JsonRpcParams,
+  {
   timeoutMs = 15000,
   retries = 0,
   retryBaseMs = 500,
   logger = () => {},
   sessionCookie
-} = {}) {
+  }: {
+    timeoutMs?: number;
+    retries?: number;
+    retryBaseMs?: number;
+    logger?: Logger;
+    sessionCookie?: string;
+  } = {}
+): Promise<void> {
   logger(`RPC send ${method}`);
   const response = await fetchWithPolicy(endpoint, {
     method: "POST",
@@ -264,7 +348,11 @@ export async function rpc(endpoint, accessToken, id, method, params, {
   }
 }
 
-export async function readRpcResult(reader, expectedId, timeoutMs = 30000) {
+export async function readRpcResult(
+  reader: RpcReader,
+  expectedId: string | number,
+  timeoutMs = 30000
+): Promise<Record<string, unknown>> {
   const decoder = new TextDecoder();
   let buffer = "";
   const stopAt = Date.now() + timeoutMs;
@@ -294,18 +382,22 @@ export async function readRpcResult(reader, expectedId, timeoutMs = 30000) {
         continue;
       }
 
-      const message = JSON.parse(data);
+      const message = JSON.parse(data) as {
+        id?: string | number;
+        error?: { message?: string };
+        result?: Record<string, unknown>;
+      };
       if (message.id === expectedId) {
         if (message.error) {
           throw new Error(message.error.message || JSON.stringify(message.error));
         }
-        return message.result;
+        return message.result || {};
       }
     }
   }
 }
 
-function normalizeEpochMs(value) {
+function normalizeEpochMs(value: unknown): number | undefined {
   const parsed = Number(value);
   if (!Number.isFinite(parsed) || parsed <= 0) {
     return undefined;

@@ -6,6 +6,10 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
 import {
+  type AppSession,
+  type FetchPolicyOptions,
+  type SseConnection,
+  type Token,
   appSessionCookieHeader,
   connectSse,
   fetchWithPolicy,
@@ -19,16 +23,81 @@ import {
   tokenExpiresAt,
   warnIfInsecureUrl,
   writeCachedTokenFile
-} from "./runtime-utils.mjs";
+} from "./runtime-utils";
+
+type AnyRecord = Record<string, any>;
+type RpcId = string | number | null;
+type ToolArgs = Record<string, any>;
+type JsonRpcMessage = {
+  jsonrpc?: string;
+  id?: RpcId;
+  method: string;
+  params?: ToolArgs;
+  result?: AnyRecord;
+  error?: { code?: number; message?: string };
+};
+type JsonToolResult = {
+  content: Array<{ type: "text"; text: string }>;
+  structuredContent?: { result: unknown };
+};
+type ToolDefinition = {
+  name: string;
+  description?: string;
+  inputSchema?: AnyRecord;
+};
+type OAuthClient = {
+  client_id?: string;
+  client_secret?: string;
+};
+type OAuthMetadata = AnyRecord & {
+  issuer?: string;
+  token_endpoint: string;
+  userinfo_endpoint?: string;
+  registration_endpoint?: string;
+  device_authorization_endpoint?: string;
+  grant_types_supported?: string[];
+  token_endpoint_auth_methods_supported?: string[];
+};
+type OAuthToken = Token & {
+  access_token: string;
+  metadata?: OAuthMetadata;
+};
+type CachedToken = OAuthToken & {
+  metadata?: OAuthMetadata;
+  app_session?: AppSession;
+};
+type TokenInfo = {
+  token?: string;
+  source?: string;
+  cached?: CachedToken;
+};
+type JsonResponse = {
+  response: Response;
+  body: AnyRecord;
+  url: string;
+};
+type FailedResult = { error: Error };
+type SessionResult = JsonResponse | FailedResult;
+type RemoteConnection = SseConnection & {
+  accessToken: string;
+  appSession?: AppSession;
+  sessionCookie?: string;
+  nextId: number;
+};
+type ErrorWithCode = Error & { code?: string };
+
+function asError(error: unknown): ErrorWithCode {
+  return error instanceof Error ? error as ErrorWithCode : new Error(String(error));
+}
 
 const PREFIX = "MCP_COMPLIANCE_THEATER_RESOURCE_";
 const env = process.env;
-let registeredClient;
+let registeredClient: OAuthClient | undefined;
 let logWriteFailed = false;
-let remote;
-let remoteQueue = Promise.resolve();
+let remote: RemoteConnection | undefined;
+let remoteQueue: Promise<AnyRecord> = Promise.resolve({});
 
-const exposedRemoteToolNames = new Set([
+const exposedRemoteToolNames = new Set<string>([
   "searchPolicyStore",
   "searchCaseFile",
   "getMultipleCaseFileDocuments",
@@ -51,7 +120,7 @@ const exposedRemoteToolNames = new Set([
   "compactWorkspace"
 ]);
 
-const memoryTools = [
+const memoryTools: ToolDefinition[] = [
   {
     name: "listMemories",
     description: "List memories for the authenticated Compliance Theater app session.",
@@ -145,7 +214,7 @@ const memoryTools = [
   }
 ];
 
-const helperTools = [
+const helperTools: ToolDefinition[] = [
   {
     name: "mcp_resource_auth_list_abilities",
     description: "List tools exposed by Compliance Theater 2000, plus resource and resource template counts.",
@@ -175,11 +244,11 @@ const helperTools = [
   ...memoryTools
 ];
 
-function key(name) {
+function key(name: string): string {
   return `${PREFIX}${name}`;
 }
 
-function resolveValue(value) {
+function resolveValue(value?: string): string | undefined {
   const fallback = /^\$\{[A-Z0-9_]+:-(.*)\}$/.exec(value || "");
   if (fallback) {
     return fallback[1];
@@ -192,7 +261,7 @@ function resolveValue(value) {
   return value;
 }
 
-function optional(name) {
+function optional(name: string): string | undefined {
   const value = resolveValue(env[key(name)]);
   if (!value || value.startsWith("[TODO:")) {
     return undefined;
@@ -200,7 +269,7 @@ function optional(name) {
   return value;
 }
 
-function required(name) {
+function required(name: string): string {
   const value = optional(name);
   if (!value) {
     throw new Error(`Missing required environment variable ${key(name)}`);
@@ -208,12 +277,12 @@ function required(name) {
   return value;
 }
 
-function logFilePath() {
+function logFilePath(): string {
   return optional("LOG_FILE") ||
     join(homedir(), ".codex", "mcp-resource-auth", "compliance-theater-wrapper.log");
 }
 
-function redact(value) {
+function redact(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(redact);
   }
@@ -229,7 +298,7 @@ function redact(value) {
   );
 }
 
-function log(message, details) {
+function log(message: string, details?: unknown): void {
   console.error(`[mcp-resource-auth] ${message}`);
   const payload = {
     timestamp: new Date().toISOString(),
@@ -245,17 +314,17 @@ function log(message, details) {
   } catch (error) {
     if (!logWriteFailed) {
       logWriteFailed = true;
-      console.error(`[mcp-resource-auth] could not write log file ${path}: ${error.message}`);
+      console.error(`[mcp-resource-auth] could not write log file ${path}: ${asError(error).message}`);
     }
   }
 }
 
-function cachePath() {
+function cachePath(): string {
   return optional("TOKEN_CACHE_PATH") ||
     join(homedir(), ".codex", "mcp-resource-auth", "compliance-theater-token-cache.json");
 }
 
-function tokenSkewMs() {
+function tokenSkewMs(): number {
   return parseNumber(optional("TOKEN_EXPIRY_SKEW_SECONDS"), 60, 0) * 1000;
 }
 
@@ -275,25 +344,26 @@ function proxyRequestTimeoutMs() {
   return parseNumber(optional("PROXY_REQUEST_TIMEOUT_MS"), 360000, 1000);
 }
 
-async function readCachedToken() {
-  return readCachedTokenFile(cachePath(), {
+async function readCachedToken(): Promise<CachedToken | undefined> {
+  const cached = await readCachedTokenFile(cachePath(), {
     skewMs: tokenSkewMs(),
     logger: log
   });
+  return cached?.access_token ? cached as CachedToken : undefined;
 }
 
-async function writeCachedToken(token) {
+async function writeCachedToken(token: Token): Promise<void> {
   if (optional("DISABLE_TOKEN_CACHE") === "1") {
     return;
   }
   await writeCachedTokenFile(cachePath(), token, { logger: log });
 }
 
-function normalizeIssuer(value) {
+function normalizeIssuer(value: string): string {
   return value.replace(/\/+$/, "");
 }
 
-function metadataCandidates() {
+function metadataCandidates(): string[] {
   const explicit = optional("AUTH_METADATA_URL");
   if (explicit) {
     warnIfInsecureUrl(explicit, log, "OAuth metadata URL");
@@ -310,7 +380,7 @@ function metadataCandidates() {
   ];
 }
 
-async function fetchJsonResponse(url, options = {}) {
+async function fetchJsonResponse(url: string, options: FetchPolicyOptions = {}): Promise<JsonResponse> {
   const startedAt = Date.now();
   const response = await fetchWithPolicy(url, {
     ...options,
@@ -335,7 +405,7 @@ async function fetchJsonResponse(url, options = {}) {
   return { response, body, url };
 }
 
-async function fetchJson(url, options = {}) {
+async function fetchJson(url: string, options: FetchPolicyOptions = {}): Promise<AnyRecord> {
   const { response, body } = await fetchJsonResponse(url, options);
   if (!response.ok) {
     throw new Error(String(body.error || body.error_description || `HTTP ${response.status}`));
@@ -343,7 +413,7 @@ async function fetchJson(url, options = {}) {
   return body;
 }
 
-async function discoverMetadata() {
+async function discoverMetadata(): Promise<OAuthMetadata> {
   const errors = [];
   for (const url of metadataCandidates()) {
     try {
@@ -352,20 +422,20 @@ async function discoverMetadata() {
         throw new Error("metadata is missing issuer or token_endpoint");
       }
       log(`discovered OAuth metadata from ${url}`);
-      return metadata;
+      return metadata as OAuthMetadata;
     } catch (error) {
-      errors.push(`${url}: ${error.message}`);
+      errors.push(`${url}: ${asError(error).message}`);
     }
   }
   throw new Error(`Unable to discover OAuth metadata. Tried: ${errors.join("; ")}`);
 }
 
-function hasGrant(metadata, grant) {
+function hasGrant(metadata: OAuthMetadata, grant: string): boolean {
   const grants = metadata.grant_types_supported;
   return Array.isArray(grants) ? grants.includes(grant) : grant === "authorization_code";
 }
 
-function tokenAuthHeaders(metadata) {
+function tokenAuthHeaders(metadata: OAuthMetadata): HeadersInit {
   const clientId = optional("CLIENT_ID");
   const clientSecret = optional("CLIENT_SECRET");
   const methods = metadata.token_endpoint_auth_methods_supported || ["client_secret_basic"];
@@ -375,7 +445,7 @@ function tokenAuthHeaders(metadata) {
   return {};
 }
 
-function addClientAuth(body, metadata) {
+function addClientAuth(body: URLSearchParams, metadata: OAuthMetadata): void {
   const clientId = optional("CLIENT_ID") || registeredClient?.client_id;
   const clientSecret = optional("CLIENT_SECRET") || registeredClient?.client_secret;
   const methods = metadata.token_endpoint_auth_methods_supported || ["client_secret_basic"];
@@ -387,7 +457,7 @@ function addClientAuth(body, metadata) {
   }
 }
 
-async function tokenRequest(metadata, body) {
+async function tokenRequest(metadata: OAuthMetadata, body: URLSearchParams): Promise<OAuthToken> {
   addClientAuth(body, metadata);
   const token = await fetchJson(metadata.token_endpoint, {
     method: "POST",
@@ -400,10 +470,10 @@ async function tokenRequest(metadata, body) {
   if (!token.access_token) {
     throw new Error("token endpoint response did not include access_token");
   }
-  return token;
+  return token as OAuthToken;
 }
 
-async function refreshToken(metadata) {
+async function refreshToken(metadata: OAuthMetadata): Promise<OAuthToken | undefined> {
   const refresh = optional("REFRESH_TOKEN");
   if (!refresh) {
     return undefined;
@@ -417,7 +487,7 @@ async function refreshToken(metadata) {
   return tokenRequest(metadata, body);
 }
 
-async function clientCredentials(metadata) {
+async function clientCredentials(metadata: OAuthMetadata): Promise<OAuthToken | undefined> {
   if (!hasGrant(metadata, "client_credentials") || !optional("CLIENT_ID") || !optional("CLIENT_SECRET")) {
     return undefined;
   }
@@ -430,15 +500,13 @@ async function clientCredentials(metadata) {
   return tokenRequest(metadata, body);
 }
 
-async function passwordGrant(metadata) {
+async function passwordGrant(metadata: OAuthMetadata): Promise<OAuthToken | undefined> {
   if (!hasGrant(metadata, "password") || !optional("USERNAME") || !optional("PASSWORD")) {
     return undefined;
   }
-  const body = new URLSearchParams({
-    grant_type: "password",
-    username: optional("USERNAME"),
-    password: optional("PASSWORD")
-  });
+  const username = required("USERNAME");
+  const password = required("PASSWORD");
+  const body = new URLSearchParams({ grant_type: "password", username, password });
   const scope = optional("OAUTH_SCOPE");
   if (scope) {
     body.set("scope", scope);
@@ -447,7 +515,7 @@ async function passwordGrant(metadata) {
   return tokenRequest(metadata, body);
 }
 
-async function registerClient(metadata) {
+async function registerClient(metadata: OAuthMetadata): Promise<OAuthClient | undefined> {
   if (optional("CLIENT_ID")) {
     return { client_id: optional("CLIENT_ID"), client_secret: optional("CLIENT_SECRET") };
   }
@@ -476,7 +544,7 @@ async function registerClient(metadata) {
   return registeredClient;
 }
 
-async function deviceAuthorization(metadata) {
+async function deviceAuthorization(metadata: OAuthMetadata): Promise<OAuthToken | undefined> {
   if (!metadata.device_authorization_endpoint) {
     return undefined;
   }
@@ -524,7 +592,7 @@ async function deviceAuthorization(metadata) {
         })
       );
     } catch (error) {
-      const message = String(error.message || "").toLowerCase();
+      const message = asError(error).message.toLowerCase();
       if (message.includes("slow_down")) {
         intervalMs += 5000;
         log(`slowing device authorization polling to ${intervalMs}ms`);
@@ -537,7 +605,7 @@ async function deviceAuthorization(metadata) {
   throw new Error("Timed out waiting for device authorization");
 }
 
-async function acquireToken() {
+async function acquireToken(): Promise<CachedToken> {
   const existing = optional("ACCESS_TOKEN");
   if (existing) {
     log("using preconfigured access token");
@@ -566,27 +634,27 @@ async function acquireToken() {
   return acquired;
 }
 
-function sendToClient(message) {
+function sendToClient(message: AnyRecord): void {
   log("sending message to client", summarizeMessage(message));
   process.stdout.write(`${JSON.stringify(message)}\n`);
 }
 
-function errorResponse(id, code, message) {
+function errorResponse(id: RpcId | undefined, code: number, message: string): AnyRecord {
   return { jsonrpc: "2.0", id, error: { code, message } };
 }
 
-function textToolResult(text) {
+function textToolResult(text: string): JsonToolResult {
   return { content: [{ type: "text", text }] };
 }
 
-function jsonToolResult(value) {
+function jsonToolResult(value: unknown): JsonToolResult {
   return {
     content: [{ type: "text", text: JSON.stringify(value, null, 2) }],
     structuredContent: { result: value }
   };
 }
 
-function summarizeMessage(message) {
+function summarizeMessage(message: AnyRecord | undefined): AnyRecord {
   if (!message || typeof message !== "object") {
     return { type: typeof message };
   }
@@ -603,7 +671,7 @@ function summarizeMessage(message) {
   };
 }
 
-async function connectRemote() {
+async function connectRemote(): Promise<RemoteConnection> {
   if (remote) {
     return remote;
   }
@@ -615,12 +683,12 @@ async function connectRemote() {
     appSession = await acquireAppSession(token);
     sessionCookie = appSessionCookieHeader(appSession);
   } catch (error) {
-    log(`wrapped app session unavailable for MCP transport; falling back to source bearer: ${error.message}`);
+    log(`wrapped app session unavailable for MCP transport; falling back to source bearer: ${asError(error).message}`);
   }
   const sseUrl = required("SERVER_URL");
   warnIfInsecureUrl(sseUrl, log, "Target server URL");
   log("connecting remote MCP SSE", { sseUrl });
-  remote = await connectSse({
+  const connection = await connectSse({
     sseUrl,
     accessToken: token.access_token,
     sessionCookie,
@@ -630,10 +698,12 @@ async function connectRemote() {
     httpRetryBaseMs: httpRetryBaseMs(),
     logger: log
   });
-  remote.accessToken = token.access_token;
-  remote.appSession = appSession;
-  remote.sessionCookie = sessionCookie;
-  remote.nextId = randomInt(100_000, 999_999);
+  remote = Object.assign(connection, {
+    accessToken: token.access_token,
+    appSession,
+    sessionCookie,
+    nextId: randomInt(100_000, 999_999)
+  });
   await rawRemoteRequest(remote, "initialize", {
     protocolVersion: "2024-11-05",
     capabilities: {},
@@ -644,12 +714,12 @@ async function connectRemote() {
   return remote;
 }
 
-async function remoteNotification(method, params = {}) {
+async function remoteNotification(method: string, params: ToolArgs = {}): Promise<void> {
   const connection = remote || await connectRemote();
   await postRemoteJson(connection, { jsonrpc: "2.0", method, params });
 }
 
-async function postRemoteJson(connection, message) {
+async function postRemoteJson(connection: RemoteConnection, message: JsonRpcMessage): Promise<void> {
   const response = await fetchWithPolicy(connection.endpoint, {
     method: "POST",
     headers: {
@@ -670,7 +740,7 @@ async function postRemoteJson(connection, message) {
   }
 }
 
-function remoteRequest(method, params = {}) {
+function remoteRequest(method: string, params: ToolArgs = {}): Promise<AnyRecord> {
   remoteQueue = remoteQueue.then(async () => {
     const connection = remote || await connectRemote();
     return rawRemoteRequest(connection, method, params);
@@ -678,7 +748,11 @@ function remoteRequest(method, params = {}) {
   return remoteQueue;
 }
 
-async function rawRemoteRequest(connection, method, params = {}) {
+async function rawRemoteRequest(
+  connection: RemoteConnection,
+  method: string,
+  params: ToolArgs = {}
+): Promise<AnyRecord> {
   const id = connection.nextId++;
   log("remote request started", { id, method, paramKeys: Object.keys(params || {}) });
   await rpc(connection.endpoint, connection.accessToken, id, method, params, {
@@ -697,13 +771,13 @@ async function rawRemoteRequest(connection, method, params = {}) {
   return result || {};
 }
 
-function isUnsupportedMethod(error) {
-  return String(error?.message || "").toLowerCase().includes("method not found");
+function isUnsupportedMethod(error: unknown): boolean {
+  return String((error as Error | undefined)?.message || "").toLowerCase().includes("method not found");
 }
 
-async function collectPaginated(method, keyName) {
-  const items = [];
-  let cursor;
+async function collectPaginated(method: string, keyName: string): Promise<AnyRecord[]> {
+  const items: AnyRecord[] = [];
+  let cursor: string | undefined;
   do {
     let result;
     try {
@@ -720,25 +794,26 @@ async function collectPaginated(method, keyName) {
   return items;
 }
 
-async function listTools() {
+async function listTools(): Promise<ToolDefinition[]> {
   const result = await remoteRequest("tools/list");
-  const exposedTools = (result.tools || []).filter((tool) => exposedRemoteToolNames.has(tool.name));
+  const exposedTools = ((result.tools || []) as ToolDefinition[])
+    .filter((tool) => exposedRemoteToolNames.has(tool.name));
   return [...exposedTools, ...helperTools];
 }
 
-async function listResources() {
+async function listResources(): Promise<AnyRecord[]> {
   return collectPaginated("resources/list", "resources");
 }
 
-async function listResourceTemplates() {
+async function listResourceTemplates(): Promise<AnyRecord[]> {
   return collectPaginated("resources/templates/list", "resourceTemplates");
 }
 
-function formatSchema(schema) {
+function formatSchema(schema?: AnyRecord): string {
   return schema ? JSON.stringify(schema) : "{}";
 }
 
-function formatAbilities(tools, resources, templates) {
+function formatAbilities(tools: ToolDefinition[], resources: AnyRecord[], templates: AnyRecord[]): string {
   const lines = ["Tools:"];
   for (const tool of tools) {
     lines.push(`- ${tool.name}: ${tool.description || "No description"}`);
@@ -753,7 +828,7 @@ function formatAbilities(tools, resources, templates) {
   return lines.join("\n");
 }
 
-function resourcePath(resource) {
+function resourcePath(resource: AnyRecord): string {
   try {
     const parsed = new URL(resource.uri);
     return `${parsed.protocol}//${parsed.host}${parsed.pathname}`;
@@ -762,7 +837,7 @@ function resourcePath(resource) {
   }
 }
 
-function formatResourceDirectory(resources, templates) {
+function formatResourceDirectory(resources: AnyRecord[], templates: AnyRecord[]): string {
   const lines = ["Resources:"];
   const sorted = [...resources].sort((a, b) => resourcePath(a).localeCompare(resourcePath(b)));
   if (!sorted.length) {
@@ -791,7 +866,7 @@ function formatResourceDirectory(resources, templates) {
   return lines.join("\n");
 }
 
-function sessionEndpointUrl() {
+function sessionEndpointUrl(): string {
   const explicit = optional("SESSION_STATUS_URL");
   if (explicit) {
     warnIfInsecureUrl(explicit, log, "Session status URL");
@@ -804,7 +879,7 @@ function sessionEndpointUrl() {
   return parsed.toString();
 }
 
-function wrapEndpointUrl() {
+function wrapEndpointUrl(): string {
   const explicit = optional("WRAP_URL");
   if (explicit) {
     warnIfInsecureUrl(explicit, log, "Session wrap URL");
@@ -817,7 +892,7 @@ function wrapEndpointUrl() {
   return parsed.toString();
 }
 
-function appEndpointUrl(pathname, query = {}) {
+function appEndpointUrl(pathname: string, query: Record<string, unknown> = {}): string {
   const parsed = new URL(required("SERVER_URL"));
   parsed.pathname = pathname;
   parsed.search = "";
@@ -830,11 +905,11 @@ function appEndpointUrl(pathname, query = {}) {
   return parsed.toString();
 }
 
-function memoryEndpointUrl(pathname, query) {
+function memoryEndpointUrl(pathname: string, query?: Record<string, unknown>): string {
   return appEndpointUrl(`/api/memory/${pathname.replace(/^\/+/, "")}`, query);
 }
 
-async function clearCachedToken() {
+async function clearCachedToken(): Promise<string> {
   if (optional("DISABLE_TOKEN_CACHE") === "1") {
     return "Token cache is disabled by MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE=1.";
   }
@@ -842,14 +917,14 @@ async function clearCachedToken() {
     await rm(cachePath());
     return `Removed cached token file: ${cachePath()}`;
   } catch (error) {
-    if (error?.code === "ENOENT") {
+    if (asError(error).code === "ENOENT") {
       return `No cached token file found at: ${cachePath()}`;
     }
     throw error;
   }
 }
 
-async function currentAccessToken() {
+async function currentAccessToken(): Promise<TokenInfo | undefined> {
   const explicit = optional("ACCESS_TOKEN");
   if (explicit) {
     return { token: explicit, source: "env:ACCESS_TOKEN" };
@@ -858,7 +933,7 @@ async function currentAccessToken() {
   return cached?.access_token ? { token: cached.access_token, source: "cached-token", cached } : undefined;
 }
 
-function roleSummary(resourceAccess) {
+function roleSummary(resourceAccess: AnyRecord | undefined): string {
   if (!resourceAccess || typeof resourceAccess !== "object") {
     return "none";
   }
@@ -869,13 +944,17 @@ function roleSummary(resourceAccess) {
   return entries.length ? entries.join("\n") : "none";
 }
 
-async function fetchSessionForAppSession(appSession) {
+async function fetchSessionForAppSession(appSession: AppSession): Promise<JsonResponse> {
   const url = sessionEndpointUrl();
   const startedAt = Date.now();
+  const sessionCookie = appSessionCookieHeader(appSession);
+  if (!sessionCookie) {
+    throw new Error("Wrapped app session did not include a cookie header.");
+  }
   const response = await fetchWithPolicy(url, {
     headers: {
       Accept: "application/json",
-      Cookie: appSessionCookieHeader(appSession)
+      Cookie: sessionCookie
     },
     timeoutMs: httpTimeoutMs(),
     retries: httpRetryCount(),
@@ -893,11 +972,11 @@ async function fetchSessionForAppSession(appSession) {
   return { response, body, url };
 }
 
-async function metadataForToken(tokenInfo) {
+async function metadataForToken(tokenInfo?: TokenInfo): Promise<OAuthMetadata> {
   return tokenInfo?.cached?.metadata || discoverMetadata();
 }
 
-async function fetchUserInfoForToken(accessToken, metadata) {
+async function fetchUserInfoForToken(accessToken: string, metadata?: OAuthMetadata): Promise<JsonResponse | undefined> {
   if (!metadata?.userinfo_endpoint) {
     return undefined;
   }
@@ -906,7 +985,7 @@ async function fetchUserInfoForToken(accessToken, metadata) {
   });
 }
 
-function tokenExpiryLine(tokenInfo) {
+function tokenExpiryLine(tokenInfo?: TokenInfo): string {
   const cached = tokenInfo?.cached;
   if (!cached) {
     return "- expires: (not provided)";
@@ -915,7 +994,7 @@ function tokenExpiryLine(tokenInfo) {
   return expiresAt > 0 ? `- expires: ${new Date(expiresAt).toISOString()}` : "- expires: (not provided)";
 }
 
-function formatSessionReadiness(sessionResult) {
+function formatSessionReadiness(sessionResult?: JsonResponse): string[] {
   if (!sessionResult) {
     return ["App session:", "- status: not checked", "- detail: no session endpoint is configured"];
   }
@@ -926,7 +1005,12 @@ function formatSessionReadiness(sessionResult) {
   return ["App session:", "- status: invalid", `- endpoint: ${url}`, `- HTTP: ${response.status}`, `- response: ${JSON.stringify(body)}`];
 }
 
-function formatUserInfoStatus(userInfo, context, tokenInfo, sessionResult) {
+function formatUserInfoStatus(
+  userInfo: AnyRecord,
+  context: string,
+  tokenInfo?: TokenInfo,
+  sessionResult?: JsonResponse
+): string {
   return [
     `Auth status: authenticated (${context})`,
     "OAuth userinfo endpoint: verified",
@@ -945,7 +1029,7 @@ function formatUserInfoStatus(userInfo, context, tokenInfo, sessionResult) {
   ].join("\n");
 }
 
-function parseFutureExpiry(value, label) {
+function parseFutureExpiry(value: string, label: string): number {
   const expiresAt = Date.parse(value);
   if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
     throw new Error(`Wrap response did not include a future ${label}.`);
@@ -953,7 +1037,7 @@ function parseFutureExpiry(value, label) {
   return expiresAt;
 }
 
-function appSessionFromWrapResponse(body) {
+function appSessionFromWrapResponse(body: AnyRecord): AppSession {
   if (!body?.success || !body.token || !body.cookieName || !body.expiresAt) {
     throw new Error("Wrap response did not include a wrapped app session token.");
   }
@@ -969,11 +1053,11 @@ function appSessionFromWrapResponse(body) {
   };
 }
 
-function shouldPersistDerivedSession(token) {
+function shouldPersistDerivedSession(token: Token): boolean {
   return Boolean(token?.metadata || token?.cached_at);
 }
 
-async function wrapAccessToken(token) {
+async function wrapAccessToken(token: CachedToken): Promise<AppSession> {
   const url = wrapEndpointUrl();
   log("requesting wrapped app session", { url });
   const body = await fetchJson(url, {
@@ -996,15 +1080,15 @@ async function wrapAccessToken(token) {
   return appSession;
 }
 
-async function acquireAppSession(token) {
+async function acquireAppSession(token: CachedToken): Promise<AppSession> {
   if (isUsableCachedAppSession(token, tokenSkewMs())) {
     log("using cached wrapped app session");
-    return token.app_session;
+    return token.app_session!;
   }
   return wrapAccessToken(token);
 }
 
-function requiredToolArgument(args, name) {
+function requiredToolArgument(args: ToolArgs | undefined, name: string): any {
   const value = args?.[name];
   if (value === undefined || value === null || value === "") {
     throw new Error(`${name} is required.`);
@@ -1012,14 +1096,18 @@ function requiredToolArgument(args, name) {
   return value;
 }
 
-async function memoryApiRequest(method, url, body) {
+async function memoryApiRequest(method: string, url: string, body?: unknown): Promise<AnyRecord> {
   const token = await acquireToken();
   const appSession = await acquireAppSession(token);
+  const sessionCookie = appSessionCookieHeader(appSession);
+  if (!sessionCookie) {
+    throw new Error("Wrapped app session did not include a cookie header.");
+  }
   const responseResult = await fetchJsonResponse(url, {
     method,
     headers: {
       Accept: "application/json",
-      Cookie: appSessionCookieHeader(appSession),
+      Cookie: sessionCookie,
       ...(body === undefined ? {} : { "Content-Type": "application/json" })
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) })
@@ -1031,7 +1119,7 @@ async function memoryApiRequest(method, url, body) {
   return responseResult.body;
 }
 
-async function callMemoryTool(name, args = {}) {
+async function callMemoryTool(name: string, args: ToolArgs = {}): Promise<AnyRecord> {
   switch (name) {
     case "listMemories":
       return memoryApiRequest("GET", memoryEndpointUrl("memories/", {
@@ -1085,7 +1173,12 @@ async function callMemoryTool(name, args = {}) {
   }
 }
 
-function formatSessionStatus(sessionResult, context, tokenInfo, userInfoResult) {
+function formatSessionStatus(
+  sessionResult: JsonResponse,
+  context: string,
+  tokenInfo?: TokenInfo,
+  userInfoResult?: JsonResponse
+): string {
   const session = sessionResult.body?.data || {};
   const user = session.user || {};
   const lines = [
@@ -1112,60 +1205,75 @@ function formatSessionStatus(sessionResult, context, tokenInfo, userInfoResult) 
   return lines.join("\n");
 }
 
-async function verifiedAuthStatus(accessToken, context, tokenInfo = {}) {
-  let userInfoResult;
+async function verifiedAuthStatus(
+  accessToken: string,
+  context: string,
+  tokenInfo: TokenInfo = {}
+): Promise<string> {
+  let userInfoResult: JsonResponse | FailedResult | undefined;
   try {
     userInfoResult = await fetchUserInfoForToken(accessToken, await metadataForToken(tokenInfo));
   } catch (error) {
-    userInfoResult = { error };
+    userInfoResult = { error: asError(error) };
   }
 
-  let appSession;
+  let appSession: AppSession | FailedResult;
   try {
     appSession = await acquireAppSession(tokenInfo.cached || { access_token: accessToken });
   } catch (error) {
     appSession = { error };
   }
-  const sessionResult = appSession?.token
+  const sessionResult: SessionResult = "token" in appSession && appSession.token
     ? await fetchSessionForAppSession(appSession).catch((error) => ({ error }))
     : { error: appSession.error };
-  if (userInfoResult?.response?.ok) {
-    return formatUserInfoStatus(userInfoResult.body, context, tokenInfo, sessionResult.response ? sessionResult : undefined);
+  if (userInfoResult && "response" in userInfoResult && userInfoResult.response.ok) {
+    return formatUserInfoStatus(
+      userInfoResult.body,
+      context,
+      tokenInfo,
+      "response" in sessionResult ? sessionResult : undefined
+    );
   }
-  if (isAuthenticatedSessionResult(sessionResult)) {
-    return formatSessionStatus(sessionResult, context, tokenInfo, userInfoResult);
+  if ("response" in sessionResult && isAuthenticatedSessionResult(sessionResult)) {
+    return formatSessionStatus(
+      sessionResult,
+      context,
+      tokenInfo,
+      userInfoResult && "response" in userInfoResult ? userInfoResult : undefined
+    );
   }
 
-  const userInfoRejected = userInfoResult?.response?.status === 401;
-  const sessionRejected = sessionResult?.response?.status === 401 || sessionResult?.response?.status === 403;
+  const userInfoRejected = userInfoResult && "response" in userInfoResult && userInfoResult.response.status === 401;
+  const sessionRejected = "response" in sessionResult &&
+    (sessionResult.response.status === 401 || sessionResult.response.status === 403);
   const lines = [
     `${userInfoRejected || sessionRejected ? "Auth status: token unauthenticated" : "Auth status: unknown"} (${context})`
   ];
-  if (userInfoResult?.response) {
+  if (userInfoResult && "response" in userInfoResult) {
     lines.push(`OAuth userinfo endpoint ${userInfoResult.url} returned HTTP ${userInfoResult.response.status}.`);
     lines.push(`Response: ${JSON.stringify(userInfoResult.body)}`);
-  } else if (userInfoResult?.error) {
+  } else if (userInfoResult && "error" in userInfoResult) {
     lines.push(`OAuth userinfo verification failed: ${userInfoResult.error.message}`);
   } else {
     lines.push("OAuth metadata did not provide a userinfo endpoint.");
   }
-  if (sessionResult?.response) {
+  if ("response" in sessionResult) {
     lines.push(...formatSessionReadiness(sessionResult));
-  } else if (sessionResult?.error) {
+  } else if ("error" in sessionResult) {
     lines.push(`App session check failed: ${sessionResult.error.message}`);
   }
   return lines.join("\n");
 }
 
-async function authStatusSummary() {
+async function authStatusSummary(): Promise<string> {
   const tokenInfo = await currentAccessToken();
   if (!tokenInfo?.token) {
     return "Auth status: unauthenticated (no cached or configured access token).";
   }
-  return verifiedAuthStatus(tokenInfo.token, tokenInfo.source, tokenInfo);
+  return verifiedAuthStatus(tokenInfo.token, tokenInfo.source || "unknown", tokenInfo);
 }
 
-async function loginAndSummarizeStatus() {
+async function loginAndSummarizeStatus(): Promise<string> {
   const metadata = await discoverMetadata();
   const token = await deviceAuthorization(metadata);
   if (!token?.access_token) {
@@ -1176,7 +1284,7 @@ async function loginAndSummarizeStatus() {
   return ["Login successful. Cached new access token.", "", await verifiedAuthStatus(acquired.access_token, "new-login", { cached: acquired })].join("\n");
 }
 
-async function callHelperTool(id, name, args = {}) {
+async function callHelperTool(id: RpcId | undefined, name: string, args: ToolArgs = {}): Promise<void> {
   try {
     if (memoryTools.some((tool) => tool.name === name)) {
       sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callMemoryTool(name, args)) });
@@ -1217,11 +1325,11 @@ async function callHelperTool(id, name, args = {}) {
 
     sendToClient(errorResponse(id, -32601, `Unknown helper tool ${name}`));
   } catch (error) {
-    sendToClient(errorResponse(id, -32000, error.message));
+    sendToClient(errorResponse(id, -32000, asError(error).message));
   }
 }
 
-function localInitializeResult(params = {}) {
+function localInitializeResult(params: ToolArgs = {}): AnyRecord {
   return {
     protocolVersion: params.protocolVersion || "2024-11-05",
     capabilities: {
@@ -1236,7 +1344,7 @@ function localInitializeResult(params = {}) {
   };
 }
 
-async function handleClientRequest(message) {
+async function handleClientRequest(message: JsonRpcMessage): Promise<void> {
   log("handling client request", summarizeMessage(message));
 
   if (message.method === "initialize") {
@@ -1253,7 +1361,7 @@ async function handleClientRequest(message) {
     try {
       tools = await listTools();
     } catch (error) {
-      log(`remote tools/list failed: ${error.message}`);
+      log(`remote tools/list failed: ${asError(error).message}`);
     }
     sendToClient({ jsonrpc: "2.0", id: message.id, result: { tools } });
     return;
@@ -1280,11 +1388,15 @@ async function handleClientRequest(message) {
     const result = await remoteRequest(message.method, message.params || {});
     sendToClient({ jsonrpc: "2.0", id: message.id, result });
   } catch (error) {
-    sendToClient(errorResponse(message.id, -32000, error.message));
+    sendToClient(errorResponse(message.id, -32000, asError(error).message));
   }
 }
 
-function bindJsonLines(stream, onMessage, source) {
+function bindJsonLines(
+  stream: NodeJS.ReadableStream,
+  onMessage: (message: JsonRpcMessage) => void,
+  source: string
+): void {
   const reader = createInterface({ input: stream });
   reader.on("line", (line) => {
     if (!line.trim()) {
@@ -1295,7 +1407,7 @@ function bindJsonLines(stream, onMessage, source) {
       log(`received ${source} message`, summarizeMessage(message));
       onMessage(message);
     } catch (error) {
-      log(`could not parse ${source} JSON message: ${error.message}`);
+      log(`could not parse ${source} JSON message: ${asError(error).message}`);
     }
   });
 }
@@ -1317,15 +1429,16 @@ async function main() {
   bindJsonLines(process.stdin, (message) => {
     handleClientRequest(message).catch((error) => {
       if (message.id !== undefined) {
-        sendToClient(errorResponse(message.id, -32000, error.message));
+        sendToClient(errorResponse(message.id, -32000, asError(error).message));
       } else {
-        log(error.message);
+        log(asError(error).message);
       }
     });
   }, "client");
 }
 
 main().catch((error) => {
-  log("wrapper startup failed", { message: error.message, stack: error.stack });
+  const startupError = asError(error);
+  log("wrapper startup failed", { message: startupError.message, stack: startupError.stack });
   process.exit(1);
 });

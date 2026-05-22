@@ -10,7 +10,7 @@ Use this skill when a task depends on tools or resources exposed by the plugin's
 ## Workflow
 
 1. Confirm the server configuration in `../../.mcp.json` has been customized for the target MCP server and OAuth issuer.
-2. Let `../../scripts/oauth-mcp-wrapper.mjs` discover login requirements from RFC 8414 metadata before the MCP server starts.
+2. Let the compiled `../../scripts/oauth-mcp-wrapper.js` discover login requirements from RFC 8414 metadata before the MCP server starts.
 3. Check whether the required environment variables are present before invoking tools. Never print secret values.
 4. Prefer MCP tools and resources over web search or local guesses when the requested context is available from the server.
 5. Use the `mcp_resource_auth_list_abilities` helper action when the user asks what the server can do.

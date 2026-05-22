@@ -94,7 +94,7 @@ If your Codex setup prefers a single plugins directory, create a symlink that po
 ## What This Plugin Is
 
 - A Codex plugin definition in `.codex-plugin/plugin.json`.
-- A local MCP server entrypoint in `.mcp.json` that launches deployed `scripts/oauth-mcp-wrapper.mjs`.
+- A local MCP server entrypoint in `.mcp.json` that launches compiled `scripts/oauth-mcp-wrapper.js`.
 - An OAuth wrapper that discovers authorization metadata, acquires tokens, starts the child MCP server, and forwards JSON-RPC messages.
 - A small runtime utility layer for retries, token cache management, SSE connection setup, and JSON-RPC over SSE.
 - Smoke-test scripts for listing authenticated tools and resources from an SSE MCP endpoint.
@@ -102,7 +102,7 @@ If your Codex setup prefers a single plugins directory, create a symlink that po
 
 ## Authenticated Connection Model
 
-The most important behavior in this package lives in source file `src/scripts/oauth-mcp-wrapper.mjs`. The build copies it to deployed path `dist/scripts/oauth-mcp-wrapper.mjs`.
+The most important behavior in this package lives in typed source file `src/scripts/oauth-mcp-wrapper.ts`. The build compiles it to deployed path `dist/scripts/oauth-mcp-wrapper.js`.
 
 It supports authenticated MCP connections with this flow:
 
@@ -195,7 +195,7 @@ These are implemented in the wrapper itself and are useful even when the remote 
 
 ## Runtime Utilities
 
-`src/scripts/runtime-utils.mjs` provides the shared mechanics used by both the wrapper and the smoke scripts:
+`src/scripts/runtime-utils.ts` provides the shared mechanics used by both the wrapper and the smoke scripts. The build emits `dist/scripts/runtime-utils.js` for the deployed wrapper and smoke scripts:
 
 - token expiry calculation and skew-aware cache reuse
 - secure token cache writes under `~/.codex/mcp-resource-auth/` by default
@@ -204,7 +204,7 @@ These are implemented in the wrapper itself and are useful even when the remote 
 - SSE connection setup using `Authorization: Bearer ...`
 - simple JSON-RPC request/response helpers over SSE
 
-The accompanying `src/scripts/runtime-utils.test.mjs` covers the retry policy, endpoint resolution, insecure URL warnings, and cache-expiry behavior.
+The accompanying `src/scripts/runtime-utils.test.mjs` covers the compiled utility output for retry policy, endpoint resolution, insecure URL warnings, and cache-expiry behavior.
 
 ## Smoke Scripts
 
@@ -262,7 +262,8 @@ export MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID="codex"
 export MCP_COMPLIANCE_THEATER_RESOURCE_MCP_COMMAND="node"
 export MCP_COMPLIANCE_THEATER_RESOURCE_MCP_ARGS='["./path/to/real-mcp-server.mjs"]'
 
-node ./src/scripts/oauth-mcp-wrapper.mjs
+yarn workspace @compliance-theater/codex-mcp build
+node ./dist/scripts/oauth-mcp-wrapper.js
 ```
 
 The wrapper will then acquire a bearer token if needed, start the real MCP server, and proxy Codex traffic through an authenticated connection.

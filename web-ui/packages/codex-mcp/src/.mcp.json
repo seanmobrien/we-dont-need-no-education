@@ -3,7 +3,7 @@
 		"resource-server": {
 			"command": "node",
 			"args": [
-				"./scripts/oauth-mcp-wrapper.mjs"
+				"./scripts/oauth-mcp-wrapper.js"
 			],
 			"env": {
 				"MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL": "${MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL:-http://localhost:3000/api/ai/tools/sse}",

@@ -13,8 +13,8 @@ const requiredPaths = [
   "src/.codex-plugin",
   "src/.mcp.json",
   "src/skills",
-  "src/scripts/oauth-mcp-wrapper.mjs",
-  "src/scripts/runtime-utils.mjs",
+  "src/scripts/oauth-mcp-wrapper.ts",
+  "src/scripts/runtime-utils.ts",
 ];
 
 const run = (command, args) =>
@@ -47,7 +47,6 @@ const assertRequiredInputs = async () => {
 
 const copyRuntimeScripts = async () => {
   const scriptsDist = join(distRoot, "scripts");
-  await rm(scriptsDist, { recursive: true, force: true });
   await mkdir(scriptsDist, { recursive: true });
 
   const sourceScripts = join(packageRoot, "src", "scripts");

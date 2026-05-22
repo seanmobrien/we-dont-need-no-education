@@ -14,5 +14,5 @@
     "src/.codex-plugin/**/*.json",
     "src/.mcp.json"
   ],
-  "exclude": ["__tests__", "dist", "scripts"]
+  "exclude": ["__tests__", "dist", "scripts", "src/**/*.test.mjs"]
 }
