@@ -156,6 +156,23 @@ const assertCaseWorkspaceReadAccess = async (caseId: string) => {
   }
 };
 
+const assertCaseWorkspaceWriteAccess = async (caseId: string) => {
+  const authCheck = await checkCaseFileAuthorization(undefined, caseId, {
+    requiredScope: CaseFileScope.WRITE,
+  });
+
+  if (typeof authCheck === 'boolean') {
+    if (!authCheck) {
+      throw new Error('Access denied');
+    }
+    return;
+  }
+
+  if (!authCheck.authorized) {
+    throw new Error('Access denied');
+  }
+};
+
 export const getCaseWorkspace = async ({ caseId }: { caseId: string }) =>
   safeHandler(
     async () => {
@@ -176,6 +193,13 @@ export const getCaseWorkspaceConfig = {
     caseId: workspaceIdSchema.describe('Case identifier to load.'),
   },
   outputSchema: toolCallbackResultSchemaFactory(workspaceSummarySchema),
+  annotations: {
+    title: 'Get Case Workspace',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
 };
 
 export const readWorkspaceFileCallback = async ({
@@ -185,6 +209,7 @@ export const readWorkspaceFileCallback = async ({
   caseId: string;
   file: WorkspaceFileName;
 }) => {
+  await assertCaseWorkspaceReadAccess(caseId);
   const result = await safeHandler(() => readWorkspaceFile(caseId, file));
   return toolCallbackResultFactory(result);
 };
@@ -204,6 +229,13 @@ export const readWorkspaceFileConfig = {
       path: z.string(),
     }),
   ),
+  annotations: {
+    title: 'Read Workspace File',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
 };
 
 export const appendTaskCallback = async (input: {
@@ -217,6 +249,7 @@ export const appendTaskCallback = async (input: {
   relatedQuestionIds?: string[];
   tags?: string[];
 }) => {
+  await assertCaseWorkspaceWriteAccess(input.caseId);
   const task = await safeHandler(() => appendWorkspaceTask(input));
   return toolCallbackResultFactory(task);
 };
@@ -239,6 +272,13 @@ export const appendTaskConfig = {
     tags: z.array(z.string()).optional(),
   },
   outputSchema: toolCallbackResultSchemaFactory(taskSchema),
+  annotations: {
+    title: 'Append Workspace Task',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
 };
 
 export const updateTaskStatusCallback = async (input: {
@@ -247,6 +287,7 @@ export const updateTaskStatusCallback = async (input: {
   status: (typeof TASK_STATUSES)[number];
   blockedReason?: string;
 }) => {
+  await assertCaseWorkspaceWriteAccess(input.caseId);
   const task = await safeHandler(() => updateWorkspaceTaskStatus(input));
   return toolCallbackResultFactory(task);
 };
@@ -263,6 +304,13 @@ export const updateTaskStatusConfig = {
       .describe('Reason when marking a task blocked.'),
   },
   outputSchema: toolCallbackResultSchemaFactory(taskSchema),
+  annotations: {
+    title: 'Update Task Status',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
 };
 
 export const updateTaskDetailsCallback = async (input: {
@@ -274,6 +322,7 @@ export const updateTaskDetailsCallback = async (input: {
   owner?: (typeof TASK_OWNERS)[number];
   tags?: string[];
 }) => {
+  await assertCaseWorkspaceWriteAccess(input.caseId);
   const task = await safeHandler(() => updateWorkspaceTaskDetails(input));
   return toolCallbackResultFactory(task);
 };
@@ -291,6 +340,13 @@ export const updateTaskDetailsConfig = {
     tags: z.array(z.string()).optional(),
   },
   outputSchema: toolCallbackResultSchemaFactory(taskSchema),
+  annotations: {
+    title: 'Update Task Details',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
 };
 
 export const upsertDocumentSummaryCallback = async (input: {
@@ -304,6 +360,7 @@ export const upsertDocumentSummaryCallback = async (input: {
   sourceSummaryId?: string;
   lastRefreshedAt?: string;
 }) => {
+  await assertCaseWorkspaceWriteAccess(input.caseId);
   const record = await safeHandler(() =>
     upsertWorkspaceDocumentSummary(input.caseId, input),
   );
@@ -325,6 +382,13 @@ export const upsertDocumentSummaryConfig = {
     lastRefreshedAt: z.string().optional(),
   },
   outputSchema: toolCallbackResultSchemaFactory(documentSummarySchema),
+  annotations: {
+    title: 'Upsert Document Summary',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
 };
 
 export const addOpenQuestionCallback = async (input: {
@@ -335,6 +399,7 @@ export const addOpenQuestionCallback = async (input: {
   relatedDocumentIds?: string[];
   notes?: string;
 }) => {
+  await assertCaseWorkspaceWriteAccess(input.caseId);
   const record = await safeHandler(() => addWorkspaceQuestion(input));
   return toolCallbackResultFactory(record);
 };
@@ -350,6 +415,13 @@ export const addOpenQuestionConfig = {
     notes: z.string().optional(),
   },
   outputSchema: toolCallbackResultSchemaFactory(questionSchema),
+  annotations: {
+    title: 'Add Open Question',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
 };
 
 export const updateOpenQuestionStatusCallback = async (input: {
@@ -358,6 +430,7 @@ export const updateOpenQuestionStatusCallback = async (input: {
   status: 'open' | 'investigating' | 'resolved' | 'deferred';
   notes?: string;
 }) => {
+  await assertCaseWorkspaceWriteAccess(input.caseId);
   const record = await safeHandler(() =>
     updateWorkspaceQuestionStatus(input),
   );
@@ -373,6 +446,13 @@ export const updateOpenQuestionStatusConfig = {
     notes: z.string().optional(),
   },
   outputSchema: toolCallbackResultSchemaFactory(questionSchema),
+  annotations: {
+    title: 'Update Open Question Status',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
 };
 
 export const appendSessionLogCallback = async (input: {
@@ -380,6 +460,7 @@ export const appendSessionLogCallback = async (input: {
   actor?: 'system' | 'model' | 'user';
   summary: string;
 }) => {
+  await assertCaseWorkspaceWriteAccess(input.caseId);
   const entry = await safeHandler(() => appendWorkspaceSessionLog(input));
   return toolCallbackResultFactory(entry);
 };
@@ -393,6 +474,13 @@ export const appendSessionLogConfig = {
     summary: z.string(),
   },
   outputSchema: toolCallbackResultSchemaFactory(sessionEntrySchema),
+  annotations: {
+    title: 'Append Session Log',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
 };
 
 export const compactWorkspaceCallback = async ({
@@ -400,6 +488,7 @@ export const compactWorkspaceCallback = async ({
 }: {
   caseId: string;
 }) => {
+  await assertCaseWorkspaceWriteAccess(caseId);
   const summary = await safeHandler(() => compactWorkspace(caseId));
   return toolCallbackResultFactory(summary);
 };
@@ -411,4 +500,11 @@ export const compactWorkspaceConfig = {
     caseId: workspaceIdSchema,
   },
   outputSchema: toolCallbackResultSchemaFactory(workspaceSummarySchema),
+  annotations: {
+    title: 'Compact Workspace',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: false,
+    openWorldHint: false,
+  },
 };
