@@ -54,6 +54,7 @@ const workspaceSummarySchema = z.object({
   openQuestions: z.number(),
   lastUpdated: z.string().optional(),
 });
+type WorkspaceSummary = z.infer<typeof workspaceSummarySchema>;
 
 const taskSchema = z.object({
   taskId: z.string(),
@@ -161,8 +162,11 @@ export const getCaseWorkspace = async ({ caseId }: { caseId: string }) =>
       await assertCaseWorkspaceReadAccess(caseId);
       return getCaseWorkspaceSummary(caseId);
     },
-    (summary) => toolCallbackResultFactory(summary),
-    (error) => toolCallbackResultFactory(error),
+    (summary: WorkspaceSummary) => toolCallbackResultFactory(summary),
+    (error) =>
+      toolCallbackResultFactory<WorkspaceSummary>(
+        error instanceof Error ? error : new Error(String(error)),
+      ),
   );
 
 export const getCaseWorkspaceConfig = {
