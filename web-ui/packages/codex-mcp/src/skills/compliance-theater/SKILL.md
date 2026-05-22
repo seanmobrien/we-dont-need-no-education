@@ -40,6 +40,21 @@ The wrapper also exposes memory API tools backed by the configured app host:
 
 Use `mcp_resource_auth_manage_auth` for login, status, and cache maintenance when authentication needs attention. Do not call or describe backend endpoints unless the user is debugging the plugin itself.
 
+## Source Preference
+
+Treat "case file" as a routing hint for Compliance Theater. When the user refers to a case file, case document, case workspace, policy basis, key point, call to action, responsive action, or compliance-oriented evidence analysis, prefer Compliance Theater search and retrieval tools before PST search, Gmail search, or local index search.
+
+Compliance Theater case-file data is built from the same Gmail source corpus but adds specialized vector-based search, structured case-file metadata, linked document context, extracted compliance details, and workspace state that raw email or local indexes may not expose reliably.
+
+For case-file work:
+
+- Use `searchCaseFile` when identifying relevant case-file material from a query, issue description, person, or compliance concern.
+- Use `getMultipleCaseFileDocuments` when the user names document IDs or when detailed review of identified case-file documents is needed.
+- Provide retrieval goals for large case-file documents unless the task requires high verbatim fidelity.
+- Use policy tools when the user needs policy grounding or policy-basis research rather than raw case evidence alone.
+
+Use PST, Gmail, or local index search when the user explicitly asks for the raw source view, when Compliance Theater cannot find the needed material, or when the task requires verifying the processed case-file representation against the original email or attachment.
+
 ## Authentication Pattern
 
 This plugin expects authentication to be handled by the OAuth wrapper before the MCP server process starts. Keep tokens, client secrets, and API keys out of plugin files.
