@@ -11,7 +11,7 @@ import {
   rpc,
   warnIfInsecureUrl,
   writeCachedTokenFile
-} from "./runtime-utils.mjs";
+} from "./runtime-utils.js";
 
 const PREFIX = "MCP_COMPLIANCE_THEATER_RESOURCE_";
 
