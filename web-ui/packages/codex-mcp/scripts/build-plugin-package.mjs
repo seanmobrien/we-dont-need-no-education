@@ -97,6 +97,7 @@ const main = async () => {
   await cp(join(packageRoot, "src", "skills"), join(distRoot, "skills"), {
     recursive: true,
   });
+  await mkdir(join(marketplaceRoot, "plugins"), { recursive: true });
   await cp(distRoot, join(marketplaceRoot, "plugins", pluginName), {
     recursive: true,
   });
