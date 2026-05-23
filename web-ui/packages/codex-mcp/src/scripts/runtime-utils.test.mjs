@@ -97,10 +97,10 @@ test("isAuthenticatedSessionResult requires an authenticated app session body", 
 });
 
 test("fetchWithPolicy retries retryable responses", async () => {
-  const originalFetch = global.fetch;
+  const originalFetch = globalThis.fetch;
   let calls = 0;
 
-  global.fetch = async () => {
+  globalThis.fetch = async () => {
     calls += 1;
     return new Response(calls === 1 ? "retry" : "ok", { status: calls === 1 ? 503 : 200 });
   };
@@ -115,15 +115,15 @@ test("fetchWithPolicy retries retryable responses", async () => {
     assert.equal(calls, 2);
     assert.equal(response.status, 200);
   } finally {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   }
 });
 
 test("rpc prefers the wrapped session cookie over the bearer token", async () => {
-  const originalFetch = global.fetch;
+  const originalFetch = globalThis.fetch;
   let sentHeaders;
 
-  global.fetch = async (_url, options) => {
+  globalThis.fetch = async (_url, options) => {
     sentHeaders = options.headers;
     return new Response("{}", { status: 200 });
   };
@@ -137,6 +137,6 @@ test("rpc prefers the wrapped session cookie over the bearer token", async () =>
     assert.equal(sentHeaders.Cookie, "authjs.session-token=wrapped-token");
     assert.equal(sentHeaders.Authorization, undefined);
   } finally {
-    global.fetch = originalFetch;
+    globalThis.fetch = originalFetch;
   }
 });

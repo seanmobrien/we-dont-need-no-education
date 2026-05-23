@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
-import { cp, mkdir, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { cp, mkdir, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = join(packageRoot, "dist");
 const marketplaceRoot = join(packageRoot, "dist-marketplace");
+const marketplaceName = "compliance-theater-marketplace";
 const pluginName = "compliance-theater-2000";
 
 const requiredPaths = [
@@ -45,28 +46,11 @@ const assertRequiredInputs = async () => {
   }
 };
 
-const copyRuntimeScripts = async () => {
-  const scriptsDist = join(distRoot, "scripts");
-  await mkdir(scriptsDist, { recursive: true });
-
-  const sourceScripts = join(packageRoot, "src", "scripts");
-  const entries = await readdir(sourceScripts, { withFileTypes: true });
-  for (const entry of entries) {
-    if (
-      entry.isFile() &&
-      entry.name.endsWith(".mjs") &&
-      !entry.name.endsWith(".test.mjs")
-    ) {
-      await cp(join(sourceScripts, entry.name), join(scriptsDist, entry.name));
-    }
-  }
-};
-
 const writeMarketplace = async () => {
   const marketplace = {
-    name: "local-codex-plugins",
+    name: marketplaceName,
     interface: {
-      displayName: "Compliance Theater Local Plugins",
+      displayName: "Compliance Theater Marketplace",
     },
     plugins: [
       {
@@ -113,7 +97,6 @@ const main = async () => {
   await cp(join(packageRoot, "src", "skills"), join(distRoot, "skills"), {
     recursive: true,
   });
-  await copyRuntimeScripts();
   await cp(distRoot, join(marketplaceRoot, "plugins", pluginName), {
     recursive: true,
   });

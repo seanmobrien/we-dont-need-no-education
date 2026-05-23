@@ -68,17 +68,19 @@ Or, if using the published output:
 
 ## Environment Variables
 
-Set these environment variables as needed:
+The plugin manifest intentionally exposes only a small settings surface:
 
-- `MCP_COMPLIANCE_THEATER_RESOURCE_MCP_COMMAND`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_MCP_ARGS`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL` - the MCP SSE endpoint. Defaults to the hosted Compliance Theater service.
+- `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET` - optional, secure client secret for confidential clients.
+- `MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE` - optional wrapper diagnostics path.
+
+Defaults cover the hosted SSE URL, issuer, client ID, and OAuth scope. Local development should usually override only `MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL`, for example with `http://localhost:3000/api/ai/tools/sse`.
+
+Advanced auth overrides are still supported through `.mcp.json` and the wrapper environment contract, but they are deliberately not part of the default Codex settings UI:
+
 - `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE`
-
-Defaults already cover common local values for issuer, client ID, OAuth scope, and local SSE URL.
 
 ### 3. Optional: symlink a stable local plugin path
 
@@ -95,9 +97,8 @@ If your Codex setup prefers a single plugins directory, create a symlink that po
 
 - A Codex plugin definition in `.codex-plugin/plugin.json`.
 - A local MCP server entrypoint in `.mcp.json` that launches compiled `scripts/oauth-mcp-wrapper.js`.
-- An OAuth wrapper that discovers authorization metadata, acquires tokens, starts the child MCP server, and forwards JSON-RPC messages.
+- An OAuth wrapper that discovers authorization metadata, acquires tokens, connects to the configured MCP SSE endpoint, and forwards JSON-RPC messages.
 - A small runtime utility layer for retries, token cache management, SSE connection setup, and JSON-RPC over SSE.
-- Smoke-test scripts for listing authenticated tools and resources from an SSE MCP endpoint.
 - A bundled skill under deployed `skills/compliance-theater/` that tells Codex when and how to use the authenticated MCP server.
 
 ## Authenticated Connection Model
@@ -107,7 +108,7 @@ The most important behavior in this package lives in typed source file `src/scri
 It supports authenticated MCP connections with this flow:
 
 1. Read plugin settings and environment variables with the `MCP_COMPLIANCE_THEATER_RESOURCE_` prefix.
-2. Resolve the target SSE URL, OAuth issuer, client identity, and the real MCP server command to launch.
+2. Resolve the target SSE URL, OAuth issuer, and client identity.
 3. Try to reuse an existing access token in this order:
    - `ACCESS_TOKEN` from the environment
    - a cached token file
@@ -116,9 +117,9 @@ It supports authenticated MCP connections with this flow:
    - password grant
    - device-authorization flow
 4. Discover OAuth metadata through RFC 8414 if explicit metadata is not supplied.
-5. Start the child MCP server only after a usable token has been acquired.
-6. Inject the access token into the child process environment.
-7. Proxy JSON-RPC requests and responses between Codex and the child MCP server.
+5. Exchange the Keycloak token for a wrapped app session when needed.
+6. Connect to the configured SSE MCP endpoint.
+7. Proxy JSON-RPC requests and responses between Codex and the remote MCP server.
 
 The wrapper also supports dynamic client registration when the authorization server exposes a registration endpoint and no client ID is configured.
 
@@ -126,31 +127,29 @@ The wrapper also supports dynamic client registration when the authorization ser
 
 The plugin manifest and `.mcp.json` default to these values:
 
-- Target MCP SSE URL: `http://localhost:3000/api/ai/tools/sse`
+- Target MCP SSE URL: `https://full-ui.compliance-theater.obapps.net/api/ai/tools/sse`
 - OAuth issuer: `https://login.obapps.net/realms/compliance-theater`
 - OAuth client ID: `codex`
 - OAuth scope: `openid`
-- Child access-token environment variable: `MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN`
+The settings exposed in `.codex-plugin/plugin.json` map directly to environment variables so Codex can configure the plugin without modifying the wrapper script. The UI-facing settings are intentionally limited to the MCP endpoint, an optional secure client secret, and an optional log path.
 
-The settings exposed in `.codex-plugin/plugin.json` map directly to environment variables so Codex can configure the plugin without modifying the wrapper script.
-
-The key required inputs are:
+The key UI-facing input is:
 
 - `MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_MCP_COMMAND`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_MCP_ARGS`
 
-Useful optional inputs include:
+Useful UI-facing optional inputs are:
 
-- `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE`
+
+Advanced optional inputs include:
+
+- `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_REFRESH_TOKEN`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_WRAP_URL`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_SESSION_STATUS_URL`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS`
@@ -161,12 +160,7 @@ Useful optional inputs include:
 
 ## Helper Tools Added By The Wrapper
 
-The wrapper exposes an allowlisted native plugin tool surface over the authenticated upstream MCP server:
-
-- `searchPolicyStore`, `searchCaseFile`, `getMultipleCaseFileDocuments`, `getCaseFileDocumentIndex`, `amendCaseFileDocument`
-- `sequentialthinking`, `createTodo`, `getTodos`, `updateTodo`, `toggleTodo`
-- `getCaseWorkspace`, `readWorkspaceFile`, `appendWorkspaceTask`, `updateWorkspaceTaskStatus`, `updateWorkspaceTaskDetails`
-- `upsertWorkspaceDocumentSummary`, `addOpenQuestion`, `updateOpenQuestionStatus`, `appendWorkspaceSessionLog`, `compactWorkspace`
+The wrapper exposes a fixed native plugin tool surface over the authenticated proxy. Each exposed tool handles auth, forwards the request to the configured Compliance Theater service, and returns the result. The fixed catalog intentionally avoids runtime tool-discovery churn in normal model workflows.
 
 The wrapper also adds app-session-backed memory API tools that call the configured app host:
 
@@ -183,6 +177,8 @@ The wrapper adds convenience tools alongside those native tools:
   - `status`: inspects auth state, wraps the Keycloak bearer token when needed, and calls `/api/auth/session` with the app session cookie.
   - `clear-cache`: deletes the local cached token file.
   - `login`: runs an interactive login flow and caches a fresh token.
+- `selectComplianceTools`
+  Given a user goal, returns a short list of native Compliance Theater tools likely to help. This is a planning helper only; callers should then invoke the returned tools directly.
 
 `mcp_resource_auth_manage_auth` status output behaves as follows:
 
@@ -193,9 +189,11 @@ The wrapper adds convenience tools alongside those native tools:
 
 These are implemented in the wrapper itself and are useful even when the remote MCP server exposes a large surface area.
 
+Protected upstream calls default to a 360 second proxy timeout because case-file retrieval, preprocessing, and policy search can be long-running.
+
 ## Runtime Utilities
 
-`src/scripts/runtime-utils.ts` provides the shared mechanics used by both the wrapper and the smoke scripts. The build emits `dist/scripts/runtime-utils.js` for the deployed wrapper and smoke scripts:
+`src/scripts/runtime-utils.ts` provides the shared mechanics used by the wrapper. The build emits `dist/scripts/runtime-utils.js` for the deployed wrapper:
 
 - token expiry calculation and skew-aware cache reuse
 - secure token cache writes under `~/.codex/mcp-resource-auth/` by default
@@ -206,41 +204,24 @@ These are implemented in the wrapper itself and are useful even when the remote 
 
 The accompanying `src/scripts/runtime-utils.test.mjs` covers the compiled utility output for retry policy, endpoint resolution, insecure URL warnings, and cache-expiry behavior.
 
-## Smoke Scripts
-
-This folder includes two small validation scripts:
-
-- `src/scripts/smoke-list-abilities-sse.mjs`
-  Acquires or reuses a token, connects to the SSE endpoint, initializes MCP, and lists tools.
-- `src/scripts/smoke-list-resources-sse.mjs`
-  Reuses a cached token, connects to the SSE endpoint, and prints resource and resource-template listings.
-
-These scripts are useful for confirming that:
-
-- the OAuth issuer is reachable
-- token acquisition works
-- the SSE endpoint accepts bearer authentication
-- the MCP server is exposing tools and resources as expected
-
 ## Bundled Skill
 
 `src/skills/compliance-theater/SKILL.md` is the source skill file that tells Codex how to use this plugin responsibly.
 
 The skill emphasizes:
 
-- using authenticated MCP resources and tools before guessing or searching elsewhere
-- relying on RFC 8414 metadata discovery
+- using installed Compliance Theater tools directly before guessing or searching elsewhere
+- treating authentication as a simple plugin login/status flow
 - avoiding printing secrets
-- using the helper actions for tool and resource discovery
+- using the helper actions for login/status and optional goal-based tool selection
+- allowing long-running case-file and policy calls to complete under the 360 second default timeout
 - preferring narrow resource reads and read-only actions unless mutation is explicitly requested
 
 ## Operational Notes
 
 - The wrapper writes interactive login prompts, device codes, and status messages to stderr so stdout remains clean JSON-RPC for Codex.
-- The child MCP process inherits stderr, which makes auth and startup problems easier to diagnose.
 - The plugin caches access tokens on disk unless caching is disabled.
 - The wrapper warns when the OAuth issuer or SSE endpoint uses insecure HTTP outside loopback hosts.
-- The child MCP command and args are not hardcoded here; this folder is meant to wrap a real MCP server command supplied through configuration.
 
 ## Current Metadata Gaps
 
@@ -256,14 +237,12 @@ If this plugin is intended for broader distribution, those should be replaced wi
 ## Minimal Example
 
 ```bash
-export MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL="http://localhost:3000/api/ai/tools/sse"
+export MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL="https://full-ui.compliance-theater.obapps.net/api/ai/tools/sse"
 export MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER="https://login.obapps.net/realms/compliance-theater"
 export MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID="codex"
-export MCP_COMPLIANCE_THEATER_RESOURCE_MCP_COMMAND="node"
-export MCP_COMPLIANCE_THEATER_RESOURCE_MCP_ARGS='["./path/to/real-mcp-server.mjs"]'
 
 yarn workspace @compliance-theater/codex-mcp build
 node ./dist/scripts/oauth-mcp-wrapper.js
 ```
 
-The wrapper will then acquire a bearer token if needed, start the real MCP server, and proxy Codex traffic through an authenticated connection.
+The wrapper will then acquire a bearer token if needed, wrap it into an app session when available, and proxy Codex traffic through the configured MCP SSE endpoint.

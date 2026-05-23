@@ -44,6 +44,7 @@ type ToolDefinition = {
   name: string;
   description?: string;
   inputSchema?: AnyRecord;
+  annotations?: AnyRecord;
 };
 type OAuthClient = {
   client_id?: string;
@@ -90,6 +91,25 @@ function asError(error: unknown): ErrorWithCode {
   return error instanceof Error ? error as ErrorWithCode : new Error(String(error));
 }
 
+function httpStatusError(message: string, status: number): ErrorWithCode & { status: number } {
+  const error = new Error(message) as ErrorWithCode & { status: number };
+  error.status = status;
+  return error;
+}
+
+function httpStatusFromError(error: unknown): number | undefined {
+  const normalized = asError(error) as ErrorWithCode & { status?: number };
+  if (typeof normalized.status === "number") {
+    return normalized.status;
+  }
+  const match = /\bHTTP\s+(\d{3})\b/i.exec(normalized.message);
+  return match ? Number(match[1]) : undefined;
+}
+
+function isHttpBadRequest(error: unknown): boolean {
+  return httpStatusFromError(error) === 400;
+}
+
 const PREFIX = "MCP_COMPLIANCE_THEATER_RESOURCE_";
 const env = process.env;
 let registeredClient: OAuthClient | undefined;
@@ -97,28 +117,347 @@ let logWriteFailed = false;
 let remote: RemoteConnection | undefined;
 let remoteQueue: Promise<AnyRecord> = Promise.resolve({});
 
-const exposedRemoteToolNames = new Set<string>([
+const searchOptionsSchema = {
+  type: "object",
+  properties: {
+    hitsPerPage: { type: "integer", minimum: 1, maximum: 25, description: "Results per page." },
+    page: { type: "integer", minimum: 1, description: "Page number." },
+    metadata: { type: "object", additionalProperties: { type: "string" }, description: "Metadata filters." },
+    count: { type: "boolean", description: "Return total result count." },
+    continuationToken: { type: "string", description: "Pagination token." },
+    exhaustive: { type: "boolean", description: "Use exhaustive search." }
+  },
+  additionalProperties: true
+};
+const caseFileScopes = ["email", "attachment", "core-document", "key-point", "call-to-action", "responsive-action", "note"];
+const policyScopes = ["school-district", "state", "federal"];
+const workspaceFiles = ["overview", "tasks", "documentSummaries", "openQuestions", "timelineNotes", "sessionLog", "metadata"];
+const taskStatuses = ["inbox", "ready", "in_progress", "blocked", "done", "deferred"];
+const taskPriorities = ["low", "medium", "high", "urgent"];
+const taskOwners = ["model", "user", "system"];
+const questionStatuses = ["open", "investigating", "resolved", "deferred"];
+const questionTypes = ["factual", "legal", "evidentiary", "process"];
+
+function objectSchema(properties: AnyRecord, required: string[] = [], additionalProperties = false): AnyRecord {
+  return { type: "object", properties, required, additionalProperties };
+}
+
+function arrayOf(items: AnyRecord): AnyRecord {
+  return { type: "array", items };
+}
+
+const stringOrNumberSchema = {
+  anyOf: [{ type: "string" }, { type: "number" }]
+};
+
+function displayTitle(name: string): string {
+  return name
+    .replace(/^mcp_resource_auth_/, "")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+const readOnlyRemoteToolNames = new Set([
   "searchPolicyStore",
   "searchCaseFile",
   "getMultipleCaseFileDocuments",
   "getCaseFileDocumentIndex",
-  "amendCaseFileDocument",
   "sequentialthinking",
-  "createTodo",
   "getTodos",
-  "updateTodo",
-  "toggleTodo",
+  "getCaseWorkspace",
+  "readWorkspaceFile"
+]);
+const idempotentRemoteToolNames = new Set([
+  "searchPolicyStore",
+  "searchCaseFile",
+  "getMultipleCaseFileDocuments",
+  "getCaseFileDocumentIndex",
+  "sequentialthinking",
+  "getTodos",
   "getCaseWorkspace",
   "readWorkspaceFile",
-  "appendWorkspaceTask",
+  "updateTodo",
   "updateWorkspaceTaskStatus",
   "updateWorkspaceTaskDetails",
   "upsertWorkspaceDocumentSummary",
-  "addOpenQuestion",
-  "updateOpenQuestionStatus",
-  "appendWorkspaceSessionLog",
-  "compactWorkspace"
+  "updateOpenQuestionStatus"
 ]);
+
+function annotationsForRemoteTool(name: string): AnyRecord {
+  const readOnly = readOnlyRemoteToolNames.has(name);
+  return {
+    title: displayTitle(name),
+    readOnlyHint: readOnly,
+    destructiveHint: false,
+    idempotentHint: idempotentRemoteToolNames.has(name),
+    openWorldHint: false
+  };
+}
+
+function withAnnotations(tools: ToolDefinition[], getAnnotations: (name: string) => AnyRecord): ToolDefinition[] {
+  return tools.map((tool) => ({
+    ...tool,
+    annotations: {
+      ...getAnnotations(tool.name),
+      ...(tool.annotations || {})
+    }
+  }));
+}
+
+const staticRemoteTools: ToolDefinition[] = [
+  {
+    name: "searchPolicyStore",
+    description: "Search Compliance Theater policy sources with hybrid/vector search.",
+    inputSchema: objectSchema({
+      query: { type: "string", description: "The policy search query." },
+      options: {
+        ...searchOptionsSchema,
+        properties: {
+          ...searchOptionsSchema.properties,
+          scope: { type: "array", items: { type: "string", enum: policyScopes }, description: "Policy scope filter." }
+        }
+      }
+    }, ["query"])
+  },
+  {
+    name: "searchCaseFile",
+    description: "Search Compliance Theater case-file evidence with specialized case metadata and vector search.",
+    inputSchema: objectSchema({
+      query: { type: "string", description: "The case-file search query." },
+      options: {
+        ...searchOptionsSchema,
+        properties: {
+          ...searchOptionsSchema.properties,
+          scope: { type: "array", items: { type: "string", enum: caseFileScopes }, description: "Case-file scope filter." },
+          emailId: { type: "string", description: "Filter by email ID." },
+          threadId: { type: "string", description: "Filter by thread ID." },
+          attachmentId: { type: "number", description: "Filter by attachment ID." },
+          documentId: { type: "number", description: "Filter by document ID." },
+          replyToDocumentId: { type: "number", description: "Filter by direct reply document ID." },
+          relatedToDocumentId: { type: "number", description: "Filter by related document ID." }
+        }
+      }
+    }, ["query"])
+  },
+  {
+    name: "getMultipleCaseFileDocuments",
+    description: "Retrieve and optionally summarize one or more case-file documents by ID.",
+    inputSchema: objectSchema({
+      requests: arrayOf(objectSchema({
+        caseFileId: { ...stringOrNumberSchema, description: "Case-file document ID to retrieve." },
+        goals: { type: "array", items: { type: "string" }, description: "Document-specific extraction or summary goals." },
+        verbatimFidelity: { type: "number", minimum: 1, maximum: 100, description: "Document-specific fidelity override." }
+      }, ["caseFileId"])),
+      goals: { type: "array", items: { type: "string" }, description: "Shared extraction or summary goals for all requested documents." },
+      verbatim_fidelity: { type: "number", minimum: 1, maximum: 100, description: "Shared fidelity target. 100 is closest to source text; 1 is concise summary." }
+    }, ["requests"])
+  },
+  {
+    name: "getCaseFileDocumentIndex",
+    description: "List case-file document IDs and metadata, optionally filtered by document type.",
+    inputSchema: objectSchema({
+      scope: { type: "array", items: { type: "string", enum: caseFileScopes }, description: "Optional document type filters." }
+    })
+  },
+  {
+    name: "amendCaseFileDocument",
+    description: "Amend structured case-file document details, ratings, notes, and relationships.",
+    inputSchema: objectSchema({
+      update: objectSchema({
+        targetCaseFileId: { ...stringOrNumberSchema, description: "Case-file document ID to amend." },
+        severityRating: { type: "number" },
+        severityReasons: { type: "array", items: { type: "string" } },
+        notes: { type: "array", items: { type: "string" } },
+        complianceRating: { type: "number" },
+        complianceReasons: { type: "array", items: { type: "string" } },
+        completionRating: { type: "number", description: "Rates how close to fully complete the call to action is." },
+        completionReasons: { type: "array", items: { type: "string" } },
+        addRelatedDocuments: arrayOf(objectSchema({
+          relatedToDocumentId: { type: "number", description: "Related document ID." },
+          relationshipType: { type: "string", description: "How the related document connects to the target document." }
+        }, ["relatedToDocumentId", "relationshipType"])),
+        associateResponsiveAction: arrayOf(objectSchema({
+          relatedCtaDocumentId: { type: "number", description: "Related call-to-action document ID." },
+          complianceChapter13: { type: "number" },
+          complianceChapter13Reasons: { type: "array", items: { type: "string" } },
+          completionPercentage: { type: "number" },
+          completionReasons: { type: "array", items: { type: "string" } }
+        }, ["relatedCtaDocumentId", "complianceChapter13", "complianceChapter13Reasons", "completionPercentage", "completionReasons"])),
+        sentimentRating: { type: "number" },
+        sentimentReasons: { type: "array", items: { type: "string" } },
+        chapter13Rating: { type: "number" },
+        chapter13Reasons: { type: "array", items: { type: "string" } },
+        titleIXRating: { type: "number" },
+        titleIXReasons: { type: "array", items: { type: "string" } },
+        explanation: { type: "string", description: "Reason the amendment is being made." }
+      }, ["targetCaseFileId", "explanation"], true)
+    }, ["update"])
+  },
+  {
+    name: "sequentialthinking",
+    description: "Perform structured sequential thinking for complex case analysis or planning.",
+    inputSchema: objectSchema({
+      thought: { type: "string", description: "Current thinking step." },
+      nextThoughtNeeded: { type: "boolean", description: "Whether another thought is needed." },
+      thoughtNumber: { type: "number", minimum: 1, description: "Current thought number." },
+      totalThoughts: { type: "number", minimum: 1, description: "Estimated total thoughts." },
+      isRevision: { type: "boolean", description: "Whether this revises an earlier thought." },
+      revisesThought: { type: "number", description: "Thought number being revised." },
+      branchFromThought: { type: "number", description: "Thought number where a branch begins." },
+      branchId: { type: "string", description: "Branch identifier." },
+      needsMoreThoughts: { type: "boolean", description: "Whether additional thoughts are needed." }
+    }, ["thought", "nextThoughtNeeded", "thoughtNumber", "totalThoughts"])
+  },
+  {
+    name: "createTodo",
+    description: "Create or replace a compliance-oriented todo list.",
+    inputSchema: objectSchema({
+      listId: { type: "string", description: "Optional stable list ID." },
+      title: { type: "string", description: "Todo list title." },
+      description: { type: "string", description: "Todo list description." },
+      status: { type: "string", enum: ["pending", "active", "complete"], description: "List status." },
+      priority: { type: "string", enum: ["high", "medium", "low"], description: "List priority." },
+      todos: arrayOf(objectSchema({
+        id: { type: "string", description: "Optional stable todo ID." },
+        title: { type: "string", description: "Task title." },
+        description: { type: "string", description: "Task details." },
+        status: { type: "string", enum: ["pending", "active", "complete"] },
+        completed: { type: "boolean" },
+        priority: { type: "string", enum: ["high", "medium", "low"] }
+      }, ["title"]))
+    }, ["title"])
+  },
+  {
+    name: "getTodos",
+    description: "Read todo lists, optionally filtered by completion state or list ID.",
+    inputSchema: objectSchema({
+      completed: { type: "boolean", description: "Filter by completion state." },
+      listId: { type: "string", description: "Optional list ID." }
+    })
+  },
+  {
+    name: "updateTodo",
+    description: "Update an existing todo item.",
+    inputSchema: objectSchema({
+      id: { type: "string", description: "Todo ID." },
+      title: { type: "string", description: "New title." },
+      description: { type: "string", description: "New description." },
+      completed: { type: "boolean", description: "Completion flag." },
+      status: { type: "string", enum: ["pending", "active", "complete"] },
+      priority: { type: "string", enum: ["high", "medium", "low"] }
+    }, ["id"])
+  },
+  {
+    name: "toggleTodo",
+    description: "Advance a todo through its completion workflow.",
+    inputSchema: objectSchema({ id: { type: "string", description: "Todo ID." } }, ["id"])
+  },
+  {
+    name: "getCaseWorkspace",
+    description: "Return a summary of a case workspace.",
+    inputSchema: objectSchema({ caseId: { type: "string", description: "Case identifier." } }, ["caseId"])
+  },
+  {
+    name: "readWorkspaceFile",
+    description: "Read a case workspace file.",
+    inputSchema: objectSchema({
+      caseId: { type: "string", description: "Case identifier." },
+      file: { type: "string", enum: workspaceFiles, description: "Workspace file to read." }
+    }, ["caseId", "file"])
+  },
+  {
+    name: "appendWorkspaceTask",
+    description: "Append a task to a case workspace.",
+    inputSchema: objectSchema({
+      caseId: { type: "string" },
+      title: { type: "string" },
+      description: { type: "string" },
+      status: { type: "string", enum: taskStatuses },
+      priority: { type: "string", enum: taskPriorities },
+      owner: { type: "string", enum: taskOwners },
+      relatedDocumentIds: { type: "array", items: { type: "string" } },
+      relatedQuestionIds: { type: "array", items: { type: "string" } },
+      tags: { type: "array", items: { type: "string" } }
+    }, ["caseId", "title"])
+  },
+  {
+    name: "updateWorkspaceTaskStatus",
+    description: "Update the status of a case workspace task.",
+    inputSchema: objectSchema({
+      caseId: { type: "string" },
+      taskId: { type: "string" },
+      status: { type: "string", enum: taskStatuses },
+      blockedReason: { type: "string" }
+    }, ["caseId", "taskId", "status"])
+  },
+  {
+    name: "updateWorkspaceTaskDetails",
+    description: "Update editable fields on a case workspace task.",
+    inputSchema: objectSchema({
+      caseId: { type: "string" },
+      taskId: { type: "string" },
+      title: { type: "string" },
+      description: { type: "string" },
+      priority: { type: "string", enum: taskPriorities },
+      owner: { type: "string", enum: taskOwners },
+      tags: { type: "array", items: { type: "string" } }
+    }, ["caseId", "taskId"])
+  },
+  {
+    name: "upsertWorkspaceDocumentSummary",
+    description: "Create or update a document summary in a case workspace.",
+    inputSchema: objectSchema({
+      caseId: { type: "string" },
+      documentId: { type: "string" },
+      title: { type: "string" },
+      date: { type: "string" },
+      summary: { type: "string" },
+      relevance: { type: "array", items: { type: "string" } },
+      status: { type: "string", enum: ["draft", "reviewed", "needs_refresh"] },
+      sourceSummaryId: { type: "string" },
+      lastRefreshedAt: { type: "string" }
+    }, ["caseId", "documentId", "summary", "status"])
+  },
+  {
+    name: "addOpenQuestion",
+    description: "Add an open question to a case workspace.",
+    inputSchema: objectSchema({
+      caseId: { type: "string" },
+      question: { type: "string" },
+      type: { type: "string", enum: questionTypes },
+      status: { type: "string", enum: questionStatuses },
+      relatedDocumentIds: { type: "array", items: { type: "string" } },
+      notes: { type: "string" }
+    }, ["caseId", "question", "type"])
+  },
+  {
+    name: "updateOpenQuestionStatus",
+    description: "Update an open question's status or notes.",
+    inputSchema: objectSchema({
+      caseId: { type: "string" },
+      questionId: { type: "string" },
+      status: { type: "string", enum: questionStatuses },
+      notes: { type: "string" }
+    }, ["caseId", "questionId", "status"])
+  },
+  {
+    name: "appendWorkspaceSessionLog",
+    description: "Append a session log entry to a case workspace.",
+    inputSchema: objectSchema({
+      caseId: { type: "string" },
+      actor: { type: "string", enum: ["system", "model", "user"] },
+      summary: { type: "string" }
+    }, ["caseId", "summary"])
+  },
+  {
+    name: "compactWorkspace",
+    description: "Compact workspace metadata and regenerate workspace markdown projections.",
+    inputSchema: objectSchema({ caseId: { type: "string" } }, ["caseId"])
+  }
+];
+const exposedRemoteTools = withAnnotations(staticRemoteTools, annotationsForRemoteTool);
+const remoteToolNames = new Set(exposedRemoteTools.map((tool) => tool.name));
 
 const memoryTools: ToolDefinition[] = [
   {
@@ -241,8 +580,47 @@ const helperTools: ToolDefinition[] = [
       additionalProperties: false
     }
   },
+  {
+    name: "selectComplianceTools",
+    description: "Given a Compliance Theater goal, return the native plugin tools most relevant to that task.",
+    inputSchema: objectSchema({
+      goal: { type: "string", description: "The user goal or task to plan tool usage for." },
+      maxTools: { type: "integer", minimum: 1, maximum: 20, default: 8, description: "Maximum recommendations to return." }
+    }, ["goal"])
+  },
   ...memoryTools
 ];
+function annotationsForHelperTool(name: string): AnyRecord {
+  const readOnlyHelperNames = new Set([
+    "mcp_resource_auth_list_abilities",
+    "mcp_resource_auth_list_resources",
+    "selectComplianceTools",
+    "listMemories",
+    "getMemoryCategories",
+    "getMemory",
+    "searchMemories",
+    "getRelatedMemories"
+  ]);
+  const idempotentHelperNames = new Set([
+    "mcp_resource_auth_list_abilities",
+    "mcp_resource_auth_list_resources",
+    "selectComplianceTools",
+    "listMemories",
+    "getMemoryCategories",
+    "getMemory",
+    "searchMemories",
+    "getRelatedMemories",
+    "updateMemory"
+  ]);
+  return {
+    title: displayTitle(name),
+    readOnlyHint: readOnlyHelperNames.has(name),
+    destructiveHint: false,
+    idempotentHint: idempotentHelperNames.has(name),
+    openWorldHint: false
+  };
+}
+const exposedHelperTools = withAnnotations(helperTools, annotationsForHelperTool);
 
 function key(name: string): string {
   return `${PREFIX}${name}`;
@@ -408,7 +786,7 @@ async function fetchJsonResponse(url: string, options: FetchPolicyOptions = {}):
 async function fetchJson(url: string, options: FetchPolicyOptions = {}): Promise<AnyRecord> {
   const { response, body } = await fetchJsonResponse(url, options);
   if (!response.ok) {
-    throw new Error(String(body.error || body.error_description || `HTTP ${response.status}`));
+    throw httpStatusError(String(body.error || body.error_description || `HTTP ${response.status}`), response.status);
   }
   return body;
 }
@@ -605,16 +983,20 @@ async function deviceAuthorization(metadata: OAuthMetadata): Promise<OAuthToken 
   throw new Error("Timed out waiting for device authorization");
 }
 
-async function acquireToken(): Promise<CachedToken> {
+async function acquireToken(options: { ignoreCache?: boolean } = {}): Promise<CachedToken> {
   const existing = optional("ACCESS_TOKEN");
   if (existing) {
     log("using preconfigured access token");
     return { access_token: existing };
   }
 
-  const cached = await readCachedToken();
-  if (cached) {
-    return cached;
+  if (!options.ignoreCache) {
+    const cached = await readCachedToken();
+    if (cached) {
+      return cached;
+    }
+  } else {
+    log("ignoring cached token for fresh authentication");
   }
 
   const metadata = await discoverMetadata();
@@ -632,6 +1014,17 @@ async function acquireToken(): Promise<CachedToken> {
   const acquired = { ...token, metadata };
   await writeCachedToken(acquired);
   return acquired;
+}
+
+async function freshTokenAfterBadRequest(reason: string): Promise<CachedToken> {
+  remote = undefined;
+  log("HTTP 400 received from protected upstream; clearing cached auth and retrying once", { reason });
+  try {
+    await clearCachedToken();
+  } catch (error) {
+    log("could not clear cached token before retrying auth", { message: asError(error).message });
+  }
+  return acquireToken({ ignoreCache: true });
 }
 
 function sendToClient(message: AnyRecord): void {
@@ -677,14 +1070,37 @@ async function connectRemote(): Promise<RemoteConnection> {
   }
 
   const token = await acquireToken();
+  try {
+    return await establishRemoteConnection(token);
+  } catch (error) {
+    if (!isHttpBadRequest(error)) {
+      throw error;
+    }
+    const freshToken = await freshTokenAfterBadRequest("remote MCP connection returned HTTP 400");
+    return establishRemoteConnection(freshToken);
+  }
+}
+
+async function optionalAppSessionForMcpTransport(token: CachedToken): Promise<{
+  appSession?: AppSession;
+  sessionCookie?: string;
+}> {
   let appSession;
   let sessionCookie;
   try {
     appSession = await acquireAppSession(token);
     sessionCookie = appSessionCookieHeader(appSession);
   } catch (error) {
+    if (isHttpBadRequest(error)) {
+      throw error;
+    }
     log(`wrapped app session unavailable for MCP transport; falling back to source bearer: ${asError(error).message}`);
   }
+  return { appSession, sessionCookie };
+}
+
+async function establishRemoteConnection(token: CachedToken): Promise<RemoteConnection> {
+  const { appSession, sessionCookie } = await optionalAppSessionForMcpTransport(token);
   const sseUrl = required("SERVER_URL");
   warnIfInsecureUrl(sseUrl, log, "Target server URL");
   log("connecting remote MCP SSE", { sseUrl });
@@ -741,9 +1157,18 @@ async function postRemoteJson(connection: RemoteConnection, message: JsonRpcMess
 }
 
 function remoteRequest(method: string, params: ToolArgs = {}): Promise<AnyRecord> {
-  remoteQueue = remoteQueue.then(async () => {
+  remoteQueue = remoteQueue.catch(() => ({})).then(async () => {
     const connection = remote || await connectRemote();
-    return rawRemoteRequest(connection, method, params);
+    try {
+      return await rawRemoteRequest(connection, method, params);
+    } catch (error) {
+      if (!isHttpBadRequest(error)) {
+        throw error;
+      }
+      const freshToken = await freshTokenAfterBadRequest(`remote MCP request ${method} returned HTTP 400`);
+      const retryConnection = await establishRemoteConnection(freshToken);
+      return rawRemoteRequest(retryConnection, method, params);
+    }
   });
   return remoteQueue;
 }
@@ -794,11 +1219,12 @@ async function collectPaginated(method: string, keyName: string): Promise<AnyRec
   return items;
 }
 
-async function listTools(): Promise<ToolDefinition[]> {
-  const result = await remoteRequest("tools/list");
-  const exposedTools = ((result.tools || []) as ToolDefinition[])
-    .filter((tool) => exposedRemoteToolNames.has(tool.name));
-  return [...exposedTools, ...helperTools];
+function listTools(): ToolDefinition[] {
+  return [...exposedRemoteTools, ...exposedHelperTools];
+}
+
+function remoteToolIsCallable(name: string | undefined): boolean {
+  return Boolean(name && remoteToolNames.has(name));
 }
 
 async function listResources(): Promise<AnyRecord[]> {
@@ -826,6 +1252,54 @@ function formatAbilities(tools: ToolDefinition[], resources: AnyRecord[], templa
     lines.push(`- ${template.uriTemplate}: ${template.name || template.description || "Template"}`);
   }
   return lines.join("\n");
+}
+
+function selectComplianceTools(goal: string, maxTools = 8): AnyRecord {
+  const normalized = goal.toLowerCase();
+  const scored = exposedRemoteTools.map((tool) => {
+    const haystack = `${tool.name} ${tool.description || ""}`.toLowerCase();
+    let score = 0;
+    for (const word of normalized.split(/[^a-z0-9]+/).filter((value) => value.length > 2)) {
+      if (haystack.includes(word)) {
+        score += 2;
+      }
+    }
+    if (normalized.includes("case file") || normalized.includes("case-file") || normalized.includes("violation")) {
+      if (["searchCaseFile", "getMultipleCaseFileDocuments", "getCaseFileDocumentIndex"].includes(tool.name)) {
+        score += 8;
+      }
+    }
+    if (normalized.includes("policy") || normalized.includes("rule") || normalized.includes("legal basis")) {
+      if (tool.name === "searchPolicyStore") {
+        score += 8;
+      }
+    }
+    if (normalized.includes("workspace") || normalized.includes("task") || normalized.includes("question")) {
+      if (tool.name.toLowerCase().includes("workspace") || tool.name.toLowerCase().includes("question")) {
+        score += 6;
+      }
+    }
+    if (normalized.includes("todo") || normalized.includes("plan")) {
+      if (tool.name.toLowerCase().includes("todo") || tool.name === "sequentialthinking") {
+        score += 6;
+      }
+    }
+    return { tool, score };
+  });
+  const selected = scored
+    .sort((a, b) => b.score - a.score || a.tool.name.localeCompare(b.tool.name))
+    .filter((item, index) => item.score > 0 || index < 3)
+    .slice(0, Math.max(1, Math.min(20, maxTools)))
+    .map(({ tool }) => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: tool.inputSchema
+    }));
+  return {
+    goal,
+    tools: selected,
+    note: "Call these native Compliance Theater tools directly. The plugin handles authentication and forwarding."
+  };
 }
 
 function resourcePath(resource: AnyRecord): string {
@@ -1104,6 +1578,23 @@ function requiredToolArgument(args: ToolArgs | undefined, name: string): any {
 
 async function memoryApiRequest(method: string, url: string, body?: unknown): Promise<AnyRecord> {
   const token = await acquireToken();
+  try {
+    return await memoryApiRequestWithToken(token, method, url, body);
+  } catch (error) {
+    if (!isHttpBadRequest(error)) {
+      throw error;
+    }
+    const freshToken = await freshTokenAfterBadRequest(`Memory API ${method} ${url} returned HTTP 400`);
+    return memoryApiRequestWithToken(freshToken, method, url, body);
+  }
+}
+
+async function memoryApiRequestWithToken(
+  token: CachedToken,
+  method: string,
+  url: string,
+  body?: unknown
+): Promise<AnyRecord> {
   const appSession = await acquireAppSession(token);
   const sessionCookie = appSessionCookieHeader(appSession);
   if (!sessionCookie) {
@@ -1120,7 +1611,7 @@ async function memoryApiRequest(method: string, url: string, body?: unknown): Pr
   });
   if (!responseResult.response.ok) {
     const detail = responseResult.body?.message || responseResult.body?.error || `HTTP ${responseResult.response.status}`;
-    throw new Error(`Memory API ${method} ${url} failed: ${detail}`);
+    throw httpStatusError(`Memory API ${method} ${url} failed: ${detail}`, responseResult.response.status);
   }
   return responseResult.body;
 }
@@ -1299,11 +1790,23 @@ async function callHelperTool(id: RpcId | undefined, name: string, args: ToolArg
 
     if (name === "mcp_resource_auth_list_abilities") {
       const [tools, resources, templates] = await Promise.all([
-        listTools().catch(() => helperTools),
+        Promise.resolve(listTools()),
         listResources().catch(() => []),
         listResourceTemplates().catch(() => [])
       ]);
       sendToClient({ jsonrpc: "2.0", id, result: textToolResult(formatAbilities(tools, resources, templates)) });
+      return;
+    }
+
+    if (name === "selectComplianceTools") {
+      sendToClient({
+        jsonrpc: "2.0",
+        id,
+        result: jsonToolResult(selectComplianceTools(
+          String(requiredToolArgument(args, "goal")),
+          args.maxTools === undefined ? 8 : Number(args.maxTools)
+        ))
+      });
       return;
     }
 
@@ -1363,13 +1866,7 @@ async function handleClientRequest(message: JsonRpcMessage): Promise<void> {
   }
 
   if (message.method === "tools/list") {
-    let tools = [...helperTools];
-    try {
-      tools = await listTools();
-    } catch (error) {
-      log(`remote tools/list failed: ${asError(error).message}`);
-    }
-    sendToClient({ jsonrpc: "2.0", id: message.id, result: { tools } });
+    sendToClient({ jsonrpc: "2.0", id: message.id, result: { tools: listTools() } });
     return;
   }
 
@@ -1379,7 +1876,7 @@ async function handleClientRequest(message: JsonRpcMessage): Promise<void> {
       await callHelperTool(message.id, name, message.params?.arguments || {});
       return;
     }
-    if (!exposedRemoteToolNames.has(name)) {
+    if (!remoteToolIsCallable(name)) {
       sendToClient(errorResponse(message.id, -32601, `Tool ${name || "(missing)"} is not exposed by this plugin.`));
       return;
     }

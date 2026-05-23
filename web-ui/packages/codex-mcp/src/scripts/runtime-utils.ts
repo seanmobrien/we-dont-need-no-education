@@ -284,7 +284,7 @@ export async function connectSse({
   let buffer = "";
   const stopAt = Date.now() + timeoutMs;
 
-  while (true) {
+  for (;;) {
     const timeRemaining = Math.max(stopAt - Date.now(), 1);
     const { done, value } = await readWithTimeout(reader, timeRemaining, "Timed out waiting for SSE endpoint event");
     if (done) {
@@ -357,7 +357,7 @@ export async function readRpcResult(
   let buffer = "";
   const stopAt = Date.now() + timeoutMs;
 
-  while (true) {
+  for (;;) {
     const timeRemaining = Math.max(stopAt - Date.now(), 1);
     const { done, value } = await readWithTimeout(
       reader,
