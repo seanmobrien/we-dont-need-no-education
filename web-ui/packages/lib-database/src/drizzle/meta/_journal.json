@@ -57,6 +57,13 @@
       "when": 1779505768406,
       "tag": "0007_document_unit_embeddings_model_pk",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1779597600000,
+      "tag": "0008_document_unit_embeddings_positions",
+      "breakpoints": true
     }
   ]
 }

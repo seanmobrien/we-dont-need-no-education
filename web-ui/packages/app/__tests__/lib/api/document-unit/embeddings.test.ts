@@ -31,6 +31,8 @@ type StoredRow = {
   document_id: number;
   embedding_model: string;
   index: number;
+  start_pos: number | null;
+  end_pos: number | null;
   vector: string | null;
   created_on: string | null;
 };
@@ -56,16 +58,20 @@ const buildSqlMock = (content: string | null) => {
     }
 
     if (query.includes('INSERT INTO document_unit_embeddings')) {
-      const [unitId, embeddingModel, index, vectorLiteral] = values as [
+      const [unitId, embeddingModel, index, vectorLiteral, startPos, endPos] = values as [
         number,
         string,
         number,
         string,
+        number | null,
+        number | null,
       ];
       storedRows.set(index, {
         document_id: unitId,
         embedding_model: embeddingModel,
         index,
+        start_pos: startPos,
+        end_pos: endPos,
         vector: String(vectorLiteral),
         created_on: '2026-01-01T00:00:00.000Z',
       });
@@ -137,6 +143,18 @@ describe('regenerateDocumentEmbeddings', () => {
       embeddingModel: 'model-small',
       chunkSize: 5,
     });
+    expect(regenerated?.embeddings).toMatchObject([
+      {
+        index: 1,
+        startPos: 0,
+        endPos: 5,
+      },
+      {
+        index: 2,
+        startPos: 5,
+        endPos: 10,
+      },
+    ]);
     expect(regenerated?.embeddings.map((row) => row.index)).toEqual([1, 2]);
   });
 
@@ -162,5 +180,12 @@ describe('regenerateDocumentEmbeddings', () => {
       embeddingModel: 'model-large',
       chunkSize: 10,
     });
+    expect(regenerated?.embeddings).toMatchObject([
+      {
+        index: 1,
+        startPos: 0,
+        endPos: 10,
+      },
+    ]);
   });
 });

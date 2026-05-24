@@ -14,6 +14,8 @@ export type DocumentUnitEmbeddingRecord = {
   documentId: number;
   embeddingModel: string;
   index: number;
+  startPos: number | null;
+  endPos: number | null;
   embedding: number[] | null;
   createdOn: string | null;
 };
@@ -30,6 +32,8 @@ type DocumentUnitEmbeddingRow = {
   document_id: number;
   embedding_model: string;
   index: number;
+  start_pos: number | null;
+  end_pos: number | null;
   vector: string | null;
   created_on: string | null;
 };
@@ -97,12 +101,23 @@ const parseVector = (value: string | null): number[] | null => {
   }
 };
 
+const parseNullableInteger = (value: number | string | null): number | null => {
+  if (value == null) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? parsed : null;
+};
+
 const toRecord = (
   row: DocumentUnitEmbeddingRow,
 ): DocumentUnitEmbeddingRecord => ({
   documentId: Number(row.document_id),
   embeddingModel: String(row.embedding_model),
   index: Number(row.index),
+  startPos: parseNullableInteger(row.start_pos),
+  endPos: parseNullableInteger(row.end_pos),
   embedding: parseVector(row.vector),
   createdOn: row.created_on ? String(row.created_on) : null,
 });
@@ -121,6 +136,37 @@ const ensureEmbeddingVector = (embedding: number[]): number[] => {
 const toVectorLiteral = (embedding: number[]): string => {
   const normalized = ensureEmbeddingVector(embedding);
   return `[${normalized.join(',')}]`;
+};
+
+const normalizeNullablePosition = (value: number | null | undefined): number | null => {
+  if (value == null) {
+    return null;
+  }
+
+  const normalized = Number(value);
+  if (!Number.isInteger(normalized) || normalized < 0) {
+    throw new RangeError('Embedding positions must be null or non-negative integers.');
+  }
+
+  return normalized;
+};
+
+const getInferredChunkPositions = ({
+  index,
+  chunkSize,
+  contentLength,
+}: {
+  index: number;
+  chunkSize: number;
+  contentLength: number;
+}): { startPos: number; endPos: number } => {
+  const startPos = chunkSize * Math.max(0, index - 1);
+  const endPos = Math.min(startPos + chunkSize, contentLength);
+
+  return {
+    startPos,
+    endPos,
+  };
 };
 
 export const getDocumentUnitContent = async (
@@ -163,6 +209,8 @@ export const getDocumentEmbeddingByIndex = async (
       document_id,
       embedding_model,
       "index",
+      start_pos,
+      end_pos,
       vector::text AS vector,
       created_on::text AS created_on
     FROM document_unit_embeddings
@@ -187,6 +235,8 @@ export const listDocumentEmbeddings = async (
       document_id,
       embedding_model,
       "index",
+      start_pos,
+      end_pos,
       vector::text AS vector,
       created_on::text AS created_on
     FROM document_unit_embeddings
@@ -201,31 +251,43 @@ export const upsertDocumentEmbeddingByIndex = async ({
   unitId,
   embeddingModel,
   index,
+  startPos,
+  endPos,
   embedding,
 }: {
   unitId: number;
   embeddingModel: string;
   index: number;
+  startPos?: number | null;
+  endPos?: number | null;
   embedding: number[];
 }): Promise<DocumentUnitEmbeddingRecord> => {
   const sql = await pgDbWithInit();
   const vectorLiteral = toVectorLiteral(embedding);
+  const normalizedStartPos = normalizeNullablePosition(startPos);
+  const normalizedEndPos = normalizeNullablePosition(endPos);
   await sql`
     INSERT INTO document_unit_embeddings (
       document_id,
       embedding_model,
       "index",
-      vector
+      vector,
+      start_pos,
+      end_pos
     )
     VALUES (
       ${unitId},
       ${embeddingModel},
       ${index},
-      ${vectorLiteral}::vector
+      ${vectorLiteral}::vector,
+      ${normalizedStartPos},
+      ${normalizedEndPos}
     )
     ON CONFLICT (document_id, embedding_model, "index")
     DO UPDATE SET
       vector = EXCLUDED.vector,
+      start_pos = COALESCE(EXCLUDED.start_pos, document_unit_embeddings.start_pos),
+      end_pos = COALESCE(EXCLUDED.end_pos, document_unit_embeddings.end_pos),
       created_on = CURRENT_TIMESTAMP
   `;
 
@@ -323,6 +385,7 @@ export const regenerateDocumentEmbeddings = async ({
   const embeddingModel = getEmbeddingModelNameForSize(size);
   const expectedDimensions = getEmbeddingDimensionsForSize(size);
   const chunks = splitDocumentContentForEmbeddings(content, targetChunkSize);
+  const contentLength = String(content ?? '').length;
   const embeddingService =
     size === 'small'
       ? new EmbeddingService(createEmbeddingSmallModel(), {
@@ -336,10 +399,17 @@ export const regenerateDocumentEmbeddings = async ({
 
   for (let index = 0; index < chunks.length; index += 1) {
     const embedding = await embeddingService.embed(chunks[index]);
+    const positions = getInferredChunkPositions({
+      index: index + 1,
+      chunkSize: targetChunkSize,
+      contentLength,
+    });
     await upsertDocumentEmbeddingByIndex({
       unitId,
       embeddingModel,
       index: index + 1,
+      startPos: positions.startPos,
+      endPos: positions.endPos,
       embedding,
     });
   }

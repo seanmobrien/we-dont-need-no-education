@@ -1270,6 +1270,8 @@ export const documentUnitEmbeddings = pgTable(
     documentId: integer('document_id').notNull(),
     embeddingModel: varchar('embedding_model', { length: 255 }).notNull(),
     index: integer().notNull(),
+    startPos: integer('start_pos'),
+    endPos: integer('end_pos'),
     // vector: vector().notNull(),
     createdOn: time('created_on').default(sql`CURRENT_TIMESTAMP`),
   },

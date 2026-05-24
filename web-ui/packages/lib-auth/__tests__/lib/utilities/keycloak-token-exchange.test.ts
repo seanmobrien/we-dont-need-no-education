@@ -8,6 +8,7 @@ process.env.AUTH_KEYCLOAK_ISSUER =
   'https://keycloak.example.com/auth/realms/test';
 process.env.AUTH_KEYCLOAK_CLIENT_ID = 'test-client';
 process.env.AUTH_KEYCLOAK_CLIENT_SECRET = 'test-secret';
+process.env.AUTH_SECRET = 'test-auth-secret';
 process.env.NEXTAUTH_SECRET = 'test-nextauth-secret';
 
 // Mock dependencies
@@ -83,8 +84,48 @@ describe('KeycloakTokenExchange', () => {
       expect(token).toBe('keycloak-access-token');
       expect(mockedGetToken).toHaveBeenCalledWith({
         req: mockRequest,
-        secret: 'test-nextauth-secret',
+        secret: 'test-auth-secret',
       });
+    });
+
+    it('falls back to NEXTAUTH_SECRET when AUTH_SECRET is unset', async () => {
+      const originalAuthSecret = process.env.AUTH_SECRET;
+      delete process.env.AUTH_SECRET;
+      mockedGetToken.mockResolvedValue({
+        access_token: 'keycloak-access-token',
+      } as any);
+
+      try {
+        const token = await tokenExchange.extractKeycloakToken(mockRequest);
+
+        expect(token).toBe('keycloak-access-token');
+        expect(mockedGetToken).toHaveBeenCalledWith({
+          req: mockRequest,
+          secret: 'test-nextauth-secret',
+        });
+      } finally {
+        process.env.AUTH_SECRET = originalAuthSecret;
+      }
+    });
+
+    it('falls back to NEXTAUTH_SECRET when AUTH_SECRET is empty', async () => {
+      const originalAuthSecret = process.env.AUTH_SECRET;
+      process.env.AUTH_SECRET = '';
+      mockedGetToken.mockResolvedValue({
+        access_token: 'keycloak-access-token',
+      } as any);
+
+      try {
+        const token = await tokenExchange.extractKeycloakToken(mockRequest);
+
+        expect(token).toBe('keycloak-access-token');
+        expect(mockedGetToken).toHaveBeenCalledWith({
+          req: mockRequest,
+          secret: 'test-nextauth-secret',
+        });
+      } finally {
+        process.env.AUTH_SECRET = originalAuthSecret;
+      }
     });
 
     it('should throw error when no JWT token found', async () => {

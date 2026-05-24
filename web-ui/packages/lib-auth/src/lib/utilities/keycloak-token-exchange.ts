@@ -80,8 +80,12 @@ export class KeycloakTokenExchange {
       if (typeof valueFromProcess === 'string') {
         return valueFromProcess;
       }
-      const valueFromEnv = env(key);
-      return typeof valueFromEnv === 'string' ? valueFromEnv : '';
+      try {
+        const valueFromEnv = env(key);
+        return typeof valueFromEnv === 'string' ? valueFromEnv : '';
+      } catch {
+        return '';
+      }
     };
 
     // Load configuration from environment with optional overrides
@@ -117,9 +121,23 @@ export class KeycloakTokenExchange {
     req: NextRequest | NextApiRequest
   ): Promise<string> {
     try {
+      const authSecret = [
+        process.env.AUTH_SECRET,
+        process.env.NEXTAUTH_SECRET,
+        (() => {
+          try {
+            return env('AUTH_SECRET');
+          } catch {
+            return undefined;
+          }
+        })(),
+      ].find(
+        (candidate): candidate is string =>
+          typeof candidate === 'string' && candidate.trim().length > 0,
+      );
       const token = await getToken({
         req: req as NextRequest,
-        secret: process.env.NEXTAUTH_SECRET,
+        secret: authSecret,
       }) as JWT | null;
 
       if (!token) {
