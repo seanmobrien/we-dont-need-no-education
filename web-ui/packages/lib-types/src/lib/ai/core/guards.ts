@@ -16,6 +16,9 @@ import {
   AiLanguageModelType,
   AiProviderTypeValues,
   AiProviderType,
+  AiModelTypeValue_Embedding,
+  AiModelTypeValue_EmbeddingSmall,
+  AiModelTypeValue_GoogleEmbedding,
 } from './unions';
 
 /**
@@ -104,6 +107,7 @@ export const isAiModelType = (value: unknown): value is AiModelType =>
  * isAiLanguageModelType('lofi'); // true
  * isAiLanguageModelType('gemini-pro'); // true
  * isAiLanguageModelType('embedding'); // false
+ * isAiLanguageModelType('embedding-small'); // false
  * isAiLanguageModelType('google-embedding'); // false
  * isAiLanguageModelType('other-model'); // false
  * ```
@@ -111,7 +115,10 @@ export const isAiModelType = (value: unknown): value is AiModelType =>
 export const isAiLanguageModelType = (
   value: unknown,
 ): value is AiLanguageModelType =>
-  isAiModelType(value) && value !== 'embedding' && value !== 'google-embedding';
+  isAiModelType(value) &&
+  value !== AiModelTypeValue_Embedding &&
+  value !== AiModelTypeValue_EmbeddingSmall &&
+  value !== AiModelTypeValue_GoogleEmbedding;
 
 /**
  * Type guard to check if a given value is a valid `AiProviderType`.

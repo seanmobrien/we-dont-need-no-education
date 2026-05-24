@@ -18,6 +18,19 @@ import {
   clientEnvSchema,
 } from './_client';
 
+const inferSmallEmbeddingModel = (
+  explicitSmallModel: string | undefined,
+  baseEmbeddingModel: string | undefined,
+): string | undefined => {
+  if ((explicitSmallModel ?? '').trim().length > 0) {
+    return explicitSmallModel;
+  }
+  if ((baseEmbeddingModel ?? '').trim().length === 0) {
+    return baseEmbeddingModel;
+  }
+  return String(baseEmbeddingModel).replace(/large/gi, 'small');
+};
+
 const buildRawInstance = () => {
   const raw = {
     ...clientRawInstance,
@@ -34,6 +47,10 @@ const buildRawInstance = () => {
     AZURE_OPENAI_DEPLOYMENT_CHAT: process.env.AZURE_OPENAI_DEPLOYMENT_CHAT,
     AZURE_OPENAI_DEPLOYMENT_EMBEDDING:
       process.env.AZURE_OPENAI_DEPLOYMENT_EMBEDDING,
+    AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL: inferSmallEmbeddingModel(
+      process.env.AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL,
+      process.env.AZURE_OPENAI_DEPLOYMENT_EMBEDDING,
+    ),
     AZURE_OPENAI_ENDPOINT_EMBEDDING: process.env.AZURE_OPENAI_ENDPOINT,
     AZURE_OPENAI_KEY_EMBEDDING: process.env.AZURE_OPENAI_KEY_EMBEDDING,
     AZURE_OPENAI_DEPLOYMENT_COMPLETIONS:
@@ -68,6 +85,10 @@ const buildRawInstance = () => {
     GOOGLE_GENERATIVE_HIFI: process.env.GOOGLE_GENERATIVE_HIFI,
     GOOGLE_GENERATIVE_LOFI: process.env.GOOGLE_GENERATIVE_LOFI,
     GOOGLE_GENERATIVE_EMBEDDING: process.env.GOOGLE_GENERATIVE_EMBEDDING,
+    GOOGLE_GENERATIVE_EMBEDDING_SMALL: inferSmallEmbeddingModel(
+      process.env.GOOGLE_GENERATIVE_EMBEDDING_SMALL,
+      process.env.GOOGLE_GENERATIVE_EMBEDDING,
+    ),
     AUTH_KEYCLOAK_CLIENT_ID: process.env.AUTH_KEYCLOAK_CLIENT_ID,
     AUTH_KEYCLOAK_CLIENT_SECRET: process.env.AUTH_KEYCLOAK_CLIENT_SECRET,
     AUTH_KEYCLOAK_IMPERSONATION_AUDIENCE:
@@ -104,6 +125,11 @@ const buildRawInstance = () => {
     OPENAI_LOFI: process.env.OPENAI_LOFI,
     /** OpenAI embedding model name for vector generation. Example: 'text-embedding-3-large' */
     OPENAI_EMBEDDING: process.env.OPENAI_EMBEDDING,
+    /** OpenAI small embedding model name for vector generation. Example: 'text-embedding-3-small' */
+    OPENAI_EMBEDDING_SMALL: inferSmallEmbeddingModel(
+      process.env.OPENAI_EMBEDDING_SMALL,
+      process.env.OPENAI_EMBEDDING,
+    ),
     /** Maximum token threshold for AI batch processing. Example: '50000' */
     TOKEN_BATCH_THRESHOLD: process.env.TOKEN_BATCH_THRESHOLD,
   };
@@ -175,6 +201,19 @@ const serverEnvSchema = z
       .default('text-embedding-3-large')
       .describe(
         'Azure OpenAI deployment name for text embeddings. Default: text-embedding-3-large. Example: text-embedding-ada-002',
+      ),
+    AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL: z
+      .string()
+      .optional()
+      .default(
+        inferSmallEmbeddingModel(
+          process.env.AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL,
+          process.env.AZURE_OPENAI_DEPLOYMENT_EMBEDDING ??
+            'text-embedding-3-large',
+        ) ?? 'text-embedding-3-small',
+      )
+      .describe(
+        'Azure OpenAI deployment name for small text embeddings. Defaults to AZURE_OPENAI_DEPLOYMENT_EMBEDDING with "large" replaced by "small". Example: text-embedding-3-small',
       ),
     AZURE_OPENAI_ENDPOINT_EMBEDDING: z
       .string()
@@ -339,6 +378,18 @@ const serverEnvSchema = z
       .describe(
         'Google Generative AI embedding model name. Default: google-embedding. Example: text-embedding-004',
       ),
+    GOOGLE_GENERATIVE_EMBEDDING_SMALL: z
+      .string()
+      .optional()
+      .default(
+        inferSmallEmbeddingModel(
+          process.env.GOOGLE_GENERATIVE_EMBEDDING_SMALL,
+          process.env.GOOGLE_GENERATIVE_EMBEDDING ?? 'google-embedding',
+        ) ?? 'google-embedding',
+      )
+      .describe(
+        'Google Generative AI small embedding model name. Defaults to GOOGLE_GENERATIVE_EMBEDDING with "large" replaced by "small" (or unchanged when "large" is not present).',
+      ),
 
     AUTH_KEYCLOAK_CLIENT_ID: z
       .string()
@@ -498,6 +549,18 @@ const serverEnvSchema = z
       .default('text-embedding-3-large')
       .describe(
         'OpenAI embedding model name for vector generation. Default: text-embedding-3-large. Example: text-embedding-3-large',
+      ),
+    OPENAI_EMBEDDING_SMALL: z
+      .string()
+      .optional()
+      .default(
+        inferSmallEmbeddingModel(
+          process.env.OPENAI_EMBEDDING_SMALL,
+          process.env.OPENAI_EMBEDDING ?? 'text-embedding-3-large',
+        ) ?? 'text-embedding-3-small',
+      )
+      .describe(
+        'OpenAI small embedding model name for vector generation. Defaults to OPENAI_EMBEDDING with "large" replaced by "small". Example: text-embedding-3-small',
       ),
   })
   .extend(clientEnvSchema.shape); // Include all client env vars as well

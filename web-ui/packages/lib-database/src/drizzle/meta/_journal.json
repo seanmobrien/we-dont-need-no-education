@@ -43,6 +43,20 @@
       "when": 1765055102924,
       "tag": "0005_supreme_inertia",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779505768405,
+      "tag": "0006_seed_embedding_small",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779505768406,
+      "tag": "0007_document_unit_embeddings_model_pk",
+      "breakpoints": true
     }
   ]
 }

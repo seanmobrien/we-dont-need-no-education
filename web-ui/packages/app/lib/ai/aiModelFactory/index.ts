@@ -2,6 +2,7 @@ export {
   getProviderRegistry,
   aiModelFactory,
   createEmbeddingModel,
+  createEmbeddingSmallModel,
   createGoogleEmbeddingModel,
 } from './factory';
 

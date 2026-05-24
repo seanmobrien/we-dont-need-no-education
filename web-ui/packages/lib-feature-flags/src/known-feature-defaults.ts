@@ -66,6 +66,9 @@ const ModelConfigDefaults: ModelConfigDefaultType = {
     embedding: {
       model: env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING'),
     },
+    embedding_small: {
+      model: env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL'),
+    },
   },
   google: {
     default: {},
@@ -75,7 +78,8 @@ const ModelConfigDefaults: ModelConfigDefaultType = {
       completions: { model: 'gemini-2.5-flash' },
       'gemini-2.0-flash': { model: 'gemini-2.0-flash' },
     },
-    embedding: { model: 'text-embedding-004' },
+    embedding: { model: env('GOOGLE_GENERATIVE_EMBEDDING') },
+    embedding_small: { model: env('GOOGLE_GENERATIVE_EMBEDDING_SMALL') },
   },
   openai: {
     default: {},
@@ -84,7 +88,8 @@ const ModelConfigDefaults: ModelConfigDefaultType = {
       lofi: { model: 'gpt-5-mini' },
       completions: { model: 'gpt-5-mini' },
     },
-    embedding: { model: 'text-embedding-3-large' },
+    embedding: { model: env('OPENAI_EMBEDDING') },
+    embedding_small: { model: env('OPENAI_EMBEDDING_SMALL') },
   },
 } as const;
 

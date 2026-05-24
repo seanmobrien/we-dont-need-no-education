@@ -14,6 +14,7 @@ import {
 } from '@compliance-theater/types/lib/ai/core';
 import {
   AiModelTypeValue_Embedding,
+  AiModelTypeValue_EmbeddingSmall,
   AiModelTypeValue_GoogleEmbedding,
 } from '@compliance-theater/types/lib/ai/core/unions';
 import { log, LoggedError } from '@compliance-theater/logger';
@@ -124,6 +125,35 @@ type OptionsFactoryProps = Omit<ModelServerConfig, 'model'> & {
   apiKey?: string;
 };
 
+const getDefaultEmbeddingConfig = (
+  provider: AiProviderType,
+  model: 'embedding' | 'embedding-small',
+): ModelServerConfig => {
+  switch (provider) {
+    case 'azure':
+      return {
+        model:
+          model === 'embedding-small'
+            ? env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL')
+            : env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING'),
+      };
+    case 'google':
+      return {
+        model:
+          model === 'embedding-small'
+            ? env('GOOGLE_GENERATIVE_EMBEDDING_SMALL')
+            : env('GOOGLE_GENERATIVE_EMBEDDING'),
+      };
+    case 'openai':
+      return {
+        model:
+          model === 'embedding-small'
+            ? env('OPENAI_EMBEDDING_SMALL')
+            : env('OPENAI_EMBEDDING'),
+      };
+  }
+};
+
 /**
  * Factory function used to create all of our custom providers.  Supports model aliases
  * and flagsmith-based configuration management.
@@ -168,19 +198,32 @@ const customProviderFactory = async <
     config: ModelProviderFactoryConfig,
     model: T
   ): ModelFromDeploymentId<T> => {
+    const isEmbeddingModel =
+      model === 'embedding' || model === 'embedding-small';
+    const resolvedEmbeddingConfig =
+      model === 'embedding'
+        ? config.embedding?.model
+          ? config.embedding
+          : getDefaultEmbeddingConfig(provider, 'embedding')
+        : model === 'embedding-small'
+          ? config.embedding_small?.model
+            ? config.embedding_small
+            : getDefaultEmbeddingConfig(provider, 'embedding-small')
+          : undefined;
+
     const merged = {
       ...(apiKey ? { apiKey } : {}),
       ...(baselineFactory(model) ?? {}),
       ...(config['default'] ?? {}),
       ...(model === undefined ? config.fallback ?? {} : {}),
-      ...(model && model !== 'embedding' ? config.named?.[model] ?? {} : {}),
-      ...(model === 'embedding' ? config.embedding ?? {} : {}),
+      ...(model && !isEmbeddingModel ? config.named?.[model] ?? {} : {}),
+      ...(resolvedEmbeddingConfig ?? {}),
     };
     const builder = providerFactory(optionsFactory(merged) as TOptions);
     if (model === undefined) {
       return builder as ProviderV2 as ModelFromDeploymentId<T>;
     }
-    if (model === 'embedding') {
+    if (isEmbeddingModel) {
       return builder.textEmbeddingModel(
         merged.model!
       ) as ModelFromDeploymentId<T>;
@@ -214,6 +257,7 @@ const customProviderFactory = async <
       languageModels,
       textEmbeddingModels: {
         embedding: modelFactory(cfg, 'embedding'),
+        'embedding-small': modelFactory(cfg, 'embedding-small'),
       },
       fallbackProvider: modelFactory(cfg, undefined),
     });
@@ -231,7 +275,7 @@ const getAzureProvider = async () => {
     providerFactory: createAzure,
     apiKey: env('AZURE_API_KEY'),
     baselineFactory: (model: string | undefined) =>
-      model === 'embedding'
+      model === 'embedding' || model === 'embedding-small'
         ? {
           model,
           // base: env('AZURE_OPENAI_ENDPOINT_EMBEDDING'),
@@ -481,6 +525,7 @@ export const aiModelFactory: GetAiModelProviderOverloads = async (
   }
   switch (modelType) {
     case 'embedding':
+    case 'embedding-small':
     case caseProviderMatch('azure:', modelType): // Matches any string starting with 'azure
       const embed = (await getProviderRegistry()).textEmbeddingModel(
         azureModelKey
@@ -525,6 +570,13 @@ export const aiModelFactory: GetAiModelProviderOverloads = async (
 export const createEmbeddingModel = async (): Promise<
   EmbeddingModelV2<string>
 > => aiModelFactory(AiModelTypeValue_Embedding);
+
+/**
+ * Convenience function to create Azure small embedding model
+ */
+export const createEmbeddingSmallModel = async (): Promise<
+  EmbeddingModelV2<string>
+> => aiModelFactory(AiModelTypeValue_EmbeddingSmall);
 
 /**
  * Convenience function to create Google embedding model

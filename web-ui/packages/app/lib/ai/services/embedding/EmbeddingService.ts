@@ -7,6 +7,10 @@ import {
   SingletonProvider,
 } from '@compliance-theater/logger/singleton-provider';
 
+type EmbeddingServiceOptions = {
+  expectedDimensions?: number;
+};
+
 export class EmbeddingService implements IEmbeddingService {
   private static get globalEmbeddingModel(): Promise<EmbeddingModelV2<string>> {
     return globalRequiredSingleton(
@@ -27,17 +31,25 @@ export class EmbeddingService implements IEmbeddingService {
   private embeddingClient: Promise<EmbeddingModelV2<string>>;
   private cacheEmbeddings = true;
   private embeddingCache: Map<string, number[]> = new Map();
+  private readonly expectedDimensions: number | undefined;
 
   constructor(
     embeddingClient?:
       | EmbeddingModelV2<string>
-      | Promise<EmbeddingModelV2<string>>
+      | Promise<EmbeddingModelV2<string>>,
+    options?: EmbeddingServiceOptions,
   ) {
     this.embeddingClient =
       embeddingClient instanceof Promise ||
         typeof embeddingClient === 'undefined'
         ? embeddingClient ?? EmbeddingService.globalEmbeddingModel
         : Promise.resolve(embeddingClient);
+    this.expectedDimensions =
+      typeof options?.expectedDimensions === 'number' &&
+      Number.isInteger(options.expectedDimensions) &&
+      options.expectedDimensions > 0
+        ? options.expectedDimensions
+        : undefined;
   }
 
   public setCacheEmbeddings(cache: boolean): this {
@@ -45,11 +57,54 @@ export class EmbeddingService implements IEmbeddingService {
     return this;
   }
 
+  private getProviderOptions(
+    model: EmbeddingModelV2<string>,
+    dimensions: number,
+  ): { openai: { dimensions: number } } | undefined {
+    const descriptor = model as { modelId?: unknown; provider?: unknown };
+    const provider =
+      typeof descriptor.provider === 'string'
+        ? descriptor.provider
+        : typeof descriptor.modelId === 'string' && descriptor.modelId.startsWith('azure:')
+          ? 'azure'
+          : typeof descriptor.modelId === 'string' && descriptor.modelId.startsWith('openai:')
+            ? 'openai'
+            : undefined;
+
+    if (
+      provider === 'azure' ||
+      provider === 'openai' ||
+      (typeof provider === 'string' &&
+        (provider.startsWith('azure.') || provider.startsWith('openai.')))
+    ) {
+      // Azure text embeddings use the OpenAI embedding provider implementation,
+      // so the dimensions override must still flow through the `openai` key.
+      return { openai: { dimensions } };
+    }
+    return undefined;
+  }
+
   private async getEmbedding(query: string): Promise<number[]> {
+    const model = await this.embeddingClient;
+    const providerOptions =
+      typeof this.expectedDimensions === 'number'
+        ? this.getProviderOptions(model, this.expectedDimensions)
+        : undefined;
     const ret = await embed({
-      model: await this.embeddingClient,
+      model,
       value: query,
+      ...(providerOptions ? { providerOptions } : {}),
     });
+
+    if (
+      typeof this.expectedDimensions === 'number' &&
+      ret.embedding.length !== this.expectedDimensions
+    ) {
+      throw new RangeError(
+        `Expected embedding dimension ${this.expectedDimensions} but received ${ret.embedding.length}.`,
+      );
+    }
+
     return ret.embedding;
   }
 

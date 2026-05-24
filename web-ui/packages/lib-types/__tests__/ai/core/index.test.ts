@@ -25,6 +25,7 @@ describe('AI Core Types', () => {
     it('should correctly identify valid AI model types', () => {
       expect(isAiModelType('lofi')).toBe(true);
       expect(isAiModelType('hifi')).toBe(true);
+      expect(isAiModelType('embedding-small')).toBe(true);
       expect(isAiModelType('invalid')).toBe(false);
       expect(isAiModelType(undefined)).toBe(false);
       expect(isAiModelType(null)).toBe(false);
@@ -34,6 +35,7 @@ describe('AI Core Types', () => {
       expect(isAiLanguageModelType('lofi')).toBe(true);
       expect(isAiLanguageModelType('hifi')).toBe(true);
       expect(isAiLanguageModelType('embedding')).toBe(false);
+      expect(isAiLanguageModelType('embedding-small')).toBe(false);
       expect(isAiLanguageModelType('google-embedding')).toBe(false);
     });
 

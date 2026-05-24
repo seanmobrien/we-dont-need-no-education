@@ -111,7 +111,13 @@ export class ModelAvailabilityManager {
    * Disable all models for a provider
    */
   disableProvider(provider: 'azure' | 'google' | 'openai'): void {
-    const modelTypes = ['hifi', 'lofi', 'completions', 'embedding'];
+    const modelTypes = [
+      'hifi',
+      'lofi',
+      'completions',
+      'embedding',
+      'embedding-small',
+    ];
     const googleSpecificModels = [
       'gemini-pro',
       'gemini-flash',
@@ -133,7 +139,13 @@ export class ModelAvailabilityManager {
    * Enable all models for a provider
    */
   async enableProvider(provider: 'azure' | 'google' | 'openai'): Promise<void> {
-    const modelTypes = ['hifi', 'lofi', 'completions', 'embedding'];
+    const modelTypes = [
+      'hifi',
+      'lofi',
+      'completions',
+      'embedding',
+      'embedding-small',
+    ];
     const googleSpecificModels = [
       'gemini-pro',
       'gemini-flash',
@@ -272,6 +284,7 @@ export const handleAzureRateLimit = (durationMs: number = 300000): void => {
   getAvailability().temporarilyDisableModel('azure:lofi', durationMs);
   getAvailability().temporarilyDisableModel('azure:completions', durationMs);
   getAvailability().temporarilyDisableModel('azure:embedding', durationMs);
+  getAvailability().temporarilyDisableModel('azure:embedding-small', durationMs);
 };
 
 /**
@@ -285,6 +298,10 @@ export const handleGoogleRateLimit = (durationMs: number = 300000): void => {
   getAvailability().temporarilyDisableModel('google:hifi', durationMs);
   getAvailability().temporarilyDisableModel('google:lofi', durationMs);
   getAvailability().temporarilyDisableModel('google:embedding', durationMs);
+  getAvailability().temporarilyDisableModel(
+    'google:embedding-small',
+    durationMs
+  );
   getAvailability().temporarilyDisableModel('google:gemini-pro', durationMs);
   getAvailability().temporarilyDisableModel('google:gemini-flash', durationMs);
   getAvailability().temporarilyDisableModel(
@@ -305,4 +322,8 @@ export const handleOpenAIRateLimit = (durationMs: number = 300000): void => {
   getAvailability().temporarilyDisableModel('openai:lofi', durationMs);
   getAvailability().temporarilyDisableModel('openai:completions', durationMs);
   getAvailability().temporarilyDisableModel('openai:embedding', durationMs);
+  getAvailability().temporarilyDisableModel(
+    'openai:embedding-small',
+    durationMs
+  );
 };

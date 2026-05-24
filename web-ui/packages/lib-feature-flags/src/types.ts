@@ -38,6 +38,7 @@ export type ModelServerConfig = ModelProviderConfig & {
 export type ModelProviderFactoryConfig = {
   default: ModelProviderConfig;
   embedding: ModelServerConfig;
+  embedding_small?: ModelServerConfig;
   fallback?: ModelProviderConfig;
   named?: Record<string, ModelServerConfig> & {
     hifi: ModelServerConfig;
