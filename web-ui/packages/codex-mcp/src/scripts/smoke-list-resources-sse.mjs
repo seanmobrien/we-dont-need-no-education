@@ -8,7 +8,7 @@ import {
   readRpcResult,
   rpc,
   warnIfInsecureUrl
-} from "./runtime-utils.mjs";
+} from "./runtime-utils.js";
 
 const PREFIX = "MCP_COMPLIANCE_THEATER_RESOURCE_";
 

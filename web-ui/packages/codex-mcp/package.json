@@ -15,7 +15,7 @@
     "build": "node ./scripts/build-plugin-package.mjs",
     "test": "jest --coverage",
     "test:unit": "jest",
-    "lint": "eslint src --ext .ts,.js --config ../../eslint.config.mjs",
+    "lint": "eslint src --config ../../eslint.config.mjs",
     "prepack": "node ./scripts/build-plugin-package.mjs",
     "prepare": "node ./scripts/build-plugin-package.mjs",
     "publish": "npm publish --access public"

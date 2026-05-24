@@ -40,56 +40,21 @@
   "settings": [
     {
       "name": "targetServerUrl",
-      "label": "Target server URL",
-      "description": "Base URL for the upstream service or remote MCP endpoint.",
+      "label": "Compliance Theater URL",
+      "description": "MCP SSE endpoint. Use the hosted default, or http://localhost:3000/api/ai/tools/sse for local development.",
       "type": "string",
       "required": true,
-      "default": "http://localhost:3000/api/ai/tools/sse",
+      "default": "https://full-ui.compliance-theater.obapps.net/api/ai/tools/sse",
       "env": "MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL"
-    },
-    {
-      "name": "authorizationIssuer",
-      "label": "Authorization issuer",
-      "description": "OAuth issuer used to discover /.well-known/oauth-authorization-server metadata.",
-      "type": "string",
-      "required": true,
-      "default": "https://login.obapps.net/realms/compliance-theater",
-      "env": "MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER"
-    },
-    {
-      "name": "clientId",
-      "label": "OAuth client ID",
-      "description": "OAuth public client identifier used for interactive login.",
-      "type": "string",
-      "required": true,
-      "default": "codex",
-      "env": "MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID"
     },
     {
       "name": "clientSecret",
       "label": "OAuth client secret",
-      "description": "Optional OAuth client secret for confidential clients.",
+      "description": "Optional OAuth client secret for confidential clients. Store this in Codex secure plugin settings rather than config.toml.",
       "type": "string",
       "required": false,
       "secure": true,
       "env": "MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET"
-    },
-    {
-      "name": "oauthScope",
-      "label": "OAuth scope",
-      "description": "Space-delimited scopes requested for resource and tool access.",
-      "type": "string",
-      "required": false,
-      "default": "openid",
-      "env": "MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE"
-    },
-    {
-      "name": "sessionStatusUrl",
-      "label": "Session status URL",
-      "description": "Optional app endpoint used as a secondary bearer-token status check. Leave blank to use OAuth userinfo.",
-      "type": "string",
-      "required": false,
-      "env": "MCP_COMPLIANCE_THEATER_RESOURCE_SESSION_STATUS_URL"
     },
     {
       "name": "logFile",
