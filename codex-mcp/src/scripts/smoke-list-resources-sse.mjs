@@ -19,7 +19,7 @@ function readEnv(name) {
 const sseUrl = readEnv("SERVER_URL") ||
   "http://localhost:3000/api/ai/tools/sse";
 const tokenCachePath = readEnv("TOKEN_CACHE_PATH") ||
-  join(homedir(), ".codex", "mcp-resource-auth", "compliance-theater-token-cache.json");
+  join(homedir(), ".codex", "compliance-theater", "compliance-theater-token-cache.json");
 const stageTimeoutMs = parseNumber(readEnv("SMOKE_TIMEOUT_SECONDS"), 30, 1) * 1000;
 const httpTimeoutMs = parseNumber(readEnv("HTTP_TIMEOUT_MS"), 15000, 1000);
 const httpRetries = parseNumber(readEnv("HTTP_RETRY_COUNT"), 1, 0);
