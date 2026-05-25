@@ -71,6 +71,7 @@ import { NextRequest } from 'next/server';
 import { POST, PUT, GET } from '../../../../app/api/email/route';
 import { GET as GetWithId, DELETE } from '../../../../app/api/email/[emailId]/route';
 import { selectForGrid } from '../../../../lib/components/mui/data-grid/queryHelpers';
+import { hideConsoleOutput } from '../../../shared/test-utils';
 
 import { withJestTestExtensions } from '../../../shared/jest.test-extensions';
 import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file/index';
@@ -88,9 +89,11 @@ type MockDbQuery = {
 let mockDb = withJestTestExtensions().makeMockDb();
 let mockDbQuery: MockDbQuery;
 let mockDbDelete: jest.Mock;
+const mockConsole = hideConsoleOutput();
 
 describe('Email API', () => {
   beforeEach(() => {
+    mockConsole.setup();
 
     // Reset EmailService mocks
     Object.values(mockEmailService).forEach((mock) => mock.mockReset());

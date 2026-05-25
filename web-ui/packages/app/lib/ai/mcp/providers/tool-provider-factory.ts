@@ -30,7 +30,7 @@ import { toolProxyFactory } from '../tools';
 
 import { clientToolProviderFactory } from './client-tool-provider';
 
-type DisposeEmitterListener = (...args: unknown[]) => void;
+type DisposeEmitterListener = (...args: unknown[]) => {};
 
 const asDisposeEmitterListener = (
   listener: () => void,
