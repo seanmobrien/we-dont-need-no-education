@@ -312,7 +312,7 @@ const handler = wrapRouteRequest(
           l.info('=== MCP Handler: Server callback called ===', {
             serverInfo: safeSerialize.serverDescriptor(server),
           })
-        );
+        );        
         log((l) => l.info('=== Registering MCP tools ==='));
         registerAppMcpTools(server as MinimalMcpToolServer);
         server.server.onerror = makeErrorHandler(server, 'server');

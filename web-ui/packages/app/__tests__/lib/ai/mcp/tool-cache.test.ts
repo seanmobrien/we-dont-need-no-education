@@ -166,6 +166,19 @@ describe('MCPToolCache', () => {
       expect(call1[0]).toContain(':ro'); // Read-only
       expect(call2[0]).toContain(':rw'); // Read-write
     });
+
+    it('should generate different keys when the cache salt changes', async () => {
+      const options1 = { ...mockOptions, cacheKeySalt: 'registry-v1' };
+      const options2 = { ...mockOptions, cacheKeySalt: 'registry-v2' };
+
+      await cache.setCachedTools(options1, mockToolSet);
+      await cache.setCachedTools(options2, mockToolSet);
+
+      expect(mockRedisClient.setEx).toHaveBeenCalledTimes(2);
+      const call1 = mockRedisClient.setEx.mock.calls[0];
+      const call2 = mockRedisClient.setEx.mock.calls[1];
+      expect(call1[0]).not.toEqual(call2[0]);
+    });
   });
 
   describe('cache storage and retrieval', () => {

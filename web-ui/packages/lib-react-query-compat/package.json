@@ -51,21 +51,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "5.90.21",
-    "@tanstack/react-query-devtools": "5.91.3",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
-  },
-  "peerDependencies": {
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
-  },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    },
-    "react-dom": {
-      "optional": true
-    }
+    "@tanstack/react-query-devtools": "5.91.3"
   },
   "devDependencies": {
     "@swc/core": "^1.13.5",
@@ -78,8 +64,6 @@
     "eslint": "^9.39.3",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
     "rimraf": "^6.1.2",
     "typescript": "^5.9.3"
   }

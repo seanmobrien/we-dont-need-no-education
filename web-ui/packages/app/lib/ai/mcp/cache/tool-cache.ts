@@ -73,8 +73,12 @@ export class MCPToolCache {
       .substring(0, 16);
 
     const accessLevel = options.allowWrite ? 'rw' : 'ro';
+    const saltHash = createHash('sha256')
+      .update(options.cacheKeySalt ?? '')
+      .digest('hex')
+      .substring(0, 16);
 
-    return `${this.config.keyPrefix}:${urlHash}:${headersHash}:${accessLevel}`;
+    return `${this.config.keyPrefix}:${urlHash}:${headersHash}:${accessLevel}:${saltHash}`;
   }
 
   /**

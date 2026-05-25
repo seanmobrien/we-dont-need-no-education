@@ -87,4 +87,64 @@ describe('EmbeddingService', () => {
     // Distinct keys due to case sensitivity
     expect(embed).toHaveBeenCalledTimes(2);
   });
+
+  it('requests configured dimensions for azure embedding models', async () => {
+    const customModel = {
+      provider: 'azure.embeddings',
+      modelId: 'embedding-small',
+    };
+    (embed as jest.Mock).mockResolvedValueOnce({
+      embedding: Array.from({ length: 1536 }, (_, index) => index),
+    });
+
+    // @ts-expect-error - supplying structurally minimal model for test purposes
+    const service = new EmbeddingService(customModel, {
+      expectedDimensions: 1536,
+    });
+    const vector = await service.embed('dimensioned');
+
+    expect(vector).toHaveLength(1536);
+    expect(embed).toHaveBeenCalledWith({
+      model: customModel,
+      value: 'dimensioned',
+      providerOptions: {
+        openai: {
+          dimensions: 1536,
+        },
+      },
+    });
+  });
+
+  it('throws when embedding output dimensions do not match the expected size', async () => {
+    const customModel = {
+      provider: 'azure.embeddings',
+      modelId: 'embedding-small',
+    };
+    (embed as jest.Mock).mockResolvedValueOnce({
+      embedding: [1, 2, 3],
+    });
+
+    // @ts-expect-error - supplying structurally minimal model for test purposes
+    const service = new EmbeddingService(customModel, {
+      expectedDimensions: 1536,
+    });
+
+    await expect(service.embed('dimension-mismatch')).rejects.toThrow(
+      'Expected embedding dimension 1536 but received 3.',
+    );
+  });
+
+  it('rejects legacy providerOptions constructor usage', () => {
+    const customModel = {
+      provider: 'azure.embeddings',
+      modelId: 'embedding-small',
+    };
+
+    expect(
+      // @ts-expect-error - intentionally exercising legacy option shape rejection
+      () => new EmbeddingService(customModel, { providerOptions: {} }),
+    ).toThrow(
+      'EmbeddingService options.providerOptions is no longer supported. Use options.expectedDimensions instead.',
+    );
+  });
 });

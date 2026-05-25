@@ -1,0 +1,37 @@
+{
+  "name": "@compliance-theater/codex-mcp",
+  "version": "0.1.0",
+  "description": "Codex plugin for MCP authentication and resource access.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "dist-marketplace"
+  ],
+  "scripts": {
+    "build:clean": "rimraf dist dist-marketplace tsconfig.tsbuildinfo codex-plugin-workspace.json",
+    "build:publish": "node ./scripts/build-plugin-package.mjs",
+    "build:typescript": "node ./scripts/build-plugin-package.mjs",
+    "build": "node ./scripts/build-plugin-package.mjs",
+    "test": "jest --coverage",
+    "test:unit": "jest",
+    "lint": "eslint src --config ../web-ui/eslint.config.mjs",
+    "prepack": "node ./scripts/build-plugin-package.mjs",
+    "prepare": "node ./scripts/build-plugin-package.mjs",
+    "publish": "npm publish --access public"
+  },
+  "keywords": [
+    "codex",
+    "plugin",
+    "mcp",
+    "auth"
+  ],
+  "author": "Compliance Theater",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.0.0",
+    "eslint": "^9.39.3",
+    "jest": "^29.0.0",
+    "typescript": "^5.0.0"
+  }
+}

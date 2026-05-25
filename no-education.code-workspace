@@ -37,7 +37,7 @@
 		},
 		"files.watcherExclude": {
 			"**/.next/**": true,
-			"**/*.workspace/**": true,
+			"**/*.worktrees/**": true,
 			"**/.yarn-cache/**": true,
 			"**/coverage/**": true,
 			"**/dist/**": true,

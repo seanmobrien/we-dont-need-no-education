@@ -9,12 +9,13 @@
   },
   "workspaces": [
     "web-ui/packages/*",
+    "codex-mcp",
     "web-ui/submodules/json-viewer/packages",
     "web-ui/submodules/sce",
     "web-ui/submodules/sce/packages/*/ts"
   ],
   "scripts": {
-    "build:codex-publish": "pnpm --filter @compliance-theater/codex-mcp run build:publish",
+    "build:codex-publish": "yarn workspace @compliance-theater/codex-mcp build:publish",
     "add": "turbo run add --filter='@compliance-theater/*' ",
     "preinstall": "node preinstall.js",
     "codex-install-mcp": "node scripts/codex-install-mcp.mjs",
@@ -177,6 +178,7 @@
     "@emotion/cache": "11.14.0",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.0",
+    "@modelcontextprotocol/sdk": "1.29.0",
     "@mui/icons-material": "7.3.6",
     "@mui/material": "7.3.6",
     "@mui/material-nextjs": "7.3.6",
@@ -187,6 +189,7 @@
     "ai": "^5.0.23",
     "drizzle-orm": "^0.44.1",
     "got": "^14.4.9",
+    "mcp-handler": "1.1.0",
     "mitt": "^3.0.1",
     "next": "^15.5.12",
     "pg": ">=8",

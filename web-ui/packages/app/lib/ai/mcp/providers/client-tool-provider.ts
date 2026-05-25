@@ -69,6 +69,12 @@ import { ConnectableToolProvider, MCPClient } from '../types';
 import z from 'zod';
 import EventEmitter from '@protobufjs/eventemitter';
 
+type DisposeEmitterListener = (...args: unknown[]) => object;
+
+const asDisposeEmitterListener = (
+  listener: () => void,
+): DisposeEmitterListener => listener as unknown as DisposeEmitterListener;
+
 /**
  * Factory that creates a pre‑connected {@link ConnectableToolProvider} exposing
  * client‑side interactive tools defined via Zod schemas.
@@ -125,8 +131,10 @@ export const clientToolProviderFactory = (): ConnectableToolProvider => {
   const dispose = () => {
     emitter.emit('disposed');
   };
-  const addDisposeListener = (listener: () => void) => emitter.on('disposed', listener);
-  const removeDisposeListener = (listener: () => void) => emitter.off('disposed', listener);
+  const addDisposeListener = (listener: () => void) =>
+    emitter.on('disposed', asDisposeEmitterListener(listener));
+  const removeDisposeListener = (listener: () => void) =>
+    emitter.off('disposed', asDisposeEmitterListener(listener));
 
   const thisProvider: ConnectableToolProvider = {
     get_mcpClient: () => {

@@ -80,7 +80,12 @@ export type ProviderModelNormalization = {
 /**
  * List of aliased model names.
  */
-export const ModelAliasNameValues = ['hifi', 'lofi', 'embedding'] as const;
+export const ModelAliasNameValues = [
+  'hifi',
+  'lofi',
+  'embedding',
+  'embedding-small',
+] as const;
 
 export type ModelAliasNameType = (typeof ModelAliasNameValues)[number];
 
@@ -95,16 +100,19 @@ export const EnvironmentAliasMap: Record<
     hifi: 'AZURE_OPENAI_DEPLOYMENT_HIFI',
     lofi: 'AZURE_OPENAI_DEPLOYMENT_LOFI',
     embedding: 'AZURE_OPENAI_DEPLOYMENT_EMBEDDING',
+    'embedding-small': 'AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL',
   },
   google: {
     hifi: 'GOOGLE_GENERATIVE_HIFI',
     lofi: 'GOOGLE_GENERATIVE_LOFI',
     embedding: 'GOOGLE_GENERATIVE_EMBEDDING',
+    'embedding-small': 'GOOGLE_GENERATIVE_EMBEDDING_SMALL',
   },
   openai: {
     hifi: 'OPENAI_HIFI',
     lofi: 'OPENAI_LOFI',
     embedding: 'OPENAI_EMBEDDING',
+    'embedding-small': 'OPENAI_EMBEDDING_SMALL',
   },
 } as const;
 

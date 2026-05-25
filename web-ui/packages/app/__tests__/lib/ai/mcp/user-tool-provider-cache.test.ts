@@ -148,6 +148,43 @@ describe('getUserToolProviderCache', () => {
       expect(mockFactory).toHaveBeenCalledTimes(2);
     });
 
+    it('should create different instances when the tool cache salt changes', async () => {
+      const userId = 'user1';
+      const sessionId = 'session1';
+      const config1 = {
+        writeEnabled: true,
+        memoryDisabled: false,
+        toolCacheSalt: 'registry-v1',
+      };
+      const config2 = {
+        writeEnabled: true,
+        memoryDisabled: false,
+        toolCacheSalt: 'registry-v2',
+      };
+
+      const mockToolProviderSet2 = makeToolSet({});
+
+      mockFactory
+        .mockResolvedValueOnce(mockToolProviderSet)
+        .mockResolvedValueOnce(mockToolProviderSet2);
+
+      const result1 = await cache.getOrCreate(
+        userId,
+        sessionId,
+        config1,
+        mockFactory,
+      );
+      const result2 = await cache.getOrCreate(
+        userId,
+        sessionId,
+        config2,
+        mockFactory,
+      );
+
+      expect(result1).not.toBe(result2);
+      expect(mockFactory).toHaveBeenCalledTimes(2);
+    });
+
     it('should create different instances for different users', async () => {
       const sessionId = 'session1';
       const config = { writeEnabled: true, memoryDisabled: false };

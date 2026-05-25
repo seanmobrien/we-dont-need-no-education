@@ -57,10 +57,12 @@ describe('lib/ai/core/guards', () => {
     it('validates model and provider predicates for representative values', () => {
         expect(isAiModelType('azure:hifi')).toBe(true);
         expect(isAiModelType('google:embedding')).toBe(true);
+        expect(isAiModelType('embedding-small')).toBe(true);
         expect(isAiModelType('totally-unknown')).toBe(false);
 
         expect(isAiLanguageModelType('hifi')).toBe(true);
         expect(isAiLanguageModelType('embedding')).toBe(false);
+        expect(isAiLanguageModelType('embedding-small')).toBe(false);
         expect(isAiLanguageModelType('google-embedding')).toBe(false);
 
         expect(isAiProviderType('azure')).toBe(true);

@@ -46,11 +46,11 @@ type AppProviderRegisteryProvider = ProviderRegistryProvider<RegisteryProviders,
 */
 export interface GetAiModelProviderOverloads {
     (): Promise<AiModelProvider>;
-    (deploymentId: 'embedding' | 'google-embedding'): Promise<
+    (deploymentId: 'embedding' | 'embedding-small' | 'google-embedding'): Promise<
         EmbeddingModelV2<string>
     >;
     (
-        deploymentId: Exclude<AiModelType, 'embedding' | 'google-embedding'>
+        deploymentId: Exclude<AiModelType, 'embedding' | 'embedding-small' | 'google-embedding'>
     ): Promise<LanguageModelV2>;
     (deploymentId: AiModelType): Promise<
         LanguageModelV2 | EmbeddingModelV2<string>
@@ -62,6 +62,7 @@ export type IAiModelFactoryService = {
     getProviderRegistry: () => Promise<AppProviderRegisteryProvider>;
     aiModelFactory: GetAiModelProviderOverloads;
     createEmbeddingModel: () => Promise<EmbeddingModelV2<string>>;
+    createEmbeddingSmallModel: () => Promise<EmbeddingModelV2<string>>;
     createGoogleEmbeddingModel: Promise<EmbeddingModelV2<string>>;
 };
 

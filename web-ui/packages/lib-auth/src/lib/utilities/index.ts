@@ -10,11 +10,13 @@ export * from './keycloak-token-exchange';
 
 export type {
   KnownScope,
+  ExtractedRequestToken,
 } from './extract-token';
 
 export {
   KnownScopeIndex,
   KnownScopeValues,
+  extractTokenDetails,
   extractToken,
   SessionTokenKey
 } from './extract-token';

@@ -45,7 +45,7 @@
       ]
     },
     "@compliance-theater/codex-mcp#build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "@compliance-theater/app#build"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "!**/coverage/**",
@@ -156,7 +156,7 @@
       ]
     },
     "@compliance-theater/codex-mcp#build:publish": {
-      "dependsOn": ["^build:publish"],
+      "dependsOn": ["^build:publish", "@compliance-theater/app#build"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "!**/coverage/**",
@@ -458,11 +458,6 @@
       "cache": false,
       "persistent": false,
       "outputs": []
-    },
-    "dev": {
-      "cache": false,
-      "dependsOn": ["^dev"],
-      "persistent": true
     },
     "debug": {
       "cache": false,

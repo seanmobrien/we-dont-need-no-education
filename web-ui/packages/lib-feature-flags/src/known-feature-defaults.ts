@@ -32,6 +32,40 @@ const DEFAULT_ENHANCED_FETCH_CONFIG = {
   } as const,
 } as const satisfies EnhancedFetchConfig;
 
+const DEFAULT_EMBEDDING_DIMENSIONS = {
+  embedding: 3072,
+  'embedding-small': 1536,
+} as const;
+
+const parseEmbeddingDimensions = (
+  value: number | string,
+  fallback: number,
+): number => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const getDefaultEmbeddingDimensions = (
+  model: 'embedding' | 'embedding-small',
+): number =>
+  model === 'embedding-small'
+    ? parseEmbeddingDimensions(
+        env('AZURE_AISEARCH_VECTOR_SIZE_SMALL'),
+        DEFAULT_EMBEDDING_DIMENSIONS['embedding-small'],
+      )
+    : parseEmbeddingDimensions(
+        env('AZURE_AISEARCH_VECTOR_SIZE_LARGE'),
+        DEFAULT_EMBEDDING_DIMENSIONS.embedding,
+      );
+
+const getDefaultOpenAICompatibleEmbeddingProviderOptions = (
+  model: 'embedding' | 'embedding-small',
+) => ({
+  openai: {
+    dimensions: getDefaultEmbeddingDimensions(model),
+  },
+});
+
 type ModelConfigDefaultType = {
   [key in AiProvider | 'client']: key extends infer K
   ? K extends AiProvider
@@ -65,6 +99,13 @@ const ModelConfigDefaults: ModelConfigDefaultType = {
     },
     embedding: {
       model: env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING'),
+      providerOptions:
+        getDefaultOpenAICompatibleEmbeddingProviderOptions('embedding'),
+    },
+    embedding_small: {
+      model: env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL'),
+      providerOptions:
+        getDefaultOpenAICompatibleEmbeddingProviderOptions('embedding-small'),
     },
   },
   google: {
@@ -75,7 +116,8 @@ const ModelConfigDefaults: ModelConfigDefaultType = {
       completions: { model: 'gemini-2.5-flash' },
       'gemini-2.0-flash': { model: 'gemini-2.0-flash' },
     },
-    embedding: { model: 'text-embedding-004' },
+    embedding: { model: env('GOOGLE_GENERATIVE_EMBEDDING') },
+    embedding_small: { model: env('GOOGLE_GENERATIVE_EMBEDDING_SMALL') },
   },
   openai: {
     default: {},
@@ -84,7 +126,16 @@ const ModelConfigDefaults: ModelConfigDefaultType = {
       lofi: { model: 'gpt-5-mini' },
       completions: { model: 'gpt-5-mini' },
     },
-    embedding: { model: 'text-embedding-3-large' },
+    embedding: {
+      model: env('OPENAI_EMBEDDING'),
+      providerOptions:
+        getDefaultOpenAICompatibleEmbeddingProviderOptions('embedding'),
+    },
+    embedding_small: {
+      model: env('OPENAI_EMBEDDING_SMALL'),
+      providerOptions:
+        getDefaultOpenAICompatibleEmbeddingProviderOptions('embedding-small'),
+    },
   },
 } as const;
 

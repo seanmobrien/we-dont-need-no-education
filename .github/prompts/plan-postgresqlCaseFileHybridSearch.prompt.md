@@ -1,0 +1,55 @@
+## Plan: PostgreSQL Case-File Hybrid Search
+
+Refactor the current search stack so the shared `HybridSearchClient` becomes provider-agnostic, move Azure-specific request/response behavior into a dedicated Azure base, add a PostgreSQL-backed case-file implementation that combines lexical matches on `document_units.content` with pgvector similarity from `document_unit_embeddings.vector`, and route only case-file search through a feature flag. Policy search stays on Azure in the first pass.
+
+**Steps**
+1. Define provider-neutral contracts in the search service layer. Update `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/services/search/HybridSearchBase.ts` and `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/services/search/types.ts` so the shared layer owns only `hybridSearch(query, options)`, embedding generation, common result types, and a structured filter DTO rather than Azure payload mutation. Move current Azure-only payload and response parsing logic out of the shared base. This blocks the provider implementations.
+2. Preserve current Azure implementations on top of the new Azure base. Keep `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/services/search/HybridDocumentSearch.ts` and `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/services/search/HybridPolicySearch.ts` as Azure concrete clients for compatibility, but rebase them onto a new Azure-specific abstract class. Update the matching `.d.ts` files and `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/services/search/index.ts`. Depends on step 1.
+3. Add runtime provider selection for case-file search without changing call sites. Keep `hybridDocumentSearchFactory()` synchronous by returning a delegating client/router that resolves a feature flag inside `hybridSearch()` and dispatches to Azure or PostgreSQL. Add typed feature flags in `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/lib-feature-flags/src/known-feature.ts` and defaults in `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/lib-feature-flags/src/known-feature-defaults.ts`. Recommended flags: `search_casefile_provider` with default `azure`, plus `search_casefile_pg_config` for `embeddingTier`, candidate-pool sizes, and score weights. Leave `hybridPolicySearchFactory()` Azure-only in this pass. Depends on steps 1-2.
+4. Reconcile PostgreSQL schema prerequisites before query work. Treat `document_unit_embeddings.vector` as required because app code in `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/api/document-unit/embeddings.ts` and migration `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/lib-database/src/drizzle/0007_document_unit_embeddings_model_pk.sql` assume it exists, while `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/lib-database/src/drizzle/schema.ts` still comments it out and `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/lib-database/src/drizzle/0004_needy_invaders.sql` historically dropped it. Update repo-managed schema/migrations so the runtime shape is explicit, add pgvector indexes per supported embedding model/tier, and add a lexical index on `document_units.content` suitable for hybrid ranking. Can begin after step 1; blocks step 5.
+5. Implement PostgreSQL case-file hybrid search. Add a PostgreSQL-specific base plus a `PostgresHybridDocumentSearch` implementation that reuses `EmbeddingService` and the embedding-tier helpers from `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/api/document-unit/embeddings.ts`, queries `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/lib-database/src/drizzle/schema.ts` `DocumentWithDetails` metadata, joins `document_unit_embeddings` for vector similarity, collapses chunk-level hits to one row per document, and combines lexical/vector ranks into the existing `AiSearchResultEnvelope`. Depends on steps 1, 3, and 4.
+6. Map the existing case-file option contract onto SQL filters. Preserve support for `scope`, `emailId`, `threadId`, `attachmentId`, `documentId`, `replyToDocumentId`, and `relatedToDocumentId` using relational columns or view fields from `DocumentWithDetails` plus related-document arrays/joins. Keep the public tool-layer inputs and outputs unchanged. Depends on step 5.
+7. Update tests around provider-specific behavior and routing. Split the Azure-oriented assertions in `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/__tests__/lib/ai/services/search/hybridSearchClient.test.ts` so Azure payload/parsing expectations live with the Azure subclass, then add PG-focused tests for filter parity, chunk collapse, score merging, and feature-flag routing. Keep `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/__tests__/lib/ai/tools/searchCaseFile.test.ts` and `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/__tests__/lib/ai/tools/searchPolicyStore.test.ts` focused on the unchanged public interface. Depends on steps 2-6.
+8. Validate rollout and fallback behavior. Compare Azure and PostgreSQL case-file search on the same dataset, verify that policy search still routes through Azure, and document the rollout sequence for enabling PostgreSQL case-file search by feature flag without changing callers. Depends on steps 3-7.
+
+**Relevant files**
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/services/search/HybridSearchBase.ts` — current shared base to make provider-agnostic
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/services/search/HybridSearchBase.d.ts` — declaration mirror for the shared base
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/services/search/types.ts` — shared search result/options types; move Azure payload types out of here
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/services/search/HybridDocumentSearch.ts` — current Azure document client or wrapper/router entry point
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/services/search/HybridDocumentSearch.d.ts` — declaration mirror
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/services/search/HybridPolicySearch.ts` — Azure-only in the first pass, rebased onto the new Azure base
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/services/search/HybridPolicySearch.d.ts` — declaration mirror
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/services/search/index.ts` — export surface for provider/router additions
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/tools/searchCaseFile.ts` — caller that should remain unchanged while provider routing changes underneath
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/ai/tools/searchPolicyStore.ts` — unchanged Azure policy path in this pass
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/lib/api/document-unit/embeddings.ts` — existing pgvector access and embedding-tier helpers to reuse
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/lib-database/src/drizzle/schema.ts` — `document_units`, `document_unit_embeddings`, and `DocumentWithDetails`
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/lib-database/src/drizzle/0004_needy_invaders.sql` — historical migration that dropped `document_unit_embeddings.vector`
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/lib-database/src/drizzle/0007_document_unit_embeddings_model_pk.sql` — later migration that reintroduces `vector` and embedding-model lineage
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/lib-feature-flags/src/known-feature.ts` — add typed case-file search flags
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/lib-feature-flags/src/known-feature-defaults.ts` — add default case-file search flag values
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/__tests__/lib/ai/services/search/hybridSearchClient.test.ts` — current Azure-heavy search test surface to split/refocus
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/__tests__/lib/ai/tools/searchCaseFile.test.ts` — public contract coverage for case-file search
+- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/app/__tests__/lib/ai/tools/searchPolicyStore.test.ts` — explicit coverage that policy stays on Azure
+- `/home/seanm/repos/we-dont-need-no-education/chat/scb-embed/src/main/java/com/obapps/schoolchatbot/embed/FileSystemEmbedder.java` — policy ingest reference only; not modified in this pass
+- `/home/seanm/repos/we-dont-need-no-education/chat/scb-embed/src/main/java/com/obapps/schoolchatbot/embed/EmbedPlsas.java` — Azure policy indexing reference only; not modified in this pass
+
+**Verification**
+1. Add targeted Jest coverage for the refactored search services and run `yarn test __tests__/lib/ai/services/search/hybridSearchClient.test.ts __tests__/lib/ai/tools/searchCaseFile.test.ts __tests__/lib/ai/tools/searchPolicyStore.test.ts __tests__/lib/api/document-unit/embeddings.test.ts` from `web-ui/packages/app`.
+2. Add PG-search unit tests that assert filter parity with the current `CaseFileSearchOptions` contract, best-chunk collapse, and weighted hybrid ranking.
+3. Run an A/B smoke test against the same case-file dataset with `search_casefile_provider='azure'` and `search_casefile_provider='postgresql'`; compare top result ids, result counts, and latency.
+4. Verify database prerequisites in a real environment before rollout: `document_unit_embeddings.vector` exists, the pgvector extension is installed, embedding-tier-specific vector indexes exist, and the lexical index on `document_units.content` is used under `EXPLAIN ANALYZE`.
+5. Confirm policy queries continue to route through Azure regardless of the case-file provider flag.
+
+**Decisions**
+- First pass includes only PostgreSQL-backed case-file search.
+- Policy search is explicitly out of scope and should fall back to the existing Azure AI Search implementation.
+- The rollout switch is a feature flag, not an env-only toggle.
+- Embedding tier should be configurable internally for PostgreSQL search while keeping the public `hybridSearch(query, options)` interface unchanged.
+- Because feature flag resolution is async today, case-file provider selection should happen inside a delegating search client or router, not by making the existing factory async.
+
+**Further Considerations**
+1. Prefer a structured filter DTO over carrying Azure OData strings through the shared abstraction; otherwise the “agnostic” base will still be Azure-shaped.
+2. Put PostgreSQL score weights and candidate-pool sizes behind the case-file PG config flag so ranking can be tuned without another API or factory change.
+3. When policy PostgreSQL search comes back into scope, the provider-neutral base should already be ready for a follow-up `PostgresHybridPolicySearch` without revisiting tool callers.

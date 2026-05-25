@@ -25,6 +25,7 @@ import {
   cacheWithRedis,
   getRedisClient,
 } from '../../../lib/ai/middleware';
+import { createAzure } from '@ai-sdk/azure';
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import {
@@ -33,11 +34,13 @@ import {
   AiModelTypeValue_HiFi,
   AiModelTypeValue_Completions,
   AiModelTypeValue_Embedding,
+  AiModelTypeValue_EmbeddingSmall,
   AiModelTypeValue_GeminiPro,
   AiModelTypeValue_GeminiFlash,
   AiModelTypeValue_GoogleEmbedding,
 } from '@compliance-theater/types/lib/ai/core/unions';
 import { isAiModelType, isAiLanguageModelType } from '@compliance-theater/types/lib/ai/core/guards';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 
 // Mock environment variables - handled globally in jest.env-vars.ts
 
@@ -56,6 +59,7 @@ describe('AI Model Types', () => {
       'google:hifi',
       'completions',
       'embedding',
+      'embedding-small',
       'gemini-pro',
       'gemini-flash',
       'google-embedding',
@@ -74,6 +78,7 @@ describe('AI Model Types', () => {
     expect(AiModelTypeValue_HiFi).toBe('hifi');
     expect(AiModelTypeValue_Completions).toBe('completions');
     expect(AiModelTypeValue_Embedding).toBe('embedding');
+    expect(AiModelTypeValue_EmbeddingSmall).toBe('embedding-small');
     expect(AiModelTypeValue_GeminiPro).toBe('gemini-pro');
     expect(AiModelTypeValue_GeminiFlash).toBe('gemini-flash');
     expect(AiModelTypeValue_GoogleEmbedding).toBe('google-embedding');
@@ -86,6 +91,7 @@ describe('AI Model Type Guards', () => {
     expect(isAiModelType('hifi')).toBe(true);
     expect(isAiModelType('completions')).toBe(true);
     expect(isAiModelType('embedding')).toBe(true);
+    expect(isAiModelType('embedding-small')).toBe(true);
     expect(isAiModelType('gemini-pro')).toBe(true);
     expect(isAiModelType('gemini-flash')).toBe(true);
     expect(isAiModelType('google-embedding')).toBe(true);
@@ -99,6 +105,7 @@ describe('AI Model Type Guards', () => {
     expect(isAiLanguageModelType('gemini-pro')).toBe(true);
     expect(isAiLanguageModelType('gemini-flash')).toBe(true);
     expect(isAiLanguageModelType('embedding')).toBe(false);
+    expect(isAiLanguageModelType('embedding-small')).toBe(false);
     expect(isAiLanguageModelType('google-embedding')).toBe(false);
     expect(isAiLanguageModelType('invalid-model')).toBe(false);
   });
@@ -122,6 +129,62 @@ describe('AI Model Factory Integration', () => {
       '../../../lib/ai/aiModelFactory'
     );
     expect(typeof createGoogleEmbeddingModel).toBe('function');
+  });
+
+  it('should define createEmbeddingSmallModel function', async () => {
+    const { createEmbeddingSmallModel } = await import(
+      '../../../lib/ai/aiModelFactory'
+    );
+    expect(typeof createEmbeddingSmallModel).toBe('function');
+  });
+
+  it('should resolve the small embedding alias separately from the large alias', async () => {
+    const { createEmbeddingSmallModel, createEmbeddingModel } = await import(
+      '../../../lib/ai/aiModelFactory'
+    );
+
+    const smallModel = await createEmbeddingSmallModel();
+    const largeModel = await createEmbeddingModel();
+
+    expect(smallModel).toMatchObject({
+      modelId: 'test-embedding-small',
+    });
+    expect(largeModel).toMatchObject({
+      modelId: 'test-embedding',
+    });
+    expect(smallModel).not.toMatchObject({
+      modelId: 'test-embedding',
+    });
+  });
+
+  it('should seed Azure embedding defaults with OpenAI-compatible dimensions', async () => {
+    const createAzureMock = createAzure as jest.MockedFunction<typeof createAzure>;
+
+    SingletonProvider.Instance.delete(
+      Symbol.for('@noeducation/aiModelFactory:providerRegistry')
+    );
+    createAzureMock.mockClear();
+
+    const { createEmbeddingModel } = await import(
+      '../../../lib/ai/aiModelFactory'
+    );
+
+    await createEmbeddingModel();
+
+    const embeddingCalls = createAzureMock.mock.results.flatMap((result) => {
+      const builder = result.value as
+        | { textEmbeddingModel?: jest.Mock }
+        | undefined;
+      return builder?.textEmbeddingModel?.mock.calls ?? [];
+    });
+
+    expect(createAzureMock).toHaveBeenCalled();
+    expect(embeddingCalls).toEqual(
+      expect.arrayContaining([
+        ['test-embedding', { dimensions: 3072 }],
+        ['test-embedding-small', { dimensions: 1536 }],
+      ])
+    );
   });
 
   it('should define model availability control functions', async () => {
@@ -195,6 +258,9 @@ describe('Model Availability Management', () => {
     expect(await modelControls.isModelAvailable('azure:hifi')).toBe(false);
     expect(await modelControls.isModelAvailable('azure:lofi')).toBe(false);
     expect(await modelControls.isModelAvailable('azure:embedding')).toBe(false);
+    expect(await modelControls.isModelAvailable('azure:embedding-small')).toBe(
+      false
+    );
     expect(await modelControls.isProviderAvailable('azure')).toBe(false);
 
     // Google should still be available
@@ -233,6 +299,7 @@ describe('Model Availability Management', () => {
     expect(modelControls.isModelAvailable('azure:hifi')).toBe(false);
     expect(modelControls.isModelAvailable('azure:lofi')).toBe(false);
     expect(modelControls.isModelAvailable('azure:embedding')).toBe(false);
+    expect(modelControls.isModelAvailable('azure:embedding-small')).toBe(false);
 
     // Google should still be available
     expect(modelControls.isModelAvailable('google:hifi')).toBe(true);
@@ -244,6 +311,9 @@ describe('Model Availability Management', () => {
     expect(modelControls.isModelAvailable('google:hifi')).toBe(false);
     expect(modelControls.isModelAvailable('google:gemini-pro')).toBe(false);
     expect(modelControls.isModelAvailable('google:embedding')).toBe(false);
+    expect(modelControls.isModelAvailable('google:embedding-small')).toBe(
+      false
+    );
 
     // Azure should still be available
     expect(modelControls.isModelAvailable('azure:hifi')).toBe(true);

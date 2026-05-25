@@ -6,9 +6,20 @@ import { useSuspenseQuery } from '@compliance-theater/react-query-compat/runtime
 import { UseEmailApiQueryResult, TResponseMap, EmailAttachment } from './types';
 const fetch = resolveFetchService();
 
+type EmailApiError = Error & {
+  status?: number;
+  statusText?: string;
+  responseBody?: string;
+};
+
 const getHttpStatusFromError = (error: unknown): number | undefined => {
   if (!(error instanceof Error)) {
     return undefined;
+  }
+
+  const directStatus = (error as EmailApiError).status;
+  if (typeof directStatus === 'number') {
+    return directStatus;
   }
 
   const cause = error.cause;
@@ -97,13 +108,24 @@ export const emailApiQuery = async <
           return [] as unknown as TResponseMap<TQuery>;
         }
       }
-      throw new Error(`Failed to fetch ${description}`, {
-        cause: {
-          name: 'FetchError',
-          status: response.status,
-          statusText: response.statusText,
-        },
-      });
+      let responseBody: string | undefined;
+      try {
+        const maybeBody = await response.text();
+        responseBody = maybeBody?.trim() || undefined;
+      } catch {
+        responseBody = undefined;
+      }
+
+      const statusSummary = `${response.status} ${response.statusText}`.trim();
+      const message = responseBody
+        ? `Failed to fetch ${description} (${statusSummary}): ${responseBody}`
+        : `Failed to fetch ${description} (${statusSummary})`;
+      const fetchError = new Error(message) as EmailApiError;
+      fetchError.name = 'FetchError';
+      fetchError.status = response.status;
+      fetchError.statusText = response.statusText;
+      fetchError.responseBody = responseBody;
+      throw fetchError;
     }
     const data = (await response.json()) as TResponseMap<TQuery>;
     if (

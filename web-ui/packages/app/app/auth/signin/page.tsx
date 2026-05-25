@@ -12,6 +12,32 @@ import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { dumpError, LoggedError } from '@compliance-theater/logger';
 import { cookies } from 'next/headers';
 
+const normalizeCallbackUrl = (value: string | undefined): string | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (trimmed.startsWith('/')) {
+    return trimmed;
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.origin === 'http://localhost:3000') {
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
+};
+
 const sharedImageProps = {
   style: { height: 200, width: 270 },
   height: 520,
@@ -38,7 +64,20 @@ const SignInSlots = {
   form: { noValidate: true },
 };
 
-const SignIn = async () => {
+const SignIn = async ({
+  searchParams,
+}: {
+  searchParams?: Promise<{ callbackUrl?: string | string[] }>;
+}) => {
+  type SignInSearchParams = { callbackUrl?: string | string[] };
+  const resolvedSearchParams: SignInSearchParams = searchParams
+    ? await searchParams
+    : {};
+  const callbackFromQuery = Array.isArray(resolvedSearchParams?.callbackUrl)
+    ? resolvedSearchParams.callbackUrl[0]
+    : resolvedSearchParams?.callbackUrl;
+  const initialCallbackUrl = normalizeCallbackUrl(callbackFromQuery);
+
   const signInImpl = async (
     provider: AuthProvider,
     _formData: FormData,
@@ -47,7 +86,10 @@ const SignIn = async () => {
     'use server';
     try {
       return await signIn(provider.id, {
-        redirectTo: callbackUrl ?? '/',
+        redirectTo:
+          normalizeCallbackUrl(callbackUrl) ??
+          initialCallbackUrl ??
+          '/messages',
       });
     } catch (error) {
       // The desired flow for successful sign in in all cases

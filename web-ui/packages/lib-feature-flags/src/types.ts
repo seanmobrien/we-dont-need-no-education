@@ -27,10 +27,17 @@ export type ModelConfig = {
   tool_model: ModelType;
 };
 
+export type OpenAICompatibleEmbeddingModelSettings = {
+  dimensions?: number;
+};
+
 export type ModelProviderConfig = {
   base?: string;
   deployBased?: boolean;
   version?: string;
+  providerOptions?: {
+    openai?: OpenAICompatibleEmbeddingModelSettings;
+  };
 };
 export type ModelServerConfig = ModelProviderConfig & {
   model: string;
@@ -38,6 +45,7 @@ export type ModelServerConfig = ModelProviderConfig & {
 export type ModelProviderFactoryConfig = {
   default: ModelProviderConfig;
   embedding: ModelServerConfig;
+  embedding_small?: ModelServerConfig;
   fallback?: ModelProviderConfig;
   named?: Record<string, ModelServerConfig> & {
     hifi: ModelServerConfig;

@@ -95,6 +95,29 @@ const instrumentServer = () => {
     ?? process.env.AZURE_MONITOR_CONNECTION_STRING;
   console.info(`[otel] Azure Monitor Connection String: [${connStr}]`);
 
+  const disableAzureMonitorExporter = process.env.OTEL_DISABLE_AZURE_MONITOR === '1';
+  const disableOfflineStorage =
+    process.env.OTEL_AZURE_MONITOR_DISABLE_OFFLINE_STORAGE === '1';
+  const storageDirectory = process.env.OTEL_AZURE_MONITOR_STORAGE_DIRECTORY;
+
+  if (disableAzureMonitorExporter) {
+    console.log('[otel] Azure Monitor exporter disabled by OTEL_DISABLE_AZURE_MONITOR=1');
+    return;
+  }
+
+  const exporterOptions = {
+    connectionString: connStr,
+    ...(disableOfflineStorage ? { disableOfflineStorage: true } : {}),
+    ...(storageDirectory ? { storageDirectory } : {}),
+  };
+
+  if (disableOfflineStorage) {
+    console.log('[otel] Azure Monitor offline storage disabled by OTEL_AZURE_MONITOR_DISABLE_OFFLINE_STORAGE=1');
+  }
+  if (storageDirectory) {
+    console.log(`[otel] Azure Monitor offline storage directory: ${storageDirectory}`);
+  }
+
 
   // Skip instrumentation in development if no valid connection string
   if (
@@ -111,20 +134,15 @@ const instrumentServer = () => {
   };
   const traceExporter = new UrlFilteredSpanExporter(
     new ChunkingTraceExporter(
-      new AzureMonitorTraceExporter({
-        connectionString: connStr,
-        //connectionString: connStr 
-      }),
+      new AzureMonitorTraceExporter(exporterOptions),
       { maxChunkChars: 8000, keepOriginalKey: false },
     ),
     urlFilter,
   );
-  const metricExporter = new AzureMonitorMetricExporter({
-    connectionString: connStr,
-  });
+  const metricExporter = new AzureMonitorMetricExporter(exporterOptions);
   const logExporter = new UrlFilteredLogExporter(
     new ChunkingLogExporter(
-      new AzureMonitorLogExporter({ connectionString: connStr }),
+      new AzureMonitorLogExporter(exporterOptions),
       { maxChunkChars: 8000, keepOriginalKey: false },
     ),
     urlFilter,

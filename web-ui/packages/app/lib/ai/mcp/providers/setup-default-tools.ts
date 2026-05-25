@@ -40,6 +40,7 @@ import {
 import type { User } from '@compliance-theater/auth-compat';
 import { encodeJwt as encode, getToken } from '@compliance-theater/auth-compat/runtime';
 import { getMem0EnabledFlag, getStreamingTransportFlag } from '../tool-flags';
+import { APP_MCP_TOOL_REGISTRY_CACHE_SALT } from '@/lib/ai/tools/mcp-tool-registry';
 
 /**
  * Builds a minimal header map for MCP client connections.
@@ -140,6 +141,7 @@ export const setupDefaultTools = async ({
     const sessionToken = req.cookies?.get(sessionTokenKey)?.value;
     options.push({
       allowWrite: writeEnabled,
+      cacheKeySalt: APP_MCP_TOOL_REGISTRY_CACHE_SALT,
       url: url.toString(),
       headers: async () => ({
         ...defaultHeaders,

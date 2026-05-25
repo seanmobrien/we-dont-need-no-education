@@ -128,7 +128,8 @@ export const ChatWindow = ({
     getItemKey,
   });
 
-  const items = [...messages].reverse(); // For inverted render
+  // Memoize reversed messages to ensure stable array per render
+  const items = React.useMemo(() => [...messages].reverse(), [messages]); // For inverted render
 
   return (
     <Box
@@ -157,12 +158,17 @@ export const ChatWindow = ({
         }}
       >
         {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+          const message = items[virtualRow.index];
+          if (!message) {
+            return null;
+          }
+
           const {
             parts = [],
             role,
             id: messageId,
             // createdAt,
-          } = items[virtualRow.index];
+          } = message;
 
           return (
             <ChatMessageV2
