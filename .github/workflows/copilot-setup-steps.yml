@@ -75,9 +75,6 @@ jobs:
           git submodule sync --recursive
           git submodule update --init --recursive --jobs 4
           git submodule status --recursive
-          git checkout copilot/pr-426-embed-review-fixes-2
-          git checkout -B copilot/pr-426-embed-review-fixes-2 origin/copilot/pr-426-embed-review-fixes-2
-          git push --force-with-lease -u origin copilot/pr-426-embed-review-fixes-2
         shell: bash
 
       - name: Setup Java
