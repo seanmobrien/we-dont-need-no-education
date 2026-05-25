@@ -9,12 +9,13 @@
   },
   "workspaces": [
     "web-ui/packages/*",
+    "codex-mcp",
     "web-ui/submodules/json-viewer/packages",
     "web-ui/submodules/sce",
     "web-ui/submodules/sce/packages/*/ts"
   ],
   "scripts": {
-    "build:codex-publish": "pnpm --filter @compliance-theater/codex-mcp run build:publish",
+    "build:codex-publish": "yarn workspace @compliance-theater/codex-mcp build:publish",
     "add": "turbo run add --filter='@compliance-theater/*' ",
     "preinstall": "node preinstall.js",
     "codex-install-mcp": "node scripts/codex-install-mcp.mjs",

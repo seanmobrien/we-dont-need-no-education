@@ -11,6 +11,10 @@ type EmbeddingServiceOptions = {
   expectedDimensions?: number;
 };
 
+type LegacyEmbeddingServiceOptions = {
+  providerOptions?: unknown;
+};
+
 export class EmbeddingService implements IEmbeddingService {
   private static get globalEmbeddingModel(): Promise<EmbeddingModelV2<string>> {
     return globalRequiredSingleton(
@@ -44,6 +48,14 @@ export class EmbeddingService implements IEmbeddingService {
         typeof embeddingClient === 'undefined'
         ? embeddingClient ?? EmbeddingService.globalEmbeddingModel
         : Promise.resolve(embeddingClient);
+
+    // Reject legacy constructor option shape to avoid silently ignoring migration issues.
+    if ('providerOptions' in ((options as LegacyEmbeddingServiceOptions) ?? {})) {
+      throw new TypeError(
+        'EmbeddingService options.providerOptions is no longer supported. Use options.expectedDimensions instead.',
+      );
+    }
+
     this.expectedDimensions =
       typeof options?.expectedDimensions === 'number' &&
       Number.isInteger(options.expectedDimensions) &&

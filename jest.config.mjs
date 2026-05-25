@@ -11,6 +11,7 @@ const config = {
   displayName: 'Monorepo Root',
   projects: [
     './web-ui/packages/*/jest.config.mjs',
+    './codex-mcp/jest.config.js',
     './web-ui/submodules/*/packages/**/jest.config.cjs',
   ],
   transformIgnorePatterns: ['node_modules/(?!(@compliance-theater)/)'],

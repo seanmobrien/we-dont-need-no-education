@@ -1,5 +1,5 @@
 /**
- * @module mcpToolsMetrics
+ * @module mcpToolMetrics
  *
  * Centralized metrics export and management for all MCP (Model Context Protocol) tools.
  * Provides comprehensive OpenTelemetry metrics for AI tool usage, performance, and observability.
@@ -27,7 +27,7 @@ interface MetricsRegistry {
  * Provides a centralized way to export all MCP tool metrics for observability backends
  * like Prometheus, DataDog, or other OpenTelemetry-compatible systems.
  */
-export const mcpToolsMetricsRegistry = {
+export const mcpToolMetricsRegistry = {
   /**
    * Export all MCP tool metrics for external observability systems
    *
@@ -98,7 +98,7 @@ export const mcpToolsMetricsRegistry = {
       } catch (error) {
         LoggedError.isTurtlesAllTheWayDownBaby(error, {
           log: true,
-          source: 'mcpToolsMetricsRegistry.startPeriodicMetricsUpdate',
+          source: 'mcpToolMetricsRegistry.startPeriodicMetricsUpdate',
         });
       }
     }, intervalMs);
@@ -116,7 +116,7 @@ export const mcpToolsMetricsRegistry = {
    * @returns Summary object with metric counts and categories
    */
   getMetricsSummary: () => {
-    const metrics = mcpToolsMetricsRegistry.exportAllMetrics();
+    const metrics = mcpToolMetricsRegistry.exportAllMetrics();
 
     let totalCounters = 0;
     let totalHistograms = 0;
@@ -153,7 +153,7 @@ export const mcpToolsMetricsRegistry = {
     };
 
     try {
-      const metrics = mcpToolsMetricsRegistry.exportAllMetrics();
+      const metrics = mcpToolMetricsRegistry.exportAllMetrics();
 
       // Basic validation - ensure all metric names are strings and follow naming conventions
       Object.entries(metrics).forEach(

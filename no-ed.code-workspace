@@ -21,8 +21,8 @@
 				"**/dist",
 				"**/coverage",
 				"**/*.worktrees",
-				"/attachments/**",
-				"/backups/**"
+				"**/attachments/**",
+				"**/backups/**"
 			]
 		},
 		"git.ignoredRepositories": [

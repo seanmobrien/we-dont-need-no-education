@@ -1,10 +1,10 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../web-ui/tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "module": "CommonJS",
-    "moduleResolution": "node",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true
@@ -12,7 +12,7 @@
   "include": [
     "src/**/*",
     "src/.codex-plugin/**/*.json",
-    "src/.mcp.json"
+    "src/mcp/servers.mcp.json"
   ],
   "exclude": ["__tests__", "dist", "scripts", "src/**/*.mjs"]
 }

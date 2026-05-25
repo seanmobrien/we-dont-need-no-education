@@ -30,7 +30,12 @@ declare module '@/lib/ai/services/embedding/EmbeddingService' {
      * @param {EmbeddingModelV2<string>} [embeddingClient] - Optional embedding model instance.
      * If not provided, the service uses the global singleton embedding model.
      */
-    constructor(embeddingClient?: EmbeddingModelV2<string>);
+    constructor(
+      embeddingClient?:
+        | EmbeddingModelV2<string>
+        | Promise<EmbeddingModelV2<string>>,
+      options?: { expectedDimensions?: number }
+    );
 
     /**
      * Configures whether to cache generated embeddings in memory.

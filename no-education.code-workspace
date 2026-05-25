@@ -37,14 +37,14 @@
 		},
 		"files.watcherExclude": {
 			"**/.next/**": true,
-			"**/*.workspace/**": true,
+			"**/*.worktrees/**": true,
 			"**/.yarn-cache/**": true,
 			"**/coverage/**": true,
 			"**/dist/**": true,
 			"**/node_modules/**": true,
 			"**/out/**": true
 		},
-		"typescript.tsdk": "../node_modules/typescript/lib",
+		"typescript.tsdk": "node_modules/typescript/lib",
 		"typescript.disableAutomaticTypeAcquisition": true,
 		"typescript.tsserver.watchOptions": {
 			"watchFile": "useFsEventsOnParentDirectory",

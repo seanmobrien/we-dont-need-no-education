@@ -133,4 +133,18 @@ describe('EmbeddingService', () => {
       'Expected embedding dimension 1536 but received 3.',
     );
   });
+
+  it('rejects legacy providerOptions constructor usage', () => {
+    const customModel = {
+      provider: 'azure.embeddings',
+      modelId: 'embedding-small',
+    };
+
+    expect(
+      // @ts-expect-error - intentionally exercising legacy option shape rejection
+      () => new EmbeddingService(customModel, { providerOptions: {} }),
+    ).toThrow(
+      'EmbeddingService options.providerOptions is no longer supported. Use options.expectedDimensions instead.',
+    );
+  });
 });

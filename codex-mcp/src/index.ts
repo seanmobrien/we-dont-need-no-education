@@ -1,5 +1,5 @@
 import pluginManifestJson from './.codex-plugin/plugin.json';
-import mcpConfigJson from './.mcp.json';
+import mcpConfigJson from './mcp/servers.mcp.json';
 
 export type PluginSetting = {
 	name: string;
