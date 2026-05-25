@@ -9,5 +9,17 @@ describe('Codex plugin manifest', () => {
     expect(manifest).toHaveProperty('name');
     expect(manifest).toHaveProperty('version');
     expect(manifest).toHaveProperty('description');
+    expect(Array.isArray(manifest.settings)).toBe(true);
+
+    const settingNames = manifest.settings.map((setting: { name: string }) => setting.name);
+    expect(settingNames).toEqual([
+      'clientSecret',
+      'logFile',
+      'neo4jUri',
+      'neo4jUsername',
+      'neo4jPassword',
+      'neo4jDatabase',
+      'neo4jAutoDiscovery',
+    ]);
   });
 });

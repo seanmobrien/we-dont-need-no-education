@@ -70,13 +70,24 @@ Or, if using the published output:
 
 The plugin manifest intentionally exposes only a small settings surface:
 
-- `MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL` - the MCP SSE endpoint. Defaults to the hosted Compliance Theater service.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET` - optional, secure client secret for confidential clients.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE` - optional wrapper diagnostics path.
+- `MCP_COMPLIANCE_THEATER_NEO4J_URI` - optional Neo4j URI for graph tools.
+- `MCP_COMPLIANCE_THEATER_NEO4J_USERNAME` - optional Neo4j username for graph tools.
+- `MCP_COMPLIANCE_THEATER_NEO4J_PASSWORD` - optional, secure Neo4j password for graph tools.
+- `MCP_COMPLIANCE_THEATER_NEO4J_DATABASE` - optional Neo4j database for graph tools.
+- `MCP_COMPLIANCE_THEATER_NEO4J_AUTO_DISCOVERY` - optional graph credential discovery toggle; defaults to `true`.
 
-Defaults cover the hosted SSE URL, issuer, client ID, and OAuth scope. Local development should usually override only `MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL`, for example with `http://localhost:3000/api/ai/tools/sse`.
+The wrapper applies defaults for the hosted SSE URL, issuer, client ID, and OAuth scope. If you want to override those in Codex, add them through Environment variable passthrough or set them in the parent shell before starting Codex.
 
-Advanced auth overrides are still supported through `.mcp.json` and the wrapper environment contract, but they are deliberately not part of the default Codex settings UI:
+The most common passthrough overrides are:
+
+- `MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID`
+- `MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE`
+
+Advanced auth overrides are still supported through `servers.mcp.json` and the wrapper environment contract, but they are deliberately not part of the default Codex settings UI:
 
 - `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER`
 - `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID`
@@ -96,7 +107,7 @@ If your Codex setup prefers a single plugins directory, create a symlink that po
 ## What This Plugin Is
 
 - A Codex plugin definition in `.codex-plugin/plugin.json`.
-- A local MCP server entrypoint in `.mcp.json` that launches compiled `scripts/oauth-mcp-wrapper.js`.
+- A local MCP server entrypoint in `servers.mcp.json` that launches compiled `scripts/oauth-mcp-wrapper.js`.
 - An OAuth wrapper that discovers authorization metadata, acquires tokens, connects to the configured MCP SSE endpoint, and forwards JSON-RPC messages.
 - A small runtime utility layer for retries, token cache management, SSE connection setup, and JSON-RPC over SSE.
 - A bundled skill under deployed `skills/compliance-theater/` that tells Codex when and how to use the authenticated MCP server.
@@ -125,71 +136,146 @@ The wrapper also supports dynamic client registration when the authorization ser
 
 ## Default Targets And Settings
 
-The plugin manifest and `.mcp.json` default to these values:
+The wrapper defaults to these values when the corresponding environment variables are not present:
 
 - Target MCP SSE URL: `https://full-ui.compliance-theater.obapps.net/api/ai/tools/sse`
 - OAuth issuer: `https://login.obapps.net/realms/compliance-theater`
 - OAuth client ID: `codex`
 - OAuth scope: `openid`
-The settings exposed in `.codex-plugin/plugin.json` map directly to environment variables so Codex can configure the plugin without modifying the wrapper script. The UI-facing settings are intentionally limited to the MCP endpoint, an optional secure client secret, and an optional log path.
+| Variable | Default | Description |
+|---|---|---|
+| `MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL` | `https://full-ui.compliance-theater.obapps.net/api/ai/tools/sse` | MCP SSE endpoint. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER` | `https://login.obapps.net/realms/compliance-theater` | OAuth issuer URL (RFC 8414). |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID` | `codex` | OAuth client ID. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE` | `openid` | OAuth scope requested at token time. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET` | REQUIRED | OAuth client secret for confidential clients. Declared as a secure UI setting. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN` | — | Pre-existing bearer token; skips token acquisition if set. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_REFRESH_TOKEN` | — | Refresh token used before falling back to interactive flows. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL` | — | Override for the OAuth metadata discovery URL (RFC 8414). |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH` | `~/.codex/mcp-resource-auth/token.json` | Path for the on-disk token cache. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE` | — | Set to `1` to disable on-disk token caching. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS` | `360000` | Timeout in ms for upstream HTTP requests. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_COUNT` | `2` | Number of retries for failed HTTP requests. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_BASE_MS` | `500` | Base delay in ms for exponential backoff retries. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_PROXY_REQUEST_TIMEOUT_MS` | `360000` | Timeout in ms for proxied MCP requests (case-file and policy calls can be long-running). |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_DEVICE_CODE_TIMEOUT_SECONDS` | `900` | Timeout in seconds for the device-authorization flow. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE` | `~/.codex/mcp-resource-auth/compliance-theater-wrapper.log` | Wrapper diagnostics log path. Declared as a UI setting. |
+| `MCP_COMPLIANCE_THEATER_NEO4J_URI` | — | Neo4j URI for graph tools. Declared as a plugin setting. |
+| `MCP_COMPLIANCE_THEATER_NEO4J_USERNAME` | — | Neo4j username for graph tools. Declared as a plugin setting. |
+| `MCP_COMPLIANCE_THEATER_NEO4J_PASSWORD` | — | Neo4j password for graph tools. Declared as a secure plugin setting. |
+| `MCP_COMPLIANCE_THEATER_NEO4J_DATABASE` | — | Neo4j database for graph tools. Declared as a plugin setting. |
+| `MCP_COMPLIANCE_THEATER_NEO4J_AUTO_DISCOVERY` | `true` | Enables graph credential discovery through `/api/memory/config?secrets=true` before falling back to explicit Neo4j settings. |
 
-The key UI-facing input is:
+## Usage Model
 
-- `MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL`
+This plugin supports education compliance investigations, policy grounding, evidence review, case-file analysis, case workspace management, compliance task tracking, and memory-backed continuity across related work.
 
-Useful UI-facing optional inputs are:
+The wrapper manages authentication inline. When a user approves a case-file, policy, memory, or workspace action, that approval covers the wrapper's internal auth/session work needed to complete the action. Protected upstream calls default to a 360 second timeout because case-file retrieval, preprocessing, and policy search can be long-running.
 
-- `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE`
+Use Compliance Theater before PST search, Gmail search, or local index search when a task mentions:
 
-Advanced optional inputs include:
+- `case file` or `case document`: use case-file search/retrieval. Search scope filters include `email`, `attachment`, `core-document`, and `note`.
+- `case workspace`: use workspace tools.
+- `policy basis`: use policy search first, then case-file evidence if facts are needed.
+- `key point`: use case-file search scope `key-point`.
+- `call to action`: use case-file search scope `call-to-action`.
+- `responsive action`: use case-file search scope `responsive-action`.
+- `case note`: use case-file search scope `note`.
+- compliance-oriented evidence analysis: combine case-file search, case-file retrieval, and policy search as needed.
 
-- `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_REFRESH_TOKEN`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_COUNT`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_BASE_MS`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_PROXY_REQUEST_TIMEOUT_MS`
-- `MCP_COMPLIANCE_THEATER_RESOURCE_DEVICE_CODE_TIMEOUT_SECONDS`
+When reporting results, cite the tool name and important document IDs, case-file IDs, or workspace IDs used.
 
-## Helper Tools Added By The Wrapper
+## Tool Search And Namespaces
 
-The wrapper exposes a fixed native plugin tool surface over the authenticated proxy. Each exposed tool handles auth, forwards the request to the configured Compliance Theater service, and returns the result. The fixed catalog intentionally avoids runtime tool-discovery churn in normal model workflows.
+The MCP config splits the tool surface into small namespace servers. Each server entry includes `defer_loading: true` plus a high-level description so OpenAI `tool_search` can discover only the relevant Compliance Theater namespace at runtime.
 
-The wrapper also adds app-session-backed memory API tools that call the configured app host:
+OpenAI Responses API callers should include `{ "type": "tool_search" }` in the request `tools` array when using deferred namespace discovery. The model can then choose, for example, `compliance-theater-search` for evidence discovery, `compliance-theater-case-files` for document reads/amendments, or `compliance-theater-case-workspace` for workspace state before individual tool schemas are loaded.
 
-- `listMemories`, `createMemory`, `getMemoryCategories`, `getMemory`, `updateMemory`, `searchMemories`, `getRelatedMemories`
+## Namespace Servers
 
-The wrapper adds convenience tools alongside those native tools:
+### `compliance-theater`
 
-- `mcp_resource_auth_list_abilities`
-  Returns a text summary of tool names, descriptions, schemas, and resource counts.
-- `mcp_resource_auth_list_resources`
-  Returns a directory-style listing of resources and resource templates.
-- `mcp_resource_auth_manage_auth`
-  Manages auth state with action-based operations:
-  - `status`: inspects auth state, wraps the Keycloak bearer token when needed, and calls `/api/auth/session` with the app session cookie.
-  - `clear-cache`: deletes the local cached token file.
-  - `login`: runs an interactive login flow and caches a fresh token.
-- `selectComplianceTools`
-  Given a user goal, returns a short list of native Compliance Theater tools likely to help. This is a planning helper only; callers should then invoke the returned tools directly.
+General compliance planning support.
 
-`mcp_resource_auth_manage_auth` status output behaves as follows:
+- `sequentialthinking`: structured planning for complex compliance analysis.
 
-- If no configured or cached token exists, it returns `unauthenticated`.
-- If a token exists, it calls `[MCP Server]/api/auth/session` using `Authorization: Bearer <token>`.
-- If session reports unauthenticated (or HTTP 401/403), it reports cached token unauthenticated.
-- If session reports authenticated, it prints helpful details including user name, email, id/hash when present, expiry, scope, and resource-access permissions.
+### `compliance-theater-search`
 
-These are implemented in the wrapper itself and are useful even when the remote MCP server exposes a large surface area.
+Search, index, embedding, and graph tools for policy sources, case-file evidence, and Neo4j relationship traversal.
 
-Protected upstream calls default to a 360 second proxy timeout because case-file retrieval, preprocessing, and policy search can be long-running.
+- `policy`: search policy sources. Policy scope filters: `school-district`, `state`, `federal`.
+- `case_file`: search case-file evidence. Case-file scope filters: `email`, `attachment`, `core-document`, `key-point`, `call-to-action`, `responsive-action`, `note`.
+- `index`: list case-file document IDs and metadata, optionally by case-file scope.
+- `embed`: read or generate case-file embeddings. Use `modelSize: "small"` by default; use `large` only for larger-vector or high-recall/high-fidelity vector work. Prefer `action: "read"` before generation unless the task specifically asks to compute or refresh embeddings. Use `action: "query-vectors"` to retrieve vectors for advanced query scenarios.
+- `graph_schema`: inspect Neo4j graph labels, relationship types, and property keys before writing graph queries.
+- `graph_read`: run read-only Cypher for relationship traversal, graph-backed evidence exploration, or validating graph shape.
+- `graph_write`: run write-capable Cypher. Use only when the user explicitly asks to create, update, or delete graph data.
+
+Graph tools are backed by a plugin-hosted Neo4j stdio MCP child server. Before launching it, the wrapper optionally discovers concrete graph credentials once per session with `GET /api/memory/config?secrets=true`; usable discovered credentials are cached under the wrapper cache directory until the session token expires. If discovery is disabled, fails, or returns `env:` placeholders, the wrapper falls back to explicit Neo4j plugin settings. The wrapper first tries `python -m neo4j_mcp_server`; if that cannot initialize, it falls back to `uvx neo4j-mcp-server`. It translates resolved settings into the child process's `NEO4J_*` environment and internally sets `NEO4J_READ_ONLY=false` and `NEO4J_TELEMETRY=false`.
+
+### `compliance-theater-case-files`
+
+Case-file document retrieval and amendment tools.
+
+- `get`: retrieve case-file documents.
+- `amend`: amend structured case-file document details, ratings, notes, and relationships.
+
+`get` supports two modes:
+
+- `mode: "direct"` returns full-fidelity, unsummarized reads for up to three case-file IDs. Pass `caseFileId` for one ID or `ids` for multiple IDs.
+- `mode: "goals"` supports larger batches or task-specific extraction/synthesis. Provide `requests` for per-document goals, shared `goals` for common processing, and `verbatim_fidelity` when source-near output matters.
+
+### `compliance-theater-case-workspace`
+
+Case workspace state, task, question, document-summary, and session-log tools.
+
+- `get`: return a case workspace summary.
+- `read`: read `overview`, `tasks`, `documentSummaries`, `openQuestions`, `timelineNotes`, `sessionLog`, or `metadata`.
+- `append_task`: add a workspace task.
+- `update_status`: change task status.
+- `update_details`: update task title, description, priority, owner, or tags.
+- `upsert`: create or update a document summary.
+- `insert_question`: add a factual, legal, evidentiary, or process question.
+- `update_question`: update question status or notes.
+- `log`: add a session-log entry.
+- `compact`: compact metadata and regenerate workspace projections.
+
+### `compliance-theater-memory`
+
+Persistent memory tools for prior context, learned facts, categories, and related memory lookups.
+
+- `list`: list persisted memories.
+- `insert`: create a memory.
+- `categories`: list memory categories.
+- `get`: retrieve a memory by ID.
+- `update`: update memory content.
+- `search`: search memories.
+- `related`: retrieve memories related to a memory ID.
+
+### `compliance-theater-todo`
+
+Compliance-oriented todo list and task workflow tools.
+
+- `insert`: create or replace a compliance-oriented todo list.
+- `get`: read todo lists, optionally filtered by completion state or list ID.
+- `update`: update a todo item.
+- `toggle`: advance a todo through its completion workflow.
+
+### `compliance-theater-utils`
+
+Authenticated utility tools for API escape hatches, resource inspection, and auth/session operations.
+
+- `call_api`: call an authenticated Compliance Theater app API route relative to `/api`. Prefer dedicated tools when they exist.
+- `list`: list abilities or resources. Use for inspection/debugging, not ordinary task routing.
+- `auth`: check status, clear cache, or login.
+
+## Authentication Behavior
+
+Tools manage authentication inline. If a device authorization URL or user code is returned, show the URL and code to the user immediately and wait for their confirmation or the tool's login result before continuing.
+
+Use `auth` with `action: "status"` to retrieve session status and details when the user asks. If calls fail with auth-related issues, use `auth` with `action: "clear-cache"`, then `auth` with `action: "login"`, then retry the failed call. If authentication failure persists, surface the non-secret error details to the user.
+
+Never print tokens, client secrets, cookies, or raw credential values.
 
 ## Runtime Utilities
 
@@ -210,12 +296,12 @@ The accompanying `src/scripts/runtime-utils.test.mjs` covers the compiled utilit
 
 The skill emphasizes:
 
-- using installed Compliance Theater tools directly before guessing or searching elsewhere
-- treating authentication as a simple plugin login/status flow
+- supporting education compliance investigations, policy grounding, evidence review, and case workspace management
+- routing case-file, case-document, policy-basis, key-point, call-to-action, responsive-action, and case-note tasks to the appropriate namespace
+- using OpenAI tool search to discover the narrowest matching deferred namespace when available
+- treating authentication as inline tool behavior, with `auth` reserved for status checks and troubleshooting
 - avoiding printing secrets
-- using the helper actions for login/status and optional goal-based tool selection
 - allowing long-running case-file and policy calls to complete under the 360 second default timeout
-- preferring narrow resource reads and read-only actions unless mutation is explicitly requested
 
 ## Operational Notes
 

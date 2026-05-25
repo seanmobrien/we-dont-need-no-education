@@ -1,0 +1,219 @@
+{
+	"mcpServers": {
+		"compliance-theater": {
+			"description": "Default Compliance Theater MCP tools for general compliance reasoning. Use tool search to discover specialized Compliance Theater namespaces for memory, case files, search, todos, utilities, and case workspaces.",
+			"server_description": "Default Compliance Theater MCP tools for general compliance reasoning. Use tool search to discover specialized Compliance Theater namespaces for memory, case files, search, todos, utilities, and case workspaces.",
+			"defer_loading": true,
+			"command": "node",
+			"args": [
+				"./scripts/oauth-mcp-wrapper.js"
+			],
+			"env": {
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOOLSET": "default"
+			},
+			"env_vars": [
+				"MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_REFRESH_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_COUNT",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_BASE_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_PROXY_REQUEST_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DEVICE_CODE_TIMEOUT_SECONDS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE"
+			]
+		},
+		"compliance-theater-memory": {
+			"description": "Compliance Theater memory tools for listing, creating, retrieving, updating, searching, and relating persisted memories.",
+			"server_description": "Compliance Theater memory tools for listing, creating, retrieving, updating, searching, and relating persisted memories.",
+			"defer_loading": true,
+			"command": "node",
+			"args": [
+				"./scripts/oauth-mcp-wrapper.js"
+			],
+			"env": {
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOOLSET": "memory"
+			},
+			"env_vars": [
+				"MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_REFRESH_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_COUNT",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_BASE_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_PROXY_REQUEST_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DEVICE_CODE_TIMEOUT_SECONDS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE"
+			]
+		},
+		"compliance-theater-utils": {
+			"description": "Compliance Theater utility tools for authenticated app API calls, auth status/login/cache management, and listing abilities or resources.",
+			"server_description": "Compliance Theater utility tools for authenticated app API calls, auth status/login/cache management, and listing abilities or resources.",
+			"defer_loading": true,
+			"command": "node",
+			"args": [
+				"./scripts/oauth-mcp-wrapper.js"
+			],
+			"env": {
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOOLSET": "utils"
+			},
+			"env_vars": [
+				"MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_REFRESH_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_COUNT",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_BASE_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_PROXY_REQUEST_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DEVICE_CODE_TIMEOUT_SECONDS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE"
+			]
+		},
+		"compliance-theater-todo": {
+			"description": "Compliance Theater todo tools for creating, reading, updating, and advancing compliance-oriented task lists.",
+			"server_description": "Compliance Theater todo tools for creating, reading, updating, and advancing compliance-oriented task lists.",
+			"defer_loading": true,
+			"command": "node",
+			"args": [
+				"./scripts/oauth-mcp-wrapper.js"
+			],
+			"env": {
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOOLSET": "todo"
+			},
+			"env_vars": [
+				"MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_REFRESH_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_COUNT",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_BASE_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_PROXY_REQUEST_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DEVICE_CODE_TIMEOUT_SECONDS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE"
+			]
+		},
+		"compliance-theater-case-workspace": {
+			"description": "Compliance Theater case workspace tools for summaries, workspace files, tasks, document summaries, open questions, session logs, and compaction.",
+			"server_description": "Compliance Theater case workspace tools for summaries, workspace files, tasks, document summaries, open questions, session logs, and compaction.",
+			"defer_loading": true,
+			"command": "node",
+			"args": [
+				"./scripts/oauth-mcp-wrapper.js"
+			],
+			"env": {
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOOLSET": "case-workspace"
+			},
+			"env_vars": [
+				"MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_REFRESH_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_COUNT",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_BASE_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_PROXY_REQUEST_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DEVICE_CODE_TIMEOUT_SECONDS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE"
+			]
+		},
+		"compliance-theater-search": {
+			"description": "Compliance Theater search tools for policy search, case-file evidence search, case-file document indexes, embeddings, and Neo4j graph queries.",
+			"server_description": "Compliance Theater search tools for policy search, case-file evidence search, case-file document indexes, embeddings, and Neo4j graph queries.",
+			"defer_loading": true,
+			"command": "node",
+			"args": [
+				"./scripts/oauth-mcp-wrapper.js"
+			],
+			"env": {
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOOLSET": "search"
+			},
+			"env_vars": [
+				"MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_REFRESH_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_COUNT",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_BASE_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_PROXY_REQUEST_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DEVICE_CODE_TIMEOUT_SECONDS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE",
+				"MCP_COMPLIANCE_THEATER_NEO4J_URI",
+				"MCP_COMPLIANCE_THEATER_NEO4J_USERNAME",
+				"MCP_COMPLIANCE_THEATER_NEO4J_PASSWORD",
+				"MCP_COMPLIANCE_THEATER_NEO4J_DATABASE",
+				"MCP_COMPLIANCE_THEATER_NEO4J_AUTO_DISCOVERY"
+			]
+		},
+		"compliance-theater-case-files": {
+			"description": "Compliance Theater case-file tools for direct full-fidelity reads, goal-based case-file retrieval, and amendments to structured case-file document details.",
+			"server_description": "Compliance Theater case-file tools for direct full-fidelity reads, goal-based case-file retrieval, and amendments to structured case-file document details.",
+			"defer_loading": true,
+			"command": "node",
+			"args": [
+				"./scripts/oauth-mcp-wrapper.js"
+			],
+			"env": {
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOOLSET": "case-files"
+			},
+			"env_vars": [
+				"MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_OAUTH_SCOPE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_REFRESH_TOKEN",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_COUNT",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_BASE_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_PROXY_REQUEST_TIMEOUT_MS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_DEVICE_CODE_TIMEOUT_SECONDS",
+				"MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE"
+			]
+		}
+	}
+}

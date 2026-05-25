@@ -12,7 +12,7 @@ const pluginName = "compliance-theater-2000";
 
 const requiredPaths = [
   "src/.codex-plugin",
-  "src/.mcp.json",
+  "src/mcp/servers.mcp.json",
   "src/skills",
   "src/scripts/oauth-mcp-wrapper.ts",
   "src/scripts/runtime-utils.ts",
@@ -93,7 +93,7 @@ const main = async () => {
   await cp(join(packageRoot, "src", ".codex-plugin"), join(distRoot, ".codex-plugin"), {
     recursive: true,
   });
-  await cp(join(packageRoot, "src", ".mcp.json"), join(distRoot, ".mcp.json"));
+  await cp(join(packageRoot, "src", "mcp", "servers.mcp.json"), join(distRoot, "mcp", "servers.mcp.json"));
   await cp(join(packageRoot, "src", "skills"), join(distRoot, "skills"), {
     recursive: true,
   });

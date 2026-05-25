@@ -18,11 +18,11 @@
     "rfc8414"
   ],
   "skills": "./skills/",
-  "mcpServers": "./.mcp.json",
+  "mcpServers": "./mcp/servers.mcp.json",
   "interface": {
     "displayName": "Compliance Theater 2000",
     "shortDescription": "Compliance analysis and resources for education.",
-    "longDescription": "Rich education compliance analysis support for Codex, including authenticated MCP access to policy, evidence, and compliance workflows.",
+    "longDescription": "Rich education compliance analysis support through Compliance Theater 2000, including access to policy, evidence, and compliance workflows.",
     "developerName": "litbit",
     "category": "Productivity",
     "capabilities": ["Interactive"],
@@ -39,30 +39,63 @@
   },
   "settings": [
     {
-      "name": "targetServerUrl",
-      "label": "Compliance Theater URL",
-      "description": "MCP SSE endpoint. Use the hosted default, or http://localhost:3000/api/ai/tools/sse for local development.",
+      "name": "clientSecret",
+      "label": "Client Secret",
+      "description": "Client secret used to authenticate with Compliance Theater resources.",
       "type": "string",
       "required": true,
-      "default": "https://full-ui.compliance-theater.obapps.net/api/ai/tools/sse",
-      "env": "MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL"
-    },
-    {
-      "name": "clientSecret",
-      "label": "OAuth client secret",
-      "description": "Optional OAuth client secret for confidential clients. Store this in Codex secure plugin settings rather than config.toml.",
-      "type": "string",
-      "required": false,
       "secure": true,
       "env": "MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET"
     },
     {
       "name": "logFile",
-      "label": "Wrapper log file",
-      "description": "Optional path for MCP wrapper diagnostics. Defaults to ~/.codex/mcp-resource-auth/compliance-theater-wrapper.log.",
+      "label": "Local log file path",
+      "description": "Optionally override the log file path; defaults to ~/.codex/mcp-resource-auth/compliance-theater-wrapper.log.",
       "type": "string",
       "required": false,
       "env": "MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE"
+    },
+    {
+      "name": "neo4jUri",
+      "label": "Neo4j URI",
+      "description": "Neo4j connection URI used by Compliance Theater graph tools.",
+      "type": "string",
+      "required": false,
+      "env": "MCP_COMPLIANCE_THEATER_NEO4J_URI"
+    },
+    {
+      "name": "neo4jUsername",
+      "label": "Neo4j username",
+      "description": "Neo4j username used by Compliance Theater graph tools.",
+      "type": "string",
+      "required": false,
+      "env": "MCP_COMPLIANCE_THEATER_NEO4J_USERNAME"
+    },
+    {
+      "name": "neo4jPassword",
+      "label": "Neo4j password",
+      "description": "Neo4j password used by Compliance Theater graph tools.",
+      "type": "string",
+      "required": false,
+      "secure": true,
+      "env": "MCP_COMPLIANCE_THEATER_NEO4J_PASSWORD"
+    },
+    {
+      "name": "neo4jDatabase",
+      "label": "Neo4j database",
+      "description": "Neo4j database name used by Compliance Theater graph tools.",
+      "type": "string",
+      "required": false,
+      "env": "MCP_COMPLIANCE_THEATER_NEO4J_DATABASE"
+    },
+    {
+      "name": "neo4jAutoDiscovery",
+      "label": "Auto-discover Neo4j credentials",
+      "description": "When enabled, graph tools try to discover Neo4j credentials from the authenticated Compliance Theater app session before falling back to explicit Neo4j settings.",
+      "type": "boolean",
+      "required": false,
+      "default": "true",
+      "env": "MCP_COMPLIANCE_THEATER_NEO4J_AUTO_DISCOVERY"
     }
   ]
 }

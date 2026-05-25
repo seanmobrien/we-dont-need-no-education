@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { randomInt } from "node:crypto";
+import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { appendFileSync, mkdirSync } from "node:fs";
-import { rm } from "node:fs/promises";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { createInterface } from "node:readline";
@@ -44,8 +45,10 @@ type ToolDefinition = {
   name: string;
   description?: string;
   inputSchema?: AnyRecord;
+  outputSchema?: AnyRecord;
   annotations?: AnyRecord;
 };
+type Toolset = "all" | "default" | "memory" | "utils" | "todo" | "case-workspace" | "search" | "case-files";
 type OAuthClient = {
   client_id?: string;
   client_secret?: string;
@@ -85,6 +88,28 @@ type RemoteConnection = SseConnection & {
   sessionCookie?: string;
   nextId: number;
 };
+type StdioMcpConnection = {
+  child: ChildProcessWithoutNullStreams;
+  commandLabel: string;
+  nextId: number;
+  buffer: Buffer;
+  pending: Map<number, {
+    resolve: (value: AnyRecord) => void;
+    reject: (error: Error) => void;
+    timer: NodeJS.Timeout;
+  }>;
+  queue: Promise<AnyRecord>;
+};
+type Neo4jSettings = {
+  URI: string;
+  USERNAME: string;
+  PASSWORD: string;
+  DATABASE: string;
+};
+type CachedNeo4jSettings = Neo4jSettings & {
+  expires_at: number;
+  expires_at_iso?: string;
+};
 type ErrorWithCode = Error & { code?: string };
 
 function asError(error: unknown): ErrorWithCode {
@@ -116,6 +141,9 @@ let registeredClient: OAuthClient | undefined;
 let logWriteFailed = false;
 let remote: RemoteConnection | undefined;
 let remoteQueue: Promise<AnyRecord> = Promise.resolve({});
+let neo4jRemote: StdioMcpConnection | undefined;
+let neo4jSettingsCache: Neo4jSettings | undefined;
+let neo4jAutoDiscoveryAttempted = false;
 
 const searchOptionsSchema = {
   type: "object",
@@ -458,10 +486,76 @@ const staticRemoteTools: ToolDefinition[] = [
 ];
 const exposedRemoteTools = withAnnotations(staticRemoteTools, annotationsForRemoteTool);
 const remoteToolNames = new Set(exposedRemoteTools.map((tool) => tool.name));
+const caseFileToolNames = new Set(["getMultipleCaseFileDocuments", "amendCaseFileDocument"]);
+const searchToolNames = new Set(["searchPolicyStore", "searchCaseFile", "getCaseFileDocumentIndex"]);
+const todoToolNames = new Set(["createTodo", "getTodos", "updateTodo", "toggleTodo"]);
+const caseWorkspaceToolNames = new Set([
+  "getCaseWorkspace",
+  "readWorkspaceFile",
+  "appendWorkspaceTask",
+  "updateWorkspaceTaskStatus",
+  "updateWorkspaceTaskDetails",
+  "upsertWorkspaceDocumentSummary",
+  "addOpenQuestion",
+  "updateOpenQuestionStatus",
+  "appendWorkspaceSessionLog",
+  "compactWorkspace"
+]);
+const searchRemoteToolAliases: Record<string, string> = {
+  policy: "searchPolicyStore",
+  case_file: "searchCaseFile",
+  index: "getCaseFileDocumentIndex"
+};
+const todoRemoteToolAliases: Record<string, string> = {
+  insert: "createTodo",
+  get: "getTodos",
+  update: "updateTodo",
+  toggle: "toggleTodo"
+};
+const caseWorkspaceRemoteToolAliases: Record<string, string> = {
+  get: "getCaseWorkspace",
+  read: "readWorkspaceFile",
+  append_task: "appendWorkspaceTask",
+  update_status: "updateWorkspaceTaskStatus",
+  update_details: "updateWorkspaceTaskDetails",
+  upsert: "upsertWorkspaceDocumentSummary",
+  insert_question: "addOpenQuestion",
+  update_question: "updateOpenQuestionStatus",
+  log: "appendWorkspaceSessionLog",
+  compact: "compactWorkspace"
+};
+
+function aliasedRemoteTools(toolNames: Set<string>, aliases: Record<string, string>): ToolDefinition[] {
+  const publicNameByUpstreamName = new Map(Object.entries(aliases).map(([publicName, upstreamName]) => [upstreamName, publicName]));
+  return exposedRemoteTools
+    .filter((tool) => toolNames.has(tool.name))
+    .map((tool) => {
+      const name = publicNameByUpstreamName.get(tool.name) || tool.name;
+      return {
+        ...tool,
+        name,
+        annotations: {
+          ...tool.annotations,
+          title: displayTitle(name)
+        }
+      };
+    });
+}
+
+const exposedSearchTools = aliasedRemoteTools(searchToolNames, searchRemoteToolAliases);
+const exposedTodoTools = aliasedRemoteTools(todoToolNames, todoRemoteToolAliases);
+const exposedCaseWorkspaceTools = aliasedRemoteTools(caseWorkspaceToolNames, caseWorkspaceRemoteToolAliases);
+const exposedDefaultRemoteTools = exposedRemoteTools.filter(
+  (tool) =>
+    !caseFileToolNames.has(tool.name) &&
+    !searchToolNames.has(tool.name) &&
+    !todoToolNames.has(tool.name) &&
+    !caseWorkspaceToolNames.has(tool.name)
+);
 
 const memoryTools: ToolDefinition[] = [
   {
-    name: "listMemories",
+    name: "list",
     description: "List memories for the authenticated Compliance Theater app session.",
     inputSchema: {
       type: "object",
@@ -480,7 +574,7 @@ const memoryTools: ToolDefinition[] = [
     }
   },
   {
-    name: "createMemory",
+    name: "insert",
     description: "Create a memory for the authenticated Compliance Theater app session.",
     inputSchema: {
       type: "object",
@@ -495,12 +589,12 @@ const memoryTools: ToolDefinition[] = [
     }
   },
   {
-    name: "getMemoryCategories",
+    name: "categories",
     description: "Get the available memory categories for the authenticated Compliance Theater app session.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false }
   },
   {
-    name: "getMemory",
+    name: "get",
     description: "Get a memory by its ID.",
     inputSchema: {
       type: "object",
@@ -510,7 +604,7 @@ const memoryTools: ToolDefinition[] = [
     }
   },
   {
-    name: "updateMemory",
+    name: "update",
     description: "Update a memory by its ID.",
     inputSchema: {
       type: "object",
@@ -523,7 +617,7 @@ const memoryTools: ToolDefinition[] = [
     }
   },
   {
-    name: "searchMemories",
+    name: "search",
     description: "Search memories for the authenticated Compliance Theater app session.",
     inputSchema: {
       type: "object",
@@ -538,7 +632,7 @@ const memoryTools: ToolDefinition[] = [
     }
   },
   {
-    name: "getRelatedMemories",
+    name: "related",
     description: "List memories related to a source memory ID.",
     inputSchema: {
       type: "object",
@@ -553,19 +647,229 @@ const memoryTools: ToolDefinition[] = [
   }
 ];
 
-const helperTools: ToolDefinition[] = [
+const readCaseFileOutputSchema = objectSchema({
+  isError: { type: "boolean", description: "Whether the app route reported an error." },
+  value: objectSchema({
+    case_file: objectSchema({
+      unitId: { type: "number", description: "Case-file document/unit ID." },
+      documentType: { type: "string", description: "Case-file document type, such as email, attachment, note, key_point, cta, or cta_response." },
+      emailId: { type: ["string", "null"], description: "Source email ID, when available." },
+      attachmentId: { type: ["number", "null"], description: "Source attachment ID, when available." },
+      documentPropertyId: { type: ["string", "null"], description: "Source document-property ID, when available." },
+      content: { type: ["string", "null"], description: "Full-fidelity, unsummarized text content for the requested case file." },
+      createdOn: { type: ["string", "null"], description: "Creation timestamp." },
+      docRel_sourceDoc: { type: "array", items: { type: "object", additionalProperties: true }, description: "Documents related where this case file is the source." },
+      docRel_targetDoc: { type: "array", items: { type: "object", additionalProperties: true }, description: "Documents related where this case file is the target." },
+      docProp: { type: ["object", "null"], additionalProperties: true, description: "Primary structured document property metadata, when available." },
+      docProps: { type: "array", items: { type: "object", additionalProperties: true }, description: "Additional structured document property records." },
+      email: { type: ["object", "null"], additionalProperties: true, description: "Email metadata and linked email details for email case files." },
+      emailAttachment: { type: ["object", "null"], additionalProperties: true, description: "Attachment metadata for attachment case files." }
+    }, [], true)
+  }, ["case_file"])
+}, ["isError", "value"]);
+
+const caseFileTools: ToolDefinition[] = [
   {
-    name: "mcp_resource_auth_list_abilities",
-    description: "List tools exposed by Compliance Theater 2000, plus resource and resource template counts.",
-    inputSchema: { type: "object", properties: {}, additionalProperties: false }
+    name: "get",
+    description: "Retrieve case-file documents either directly without preprocessing or through goal-based batch extraction.",
+    inputSchema: objectSchema({
+      mode: {
+        type: "string",
+        enum: ["direct", "goals"],
+        description: "direct returns full-fidelity unsummarized documents, up to 3 IDs; goals uses the batch preprocessor with optional goals and fidelity."
+      },
+      caseFileId: { ...stringOrNumberSchema, description: "Single case-file ID. Convenience alias for ids with one item." },
+      ids: { type: "array", items: stringOrNumberSchema, description: "Case-file IDs to retrieve. Direct mode allows at most 3 IDs." },
+      requests: arrayOf(objectSchema({
+        caseFileId: { ...stringOrNumberSchema, description: "Case-file document ID to retrieve." },
+        goals: { type: "array", items: { type: "string" }, description: "Document-specific extraction or summary goals." },
+        verbatimFidelity: { type: "number", minimum: 1, maximum: 100, description: "Document-specific fidelity override." }
+      }, ["caseFileId"])),
+      goals: { type: "array", items: { type: "string" }, description: "Shared extraction or summary goals for goals mode." },
+      verbatim_fidelity: { type: "number", minimum: 1, maximum: 100, description: "Shared fidelity target for goals mode." }
+    }, ["mode"]),
+    outputSchema: objectSchema({
+      mode: { type: "string", enum: ["direct", "goals"] },
+      items: {
+        type: "array",
+        items: objectSchema({
+          caseFileId: stringOrNumberSchema,
+          result: readCaseFileOutputSchema
+        }, ["caseFileId", "result"])
+      },
+      result: { description: "Batch/goals mode response from getMultipleCaseFileDocuments." }
+    }, ["mode"], true)
   },
   {
-    name: "mcp_resource_auth_list_resources",
-    description: "Return a directory-style listing of resources and resource templates exposed by Compliance Theater 2000.",
-    inputSchema: { type: "object", properties: {}, additionalProperties: false }
+    name: "amend",
+    description: "Amend structured case-file document details, ratings, notes, and relationships.",
+    inputSchema: objectSchema({
+      update: objectSchema({
+        targetCaseFileId: { ...stringOrNumberSchema, description: "Case-file document ID to amend." },
+        severityRating: { type: "number" },
+        severityReasons: { type: "array", items: { type: "string" } },
+        notes: { type: "array", items: { type: "string" } },
+        complianceRating: { type: "number" },
+        complianceReasons: { type: "array", items: { type: "string" } },
+        completionRating: { type: "number", description: "Rates how close to fully complete the call to action is." },
+        completionReasons: { type: "array", items: { type: "string" } },
+        addRelatedDocuments: arrayOf(objectSchema({
+          relatedToDocumentId: { type: "number", description: "Related document ID." },
+          relationshipType: { type: "string", description: "How the related document connects to the target document." }
+        }, ["relatedToDocumentId", "relationshipType"])),
+        associateResponsiveAction: arrayOf(objectSchema({
+          relatedCtaDocumentId: { type: "number", description: "Related call-to-action document ID." },
+          complianceChapter13: { type: "number" },
+          complianceChapter13Reasons: { type: "array", items: { type: "string" } },
+          completionPercentage: { type: "number" },
+          completionReasons: { type: "array", items: { type: "string" } }
+        }, ["relatedCtaDocumentId", "complianceChapter13", "complianceChapter13Reasons", "completionPercentage", "completionReasons"])),
+        sentimentRating: { type: "number" },
+        sentimentReasons: { type: "array", items: { type: "string" } },
+        chapter13Rating: { type: "number" },
+        chapter13Reasons: { type: "array", items: { type: "string" } },
+        titleIXRating: { type: "number" },
+        titleIXReasons: { type: "array", items: { type: "string" } },
+        explanation: { type: "string", description: "Reason the amendment is being made." }
+      }, ["targetCaseFileId", "explanation"], true)
+    }, ["update"])
+  }
+];
+
+const coreHelperTools: ToolDefinition[] = [
+  {
+    name: "read_case_file",
+    description: "Retrieve one full-fidelity, unsummarized case file by ID from the Compliance Theater app. Useful for loading one complete case file at a time without MCP summarization or preprocessing.",
+    inputSchema: objectSchema({
+      caseFileId: {
+        ...stringOrNumberSchema,
+        description: "Case-file ID to retrieve. May be a numeric document/unit ID or a GUID accepted by the app's document-unit API."
+      }
+    }, ["caseFileId"]),
+    outputSchema: readCaseFileOutputSchema
+  }
+];
+const graphToolInputSchemas: Record<string, AnyRecord> = {
+  graph_schema: objectSchema({
+    properties: { type: "object" }
+  }, ["properties"]),
+  graph_read: objectSchema({
+    query: { type: "string" },
+    params: { type: "object" }
+  }, ["query"]),
+  graph_write: objectSchema({
+    query: { type: "string" },
+    params: { type: "object" }
+  }, ["query"])
+};
+
+const graphTools: ToolDefinition[] = [
+  {
+    name: "graph_schema",
+    description: "Retrieve Neo4j graph schema information, including node labels, relationship types, and property keys.",
+    inputSchema: graphToolInputSchemas.graph_schema
   },
   {
-    name: "mcp_resource_auth_manage_auth",
+    name: "graph_read",
+    description: "Run a read-only Cypher query against the configured Neo4j graph database.",
+    inputSchema: graphToolInputSchemas.graph_read
+  },
+  {
+    name: "graph_write",
+    description: "Run a write-capable Cypher query against the configured Neo4j graph database.",
+    inputSchema: graphToolInputSchemas.graph_write
+  }
+];
+
+const graphToolAliases: Record<string, string> = {
+  graph_schema: "get_schema",
+  graph_read: "read_cypher",
+  graph_write: "write_cypher"
+};
+
+const searchHelperTools: ToolDefinition[] = [
+  {
+    name: "embed",
+    description: "Read or generate chunked vector embeddings for a single case file through the Compliance Theater app document-unit embeddings API.",
+    inputSchema: objectSchema({
+      caseFileId: {
+        ...stringOrNumberSchema,
+        description: "Case-file document/unit ID to read or embed."
+      },
+      modelSize: {
+        type: "string",
+        enum: ["large", "small"],
+        default: "large",
+        description: "Embedding model size. Sent as the size query string. Defaults to large for query-vectors."
+      },
+      action: {
+        type: "string",
+        enum: ["read", "embed", "embed-if-missing", "query-vectors"],
+        description: "read returns existing embedding data or null if missing; embed always recomputes document chunk embeddings; embed-if-missing reads first and computes only when missing; query-vectors encodes provided query text through the app /api/ai/embed route."
+      },
+      text: {
+        type: "string",
+        description: "Query text to encode when action is query-vectors."
+      },
+      index: {
+        anyOf: [{ type: "integer", minimum: 0 }, { type: "string" }],
+        description: "Optional chunk/vector index for read-only access to a specific embedding chunk."
+      }
+    }, ["action"]),
+    outputSchema: objectSchema({
+      action: { type: "string", enum: ["read", "embed", "embed-if-missing", "query-vectors"] },
+      caseFileId: { anyOf: [{ type: "string" }, { type: "number" }, { type: "null" }] },
+      modelSize: { type: "string", enum: ["large", "small"] },
+      index: { anyOf: [{ type: "integer" }, { type: "string" }, { type: "null" }] },
+      endpoint: { type: "string", description: "App API path called, without host." },
+      generated: { type: "boolean", description: "Whether this call requested vector generation." },
+      result: { description: "Embedding API response, or null when read finds no embedding data." }
+    }, ["action", "caseFileId", "modelSize", "generated", "result"], true)
+  },
+  ...graphTools
+];
+const utilityTools: ToolDefinition[] = [
+  {
+    name: "call_api",
+    description: "Call an authenticated Compliance Theater app API endpoint. Provide a URL relative to the configured app host's /api path, such as document-unit/8 or memory/memories/. The wrapper sends the request with its wrapped app session cookies and returns the response.",
+    inputSchema: objectSchema({
+      url: {
+        type: "string",
+        description: "URL relative to the Compliance Theater /api root. Examples: document-unit/8, api/document-unit/8, /api/document-unit/8?include=email."
+      },
+      method: {
+        type: "string",
+        default: "GET",
+        description: "HTTP method to use. Defaults to GET. Supports GET, POST, PUT, PATCH, DELETE, and other token-style HTTP methods."
+      },
+      data: {
+        description: "Optional JSON request body. Do not pass data with GET or HEAD; include query parameters in the URL instead."
+      }
+    }, ["url"], true),
+    outputSchema: objectSchema({
+      ok: { type: "boolean", description: "Whether the HTTP response status is 2xx." },
+      status: { type: "integer", description: "HTTP response status." },
+      statusText: { type: "string", description: "HTTP response status text." },
+      method: { type: "string", description: "HTTP method used." },
+      url: { type: "string", description: "Resolved app API URL." },
+      body: { description: "Parsed JSON response body when JSON was returned; otherwise null." },
+      text: { type: ["string", "null"], description: "Raw text response when the response was not JSON." }
+    }, ["ok", "status", "method", "url"], true)
+  },
+  {
+    name: "list",
+    description: "List Compliance Theater abilities or resources. Defaults to abilities.",
+    inputSchema: objectSchema({
+      type: {
+        type: "string",
+        enum: ["abilities", "resources"],
+        default: "abilities",
+        description: "Directory type to list."
+      }
+    })
+  },
+  {
+    name: "auth",
     description: "Manage plugin authentication state. Supports login, status, and clear-cache actions.",
     inputSchema: {
       type: "object",
@@ -579,48 +883,56 @@ const helperTools: ToolDefinition[] = [
       required: ["action"],
       additionalProperties: false
     }
-  },
-  {
-    name: "selectComplianceTools",
-    description: "Given a Compliance Theater goal, return the native plugin tools most relevant to that task.",
-    inputSchema: objectSchema({
-      goal: { type: "string", description: "The user goal or task to plan tool usage for." },
-      maxTools: { type: "integer", minimum: 1, maximum: 20, default: 8, description: "Maximum recommendations to return." }
-    }, ["goal"])
-  },
-  ...memoryTools
+  }
 ];
+const helperTools: ToolDefinition[] = [...coreHelperTools, ...caseFileTools, ...searchHelperTools, ...utilityTools, ...memoryTools];
 function annotationsForHelperTool(name: string): AnyRecord {
   const readOnlyHelperNames = new Set([
-    "mcp_resource_auth_list_abilities",
-    "mcp_resource_auth_list_resources",
-    "selectComplianceTools",
-    "listMemories",
-    "getMemoryCategories",
-    "getMemory",
-    "searchMemories",
-    "getRelatedMemories"
+    "read_case_file",
+    "get",
+    "list",
+    "graph_schema",
+    "graph_read",
+    "categories",
+    "search",
+    "related"
   ]);
   const idempotentHelperNames = new Set([
-    "mcp_resource_auth_list_abilities",
-    "mcp_resource_auth_list_resources",
-    "selectComplianceTools",
-    "listMemories",
-    "getMemoryCategories",
-    "getMemory",
-    "searchMemories",
-    "getRelatedMemories",
-    "updateMemory"
+    "read_case_file",
+    "get",
+    "embed",
+    "list",
+    "graph_schema",
+    "graph_read",
+    "categories",
+    "search",
+    "related",
+    "update"
   ]);
   return {
     title: displayTitle(name),
     readOnlyHint: readOnlyHelperNames.has(name),
-    destructiveHint: false,
+    destructiveHint: name === "graph_write",
     idempotentHint: idempotentHelperNames.has(name),
     openWorldHint: false
   };
 }
 const exposedHelperTools = withAnnotations(helperTools, annotationsForHelperTool);
+const exposedCoreHelperTools = withAnnotations(
+  coreHelperTools.filter((tool) => tool.name !== "read_case_file"),
+  annotationsForHelperTool
+);
+const exposedCaseFileTools = withAnnotations(caseFileTools, annotationsForHelperTool);
+const exposedSearchHelperTools = withAnnotations(searchHelperTools, annotationsForHelperTool);
+const exposedUtilityTools = withAnnotations(utilityTools, annotationsForHelperTool);
+const exposedMemoryTools = withAnnotations(memoryTools, annotationsForHelperTool);
+
+const defaultEnvValues: Record<string, string> = {
+  SERVER_URL: "https://full-ui.compliance-theater.obapps.net/api/ai/tools/sse",
+  AUTH_ISSUER: "https://login.obapps.net/realms/compliance-theater",
+  CLIENT_ID: "codex",
+  OAUTH_SCOPE: "openid",
+};
 
 function key(name: string): string {
   return `${PREFIX}${name}`;
@@ -640,11 +952,31 @@ function resolveValue(value?: string): string | undefined {
 }
 
 function optional(name: string): string | undefined {
-  const value = resolveValue(env[key(name)]);
+  const resolved = resolveValue(env[key(name)]);
+  const value = !resolved || resolved.startsWith("[TODO:")
+    ? defaultEnvValues[name]
+    : resolved;
   if (!value || value.startsWith("[TODO:")) {
     return undefined;
   }
   return value;
+}
+
+function configuredToolset(): Toolset {
+  const value = optional("TOOLSET")?.trim().toLowerCase();
+  if (
+    value === "all" ||
+    value === "default" ||
+    value === "memory" ||
+    value === "utils" ||
+    value === "todo" ||
+    value === "case-workspace" ||
+    value === "search" ||
+    value === "case-files"
+  ) {
+    return value;
+  }
+  return "all";
 }
 
 function required(name: string): string {
@@ -700,6 +1032,30 @@ function log(message: string, details?: unknown): void {
 function cachePath(): string {
   return optional("TOKEN_CACHE_PATH") ||
     join(homedir(), ".codex", "mcp-resource-auth", "compliance-theater-token-cache.json");
+}
+
+function legacyDeviceLoginPath(): string {
+  return join(homedir(), ".codex", "mcp-resource-auth", "compliance-theater-device-login.json");
+}
+
+function neo4jCredentialCachePath(): string {
+  return join(dirname(cachePath()), "compliance-theater-neo4j-credentials.json");
+}
+
+function credentialCachePaths(): Array<{ path: string; label: string }> {
+  const paths = [
+    { path: cachePath(), label: "cached OAuth token, refresh token, and wrapped Auth.js session cookie" },
+    { path: legacyDeviceLoginPath(), label: "legacy device-login state" },
+    { path: neo4jCredentialCachePath(), label: "cached Neo4j graph credentials" }
+  ];
+  const seen = new Set<string>();
+  return paths.filter(({ path }) => {
+    if (seen.has(path)) {
+      return false;
+    }
+    seen.add(path);
+    return true;
+  });
 }
 
 function tokenSkewMs(): number {
@@ -1196,6 +1552,349 @@ async function rawRemoteRequest(
   return result || {};
 }
 
+function neo4jSetting(name: string): string | undefined {
+  const value = env[`MCP_COMPLIANCE_THEATER_NEO4J_${name}`];
+  if (!value || value.startsWith("[TODO:")) {
+    return undefined;
+  }
+  return value;
+}
+
+function neo4jAutoDiscoveryEnabled(): boolean {
+  const value = env.MCP_COMPLIANCE_THEATER_NEO4J_AUTO_DISCOVERY;
+  if (value === undefined || value === "" || value.startsWith("[TODO:")) {
+    return true;
+  }
+  return !["0", "false", "no", "off"].includes(value.trim().toLowerCase());
+}
+
+function completeNeo4jSettings(values: Partial<Neo4jSettings>): Neo4jSettings | undefined {
+  if (values.URI && values.USERNAME && values.PASSWORD && values.DATABASE) {
+    return values as Neo4jSettings;
+  }
+  return undefined;
+}
+
+function configuredNeo4jSettings(): Partial<Neo4jSettings> {
+  return {
+    URI: neo4jSetting("URI"),
+    USERNAME: neo4jSetting("USERNAME"),
+    PASSWORD: neo4jSetting("PASSWORD"),
+    DATABASE: neo4jSetting("DATABASE")
+  };
+}
+
+function discoveredNeo4jSettings(config: AnyRecord): Neo4jSettings | undefined {
+  const graphConfig = config?.mem0?.graph_store?.config;
+  if (!graphConfig || typeof graphConfig !== "object") {
+    return undefined;
+  }
+  const values = {
+    URI: graphConfig.url,
+    USERNAME: graphConfig.username,
+    PASSWORD: graphConfig.password,
+    DATABASE: graphConfig.database
+  };
+  if (Object.values(values).some((value) => typeof value !== "string" || value.trim() === "" || value.startsWith("env:"))) {
+    return undefined;
+  }
+  return values as Neo4jSettings;
+}
+
+async function readCachedNeo4jSettings(): Promise<Neo4jSettings | undefined> {
+  try {
+    const cached = JSON.parse(await readFile(neo4jCredentialCachePath(), "utf8")) as CachedNeo4jSettings;
+    if (cached.expires_at && cached.expires_at > Date.now() + tokenSkewMs()) {
+      const settings = completeNeo4jSettings(cached);
+      if (settings) {
+        log("using cached Neo4j graph credentials", { expiresAt: new Date(cached.expires_at).toISOString() });
+        return settings;
+      }
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+}
+
+async function writeCachedNeo4jSettings(settings: Neo4jSettings, expiresAt: number): Promise<void> {
+  const path = neo4jCredentialCachePath();
+  mkdirSync(dirname(path), { recursive: true });
+  await writeFile(path, `${JSON.stringify({
+    ...settings,
+    expires_at: expiresAt,
+    expires_at_iso: new Date(expiresAt).toISOString()
+  }, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
+  log("cached discovered Neo4j graph credentials", { expiresAt: new Date(expiresAt).toISOString() });
+}
+
+async function discoverNeo4jSettings(): Promise<Neo4jSettings | undefined> {
+  if (neo4jAutoDiscoveryAttempted) {
+    return undefined;
+  }
+  neo4jAutoDiscoveryAttempted = true;
+  try {
+    const config = await appSessionJsonRequest("GET", appEndpointUrl("/api/memory/config", { secrets: true }));
+    const settings = discoveredNeo4jSettings(config);
+    if (!settings) {
+      log("Neo4j graph credential discovery returned no concrete graph_store credentials");
+      return undefined;
+    }
+    const token = await acquireToken();
+    await writeCachedNeo4jSettings(settings, tokenExpiresAt(token, 0));
+    return settings;
+  } catch (error) {
+    log("Neo4j graph credential discovery failed; falling back to plugin settings", { message: asError(error).message });
+    return undefined;
+  }
+}
+
+async function resolvedNeo4jSettings(): Promise<Neo4jSettings> {
+  if (neo4jSettingsCache) {
+    return neo4jSettingsCache;
+  }
+  if (neo4jAutoDiscoveryEnabled()) {
+    const cached = await readCachedNeo4jSettings();
+    if (cached) {
+      neo4jSettingsCache = cached;
+      return cached;
+    }
+    const discovered = await discoverNeo4jSettings();
+    if (discovered) {
+      neo4jSettingsCache = discovered;
+      return discovered;
+    }
+  }
+  const configured = completeNeo4jSettings(configuredNeo4jSettings());
+  if (configured) {
+    neo4jSettingsCache = configured;
+    return configured;
+  }
+
+  const requiredSettings = ["URI", "USERNAME", "PASSWORD", "DATABASE"];
+  const pluginSettingNames: Record<string, string> = {
+    URI: "neo4jUri",
+    USERNAME: "neo4jUsername",
+    PASSWORD: "neo4jPassword",
+    DATABASE: "neo4jDatabase"
+  };
+  const missing = requiredSettings.filter((name) => {
+    const value = configuredNeo4jSettings()[name as keyof Neo4jSettings];
+    return !value;
+  });
+  throw new Error(`Neo4j graph tools are not configured. Missing plugin settings: ${missing.map((name) => pluginSettingNames[name]).join(", ")}.`);
+}
+
+async function neo4jChildEnv(): Promise<NodeJS.ProcessEnv> {
+  const settings = await resolvedNeo4jSettings();
+  return {
+    ...process.env,
+    NEO4J_URI: settings.URI,
+    NEO4J_USERNAME: settings.USERNAME,
+    NEO4J_PASSWORD: settings.PASSWORD,
+    NEO4J_DATABASE: settings.DATABASE,
+    NEO4J_READ_ONLY: "false",
+    NEO4J_TELEMETRY: "false"
+  };
+}
+
+function writeStdioMcpMessage(connection: StdioMcpConnection, message: AnyRecord): void {
+  const body = JSON.stringify(message);
+  const header = `Content-Length: ${Buffer.byteLength(body, "utf8")}\r\n\r\n`;
+  connection.child.stdin.write(header + body);
+}
+
+function rejectPendingStdioRequests(connection: StdioMcpConnection, error: Error): void {
+  for (const pending of connection.pending.values()) {
+    clearTimeout(pending.timer);
+    pending.reject(error);
+  }
+  connection.pending.clear();
+}
+
+function handleStdioMcpMessage(connection: StdioMcpConnection, message: AnyRecord): void {
+  if (typeof message.id !== "number") {
+    return;
+  }
+  const pending = connection.pending.get(message.id);
+  if (!pending) {
+    return;
+  }
+  clearTimeout(pending.timer);
+  connection.pending.delete(message.id);
+  if (message.error) {
+    const detail = message.error.message || JSON.stringify(message.error);
+    pending.reject(new Error(`Neo4j MCP ${connection.commandLabel} request failed: ${detail}`));
+    return;
+  }
+  pending.resolve(message.result || {});
+}
+
+function parseStdioMcpBuffer(connection: StdioMcpConnection): void {
+  while (connection.buffer.length > 0) {
+    const headerEnd = connection.buffer.indexOf("\r\n\r\n");
+    if (headerEnd >= 0) {
+      const header = connection.buffer.subarray(0, headerEnd).toString("utf8");
+      const match = /content-length:\s*(\d+)/i.exec(header);
+      if (!match) {
+        connection.buffer = Buffer.alloc(0);
+        throw new Error("Neo4j MCP backend returned an invalid stdio frame.");
+      }
+      const contentLength = Number(match[1]);
+      const bodyStart = headerEnd + 4;
+      const bodyEnd = bodyStart + contentLength;
+      if (connection.buffer.length < bodyEnd) {
+        return;
+      }
+      const body = connection.buffer.subarray(bodyStart, bodyEnd).toString("utf8");
+      connection.buffer = connection.buffer.subarray(bodyEnd);
+      handleStdioMcpMessage(connection, JSON.parse(body));
+      continue;
+    }
+
+    const lineEnd = connection.buffer.indexOf("\n");
+    if (lineEnd < 0) {
+      return;
+    }
+    const line = connection.buffer.subarray(0, lineEnd).toString("utf8").trim();
+    connection.buffer = connection.buffer.subarray(lineEnd + 1);
+    if (line) {
+      handleStdioMcpMessage(connection, JSON.parse(line));
+    }
+  }
+}
+
+function rawStdioMcpRequest(
+  connection: StdioMcpConnection,
+  method: string,
+  params: ToolArgs = {},
+  timeoutMs = proxyRequestTimeoutMs()
+): Promise<AnyRecord> {
+  const id = connection.nextId++;
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      connection.pending.delete(id);
+      reject(new Error(`Neo4j MCP backend timed out while handling ${method}.`));
+    }, timeoutMs);
+    connection.pending.set(id, { resolve, reject, timer });
+    try {
+      writeStdioMcpMessage(connection, { jsonrpc: "2.0", id, method, params });
+    } catch (error) {
+      clearTimeout(timer);
+      connection.pending.delete(id);
+      reject(asError(error));
+    }
+  });
+}
+
+async function stdioMcpRequest(connection: StdioMcpConnection, method: string, params: ToolArgs = {}): Promise<AnyRecord> {
+  connection.queue = connection.queue.catch(() => ({})).then(() => rawStdioMcpRequest(connection, method, params));
+  return connection.queue;
+}
+
+async function startNeo4jMcpCandidate(command: string, args: string[], commandLabel: string): Promise<StdioMcpConnection> {
+  const child = spawn(command, args, {
+    cwd: process.cwd(),
+    env: await neo4jChildEnv(),
+    stdio: "pipe",
+    windowsHide: true
+  });
+  const connection: StdioMcpConnection = {
+    child,
+    commandLabel,
+    nextId: randomInt(100_000, 999_999),
+    buffer: Buffer.alloc(0),
+    pending: new Map(),
+    queue: Promise.resolve({})
+  };
+
+  child.stdout.on("data", (chunk: Buffer) => {
+    try {
+      connection.buffer = Buffer.concat([connection.buffer, chunk]);
+      parseStdioMcpBuffer(connection);
+    } catch (error) {
+      rejectPendingStdioRequests(connection, asError(error));
+    }
+  });
+  child.stderr.setEncoding("utf8");
+  child.stderr.on("data", (chunk: string) => {
+    const text = chunk.trim();
+    if (text) {
+      log(`Neo4j MCP backend stderr (${commandLabel}): ${text.slice(0, 1000)}`);
+    }
+  });
+  child.on("error", (error) => {
+    rejectPendingStdioRequests(connection, new Error(`Neo4j MCP backend failed to start with ${commandLabel}: ${error.message}`));
+  });
+  child.on("exit", (code, signal) => {
+    if (neo4jRemote === connection) {
+      neo4jRemote = undefined;
+    }
+    rejectPendingStdioRequests(connection, new Error(`Neo4j MCP backend exited while using ${commandLabel} (code ${code ?? "unknown"}, signal ${signal ?? "none"}).`));
+  });
+
+  log("starting Neo4j MCP backend", { commandLabel });
+  try {
+    await rawStdioMcpRequest(connection, "initialize", {
+      protocolVersion: "2024-11-05",
+      capabilities: {},
+      clientInfo: { name: "compliance-theater-neo4j-bridge", version: "0.1.0" }
+    }, 15_000);
+    writeStdioMcpMessage(connection, { jsonrpc: "2.0", method: "notifications/initialized", params: {} });
+    log("Neo4j MCP backend initialized", { commandLabel });
+    return connection;
+  } catch (error) {
+    connection.child.kill();
+    throw error;
+  }
+}
+
+async function connectNeo4jMcp(): Promise<StdioMcpConnection> {
+  if (neo4jRemote) {
+    return neo4jRemote;
+  }
+  await resolvedNeo4jSettings();
+  const attempts: Array<{ command: string; args: string[]; label: string }> = [
+    { command: "python", args: ["-m", "neo4j_mcp_server"], label: "python -m neo4j_mcp_server" },
+    { command: "uvx", args: ["neo4j-mcp-server"], label: "uvx neo4j-mcp-server" }
+  ];
+  const failures: string[] = [];
+  for (const attempt of attempts) {
+    try {
+      neo4jRemote = await startNeo4jMcpCandidate(attempt.command, attempt.args, attempt.label);
+      return neo4jRemote;
+    } catch (error) {
+      failures.push(`${attempt.label}: ${asError(error).message}`);
+      if (neo4jRemote) {
+        neo4jRemote.child.kill();
+        neo4jRemote = undefined;
+      }
+    }
+  }
+  throw new Error(`Neo4j MCP backend could not be started. Tried python -m neo4j_mcp_server and uvx neo4j-mcp-server. Details: ${failures.join(" | ")}`);
+}
+
+async function callNeo4jGraphTool(name: string, args: ToolArgs = {}, retried = false): Promise<AnyRecord> {
+  const upstreamName = graphToolAliases[name];
+  if (!upstreamName) {
+    throw new Error(`Unknown Neo4j graph tool ${name}.`);
+  }
+  const connection = await connectNeo4jMcp();
+  try {
+    return await stdioMcpRequest(connection, "tools/call", {
+      name: upstreamName,
+      arguments: args
+    });
+  } catch (error) {
+    const message = asError(error).message;
+    if (!retried && /backend exited|failed to start|EPIPE|closed/i.test(message)) {
+      neo4jRemote = undefined;
+      return callNeo4jGraphTool(name, args, true);
+    }
+    throw error;
+  }
+}
+
 function isUnsupportedMethod(error: unknown): boolean {
   return String((error as Error | undefined)?.message || "").toLowerCase().includes("method not found");
 }
@@ -1219,12 +1918,100 @@ async function collectPaginated(method: string, keyName: string): Promise<AnyRec
   return items;
 }
 
+function exposedHelperToolsForToolset(): ToolDefinition[] {
+  const toolset = configuredToolset();
+  if (toolset === "memory") {
+    return exposedMemoryTools;
+  }
+  if (toolset === "utils") {
+    return exposedUtilityTools;
+  }
+  if (toolset === "todo") {
+    return [];
+  }
+  if (toolset === "case-workspace") {
+    return [];
+  }
+  if (toolset === "search") {
+    return exposedSearchHelperTools;
+  }
+  if (toolset === "case-files") {
+    return exposedCaseFileTools;
+  }
+  if (toolset === "default") {
+    return exposedCoreHelperTools;
+  }
+  return exposedHelperTools;
+}
+
 function listTools(): ToolDefinition[] {
+  const toolset = configuredToolset();
+  if (toolset === "memory") {
+    return exposedMemoryTools;
+  }
+  if (toolset === "utils") {
+    return exposedUtilityTools;
+  }
+  if (toolset === "todo") {
+    return exposedTodoTools;
+  }
+  if (toolset === "case-workspace") {
+    return exposedCaseWorkspaceTools;
+  }
+  if (toolset === "search") {
+    return [...exposedSearchTools, ...exposedSearchHelperTools];
+  }
+  if (toolset === "case-files") {
+    return exposedCaseFileTools;
+  }
+  if (toolset === "default") {
+    return [...exposedDefaultRemoteTools, ...exposedCoreHelperTools];
+  }
   return [...exposedRemoteTools, ...exposedHelperTools];
 }
 
 function remoteToolIsCallable(name: string | undefined): boolean {
-  return Boolean(name && remoteToolNames.has(name));
+  const toolset = configuredToolset();
+  if (!name || toolset === "memory" || toolset === "utils") {
+    return false;
+  }
+  if (toolset === "todo") {
+    return Object.prototype.hasOwnProperty.call(todoRemoteToolAliases, name);
+  }
+  if (toolset === "case-workspace") {
+    return Object.prototype.hasOwnProperty.call(caseWorkspaceRemoteToolAliases, name);
+  }
+  if (toolset === "search") {
+    return Object.prototype.hasOwnProperty.call(searchRemoteToolAliases, name);
+  }
+  if (toolset === "case-files") {
+    return false;
+  }
+  if (toolset === "default") {
+    return remoteToolNames.has(name) && !searchToolNames.has(name) && !todoToolNames.has(name) && !caseWorkspaceToolNames.has(name);
+  }
+  return remoteToolNames.has(name);
+}
+
+function upstreamRemoteToolName(name: string | undefined): string | undefined {
+  const toolset = configuredToolset();
+  if (!name) {
+    return undefined;
+  }
+  if (toolset === "todo") {
+    return todoRemoteToolAliases[name] || name;
+  }
+  if (toolset === "case-workspace") {
+    return caseWorkspaceRemoteToolAliases[name] || name;
+  }
+  if (toolset === "search") {
+    return searchRemoteToolAliases[name] || name;
+  }
+  return name;
+}
+
+function helperToolIsCallable(name: string | undefined): boolean {
+  return Boolean(name && exposedHelperToolsForToolset().some((tool) => tool.name === name));
 }
 
 async function listResources(): Promise<AnyRecord[]> {
@@ -1244,6 +2031,9 @@ function formatAbilities(tools: ToolDefinition[], resources: AnyRecord[], templa
   for (const tool of tools) {
     lines.push(`- ${tool.name}: ${tool.description || "No description"}`);
     lines.push(`  inputSchema: ${formatSchema(tool.inputSchema)}`);
+    if (tool.outputSchema) {
+      lines.push(`  outputSchema: ${formatSchema(tool.outputSchema)}`);
+    }
   }
   lines.push("");
   lines.push(`Resources: ${resources.length}`);
@@ -1252,54 +2042,6 @@ function formatAbilities(tools: ToolDefinition[], resources: AnyRecord[], templa
     lines.push(`- ${template.uriTemplate}: ${template.name || template.description || "Template"}`);
   }
   return lines.join("\n");
-}
-
-function selectComplianceTools(goal: string, maxTools = 8): AnyRecord {
-  const normalized = goal.toLowerCase();
-  const scored = exposedRemoteTools.map((tool) => {
-    const haystack = `${tool.name} ${tool.description || ""}`.toLowerCase();
-    let score = 0;
-    for (const word of normalized.split(/[^a-z0-9]+/).filter((value) => value.length > 2)) {
-      if (haystack.includes(word)) {
-        score += 2;
-      }
-    }
-    if (normalized.includes("case file") || normalized.includes("case-file") || normalized.includes("violation")) {
-      if (["searchCaseFile", "getMultipleCaseFileDocuments", "getCaseFileDocumentIndex"].includes(tool.name)) {
-        score += 8;
-      }
-    }
-    if (normalized.includes("policy") || normalized.includes("rule") || normalized.includes("legal basis")) {
-      if (tool.name === "searchPolicyStore") {
-        score += 8;
-      }
-    }
-    if (normalized.includes("workspace") || normalized.includes("task") || normalized.includes("question")) {
-      if (tool.name.toLowerCase().includes("workspace") || tool.name.toLowerCase().includes("question")) {
-        score += 6;
-      }
-    }
-    if (normalized.includes("todo") || normalized.includes("plan")) {
-      if (tool.name.toLowerCase().includes("todo") || tool.name === "sequentialthinking") {
-        score += 6;
-      }
-    }
-    return { tool, score };
-  });
-  const selected = scored
-    .sort((a, b) => b.score - a.score || a.tool.name.localeCompare(b.tool.name))
-    .filter((item, index) => item.score > 0 || index < 3)
-    .slice(0, Math.max(1, Math.min(20, maxTools)))
-    .map(({ tool }) => ({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: tool.inputSchema
-    }));
-  return {
-    goal,
-    tools: selected,
-    note: "Call these native Compliance Theater tools directly. The plugin handles authentication and forwarding."
-  };
 }
 
 function resourcePath(resource: AnyRecord): string {
@@ -1383,19 +2125,85 @@ function memoryEndpointUrl(pathname: string, query?: Record<string, unknown>): s
   return appEndpointUrl(`/api/memory/${pathname.replace(/^\/+/, "")}`, query);
 }
 
+function documentUnitEndpointUrl(caseFileId: string | number): string {
+  return appEndpointUrl(`/api/document-unit/${encodeURIComponent(String(caseFileId))}`);
+}
+
+function documentUnitEmbeddingsEndpointUrl(
+  caseFileId: string | number,
+  modelSize: string,
+  index?: string | number
+): string {
+  const encodedId = encodeURIComponent(String(caseFileId));
+  const encodedIndex = index === undefined || index === null || index === ""
+    ? undefined
+    : encodeURIComponent(String(index));
+  return appEndpointUrl(
+    `/api/document-unit/${encodedId}/embeddings${encodedIndex === undefined ? "" : `/${encodedIndex}`}`,
+    { size: modelSize }
+  );
+}
+
+function documentUnitEmbeddingsEndpointPath(caseFileId: string | number, index?: string | number): string {
+  const encodedId = encodeURIComponent(String(caseFileId));
+  const encodedIndex = index === undefined || index === null || index === ""
+    ? undefined
+    : encodeURIComponent(String(index));
+  return `/api/document-unit/${encodedId}/embeddings${encodedIndex === undefined ? "" : `/${encodedIndex}`}`;
+}
+
+function aiEmbedEndpointUrl(): string {
+  return appEndpointUrl("/api/ai/embed");
+}
+
+function aiEmbedEndpointPath(): string {
+  return "/api/ai/embed";
+}
+
 async function clearCachedToken(): Promise<string> {
-  if (optional("DISABLE_TOKEN_CACHE") === "1") {
-    return "Token cache is disabled by MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE=1.";
-  }
-  try {
-    await rm(cachePath());
-    return `Removed cached token file: ${cachePath()}`;
-  } catch (error) {
-    if (asError(error).code === "ENOENT") {
-      return `No cached token file found at: ${cachePath()}`;
+  const messages: string[] = [];
+  const activeRemote = remote;
+  const activeNeo4jRemote = neo4jRemote;
+  remote = undefined;
+  neo4jRemote = undefined;
+  neo4jSettingsCache = undefined;
+  neo4jAutoDiscoveryAttempted = false;
+  registeredClient = undefined;
+  if (activeRemote) {
+    try {
+      await activeRemote.reader.cancel();
+      messages.push("Closed in-memory MCP connection and cleared its wrapped session cookie.");
+    } catch (error) {
+      messages.push(`Cleared in-memory MCP connection state; reader close reported: ${asError(error).message}`);
     }
-    throw error;
+  } else {
+    messages.push("Cleared in-memory auth/session state.");
   }
+  if (activeNeo4jRemote) {
+    activeNeo4jRemote.child.kill();
+    messages.push("Closed in-memory Neo4j MCP backend connection.");
+  }
+
+  if (optional("DISABLE_TOKEN_CACHE") === "1") {
+    messages.push("Token cache is disabled by MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE=1.");
+    return messages.join("\n");
+  }
+
+  for (const { path, label } of credentialCachePaths()) {
+    try {
+      await rm(path);
+      messages.push(`Removed ${label}: ${path}`);
+    } catch (error) {
+      if (asError(error).code === "ENOENT") {
+        messages.push(`No ${label} file found at: ${path}`);
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  messages.push("Wrapper-managed OAuth tokens, refresh tokens, wrapped Auth.js session tokens, and cookies are cleared.");
+  return messages.join("\n");
 }
 
 async function currentAccessToken(): Promise<TokenInfo | undefined> {
@@ -1616,9 +2424,408 @@ async function memoryApiRequestWithToken(
   return responseResult.body;
 }
 
+async function appSessionJsonRequest(method: string, url: string, body?: unknown): Promise<AnyRecord> {
+  const token = await acquireToken();
+  try {
+    return await appSessionJsonRequestWithToken(token, method, url, body);
+  } catch (error) {
+    if (!isHttpBadRequest(error)) {
+      throw error;
+    }
+    const freshToken = await freshTokenAfterBadRequest(`App API ${method} ${url} returned HTTP 400`);
+    return appSessionJsonRequestWithToken(freshToken, method, url, body);
+  }
+}
+
+async function appSessionJsonRequestWithToken(
+  token: CachedToken,
+  method: string,
+  url: string,
+  body?: unknown
+): Promise<AnyRecord> {
+  const appSession = await acquireAppSession(token);
+  const sessionCookie = appSessionCookieHeader(appSession);
+  if (!sessionCookie) {
+    throw new Error("Wrapped app session did not include a cookie header.");
+  }
+  const responseResult = await fetchJsonResponse(url, {
+    method,
+    headers: {
+      Accept: "application/json",
+      Cookie: sessionCookie,
+      ...(body === undefined ? {} : { "Content-Type": "application/json" })
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) })
+  });
+  if (!responseResult.response.ok) {
+    const detail = responseResult.body?.message || responseResult.body?.error || `HTTP ${responseResult.response.status}`;
+    throw httpStatusError(`App API ${method} ${url} failed: ${detail}`, responseResult.response.status);
+  }
+  return responseResult.body;
+}
+
+function appApiEndpointUrl(relativeUrl: string): string {
+  const trimmed = relativeUrl.trim();
+  if (!trimmed) {
+    throw new Error("url is required.");
+  }
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) || trimmed.startsWith("//")) {
+    throw new Error("url must be relative to the Compliance Theater /api root.");
+  }
+
+  const withoutLeadingSlash = trimmed.replace(/^\/+/, "");
+  const apiRelative = withoutLeadingSlash.replace(/^api(?:\/|$)/i, "");
+  const server = new URL(required("SERVER_URL"));
+  const apiRoot = new URL("/api/", server.origin);
+  const target = new URL(apiRelative, apiRoot);
+  if (target.origin !== apiRoot.origin || !target.pathname.startsWith("/api/")) {
+    throw new Error("url must resolve inside the Compliance Theater /api root.");
+  }
+  return target.toString();
+}
+
+function normalizeHttpMethod(value: unknown): string {
+  const method = String(value || "GET").trim().toUpperCase();
+  if (!/^[A-Z][A-Z0-9_-]*$/.test(method)) {
+    throw new Error("method must be a valid HTTP method token.");
+  }
+  return method;
+}
+
+function hasToolData(args: ToolArgs): boolean {
+  return Object.prototype.hasOwnProperty.call(args, "data") && args.data !== undefined;
+}
+
+async function appSessionApiResponse(method: string, url: string, body?: unknown): Promise<AnyRecord> {
+  const token = await acquireToken();
+  const first = await appSessionApiResponseWithToken(token, method, url, body);
+  if (first.status !== 400) {
+    return first;
+  }
+  const freshToken = await freshTokenAfterBadRequest(`App API ${method} ${url} returned HTTP 400`);
+  return appSessionApiResponseWithToken(freshToken, method, url, body);
+}
+
+async function appSessionApiResponseWithToken(
+  token: CachedToken,
+  method: string,
+  url: string,
+  body?: unknown
+): Promise<AnyRecord> {
+  const appSession = await acquireAppSession(token);
+  const sessionCookie = appSessionCookieHeader(appSession);
+  if (!sessionCookie) {
+    throw new Error("Wrapped app session did not include a cookie header.");
+  }
+
+  const startedAt = Date.now();
+  const response = await fetchWithPolicy(url, {
+    method,
+    headers: {
+      Accept: "application/json, text/plain;q=0.9, */*;q=0.8",
+      Cookie: sessionCookie,
+      ...(body === undefined ? {} : { "Content-Type": "application/json" })
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    timeoutMs: httpTimeoutMs(),
+    retries: httpRetryCount(),
+    retryBaseMs: httpRetryBaseMs(),
+    logger: log
+  });
+  const text = await response.text();
+  let parsedBody: unknown = null;
+  let parsedJson = false;
+  try {
+    parsedBody = text ? JSON.parse(text) : null;
+    parsedJson = text.trim().length > 0;
+  } catch {
+    parsedBody = null;
+  }
+  log("App API call completed", {
+    url,
+    method,
+    status: response.status,
+    durationMs: Date.now() - startedAt
+  });
+  return {
+    ok: response.ok,
+    status: response.status,
+    statusText: response.statusText,
+    method,
+    url,
+    body: parsedBody,
+    text: parsedJson ? null : text
+  };
+}
+
+async function callApiTool(args: ToolArgs = {}): Promise<AnyRecord> {
+  const url = appApiEndpointUrl(String(requiredToolArgument(args, "url")));
+  const method = normalizeHttpMethod(args.method);
+  const includesBody = hasToolData(args);
+  if (includesBody && (method === "GET" || method === "HEAD")) {
+    throw new Error("data cannot be sent with GET or HEAD. Put query parameters in the url, or use POST/PUT/PATCH.");
+  }
+  return appSessionApiResponse(method, url, includesBody ? args.data : undefined);
+}
+
+async function readCaseFileTool(args: ToolArgs = {}): Promise<AnyRecord> {
+  const caseFileId = args.caseFileId ?? args.case_file_id ?? args.id;
+  if (caseFileId === undefined || caseFileId === null || caseFileId === "") {
+    throw new Error("caseFileId is required.");
+  }
+  return appSessionJsonRequest("GET", documentUnitEndpointUrl(caseFileId));
+}
+
+function caseFileIdsFromArgs(args: ToolArgs): Array<string | number> {
+  const ids: Array<string | number> = [];
+  if (args.caseFileId !== undefined && args.caseFileId !== null && args.caseFileId !== "") {
+    ids.push(args.caseFileId);
+  }
+  if (args.id !== undefined && args.id !== null && args.id !== "") {
+    ids.push(args.id);
+  }
+  if (Array.isArray(args.ids)) {
+    ids.push(...args.ids.filter((id) => id !== undefined && id !== null && id !== ""));
+  }
+  if (Array.isArray(args.requests)) {
+    ids.push(...args.requests
+      .map((request) => request?.caseFileId)
+      .filter((id) => id !== undefined && id !== null && id !== ""));
+  }
+  return ids;
+}
+
+function goalsRequestsFromArgs(args: ToolArgs): AnyRecord[] {
+  if (Array.isArray(args.requests) && args.requests.length > 0) {
+    return args.requests;
+  }
+  const ids = caseFileIdsFromArgs(args);
+  return ids.map((caseFileId) => ({ caseFileId }));
+}
+
+async function getCaseFileTool(args: ToolArgs = {}): Promise<AnyRecord> {
+  const mode = args.mode;
+  if (mode !== "direct" && mode !== "goals") {
+    throw new Error("mode is required and must be one of: direct, goals.");
+  }
+  if (mode === "direct") {
+    if (args.goals !== undefined || args.verbatim_fidelity !== undefined) {
+      throw new Error("direct mode does not accept goals or verbatim_fidelity. Use goals mode for preprocessing.");
+    }
+    const ids = caseFileIdsFromArgs(args);
+    if (ids.length === 0) {
+      throw new Error("direct mode requires caseFileId, id, ids, or requests.");
+    }
+    if (ids.length > 3) {
+      throw new Error("direct mode supports at most 3 case-file IDs. Use goals mode for larger batches.");
+    }
+    return {
+      mode,
+      items: await Promise.all(ids.map(async (caseFileId) => ({
+        caseFileId,
+        result: await readCaseFileTool({ caseFileId })
+      })))
+    };
+  }
+
+  const requests = goalsRequestsFromArgs(args);
+  if (requests.length === 0) {
+    throw new Error("goals mode requires requests, ids, caseFileId, or id.");
+  }
+  return {
+    mode,
+    result: await remoteRequest("tools/call", {
+      name: "getMultipleCaseFileDocuments",
+      arguments: {
+        requests,
+        ...(args.goals === undefined ? {} : { goals: args.goals }),
+        ...(args.verbatim_fidelity === undefined ? {} : { verbatim_fidelity: args.verbatim_fidelity })
+      }
+    })
+  };
+}
+
+async function amendCaseFileTool(args: ToolArgs = {}): Promise<AnyRecord> {
+  return remoteRequest("tools/call", {
+    name: "amendCaseFileDocument",
+    arguments: args
+  });
+}
+
+function requiredModelSize(args: ToolArgs): "large" | "small" {
+  const modelSize = args.modelSize ?? args.model_size ?? args.size;
+  if (modelSize !== "large" && modelSize !== "small") {
+    throw new Error("modelSize is required and must be one of: large, small.");
+  }
+  return modelSize;
+}
+
+function optionalModelSize(args: ToolArgs): "large" | "small" {
+  const modelSize = args.modelSize ?? args.model_size ?? args.size ?? "large";
+  if (modelSize !== "large" && modelSize !== "small") {
+    throw new Error("modelSize must be one of: large, small.");
+  }
+  return modelSize;
+}
+
+function isMissingEmbeddingResult(value: unknown): boolean {
+  if (value === null || value === undefined) {
+    return true;
+  }
+  if (typeof value === "string") {
+    return value.trim().length === 0;
+  }
+  if (Array.isArray(value)) {
+    return value.length === 0;
+  }
+  if (typeof value === "object") {
+    const record = value as AnyRecord;
+    if (record.isError === true && !record.value && !record.items && !record.result) {
+      return true;
+    }
+    if ("value" in record) {
+      return isMissingEmbeddingResult(record.value);
+    }
+    if ("result" in record) {
+      return isMissingEmbeddingResult(record.result);
+    }
+    if ("items" in record) {
+      return isMissingEmbeddingResult(record.items);
+    }
+    if ("embeddings" in record && isMissingEmbeddingResult(record.embeddings)) {
+      return true;
+    }
+    const meaningfulKeys = Object.keys(record).filter((key) => record[key] !== undefined && record[key] !== null);
+    if (meaningfulKeys.length === 0) {
+      return true;
+    }
+    if (meaningfulKeys.length === 1 && meaningfulKeys[0] === "isError" && record.isError === false) {
+      return true;
+    }
+  }
+  return false;
+}
+
+async function readEmbeddingsOrNull(caseFileId: string | number, modelSize: "large" | "small", index?: string | number) {
+  try {
+    const result = await appSessionJsonRequest("GET", documentUnitEmbeddingsEndpointUrl(caseFileId, modelSize, index));
+    return isMissingEmbeddingResult(result) ? null : result;
+  } catch (error) {
+    const status = httpStatusFromError(error);
+    if (status === 404 || status === 204) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function generateEmbeddings(caseFileId: string | number, modelSize: "large" | "small") {
+  return appSessionJsonRequest("PUT", documentUnitEmbeddingsEndpointUrl(caseFileId, modelSize));
+}
+
+async function generateQueryVectors(text: string, modelSize: "large" | "small") {
+  return appSessionJsonRequest("POST", aiEmbedEndpointUrl(), {
+    text,
+    size: modelSize
+  });
+}
+
+type EmbeddingAction = "read" | "embed" | "embed-if-missing" | "query-vectors";
+
+function embeddingAction(args: ToolArgs): EmbeddingAction {
+  const rawAction = args.action;
+  const normalized = typeof rawAction === "string" ? rawAction.replace(/_/g, "-") : "";
+  if (
+    normalized === "read" ||
+    normalized === "embed" ||
+    normalized === "embed-if-missing" ||
+    normalized === "query-vectors"
+  ) {
+    return normalized;
+  }
+  throw new Error("action is required and must be one of: read, embed, embed-if-missing, query-vectors.");
+}
+
+async function manageCaseFileEmbeddingsTool(args: ToolArgs = {}): Promise<AnyRecord> {
+  const action = embeddingAction(args);
+  if (action === "query-vectors") {
+    const text = args.text ?? args.query ?? args.queryText ?? args.query_text;
+    if (typeof text !== "string" || text.trim() === "") {
+      throw new Error("text is required for query-vectors.");
+    }
+    const modelSize = optionalModelSize(args);
+    return {
+      action,
+      caseFileId: null,
+      modelSize,
+      index: null,
+      endpoint: aiEmbedEndpointPath(),
+      generated: true,
+      result: await generateQueryVectors(text, modelSize)
+    };
+  }
+
+  const caseFileId = args.caseFileId ?? args.case_file_id ?? args.documentId ?? args.docId ?? args.id;
+  if (caseFileId === undefined || caseFileId === null || caseFileId === "") {
+    throw new Error("caseFileId is required.");
+  }
+  const modelSize = requiredModelSize(args);
+  const index = args.index;
+  if (index !== undefined && index !== null && index !== "" && action !== "read" && action !== "embed-if-missing") {
+    throw new Error("index can only be used with action read or embed-if-missing.");
+  }
+
+  if (action === "read") {
+    return {
+      action,
+      caseFileId,
+      modelSize,
+      index: index ?? null,
+      endpoint: documentUnitEmbeddingsEndpointPath(caseFileId, index),
+      generated: false,
+      result: await readEmbeddingsOrNull(caseFileId, modelSize, index)
+    };
+  }
+
+  if (action === "embed") {
+    return {
+      action,
+      caseFileId,
+      modelSize,
+      index: null,
+      endpoint: documentUnitEmbeddingsEndpointPath(caseFileId),
+      generated: true,
+      result: await generateEmbeddings(caseFileId, modelSize)
+    };
+  }
+
+  const existing = await readEmbeddingsOrNull(caseFileId, modelSize, index);
+  if (existing !== null) {
+    return {
+      action,
+      caseFileId,
+      modelSize,
+      index: index ?? null,
+      endpoint: documentUnitEmbeddingsEndpointPath(caseFileId, index),
+      generated: false,
+      result: existing
+    };
+  }
+
+  return {
+    action,
+    caseFileId,
+    modelSize,
+    index: null,
+    endpoint: documentUnitEmbeddingsEndpointPath(caseFileId),
+    generated: true,
+    result: await generateEmbeddings(caseFileId, modelSize)
+  };
+}
+
 async function callMemoryTool(name: string, args: ToolArgs = {}): Promise<AnyRecord> {
   switch (name) {
-    case "listMemories":
+    case "list":
       return memoryApiRequest("GET", memoryEndpointUrl("memories/", {
         app_id: args.app_id,
         from_date: args.from_date,
@@ -1630,34 +2837,34 @@ async function callMemoryTool(name: string, args: ToolArgs = {}): Promise<AnyRec
         page: args.page,
         size: args.size
       }));
-    case "createMemory":
+    case "insert":
       return memoryApiRequest("POST", memoryEndpointUrl("memories/"), {
         text: requiredToolArgument(args, "text"),
         ...(args.metadata === undefined ? {} : { metadata: args.metadata }),
         ...(args.infer === undefined ? {} : { infer: args.infer }),
         ...(args.app === undefined ? {} : { app: args.app })
       });
-    case "getMemoryCategories":
+    case "categories":
       return memoryApiRequest("GET", memoryEndpointUrl("memories/categories"));
-    case "getMemory":
+    case "get":
       return memoryApiRequest(
         "GET",
         memoryEndpointUrl(`memories/${encodeURIComponent(requiredToolArgument(args, "memory_id"))}`)
       );
-    case "updateMemory":
+    case "update":
       return memoryApiRequest(
         "PUT",
         memoryEndpointUrl(`memories/${encodeURIComponent(requiredToolArgument(args, "memory_id"))}`),
         { memory_content: requiredToolArgument(args, "memory_content") }
       );
-    case "searchMemories":
+    case "search":
       return memoryApiRequest("POST", memoryEndpointUrl("memories/search"), {
         query: requiredToolArgument(args, "query"),
         ...(args.numberOfHits === undefined ? {} : { numberOfHits: args.numberOfHits }),
         ...(args.page === undefined ? {} : { page: args.page }),
         ...(args.filters === undefined ? {} : { filters: args.filters })
       });
-    case "getRelatedMemories":
+    case "related":
       return memoryApiRequest(
         "GET",
         memoryEndpointUrl(`memories/${encodeURIComponent(requiredToolArgument(args, "memory_id"))}/related`, {
@@ -1783,43 +2990,69 @@ async function loginAndSummarizeStatus(): Promise<string> {
 
 async function callHelperTool(id: RpcId | undefined, name: string, args: ToolArgs = {}): Promise<void> {
   try {
-    if (memoryTools.some((tool) => tool.name === name)) {
+    const toolset = configuredToolset();
+    if (toolset === "memory" && memoryTools.some((tool) => tool.name === name)) {
       sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callMemoryTool(name, args)) });
       return;
     }
 
-    if (name === "mcp_resource_auth_list_abilities") {
-      const [tools, resources, templates] = await Promise.all([
-        Promise.resolve(listTools()),
-        listResources().catch(() => []),
-        listResourceTemplates().catch(() => [])
-      ]);
-      sendToClient({ jsonrpc: "2.0", id, result: textToolResult(formatAbilities(tools, resources, templates)) });
+    if (name === "read_case_file") {
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await readCaseFileTool(args)) });
       return;
     }
 
-    if (name === "selectComplianceTools") {
-      sendToClient({
-        jsonrpc: "2.0",
-        id,
-        result: jsonToolResult(selectComplianceTools(
-          String(requiredToolArgument(args, "goal")),
-          args.maxTools === undefined ? 8 : Number(args.maxTools)
-        ))
-      });
+    if (name === "get") {
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await getCaseFileTool(args)) });
       return;
     }
 
-    if (name === "mcp_resource_auth_list_resources") {
-      const [resources, templates] = await Promise.all([
-        listResources().catch(() => []),
-        listResourceTemplates().catch(() => [])
-      ]);
-      sendToClient({ jsonrpc: "2.0", id, result: textToolResult(formatResourceDirectory(resources, templates)) });
+    if (name === "amend") {
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await amendCaseFileTool(args)) });
       return;
     }
 
-    if (name === "mcp_resource_auth_manage_auth") {
+    if (name === "embed") {
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await manageCaseFileEmbeddingsTool(args)) });
+      return;
+    }
+
+    if (name in graphToolAliases) {
+      sendToClient({ jsonrpc: "2.0", id, result: await callNeo4jGraphTool(name, args) });
+      return;
+    }
+
+    if (name === "call_api") {
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callApiTool(args)) });
+      return;
+    }
+
+    if (toolset !== "utils" && memoryTools.some((tool) => tool.name === name)) {
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callMemoryTool(name, args)) });
+      return;
+    }
+
+    if (name === "list") {
+      const listType = args.type ?? "abilities";
+      if (listType === "abilities") {
+        const [tools, resources, templates] = await Promise.all([
+          Promise.resolve(listTools()),
+          listResources().catch(() => []),
+          listResourceTemplates().catch(() => [])
+        ]);
+        sendToClient({ jsonrpc: "2.0", id, result: textToolResult(formatAbilities(tools, resources, templates)) });
+      } else if (listType === "resources") {
+        const [resources, templates] = await Promise.all([
+          listResources().catch(() => []),
+          listResourceTemplates().catch(() => [])
+        ]);
+        sendToClient({ jsonrpc: "2.0", id, result: textToolResult(formatResourceDirectory(resources, templates)) });
+      } else {
+        sendToClient(errorResponse(id, -32602, "type must be one of: abilities, resources"));
+      }
+      return;
+    }
+
+    if (name === "auth") {
       if (args?.action === "clear-cache") {
         sendToClient({ jsonrpc: "2.0", id, result: textToolResult(await clearCachedToken()) });
       } else if (args?.action === "status") {
@@ -1872,7 +3105,7 @@ async function handleClientRequest(message: JsonRpcMessage): Promise<void> {
 
   if (message.method === "tools/call") {
     const name = message.params?.name;
-    if (helperTools.some((tool) => tool.name === name)) {
+    if (helperToolIsCallable(name)) {
       await callHelperTool(message.id, name, message.params?.arguments || {});
       return;
     }
@@ -1888,7 +3121,13 @@ async function handleClientRequest(message: JsonRpcMessage): Promise<void> {
   }
 
   try {
-    const result = await remoteRequest(message.method, message.params || {});
+    const params = message.method === "tools/call"
+      ? {
+        ...(message.params || {}),
+        name: upstreamRemoteToolName(message.params?.name)
+      }
+      : (message.params || {});
+    const result = await remoteRequest(message.method, params);
     sendToClient({ jsonrpc: "2.0", id: message.id, result });
   } catch (error) {
     sendToClient(errorResponse(message.id, -32000, asError(error).message));

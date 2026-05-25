@@ -1,6 +1,7 @@
 import { EmbeddingModelV2 } from '@ai-sdk/provider';
 import { createEmbeddingModel } from '../../aiModelFactory';
 import { embed } from '@compliance-theater/types/ai-sdk';
+import type { SharedV2ProviderOptions } from '@compliance-theater/types/ai-sdk';
 import { IEmbeddingService } from './types';
 import {
   globalRequiredSingleton,
@@ -25,19 +26,24 @@ export class EmbeddingService implements IEmbeddingService {
   }
 
   private embeddingClient: Promise<EmbeddingModelV2<string>>;
+  private providerOptions?: SharedV2ProviderOptions;
   private cacheEmbeddings = true;
   private embeddingCache: Map<string, number[]> = new Map();
 
   constructor(
     embeddingClient?:
       | EmbeddingModelV2<string>
-      | Promise<EmbeddingModelV2<string>>
+      | Promise<EmbeddingModelV2<string>>,
+    options?: {
+      providerOptions?: SharedV2ProviderOptions;
+    }
   ) {
     this.embeddingClient =
       embeddingClient instanceof Promise ||
         typeof embeddingClient === 'undefined'
         ? embeddingClient ?? EmbeddingService.globalEmbeddingModel
         : Promise.resolve(embeddingClient);
+    this.providerOptions = options?.providerOptions;
   }
 
   public setCacheEmbeddings(cache: boolean): this {
@@ -49,6 +55,9 @@ export class EmbeddingService implements IEmbeddingService {
     const ret = await embed({
       model: await this.embeddingClient,
       value: query,
+      ...(this.providerOptions
+        ? { providerOptions: this.providerOptions }
+        : {}),
     });
     return ret.embedding;
   }
