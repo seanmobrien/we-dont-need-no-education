@@ -26,7 +26,7 @@ This will build the plugin, run unit tests, lint, and copy all distributable fil
 ## Standalone Usage
 
 ```sh
-cd web-ui/packages/codex-mcp
+cd codex-mcp
 yarn install
 yarn build
 yarn test
@@ -46,7 +46,7 @@ Add an entry in your local marketplace JSON (for example, under your user-level 
   "name": "compliance-theater-2000",
   "source": {
     "source": "local",
-    "path": "/absolute/path/to/we-dont-need-no-education/web-ui/packages/codex-mcp"
+    "path": "/absolute/path/to/we-dont-need-no-education/codex-mcp"
   },
   "policy": {
     "installation": "AVAILABLE",
@@ -60,11 +60,11 @@ Use an absolute path for reliability.
 
 On this repository checkout, the path would normally be:
 
-- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/codex-mcp`
+- `/home/seanm/repos/we-dont-need-no-education/codex-mcp`
 
 Or, if using the published output:
 
-- `/home/seanm/repos/we-dont-need-no-education/web-ui/packages/codex-mcp/publish`
+- `/home/seanm/repos/we-dont-need-no-education/codex-mcp/publish`
 
 ## Environment Variables
 

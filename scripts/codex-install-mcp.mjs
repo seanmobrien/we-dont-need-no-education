@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, '..');
-const pluginPackageRoot = resolve(repoRoot, 'web-ui', 'packages', 'codex-mcp');
+const pluginPackageRoot = resolve(repoRoot, 'codex-mcp');
 const pluginDistPath = resolve(pluginPackageRoot, 'dist');
 const defaultMarketplacePath = resolve(homedir(), '.codex', 'plugins', 'marketplace.json');
 const agentsMarketplacePath = resolve(homedir(), '.agents', 'plugins', 'marketplace.json');
