@@ -6,7 +6,11 @@ jest.mock('@ai-sdk/azure', () => ({
   createAzure: jest.fn(() => ({
     completion: jest.fn(() => ({ modelType: 'azure-completions' })),
     chat: jest.fn(() => ({ modelType: 'azure-chat' })),
-    textEmbeddingModel: jest.fn(() => ({ modelType: 'azure-embedding' })),
+    textEmbeddingModel: jest.fn((modelId: string) => ({
+      modelType: 'azure-embedding',
+      modelId,
+      provider: 'azure',
+    })),
   })),
   AzureOpenAIProvider: jest.fn(),
 }));
@@ -15,7 +19,11 @@ jest.mock('@ai-sdk/azure', () => ({
 jest.mock('@ai-sdk/google', () => ({
   createGoogleGenerativeAI: jest.fn(() => ({
     chat: jest.fn(() => ({ modelType: 'google-chat' })),
-    textEmbeddingModel: jest.fn(() => ({ modelType: 'google-embedding' })),
+    textEmbeddingModel: jest.fn((modelId: string) => ({
+      modelType: 'google-embedding',
+      modelId,
+      provider: 'google',
+    })),
   })),
   GoogleGenerativeAIProvider: jest.fn(),
 }));

@@ -1268,7 +1268,10 @@ export const documentUnitEmbeddings = pgTable(
   'document_unit_embeddings',
   {
     documentId: integer('document_id').notNull(),
+    embeddingModel: varchar('embedding_model', { length: 255 }).notNull(),
     index: integer().notNull(),
+    startPos: integer('start_pos'),
+    endPos: integer('end_pos'),
     // vector: vector().notNull(),
     createdOn: time('created_on').default(sql`CURRENT_TIMESTAMP`),
   },
@@ -1279,7 +1282,7 @@ export const documentUnitEmbeddings = pgTable(
       name: 'fk_document_unit',
     }).onDelete('cascade'),
     primaryKey({
-      columns: [table.documentId, table.index],
+      columns: [table.documentId, table.embeddingModel, table.index],
       name: 'document_unit_vector_store_pkey',
     }),
   ],

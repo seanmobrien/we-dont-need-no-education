@@ -32,6 +32,9 @@ describe('env package', () => {
     MEM0_API_HOST: 'https://api.mem0.ai',
     MEM0_UI_HOST: 'https://app.mem0.ai',
     MEM0_USERNAME: 'test@example.com',
+    AZURE_OPENAI_DEPLOYMENT_EMBEDDING: 'text-embedding-3-large',
+    GOOGLE_GENERATIVE_EMBEDDING: 'text-embedding-004',
+    OPENAI_EMBEDDING: 'text-embedding-3-large',
     NODE_ENV: 'test',
   };
 
@@ -110,6 +113,52 @@ describe('env package', () => {
 
       const env2 = envModule.env();
       expect(env2).not.toBe(env1);
+    });
+
+    it('should infer small embedding models when explicit small env vars are unset', () => {
+      process.env.AZURE_OPENAI_DEPLOYMENT_EMBEDDING = 'text-embedding-3-large';
+      delete process.env.AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL;
+      process.env.GOOGLE_GENERATIVE_EMBEDDING = 'text-embedding-004';
+      delete process.env.GOOGLE_GENERATIVE_EMBEDDING_SMALL;
+      process.env.OPENAI_EMBEDDING = 'text-embedding-3-large';
+      delete process.env.OPENAI_EMBEDDING_SMALL;
+
+      envModule.__clearEnvCacheForTests();
+      const currentEnv = envModule.env();
+
+      expect(currentEnv.AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL).toBe(
+        'text-embedding-3-small',
+      );
+      expect(currentEnv.GOOGLE_GENERATIVE_EMBEDDING_SMALL).toBe(
+        'text-embedding-004',
+      );
+      expect(currentEnv.OPENAI_EMBEDDING_SMALL).toBe(
+        'text-embedding-3-small',
+      );
+    });
+
+    it('should prefer explicit small embedding env vars over inferred values', () => {
+      process.env.AZURE_OPENAI_DEPLOYMENT_EMBEDDING = 'text-embedding-3-large';
+      process.env.AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL =
+        'text-embedding-3-small-explicit';
+      process.env.GOOGLE_GENERATIVE_EMBEDDING = 'text-embedding-004';
+      process.env.GOOGLE_GENERATIVE_EMBEDDING_SMALL =
+        'text-embedding-004-small-explicit';
+      process.env.OPENAI_EMBEDDING = 'text-embedding-3-large';
+      process.env.OPENAI_EMBEDDING_SMALL = 'text-embedding-3-small-explicit';
+
+      envModule.__clearEnvCacheForTests();
+      const currentEnv = envModule.env();
+
+      expect(currentEnv.AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL).toBe(
+        'text-embedding-3-small-explicit',
+      );
+      expect(currentEnv.GOOGLE_GENERATIVE_EMBEDDING_SMALL).toBe(
+        'text-embedding-004-small-explicit',
+      );
+      expect(currentEnv.OPENAI_EMBEDDING_SMALL).toBe(
+        'text-embedding-3-small-explicit',
+      );
     });
   });
 

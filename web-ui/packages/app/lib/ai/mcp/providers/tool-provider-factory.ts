@@ -30,6 +30,12 @@ import { toolProxyFactory } from '../tools';
 
 import { clientToolProviderFactory } from './client-tool-provider';
 
+type DisposeEmitterListener = (...args: unknown[]) => {};
+
+const asDisposeEmitterListener = (
+  listener: () => void,
+): DisposeEmitterListener => listener as unknown as DisposeEmitterListener;
+
 const getHttpStreamEnabledFlag = async () => {
   const ret = await getStreamingTransportFlag();
   return ret.value;
@@ -650,7 +656,7 @@ export const toolProviderSetFactory = async (
      * @param listener - The listener to add.
      */
     addDisposeListener: (listener: () => void): void => {
-      emitter.on('disposed', listener);
+      emitter.on('disposed', asDisposeEmitterListener(listener));
     },
     /**
      * Removes a dispose listener.
@@ -658,7 +664,7 @@ export const toolProviderSetFactory = async (
      * @param listener - The listener to remove.
      */
     removeDisposeListener: (listener: () => void): void => {
-      emitter.off('disposed', listener);
+      emitter.off('disposed', asDisposeEmitterListener(listener));
     },
     /**
      * Disposes of all providers with timeout protection.

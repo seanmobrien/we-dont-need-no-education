@@ -69,6 +69,8 @@ export default [
             '@typescript-eslint': tsPlugin,
         },
         rules: {
+            'no-undef': 'off',
+            'no-redeclare': 'off',
             'no-unused-vars': 'off',
             '@typescript-eslint/no-unused-vars': [
                 'warn',

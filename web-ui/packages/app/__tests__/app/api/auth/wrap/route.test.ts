@@ -30,7 +30,9 @@ import { POST } from '../../../../../app/api/auth/wrap/route';
 
 describe('POST /api/auth/wrap', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    (extractTokenDetails as jest.Mock).mockClear();
+    (encodeJwt as jest.Mock).mockClear();
+    (getToken as jest.Mock).mockClear();
     process.env.AUTH_SECRET = 'test-auth-secret';
   });
 

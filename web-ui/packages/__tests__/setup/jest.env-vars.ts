@@ -116,7 +116,7 @@ const DefaultEnvVariables = {
   AZURE_AISEARCH_DOCUMENTS_INDEX_NAME: 'documents-index',
   AZURE_AISEARCH_POLICY_INDEX_NAME: 'policy-index',
   AZURE_AISEARCH_VECTOR_SIZE_SMALL: '1536',
-  AZURE_AISEARCH_VECTOR_SIZE_LARGE: '3172',
+  AZURE_AISEARCH_VECTOR_SIZE_LARGE: '3072',
   AZURE_AISEARCH_DOCUMENT_SPLITTER_OVERLAP: '50',
   AZURE_AISEARCH_DOCUMENT_SPLITTER_MAX_TOKENS: '1000',
   AZURE_STORAGE_ACCOUNT_KEY: 'azure-storage-account-key',
@@ -127,7 +127,10 @@ const DefaultEnvVariables = {
   AZURE_OPENAI_DEPLOYMENT_LOFI: 'test-lofi',
   AZURE_OPENAI_DEPLOYMENT_HIFI: 'test-hifi',
   AZURE_OPENAI_DEPLOYMENT_EMBEDDING: 'test-embedding',
+  AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL: 'test-embedding-small',
   GOOGLE_GENERATIVE_AI_API_KEY: 'test-google-key',
+  GOOGLE_GENERATIVE_EMBEDDING_SMALL: 'test-google-embedding-small',
+  OPENAI_EMBEDDING_SMALL: 'test-openai-embedding-small',
 } as const;
 type EnvVarType = typeof DefaultEnvVariables;
 

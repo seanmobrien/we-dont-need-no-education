@@ -50,7 +50,7 @@ export type ModelFromDeploymentId<T extends string | undefined> =
   ? ProviderV2 & {
     chat: (model: string) => LanguageModelV2;
   }
-  : T extends 'embedding'
+  : T extends 'embedding' | 'embedding-small'
   ? EmbeddingModelV2<string>
   : LanguageModelV2;
 

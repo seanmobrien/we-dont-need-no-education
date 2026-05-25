@@ -11,7 +11,7 @@ import {
   rpc,
   resolveEndpoint,
   warnIfInsecureUrl
-} from "../../dist/scripts/runtime-utils.js";
+} from "./runtime-utils.ts";
 
 test("parseNumber falls back and clamps to the minimum", () => {
   assert.equal(parseNumber(undefined, 15, 1), 15);
