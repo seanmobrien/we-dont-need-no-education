@@ -70,7 +70,7 @@ Or, if using the published output:
 
 The plugin manifest intentionally exposes only a small settings surface:
 
-- `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET` - optional, secure client secret for confidential clients.
+- `MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_SECRET` - required, secure client secret for confidential clients.
 - `MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE` - optional wrapper diagnostics path.
 - `MCP_COMPLIANCE_THEATER_NEO4J_URI` - optional Neo4j URI for graph tools.
 - `MCP_COMPLIANCE_THEATER_NEO4J_USERNAME` - optional Neo4j username for graph tools.

@@ -27,6 +27,9 @@ import { POST } from '../../../../../app/api/ai/embed/route';
 
 describe('/api/ai/embed route', () => {
   beforeEach(() => {
+    process.env.AZURE_AISEARCH_VECTOR_SIZE_SMALL = '1536';
+    process.env.AZURE_AISEARCH_VECTOR_SIZE_LARGE = '3072';
+
     embedMock.mockResolvedValue([1, 2, 3]);
     setCacheEmbeddingsMock.mockClear();
   });

@@ -1,7 +1,9 @@
 import { EmbeddingService } from '@/lib/ai/services/embedding';
 import { createEmbeddingModel } from '@/lib/ai/aiModelFactory';
-import { env } from '@compliance-theater/env';
+import { getEmbeddingDimensionsForSize } from '@/lib/api/document-unit/embeddings';
+import { auth } from '@compliance-theater/auth/auth.node';
 import { LoggedError } from '@compliance-theater/logger';
+import { unauthorizedServiceResponse } from '@compliance-theater/nextjs/server';
 import { wrapRouteRequest } from '@compliance-theater/nextjs/server/utils';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -12,11 +14,11 @@ type QueryVectorSize = 'small' | 'large';
 const queryVectorConfig = {
   small: {
     chunkSize: 512,
-    vectorSize: () => Number(env('AZURE_AISEARCH_VECTOR_SIZE_SMALL')),
+    vectorSize: () => getEmbeddingDimensionsForSize('small'),
   },
   large: {
     chunkSize: 1000,
-    vectorSize: () => Number(env('AZURE_AISEARCH_VECTOR_SIZE_LARGE')),
+    vectorSize: () => getEmbeddingDimensionsForSize('large'),
   },
 } as const satisfies Record<
   QueryVectorSize,
@@ -42,6 +44,15 @@ const readRequestBody = async (
 
 export const POST = wrapRouteRequest(async (req: NextRequest) => {
   try {
+    const session = await auth();
+    if (
+      !session ||
+      !session.user ||
+      process.env.NEXT_PHASE === 'phase-production-build'
+    ) {
+      return unauthorizedServiceResponse({ req, scopes: ['mcp-tools:read'] });
+    }
+
     const { text, size: requestedSize } = await readRequestBody(req);
     const size = requestedSize ?? 'large';
 
@@ -93,7 +104,7 @@ export const POST = wrapRouteRequest(async (req: NextRequest) => {
       source: 'api.ai.embed.POST',
     });
     return NextResponse.json(
-      { error: loggedError.message, data: { error } },
+      { error: loggedError.message },
       { status: 500 }
     );
   }
