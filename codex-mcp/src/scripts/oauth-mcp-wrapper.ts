@@ -989,7 +989,7 @@ function required(name: string): string {
 
 function logFilePath(): string {
   return optional("LOG_FILE") ||
-    join(homedir(), ".codex", "mcp-resource-auth", "compliance-theater-wrapper.log");
+    join(homedir(), ".codex", "compliance-theater", "compliance-theater-wrapper.log");
 }
 
 function redact(value: unknown): unknown {
@@ -1009,7 +1009,7 @@ function redact(value: unknown): unknown {
 }
 
 function log(message: string, details?: unknown): void {
-  console.error(`[mcp-resource-auth] ${message}`);
+  console.error(`[compliance-theater] ${message}`);
   const payload = {
     timestamp: new Date().toISOString(),
     pid: process.pid,
@@ -1024,18 +1024,18 @@ function log(message: string, details?: unknown): void {
   } catch (error) {
     if (!logWriteFailed) {
       logWriteFailed = true;
-      console.error(`[mcp-resource-auth] could not write log file ${path}: ${asError(error).message}`);
+      console.error(`[compliance-theater] could not write log file ${path}: ${asError(error).message}`);
     }
   }
 }
 
 function cachePath(): string {
   return optional("TOKEN_CACHE_PATH") ||
-    join(homedir(), ".codex", "mcp-resource-auth", "compliance-theater-token-cache.json");
+    join(homedir(), ".codex", "compliance-theater", "compliance-theater-token-cache.json");
 }
 
 function legacyDeviceLoginPath(): string {
-  return join(homedir(), ".codex", "mcp-resource-auth", "compliance-theater-device-login.json");
+  return join(homedir(), ".codex", "compliance-theater", "compliance-theater-device-login.json");
 }
 
 function neo4jCredentialCachePath(): string {

@@ -152,15 +152,15 @@ The wrapper defaults to these values when the corresponding environment variable
 | `MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN` | — | Pre-existing bearer token; skips token acquisition if set. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_REFRESH_TOKEN` | — | Refresh token used before falling back to interactive flows. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL` | — | Override for the OAuth metadata discovery URL (RFC 8414). |
-| `MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH` | `~/.codex/mcp-resource-auth/token.json` | Path for the on-disk token cache. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH` | `~/.codex/compliance-theater/token.json` | Path for the on-disk token cache. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE` | — | Set to `1` to disable on-disk token caching. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS` | `360000` | Timeout in ms for upstream HTTP requests. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_COUNT` | `2` | Number of retries for failed HTTP requests. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_BASE_MS` | `500` | Base delay in ms for exponential backoff retries. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_PROXY_REQUEST_TIMEOUT_MS` | `360000` | Timeout in ms for proxied MCP requests (case-file and policy calls can be long-running). |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_DEVICE_CODE_TIMEOUT_SECONDS` | `900` | Timeout in seconds for the device-authorization flow. |
-| `MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE` | `~/.codex/mcp-resource-auth/compliance-theater-wrapper.log` | Wrapper diagnostics log path. Declared as a UI setting. |
-| `MCP_COMPLIANCE_THEATER_NEO4J_URI` | — | Neo4j URI for graph tools. Declared as a plugin setting. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE` | `~/.codex/compliance-theater/compliance-theater-wrapper.log` | Wrapper diagnostics log path. Declared as a UI setting. |
+| `MCP_COMPLIANCE_THEATER_NEO4J_URI` | — | Neo4j URI for graph tools. Declared as a plugin setting. |compliance-theater
 | `MCP_COMPLIANCE_THEATER_NEO4J_USERNAME` | — | Neo4j username for graph tools. Declared as a plugin setting. |
 | `MCP_COMPLIANCE_THEATER_NEO4J_PASSWORD` | — | Neo4j password for graph tools. Declared as a secure plugin setting. |
 | `MCP_COMPLIANCE_THEATER_NEO4J_DATABASE` | — | Neo4j database for graph tools. Declared as a plugin setting. |
@@ -282,7 +282,7 @@ Never print tokens, client secrets, cookies, or raw credential values.
 `src/scripts/runtime-utils.ts` provides the shared mechanics used by the wrapper. The build emits `dist/scripts/runtime-utils.js` for the deployed wrapper:
 
 - token expiry calculation and skew-aware cache reuse
-- secure token cache writes under `~/.codex/mcp-resource-auth/` by default
+- secure token cache writes under `~/.codex/compliance-theater/` by default
 - retry and exponential backoff for HTTP requests
 - warnings for insecure non-loopback HTTP URLs
 - SSE connection setup using `Authorization: Bearer ...`

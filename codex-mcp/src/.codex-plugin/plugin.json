@@ -1,14 +1,14 @@
 {
   "name": "compliance-theater-2000",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Rich education compliance analysis support for Codex, including authenticated MCP access to policy, evidence, and compliance workflows.",
   "author": {
-    "name": "litbit",
-    "email": "seanmobrien@hotmail.com",
-    "url": "https://github.com/seanmobrien"
+    "name": "Compliance Theater",
+    "email": "compliance-theater@hotmail.com",
+    "url": "https://github.com/compliance-theater"
   },
-  "homepage": "https://github.com/seanmobrien/we-dont-need-no-education",
-  "repository": "https://github.com/seanmobrien/we-dont-need-no-education",
+  "homepage": "https://github.com/compliance-theater/compliance-theater",
+  "repository": "https://github.com/compliance-theater/compliance-theater",
   "license": "MIT",
   "keywords": [
     "mcp",
@@ -30,9 +30,10 @@
     "privacyPolicyURL": "https://full-ui.compliance-theater.obapps.net/privacy",
     "termsOfServiceURL": "https://full-ui.compliance-theater.obapps.net/terms",
     "defaultPrompt": [
-      "List Compliance Theater 2000's available tools and resources.",
-      "Show me compliance resources.",
-      "Load case file document id <case_id> and summarize it."
+      "List Compliance Theater available tools and resources.",
+      "Search for case file documents related to FERPA compliance.",
+      "Summarize the latest updates to education compliance policies.",
+      "Search for key points of evidence related to a specific compliance requirement."
     ],
     "brandColor": "#2563EB",
     "screenshots": []
@@ -50,7 +51,7 @@
     {
       "name": "logFile",
       "label": "Local log file path",
-      "description": "Optionally override the log file path; defaults to ~/.codex/mcp-resource-auth/compliance-theater-wrapper.log.",
+      "description": "Optionally override the log file path; defaults to ~/.codex/compliance-theater/compliance-theater-wrapper.log.",
       "type": "string",
       "required": false,
       "env": "MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE"
