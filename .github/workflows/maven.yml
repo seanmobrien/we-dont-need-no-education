@@ -1,4 +1,4 @@
-git # @format
+# @format
 
 # This workflow builds the java-based components via Maven, then sets up a Node.js build environment and 
 # uses it to build and test the React-based web application. Finally, it runs Lighthouse CI to validate 
