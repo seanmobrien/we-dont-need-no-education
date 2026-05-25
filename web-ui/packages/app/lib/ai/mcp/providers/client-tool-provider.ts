@@ -69,7 +69,7 @@ import { ConnectableToolProvider, MCPClient } from '../types';
 import z from 'zod';
 import EventEmitter from '@protobufjs/eventemitter';
 
-type DisposeEmitterListener = (...args: unknown[]) => void;
+type DisposeEmitterListener = (...args: unknown[]) => {};
 
 const asDisposeEmitterListener = (
   listener: () => void,
