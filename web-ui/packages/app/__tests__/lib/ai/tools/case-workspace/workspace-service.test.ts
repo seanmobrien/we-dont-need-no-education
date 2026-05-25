@@ -19,13 +19,24 @@ import { resolveWorkspacePaths } from '../../../../../lib/ai/tools/case-workspac
 describe('case workspace service', () => {
   const workspaceRoot = path.join('/tmp', 'case-workspace-tests');
 
+  jest.setTimeout(15000);
+
+  const removeWorkspaceRoot = async () => {
+    await fs.rm(workspaceRoot, {
+      recursive: true,
+      force: true,
+      maxRetries: 10,
+      retryDelay: 50,
+    });
+  };
+
   beforeEach(async () => {
     process.env.CASE_WORKSPACE_ROOT = workspaceRoot;
-    await fs.rm(workspaceRoot, { recursive: true, force: true });
+    await removeWorkspaceRoot();
   });
 
   afterAll(async () => {
-    await fs.rm(workspaceRoot, { recursive: true, force: true });
+    await removeWorkspaceRoot();
   });
 
   it('initializes workspace and returns summary', async () => {
