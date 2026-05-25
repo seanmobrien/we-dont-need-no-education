@@ -3,6 +3,7 @@
   "compilerOptions": {
     "noEmit": true,
     "noImplicitAny": false,
+    // "ignoreDeprecations": "6.0",
     // Allow source imports from sibling frontend packages and submodules under web-ui/.
     "rootDir": "../../",
     "baseUrl": ".",

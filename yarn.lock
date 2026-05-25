@@ -2713,7 +2713,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@hono/node-server@npm:^1.19.7":
+"@hono/node-server@npm:^1.19.7, @hono/node-server@npm:^1.19.9":
   version: 1.19.14
   resolution: "@hono/node-server@npm:1.19.14"
   peerDependencies:
@@ -3783,6 +3783,39 @@ __metadata:
     zod:
       optional: false
   checksum: 10/32ce322664e03aa038986ee60a5d3b92ddbec45cf1a023d07f7d90fec3e2926ba40bb21fc6f723bf1d50979995ae76bc440001f4d5eec3f5b55aa824091c20ab
+  languageName: node
+  linkType: hard
+
+"@modelcontextprotocol/sdk@npm:1.29.0":
+  version: 1.29.0
+  resolution: "@modelcontextprotocol/sdk@npm:1.29.0"
+  dependencies:
+    "@hono/node-server": "npm:^1.19.9"
+    ajv: "npm:^8.17.1"
+    ajv-formats: "npm:^3.0.1"
+    content-type: "npm:^1.0.5"
+    cors: "npm:^2.8.5"
+    cross-spawn: "npm:^7.0.5"
+    eventsource: "npm:^3.0.2"
+    eventsource-parser: "npm:^3.0.0"
+    express: "npm:^5.2.1"
+    express-rate-limit: "npm:^8.2.1"
+    hono: "npm:^4.11.4"
+    jose: "npm:^6.1.3"
+    json-schema-typed: "npm:^8.0.2"
+    pkce-challenge: "npm:^5.0.0"
+    raw-body: "npm:^3.0.0"
+    zod: "npm:^3.25 || ^4.0"
+    zod-to-json-schema: "npm:^3.25.1"
+  peerDependencies:
+    "@cfworker/json-schema": ^4.1.1
+    zod: ^3.25 || ^4.0
+  peerDependenciesMeta:
+    "@cfworker/json-schema":
+      optional: true
+    zod:
+      optional: false
+  checksum: 10/ff551b97e06b661f95fec8fd34e112c446e69894a84a9979cdac369fb5de27f0a1a5c1f4e2a1f270cc60f93e54c28a8059a94ca51c3d528d2670ade874b244f9
   languageName: node
   linkType: hard
 
@@ -8019,6 +8052,7 @@ __metadata:
     "@eslint/eslintrc": "npm:^3"
     "@eslint/js": "npm:^9.39.1"
     "@jest/globals": "npm:^30.0.5"
+    "@modelcontextprotocol/sdk": "npm:1.29.0"
     "@mui/icons-material": "npm:7.3.6"
     "@mui/material": "npm:7.3.6"
     "@mui/material-nextjs": "npm:7.3.6"
@@ -8054,6 +8088,7 @@ __metadata:
     jest-environment-jsdom: "npm:^30.0.5"
     jest-mock-extended: "npm:^4.0.0-beta1"
     jsdom: "npm:^26.1.0"
+    mcp-handler: "npm:1.1.0"
     mitt: "npm:^3.0.1"
     next: "npm:^15.5.12"
     pg: "npm:>=8"
@@ -10256,7 +10291,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"express@npm:^5.0.1":
+"express-rate-limit@npm:^8.2.1":
+  version: 8.5.2
+  resolution: "express-rate-limit@npm:8.5.2"
+  dependencies:
+    ip-address: "npm:^10.2.0"
+  peerDependencies:
+    express: ">= 4.11"
+  checksum: 10/de2aa4582d3b1b1d242fdb8dba7b3b1c64e3a58dfa7a40d370681c175a61321fb550c6b190d755f47cefdf28f35eaad6c99ea196f99caec8caaffc2462fea1ae
+  languageName: node
+  linkType: hard
+
+"express@npm:^5.0.1, express@npm:^5.2.1":
   version: 5.2.1
   resolution: "express@npm:5.2.1"
   dependencies:
@@ -11251,7 +11297,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hono@npm:^4.0.0":
+"hono@npm:^4.0.0, hono@npm:^4.11.4":
   version: 4.12.22
   resolution: "hono@npm:4.12.22"
   checksum: 10/0dd4485c28c7a84504cb759d34256a7e2f4335a7e40f6f879ca42c217c65ff64671d27e7af702148730251d62630469976e2cff65f9fee876c4cbcba3cdcc19e
@@ -11525,6 +11571,13 @@ __metadata:
   dependencies:
     loose-envify: "npm:^1.0.0"
   checksum: 10/cc3182d793aad82a8d1f0af697b462939cb46066ec48bbf1707c150ad5fad6406137e91a262022c269702e01621f35ef60269f6c0d7fd178487959809acdfb14
+  languageName: node
+  linkType: hard
+
+"ip-address@npm:^10.2.0":
+  version: 10.2.0
+  resolution: "ip-address@npm:10.2.0"
+  checksum: 10/12fec399e1af5753ac322e47a6d81a50d3a528b3abb17c09525b2a2edcaedcca628c40520706f7037bc4d8e951b0296c47e7b86d0a8e6e2335c8f0ba4afcfac1
   languageName: node
   linkType: hard
 
@@ -13139,7 +13192,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mcp-handler@npm:^1.0.2":
+"mcp-handler@npm:1.1.0, mcp-handler@npm:^1.0.2":
   version: 1.1.0
   resolution: "mcp-handler@npm:1.1.0"
   dependencies:
@@ -18093,7 +18146,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"zod-to-json-schema@npm:^3.25.0":
+"zod-to-json-schema@npm:^3.25.0, zod-to-json-schema@npm:^3.25.1":
   version: 3.25.2
   resolution: "zod-to-json-schema@npm:3.25.2"
   peerDependencies:

@@ -125,6 +125,44 @@ type OptionsFactoryProps = Omit<ModelServerConfig, 'model'> & {
   apiKey?: string;
 };
 
+const DEFAULT_EMBEDDING_DIMENSIONS = {
+  embedding: 3072,
+  'embedding-small': 1536,
+} as const;
+
+const parseEmbeddingDimensions = (
+  value: number | string,
+  fallback: number,
+): number => {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const getDefaultEmbeddingDimensions = (
+  model: 'embedding' | 'embedding-small',
+): number =>
+  model === 'embedding-small'
+    ? parseEmbeddingDimensions(
+        env('AZURE_AISEARCH_VECTOR_SIZE_SMALL'),
+        DEFAULT_EMBEDDING_DIMENSIONS['embedding-small'],
+      )
+    : parseEmbeddingDimensions(
+        env('AZURE_AISEARCH_VECTOR_SIZE_LARGE'),
+        DEFAULT_EMBEDDING_DIMENSIONS.embedding,
+      );
+
+const getDefaultOpenAICompatibleEmbeddingProviderOptions = (
+  provider: AiProviderType,
+  model: 'embedding' | 'embedding-small',
+) =>
+  provider === 'azure' || provider === 'openai'
+    ? {
+      openai: {
+        dimensions: getDefaultEmbeddingDimensions(model),
+      },
+    }
+    : undefined;
+
 const getDefaultEmbeddingConfig = (
   provider: AiProviderType,
   model: 'embedding' | 'embedding-small',
@@ -136,6 +174,8 @@ const getDefaultEmbeddingConfig = (
           model === 'embedding-small'
             ? env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING_SMALL')
             : env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING'),
+        providerOptions:
+          getDefaultOpenAICompatibleEmbeddingProviderOptions(provider, model),
       };
     case 'google':
       return {
@@ -150,6 +190,8 @@ const getDefaultEmbeddingConfig = (
           model === 'embedding-small'
             ? env('OPENAI_EMBEDDING_SMALL')
             : env('OPENAI_EMBEDDING'),
+        providerOptions:
+          getDefaultOpenAICompatibleEmbeddingProviderOptions(provider, model),
       };
   }
 };
@@ -224,8 +266,15 @@ const customProviderFactory = async <
       return builder as ProviderV2 as ModelFromDeploymentId<T>;
     }
     if (isEmbeddingModel) {
-      return builder.textEmbeddingModel(
-        merged.model!
+      const textEmbeddingModel = builder.textEmbeddingModel as (
+        modelId: string,
+        settings?: NonNullable<OptionsFactoryProps['providerOptions']>['openai'],
+      ) => EmbeddingModelV2<string>;
+      return textEmbeddingModel(
+        merged.model!,
+        provider === 'azure' || provider === 'openai'
+          ? merged.providerOptions?.openai
+          : undefined,
       ) as ModelFromDeploymentId<T>;
     }
     const ret =

@@ -27,10 +27,17 @@ export type ModelConfig = {
   tool_model: ModelType;
 };
 
+export type OpenAICompatibleEmbeddingModelSettings = {
+  dimensions?: number;
+};
+
 export type ModelProviderConfig = {
   base?: string;
   deployBased?: boolean;
   version?: string;
+  providerOptions?: {
+    openai?: OpenAICompatibleEmbeddingModelSettings;
+  };
 };
 export type ModelServerConfig = ModelProviderConfig & {
   model: string;

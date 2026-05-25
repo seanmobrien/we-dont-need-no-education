@@ -25,6 +25,7 @@ import {
   cacheWithRedis,
   getRedisClient,
 } from '../../../lib/ai/middleware';
+import { createAzure } from '@ai-sdk/azure';
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import {
@@ -39,6 +40,7 @@ import {
   AiModelTypeValue_GoogleEmbedding,
 } from '@compliance-theater/types/lib/ai/core/unions';
 import { isAiModelType, isAiLanguageModelType } from '@compliance-theater/types/lib/ai/core/guards';
+import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
 
 // Mock environment variables - handled globally in jest.env-vars.ts
 
@@ -153,6 +155,36 @@ describe('AI Model Factory Integration', () => {
     expect(smallModel).not.toMatchObject({
       modelId: 'test-embedding',
     });
+  });
+
+  it('should seed Azure embedding defaults with OpenAI-compatible dimensions', async () => {
+    const createAzureMock = createAzure as jest.MockedFunction<typeof createAzure>;
+
+    SingletonProvider.Instance.delete(
+      Symbol.for('@noeducation/aiModelFactory:providerRegistry')
+    );
+    createAzureMock.mockClear();
+
+    const { createEmbeddingModel } = await import(
+      '../../../lib/ai/aiModelFactory'
+    );
+
+    await createEmbeddingModel();
+
+    const embeddingCalls = createAzureMock.mock.results.flatMap((result) => {
+      const builder = result.value as
+        | { textEmbeddingModel?: jest.Mock }
+        | undefined;
+      return builder?.textEmbeddingModel?.mock.calls ?? [];
+    });
+
+    expect(createAzureMock).toHaveBeenCalled();
+    expect(embeddingCalls).toEqual(
+      expect.arrayContaining([
+        ['test-embedding', { dimensions: 3072 }],
+        ['test-embedding-small', { dimensions: 1536 }],
+      ])
+    );
   });
 
   it('should define model availability control functions', async () => {
