@@ -59,13 +59,19 @@ const updateAccount = ({
     id_token?: string | null;
   };
 }) =>
-  updateAccountTokens(userId!, {
+  updateAccountTokens(
+    {
+      userId,
+      providerAccountId: String(account.providerAccountId ?? '').trim() || undefined,
+    },
+    {
     accessToken: account.access_token ?? undefined,
     refreshToken: account.refresh_token ?? undefined,
     idToken: account.id_token ?? undefined,
     expiresAt: account.expires_at ?? undefined,
     exp: account.exp,
-  });
+    }
+  );
 
 export const signIn: (params: {
   user: User | AdapterUser;
@@ -105,20 +111,19 @@ export const signIn: (params: {
   if (account && account.providerAccountId) {
     switch (account.provider) {
       case 'keycloak':
-        // Persist tokens for Keycloak. We intentionally do not
-        // await here to avoid delaying the sign-in flow; failures will
-        // propagate if required but we don't want telemetry to block UX.
-        updateAccount({ user, account }).catch((err) => {
-          LoggedError.isTurtlesAllTheWayDownBaby(err, {
-            source: 'auth.signIn.updateAccount',
-            log: true,
-            data: {
-              user,
-              account,
-            },
+        // Keycloak-backed routes depend on persisted provider tokens, so
+        // complete the token write before returning from sign-in.
+        await updateAccount({ user, account }).catch((err) => {
+            LoggedError.isTurtlesAllTheWayDownBaby(err, {
+              source: 'auth.signIn.updateAccount',
+              log: true,
+              data: {
+                user,
+                account,
+              },
+            });
+            return Promise.resolve(false);
           });
-          return Promise.resolve(false);
-        });
         break;
       default:
         log((l) => l.warn(`Unhandled provider ${account?.provider} in signIn`));

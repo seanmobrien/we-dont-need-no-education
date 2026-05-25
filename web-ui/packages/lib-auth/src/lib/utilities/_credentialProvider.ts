@@ -9,6 +9,34 @@ import {
   TokenExchangeError,
 } from './keycloak-token-exchange';
 
+type AuthSessionLike = {
+  user?: {
+    id?: string | number | null;
+    account_id?: string | number | null;
+    accountId?: string | number | null;
+  } | null;
+} | null;
+
+const resolveSessionUserId = (session: AuthSessionLike): number => {
+  const candidates = [
+    session?.user?.account_id,
+    session?.user?.accountId,
+    session?.user?.id,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed =
+      typeof candidate === 'number'
+        ? candidate
+        : parseInt(String(candidate ?? ''), 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return 0;
+};
+
 const tokenSymbol: unique symbol = Symbol('tokens');
 
 type RequestWithTokens = (NextRequest | NextApiRequest) & {
@@ -38,11 +66,11 @@ const getTokensFromUser = async (
     };
   }
 
-  const session = await auth();
+  const session = (await auth()) as AuthSessionLike;
   if (!session) {
     throw new Error('Access denied');
   }
-  if (Number(session.user!.id) !== userId) {
+  if (resolveSessionUserId(session) !== userId) {
     // TODO: check if user is admin
     throw new Error('Access denied');
   }
@@ -80,9 +108,9 @@ const getTokensFromUser = async (
 const getTokensFromSession = async (
   req: NextRequest | NextApiRequest,
 ): Promise<Omit<ICredential, 'client'>> => {
-  const session = await auth();
-  const userId = Number(session?.user?.id);
-  if (isNaN(userId)) {
+  const session = (await auth()) as AuthSessionLike;
+  const userId = resolveSessionUserId(session);
+  if (!userId) {
     throw new Error('Access denied');
   }
   return await getTokensFromUser(req, userId);
