@@ -45,11 +45,7 @@ describe('/api/ai/embed route', () => {
     expect(EmbeddingService).toHaveBeenCalledWith(
       { modelId: 'text-embedding-3-large' },
       {
-        providerOptions: {
-          openai: {
-            dimensions: 3172,
-          },
-        },
+        expectedDimensions: 3072,
       }
     );
     expect(setCacheEmbeddingsMock).toHaveBeenCalledWith(false);
@@ -57,7 +53,7 @@ describe('/api/ai/embed route', () => {
     expect(body).toEqual({
       vectors: [1, 2, 3],
       size: 'large',
-      vectorSize: 3172,
+      vectorSize: 3072,
       model: 'text-embedding-3-large',
     });
   });

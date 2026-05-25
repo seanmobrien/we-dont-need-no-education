@@ -77,11 +77,7 @@ export const POST = wrapRouteRequest(async (req: NextRequest) => {
     const vectorSize = config.vectorSize();
     const embeddingModel = await createEmbeddingModel();
     const service = new EmbeddingService(embeddingModel, {
-      providerOptions: {
-        openai: {
-          dimensions: vectorSize,
-        },
-      },
+      expectedDimensions: vectorSize,
     }).setCacheEmbeddings(false);
     const vectors = await service.embed(text);
 

@@ -11,7 +11,6 @@
  */
 
 import { EmbeddingModelV2 } from '@ai-sdk/provider';
-import { SharedV2ProviderOptions } from '@compliance-theater/types/ai-sdk';
 import { IEmbeddingService } from './types';
 
 declare module '@/lib/ai/services/embedding/EmbeddingService' {
@@ -32,8 +31,10 @@ declare module '@/lib/ai/services/embedding/EmbeddingService' {
      * If not provided, the service uses the global singleton embedding model.
      */
     constructor(
-      embeddingClient?: EmbeddingModelV2<string>,
-      options?: { providerOptions?: SharedV2ProviderOptions }
+      embeddingClient?:
+        | EmbeddingModelV2<string>
+        | Promise<EmbeddingModelV2<string>>,
+      options?: { expectedDimensions?: number }
     );
 
     /**
