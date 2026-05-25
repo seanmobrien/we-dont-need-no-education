@@ -1,4 +1,4 @@
-# @format
+git # @format
 
 # This workflow builds the java-based components via Maven, then sets up a Node.js build environment and 
 # uses it to build and test the React-based web application. Finally, it runs Lighthouse CI to validate 
@@ -170,7 +170,7 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: web-ui
-          path: $GITHUB_WORKSPACE/artifacts/web-ui
+          path: ${{ github.workspace }}/artifacts/web-ui
 
       - name: Validate Lighthouse scores and publish artifacts
         uses: treosh/lighthouse-ci-action@v12
