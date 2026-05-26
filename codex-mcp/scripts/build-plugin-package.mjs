@@ -14,7 +14,7 @@ const requiredPaths = [
   "src/.codex-plugin",
   "src/mcp/servers.mcp.json",
   "src/skills",
-  "src/scripts/oauth-mcp-wrapper.ts",
+  "src/scripts/entrypoint.ts",
   "src/scripts/runtime-utils.ts",
 ];
 
