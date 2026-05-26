@@ -107,14 +107,14 @@ If your Codex setup prefers a single plugins directory, create a symlink that po
 ## What This Plugin Is
 
 - A Codex plugin definition in `.codex-plugin/plugin.json`.
-- A local MCP server entrypoint in `servers.mcp.json` that launches compiled `scripts/oauth-mcp-wrapper.js`.
+- A local MCP server entrypoint in `servers.mcp.json` that launches compiled `scripts/entrypoint.js`.
 - An OAuth wrapper that discovers authorization metadata, acquires tokens, connects to the configured MCP SSE endpoint, and forwards JSON-RPC messages.
 - A small runtime utility layer for retries, token cache management, SSE connection setup, and JSON-RPC over SSE.
 - A bundled skill under deployed `skills/compliance-theater/` that tells Codex when and how to use the authenticated MCP server.
 
 ## Authenticated Connection Model
 
-The most important behavior in this package lives in typed source file `src/scripts/oauth-mcp-wrapper.ts`. The build compiles it to deployed path `dist/scripts/oauth-mcp-wrapper.js`.
+The most important behavior in this package lives in typed source file `src/scripts/entrypoint.ts`. The build compiles it to deployed path `dist/scripts/entrypoint.js`.
 
 It supports authenticated MCP connections with this flow:
 
@@ -328,7 +328,7 @@ export MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_ISSUER="https://login.obapps.net/rea
 export MCP_COMPLIANCE_THEATER_RESOURCE_CLIENT_ID="codex"
 
 yarn workspace @compliance-theater/codex-mcp build
-node ./dist/scripts/oauth-mcp-wrapper.js
+node ./dist/scripts/entrypoint.js
 ```
 
 The wrapper will then acquire a bearer token if needed, wrap it into an app session when available, and proxy Codex traffic through the configured MCP SSE endpoint.

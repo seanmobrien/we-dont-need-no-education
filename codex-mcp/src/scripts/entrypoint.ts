@@ -49,6 +49,14 @@ type ToolDefinition = {
   annotations?: AnyRecord;
 };
 type Toolset = "all" | "default" | "memory" | "utils" | "todo" | "case-workspace" | "search" | "case-files";
+type ServerName =
+  | "compliance-theater"
+  | "compliance-theater-memory"
+  | "compliance-theater-utils"
+  | "compliance-theater-todo"
+  | "compliance-theater-case-workspace"
+  | "compliance-theater-search"
+  | "compliance-theater-case-files";
 type OAuthClient = {
   client_id?: string;
   client_secret?: string;
@@ -231,6 +239,70 @@ function withAnnotations(tools: ToolDefinition[], getAnnotations: (name: string)
       ...(tool.annotations || {})
     }
   }));
+}
+
+const serverNames: ServerName[] = [
+  "compliance-theater",
+  "compliance-theater-memory",
+  "compliance-theater-utils",
+  "compliance-theater-todo",
+  "compliance-theater-case-workspace",
+  "compliance-theater-search",
+  "compliance-theater-case-files"
+];
+
+function serverNameForToolset(toolset: Toolset): ServerName {
+  if (toolset === "memory") {
+    return "compliance-theater-memory";
+  }
+  if (toolset === "utils") {
+    return "compliance-theater-utils";
+  }
+  if (toolset === "todo") {
+    return "compliance-theater-todo";
+  }
+  if (toolset === "case-workspace") {
+    return "compliance-theater-case-workspace";
+  }
+  if (toolset === "search") {
+    return "compliance-theater-search";
+  }
+  if (toolset === "case-files") {
+    return "compliance-theater-case-files";
+  }
+  return "compliance-theater";
+}
+
+function prefixedToolName(serverName: ServerName, toolName: string): string {
+  return `${serverName}_${toolName}`;
+}
+
+function unprefixedToolName(toolName: string | undefined): string | undefined {
+  if (!toolName) {
+    return undefined;
+  }
+  for (const serverName of serverNames) {
+    const prefix = `${serverName}_`;
+    if (toolName.startsWith(prefix)) {
+      return toolName.slice(prefix.length);
+    }
+  }
+  return toolName;
+}
+
+function prefixToolDefinitions(tools: ToolDefinition[], serverName: ServerName): ToolDefinition[] {
+  return tools.map((tool) => {
+    const name = prefixedToolName(serverName, tool.name);
+    return {
+      ...tool,
+      name,
+      description: `${tool.description || "No description"} Exposed as ${name}.`,
+      annotations: {
+        ...tool.annotations,
+        title: displayTitle(name)
+      }
+    };
+  });
 }
 
 const staticRemoteTools: ToolDefinition[] = [
@@ -1947,71 +2019,83 @@ function exposedHelperToolsForToolset(): ToolDefinition[] {
 function listTools(): ToolDefinition[] {
   const toolset = configuredToolset();
   if (toolset === "memory") {
-    return exposedMemoryTools;
+    return prefixToolDefinitions(exposedMemoryTools, serverNameForToolset(toolset));
   }
   if (toolset === "utils") {
-    return exposedUtilityTools;
+    return prefixToolDefinitions(exposedUtilityTools, serverNameForToolset(toolset));
   }
   if (toolset === "todo") {
-    return exposedTodoTools;
+    return prefixToolDefinitions(exposedTodoTools, serverNameForToolset(toolset));
   }
   if (toolset === "case-workspace") {
-    return exposedCaseWorkspaceTools;
+    return prefixToolDefinitions(exposedCaseWorkspaceTools, serverNameForToolset(toolset));
   }
   if (toolset === "search") {
-    return [...exposedSearchTools, ...exposedSearchHelperTools];
+    return prefixToolDefinitions([...exposedSearchTools, ...exposedSearchHelperTools], serverNameForToolset(toolset));
   }
   if (toolset === "case-files") {
-    return exposedCaseFileTools;
+    return prefixToolDefinitions(exposedCaseFileTools, serverNameForToolset(toolset));
   }
   if (toolset === "default") {
-    return [...exposedDefaultRemoteTools, ...exposedCoreHelperTools];
+    return prefixToolDefinitions([...exposedDefaultRemoteTools, ...exposedCoreHelperTools], serverNameForToolset(toolset));
   }
-  return [...exposedRemoteTools, ...exposedHelperTools];
+  return [
+    ...prefixToolDefinitions(exposedDefaultRemoteTools, "compliance-theater"),
+    ...prefixToolDefinitions(exposedCoreHelperTools, "compliance-theater"),
+    ...prefixToolDefinitions(exposedMemoryTools, "compliance-theater-memory"),
+    ...prefixToolDefinitions(exposedUtilityTools, "compliance-theater-utils"),
+    ...prefixToolDefinitions(exposedTodoTools, "compliance-theater-todo"),
+    ...prefixToolDefinitions(exposedCaseWorkspaceTools, "compliance-theater-case-workspace"),
+    ...prefixToolDefinitions([...exposedSearchTools, ...exposedSearchHelperTools], "compliance-theater-search"),
+    ...prefixToolDefinitions(exposedCaseFileTools, "compliance-theater-case-files")
+  ];
 }
 
 function remoteToolIsCallable(name: string | undefined): boolean {
   const toolset = configuredToolset();
-  if (!name || toolset === "memory" || toolset === "utils") {
+  const localName = unprefixedToolName(name);
+  if (!localName || toolset === "memory" || toolset === "utils") {
     return false;
   }
   if (toolset === "todo") {
-    return Object.prototype.hasOwnProperty.call(todoRemoteToolAliases, name);
+    return Object.prototype.hasOwnProperty.call(todoRemoteToolAliases, localName);
   }
   if (toolset === "case-workspace") {
-    return Object.prototype.hasOwnProperty.call(caseWorkspaceRemoteToolAliases, name);
+    return Object.prototype.hasOwnProperty.call(caseWorkspaceRemoteToolAliases, localName);
   }
   if (toolset === "search") {
-    return Object.prototype.hasOwnProperty.call(searchRemoteToolAliases, name);
+    return Object.prototype.hasOwnProperty.call(searchRemoteToolAliases, localName);
   }
   if (toolset === "case-files") {
     return false;
   }
   if (toolset === "default") {
-    return remoteToolNames.has(name) && !searchToolNames.has(name) && !todoToolNames.has(name) && !caseWorkspaceToolNames.has(name);
+    return remoteToolNames.has(localName) && !searchToolNames.has(localName) && !todoToolNames.has(localName) && !caseWorkspaceToolNames.has(localName);
   }
-  return remoteToolNames.has(name);
+  return remoteToolNames.has(localName);
 }
 
 function upstreamRemoteToolName(name: string | undefined): string | undefined {
   const toolset = configuredToolset();
-  if (!name) {
+  const localName = unprefixedToolName(name);
+  if (!localName) {
     return undefined;
   }
   if (toolset === "todo") {
-    return todoRemoteToolAliases[name] || name;
+    return todoRemoteToolAliases[localName] || localName;
   }
   if (toolset === "case-workspace") {
-    return caseWorkspaceRemoteToolAliases[name] || name;
+    return caseWorkspaceRemoteToolAliases[localName] || localName;
   }
   if (toolset === "search") {
-    return searchRemoteToolAliases[name] || name;
+    return searchRemoteToolAliases[localName] || localName;
   }
-  return name;
+  return localName;
 }
 
 function helperToolIsCallable(name: string | undefined): boolean {
-  return Boolean(name && exposedHelperToolsForToolset().some((tool) => tool.name === name));
+  const localName = unprefixedToolName(name);
+  return Boolean(localName && exposedHelperToolsForToolset().some((tool) => tool.name === localName));
 }
 
 async function listResources(): Promise<AnyRecord[]> {
@@ -2991,47 +3075,48 @@ async function loginAndSummarizeStatus(): Promise<string> {
 async function callHelperTool(id: RpcId | undefined, name: string, args: ToolArgs = {}): Promise<void> {
   try {
     const toolset = configuredToolset();
-    if (toolset === "memory" && memoryTools.some((tool) => tool.name === name)) {
-      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callMemoryTool(name, args)) });
+    const localName = unprefixedToolName(name) || name;
+    if (toolset === "memory" && memoryTools.some((tool) => tool.name === localName)) {
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callMemoryTool(localName, args)) });
       return;
     }
 
-    if (name === "read_case_file") {
+    if (localName === "read_case_file") {
       sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await readCaseFileTool(args)) });
       return;
     }
 
-    if (name === "get") {
+    if (localName === "get") {
       sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await getCaseFileTool(args)) });
       return;
     }
 
-    if (name === "amend") {
+    if (localName === "amend") {
       sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await amendCaseFileTool(args)) });
       return;
     }
 
-    if (name === "embed") {
+    if (localName === "embed") {
       sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await manageCaseFileEmbeddingsTool(args)) });
       return;
     }
 
-    if (name in graphToolAliases) {
-      sendToClient({ jsonrpc: "2.0", id, result: await callNeo4jGraphTool(name, args) });
+    if (localName in graphToolAliases) {
+      sendToClient({ jsonrpc: "2.0", id, result: await callNeo4jGraphTool(localName, args) });
       return;
     }
 
-    if (name === "call_api") {
+    if (localName === "call_api") {
       sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callApiTool(args)) });
       return;
     }
 
-    if (toolset !== "utils" && memoryTools.some((tool) => tool.name === name)) {
-      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callMemoryTool(name, args)) });
+    if (toolset !== "utils" && memoryTools.some((tool) => tool.name === localName)) {
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callMemoryTool(localName, args)) });
       return;
     }
 
-    if (name === "list") {
+    if (localName === "list") {
       const listType = args.type ?? "abilities";
       if (listType === "abilities") {
         const [tools, resources, templates] = await Promise.all([
@@ -3052,7 +3137,7 @@ async function callHelperTool(id: RpcId | undefined, name: string, args: ToolArg
       return;
     }
 
-    if (name === "auth") {
+    if (localName === "auth") {
       if (args?.action === "clear-cache") {
         sendToClient({ jsonrpc: "2.0", id, result: textToolResult(await clearCachedToken()) });
       } else if (args?.action === "status") {

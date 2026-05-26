@@ -1,6 +1,6 @@
 {
   "name": "@compliance-theater/codex-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Codex plugin for MCP authentication and resource access.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
