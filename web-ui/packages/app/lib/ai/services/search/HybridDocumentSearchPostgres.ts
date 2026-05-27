@@ -1,10 +1,10 @@
 import { pgDbWithInit } from '@compliance-theater/database/driver';
+import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file/index';
 import { getEmbeddingModelNameForSize } from '@/lib/api/document-unit/embeddings';
 import { CaseFileSearchOptions } from '../../tools/types';
 import {
   AiSearchResultEnvelope,
   normalizeCaseFileSearchFilters,
-  NormalizedCaseFileSearchFilters,
 } from './types';
 import {
   HybridSearchClient,
@@ -40,6 +40,23 @@ const normalizeEmbeddingVector = (vector: number[]): number[] => {
 
 const toVectorLiteral = (vector: number[]): string =>
   `[${normalizeEmbeddingVector(vector).join(',')}]`;
+
+const parseOptionalInteger = (value: unknown): number | undefined => {
+  if (typeof value === 'number' && Number.isSafeInteger(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!/^-?\d+$/.test(trimmed)) {
+      return undefined;
+    }
+    const parsed = Number(trimmed);
+    if (Number.isSafeInteger(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+};
 
 const toResultEnvelope = (
   rows: PostgresSearchRow[],
@@ -86,23 +103,11 @@ export class HybridDocumentSearchPostgres extends HybridSearchClient<CaseFileSea
     super(options);
   }
 
-  protected normalizeOptions(
-    options: CaseFileSearchOptions,
-  ): CaseFileSearchOptions & { normalizedFilters: NormalizedCaseFileSearchFilters } {
-    return {
-      ...options,
-      normalizedFilters: normalizeCaseFileSearchFilters(options),
-    };
-  }
-
   protected async retrieveCandidates(
-    context: HybridSearchExecutionContext<
-      CaseFileSearchOptions & {
-        normalizedFilters: NormalizedCaseFileSearchFilters;
-      }
-    >,
+    context: HybridSearchExecutionContext<CaseFileSearchOptions>,
   ): Promise<AiSearchResultEnvelope> {
     const { naturalQuery, options, embeddingVector, topK, page } = context;
+    const normalizedFilters = normalizeCaseFileSearchFilters(options);
     const {
       scopeDocumentTypes,
       emailId,
@@ -111,12 +116,21 @@ export class HybridDocumentSearchPostgres extends HybridSearchClient<CaseFileSea
       documentId,
       replyToDocumentId,
       relatedToDocumentId,
-    } = options.normalizedFilters;
+    } = normalizedFilters;
     const sql = await pgDbWithInit();
     const queryText = String(naturalQuery ?? '').trim();
     const embeddingModel = getEmbeddingModelNameForSize('large');
     const vectorLiteral = toVectorLiteral(embeddingVector);
     const offset = Math.max(0, (page - 1) * topK);
+    const threadIdFilter = parseOptionalInteger(threadId);
+    const accessibleUserIds = ((await getAccessibleUserIds(undefined)) ?? [])
+      .map((id) => Number(id))
+      .filter((id): id is number => Number.isSafeInteger(id))
+      .map((id) => Math.trunc(id));
+    const whereAccessibleCaseFiles =
+      accessibleUserIds.length > 0
+        ? sql`du.user_id IN ${sql(`(${accessibleUserIds.join(',')})`)}`
+        : sql`1=-1`;
 
     const rows = await sql<PostgresSearchRow>`
       WITH scored_candidates AS (
@@ -144,9 +158,11 @@ export class HybridDocumentSearchPostgres extends HybridSearchClient<CaseFileSea
               AND due.vector IS NOT NULL
           ) AS vector_score
         FROM "DocumentWithDetails" d
+        JOIN document_units du ON du.unit_id = d.document_id
         WHERE (${scopeDocumentTypes.length} = 0 OR d.document_type = ANY(${scopeDocumentTypes}))
+          AND ${whereAccessibleCaseFiles}
           AND (${emailId ?? null}::uuid IS NULL OR d.email_id = ${emailId ?? null}::uuid)
-          AND (${threadId ?? null}::integer IS NULL OR d.thread_id = ${threadId ?? null}::integer)
+          AND (${threadIdFilter ?? null}::integer IS NULL OR d.thread_id = ${threadIdFilter ?? null}::integer)
           AND (${attachmentId ?? null}::integer IS NULL OR d.attachment_id = ${attachmentId ?? null}::integer)
           AND (${documentId ?? null}::integer IS NULL OR d.document_id = ${documentId ?? null}::integer)
           AND (${replyToDocumentId ?? null}::integer IS NULL OR d.reply_to_document_id = ${replyToDocumentId ?? null}::integer)

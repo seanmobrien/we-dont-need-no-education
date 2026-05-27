@@ -110,7 +110,7 @@ class RoutedHybridDocumentSearch {
       return retrieved;
     }
 
-    return augmentCaseFileResultsWithNeo4jSemantics(retrieved, options);
+    return await augmentCaseFileResultsWithNeo4jSemantics(retrieved, options);
   }
 }
 

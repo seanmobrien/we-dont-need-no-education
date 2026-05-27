@@ -7,6 +7,13 @@ import { setupImpersonationMock } from '../../../../jest.mock-impersonation';
 setupImpersonationMock();
 
 const fetchMock = jest.fn();
+const neo4jRunMock = jest.fn();
+const neo4jExecuteReadMock = jest.fn();
+const neo4jSessionCloseMock = jest.fn();
+const neo4jSessionMock = jest.fn();
+const neo4jDriverCloseMock = jest.fn();
+const neo4jDriverMock = jest.fn();
+
 jest.mock('../../../../../lib/fetch-service', () => ({
   resolveFetchService: jest.fn(
     () =>
@@ -25,10 +32,29 @@ jest.mock('@compliance-theater/database/driver', () => ({
   pgDbWithInit: jest.fn(),
 }));
 
+jest.mock('@compliance-theater/auth/lib/resources/case-file/index', () => ({
+  getAccessibleUserIds: jest.fn(),
+}));
+
+jest.mock('neo4j-driver', () => ({
+  __esModule: true,
+  default: {
+    driver: (...args: unknown[]) => neo4jDriverMock(...args),
+    auth: {
+      basic: jest.fn((username: string, password: string) => ({
+        username,
+        password,
+      })),
+    },
+    isInt: () => false,
+  },
+}));
+
 import { hybridDocumentSearchFactory } from '../../../../../lib/ai/services/search/HybridDocumentSearch';
 import { hybridPolicySearchFactory } from '../../../../../lib/ai/services/search/HybridPolicySearch';
 import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
 import { pgDbWithInit } from '@compliance-theater/database/driver';
+import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file/index';
 
 const makeEmbeddingService = () => ({
   embed: jest.fn().mockResolvedValue([0.11, 0.22, 0.33]),
@@ -58,6 +84,31 @@ describe('Hybrid search provider routing', () => {
     fetchMock.mockReset();
     (pgDbWithInit as jest.Mock).mockReset();
     (getFeatureFlag as jest.Mock).mockReset();
+    (getAccessibleUserIds as jest.Mock).mockReset();
+    (getAccessibleUserIds as jest.Mock).mockResolvedValue([123]);
+    neo4jRunMock.mockReset();
+    neo4jExecuteReadMock.mockReset();
+    neo4jExecuteReadMock.mockImplementation(
+      async (
+        callback: (tx: { run: typeof neo4jRunMock }) => unknown,
+      ) => callback({ run: neo4jRunMock }),
+    );
+    neo4jSessionCloseMock.mockReset();
+    neo4jSessionMock.mockReset();
+    neo4jSessionMock.mockReturnValue({
+      executeRead: neo4jExecuteReadMock,
+      close: neo4jSessionCloseMock,
+    });
+    neo4jDriverCloseMock.mockReset();
+    neo4jDriverMock.mockReset();
+    neo4jDriverMock.mockReturnValue({
+      session: neo4jSessionMock,
+      close: neo4jDriverCloseMock,
+    });
+    delete process.env.NEO4J_URI;
+    delete process.env.NEO4J_USERNAME;
+    delete process.env.NEO4J_PASSWORD;
+    delete process.env.NEO4J_DATABASE;
   });
 
   test('routes case-file search to Azure by default', async () => {
@@ -76,6 +127,21 @@ describe('Hybrid search provider routing', () => {
     expect(pgDbWithInit).not.toHaveBeenCalled();
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.vectorQueries[0].k).toBe(50);
+  });
+
+  test('keeps threadId string value in Azure filters', async () => {
+    mockFlagProviders({ retrieval: 'azure', graph: 'none' });
+    const embeddingService = makeEmbeddingService();
+    fetchMock.mockResolvedValue({
+      json: async () => ({ value: [] }),
+      headers: { get: () => null },
+    });
+
+    const client = hybridDocumentSearchFactory({ embeddingService });
+    await client.hybridSearch('thread query', { threadId: '000123' });
+
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.filter).toContain("a/key eq 'thread_id' and a/value eq '000123'");
   });
 
   test('routes case-file search to PostgreSQL when enabled', async () => {
@@ -104,7 +170,8 @@ describe('Hybrid search provider routing', () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(pgDbWithInit).toHaveBeenCalledTimes(1);
-    expect(sql).toHaveBeenCalledTimes(1);
+    expect(getAccessibleUserIds).toHaveBeenCalledWith(undefined);
+    expect(sql).toHaveBeenCalled();
     expect(result.results[0].id).toBe('42');
     expect(result.total).toBe(1);
   });
@@ -112,6 +179,18 @@ describe('Hybrid search provider routing', () => {
   test('applies graph augmentation reranking when neo4j mode is enabled', async () => {
     mockFlagProviders({ retrieval: 'azure', graph: 'neo4j' });
     const embeddingService = makeEmbeddingService();
+    process.env.NEO4J_URI = 'neo4j://localhost:7687';
+    process.env.NEO4J_USERNAME = 'neo4j';
+    process.env.NEO4J_PASSWORD = 'test-password';
+    process.env.NEO4J_DATABASE = 'neo4j';
+    neo4jRunMock.mockResolvedValue({
+      records: [
+        {
+          get: (field: string) =>
+            field === 'documentId' ? 2 : field === 'scoreBoost' ? 0.6 : null,
+        },
+      ],
+    });
     fetchMock.mockResolvedValue({
       json: async () => ({
         value: [
@@ -141,6 +220,8 @@ describe('Hybrid search provider routing', () => {
 
     expect(result.results[0].id).toBe('2');
     expect(result.results[0].metadata?.graph_augmentation_provider).toBe('neo4j');
+    expect(neo4jDriverMock).toHaveBeenCalledTimes(1);
+    expect(neo4jRunMock).toHaveBeenCalledTimes(1);
   });
 });
 

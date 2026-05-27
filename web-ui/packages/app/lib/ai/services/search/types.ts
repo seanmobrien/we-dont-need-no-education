@@ -75,7 +75,7 @@ const normalizeOptionalString = (value: unknown): string | undefined => {
 export type NormalizedCaseFileSearchFilters = {
   scopeDocumentTypes: string[];
   emailId?: string;
-  threadId?: number;
+  threadId?: string;
   attachmentId?: number;
   documentId?: number;
   replyToDocumentId?: number;
@@ -100,7 +100,7 @@ export const normalizeCaseFileSearchFilters = (options?: {
   return {
     scopeDocumentTypes: [...new Set(normalizedScopes)],
     emailId: normalizeOptionalString(options?.emailId),
-    threadId: normalizeOptionalNumber(options?.threadId),
+    threadId: normalizeOptionalString(options?.threadId),
     attachmentId: normalizeOptionalNumber(options?.attachmentId),
     documentId: normalizeOptionalNumber(options?.documentId),
     replyToDocumentId: normalizeOptionalNumber(options?.replyToDocumentId),
