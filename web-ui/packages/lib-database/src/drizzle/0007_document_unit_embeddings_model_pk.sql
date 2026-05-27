@@ -39,3 +39,18 @@ ALTER TABLE document_unit_embeddings
 ALTER TABLE document_unit_embeddings
   ADD CONSTRAINT document_unit_vector_store_pkey
   PRIMARY KEY (document_id, embedding_model, "index");
+
+CREATE INDEX IF NOT EXISTS idx_document_units_content_fts
+  ON document_units
+  USING GIN (to_tsvector('english', COALESCE(content, '')));
+
+CREATE INDEX IF NOT EXISTS idx_document_units_document_type
+  ON document_units (document_type);
+
+CREATE INDEX IF NOT EXISTS idx_document_unit_embeddings_model_document
+  ON document_unit_embeddings (embedding_model, document_id);
+
+CREATE INDEX IF NOT EXISTS idx_document_unit_embeddings_vector_cosine
+  ON document_unit_embeddings
+  USING ivfflat (vector vector_cosine_ops)
+  WITH (lists = 100);

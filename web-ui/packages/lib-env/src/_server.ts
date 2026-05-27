@@ -60,6 +60,10 @@ const buildRawInstance = () => {
     AZURE_OPENAI_KEY_COMPLETIONS: process.env.AZURE_OPENAI_KEY_COMPLETIONS,
     AZURE_AISEARCH_POLICY_INDEX_NAME:
       process.env.AZURE_AISEARCH_POLICY_INDEX_NAME,
+    NEO4J_URI: process.env.NEO4J_URI,
+    NEO4J_USERNAME: process.env.NEO4J_USERNAME,
+    NEO4J_PASSWORD: process.env.NEO4J_PASSWORD,
+    NEO4J_DATABASE: process.env.NEO4J_DATABASE,
     AZURE_AISEARCH_VECTOR_SIZE_SMALL:
       process.env.AZURE_AISEARCH_VECTOR_SIZE_SMALL,
     AZURE_AISEARCH_VECTOR_SIZE_LARGE:
@@ -268,6 +272,29 @@ const serverEnvSchema = z
       .min(1)
       .describe(
         'Azure AI Search index name for storing policy document vectors and metadata. Example: policies-prod',
+      ),
+    NEO4J_URI: ZodProcessors.url()
+      .optional()
+      .describe(
+        'Neo4j connection URI for optional case-file graph augmentation. Example: neo4j+s://my-graph.databases.neo4j.io',
+      ),
+    NEO4J_USERNAME: z
+      .string()
+      .optional()
+      .describe(
+        'Neo4j username used when graph augmentation is enabled. Example: neo4j',
+      ),
+    NEO4J_PASSWORD: z
+      .string()
+      .optional()
+      .describe(
+        'Neo4j password used when graph augmentation is enabled.',
+      ),
+    NEO4J_DATABASE: z
+      .string()
+      .optional()
+      .describe(
+        'Neo4j database name for case-file graph augmentation. Example: neo4j',
       ),
     AZURE_AISEARCH_VECTOR_SIZE_SMALL: z
       .coerce.number()

@@ -26,6 +26,8 @@ export const StringFeatureFlagValues = [
   'mcp_trace_level',
   'models_fetch_trace_level',
   'todo_storage_strategy',
+  'search_case_file_retrieval_provider',
+  'search_case_file_graph_augmentation_provider',
 ] as const;
 export const ObjectFeatureFlagValues = [
   'models_fetch_enhanced',

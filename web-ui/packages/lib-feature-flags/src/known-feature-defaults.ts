@@ -176,6 +176,8 @@ export const AllFeatureFlagsDefault: KnownFeatureValueTypeMap = {
   mcp_max_duration: 1000 * 60 * 15,
   mcp_protocol_http_stream: false,
   mcp_trace_level: 'warn',
+  search_case_file_retrieval_provider: 'azure',
+  search_case_file_graph_augmentation_provider: 'none',
   health_database_cache_ttl: 120,
   health_memory_cache_ttl: 60,
   health_memory_cache_error_ttl: 10,

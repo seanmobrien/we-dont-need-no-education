@@ -1,11 +1,25 @@
 import { env } from '@compliance-theater/env';
+import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
 import { CaseFileSearchOptions } from '../../tools/types';
-import { CaseFileSearchScopeType } from '../../tools/unions';
-import { HybridSearchClient } from './HybridSearchBase';
-import { HybridSearchPayload } from './types';
+import { HybridAzureSearchClient } from './HybridAzureSearchBase';
+import {
+  CaseFileSearchGraphAugmentationProvider,
+  CaseFileSearchRetrievalProvider,
+  HybridSearchPayload,
+  normalizeCaseFileSearchFilters,
+  normalizeCaseFileSearchGraphAugmentationProvider,
+  normalizeCaseFileSearchRetrievalProvider,
+} from './types';
 import { IEmbeddingService } from '../embedding';
+import { HybridDocumentSearchPostgres } from './HybridDocumentSearchPostgres';
+import { augmentCaseFileResultsWithNeo4jSemantics } from './HybridDocumentNeo4jAugmentation';
 
-export class HybridDocumentSearch extends HybridSearchClient<CaseFileSearchOptions> {
+const CASE_FILE_RETRIEVAL_PROVIDER_FLAG =
+  'search_case_file_retrieval_provider' as const;
+const CASE_FILE_GRAPH_AUGMENTATION_PROVIDER_FLAG =
+  'search_case_file_graph_augmentation_provider' as const;
+
+export class HybridDocumentSearch extends HybridAzureSearchClient<CaseFileSearchOptions> {
   protected getSearchIndexName(): string {
     return env('AZURE_AISEARCH_DOCUMENTS_INDEX_NAME');
   }
@@ -14,76 +28,47 @@ export class HybridDocumentSearch extends HybridSearchClient<CaseFileSearchOptio
     payload: HybridSearchPayload,
     options: CaseFileSearchOptions,
   ): void {
-    const {
-      scope: policyType,
-      emailId,
-      threadId,
-      attachmentId,
-      documentId,
-      replyToDocumentId,
-      relatedToDocumentId,
-    } = options ?? {};
-    let filterValues: string[] = [];
-    const validTypes: Record<CaseFileSearchScopeType, Array<string>> = {
-      email: ['email'],
-      attachment: ['attachment'],
-      'key-point': ['key_point'],
-      'call-to-action': ['cta'],
-      'responsive-action': ['cta_response'],
-      note: ['note'],
-      'core-document': ['email', 'attachment'],
-    };
+    const normalized = normalizeCaseFileSearchFilters(options);
     const filters: Array<string> = [];
 
-    if (Array.isArray(policyType)) {
-      filterValues = policyType
-        .flatMap((type) => validTypes[type])
-        .filter(Boolean);
-    } else if (typeof policyType === 'string') {
-      const mapped = validTypes[policyType];
-      if (mapped) {
-        filterValues = [mapped];
-      }
-    }
-
-    if (filterValues.length > 0) {
-      const orFilters = filterValues
+    if (normalized.scopeDocumentTypes.length > 0) {
+      const orFilters = normalized.scopeDocumentTypes
         .map(
-          (val) =>
-            `metadata/attributes/any(a: a/key eq 'document_type' and a/value eq '${val}')`,
+          (documentType) =>
+            `metadata/attributes/any(a: a/key eq 'document_type' and a/value eq '${documentType}')`,
         )
         .join(' or ');
       filters.push(`(${orFilters})`);
     }
 
-    if (emailId) {
+    if (normalized.emailId) {
       filters.push(
-        `metadata/attributes/any(a: a/key eq 'email_id' and a/value eq '${emailId}')`,
+        `metadata/attributes/any(a: a/key eq 'email_id' and a/value eq '${normalized.emailId}')`,
       );
     }
-    if (threadId) {
+    if (normalized.threadId != null) {
       filters.push(
-        `metadata/attributes/any(a: a/key eq 'thread_id' and a/value eq '${threadId}')`,
+        `metadata/attributes/any(a: a/key eq 'thread_id' and a/value eq '${normalized.threadId}')`,
       );
     }
-    if (attachmentId) {
+    if (normalized.attachmentId != null) {
       filters.push(
-        `metadata/attributes/any(a: a/key eq 'attachment_id' and a/value eq '${attachmentId}')`,
+        `metadata/attributes/any(a: a/key eq 'attachment_id' and a/value eq '${normalized.attachmentId}')`,
       );
     }
-    if (documentId) {
+    if (normalized.documentId != null) {
       filters.push(
-        `metadata/attributes/any(a: a/key eq 'id' and a/value eq '${documentId}')`,
+        `metadata/attributes/any(a: a/key eq 'id' and a/value eq '${normalized.documentId}')`,
       );
     }
-    if (replyToDocumentId) {
+    if (normalized.replyToDocumentId != null) {
       filters.push(
-        `metadata/attributes/any(a: a/key eq 'parent_email_id' and a/value eq '${replyToDocumentId}')`,
+        `metadata/attributes/any(a: a/key eq 'parent_email_id' and a/value eq '${normalized.replyToDocumentId}')`,
       );
     }
-    if (relatedToDocumentId) {
+    if (normalized.relatedToDocumentId != null) {
       filters.push(
-        `metadata/attributes/any(a: a/key eq 'relatedEmailId:${relatedToDocumentId}')`,
+        `(metadata/attributes/any(a: a/key eq 'related_documents' and a/value eq '${normalized.relatedToDocumentId}') or metadata/attributes/any(a: a/key eq 'relatedEmailId:${normalized.relatedToDocumentId}'))`,
       );
     }
     if (filters.length > 0) {
@@ -92,6 +77,43 @@ export class HybridDocumentSearch extends HybridSearchClient<CaseFileSearchOptio
   }
 }
 
+class RoutedHybridDocumentSearch {
+  readonly #azureClient: HybridDocumentSearch;
+  readonly #postgresClient: HybridDocumentSearchPostgres;
+
+  constructor(options?: { embeddingService?: IEmbeddingService }) {
+    this.#azureClient = new HybridDocumentSearch(options);
+    this.#postgresClient = new HybridDocumentSearchPostgres(options);
+  }
+
+  async #getRetrievalProvider(): Promise<CaseFileSearchRetrievalProvider> {
+    const flag = await getFeatureFlag(CASE_FILE_RETRIEVAL_PROVIDER_FLAG);
+    return normalizeCaseFileSearchRetrievalProvider(flag);
+  }
+
+  async #getGraphAugmentationProvider(): Promise<CaseFileSearchGraphAugmentationProvider> {
+    const flag = await getFeatureFlag(CASE_FILE_GRAPH_AUGMENTATION_PROVIDER_FLAG);
+    return normalizeCaseFileSearchGraphAugmentationProvider(flag);
+  }
+
+  async hybridSearch(query: string, options?: CaseFileSearchOptions) {
+    const [retrievalProvider, graphAugmentationProvider] = await Promise.all([
+      this.#getRetrievalProvider(),
+      this.#getGraphAugmentationProvider(),
+    ]);
+
+    const retrievalClient =
+      retrievalProvider === 'postgresql' ? this.#postgresClient : this.#azureClient;
+    const retrieved = await retrievalClient.hybridSearch(query, options);
+
+    if (graphAugmentationProvider !== 'neo4j') {
+      return retrieved;
+    }
+
+    return augmentCaseFileResultsWithNeo4jSemantics(retrieved, options);
+  }
+}
+
 export const hybridDocumentSearchFactory = (options?: {
   embeddingService?: IEmbeddingService;
-}) => new HybridDocumentSearch(options);
+}) => new RoutedHybridDocumentSearch(options);

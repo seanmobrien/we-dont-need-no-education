@@ -82,4 +82,51 @@ describe('searchCaseFile', () => {
       data: { query, options },
     });
   });
+
+  it('returns PostgreSQL-routed search results unchanged from the client contract', async () => {
+    const query = 'postgres query';
+    const expectedEnvelope = {
+      results: [
+        {
+          id: '42',
+          content: 'postgres result',
+          score: 0.9,
+          metadata: { retrieval_provider: 'postgresql' },
+        },
+      ],
+      total: 1,
+    };
+    mockHybridSearch.mockResolvedValue(expectedEnvelope);
+
+    const result = await localSearchCaseFile({ query, options: { scope: ['email'] } as any });
+    expect(result.structuredContent.result.isError).toBe(false);
+    expect(
+      result.structuredContent.result.isError
+        ? null
+        : result.structuredContent.result.value,
+    ).toEqual(expectedEnvelope);
+  });
+
+  it('returns neo4j-augmented metadata unchanged from the client contract', async () => {
+    const query = 'graph query';
+    const expectedEnvelope = {
+      results: [
+        {
+          id: '2',
+          content: 'graph result',
+          score: 1.1,
+          metadata: { graph_augmentation_provider: 'neo4j' },
+        },
+      ],
+    };
+    mockHybridSearch.mockResolvedValue(expectedEnvelope);
+
+    const result = await localSearchCaseFile({ query, options: { threadId: '123' } as any });
+    expect(result.structuredContent.result.isError).toBe(false);
+    expect(
+      result.structuredContent.result.isError
+        ? null
+        : result.structuredContent.result.value,
+    ).toEqual(expectedEnvelope);
+  });
 });

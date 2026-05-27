@@ -8,3 +8,4 @@ export {
   HybridDocumentSearch,
   hybridDocumentSearchFactory,
 } from './HybridDocumentSearch';
+export { HybridDocumentSearchPostgres } from './HybridDocumentSearchPostgres';

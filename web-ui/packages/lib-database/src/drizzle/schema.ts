@@ -1272,10 +1272,15 @@ export const documentUnitEmbeddings = pgTable(
     index: integer().notNull(),
     startPos: integer('start_pos'),
     endPos: integer('end_pos'),
-    // vector: vector().notNull(),
+    vector: vector('vector', { dimensions: 3072 }),
     createdOn: time('created_on').default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
+    index('idx_document_unit_embeddings_model_document').using(
+      'btree',
+      table.embeddingModel.asc().nullsLast().op('text_ops'),
+      table.documentId.asc().nullsLast().op('int4_ops'),
+    ),
     foreignKey({
       columns: [table.documentId],
       foreignColumns: [documentUnits.unitId],

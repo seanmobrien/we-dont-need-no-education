@@ -1,11 +1,11 @@
 import { env } from '@compliance-theater/env';
 import type { PolicySearchOptions } from '../../tools/types';
 import type { PolicySearchScopeType } from '../../tools/unions';
-import { HybridSearchClient } from './HybridSearchBase';
+import { HybridAzureSearchClient } from './HybridAzureSearchBase';
 import type { HybridSearchPayload } from './types';
 import type { IEmbeddingService } from '../embedding';
 
-export class HybridPolicySearch extends HybridSearchClient<PolicySearchOptions> {
+export class HybridPolicySearch extends HybridAzureSearchClient<PolicySearchOptions> {
   protected getSearchIndexName(): string {
     return env('AZURE_AISEARCH_POLICY_INDEX_NAME');
   }
@@ -33,7 +33,7 @@ export class HybridPolicySearch extends HybridSearchClient<PolicySearchOptions> 
     } else if (typeof policyType === 'string') {
       const mapped = validTypes[policyType];
       if (mapped) {
-        filterValues = [mapped];
+        filterValues = mapped;
       }
     }
 
