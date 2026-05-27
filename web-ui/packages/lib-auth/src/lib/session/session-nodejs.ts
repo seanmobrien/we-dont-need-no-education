@@ -13,6 +13,54 @@ import { createHash } from 'crypto';
 import { LoggedError } from '@compliance-theater/logger';
 import { createCachedModuleLoader } from '../runtime-loader';
 
+type SessionIdentityLike = Session & {
+  user?: Session['user'] & {
+    accountId?: string | number | null;
+    account_id?: string | number | null;
+    subject?: string | null;
+  };
+};
+
+type AccountTokenIdentity = {
+  userId?: number;
+  providerAccountId?: string;
+};
+
+const resolveSessionAccountTokenIdentity = (
+  session: SessionIdentityLike,
+): AccountTokenIdentity => {
+  const user = session.user;
+  const userIdCandidates = [user?.account_id, user?.accountId, user?.id];
+
+  let userId: number | undefined;
+  for (const candidate of userIdCandidates) {
+    const parsed =
+      typeof candidate === 'number'
+        ? candidate
+        : parseInt(String(candidate ?? ''), 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      userId = parsed;
+      break;
+    }
+  }
+
+  const providerAccountId =
+    [
+      user?.subject,
+      typeof user?.id === 'string' && user.id.trim().length > 0
+        ? user.id
+        : undefined,
+    ].find(
+      (candidate) =>
+        typeof candidate === 'string' && candidate.trim().length > 0,
+    ) ?? undefined;
+
+  return {
+    ...(userId ? { userId } : {}),
+    ...(providerAccountId ? { providerAccountId } : {}),
+  };
+};
+
 const hashFromServer = async (input: string): Promise<string> =>
   createHash('sha256').update(input).digest('hex');
 
@@ -30,16 +78,17 @@ export const session = async ({
   session: Session;
   token: JWT;
 }): Promise<Session> => {
-  const session = await setupSession({
+  const session = (await setupSession({
     session: sessionFromProps,
     token,
     hash: hashFromServer,
-  });
-  if (!session?.user?.id) {
+  })) as SessionIdentityLike;
+  const accountTokenIdentity = resolveSessionAccountTokenIdentity(session);
+  if (!accountTokenIdentity.userId && !accountTokenIdentity.providerAccountId) {
     return session;
   }
   try {
-    const dbTokens = await getAccountTokens(session.user.id);
+    const dbTokens = await getAccountTokens(accountTokenIdentity);
 
     if (dbTokens?.accessToken) {
       // Check for expiry
@@ -66,7 +115,7 @@ export const session = async ({
           session.error = String(refreshed.error);
         } else {
           // Save new tokens to DB
-          await updateAccountTokens(session.user.id, {
+          await updateAccountTokens(accountTokenIdentity, {
             accessToken: refreshed.access_token,
             refreshToken: refreshed.refresh_token,
             expiresAt: Number(refreshed.expires_at ?? 0),

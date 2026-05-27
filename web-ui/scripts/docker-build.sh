@@ -15,7 +15,7 @@ WEB_UI_ROOT="$REPO_ROOT/web-ui"
 
 # Paths
 ENV_LOCAL_PATH="$WEB_UI_ROOT/packages/app/.env.local"
-SECRETS_DIR="$REPO_ROOT/secrets"
+SECRETS_DIR="$WEB_UI_ROOT/secrets"
 CONTAINER_NAME="web-ui-local"
 IMAGE_TAG="web-ui:localbuild"
 
@@ -88,7 +88,9 @@ function create_build_secrets() {
     
     if [ -d "$SECRETS_DIR" ]; then
         echo -e "${YELLOW}⚠${NC} Secrets directory already exists, cleaning up..."
-        rm -rf "$SECRETS_DIR"
+        if ! rm -rf -- "$SECRETS_DIR"; then
+            echo -e "${YELLOW}Warning: failed to remove secrets directory: $SECRETS_DIR${NC}" >&2
+        fi
     fi
     
     mkdir -p "$SECRETS_DIR"
@@ -123,13 +125,18 @@ function create_build_secrets() {
             MISSING_SECRETS+=("$secret_name")
         else
             # Write to file
-            echo -n "$secret_value" > "$SECRETS_DIR/$secret_name"
-            echo -e "${GREEN}✓${NC} Created secret file: $secret_name"
-    
+            if ! echo -n "$secret_value" > "$SECRETS_DIR/$secret_name"; then
+                echo -e "${YELLOW}Warning: failed to create secret file: $SECRETS_DIR/$secret_name${NC}" >&2
+            else
+                echo -e "${GREEN}✓${NC} Created secret file: $secret_name"
+            fi
             # Special case: if this is OPENAI_KEY_TEXT, also create OPENID_KEY_TEXT
             if [ "$secret_name" = "OPENAI_KEY_TEXT" ]; then
-                echo -n "$secret_value" > "$SECRETS_DIR/OPENID_KEY_TEXT"
-                echo -e "${GREEN}✓${NC} Created secret file: OPENID_KEY_TEXT (alias for OPENID_KEY)"
+                if ! echo -n "$secret_value" > "$SECRETS_DIR/OPENID_KEY_TEXT"; then
+                    echo -e "${YELLOW}Warning: failed to create secret file: $SECRETS_DIR/OPENID_KEY_TEXT${NC}" >&2
+                else
+                    echo -e "${GREEN}✓${NC} Created secret file: OPENID_KEY_TEXT (alias for OPENID_KEY)"
+                fi
             fi
         fi
     done
