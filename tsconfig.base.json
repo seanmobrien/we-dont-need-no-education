@@ -31,7 +31,7 @@
     "composite": true,
     "declaration": true,
     "declarationMap": true,
-    "baseUrl": ".",
+    // "baseUrl": ".",
     "types": [
       "node",
       "jest"

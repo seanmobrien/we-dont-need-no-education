@@ -8,7 +8,7 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = join(packageRoot, "dist");
 const marketplaceRoot = join(packageRoot, "dist-marketplace");
 const marketplaceName = "compliance-theater-marketplace";
-const pluginName = "compliance-theater-2000";
+const pluginName = "compliance_theater_2000";
 
 const requiredPaths = [
   "src/.codex-plugin",
