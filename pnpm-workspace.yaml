@@ -1,6 +1,5 @@
 packages:
   - 'web-ui/packages/**'
-  - 'codex-mcp'
   - 'web-ui/submodules/json-viewer/packages'
   - '!web-ui/submodules/json-viewer/packages/docs'
   - 'web-ui/submodules/sce'

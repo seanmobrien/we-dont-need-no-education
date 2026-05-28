@@ -27,7 +27,9 @@ Routing hints include:
 
 ## Tool Search
 
-Compliance Theater is split into small MCP servers with OpenAI Tool Search support. If tool search is available, use it to discover the narrowest matching tool.
+Compliance Theater is split into small MCP servers with focused toolsets. When the user mentions a relevant MCP server or tool, prefer that tool for retrieval, analysis, or action. For example:
+- If the user asks for a case workspace summary, prefer ```compliance_theater_case_workspace.get``` over ```compliance_theater_search``` or local index search.
+- If the user asks for policy references related to a case document, prefer ```compliance_theater_search_policy``` and ```compliance_theater_case_files_get``` over local index search or Gmail search.
 
 ## MCP Servers
 
@@ -41,13 +43,13 @@ General compliance planning support.
 
 Search, index, embedding, and graph tools for policy sources, case-file evidence, and Neo4j relationship traversal.
 
-- `policy`: search policy sources. Policy scope filters: `school-district`, `state`, `federal`.
-- `case_file`: search case-file evidence. Case-file scope filters: `email`, `attachment`, `core-document`, `key-point`, `call-to-action`, `responsive-action`, `note`.
-- `index`: list case-file document IDs and metadata, optionally by case-file scope.
-- `embed`: read or generate case-file embeddings. Use `modelSize: "small"` by default. Use `large` only when the user asks for larger vectors or high-recall/high-fidelity vector work. Prefer `action: "read"` before generation unless the task specifically asks to compute or refresh embeddings. Use `action: "query-vectors"` to retrieve vectors for advanced query scenarios.
-- `graph_schema`: inspect Neo4j graph labels, relationship types, and property keys before writing graph queries.
-- `graph_read`: run read-only Cypher for relationship traversal, graph-backed evidence exploration, or validating graph shape.
-- `graph_write`: run write-capable Cypher. Use only when the user explicitly asks to create, update, or delete graph data.
+- `compliance_theater_search_policy`: search policy sources. Policy scope filters: `school-district`, `state`, `federal`.
+- `compliance_theater_search_case_file`: search case-file evidence. Case-file scope filters: `email`, `attachment`, `core-document`, `key-point`, `call-to-action`, `responsive-action`, `note`.
+- `compliance_theater_search_index`: list case-file document IDs and metadata, optionally by case-file scope.
+- `compliance_theater_search_embed`: read or generate case-file embeddings. Use `modelSize: "small"` by default. Use `large` only when the user asks for larger vectors or high-recall/high-fidelity vector work. Prefer `action: "read"` before generation unless the task specifically asks to compute or refresh embeddings. Use `action: "query-vectors"` to retrieve vectors for advanced query scenarios.
+- `compliance_theater_search_graph_schema`: inspect Neo4j graph labels, relationship types, and property keys before writing graph queries.
+- `compliance_theater_search_graph_read`: run read-only Cypher for relationship traversal, graph-backed evidence exploration, or validating graph shape.
+- `compliance_theater_search_graph_write`: run write-capable Cypher. Use only when the user explicitly asks to create, update, or delete graph data.
 
 Graph tools use a plugin-hosted Neo4j MCP backend. The wrapper can auto-discover concrete graph credentials from the authenticated app session and cache them until the session token expires; if discovery is disabled, unavailable, or returns `env:` placeholders, it falls back to explicit plugin settings. If Neo4j settings are missing or the backend cannot start, surface the non-secret setup error to the user.
 
@@ -66,10 +68,10 @@ For vector search against Neo4j:
 
 Case-file document retrieval and amendment tools.
 
-- `get`: retrieve case-file documents.
-- `amend`: amend structured case-file document details, ratings, notes, and relationships.
+- `compliance_theater_case_files_get`: retrieve case-file documents.
+- `compliance_theater_case_files_amend`: amend structured case-file document details, ratings, notes, and relationships.
 
-`get` behavior:
+`compliance_theater_case_files_get` behavior:
 
 - Use `mode: "direct"` for full-fidelity, unsummarized reads when the user names up to three case-file IDs. Pass `caseFileId` for one ID or `ids` for multiple IDs. Direct mode has a maximum of 3 IDs.
 - Use `mode: "goals"` for larger batches or when the user needs extraction, synthesis, or task-specific preprocessing. Provide `requests` when individual documents need different goals; provide shared `goals` when all requested documents should be processed the same way.
@@ -79,58 +81,58 @@ Case-file document retrieval and amendment tools.
 
 Case workspace state, task, question, document-summary, and session-log tools.
 
-- `get`: return a case workspace summary.
-- `read`: read `overview`, `tasks`, `documentSummaries`, `openQuestions`, `timelineNotes`, `sessionLog`, or `metadata`.
-- `append_task`: add a workspace task.
-- `update_status`: change task status.
-- `update_details`: update task title, description, priority, owner, or tags.
-- `upsert`: create or update a document summary.
-- `insert_question`: add a factual, legal, evidentiary, or process question.
-- `update_question`: update question status or notes.
-- `log`: add a session-log entry.
-- `compact`: compact metadata and regenerate workspace projections.
+- `compliance_theater_case_workspace_get`: return a case workspace summary.
+- `compliance_theater_case_workspace_read`: read `overview`, `tasks`, `documentSummaries`, `openQuestions`, `timelineNotes`, `sessionLog`, or `metadata`.
+- `compliance_theater_case_workspace_append_task`: add a workspace task.
+- `compliance_theater_case_workspace_update_status`: change task status.
+- `compliance_theater_case_workspace_update_details`: update task title, description, priority, owner, or tags.
+- `compliance_theater_case_workspace_upsert`: create or update a document summary.
+- `compliance_theater_case_workspace_insert_question`: add a factual, legal, evidentiary, or process question.
+- `compliance_theater_case_workspace_update_question`: update question status or notes.
+- `compliance_theater_case_workspace_log`: add a session-log entry.
+- `compliance_theater_case_workspace_compact`: compact metadata and regenerate workspace projections.
 
 `compliance_theater_memory`
 
 Persistent memory tools for prior context, learned facts, categories, and related memory lookups.
 
-- `list`: list persisted memories.
-- `insert`: create a memory.
-- `categories`: list memory categories.
-- `get`: retrieve a memory by ID.
-- `update`: update memory content.
-- `search`: search memories.
-- `related`: retrieve memories related to a memory ID.
+- `compliance_theater_memory_list`: list persisted memories.
+- `compliance_theater_memory_insert`: create a memory.
+- `compliance_theater_memory_categories`: list memory categories.
+- `compliance_theater_memory_get`: retrieve a memory by ID.
+- `compliance_theater_memory_update`: update memory content.
+- `compliance_theater_memory_search`: search memories.
+- `compliance_theater_memory_related`: retrieve memories related to a memory ID.
 
 `compliance_theater_todo`
 
 Compliance-oriented todo list and task workflow tools.
 
-- `insert`: create or replace a compliance-oriented todo list.
-- `get`: read todo lists, optionally filtered by completion state or list ID.
-- `update`: update a todo item.
-- `toggle`: advance a todo through its completion workflow.
+- `compliance_theater_todo_insert`: create or replace a compliance-oriented todo list.
+- `compliance_theater_todo_get`: read todo lists, optionally filtered by completion state or list ID.
+- `compliance_theater_todo_update`: update a todo item.
+- `compliance_theater_todo_toggle`: advance a todo through its completion workflow.
 
 `compliance_theater_utils`
 
 Authenticated utility tools for API escape hatches, resource inspection, and auth/session operations.
 
-- `call_api`: call an authenticated Compliance Theater app API route relative to `/api`. Prefer dedicated tools when they exist.
-- `list`: list abilities or resources. Use for inspection/debugging, not ordinary task routing.
-- `auth`: check status, clear cache, or login.
+- `compliance_theater_utils_call_api`: call an authenticated Compliance Theater app API route relative to `/api`. Prefer dedicated tools when they exist.
+- `compliance_theater_utils_list`: list abilities or resources. Use for inspection/debugging, not ordinary task routing.
+- `compliance_theater_utils_auth`: check status, clear cache, or login.
 
 ## Authentication
 
 1. Tools manage authentication inline.
 2. When a device authorization URL or user code is returned, immediately tell the user the URL and code and ask them to authenticate. Wait for the user's confirmation or the tool's login result before continuing.
-3. Use `auth` with `action: "status"` to retrieve session status and details if the user requests login/session status.
+3. Use `compliance_theater_utils_auth` or `compliance_theater_utils_auth` with `action: "status"` to retrieve session status and details if the user requests login/session status.
 4. Never print tokens, client secrets, cookies, or raw credential values.
 
 ## Troubleshooting
 
 If calls fail with auth-related issues:
 
-1. Call `auth` with `action: "clear-cache"`.
-2. Call `auth` with `action: "login"`.
+1. Call `compliance_theater_utils_auth` with `action: "clear-cache"`.
+2. Call `compliance_theater_utils_auth` with `action: "login"`.
 3. Retry the failed call.
 4. If authentication failure persists, surface the failure to the user with the relevant non-secret error details.

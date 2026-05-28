@@ -1,9 +1,9 @@
 {
 	"mcpServers": {
 		"compliance_theater": {
-			"description": "Default Compliance Theater MCP tools for general compliance reasoning. Tools are exposed with the compliance_theater_ prefix, such as compliance_theater_sequentialthinking.",
-			"server_description": "Default Compliance Theater MCP tools for general compliance reasoning. Tool search names include compliance_theater_sequentialthinking.",
-			
+			"description": "General Compliance Theater tools are exposed with the compliance_theater_ prefix, such as compliance_theater_sequentialthinking.",
+			"server_description": "Default Compliance Theater MCP tools for general compliance reasoning.",
+			"defer_load": false,
 			"command": "node",
 			"args": [
 				"./scripts/entrypoint.js"
@@ -32,8 +32,8 @@
 		},
 		"compliance_theater_memory": {
 			"description": "Compliance Theater memory tools for listing, creating, retrieving, updating, searching, and relating persisted memories. Tools use the compliance_theater_memory_ prefix.",
-			"server_description": "Compliance Theater memory tools. Tool search names include compliance_theater_memory_list, compliance_theater_memory_insert, compliance_theater_memory_get, compliance_theater_memory_update, compliance_theater_memory_search, and compliance_theater_memory_related.",
-			
+			"server_description": "Compliance Theater memory tools. Available tools include compliance_theater_memory_list, compliance_theater_memory_insert, compliance_theater_memory_get, compliance_theater_memory_update, compliance_theater_memory_search, and compliance_theater_memory_related.",
+			"defer_load": false,
 			"command": "node",
 			"args": [
 				"./scripts/entrypoint.js"
@@ -62,8 +62,8 @@
 		},
 		"compliance_theater_utils": {
 			"description": "Compliance Theater utility tools for authenticated app API calls, auth status/login/cache management, and listing abilities or resources. Tools use the compliance_theater_utils_ prefix.",
-			"server_description": "Compliance Theater utility tools. Tool search names include compliance_theater_utils_call_api, compliance_theater_utils_list, and compliance_theater_utils_auth.",
-			
+			"server_description": "Compliance Theater utility tools. Available tools include compliance_theater_utils_call_api, compliance_theater_utils_list, and compliance_theater_utils_auth.",
+			"defer_load": false,
 			"command": "node",
 			"args": [
 				"./scripts/entrypoint.js"
@@ -92,9 +92,9 @@
 		},
 		"compliance_theater_todo": {
 			"description": "Compliance Theater todo tools for creating, reading, updating, and advancing compliance-oriented task lists. Tools use the compliance_theater_todo_ prefix.",
-			"server_description": "Compliance Theater todo tools. Tool search names include compliance_theater_todo_insert, compliance_theater_todo_get, compliance_theater_todo_update, and compliance_theater_todo_toggle.",
-			
+			"server_description": "Compliance Theater todo tools. Available tools include compliance_theater_todo_insert, compliance_theater_todo_get, compliance_theater_todo_update, and compliance_theater_todo_toggle.",			
 			"command": "node",
+			"defer_load": false,
 			"args": [
 				"./scripts/entrypoint.js"
 			],
@@ -122,8 +122,8 @@
 		},
 		"compliance_theater_case_workspace": {
 			"description": "Compliance Theater case workspace tools for summaries, workspace files, tasks, document summaries, open questions, session logs, and compaction. Tools use the compliance_theater_case_workspace_ prefix.",
-			"server_description": "Compliance Theater case workspace tools. Tool search names include compliance_theater_case_workspace_get, compliance_theater_case_workspace_read, compliance_theater_case_workspace_append_task, compliance_theater_case_workspace_update_status, compliance_theater_case_workspace_upsert, and compliance_theater_case_workspace_compact.",
-			
+			"server_description": "Compliance Theater case workspace tools. Available tools include compliance_theater_case_workspace_get, compliance_theater_case_workspace_read, compliance_theater_case_workspace_append_task, compliance_theater_case_workspace_update_status, compliance_theater_case_workspace_upsert, and compliance_theater_case_workspace_compact.",
+			"defer_load": false,
 			"command": "node",
 			"args": [
 				"./scripts/entrypoint.js"
@@ -152,7 +152,7 @@
 		},
 		"compliance_theater_search": {
 			"description": "Compliance Theater search tools for policy search, case-file evidence search, case-file document indexes, embeddings, and Neo4j graph queries. Tools use the compliance_theater_search_ prefix.",
-			"server_description": "Compliance Theater search tools. Tool search names include compliance_theater_search_policy, compliance_theater_search_case_file, compliance_theater_search_index, compliance_theater_search_embed, compliance_theater_search_graph_schema, compliance_theater_search_graph_read, and compliance_theater_search_graph_write.",
+			"server_description": "Compliance Theater search tools. Available tools include compliance_theater_search_policy, compliance_theater_search_case_file, compliance_theater_search_index, compliance_theater_search_embed, compliance_theater_search_graph_schema, compliance_theater_search_graph_read, and compliance_theater_search_graph_write.",
 			
 			"command": "node",
 			"args": [
@@ -187,8 +187,8 @@
 		},
 		"compliance_theater_case_files": {
 			"description": "Compliance Theater case-file tools for direct full-fidelity reads, goal-based case-file retrieval, and amendments to structured case-file document details. Tools use the compliance_theater_case_files_ prefix.",
-			"server_description": "Compliance Theater case-file tools. Tool search names include compliance_theater_case_files_get for direct caseFileId reads and goals-mode retrieval, plus compliance_theater_case_files_amend for case-file amendments.",
-			
+			"server_description": "Compliance Theater case-file tools. Available tools include compliance_theater_case_files_get for direct caseFileId reads and goals-mode retrieval, plus compliance_theater_case_files_amend for case-file amendments.",
+			"defer_load": false,
 			"command": "node",
 			"args": [
 				"./scripts/entrypoint.js"
