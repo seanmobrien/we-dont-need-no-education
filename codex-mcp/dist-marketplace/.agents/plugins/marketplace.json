@@ -5,10 +5,10 @@
   },
   "plugins": [
     {
-      "name": "compliance-theater-2000",
+      "name": "compliance_theater_2000",
       "source": {
         "source": "local",
-        "path": "./plugins/compliance-theater-2000"
+        "path": "./plugins/compliance_theater_2000"
       },
       "policy": {
         "installation": "AVAILABLE",

@@ -12,16 +12,24 @@ Codex plugin for MCP authentication and resource access.
 
 ## Build, Test, and Publish
 
-From the monorepo root:
+`codex-mcp` is an independent Yarn project nested inside the repository. Install and run package commands from this directory so dependencies are installed into `codex-mcp/node_modules`:
 
 ```sh
-yarn turbo run build --filter=@compliance-theater/codex-mcp
-yarn turbo run test --filter=@compliance-theater/codex-mcp
-yarn turbo run lint --filter=@compliance-theater/codex-mcp
-yarn turbo run build:publish --filter=@compliance-theater/codex-mcp
+cd codex-mcp
+yarn install
+yarn build
+yarn test
+yarn lint
 ```
 
-This will build the plugin, run unit tests, lint, and copy all distributable files to `publish/` for standalone use.
+From the repository root, use the codex-specific wrapper scripts:
+
+```sh
+yarn build:codex-publish
+yarn codex:deploy --copy
+```
+
+The deploy script installs `codex-mcp` locally, builds it, and copies `codex-mcp/node_modules` into the deployed plugin output.
 
 ## Standalone Usage
 
@@ -41,9 +49,9 @@ You can use this repository folder as the plugin source directly, or copy the co
 
 Add an entry in your local marketplace JSON (for example, under your user-level Codex plugins marketplace file) that points to this repo path:
 
-```
+```json
 {
-  "name": "compliance-theater-2000",
+  "name": "compliance_theater_2000",
   "source": {
     "source": "local",
     "path": "/absolute/path/to/we-dont-need-no-education/codex-mcp"
@@ -152,15 +160,20 @@ The wrapper defaults to these values when the corresponding environment variable
 | `MCP_COMPLIANCE_THEATER_RESOURCE_ACCESS_TOKEN` | — | Pre-existing bearer token; skips token acquisition if set. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_REFRESH_TOKEN` | — | Refresh token used before falling back to interactive flows. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_AUTH_METADATA_URL` | — | Override for the OAuth metadata discovery URL (RFC 8414). |
-| `MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH` | `~/.codex/compliance-theater/token.json` | Path for the on-disk token cache. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_TOKEN_CACHE_PATH` | `~/.codex/compliance_theater/compliance_theater_token_cache.json` | Path for the on-disk token cache. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_DISABLE_TOKEN_CACHE` | — | Set to `1` to disable on-disk token caching. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_TIMEOUT_MS` | `360000` | Timeout in ms for upstream HTTP requests. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_COUNT` | `2` | Number of retries for failed HTTP requests. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_RETRY_BASE_MS` | `500` | Base delay in ms for exponential backoff retries. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_CONNECTIONS` | `16` | Maximum Undici pooled HTTP connections per origin for wrapper fetch calls. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_PIPELINING` | `1` | Undici HTTP/1.1 pipelining depth for pooled wrapper fetch calls. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_HTTP_KEEPALIVE_TIMEOUT_MS` | `10000` | Undici keep-alive timeout in ms for pooled wrapper fetch calls. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_PROXY_REQUEST_TIMEOUT_MS` | `360000` | Timeout in ms for proxied MCP requests (case-file and policy calls can be long-running). |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_EMBEDDING_CACHE_MAX_ENTRIES` | `256` | Maximum process-local query embedding cache entries. |
+| `MCP_COMPLIANCE_THEATER_RESOURCE_EMBEDDING_CACHE_TTL_MS` | `600000` | TTL in ms for process-local query embedding cache entries. |
 | `MCP_COMPLIANCE_THEATER_RESOURCE_DEVICE_CODE_TIMEOUT_SECONDS` | `900` | Timeout in seconds for the device-authorization flow. |
-| `MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE` | `~/.codex/compliance-theater/compliance-theater-wrapper.log` | Wrapper diagnostics log path. Declared as a UI setting. |
-| `MCP_COMPLIANCE_THEATER_NEO4J_URI` | — | Neo4j URI for graph tools. Declared as a plugin setting. |compliance-theater
+| `MCP_COMPLIANCE_THEATER_RESOURCE_LOG_FILE` | `~/.codex/compliance_theater/compliance_theater_wrapper.log` | Wrapper diagnostics log path. Declared as a UI setting. |
+| `MCP_COMPLIANCE_THEATER_NEO4J_URI` | — | Neo4j URI for graph tools. Declared as a plugin setting. |
 | `MCP_COMPLIANCE_THEATER_NEO4J_USERNAME` | — | Neo4j username for graph tools. Declared as a plugin setting. |
 | `MCP_COMPLIANCE_THEATER_NEO4J_PASSWORD` | — | Neo4j password for graph tools. Declared as a secure plugin setting. |
 | `MCP_COMPLIANCE_THEATER_NEO4J_DATABASE` | — | Neo4j database for graph tools. Declared as a plugin setting. |
@@ -185,21 +198,21 @@ Use Compliance Theater before PST search, Gmail search, or local index search wh
 
 When reporting results, cite the tool name and important document IDs, case-file IDs, or workspace IDs used.
 
-## Tool Search And Namespaces
+## Namespaces
 
-The MCP config splits the tool surface into small namespace servers. Each server entry includes `defer_loading: true` plus a high-level description so OpenAI `tool_search` can discover only the relevant Compliance Theater namespace at runtime.
+The MCP config splits the tool surface into small namespace servers. Namespace entries are loaded directly instead of relying on deferred OpenAI `tool_search` discovery, so callers can inspect the available Compliance Theater tools without a separate discovery step.
 
-OpenAI Responses API callers should include `{ "type": "tool_search" }` in the request `tools` array when using deferred namespace discovery. The model can then choose, for example, `compliance-theater-search` for evidence discovery, `compliance-theater-case-files` for document reads/amendments, or `compliance-theater-case-workspace` for workspace state before individual tool schemas are loaded.
+For example, `compliance_theater_search` handles evidence discovery, `compliance_theater_case_files` handles document reads/amendments, and `compliance_theater_case_workspace` handles workspace state.
 
 ## Namespace Servers
 
-### `compliance-theater`
+### `compliance_theater`
 
 General compliance planning support.
 
 - `sequentialthinking`: structured planning for complex compliance analysis.
 
-### `compliance-theater-search`
+### `compliance_theater_search`
 
 Search, index, embedding, and graph tools for policy sources, case-file evidence, and Neo4j relationship traversal.
 
@@ -213,7 +226,7 @@ Search, index, embedding, and graph tools for policy sources, case-file evidence
 
 Graph tools are backed by a plugin-hosted Neo4j stdio MCP child server. Before launching it, the wrapper optionally discovers concrete graph credentials once per session with `GET /api/memory/config?secrets=true`; usable discovered credentials are cached under the wrapper cache directory until the session token expires. If discovery is disabled, fails, or returns `env:` placeholders, the wrapper falls back to explicit Neo4j plugin settings. The wrapper first tries `python -m neo4j_mcp_server`; if that cannot initialize, it falls back to `uvx neo4j-mcp-server`. It translates resolved settings into the child process's `NEO4J_*` environment and internally sets `NEO4J_READ_ONLY=false` and `NEO4J_TELEMETRY=false`.
 
-### `compliance-theater-case-files`
+### `compliance_theater_case_files`
 
 Case-file document retrieval and amendment tools.
 
@@ -225,7 +238,7 @@ Case-file document retrieval and amendment tools.
 - `mode: "direct"` returns full-fidelity, unsummarized reads for up to three case-file IDs. Pass `caseFileId` for one ID or `ids` for multiple IDs.
 - `mode: "goals"` supports larger batches or task-specific extraction/synthesis. Provide `requests` for per-document goals, shared `goals` for common processing, and `verbatim_fidelity` when source-near output matters.
 
-### `compliance-theater-case-workspace`
+### `compliance_theater_case_workspace`
 
 Case workspace state, task, question, document-summary, and session-log tools.
 
@@ -240,7 +253,7 @@ Case workspace state, task, question, document-summary, and session-log tools.
 - `log`: add a session-log entry.
 - `compact`: compact metadata and regenerate workspace projections.
 
-### `compliance-theater-memory`
+### `compliance_theater_memory`
 
 Persistent memory tools for prior context, learned facts, categories, and related memory lookups.
 
@@ -252,7 +265,7 @@ Persistent memory tools for prior context, learned facts, categories, and relate
 - `search`: search memories.
 - `related`: retrieve memories related to a memory ID.
 
-### `compliance-theater-todo`
+### `compliance_theater_todo`
 
 Compliance-oriented todo list and task workflow tools.
 
@@ -261,7 +274,7 @@ Compliance-oriented todo list and task workflow tools.
 - `update`: update a todo item.
 - `toggle`: advance a todo through its completion workflow.
 
-### `compliance-theater-utils`
+### `compliance_theater_utils`
 
 Authenticated utility tools for API escape hatches, resource inspection, and auth/session operations.
 
@@ -282,7 +295,7 @@ Never print tokens, client secrets, cookies, or raw credential values.
 `src/scripts/runtime-utils.ts` provides the shared mechanics used by the wrapper. The build emits `dist/scripts/runtime-utils.js` for the deployed wrapper:
 
 - token expiry calculation and skew-aware cache reuse
-- secure token cache writes under `~/.codex/compliance-theater/` by default
+- secure token cache writes under `~/.codex/compliance_theater/` by default
 - retry and exponential backoff for HTTP requests
 - warnings for insecure non-loopback HTTP URLs
 - SSE connection setup using `Authorization: Bearer ...`
@@ -298,7 +311,7 @@ The skill emphasizes:
 
 - supporting education compliance investigations, policy grounding, evidence review, and case workspace management
 - routing case-file, case-document, policy-basis, key-point, call-to-action, responsive-action, and case-note tasks to the appropriate namespace
-- using OpenAI tool search to discover the narrowest matching deferred namespace when available
+- choosing the narrowest matching namespace from the directly loaded Compliance Theater toolspace
 - treating authentication as inline tool behavior, with `auth` reserved for status checks and troubleshooting
 - avoiding printing secrets
 - allowing long-running case-file and policy calls to complete under the 360 second default timeout

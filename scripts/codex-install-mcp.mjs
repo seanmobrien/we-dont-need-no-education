@@ -15,9 +15,9 @@ const pluginDistPath = resolve(pluginPackageRoot, 'dist');
 const defaultMarketplacePath = resolve(homedir(), '.codex', 'plugins', 'marketplace.json');
 const agentsMarketplacePath = resolve(homedir(), '.agents', 'plugins', 'marketplace.json');
 
-const DEFAULT_MARKETPLACE_NAME = 'local-codex-plugins';
-const DEFAULT_MARKETPLACE_DISPLAY_NAME = 'Local Codex Plugins';
-const PLUGIN_ENTRY_NAME = 'compliance-theater-2000';
+const DEFAULT_MARKETPLACE_NAME = 'compliance-theater-marketplace';
+const DEFAULT_MARKETPLACE_DISPLAY_NAME = 'Compliance Theater Marketplace';
+const PLUGIN_ENTRY_NAME = 'compliance_theater_2000';
 
 // ANSI color codes
 const colors = {
