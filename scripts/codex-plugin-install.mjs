@@ -12,9 +12,11 @@ const repoRoot = resolve(scriptDir, '..');
 const codexPackageName = '@compliance-theater/codex-mcp';
 const codexPackageRoot = resolve(repoRoot, 'codex-mcp');
 const pluginManifestPath = resolve(codexPackageRoot, 'src', '.codex-plugin', 'plugin.json');
+const sourceNodeModulesDir = resolve(codexPackageRoot, 'node_modules');
 const sourceMarketplaceDir = resolve(codexPackageRoot, 'dist-marketplace');
 const sourceCachedPluginDir = resolve(sourceMarketplaceDir, 'plugins', 'compliance_theater_2000');
 const targetMarketplaceDir = resolve(homedir(), '.codex', 'plugins', 'compliance-theater-marketplace');
+const targetMarketplacePluginDir = resolve(targetMarketplaceDir, 'plugins', 'compliance_theater_2000');
 const cachedPluginRootDir = resolve(
   homedir(),
   '.codex',
@@ -73,6 +75,13 @@ const ensureReadable = async (path) => {
   await access(path, fsConstants.R_OK);
 };
 
+const copyNodeModules = async (targetPluginDir) => {
+  const targetNodeModulesDir = resolve(targetPluginDir, 'node_modules');
+  console.log(`Copying ${sourceNodeModulesDir} to ${targetNodeModulesDir}...`);
+  await rm(targetNodeModulesDir, { recursive: true, force: true });
+  await cp(sourceNodeModulesDir, targetNodeModulesDir, { recursive: true });
+};
+
 const readPluginVersion = async () => {
   const manifestText = await readFile(pluginManifestPath, 'utf8');
   const manifest = JSON.parse(manifestText);
@@ -93,8 +102,12 @@ const main = async () => {
     return;
   }
 
+  console.log(`Installing ${codexPackageName} dependencies...`);
+  await run('yarn', ['install'], codexPackageRoot);
+  await ensureReadable(sourceNodeModulesDir);
+
   console.log(`Building ${codexPackageName}...`);
-  await run('yarn', ['workspace', codexPackageName, 'build'], repoRoot);
+  await run('yarn', ['build'], codexPackageRoot);
 
   console.log(`Verifying build output at ${sourceMarketplaceDir}...`);
   await ensureReadable(sourceMarketplaceDir);
@@ -108,6 +121,7 @@ const main = async () => {
   console.log(`Copying ${sourceMarketplaceDir} to ${targetMarketplaceDir}...`);
   await mkdir(dirname(targetMarketplaceDir), { recursive: true });
   await cp(sourceMarketplaceDir, targetMarketplaceDir, { recursive: true });
+  await copyNodeModules(targetMarketplacePluginDir);
 
   console.log(`Removing cached plugin versions at ${cachedPluginRootDir}...`);
   await rm(cachedPluginRootDir, { recursive: true, force: true });
@@ -119,6 +133,7 @@ const main = async () => {
     console.log(`Copying ${sourceCachedPluginDir} to ${cachedPluginVersionDir}...`);
     await mkdir(dirname(cachedPluginVersionDir), { recursive: true });
     await cp(sourceCachedPluginDir, cachedPluginVersionDir, { recursive: true });
+    await copyNodeModules(cachedPluginVersionDir);
   }
 
   console.log('Codex plugin deploy complete.');

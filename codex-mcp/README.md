@@ -12,16 +12,24 @@ Codex plugin for MCP authentication and resource access.
 
 ## Build, Test, and Publish
 
-From the monorepo root:
+`codex-mcp` is an independent Yarn project nested inside the repository. Install and run package commands from this directory so dependencies are installed into `codex-mcp/node_modules`:
 
 ```sh
-yarn turbo run build --filter=@compliance-theater/codex-mcp
-yarn turbo run test --filter=@compliance-theater/codex-mcp
-yarn turbo run lint --filter=@compliance-theater/codex-mcp
-yarn turbo run build:publish --filter=@compliance-theater/codex-mcp
+cd codex-mcp
+yarn install
+yarn build
+yarn test
+yarn lint
 ```
 
-This will build the plugin, run unit tests, lint, and copy all distributable files to `publish/` for standalone use.
+From the repository root, use the codex-specific wrapper scripts:
+
+```sh
+yarn build:codex-publish
+yarn codex:deploy --copy
+```
+
+The deploy script installs `codex-mcp` locally, builds it, and copies `codex-mcp/node_modules` into the deployed plugin output.
 
 ## Standalone Usage
 
