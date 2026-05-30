@@ -1,0 +1,4 @@
+interface:
+  display_name: "Compliance Theater Workspace"
+  short_description: "Use the local evidence workspace rules."
+  default_prompt: "Use the Compliance Theater workspace rules to add, update, retire, or navigate case theories, indexes, evidence, complaints, or report outputs."

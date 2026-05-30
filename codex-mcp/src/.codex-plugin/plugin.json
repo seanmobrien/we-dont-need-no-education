@@ -1,6 +1,6 @@
 {
   "name": "compliance_theater_2000",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Rich education compliance analysis support for Codex, including authenticated MCP access to policy, evidence, and compliance workflows.",
   "author": {
     "name": "Compliance Theater",

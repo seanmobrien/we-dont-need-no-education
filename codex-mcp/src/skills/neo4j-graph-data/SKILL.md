@@ -1,22 +1,151 @@
 ---
 name: neo4j-graph-data
-description: Use the Compliance Theater Neo4j graph for case-file, policy, evidence, case-theory anchors, email-thread, actor, attachment, subject-matter, embedding, and relationship traversal questions. Trigger when a user asks what graph data exists, how to query Neo4j, how case-file documents connect to policy or people, how to query a named theory such as improper records supporting correction denial, how to traverse evidence relationships, or how to use graph_read, graph_schema, graph_embed, or Cypher against Compliance Theater data.
+description: Use the Compliance Theater Neo4j graph for case-file, policy, evidence, correction workspace overlays, complaint/correction drafting state, case-theory anchors, email-thread, actor, attachment, subject-matter, embedding, and relationship traversal questions. Trigger when a user asks what graph data exists, how to query Neo4j, how to migrate or persist correction workspace state, how case-file documents connect to policy or people, how to query a named theory such as improper records supporting correction denial, how to traverse evidence relationships, or how to use graph_read, graph_schema, graph_write, graph_embed, or Cypher against Compliance Theater data.
 ---
 
 # Neo4j Graph Data
 
-Use this skill to reason over the Compliance Theater Neo4j graph: case-file documents, document properties, case-theory anchors, email context, actors, policy references, subject-matter concepts, embeddings, and graph-maintenance runs.
+Use this skill to reason over the Compliance Theater Neo4j graph: case-file documents, document properties, correction workspace overlays, case-theory anchors, email context, actors, policy references, subject-matter concepts, embeddings, and graph-maintenance runs.
 
 ## Workflow
 
 1. Prefer `compliance_theater_search.graph_schema` before writing nontrivial Cypher. Use the schema snapshot in [schema.md](references/schema.md) as the working model when the live schema tool is unavailable.
-2. Use `compliance_theater_search.graph_read` for exploration and analysis. Keep queries read-only unless the user explicitly asks to create, update, embed, or reconcile graph data.
+2. Use `compliance_theater_search.graph_read` for exploration and analysis. Use `compliance_theater_search.graph_write` when the user explicitly asks to create, update, embed, reconcile, migrate, or persist graph data, including durable correction-request or complaint drafting overlays.
 3. Use snake_case labels, relationship types, and properties. The canonical case-file document ID is `case_file` on `case_file_document`.
 4. For source text, retrieve exact documents through `compliance_theater_case_files.get` or `read_case_file` when quote fidelity matters. Graph nodes are excellent for discovery and traversal, but case-file retrieval remains the source-of-truth read path.
 5. For email-thread status, prefer the thread rollup pointers (`initial_email`, `last_email`, `latest_inbound_email`, `latest_outbound_email`) when the user needs first/last/current state; reconstruct the full thread with `in_thread` when sequence or full context matters.
 6. When the user asks to query a named theory, normalize the phrase into the corresponding `case_theory.theory_key` and use the case-theory anchor query pattern below.
 7. For vector work, use `vectorParams` or inline `{ "$embed": "...", "modelSize": "small" }` parameters rather than pasting vectors. Default to `small` for the 1536-dimension `text-embedding-3-small` graph embeddings.
 8. Cite graph tool use and important IDs in the answer: case-file IDs, theory keys, policy keys, actor names, thread IDs, or relationship types.
+
+## Correction Workspace Overlays
+
+Use a quarantined workspace overlay when migrating correction workspaces or preserving draft correction-request/complaint state. The overlay keeps draft theories, evidence use, caveats, tasks, and proposed cures queryable without promoting them into established facts.
+
+Preserve three layers:
+
+1. Source evidence layer: existing emails, attachments, policies, case files, source notes, graph key points, and source documents.
+2. Workspace overlay layer: draft correction points, target statements, evidence-use rows, proposed cures, caveats, research tasks, exhibit candidates, and case-theory cross-links.
+3. Established finding layer: facts or findings explicitly promoted after review.
+
+Core rule: do not merge draft correction conclusions into established evidence, violation, or final-finding nodes. Draft overlay nodes may point to source evidence; they must not claim that the source proves, establishes, or violates anything by relationship name.
+
+Use these overlay labels:
+
+- `CorrectionWorkspace`
+- `CorrectionPointDraft`
+- `TargetStatementDraft`
+- `EvidenceUseDraft`
+- `ProposedCureDraft`
+- `ResearchTaskDraft`
+- `CaveatDraft`
+- `ExhibitCandidateDraft`
+- `CaseTheoryDraft`
+
+Every overlay node and overlay relationship should carry:
+
+- `workspace_key`
+- `assertion_status`
+- `source_path` when derived from a local file
+- `created_from`
+- `updated_at` on nodes
+
+Typical `assertion_status` values are `draft`, `candidate`, `enriched`, `correction_ready_with_caveat`, `research_required`, `dropped`, and `promoted`. For evidence-use nodes, `draft_evidence_use` is acceptable. For source-reference relationships, use `draft_reference`.
+
+Use these overlay relationship types:
+
+- `HAS_CORRECTION_POINT_DRAFT`
+- `TARGETS_STATEMENT_DRAFT`
+- `USES_EVIDENCE_DRAFT`
+- `REFERENCES_SOURCE`
+- `HAS_CAVEAT_DRAFT`
+- `HAS_PROPOSED_CURE_DRAFT`
+- `NEEDS_RESEARCH_DRAFT`
+- `CROSS_LINKS_CORRECTION_DRAFT`
+- `HAS_EXHIBIT_CANDIDATE_DRAFT`
+
+Do not create `Violation`, `EstablishedFinding`, `PROVES`, `ESTABLISHES`, or `VIOLATES` during overlay migration or ordinary correction drafting.
+
+Minimum `CorrectionPointDraft` properties:
+
+- `correction_id`
+- `folder`
+- `target_area`
+- `short_description`
+- `status`
+- `priority`
+- `correction_warrant_score`
+- `evidence_posture`
+- `proposed_correction_theory`
+- `source_path`
+- `workspace_key`
+- `assertion_status`
+- `created_from`
+- `updated_at`
+
+Minimum `EvidenceUseDraft` properties:
+
+- `evidence_use_id`
+- `correction_id`
+- `evidence_rank`
+- `discovery_method`
+- `neo4j_case_file_id`
+- `neo4j_node_labels`
+- `neo4j_score`
+- `email_id`
+- `thread_id`
+- `sender`
+- `date`
+- `subject`
+- `source_file`
+- `source_line_or_locator`
+- `quoted_or_paraphrased_statement`
+- `evidence_description`
+- `why_it_supports_correction`
+- `followup_needed`
+- `workspace_key`
+- `assertion_status`
+
+Link evidence-use nodes to existing source evidence only by reference:
+
+```cypher
+MATCH (p:CorrectionPointDraft {workspace_key: $workspaceKey, correction_id: $correctionId})
+MERGE (eu:EvidenceUseDraft {workspace_key: $workspaceKey, evidence_use_id: $evidenceUseId})
+SET eu += $properties,
+    eu.updated_at = datetime()
+MERGE (p)-[:USES_EVIDENCE_DRAFT {
+  workspace_key: $workspaceKey,
+  assertion_status: 'draft'
+}]->(eu)
+WITH eu
+MATCH (src:case_file_document {case_file: $caseFile})
+MERGE (eu)-[:REFERENCES_SOURCE {
+  workspace_key: $workspaceKey,
+  assertion_status: 'draft_reference'
+}]->(src)
+```
+
+If no graph source node exists, store the local path and locator on the `EvidenceUseDraft` node and set `source_resolution_status` to `local_only_pending_graph_link` or `graph_case_file_not_found`.
+
+Analytical queries over the main graph should exclude draft overlays unless the user asks for them:
+
+```cypher
+MATCH (n)
+WHERE coalesce(n.workspace_key, '') = ''
+   OR coalesce(n.assertion_status, '') IN ['promoted', 'established']
+RETURN n
+```
+
+Workspace-specific queries should opt in by `workspace_key`:
+
+```cypher
+MATCH (w:CorrectionWorkspace {workspace_key: $workspaceKey})
+MATCH (w)-[:HAS_CORRECTION_POINT_DRAFT]->(p)
+RETURN p.correction_id, p.status, p.correction_warrant_score, p.assertion_status
+ORDER BY p.correction_id
+```
+
+Promotion requires a separate promotion pass. Only promote when primary source evidence is linked, caveats are resolved or explicitly retained, the draft point is marked ready for promotion review, and the promotion note identifies the exact claim promoted, source records used, caveats retained, and claims not promoted. Promotion updates the draft node; it does not delete it.
 
 ## Common Queries
 
