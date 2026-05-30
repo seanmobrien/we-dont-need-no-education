@@ -1137,11 +1137,14 @@ function helperToolIsCallable(name) {
     const localName = unprefixedToolName(name);
     return Boolean(localName && exposedHelperToolsForToolset().some((tool) => tool.name === localName));
 }
-async function listResources() {
+async function listResources(includeRemote = true) {
     if ((0, config_1.configuredToolset)() !== "default" && (0, config_1.configuredToolset)() !== "all") {
         return collectPaginated("resources/list", "resources");
     }
     const localResources = await (0, local_file_resources_1.listLocalFileResources)();
+    if (!includeRemote) {
+        return localResources;
+    }
     const remoteResources = await collectPaginated("resources/list", "resources").catch((error) => {
         (0, config_1.log)("remote resources/list failed while listing local file resources", { message: (0, errors_1.asError)(error).message });
         return [];
@@ -1366,7 +1369,7 @@ async function handleClientRequest(message) {
         return;
     }
     if (message.method === "resources/list") {
-        sendToClient({ jsonrpc: "2.0", id: message.id, result: { resources: await listResources() } });
+        sendToClient({ jsonrpc: "2.0", id: message.id, result: { resources: await listResources(false) } });
         return;
     }
     if (message.method === "resources/read" && ((0, config_1.configuredToolset)() === "default" || (0, config_1.configuredToolset)() === "all")) {

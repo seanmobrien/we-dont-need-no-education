@@ -1259,11 +1259,14 @@ function helperToolIsCallable(name: string | undefined): boolean {
   return Boolean(localName && exposedHelperToolsForToolset().some((tool) => tool.name === localName));
 }
 
-async function listResources(): Promise<AnyRecord[]> {
+async function listResources(includeRemote = true): Promise<AnyRecord[]> {
   if (configuredToolset() !== "default" && configuredToolset() !== "all") {
     return collectPaginated("resources/list", "resources");
   }
   const localResources = await listLocalFileResources();
+  if (!includeRemote) {
+    return localResources;
+  }
   const remoteResources = await collectPaginated("resources/list", "resources").catch((error) => {
     log("remote resources/list failed while listing local file resources", { message: asError(error).message });
     return [];
@@ -1506,7 +1509,7 @@ async function handleClientRequest(message: JsonRpcMessage): Promise<void> {
   }
 
   if (message.method === "resources/list") {
-    sendToClient({ jsonrpc: "2.0", id: message.id, result: { resources: await listResources() } });
+    sendToClient({ jsonrpc: "2.0", id: message.id, result: { resources: await listResources(false) } });
     return;
   }
 
