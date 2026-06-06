@@ -12,6 +12,7 @@ describe('@compliance-theater/auth-compat peer safety', () => {
   afterEach(() => {
     jest.resetModules();
     unmockIfResolvable('next-auth');
+    unmockIfResolvable('next-auth/providers/keycloak');
     unmockIfResolvable('@auth/core');
     unmockIfResolvable('@auth/drizzle-adapter');
   });
@@ -46,6 +47,39 @@ describe('@compliance-theater/auth-compat peer safety', () => {
     expect(() => runtime.createNextAuth({})).toThrow(
       runtime.MissingNextAuthPeerError,
     );
+  });
+
+  it('initialises NextAuth when the peer exposes a callable module export', async () => {
+    const result = { handlers: {}, auth: jest.fn() };
+    const nextAuth = jest.fn(() => result);
+    jest.doMock('next-auth', () => nextAuth, { virtual: true });
+
+    const runtime = await import('../src/runtime');
+
+    expect(runtime.createNextAuth({})).toBe(result);
+    expect(nextAuth).toHaveBeenCalledWith({});
+  });
+
+  it('initialises NextAuth when the peer exposes a nested default export', async () => {
+    const result = { handlers: {}, auth: jest.fn() };
+    const nextAuth = jest.fn(() => result);
+    jest.doMock('next-auth', () => ({ default: { default: nextAuth } }), { virtual: true });
+
+    const runtime = await import('../src/runtime');
+
+    expect(runtime.createNextAuth({})).toBe(result);
+    expect(nextAuth).toHaveBeenCalledWith({});
+  });
+
+  it('loads Keycloak when the provider peer exposes a callable module export', async () => {
+    const provider = { id: 'keycloak' };
+    const keycloak = jest.fn(() => provider);
+    jest.doMock('next-auth/providers/keycloak', () => keycloak, { virtual: true });
+
+    const runtime = await import('../src/runtime');
+
+    expect(runtime.createKeycloakProvider({ clientId: 'id' })).toBe(provider);
+    expect(keycloak).toHaveBeenCalledWith({ clientId: 'id' });
   });
 
   it('throws MissingAuthCorePeerError when @auth/core is unavailable', async () => {

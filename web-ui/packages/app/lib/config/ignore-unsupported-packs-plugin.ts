@@ -1,5 +1,25 @@
+import * as path from 'node:path';
 import type { NextConfig } from 'next/types';
 import type { NextConfigPlugin } from './types';
+
+const resolveAppPackage = (request: string): string =>
+  require.resolve(request, { paths: [process.cwd()] });
+
+const resolveAppPackageRoot = (request: string): string =>
+  path.dirname(resolveAppPackage(`${request}/package.json`));
+
+const appProvidedPeerAliases = () => ({
+  '@auth/core$': resolveAppPackage('@auth/core'),
+  '@auth/drizzle-adapter$': resolveAppPackage('@auth/drizzle-adapter'),
+  '@tanstack/react-query$': resolveAppPackage('@tanstack/react-query'),
+  '@tanstack/react-query-devtools$': resolveAppPackage(
+    '@tanstack/react-query-devtools',
+  ),
+  '@tanstack/react-query-devtools/production$': resolveAppPackage(
+    '@tanstack/react-query-devtools/production',
+  ),
+  'next-auth': resolveAppPackageRoot('next-auth'),
+});
 
 export const withIgnorePacks: NextConfigPlugin = <TArg extends NextConfig>(
   nextConfig: TArg,
@@ -64,6 +84,11 @@ export const withIgnorePacks: NextConfigPlugin = <TArg extends NextConfig>(
     ],
     webpack: (webpackConfig, args) => {
       const ret = originalWebpack?.(webpackConfig, args) ?? webpackConfig;
+      webpackConfig.resolve = webpackConfig.resolve ?? {};
+      webpackConfig.resolve.alias = {
+        ...(webpackConfig.resolve.alias ?? {}),
+        ...appProvidedPeerAliases(),
+      };
       const existingIgnoreWarnings = webpackConfig.ignoreWarnings ?? [];
       webpackConfig.ignoreWarnings = [
         ...existingIgnoreWarnings,
