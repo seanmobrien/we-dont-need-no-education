@@ -121,6 +121,7 @@ export const augmentCaseFileResultsWithNeo4jSemantics = async (
   if (!envelope.results.length) {
     return envelope;
   }
+
   const config = getNeo4jConfig();
   if (!config) {
     return envelope;
@@ -133,11 +134,7 @@ export const augmentCaseFileResultsWithNeo4jSemantics = async (
     return envelope;
   }
 
-  const scoreBoosts = await findScoreBoostsFromGraph(
-    documentIds,
-    config,
-    options,
-  );
+  const scoreBoosts = await findScoreBoostsFromGraph(documentIds, config, options);
   const boosted = envelope.results.map((result) => {
     const metadata = (result.metadata ?? {}) as Record<string, unknown>;
     const scoreBoost = scoreBoosts.get(asInteger(result.id) ?? -1) ?? 0;

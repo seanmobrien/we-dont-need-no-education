@@ -6,9 +6,7 @@ import { type IEmbeddingService } from '../embedding';
 import type { HybridSearchOptions, AiSearchResultEnvelope } from './types';
 
 declare module '@/lib/ai/services/search/HybridSearchBase' {
-  export type HybridSearchExecutionContext<
-    TOptions extends HybridSearchOptions,
-  > = {
+  export type HybridSearchExecutionContext<TOptions extends HybridSearchOptions> = {
     naturalQuery: string;
     options: TOptions;
     embeddingVector: number[];
@@ -29,11 +27,9 @@ declare module '@/lib/ai/services/search/HybridSearchBase' {
     );
 
     protected normalizeOptions(options: TOptions): TOptions;
-
     protected abstract retrieveCandidates(
       context: HybridSearchExecutionContext<TOptions>,
     ): Promise<AiSearchResultEnvelope>;
-
     protected augmentCandidates(
       context: HybridSearchExecutionContext<TOptions> & {
         envelope: AiSearchResultEnvelope;
