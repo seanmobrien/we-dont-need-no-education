@@ -223,6 +223,29 @@ describe('Hybrid search provider routing', () => {
     expect(neo4jDriverMock).toHaveBeenCalledTimes(1);
     expect(neo4jRunMock).toHaveBeenCalledTimes(1);
   });
+
+  test('skips neo4j augmentation when neo4j config is missing', async () => {
+    mockFlagProviders({ retrieval: 'azure', graph: 'neo4j' });
+    const embeddingService = makeEmbeddingService();
+    fetchMock.mockResolvedValue({
+      json: async () => ({
+        value: [
+          {
+            id: '1',
+            content: 'first',
+            '@search.score': 0.8,
+          },
+        ],
+      }),
+      headers: { get: () => null },
+    });
+
+    const client = hybridDocumentSearchFactory({ embeddingService });
+    const result = await client.hybridSearch('query');
+
+    expect(neo4jDriverMock).not.toHaveBeenCalled();
+    expect(result.results[0].metadata?.graph_augmentation_provider).toBeUndefined();
+  });
 });
 
 describe('HybridPolicySearch remains Azure-backed', () => {

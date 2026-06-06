@@ -55,10 +55,15 @@ const getNeo4jConfig = ():
 
 const findScoreBoostsFromGraph = async (
   documentIds: number[],
+  config: {
+    uri: string;
+    username: string;
+    password: string;
+    database: string;
+  },
   options?: CaseFileSearchOptions,
 ): Promise<Map<number, number>> => {
-  const config = getNeo4jConfig();
-  if (!config || documentIds.length === 0) {
+  if (documentIds.length === 0) {
     return new Map();
   }
 
@@ -120,8 +125,16 @@ export const augmentCaseFileResultsWithNeo4jSemantics = async (
   const documentIds = envelope.results
     .map((result) => asInteger(result.id))
     .filter((value): value is number => value != null);
+  if (documentIds.length === 0) {
+    return envelope;
+  }
 
-  const scoreBoosts = await findScoreBoostsFromGraph(documentIds, options);
+  const config = getNeo4jConfig();
+  if (!config) {
+    return envelope;
+  }
+
+  const scoreBoosts = await findScoreBoostsFromGraph(documentIds, config, options);
   const boosted = envelope.results.map((result) => {
     const metadata = (result.metadata ?? {}) as Record<string, unknown>;
     const scoreBoost = scoreBoosts.get(asInteger(result.id) ?? -1) ?? 0;

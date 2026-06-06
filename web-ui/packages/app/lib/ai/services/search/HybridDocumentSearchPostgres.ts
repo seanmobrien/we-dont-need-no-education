@@ -1,5 +1,6 @@
 import { pgDbWithInit } from '@compliance-theater/database/driver';
 import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file/index';
+import { log } from '@compliance-theater/logger';
 import { getEmbeddingModelNameForSize } from '@/lib/api/document-unit/embeddings';
 import { CaseFileSearchOptions } from '../../tools/types';
 import {
@@ -127,6 +128,13 @@ export class HybridDocumentSearchPostgres extends HybridSearchClient<CaseFileSea
       .map((id) => Number(id))
       .filter((id): id is number => Number.isSafeInteger(id))
       .map((id) => Math.trunc(id));
+    if (accessibleUserIds.length === 0) {
+      log((l) =>
+        l.warn('No accessible user IDs for PostgreSQL case-file search request', {
+          source: 'HybridDocumentSearchPostgres.retrieveCandidates',
+        }),
+      );
+    }
     const whereAccessibleCaseFiles =
       accessibleUserIds.length > 0
         ? sql`du.user_id IN ${sql(`(${accessibleUserIds.join(',')})`)}`

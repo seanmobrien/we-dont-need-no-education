@@ -77,7 +77,7 @@ export class HybridDocumentSearch extends HybridAzureSearchClient<CaseFileSearch
   }
 }
 
-class RoutedHybridDocumentSearch {
+export class RoutedHybridDocumentSearch {
   readonly #azureClient: HybridDocumentSearch;
   readonly #postgresClient: HybridDocumentSearchPostgres;
 

@@ -6,6 +6,7 @@ import { CaseFileSearchOptions } from '../../tools/types';
 import { HybridSearchClient } from './HybridSearchBase';
 import { HybridSearchPayload } from './types';
 import { IEmbeddingService } from '../embedding';
+import { AiSearchResultEnvelope } from './types';
 
 declare module '@/lib/ai/services/search/HybridDocumentSearch' {
   /**
@@ -43,6 +44,14 @@ declare module '@/lib/ai/services/search/HybridDocumentSearch' {
     ): void;
   }
 
+  export class RoutedHybridDocumentSearch {
+    constructor(options?: { embeddingService?: IEmbeddingService });
+    hybridSearch(
+      query: string,
+      options?: CaseFileSearchOptions,
+    ): Promise<AiSearchResultEnvelope>;
+  }
+
   /**
    * Factory helper for creating a {@link HybridDocumentSearch} instance while optionally
    * injecting a custom embedding service (for testing or alternate vector providers).
@@ -51,5 +60,5 @@ declare module '@/lib/ai/services/search/HybridDocumentSearch' {
    */
   export const hybridDocumentSearchFactory: (options?: {
     embeddingService?: IEmbeddingService;
-  }) => HybridDocumentSearch;
+  }) => RoutedHybridDocumentSearch;
 }
