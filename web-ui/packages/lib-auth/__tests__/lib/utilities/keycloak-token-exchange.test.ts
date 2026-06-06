@@ -13,6 +13,9 @@ process.env.NEXTAUTH_SECRET = 'test-nextauth-secret';
 
 // Mock dependencies
 jest.mock('@compliance-theater/auth-compat/runtime');
+jest.mock('@compliance-theater/feature-flags/server', () => ({
+  getFeatureFlag: jest.fn(),
+}));
 jest.mock('../../../src/lib/access-token', () => ({
   getRequestTokens: jest.fn(),
 }));
@@ -23,11 +26,15 @@ import {
 } from '../../../src/lib/utilities/keycloak-token-exchange';
 import { getRequestTokens } from '../../../src/lib/access-token';
 import { getToken } from '@compliance-theater/auth-compat/runtime';
+import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
 import { resolveService } from '@compliance-theater/types/dependency-injection';
 
 const mockedGetToken = getToken as jest.MockedFunction<typeof getToken>;
 const mockedGetRequestTokens = getRequestTokens as jest.MockedFunction<
   typeof getRequestTokens
+>;
+const mockedGetFeatureFlag = getFeatureFlag as jest.MockedFunction<
+  typeof getFeatureFlag
 >;
 
 describe('KeycloakTokenExchange', () => {
@@ -37,7 +44,9 @@ describe('KeycloakTokenExchange', () => {
   beforeEach(() => {
     mockedGetToken.mockReset();
     mockedGetRequestTokens.mockReset();
+    mockedGetFeatureFlag.mockReset();
     mockedGetRequestTokens.mockResolvedValue(undefined);
+    mockedGetFeatureFlag.mockResolvedValue(false);
     typedMockFetch = resolveService('fetch').fetch as jest.MockedFunction<typeof fetch>;
 
     // Mock environment variables
@@ -269,6 +278,45 @@ describe('KeycloakTokenExchange', () => {
 
   describe('getGoogleTokensFromRequest', () => {
     const mockRequest = {} as any;
+
+    beforeEach(() => {
+      mockedGetFeatureFlag.mockResolvedValue(true);
+    });
+
+    it('uses legacy token exchange flow when broker v2 flag is disabled', async () => {
+      mockedGetFeatureFlag.mockResolvedValue(false);
+      mockedGetToken.mockResolvedValue({
+        access_token: 'keycloak-access-token',
+      } as any);
+      typedMockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        text: async () =>
+          JSON.stringify({
+            access_token: 'google-access-token',
+            refresh_token: 'google-refresh-token',
+            token_type: 'Bearer',
+          }),
+      } as unknown as Response);
+
+      const result = await tokenExchange.getGoogleTokensFromRequest(
+        mockRequest,
+        'google'
+      );
+
+      expect(result).toEqual({
+        access_token: 'google-access-token',
+        refresh_token: 'google-refresh-token',
+      });
+      expect(typedMockFetch).toHaveBeenCalledTimes(1);
+      expect(typedMockFetch).toHaveBeenCalledWith(
+        'https://keycloak.example.com/realms/test/protocol/openid-connect/token',
+        expect.objectContaining({
+          method: 'POST',
+        }),
+      );
+    });
 
     it('should prefer broker token retrieval before token exchange', async () => {
       mockedGetToken.mockResolvedValue({

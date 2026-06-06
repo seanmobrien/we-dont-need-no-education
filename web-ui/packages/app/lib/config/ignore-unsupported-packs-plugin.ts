@@ -1,7 +1,10 @@
 import * as path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next/types';
 import type { NextConfigPlugin } from './types';
+
+const require = createRequire(import.meta.url);
 
 const APP_PACKAGE_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
