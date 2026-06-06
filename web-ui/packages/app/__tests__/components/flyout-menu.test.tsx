@@ -3,15 +3,26 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../shared/test-utils';
+import { render as rtlRender, screen, fireEvent, waitFor } from '../shared/test-utils';
 import { FlyoutMenu } from '../../components/flyout-menu';
 import MenuItem from '@mui/material/MenuItem';
+import Menu from '@mui/material/Menu';
 
 describe('FlyoutMenu', () => {
   const defaultProps = {
     label: 'Test Menu',
     isOpen: false,
     onHover: jest.fn(),
+  };
+
+  // Helper to wrap FlyoutMenu in a Menu context for MUI v9 compatibility
+  const render = (ui: React.ReactElement, options?: any) => {
+    return rtlRender(
+      <Menu open={true} anchorEl={document.body}>
+        {ui}
+      </Menu>,
+      options
+    );
   };
 
   beforeEach(() => {
@@ -125,12 +136,11 @@ describe('FlyoutMenu', () => {
 
       // Rerender with isOpen=true
       rerender(
-        <FlyoutMenu {...defaultProps} isOpen={true} dataTestId="hover-menu">
-          <MenuItem data-testid="child-item">Child Item</MenuItem>
-        </FlyoutMenu>,
-        {
-          chatPanel: true,
-        },
+        <Menu open={true} anchorEl={document.body}>
+          <FlyoutMenu {...defaultProps} isOpen={true} dataTestId="hover-menu">
+            <MenuItem data-testid="child-item">Child Item</MenuItem>
+          </FlyoutMenu>
+        </Menu>,
       );
       menuItem = screen.getByTestId('hover-menu');
 
@@ -162,15 +172,17 @@ describe('FlyoutMenu', () => {
       const onHover = jest.fn();
       const parentClickHandler = jest.fn();
 
-      const { container } = render(
+      const { container } = rtlRender(
         <div onClick={parentClickHandler}>
-          <FlyoutMenu
-            {...defaultProps}
-            onHover={onHover}
-            dataTestId="click-menu"
-          >
-            <MenuItem>Child Item</MenuItem>
-          </FlyoutMenu>
+          <Menu open={true} anchorEl={document.body}>
+            <FlyoutMenu
+              {...defaultProps}
+              onHover={onHover}
+              dataTestId="click-menu"
+            >
+              <MenuItem>Child Item</MenuItem>
+            </FlyoutMenu>
+          </Menu>
         </div>,
       );
 
@@ -263,13 +275,15 @@ describe('FlyoutMenu', () => {
       expect(screen.getByText('Original Label')).toBeInTheDocument();
 
       rerender(
-        <FlyoutMenu
-          {...defaultProps}
-          label="Updated Label"
-          dataTestId="prop-menu"
-        >
-          <MenuItem>Child Item</MenuItem>
-        </FlyoutMenu>,
+        <Menu open={true} anchorEl={document.body}>
+          <FlyoutMenu
+            {...defaultProps}
+            label="Updated Label"
+            dataTestId="prop-menu"
+          >
+            <MenuItem>Child Item</MenuItem>
+          </FlyoutMenu>
+        </Menu>,
       );
 
       expect(screen.queryByText('Original Label')).not.toBeInTheDocument();

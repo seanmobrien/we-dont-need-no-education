@@ -99,9 +99,9 @@
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@mui/icons-material": "^7.3.6",
-    "@mui/material": "^7.3.6",
-    "@mui/system": "^7.3.6",
+    "@mui/icons-material": "^9.0.1",
+    "@mui/material": "^9.0.1",
+    "@mui/system": "^9.0.1",
     "@toolpad/core": "^0.15.0",
     "next": "^15.5.12",
     "zod": "3.25.76"

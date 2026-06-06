@@ -6,7 +6,7 @@ exports[`CustomEmailPageItem marks parent as current page when pathname matches 
     class="MuiListItem-root MuiListItem-gutters MuiListItem-padding css-10du2vf-MuiListItem-root"
   >
     <div
-      class="MuiButtonBase-root MuiListItemButton-root MuiListItemButton-gutters MuiListItemButton-root MuiListItemButton-gutters css-1n4h1pr-MuiButtonBase-root-MuiListItemButton-root"
+      class="MuiButtonBase-root MuiListItemButton-root MuiListItemButton-gutters css-1n4h1pr-MuiButtonBase-root-MuiListItemButton-root"
       role="button"
       tabindex="0"
     >
@@ -54,7 +54,7 @@ exports[`CustomEmailPageItem should link to chat history page when item is Chat 
     class="MuiListItem-root MuiListItem-gutters MuiListItem-padding css-10du2vf-MuiListItem-root"
   >
     <div
-      class="MuiButtonBase-root MuiListItemButton-root MuiListItemButton-gutters MuiListItemButton-root MuiListItemButton-gutters css-1n4h1pr-MuiButtonBase-root-MuiListItemButton-root"
+      class="MuiButtonBase-root MuiListItemButton-root MuiListItemButton-gutters css-1n4h1pr-MuiButtonBase-root-MuiListItemButton-root"
       role="button"
       tabindex="0"
     >
