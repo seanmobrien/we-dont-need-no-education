@@ -105,7 +105,7 @@ function appApiEndpointUrl(relativeUrl) {
     }
     const withoutLeadingSlash = trimmed.replace(/^\/+/, "");
     const apiRelative = withoutLeadingSlash.replace(/^api(?:\/|$)/i, "");
-    const server = new URL((0, config_1.required)("SERVER_URL"));
+    const server = new URL((0, config_1.serverUrl)());
     const apiRoot = new URL("/api/", server.origin);
     const target = new URL(apiRelative, apiRoot);
     if (target.origin !== apiRoot.origin || !target.pathname.startsWith("/api/")) {

@@ -30,17 +30,17 @@ Preserve three layers:
 
 Core rule: do not merge draft correction conclusions into established evidence, violation, or final-finding nodes. Draft overlay nodes may point to source evidence; they must not claim that the source proves, establishes, or violates anything by relationship name.
 
-Use these overlay labels:
+Use these overlay labels as canonical. Older mixed-case overlay labels may remain on existing nodes as compatibility aliases during migration, but new overlay writes should use snake_case.
 
-- `CorrectionWorkspace`
-- `CorrectionPointDraft`
-- `TargetStatementDraft`
-- `EvidenceUseDraft`
-- `ProposedCureDraft`
-- `ResearchTaskDraft`
-- `CaveatDraft`
-- `ExhibitCandidateDraft`
-- `CaseTheoryDraft`
+- `correction_workspace`
+- `correction_point_draft`
+- `target_statement_draft`
+- `evidence_use_draft`
+- `proposed_cure_draft`
+- `research_task_draft`
+- `caveat_draft`
+- `exhibit_candidate_draft`
+- `case_theory_draft`
 
 Every overlay node and overlay relationship should carry:
 
@@ -54,19 +54,53 @@ Typical `assertion_status` values are `draft`, `candidate`, `enriched`, `correct
 
 Use these overlay relationship types:
 
-- `HAS_CORRECTION_POINT_DRAFT`
-- `TARGETS_STATEMENT_DRAFT`
-- `USES_EVIDENCE_DRAFT`
-- `REFERENCES_SOURCE`
-- `HAS_CAVEAT_DRAFT`
-- `HAS_PROPOSED_CURE_DRAFT`
-- `NEEDS_RESEARCH_DRAFT`
-- `CROSS_LINKS_CORRECTION_DRAFT`
-- `HAS_EXHIBIT_CANDIDATE_DRAFT`
+- `has_correction_point_draft`
+- `targets_statement_draft`
+- `uses_evidence_draft`
+- `references_source`
+- `has_caveat_draft`
+- `has_proposed_cure_draft`
+- `needs_research_draft`
+- `cross_links_correction_draft`
+- `has_exhibit_candidate_draft`
 
 Do not create `Violation`, `EstablishedFinding`, `PROVES`, `ESTABLISHES`, or `VIOLATES` during overlay migration or ordinary correction drafting.
 
-Minimum `CorrectionPointDraft` properties:
+### Correction-Pressure Fork Drafts
+
+Use correction-pressure fork nodes when denial of a record-correction request would force the District to defend, unwind, qualify, or correct another statement it has already placed on the record. A production-universe fork is one subtype; a statement-rollback fork is another.
+
+Fork types:
+
+- production_universe_absence: a requested record category is absent from a supposedly complete production universe.
+- statement_rollback: the correction request is supported by evidence that contradicts a maintained District statement; denial requires the District to correct or identify the source basis for that statement.
+- inconsistent_district_positions: two District statements cannot both be maintained without qualification.
+- source_record_contradiction: source records directly contradict a target statement or its premise.
+
+Draft labels:
+
+- `correction_pressure_fork_draft`
+- `correction_request_claim_draft`
+- `district_statement_draft`
+- `contradiction_basis_draft`
+- `rollback_demand_draft`
+- `production_universe_fork_draft`
+- `request_scope_draft`
+- `missing_record_category_draft`
+- `production_finality_statement_draft`
+- `presented_universe_draft`
+
+Draft relationships:
+
+- `(correction_point_draft)-[:uses_correction_pressure_fork_draft]->(correction_pressure_fork_draft)`
+- `(correction_pressure_fork_draft)-[:has_correction_request_claim_draft]->(correction_request_claim_draft)`
+- `(correction_pressure_fork_draft)-[:conflicts_with_district_statement_draft]->(district_statement_draft)`
+- `(correction_pressure_fork_draft)-[:supported_by_contradiction_basis_draft]->(contradiction_basis_draft)`
+- `(correction_pressure_fork_draft)-[:requires_rollback_or_correction_draft]->(rollback_demand_draft)`
+- `(correction_point_draft)-[:uses_production_universe_fork_draft]->(production_universe_fork_draft)`
+
+Do not use PROVES, ESTABLISHES, or VIOLATES from draft fork nodes. A fork is a correction-pressure structure until a later promotion pass establishes a final finding.
+Minimum `correction_point_draft` properties:
 
 - `correction_id`
 - `folder`
@@ -83,7 +117,7 @@ Minimum `CorrectionPointDraft` properties:
 - `created_from`
 - `updated_at`
 
-Minimum `EvidenceUseDraft` properties:
+Minimum `evidence_use_draft` properties:
 
 - `evidence_use_id`
 - `correction_id`
@@ -109,23 +143,23 @@ Minimum `EvidenceUseDraft` properties:
 Link evidence-use nodes to existing source evidence only by reference:
 
 ```cypher
-MATCH (p:CorrectionPointDraft {workspace_key: $workspaceKey, correction_id: $correctionId})
-MERGE (eu:EvidenceUseDraft {workspace_key: $workspaceKey, evidence_use_id: $evidenceUseId})
+MATCH (p:correction_point_draft {workspace_key: $workspaceKey, correction_id: $correctionId})
+MERGE (eu:evidence_use_draft {workspace_key: $workspaceKey, evidence_use_id: $evidenceUseId})
 SET eu += $properties,
     eu.updated_at = datetime()
-MERGE (p)-[:USES_EVIDENCE_DRAFT {
+MERGE (p)-[:uses_evidence_draft {
   workspace_key: $workspaceKey,
   assertion_status: 'draft'
 }]->(eu)
 WITH eu
 MATCH (src:case_file_document {case_file: $caseFile})
-MERGE (eu)-[:REFERENCES_SOURCE {
+MERGE (eu)-[:references_source {
   workspace_key: $workspaceKey,
   assertion_status: 'draft_reference'
 }]->(src)
 ```
 
-If no graph source node exists, store the local path and locator on the `EvidenceUseDraft` node and set `source_resolution_status` to `local_only_pending_graph_link` or `graph_case_file_not_found`.
+If no graph source node exists, store the local path and locator on the `evidence_use_draft` node and set `source_resolution_status` to `local_only_pending_graph_link` or `graph_case_file_not_found`.
 
 Analytical queries over the main graph should exclude draft overlays unless the user asks for them:
 
@@ -139,8 +173,8 @@ RETURN n
 Workspace-specific queries should opt in by `workspace_key`:
 
 ```cypher
-MATCH (w:CorrectionWorkspace {workspace_key: $workspaceKey})
-MATCH (w)-[:HAS_CORRECTION_POINT_DRAFT]->(p)
+MATCH (w:correction_workspace {workspace_key: $workspaceKey})
+MATCH (w)-[:has_correction_point_draft]->(p)
 RETURN p.correction_id, p.status, p.correction_warrant_score, p.assertion_status
 ORDER BY p.correction_id
 ```

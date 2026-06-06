@@ -14,7 +14,7 @@ import {
   httpTimeoutMs,
   log,
   proxyRequestTimeoutMs,
-  required,
+  serverUrl,
 } from "./config";
 import { acquireAppSession, acquireToken } from "./auth";
 import { asError, isHttpBadRequest } from "./errors";
@@ -68,7 +68,7 @@ async function optionalAppSessionForMcpTransport(token: CachedToken): Promise<{
 
 async function establishRemoteConnection(token: CachedToken): Promise<RemoteConnection> {
   const { appSession, sessionCookie } = await optionalAppSessionForMcpTransport(token);
-  const sseUrl = required("SERVER_URL");
+  const sseUrl = serverUrl();
   warnIfInsecureUrl(sseUrl, log, "Target server URL");
   log("connecting remote MCP SSE", { sseUrl });
   const connection = await connectSse({

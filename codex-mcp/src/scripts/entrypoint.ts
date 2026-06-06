@@ -27,7 +27,7 @@ import {
   neo4jCredentialCachePath,
   optional,
   proxyRequestTimeoutMs,
-  required,
+  serverUrl,
   tokenSkewMs,
 } from "./config";
 import { asError, httpStatusError, httpStatusFromError, isHttpBadRequest } from "./errors";
@@ -1575,7 +1575,7 @@ function bindJsonLines(
 async function main() {
   log("wrapper starting", { cwd: process.cwd(), node: process.version, argv: process.argv });
   log("resolved wrapper configuration", {
-    serverUrl: optional("SERVER_URL"),
+    serverUrl: serverUrl(),
     authIssuer: optional("AUTH_ISSUER"),
     wrapUrl: wrapEndpointUrl(),
     sessionStatusUrl: sessionEndpointUrl(),

@@ -16,6 +16,8 @@ const defaultEnvValues: Record<string, string> = {
   OAUTH_SCOPE: "openid",
 };
 
+const DEFAULT_SSE_PATH = "/api/ai/tools/sse";
+
 function key(name: string): string {
   return `${PREFIX}${name}`;
 }
@@ -67,6 +69,18 @@ export function required(name: string): string {
     throw new Error(`Missing required environment variable ${key(name)}`);
   }
   return value;
+}
+
+export function normalizeServerUrl(value: string): string {
+  const parsed = new URL(value);
+  if (parsed.pathname === "/" && !parsed.search && !parsed.hash) {
+    parsed.pathname = DEFAULT_SSE_PATH;
+  }
+  return parsed.toString();
+}
+
+export function serverUrl(): string {
+  return normalizeServerUrl(required("SERVER_URL"));
 }
 
 export function logFilePath(): string {

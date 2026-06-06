@@ -17,7 +17,7 @@ function sessionEndpointUrl() {
         (0, runtime_utils_1.warnIfInsecureUrl)(explicit, config_1.log, "Session status URL");
         return explicit;
     }
-    const parsed = new URL((0, config_1.required)("SERVER_URL"));
+    const parsed = new URL((0, config_1.serverUrl)());
     parsed.pathname = "/api/auth/session";
     parsed.search = "";
     parsed.hash = "";
@@ -29,14 +29,14 @@ function wrapEndpointUrl() {
         (0, runtime_utils_1.warnIfInsecureUrl)(explicit, config_1.log, "Session wrap URL");
         return explicit;
     }
-    const parsed = new URL((0, config_1.required)("SERVER_URL"));
+    const parsed = new URL((0, config_1.serverUrl)());
     parsed.pathname = "/api/auth/wrap";
     parsed.search = "";
     parsed.hash = "";
     return parsed.toString();
 }
 function appEndpointUrl(pathname, query = {}) {
-    const parsed = new URL((0, config_1.required)("SERVER_URL"));
+    const parsed = new URL((0, config_1.serverUrl)());
     parsed.pathname = pathname;
     parsed.search = "";
     parsed.hash = "";

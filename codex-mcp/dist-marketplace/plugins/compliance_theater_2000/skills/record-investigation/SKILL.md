@@ -44,17 +44,17 @@ Use this workflow when the user asks whether an official statement is false, mis
 
 When drafting correction requests or complaints, use Neo4j as the durable analytical store for workspace state. The local files remain source/provenance, but the graph should hold reusable draft structure so later agents can ask which points are active, which evidence supports a point, which caveats remain, and what research tasks are unresolved.
 
-Create a quarantined overlay instead of mutating established evidence:
+Create a quarantined overlay instead of mutating established evidence. Use snake_case labels and relationship types as canonical to match the main graph schema. Older mixed-case draft labels may remain as compatibility aliases during migration, but new overlay writes should use snake_case.
 
-- `:CorrectionWorkspace`
-- `:CorrectionPointDraft`
-- `:TargetStatementDraft`
-- `:EvidenceUseDraft`
-- `:ProposedCureDraft`
-- `:ResearchTaskDraft`
-- `:CaveatDraft`
-- `:ExhibitCandidateDraft`
-- `:CaseTheoryDraft`
+- `:correction_workspace`
+- `:correction_point_draft`
+- `:target_statement_draft`
+- `:evidence_use_draft`
+- `:proposed_cure_draft`
+- `:research_task_draft`
+- `:caveat_draft`
+- `:exhibit_candidate_draft`
+- `:case_theory_draft`
 
 All overlay nodes and overlay relationships must carry:
 
@@ -67,15 +67,15 @@ Allowed draft assertion statuses include `draft`, `candidate`, `enriched`, `corr
 
 Use overlay-specific relationships:
 
-- `(w)-[:HAS_CORRECTION_POINT_DRAFT]->(p)`
-- `(p)-[:TARGETS_STATEMENT_DRAFT]->(s)`
-- `(p)-[:USES_EVIDENCE_DRAFT]->(evidenceUse)`
-- `(evidenceUse)-[:REFERENCES_SOURCE]->(sourceEvidenceNode)`
-- `(p)-[:HAS_CAVEAT_DRAFT]->(c)`
-- `(p)-[:HAS_PROPOSED_CURE_DRAFT]->(cure)`
-- `(p)-[:NEEDS_RESEARCH_DRAFT]->(task)`
-- `(p)-[:CROSS_LINKS_CORRECTION_DRAFT]->(otherPointOrTheory)`
-- `(p)-[:HAS_EXHIBIT_CANDIDATE_DRAFT]->(exhibit)`
+- `(w)-[:has_correction_point_draft]->(p)`
+- `(p)-[:targets_statement_draft]->(s)`
+- `(p)-[:uses_evidence_draft]->(evidenceUse)`
+- `(evidenceUse)-[:references_source]->(sourceEvidenceNode)`
+- `(p)-[:has_caveat_draft]->(c)`
+- `(p)-[:has_proposed_cure_draft]->(cure)`
+- `(p)-[:needs_research_draft]->(task)`
+- `(p)-[:cross_links_correction_draft]->(otherPointOrTheory)`
+- `(p)-[:has_exhibit_candidate_draft]->(exhibit)`
 
 Never create `:Violation`, `:EstablishedFinding`, `PROVES`, `ESTABLISHES`, or `VIOLATES` from draft correction work unless the user explicitly asks for a promotion pass and the promotion criteria are met. Draft overlays point back to source evidence; they do not convert theories into facts.
 
@@ -94,10 +94,29 @@ For each correction point, preserve at least:
 - `assertion_status`
 - `source_path`
 
-For each evidence CSV row, create an `EvidenceUseDraft` node and link it to the existing `case_file_document` with `REFERENCES_SOURCE` when `neo4j_case_file_id` resolves. If no source node resolves, keep the local path/locator and set `source_resolution_status` to `local_only_pending_graph_link` or `graph_case_file_not_found`.
+For each evidence CSV row, create an `evidence_use_draft` node and link it to the existing `case_file_document` with `references_source` when `neo4j_case_file_id` resolves. If no source node resolves, keep the local path/locator and set `source_resolution_status` to `local_only_pending_graph_link` or `graph_case_file_not_found`.
 
 Before drafting final correction or complaint text from an overlay, query the graph for active points, primary evidence, caveats, proposed cures, and research tasks. Preserve unresolved caveats in the draft instead of smoothing them away.
 
+## Correction-Pressure Forks
+
+Record-correction requests are often most valuable when they force a correction-pressure fork. Use this pattern whenever denial of the correction request would require the District to unwind, qualify, or correct another statement it has on record.
+
+Production-universe fork rule:
+
+1. If the record category is absent from the local workspace, produced corpus, indexes, and Neo4j/Compliance Theater universe after a request that should have captured it, treat that absence as meaningful within the District's presented universe.
+2. If the District maintains the finality statement, the corrected posture is that the record does not exist in the presented universe.
+3. If the District later asserts the record exists, it must correct or qualify the finality/full-production statement and explain the omission.
+
+Statement-rollback fork rule:
+
+1. Identify the correction request claim or corrected wording.
+2. Identify District statement X that conflicts with that claim, the source record, or another District position.
+3. Frame the fork: if the District denies the correction, it must either identify the source basis for statement X or correct/rollback/qualify statement X.
+
+Persist forks locally and in Neo4j. Locally, capture the fork in CORRECTION.md, source_evidence_notes.md, followup_actions.md, source_notes.md, and the parent index/status files. In Neo4j, create or update `correction_pressure_fork_draft` nodes, and use production-universe-specific nodes when the fork is about missing records and full-production/finality statements.
+
+Scoring guidance: 6 means plausible but unmapped; 7 means request category, missing category or conflicted statement, and finality/at-risk statements are identified; 8 means exact request/claim, exact at-risk District statement, source IDs, and searched/presented universe or contradiction basis are mapped cleanly enough that denial directly contradicts a maintained District statement; 9+ requires direct omitted-record proof or direct contradiction.
 ## May 26 Correction Baseline
 
 When investigating Rob's May 26 response or a similar official response that classifies a request as something other than a data request, apply this baseline before scoring:

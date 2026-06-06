@@ -43,7 +43,7 @@ async function optionalAppSessionForMcpTransport(token) {
 }
 async function establishRemoteConnection(token) {
     const { appSession, sessionCookie } = await optionalAppSessionForMcpTransport(token);
-    const sseUrl = (0, config_1.required)("SERVER_URL");
+    const sseUrl = (0, config_1.serverUrl)();
     (0, runtime_utils_1.warnIfInsecureUrl)(sseUrl, config_1.log, "Target server URL");
     (0, config_1.log)("connecting remote MCP SSE", { sseUrl });
     const connection = await (0, runtime_utils_1.connectSse)({

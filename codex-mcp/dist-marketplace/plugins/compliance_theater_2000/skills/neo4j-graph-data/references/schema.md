@@ -149,19 +149,19 @@ Use a light normalization fallback when no explicit alias matches: lowercase the
 
 ### Correction Workspace Overlay Labels
 
-Correction-request and complaint drafting work should use quarantined overlay labels so draft analysis remains separate from established evidence and findings.
+Correction-request and complaint drafting work should use quarantined overlay labels so draft analysis remains separate from established evidence and findings. Use snake_case labels as canonical to match the main graph schema. Older mixed-case draft labels may remain on existing nodes as compatibility aliases during migration.
 
 Overlay labels:
 
-- `CorrectionWorkspace`: one durable workspace root per correction/complaint workspace.
-- `CorrectionPointDraft`: one draft correction point, target issue, or complaint point.
-- `TargetStatementDraft`: the challenged statement or premise.
-- `EvidenceUseDraft`: one row describing how source evidence is being used by a draft point.
-- `ProposedCureDraft`: requested correction, supplementation, production, reassessment, or complaint cure.
-- `ResearchTaskDraft`: unresolved research, exhibit-prep, request, or validation task.
-- `CaveatDraft`: qualification or limitation that must remain attached to the point.
-- `ExhibitCandidateDraft`: candidate exhibit or packet item.
-- `CaseTheoryDraft`: draft cross-link to a local or graph-backed case theory.
+- `correction_workspace`: one durable workspace root per correction/complaint workspace.
+- `correction_point_draft`: one draft correction point, target issue, or complaint point.
+- `target_statement_draft`: the challenged statement or premise.
+- `evidence_use_draft`: one row describing how source evidence is being used by a draft point.
+- `proposed_cure_draft`: requested correction, supplementation, production, reassessment, or complaint cure.
+- `research_task_draft`: unresolved research, exhibit-prep, request, or validation task.
+- `caveat_draft`: qualification or limitation that must remain attached to the point.
+- `exhibit_candidate_draft`: candidate exhibit or packet item.
+- `case_theory_draft`: draft cross-link to a local or graph-backed case theory.
 
 Required overlay properties:
 
@@ -171,7 +171,7 @@ Required overlay properties:
 - `created_from`
 - `updated_at` on nodes
 
-Allowed `assertion_status` values include `draft`, `candidate`, `enriched`, `correction_ready_with_caveat`, `research_required`, `dropped`, and `promoted`. `EvidenceUseDraft` may use `draft_evidence_use`; `REFERENCES_SOURCE` relationships may use `draft_reference`.
+Allowed `assertion_status` values include `draft`, `candidate`, `enriched`, `correction_ready_with_caveat`, `research_required`, `dropped`, and `promoted`. `evidence_use_draft` may use `draft_evidence_use`; `references_source` relationships may use `draft_reference`.
 
 Draft overlays must not create `Violation`, `EstablishedFinding`, `PROVES`, `ESTABLISHES`, or `VIOLATES` unless a separate promotion pass explicitly promotes a supported claim.
 
@@ -254,15 +254,15 @@ Relationship types are lowercase snake_case. Key relationships:
 - `owned_by`: document -> actor/user.
 - `migrated_embedding_from`: normalized document -> legacy embedding source.
 - `case_theory`: `case_file_document -> case_theory` anchor relationship. The relationship carries the evidence ordering and role for the theory.
-- `HAS_CORRECTION_POINT_DRAFT`: `CorrectionWorkspace -> CorrectionPointDraft`.
-- `TARGETS_STATEMENT_DRAFT`: `CorrectionPointDraft -> TargetStatementDraft`.
-- `USES_EVIDENCE_DRAFT`: `CorrectionPointDraft -> EvidenceUseDraft`.
-- `REFERENCES_SOURCE`: `EvidenceUseDraft -> source evidence node`, usually `case_file_document`.
-- `HAS_CAVEAT_DRAFT`: `CorrectionPointDraft -> CaveatDraft`.
-- `HAS_PROPOSED_CURE_DRAFT`: `CorrectionPointDraft -> ProposedCureDraft`.
-- `NEEDS_RESEARCH_DRAFT`: `CorrectionPointDraft -> ResearchTaskDraft`.
-- `CROSS_LINKS_CORRECTION_DRAFT`: `CorrectionPointDraft -> CorrectionPointDraft` or `CaseTheoryDraft`.
-- `HAS_EXHIBIT_CANDIDATE_DRAFT`: `CorrectionPointDraft -> ExhibitCandidateDraft`.
+- `has_correction_point_draft`: `correction_workspace -> correction_point_draft`.
+- `targets_statement_draft`: `correction_point_draft -> target_statement_draft`.
+- `uses_evidence_draft`: `correction_point_draft -> evidence_use_draft`.
+- `references_source`: `evidence_use_draft -> source evidence node`, usually `case_file_document`.
+- `has_caveat_draft`: `correction_point_draft -> caveat_draft`.
+- `has_proposed_cure_draft`: `correction_point_draft -> proposed_cure_draft`.
+- `needs_research_draft`: `correction_point_draft -> research_task_draft`.
+- `cross_links_correction_draft`: `correction_point_draft -> correction_point_draft` or `case_theory_draft`.
+- `has_exhibit_candidate_draft`: `correction_point_draft -> exhibit_candidate_draft`.
 
 `case_theory` relationship properties:
 
