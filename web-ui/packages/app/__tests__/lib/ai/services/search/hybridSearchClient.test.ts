@@ -176,6 +176,20 @@ describe('Hybrid search provider routing', () => {
     expect(result.total).toBe(1);
   });
 
+  test('throws when PostgreSQL routing has no authorization context', async () => {
+    mockFlagProviders({ retrieval: 'postgresql', graph: 'none' });
+    const embeddingService = makeEmbeddingService();
+    const sql = jest.fn();
+    (pgDbWithInit as jest.Mock).mockResolvedValue(sql);
+    (getAccessibleUserIds as jest.Mock).mockResolvedValue([]);
+
+    const client = hybridDocumentSearchFactory({ embeddingService });
+    await expect(client.hybridSearch('query', { count: true })).rejects.toThrow(
+      /No credentials available for case-file search authorization context\./,
+    );
+    expect(sql).not.toHaveBeenCalled();
+  });
+
   test('applies graph augmentation reranking when neo4j mode is enabled', async () => {
     mockFlagProviders({ retrieval: 'azure', graph: 'neo4j' });
     const embeddingService = makeEmbeddingService();
@@ -224,7 +238,7 @@ describe('Hybrid search provider routing', () => {
     expect(neo4jRunMock).toHaveBeenCalledTimes(1);
   });
 
-  test('skips neo4j augmentation when neo4j config is missing', async () => {
+  test('does not tag graph augmentation metadata when Neo4j config is missing', async () => {
     mockFlagProviders({ retrieval: 'azure', graph: 'neo4j' });
     const embeddingService = makeEmbeddingService();
     fetchMock.mockResolvedValue({
@@ -233,6 +247,7 @@ describe('Hybrid search provider routing', () => {
           {
             id: '1',
             content: 'first',
+            metadata: { attributes: [] },
             '@search.score': 0.8,
           },
         ],
@@ -243,8 +258,9 @@ describe('Hybrid search provider routing', () => {
     const client = hybridDocumentSearchFactory({ embeddingService });
     const result = await client.hybridSearch('query');
 
-    expect(neo4jDriverMock).not.toHaveBeenCalled();
     expect(result.results[0].metadata?.graph_augmentation_provider).toBeUndefined();
+    expect(neo4jDriverMock).not.toHaveBeenCalled();
+    expect(neo4jRunMock).not.toHaveBeenCalled();
   });
 });
 

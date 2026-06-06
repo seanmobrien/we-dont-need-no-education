@@ -4,9 +4,8 @@
 
 import { CaseFileSearchOptions } from '../../tools/types';
 import { HybridSearchClient } from './HybridSearchBase';
-import { HybridSearchPayload } from './types';
+import { AiSearchResultEnvelope, HybridSearchPayload } from './types';
 import { IEmbeddingService } from '../embedding';
-import { AiSearchResultEnvelope } from './types';
 
 declare module '@/lib/ai/services/search/HybridDocumentSearch' {
   /**
@@ -53,7 +52,7 @@ declare module '@/lib/ai/services/search/HybridDocumentSearch' {
   }
 
   /**
-   * Factory helper for creating a {@link HybridDocumentSearch} instance while optionally
+   * Factory helper for creating a routed case-file search client while optionally
    * injecting a custom embedding service (for testing or alternate vector providers).
    *
    * @param options Optional configuration containing an `embeddingService` override.

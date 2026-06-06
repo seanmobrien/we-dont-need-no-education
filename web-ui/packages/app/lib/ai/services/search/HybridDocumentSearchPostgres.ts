@@ -129,16 +129,13 @@ export class HybridDocumentSearchPostgres extends HybridSearchClient<CaseFileSea
       .filter((id): id is number => Number.isSafeInteger(id))
       .map((id) => Math.trunc(id));
     if (accessibleUserIds.length === 0) {
-      log((l) =>
-        l.warn('No accessible user IDs for PostgreSQL case-file search request', {
-          source: 'HybridDocumentSearchPostgres.retrieveCandidates',
-        }),
-      );
+      const errorMessage =
+        'No credentials available for case-file search authorization context.';
+      log((l) => l.warn(errorMessage));
+      throw new Error(errorMessage);
     }
     const whereAccessibleCaseFiles =
-      accessibleUserIds.length > 0
-        ? sql`du.user_id IN ${sql(`(${accessibleUserIds.join(',')})`)}`
-        : sql`1=-1`;
+      sql`du.user_id IN ${sql(`(${accessibleUserIds.join(',')})`)}`;
 
     const rows = await sql<PostgresSearchRow>`
       WITH scored_candidates AS (
