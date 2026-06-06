@@ -1,9 +1,15 @@
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next/types';
 import type { NextConfigPlugin } from './types';
 
+const APP_PACKAGE_ROOT = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../..',
+);
+
 const resolveAppPackage = (request: string): string =>
-  require.resolve(request, { paths: [process.cwd()] });
+  require.resolve(request, { paths: [APP_PACKAGE_ROOT, process.cwd()] });
 
 const resolveAppPackageRoot = (request: string): string =>
   path.dirname(resolveAppPackage(`${request}/package.json`));
