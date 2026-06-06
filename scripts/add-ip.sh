@@ -102,8 +102,8 @@ upsert_postgres_firewall_rule() {
     echo "Updating PostgreSQL firewall rule '$POSTGRES_RULE_NAME'"
     az postgres flexible-server firewall-rule update \
       --resource-group "$RESOURCE_GROUP" \
-      --name "$POSTGRES_SERVER" \
-      --rule-name "$POSTGRES_RULE_NAME" \
+      --server-name "$POSTGRES_SERVER" \
+      --name "$POSTGRES_RULE_NAME" \
       --start-ip-address "$ip" \
       --end-ip-address "$ip" >/dev/null
   else

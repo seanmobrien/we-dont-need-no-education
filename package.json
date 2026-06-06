@@ -22,6 +22,7 @@
     "link:clean": "node scripts/link-clean.mjs",
     "link:clean:sh": "bash scripts/clean-link.sh",
     "link:clean:ps1": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/clean-link.ps1",
+    "otel:clean": "rimraf /tmp/Microsoft/AzureMonitor && echo 'OpenTelemetry storage directory cleaned.'  && exit 0",
     "changeset": "changeset",
     "changeset:status": "changeset status",
     "changeset:version": "changeset version",

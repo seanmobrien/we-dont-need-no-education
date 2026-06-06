@@ -274,7 +274,7 @@ export const ClientErrorManager = ({
     (event: PromiseRejectionEvent) => {
       const error = asErrorLike(event.reason);
       if (error) {
-        processError({
+        if (!processError({
           errorObj: error,
           lastErrorMap: lastErrorMap.current,
           suppressionRules,
@@ -282,7 +282,9 @@ export const ClientErrorManager = ({
           reportSuppressedErrors,
           surfaceToErrorBoundary,
           debounceMs,
-        });
+        })) {
+          event.preventDefault();
+        }
       }
     },
     [

@@ -2,6 +2,7 @@ import { isKeyOf } from '@compliance-theater/typescript';
 
 export const BooleanFeatureFlagValues = [
   'mem0_mcp_tools_enabled',
+  'keycloak_token_broker_v2',
   'models_fetch_dedup_writerequests',
   'models_azure',
   'models_openai',

@@ -129,6 +129,36 @@ describe('ClientErrorManager', () => {
 
       unmount();
     });
+
+    it('should suppress AI internal unhandled rejections by default', async () => {
+      const { unmount } = render(<ClientErrorManager />);
+
+      const rejectionEvent = {
+        reason: {
+          messageId: 102,
+          message:
+            'AI (Internal): 102 message:"Invalid content blob. Missing required attributes (id, contentName. Content information will still be collected!"',
+        },
+        preventDefault: mockPreventDefault,
+      } as unknown as PromiseRejectionEvent;
+
+      const addEventListenerCalls = (window.addEventListener as jest.Mock).mock
+        .calls;
+      const rejectionHandler = addEventListenerCalls.find(
+        (call) => call[0] === 'unhandledrejection',
+      )?.[1];
+
+      expect(rejectionHandler).toBeDefined();
+
+      await act(async () => {
+        rejectionHandler(rejectionEvent);
+      });
+
+      expect(mockPreventDefault).toHaveBeenCalled();
+      expect(mockErrorReporter.reportError).not.toHaveBeenCalled();
+
+      unmount();
+    });
   });
 
   describe('Configuration', () => {

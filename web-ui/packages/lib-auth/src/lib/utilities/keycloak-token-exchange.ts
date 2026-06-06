@@ -2,6 +2,7 @@
 
 import { getToken } from '@compliance-theater/auth-compat/runtime';
 import type { JWT } from '@compliance-theater/auth-compat';
+import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
 import { NextRequest } from 'next/server';
 import type { NextApiRequest } from 'next';
 import { env } from '@compliance-theater/env';
@@ -449,6 +450,10 @@ export class KeycloakTokenExchange {
     return `${context}: unexpected error`;
   }
 
+  private async isKeycloakTokenBrokerV2Enabled(): Promise<boolean> {
+    return (await getFeatureFlag('keycloak_token_broker_v2')) === true;
+  }
+
   private async exchangeForBrokeredGoogleTokens({
     subjectToken,
     requestedIssuer,
@@ -611,6 +616,14 @@ export class KeycloakTokenExchange {
     audience?: string
   ): Promise<GoogleTokens> {
     const keycloakToken = await this.extractKeycloakToken(req);
+    const useBrokerV2Flow = await this.isKeycloakTokenBrokerV2Enabled();
+    if (!useBrokerV2Flow) {
+      return this.exchangeForGoogleTokens({
+        subjectToken: keycloakToken,
+        audience,
+      });
+    }
+
     const attemptedErrors: string[] = [];
     const tryBrokerFlows = async (
       providerAlias: string,
