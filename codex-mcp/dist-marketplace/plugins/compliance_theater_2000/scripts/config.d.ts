@@ -2,6 +2,8 @@ import type { Toolset } from "./types";
 export declare function optional(name: string): string | undefined;
 export declare function configuredToolset(): Toolset;
 export declare function required(name: string): string;
+export declare function normalizeServerUrl(value: string): string;
+export declare function serverUrl(): string;
 export declare function logFilePath(): string;
 export declare function log(message: string, details?: unknown): void;
 export declare function cachePath(): string;

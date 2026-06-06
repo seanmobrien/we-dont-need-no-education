@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.optional = optional;
 exports.configuredToolset = configuredToolset;
 exports.required = required;
+exports.normalizeServerUrl = normalizeServerUrl;
+exports.serverUrl = serverUrl;
 exports.logFilePath = logFilePath;
 exports.log = log;
 exports.cachePath = cachePath;
@@ -30,6 +32,7 @@ const defaultEnvValues = {
     CLIENT_ID: "codex",
     OAUTH_SCOPE: "openid",
 };
+const DEFAULT_SSE_PATH = "/api/ai/tools/sse";
 function key(name) {
     return `${PREFIX}${name}`;
 }
@@ -75,6 +78,16 @@ function required(name) {
         throw new Error(`Missing required environment variable ${key(name)}`);
     }
     return value;
+}
+function normalizeServerUrl(value) {
+    const parsed = new URL(value);
+    if (parsed.pathname === "/" && !parsed.search && !parsed.hash) {
+        parsed.pathname = DEFAULT_SSE_PATH;
+    }
+    return parsed.toString();
+}
+function serverUrl() {
+    return normalizeServerUrl(required("SERVER_URL"));
 }
 function logFilePath() {
     return optional("LOG_FILE") ||

@@ -6,7 +6,7 @@ import {
   httpRetryCount,
   httpTimeoutMs,
   log,
-  required,
+  serverUrl,
 } from "./config";
 import { httpStatusError, httpStatusFromError, isHttpBadRequest } from "./errors";
 import { fetchJsonResponse } from "./http";
@@ -134,7 +134,7 @@ function appApiEndpointUrl(relativeUrl: string): string {
 
   const withoutLeadingSlash = trimmed.replace(/^\/+/, "");
   const apiRelative = withoutLeadingSlash.replace(/^api(?:\/|$)/i, "");
-  const server = new URL(required("SERVER_URL"));
+  const server = new URL(serverUrl());
   const apiRoot = new URL("/api/", server.origin);
   const target = new URL(apiRelative, apiRoot);
   if (target.origin !== apiRoot.origin || !target.pathname.startsWith("/api/")) {

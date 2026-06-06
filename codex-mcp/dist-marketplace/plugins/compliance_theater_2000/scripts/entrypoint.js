@@ -1427,7 +1427,7 @@ function bindJsonLines(stream, onMessage, source) {
 async function main() {
     (0, config_1.log)("wrapper starting", { cwd: process.cwd(), node: process.version, argv: process.argv });
     (0, config_1.log)("resolved wrapper configuration", {
-        serverUrl: (0, config_1.optional)("SERVER_URL"),
+        serverUrl: (0, config_1.serverUrl)(),
         authIssuer: (0, config_1.optional)("AUTH_ISSUER"),
         wrapUrl: (0, urls_1.wrapEndpointUrl)(),
         sessionStatusUrl: (0, urls_1.sessionEndpointUrl)(),
