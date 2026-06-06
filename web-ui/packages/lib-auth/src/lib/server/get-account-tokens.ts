@@ -82,8 +82,8 @@ export const getAccountTokens = async (
     };
   } catch (error) {
     log((l) =>
-      l.error(
-        `Failed to get account tokens from DB for ${
+      l.warn(
+        `Account token DB lookup failed; continuing without persisted tokens for ${
           userId ?? providerAccountId ?? 'unknown-account'
         }`,
         error,
