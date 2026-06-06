@@ -1,0 +1,4 @@
+interface:
+  display_name: "Record Investigation"
+  short_description: "Investigate records for correction evidence"
+  default_prompt: "Use $record-investigation to research misleading or false statements on record for a correction request."

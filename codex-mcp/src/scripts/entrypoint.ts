@@ -1,157 +1,92 @@
 #!/usr/bin/env node
-import { randomInt } from "node:crypto";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { appendFileSync, mkdirSync } from "node:fs";
-import { readFile, rm, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { spawn } from "node:child_process";
+import { mkdirSync } from "node:fs";
+import { rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 import { createInterface } from "node:readline";
 import {
   type AppSession,
-  type FetchPolicyOptions,
-  type SseConnection,
   type Token,
   appSessionCookieHeader,
-  connectSse,
   fetchWithPolicy,
-  isAuthenticatedSessionResult,
-  isUsableCachedAppSession,
   parseNumber,
-  readCachedTokenFile,
-  readRpcResult,
-  rpc,
-  sleep,
   tokenExpiresAt,
-  warnIfInsecureUrl,
   writeCachedTokenFile
 } from "./runtime-utils";
+import {
+  cachePath,
+  configuredToolset,
+  credentialCachePaths,
+  embeddingCacheMaxEntries,
+  embeddingCacheTtlMs,
+  httpRetryBaseMs,
+  httpRetryCount,
+  httpTimeoutMs,
+  log,
+  logFilePath,
+  neo4jCredentialCachePath,
+  optional,
+  proxyRequestTimeoutMs,
+  serverUrl,
+  tokenSkewMs,
+} from "./config";
+import { asError, httpStatusError, httpStatusFromError, isHttpBadRequest } from "./errors";
+import {
+  acquireAppSession,
+  acquireToken,
+  authStatusSummary,
+  loginAndSummarizeStatus,
+  resetAuthState,
+} from "./auth";
+import { callNeo4jMcpTool, clearNeo4jState } from "./neo4j";
+import {
+  amendCaseFileTool,
+  callApiTool,
+  callMemoryTool,
+  clearAppToolCaches,
+  createGenerateQueryVectors,
+  getCaseFileTool,
+  manageCaseFileEmbeddingsTool,
+  readCaseFileTool,
+} from "./app-tools";
+import {
+  clearRemoteState,
+  remoteNotification as notifyRemote,
+  remoteRequest as requestRemote,
+} from "./remote";
+import type {
+  AnyRecord,
+  CachedToken,
+  EmbeddingAction,
+  ErrorWithCode,
+  JsonRpcMessage,
+  JsonToolResult,
+  OpenAiFunctionToolDefinition,
+  OpenAiNamespaceToolDefinition,
+  RpcId,
+  ServerName,
+  ToolArgs,
+  ToolDefinition,
+  Toolset,
+} from "./types";
+import {
+  aiEmbedEndpointPath,
+  aiEmbedEndpointUrl,
+  appEndpointUrl,
+  documentUnitEmbeddingsEndpointPath,
+  documentUnitEmbeddingsEndpointUrl,
+  documentUnitEndpointUrl,
+  memoryEndpointUrl,
+  sessionEndpointUrl,
+  wrapEndpointUrl,
+} from "./urls";
+import { fetchJson, fetchJsonResponse } from "./http";
+import { listLocalFileResources, readLocalFileResource } from "./local-file-resources";
+import {
+  materializeGraphVectorParams,
+} from "./vector-params";
 
-type AnyRecord = Record<string, any>;
-type RpcId = string | number | null;
-type ToolArgs = Record<string, any>;
-type JsonRpcMessage = {
-  jsonrpc?: string;
-  id?: RpcId;
-  method: string;
-  params?: ToolArgs;
-  result?: AnyRecord;
-  error?: { code?: number; message?: string };
-};
-type JsonToolResult = {
-  content: Array<{ type: "text"; text: string }>;
-  structuredContent?: { result: unknown };
-};
-type ToolDefinition = {
-  name: string;
-  description?: string;
-  inputSchema?: AnyRecord;
-  outputSchema?: AnyRecord;
-  annotations?: AnyRecord;
-};
-type Toolset = "all" | "default" | "memory" | "utils" | "todo" | "case-workspace" | "search" | "case-files";
-type ServerName =
-  | "compliance-theater"
-  | "compliance-theater-memory"
-  | "compliance-theater-utils"
-  | "compliance-theater-todo"
-  | "compliance-theater-case-workspace"
-  | "compliance-theater-search"
-  | "compliance-theater-case-files";
-type OAuthClient = {
-  client_id?: string;
-  client_secret?: string;
-};
-type OAuthMetadata = AnyRecord & {
-  issuer?: string;
-  token_endpoint: string;
-  userinfo_endpoint?: string;
-  registration_endpoint?: string;
-  device_authorization_endpoint?: string;
-  grant_types_supported?: string[];
-  token_endpoint_auth_methods_supported?: string[];
-};
-type OAuthToken = Token & {
-  access_token: string;
-  metadata?: OAuthMetadata;
-};
-type CachedToken = OAuthToken & {
-  metadata?: OAuthMetadata;
-  app_session?: AppSession;
-};
-type TokenInfo = {
-  token?: string;
-  source?: string;
-  cached?: CachedToken;
-};
-type JsonResponse = {
-  response: Response;
-  body: AnyRecord;
-  url: string;
-};
-type FailedResult = { error: Error };
-type SessionResult = JsonResponse | FailedResult;
-type RemoteConnection = SseConnection & {
-  accessToken: string;
-  appSession?: AppSession;
-  sessionCookie?: string;
-  nextId: number;
-};
-type StdioMcpConnection = {
-  child: ChildProcessWithoutNullStreams;
-  commandLabel: string;
-  nextId: number;
-  buffer: Buffer;
-  pending: Map<number, {
-    resolve: (value: AnyRecord) => void;
-    reject: (error: Error) => void;
-    timer: NodeJS.Timeout;
-  }>;
-  queue: Promise<AnyRecord>;
-};
-type Neo4jSettings = {
-  URI: string;
-  USERNAME: string;
-  PASSWORD: string;
-  DATABASE: string;
-};
-type CachedNeo4jSettings = Neo4jSettings & {
-  expires_at: number;
-  expires_at_iso?: string;
-};
-type ErrorWithCode = Error & { code?: string };
-
-function asError(error: unknown): ErrorWithCode {
-  return error instanceof Error ? error as ErrorWithCode : new Error(String(error));
-}
-
-function httpStatusError(message: string, status: number): ErrorWithCode & { status: number } {
-  const error = new Error(message) as ErrorWithCode & { status: number };
-  error.status = status;
-  return error;
-}
-
-function httpStatusFromError(error: unknown): number | undefined {
-  const normalized = asError(error) as ErrorWithCode & { status?: number };
-  if (typeof normalized.status === "number") {
-    return normalized.status;
-  }
-  const match = /\bHTTP\s+(\d{3})\b/i.exec(normalized.message);
-  return match ? Number(match[1]) : undefined;
-}
-
-function isHttpBadRequest(error: unknown): boolean {
-  return httpStatusFromError(error) === 400;
-}
-
-const PREFIX = "MCP_COMPLIANCE_THEATER_RESOURCE_";
 const env = process.env;
-let registeredClient: OAuthClient | undefined;
-let logWriteFailed = false;
-let remote: RemoteConnection | undefined;
-let remoteQueue: Promise<AnyRecord> = Promise.resolve({});
-let neo4jRemote: StdioMcpConnection | undefined;
-let neo4jSettingsCache: Neo4jSettings | undefined;
-let neo4jAutoDiscoveryAttempted = false;
 
 const searchOptionsSchema = {
   type: "object",
@@ -173,7 +108,6 @@ const taskPriorities = ["low", "medium", "high", "urgent"];
 const taskOwners = ["model", "user", "system"];
 const questionStatuses = ["open", "investigating", "resolved", "deferred"];
 const questionTypes = ["factual", "legal", "evidentiary", "process"];
-
 function objectSchema(properties: AnyRecord, required: string[] = [], additionalProperties = false): AnyRecord {
   return { type: "object", properties, required, additionalProperties };
 }
@@ -227,7 +161,7 @@ function annotationsForRemoteTool(name: string): AnyRecord {
     readOnlyHint: readOnly,
     destructiveHint: false,
     idempotentHint: idempotentRemoteToolNames.has(name),
-    openWorldHint: false
+    openWorldHint: false,
   };
 }
 
@@ -242,50 +176,65 @@ function withAnnotations(tools: ToolDefinition[], getAnnotations: (name: string)
 }
 
 const serverNames: ServerName[] = [
-  "compliance-theater",
-  "compliance-theater-memory",
-  "compliance-theater-utils",
-  "compliance-theater-todo",
-  "compliance-theater-case-workspace",
-  "compliance-theater-search",
-  "compliance-theater-case-files"
+  "compliance_theater",
+  "compliance_theater_memory",
+  "compliance_theater_utils",
+  "compliance_theater_todo",
+  "compliance_theater_case_workspace",
+  "compliance_theater_search",
+  "compliance_theater_case_files"
 ];
 
 function serverNameForToolset(toolset: Toolset): ServerName {
   if (toolset === "memory") {
-    return "compliance-theater-memory";
+    return "compliance_theater_memory";
   }
   if (toolset === "utils") {
-    return "compliance-theater-utils";
+    return "compliance_theater_utils";
   }
   if (toolset === "todo") {
-    return "compliance-theater-todo";
+    return "compliance_theater_todo";
   }
   if (toolset === "case-workspace") {
-    return "compliance-theater-case-workspace";
+    return "compliance_theater_case_workspace";
   }
   if (toolset === "search") {
-    return "compliance-theater-search";
+    return "compliance_theater_search";
   }
   if (toolset === "case-files") {
-    return "compliance-theater-case-files";
+    return "compliance_theater_case_files";
   }
-  return "compliance-theater";
+  return "compliance_theater";
 }
 
 function prefixedToolName(serverName: ServerName, toolName: string): string {
   return `${serverName}_${toolName}`;
 }
 
+function serverInputPrefixes(serverName: ServerName): string[] {
+  const suffix = serverName.slice("compliance_theater".length).replace(/^_/, "");
+  const suffixVariants = suffix ? [suffix, suffix.replace(/_/g, "-")] : [""];
+  const baseVariants = ["compliance_theater", "compliance-theater"];
+  const prefixes = new Set<string>();
+  for (const base of baseVariants) {
+    for (const suffixVariant of suffixVariants) {
+      prefixes.add(`${base}${suffixVariant ? `_${suffixVariant}` : ""}_`);
+      prefixes.add(`${base}${suffixVariant ? `-${suffixVariant}` : ""}_`);
+    }
+  }
+  return [...prefixes];
+}
+
 function unprefixedToolName(toolName: string | undefined): string | undefined {
   if (!toolName) {
     return undefined;
   }
-  for (const serverName of serverNames) {
-    const prefix = `${serverName}_`;
-    if (toolName.startsWith(prefix)) {
-      return toolName.slice(prefix.length);
-    }
+  const prefix = serverNames
+    .flatMap(serverInputPrefixes)
+    .sort((left, right) => right.length - left.length)
+    .find((inputPrefix) => toolName.startsWith(inputPrefix));
+  if (prefix) {
+    return toolName.slice(prefix.length);
   }
   return toolName;
 }
@@ -293,7 +242,7 @@ function unprefixedToolName(toolName: string | undefined): string | undefined {
 function prefixToolDefinitions(tools: ToolDefinition[], serverName: ServerName): ToolDefinition[] {
   return tools.map((tool) => {
     const name = prefixedToolName(serverName, tool.name);
-    return {
+    const definition: ToolDefinition = {
       ...tool,
       name,
       description: `${tool.description || "No description"} Exposed as ${name}.`,
@@ -302,8 +251,19 @@ function prefixToolDefinitions(tools: ToolDefinition[], serverName: ServerName):
         title: displayTitle(name)
       }
     };
+    return definition;
   });
 }
+
+const namespaceDescriptions: Record<ServerName, string> = {
+  compliance_theater: "Default Compliance Theater tools for general education compliance reasoning and structured case analysis.",
+  compliance_theater_memory: "Compliance Theater memory tools for listing, creating, retrieving, updating, searching, and relating persisted investigation memories.",
+  compliance_theater_utils: "Compliance Theater utility tools for authenticated app API calls, auth/session management, and ability/resource listings.",
+  compliance_theater_todo: "Compliance Theater todo tools for creating, reading, updating, and advancing compliance-oriented task lists.",
+  compliance_theater_case_workspace: "Compliance Theater case workspace tools for summaries, workspace files, tasks, document summaries, open questions, session logs, and compaction.",
+  compliance_theater_search: "Compliance Theater search tools for policy search, case-file evidence search, document indexes, embeddings, and Neo4j graph queries.",
+  compliance_theater_case_files: "Compliance Theater case-file tools for direct full-fidelity reads, goal-based retrieval, and structured case-file amendments."
+};
 
 const staticRemoteTools: ToolDefinition[] = [
   {
@@ -827,11 +787,53 @@ const graphToolInputSchemas: Record<string, AnyRecord> = {
   }, ["properties"]),
   graph_read: objectSchema({
     query: { type: "string" },
-    params: { type: "object" }
+    params: {
+      type: "object",
+      description: "Cypher parameters. To materialize a query embedding inline, set a parameter value to { \"$embed\": \"query text\", \"modelSize\": \"small\" }."
+    },
+    vectorParams: {
+      type: "object",
+      additionalProperties: {
+        anyOf: [
+          { type: "string" },
+          objectSchema({
+            text: { type: "string" },
+            query: { type: "string" },
+            queryText: { type: "string" },
+            query_text: { type: "string" },
+            modelSize: { type: "string", enum: ["large", "small"] },
+            model_size: { type: "string", enum: ["large", "small"] },
+            size: { type: "string", enum: ["large", "small"] }
+          }, [], true)
+        ]
+      },
+      description: "Optional map of Cypher parameter names to query text embedding specs. Each value is embedded and passed to Neo4j as that parameter."
+    }
   }, ["query"]),
   graph_write: objectSchema({
     query: { type: "string" },
-    params: { type: "object" }
+    params: {
+      type: "object",
+      description: "Cypher parameters. To materialize a query embedding inline, set a parameter value to { \"$embed\": \"query text\", \"modelSize\": \"small\" }."
+    },
+    vectorParams: {
+      type: "object",
+      additionalProperties: {
+        anyOf: [
+          { type: "string" },
+          objectSchema({
+            text: { type: "string" },
+            query: { type: "string" },
+            queryText: { type: "string" },
+            query_text: { type: "string" },
+            modelSize: { type: "string", enum: ["large", "small"] },
+            model_size: { type: "string", enum: ["large", "small"] },
+            size: { type: "string", enum: ["large", "small"] }
+          }, [], true)
+        ]
+      },
+      description: "Optional map of Cypher parameter names to query text embedding specs. Each value is embedded and passed to Neo4j as that parameter."
+    }
   }, ["query"])
 };
 
@@ -854,9 +856,9 @@ const graphTools: ToolDefinition[] = [
 ];
 
 const graphToolAliases: Record<string, string> = {
-  graph_schema: "get_schema",
-  graph_read: "read_cypher",
-  graph_write: "write_cypher"
+  graph_schema: "get-schema",
+  graph_read: "read-cypher",
+  graph_write: "write-cypher"
 };
 
 const searchHelperTools: ToolDefinition[] = [
@@ -999,165 +1001,6 @@ const exposedSearchHelperTools = withAnnotations(searchHelperTools, annotationsF
 const exposedUtilityTools = withAnnotations(utilityTools, annotationsForHelperTool);
 const exposedMemoryTools = withAnnotations(memoryTools, annotationsForHelperTool);
 
-const defaultEnvValues: Record<string, string> = {
-  SERVER_URL: "https://full-ui.compliance-theater.obapps.net/api/ai/tools/sse",
-  AUTH_ISSUER: "https://login.obapps.net/realms/compliance-theater",
-  CLIENT_ID: "codex",
-  OAUTH_SCOPE: "openid",
-};
-
-function key(name: string): string {
-  return `${PREFIX}${name}`;
-}
-
-function resolveValue(value?: string): string | undefined {
-  const fallback = /^\$\{[A-Z0-9_]+:-(.*)\}$/.exec(value || "");
-  if (fallback) {
-    return fallback[1];
-  }
-  const passthrough = /^\$\{([A-Z0-9_]+)\}$/.exec(value || "");
-  if (passthrough) {
-    const resolved = env[passthrough[1]];
-    return resolved && resolved !== value ? resolved : undefined;
-  }
-  return value;
-}
-
-function optional(name: string): string | undefined {
-  const resolved = resolveValue(env[key(name)]);
-  const value = !resolved || resolved.startsWith("[TODO:")
-    ? defaultEnvValues[name]
-    : resolved;
-  if (!value || value.startsWith("[TODO:")) {
-    return undefined;
-  }
-  return value;
-}
-
-function configuredToolset(): Toolset {
-  const value = optional("TOOLSET")?.trim().toLowerCase();
-  if (
-    value === "all" ||
-    value === "default" ||
-    value === "memory" ||
-    value === "utils" ||
-    value === "todo" ||
-    value === "case-workspace" ||
-    value === "search" ||
-    value === "case-files"
-  ) {
-    return value;
-  }
-  return "all";
-}
-
-function required(name: string): string {
-  const value = optional(name);
-  if (!value) {
-    throw new Error(`Missing required environment variable ${key(name)}`);
-  }
-  return value;
-}
-
-function logFilePath(): string {
-  return optional("LOG_FILE") ||
-    join(homedir(), ".codex", "compliance-theater", "compliance-theater-wrapper.log");
-}
-
-function redact(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(redact);
-  }
-  if (!value || typeof value !== "object") {
-    return value;
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).map(([name, item]) => [
-      name,
-      /token|secret|password|authorization|credential/i.test(name) ? "[redacted]" : redact(item)
-    ])
-  );
-}
-
-function log(message: string, details?: unknown): void {
-  console.error(`[compliance-theater] ${message}`);
-  const payload = {
-    timestamp: new Date().toISOString(),
-    pid: process.pid,
-    message,
-    ...(details ? { details: redact(details) } : {})
-  };
-
-  const path = logFilePath();
-  try {
-    mkdirSync(dirname(path), { recursive: true });
-    appendFileSync(path, `${JSON.stringify(payload)}\n`, "utf8");
-  } catch (error) {
-    if (!logWriteFailed) {
-      logWriteFailed = true;
-      console.error(`[compliance-theater] could not write log file ${path}: ${asError(error).message}`);
-    }
-  }
-}
-
-function cachePath(): string {
-  return optional("TOKEN_CACHE_PATH") ||
-    join(homedir(), ".codex", "compliance-theater", "compliance-theater-token-cache.json");
-}
-
-function legacyDeviceLoginPath(): string {
-  return join(homedir(), ".codex", "compliance-theater", "compliance-theater-device-login.json");
-}
-
-function neo4jCredentialCachePath(): string {
-  return join(dirname(cachePath()), "compliance-theater-neo4j-credentials.json");
-}
-
-function credentialCachePaths(): Array<{ path: string; label: string }> {
-  const paths = [
-    { path: cachePath(), label: "cached OAuth token, refresh token, and wrapped Auth.js session cookie" },
-    { path: legacyDeviceLoginPath(), label: "legacy device-login state" },
-    { path: neo4jCredentialCachePath(), label: "cached Neo4j graph credentials" }
-  ];
-  const seen = new Set<string>();
-  return paths.filter(({ path }) => {
-    if (seen.has(path)) {
-      return false;
-    }
-    seen.add(path);
-    return true;
-  });
-}
-
-function tokenSkewMs(): number {
-  return parseNumber(optional("TOKEN_EXPIRY_SKEW_SECONDS"), 60, 0) * 1000;
-}
-
-function httpTimeoutMs() {
-  return parseNumber(optional("HTTP_TIMEOUT_MS"), 360000, 1000);
-}
-
-function httpRetryCount() {
-  return parseNumber(optional("HTTP_RETRY_COUNT"), 2, 0);
-}
-
-function httpRetryBaseMs() {
-  return parseNumber(optional("HTTP_RETRY_BASE_MS"), 500, 0);
-}
-
-function proxyRequestTimeoutMs() {
-  return parseNumber(optional("PROXY_REQUEST_TIMEOUT_MS"), 360000, 1000);
-}
-
-async function readCachedToken(): Promise<CachedToken | undefined> {
-  const cached = await readCachedTokenFile(cachePath(), {
-    skewMs: tokenSkewMs(),
-    logger: log
-  });
-  return cached?.access_token ? cached as CachedToken : undefined;
-}
-
 async function writeCachedToken(token: Token): Promise<void> {
   if (optional("DISABLE_TOKEN_CACHE") === "1") {
     return;
@@ -1165,287 +1008,7 @@ async function writeCachedToken(token: Token): Promise<void> {
   await writeCachedTokenFile(cachePath(), token, { logger: log });
 }
 
-function normalizeIssuer(value: string): string {
-  return value.replace(/\/+$/, "");
-}
-
-function metadataCandidates(): string[] {
-  const explicit = optional("AUTH_METADATA_URL");
-  if (explicit) {
-    warnIfInsecureUrl(explicit, log, "OAuth metadata URL");
-    return [explicit];
-  }
-
-  const issuer = normalizeIssuer(required("AUTH_ISSUER"));
-  warnIfInsecureUrl(issuer, log, "OAuth issuer");
-  const url = new URL(issuer);
-  const issuerPath = url.pathname === "/" ? "" : url.pathname.replace(/\/+$/, "");
-  return [
-    `${url.origin}/.well-known/oauth-authorization-server${issuerPath}`,
-    `${issuer}/.well-known/oauth-authorization-server`
-  ];
-}
-
-async function fetchJsonResponse(url: string, options: FetchPolicyOptions = {}): Promise<JsonResponse> {
-  const startedAt = Date.now();
-  const response = await fetchWithPolicy(url, {
-    ...options,
-    timeoutMs: httpTimeoutMs(),
-    retries: httpRetryCount(),
-    retryBaseMs: httpRetryBaseMs(),
-    logger: log
-  });
-  const text = await response.text();
-  let body;
-  try {
-    body = text ? JSON.parse(text) : {};
-  } catch {
-    body = {};
-  }
-  log("HTTP request completed", {
-    url,
-    method: options.method || "GET",
-    status: response.status,
-    durationMs: Date.now() - startedAt
-  });
-  return { response, body, url };
-}
-
-async function fetchJson(url: string, options: FetchPolicyOptions = {}): Promise<AnyRecord> {
-  const { response, body } = await fetchJsonResponse(url, options);
-  if (!response.ok) {
-    throw httpStatusError(String(body.error || body.error_description || `HTTP ${response.status}`), response.status);
-  }
-  return body;
-}
-
-async function discoverMetadata(): Promise<OAuthMetadata> {
-  const errors = [];
-  for (const url of metadataCandidates()) {
-    try {
-      const metadata = await fetchJson(url);
-      if (!metadata.issuer || !metadata.token_endpoint) {
-        throw new Error("metadata is missing issuer or token_endpoint");
-      }
-      log(`discovered OAuth metadata from ${url}`);
-      return metadata as OAuthMetadata;
-    } catch (error) {
-      errors.push(`${url}: ${asError(error).message}`);
-    }
-  }
-  throw new Error(`Unable to discover OAuth metadata. Tried: ${errors.join("; ")}`);
-}
-
-function hasGrant(metadata: OAuthMetadata, grant: string): boolean {
-  const grants = metadata.grant_types_supported;
-  return Array.isArray(grants) ? grants.includes(grant) : grant === "authorization_code";
-}
-
-function tokenAuthHeaders(metadata: OAuthMetadata): HeadersInit {
-  const clientId = optional("CLIENT_ID");
-  const clientSecret = optional("CLIENT_SECRET");
-  const methods = metadata.token_endpoint_auth_methods_supported || ["client_secret_basic"];
-  if (clientId && clientSecret && methods.includes("client_secret_basic")) {
-    return { Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}` };
-  }
-  return {};
-}
-
-function addClientAuth(body: URLSearchParams, metadata: OAuthMetadata): void {
-  const clientId = optional("CLIENT_ID") || registeredClient?.client_id;
-  const clientSecret = optional("CLIENT_SECRET") || registeredClient?.client_secret;
-  const methods = metadata.token_endpoint_auth_methods_supported || ["client_secret_basic"];
-  if (clientId && !body.has("client_id")) {
-    body.set("client_id", clientId);
-  }
-  if (clientSecret && methods.includes("client_secret_post")) {
-    body.set("client_secret", clientSecret);
-  }
-}
-
-async function tokenRequest(metadata: OAuthMetadata, body: URLSearchParams): Promise<OAuthToken> {
-  addClientAuth(body, metadata);
-  const token = await fetchJson(metadata.token_endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      ...tokenAuthHeaders(metadata)
-    },
-    body
-  });
-  if (!token.access_token) {
-    throw new Error("token endpoint response did not include access_token");
-  }
-  return token as OAuthToken;
-}
-
-async function refreshToken(metadata: OAuthMetadata): Promise<OAuthToken | undefined> {
-  const refresh = optional("REFRESH_TOKEN");
-  if (!refresh) {
-    return undefined;
-  }
-  const body = new URLSearchParams({ grant_type: "refresh_token", refresh_token: refresh });
-  const scope = optional("OAUTH_SCOPE");
-  if (scope) {
-    body.set("scope", scope);
-  }
-  log("requesting access token with refresh_token grant");
-  return tokenRequest(metadata, body);
-}
-
-async function clientCredentials(metadata: OAuthMetadata): Promise<OAuthToken | undefined> {
-  if (!hasGrant(metadata, "client_credentials") || !optional("CLIENT_ID") || !optional("CLIENT_SECRET")) {
-    return undefined;
-  }
-  const body = new URLSearchParams({ grant_type: "client_credentials" });
-  const scope = optional("OAUTH_SCOPE");
-  if (scope) {
-    body.set("scope", scope);
-  }
-  log("requesting access token with client_credentials grant");
-  return tokenRequest(metadata, body);
-}
-
-async function passwordGrant(metadata: OAuthMetadata): Promise<OAuthToken | undefined> {
-  if (!hasGrant(metadata, "password") || !optional("USERNAME") || !optional("PASSWORD")) {
-    return undefined;
-  }
-  const username = required("USERNAME");
-  const password = required("PASSWORD");
-  const body = new URLSearchParams({ grant_type: "password", username, password });
-  const scope = optional("OAUTH_SCOPE");
-  if (scope) {
-    body.set("scope", scope);
-  }
-  log("requesting access token with password grant");
-  return tokenRequest(metadata, body);
-}
-
-async function registerClient(metadata: OAuthMetadata): Promise<OAuthClient | undefined> {
-  if (optional("CLIENT_ID")) {
-    return { client_id: optional("CLIENT_ID"), client_secret: optional("CLIENT_SECRET") };
-  }
-  if (registeredClient) {
-    return registeredClient;
-  }
-  if (!metadata.registration_endpoint) {
-    return undefined;
-  }
-
-  const scope = optional("OAUTH_SCOPE");
-  registeredClient = await fetchJson(metadata.registration_endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      client_name: "Compliance Theater 2000 Codex Plugin",
-      grant_types: ["urn:ietf:params:oauth:grant-type:device_code"],
-      token_endpoint_auth_method: "none",
-      ...(scope ? { scope } : {})
-    })
-  });
-  if (!registeredClient.client_id) {
-    throw new Error("dynamic client registration response did not include client_id");
-  }
-  log("dynamically registered OAuth client");
-  return registeredClient;
-}
-
-async function deviceAuthorization(metadata: OAuthMetadata): Promise<OAuthToken | undefined> {
-  if (!metadata.device_authorization_endpoint) {
-    return undefined;
-  }
-
-  const oauthClient = await registerClient(metadata);
-  if (!oauthClient?.client_id) {
-    return undefined;
-  }
-
-  const body = new URLSearchParams({ client_id: oauthClient.client_id });
-  if (oauthClient.client_secret) {
-    body.set("client_secret", oauthClient.client_secret);
-  }
-  const scope = optional("OAUTH_SCOPE");
-  if (scope) {
-    body.set("scope", scope);
-  }
-
-  const device = await fetchJson(metadata.device_authorization_endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body
-  });
-
-  const verification = device.verification_uri_complete || device.verification_uri;
-  log(`open ${verification}`);
-  if (device.user_code) {
-    log(`enter code ${device.user_code}`);
-  }
-
-  let intervalMs = Math.max(Number(device.interval || 5), 1) * 1000;
-  const expiresAt = Date.now() + Math.max(Number(device.expires_in || 600), 60) * 1000;
-  const timeout = Number(optional("DEVICE_CODE_TIMEOUT_SECONDS") || "900") * 1000;
-  const stopAt = Math.min(expiresAt, Date.now() + timeout);
-
-  while (Date.now() < stopAt) {
-    await sleep(intervalMs);
-    try {
-      return await tokenRequest(
-        metadata,
-        new URLSearchParams({
-          grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-          device_code: device.device_code,
-          client_id: oauthClient.client_id
-        })
-      );
-    } catch (error) {
-      const message = asError(error).message.toLowerCase();
-      if (message.includes("slow_down")) {
-        intervalMs += 5000;
-        log(`slowing device authorization polling to ${intervalMs}ms`);
-      } else if (!message.includes("authorization_pending")) {
-        throw error;
-      }
-    }
-  }
-
-  throw new Error("Timed out waiting for device authorization");
-}
-
-async function acquireToken(options: { ignoreCache?: boolean } = {}): Promise<CachedToken> {
-  const existing = optional("ACCESS_TOKEN");
-  if (existing) {
-    log("using preconfigured access token");
-    return { access_token: existing };
-  }
-
-  if (!options.ignoreCache) {
-    const cached = await readCachedToken();
-    if (cached) {
-      return cached;
-    }
-  } else {
-    log("ignoring cached token for fresh authentication");
-  }
-
-  const metadata = await discoverMetadata();
-  const token =
-    (await refreshToken(metadata)) ||
-    (await clientCredentials(metadata)) ||
-    (await passwordGrant(metadata)) ||
-    (await deviceAuthorization(metadata));
-
-  if (!token) {
-    const grants = metadata.grant_types_supported || ["authorization_code"];
-    throw new Error(`No supported OAuth flow could be selected. Server grants: ${grants.join(", ")}`);
-  }
-
-  const acquired = { ...token, metadata };
-  await writeCachedToken(acquired);
-  return acquired;
-}
-
 async function freshTokenAfterBadRequest(reason: string): Promise<CachedToken> {
-  remote = undefined;
   log("HTTP 400 received from protected upstream; clearing cached auth and retrying once", { reason });
   try {
     await clearCachedToken();
@@ -1492,458 +1055,12 @@ function summarizeMessage(message: AnyRecord | undefined): AnyRecord {
   };
 }
 
-async function connectRemote(): Promise<RemoteConnection> {
-  if (remote) {
-    return remote;
-  }
-
-  const token = await acquireToken();
-  try {
-    return await establishRemoteConnection(token);
-  } catch (error) {
-    if (!isHttpBadRequest(error)) {
-      throw error;
-    }
-    const freshToken = await freshTokenAfterBadRequest("remote MCP connection returned HTTP 400");
-    return establishRemoteConnection(freshToken);
-  }
-}
-
-async function optionalAppSessionForMcpTransport(token: CachedToken): Promise<{
-  appSession?: AppSession;
-  sessionCookie?: string;
-}> {
-  let appSession;
-  let sessionCookie;
-  try {
-    appSession = await acquireAppSession(token);
-    sessionCookie = appSessionCookieHeader(appSession);
-  } catch (error) {
-    if (isHttpBadRequest(error)) {
-      throw error;
-    }
-    log(`wrapped app session unavailable for MCP transport; falling back to source bearer: ${asError(error).message}`);
-  }
-  return { appSession, sessionCookie };
-}
-
-async function establishRemoteConnection(token: CachedToken): Promise<RemoteConnection> {
-  const { appSession, sessionCookie } = await optionalAppSessionForMcpTransport(token);
-  const sseUrl = required("SERVER_URL");
-  warnIfInsecureUrl(sseUrl, log, "Target server URL");
-  log("connecting remote MCP SSE", { sseUrl });
-  const connection = await connectSse({
-    sseUrl,
-    accessToken: token.access_token,
-    sessionCookie,
-    timeoutMs: proxyRequestTimeoutMs(),
-    httpTimeoutMs: httpTimeoutMs(),
-    httpRetries: httpRetryCount(),
-    httpRetryBaseMs: httpRetryBaseMs(),
-    logger: log
-  });
-  remote = Object.assign(connection, {
-    accessToken: token.access_token,
-    appSession,
-    sessionCookie,
-    nextId: randomInt(100_000, 999_999)
-  });
-  await rawRemoteRequest(remote, "initialize", {
-    protocolVersion: "2024-11-05",
-    capabilities: {},
-    clientInfo: { name: "compliance-theater-2000-codex-plugin", version: "0.1.0" }
-  });
-  await remoteNotification("notifications/initialized");
-  log("remote MCP initialized", { endpoint: remote.endpoint });
-  return remote;
-}
-
 async function remoteNotification(method: string, params: ToolArgs = {}): Promise<void> {
-  const connection = remote || await connectRemote();
-  await postRemoteJson(connection, { jsonrpc: "2.0", method, params });
-}
-
-async function postRemoteJson(connection: RemoteConnection, message: JsonRpcMessage): Promise<void> {
-  const response = await fetchWithPolicy(connection.endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(connection.sessionCookie
-        ? { Cookie: connection.sessionCookie }
-        : { Authorization: `Bearer ${connection.accessToken}` })
-    },
-    body: JSON.stringify(message),
-    timeoutMs: httpTimeoutMs(),
-    retries: httpRetryCount(),
-    retryBaseMs: httpRetryBaseMs(),
-    logger: log
-  });
-  const text = await response.text();
-  if (!response.ok) {
-    throw new Error(`Remote MCP ${message.method} failed with HTTP ${response.status}: ${text.slice(0, 1000)}`);
-  }
+  await notifyRemote(method, params, freshTokenAfterBadRequest);
 }
 
 function remoteRequest(method: string, params: ToolArgs = {}): Promise<AnyRecord> {
-  remoteQueue = remoteQueue.catch(() => ({})).then(async () => {
-    const connection = remote || await connectRemote();
-    try {
-      return await rawRemoteRequest(connection, method, params);
-    } catch (error) {
-      if (!isHttpBadRequest(error)) {
-        throw error;
-      }
-      const freshToken = await freshTokenAfterBadRequest(`remote MCP request ${method} returned HTTP 400`);
-      const retryConnection = await establishRemoteConnection(freshToken);
-      return rawRemoteRequest(retryConnection, method, params);
-    }
-  });
-  return remoteQueue;
-}
-
-async function rawRemoteRequest(
-  connection: RemoteConnection,
-  method: string,
-  params: ToolArgs = {}
-): Promise<AnyRecord> {
-  const id = connection.nextId++;
-  log("remote request started", { id, method, paramKeys: Object.keys(params || {}) });
-  await rpc(connection.endpoint, connection.accessToken, id, method, params, {
-    timeoutMs: httpTimeoutMs(),
-    retries: httpRetryCount(),
-    retryBaseMs: httpRetryBaseMs(),
-    logger: log,
-    sessionCookie: connection.sessionCookie
-  });
-  const result = await readRpcResult(connection.reader, id, proxyRequestTimeoutMs());
-  log("remote request completed", {
-    id,
-    method,
-    resultKeys: result && typeof result === "object" ? Object.keys(result) : []
-  });
-  return result || {};
-}
-
-function neo4jSetting(name: string): string | undefined {
-  const value = env[`MCP_COMPLIANCE_THEATER_NEO4J_${name}`];
-  if (!value || value.startsWith("[TODO:")) {
-    return undefined;
-  }
-  return value;
-}
-
-function neo4jAutoDiscoveryEnabled(): boolean {
-  const value = env.MCP_COMPLIANCE_THEATER_NEO4J_AUTO_DISCOVERY;
-  if (value === undefined || value === "" || value.startsWith("[TODO:")) {
-    return true;
-  }
-  return !["0", "false", "no", "off"].includes(value.trim().toLowerCase());
-}
-
-function completeNeo4jSettings(values: Partial<Neo4jSettings>): Neo4jSettings | undefined {
-  if (values.URI && values.USERNAME && values.PASSWORD && values.DATABASE) {
-    return values as Neo4jSettings;
-  }
-  return undefined;
-}
-
-function configuredNeo4jSettings(): Partial<Neo4jSettings> {
-  return {
-    URI: neo4jSetting("URI"),
-    USERNAME: neo4jSetting("USERNAME"),
-    PASSWORD: neo4jSetting("PASSWORD"),
-    DATABASE: neo4jSetting("DATABASE")
-  };
-}
-
-function discoveredNeo4jSettings(config: AnyRecord): Neo4jSettings | undefined {
-  const graphConfig = config?.mem0?.graph_store?.config;
-  if (!graphConfig || typeof graphConfig !== "object") {
-    return undefined;
-  }
-  const values = {
-    URI: graphConfig.url,
-    USERNAME: graphConfig.username,
-    PASSWORD: graphConfig.password,
-    DATABASE: graphConfig.database
-  };
-  if (Object.values(values).some((value) => typeof value !== "string" || value.trim() === "" || value.startsWith("env:"))) {
-    return undefined;
-  }
-  return values as Neo4jSettings;
-}
-
-async function readCachedNeo4jSettings(): Promise<Neo4jSettings | undefined> {
-  try {
-    const cached = JSON.parse(await readFile(neo4jCredentialCachePath(), "utf8")) as CachedNeo4jSettings;
-    if (cached.expires_at && cached.expires_at > Date.now() + tokenSkewMs()) {
-      const settings = completeNeo4jSettings(cached);
-      if (settings) {
-        log("using cached Neo4j graph credentials", { expiresAt: new Date(cached.expires_at).toISOString() });
-        return settings;
-      }
-    }
-  } catch {
-    return undefined;
-  }
-  return undefined;
-}
-
-async function writeCachedNeo4jSettings(settings: Neo4jSettings, expiresAt: number): Promise<void> {
-  const path = neo4jCredentialCachePath();
-  mkdirSync(dirname(path), { recursive: true });
-  await writeFile(path, `${JSON.stringify({
-    ...settings,
-    expires_at: expiresAt,
-    expires_at_iso: new Date(expiresAt).toISOString()
-  }, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
-  log("cached discovered Neo4j graph credentials", { expiresAt: new Date(expiresAt).toISOString() });
-}
-
-async function discoverNeo4jSettings(): Promise<Neo4jSettings | undefined> {
-  if (neo4jAutoDiscoveryAttempted) {
-    return undefined;
-  }
-  neo4jAutoDiscoveryAttempted = true;
-  try {
-    const config = await appSessionJsonRequest("GET", appEndpointUrl("/api/memory/config", { secrets: true }));
-    const settings = discoveredNeo4jSettings(config);
-    if (!settings) {
-      log("Neo4j graph credential discovery returned no concrete graph_store credentials");
-      return undefined;
-    }
-    const token = await acquireToken();
-    await writeCachedNeo4jSettings(settings, tokenExpiresAt(token, 0));
-    return settings;
-  } catch (error) {
-    log("Neo4j graph credential discovery failed; falling back to plugin settings", { message: asError(error).message });
-    return undefined;
-  }
-}
-
-async function resolvedNeo4jSettings(): Promise<Neo4jSettings> {
-  if (neo4jSettingsCache) {
-    return neo4jSettingsCache;
-  }
-  if (neo4jAutoDiscoveryEnabled()) {
-    const cached = await readCachedNeo4jSettings();
-    if (cached) {
-      neo4jSettingsCache = cached;
-      return cached;
-    }
-    const discovered = await discoverNeo4jSettings();
-    if (discovered) {
-      neo4jSettingsCache = discovered;
-      return discovered;
-    }
-  }
-  const configured = completeNeo4jSettings(configuredNeo4jSettings());
-  if (configured) {
-    neo4jSettingsCache = configured;
-    return configured;
-  }
-
-  const requiredSettings = ["URI", "USERNAME", "PASSWORD", "DATABASE"];
-  const pluginSettingNames: Record<string, string> = {
-    URI: "neo4jUri",
-    USERNAME: "neo4jUsername",
-    PASSWORD: "neo4jPassword",
-    DATABASE: "neo4jDatabase"
-  };
-  const missing = requiredSettings.filter((name) => {
-    const value = configuredNeo4jSettings()[name as keyof Neo4jSettings];
-    return !value;
-  });
-  throw new Error(`Neo4j graph tools are not configured. Missing plugin settings: ${missing.map((name) => pluginSettingNames[name]).join(", ")}.`);
-}
-
-async function neo4jChildEnv(): Promise<NodeJS.ProcessEnv> {
-  const settings = await resolvedNeo4jSettings();
-  return {
-    ...process.env,
-    NEO4J_URI: settings.URI,
-    NEO4J_USERNAME: settings.USERNAME,
-    NEO4J_PASSWORD: settings.PASSWORD,
-    NEO4J_DATABASE: settings.DATABASE,
-    NEO4J_READ_ONLY: "false",
-    NEO4J_TELEMETRY: "false"
-  };
-}
-
-function writeStdioMcpMessage(connection: StdioMcpConnection, message: AnyRecord): void {
-  const body = JSON.stringify(message);
-  const header = `Content-Length: ${Buffer.byteLength(body, "utf8")}\r\n\r\n`;
-  connection.child.stdin.write(header + body);
-}
-
-function rejectPendingStdioRequests(connection: StdioMcpConnection, error: Error): void {
-  for (const pending of connection.pending.values()) {
-    clearTimeout(pending.timer);
-    pending.reject(error);
-  }
-  connection.pending.clear();
-}
-
-function handleStdioMcpMessage(connection: StdioMcpConnection, message: AnyRecord): void {
-  if (typeof message.id !== "number") {
-    return;
-  }
-  const pending = connection.pending.get(message.id);
-  if (!pending) {
-    return;
-  }
-  clearTimeout(pending.timer);
-  connection.pending.delete(message.id);
-  if (message.error) {
-    const detail = message.error.message || JSON.stringify(message.error);
-    pending.reject(new Error(`Neo4j MCP ${connection.commandLabel} request failed: ${detail}`));
-    return;
-  }
-  pending.resolve(message.result || {});
-}
-
-function parseStdioMcpBuffer(connection: StdioMcpConnection): void {
-  while (connection.buffer.length > 0) {
-    const headerEnd = connection.buffer.indexOf("\r\n\r\n");
-    if (headerEnd >= 0) {
-      const header = connection.buffer.subarray(0, headerEnd).toString("utf8");
-      const match = /content-length:\s*(\d+)/i.exec(header);
-      if (!match) {
-        connection.buffer = Buffer.alloc(0);
-        throw new Error("Neo4j MCP backend returned an invalid stdio frame.");
-      }
-      const contentLength = Number(match[1]);
-      const bodyStart = headerEnd + 4;
-      const bodyEnd = bodyStart + contentLength;
-      if (connection.buffer.length < bodyEnd) {
-        return;
-      }
-      const body = connection.buffer.subarray(bodyStart, bodyEnd).toString("utf8");
-      connection.buffer = connection.buffer.subarray(bodyEnd);
-      handleStdioMcpMessage(connection, JSON.parse(body));
-      continue;
-    }
-
-    const lineEnd = connection.buffer.indexOf("\n");
-    if (lineEnd < 0) {
-      return;
-    }
-    const line = connection.buffer.subarray(0, lineEnd).toString("utf8").trim();
-    connection.buffer = connection.buffer.subarray(lineEnd + 1);
-    if (line) {
-      handleStdioMcpMessage(connection, JSON.parse(line));
-    }
-  }
-}
-
-function rawStdioMcpRequest(
-  connection: StdioMcpConnection,
-  method: string,
-  params: ToolArgs = {},
-  timeoutMs = proxyRequestTimeoutMs()
-): Promise<AnyRecord> {
-  const id = connection.nextId++;
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      connection.pending.delete(id);
-      reject(new Error(`Neo4j MCP backend timed out while handling ${method}.`));
-    }, timeoutMs);
-    connection.pending.set(id, { resolve, reject, timer });
-    try {
-      writeStdioMcpMessage(connection, { jsonrpc: "2.0", id, method, params });
-    } catch (error) {
-      clearTimeout(timer);
-      connection.pending.delete(id);
-      reject(asError(error));
-    }
-  });
-}
-
-async function stdioMcpRequest(connection: StdioMcpConnection, method: string, params: ToolArgs = {}): Promise<AnyRecord> {
-  connection.queue = connection.queue.catch(() => ({})).then(() => rawStdioMcpRequest(connection, method, params));
-  return connection.queue;
-}
-
-async function startNeo4jMcpCandidate(command: string, args: string[], commandLabel: string): Promise<StdioMcpConnection> {
-  const child = spawn(command, args, {
-    cwd: process.cwd(),
-    env: await neo4jChildEnv(),
-    stdio: "pipe",
-    windowsHide: true
-  });
-  const connection: StdioMcpConnection = {
-    child,
-    commandLabel,
-    nextId: randomInt(100_000, 999_999),
-    buffer: Buffer.alloc(0),
-    pending: new Map(),
-    queue: Promise.resolve({})
-  };
-
-  child.stdout.on("data", (chunk: Buffer) => {
-    try {
-      connection.buffer = Buffer.concat([connection.buffer, chunk]);
-      parseStdioMcpBuffer(connection);
-    } catch (error) {
-      rejectPendingStdioRequests(connection, asError(error));
-    }
-  });
-  child.stderr.setEncoding("utf8");
-  child.stderr.on("data", (chunk: string) => {
-    const text = chunk.trim();
-    if (text) {
-      log(`Neo4j MCP backend stderr (${commandLabel}): ${text.slice(0, 1000)}`);
-    }
-  });
-  child.on("error", (error) => {
-    rejectPendingStdioRequests(connection, new Error(`Neo4j MCP backend failed to start with ${commandLabel}: ${error.message}`));
-  });
-  child.on("exit", (code, signal) => {
-    if (neo4jRemote === connection) {
-      neo4jRemote = undefined;
-    }
-    rejectPendingStdioRequests(connection, new Error(`Neo4j MCP backend exited while using ${commandLabel} (code ${code ?? "unknown"}, signal ${signal ?? "none"}).`));
-  });
-
-  log("starting Neo4j MCP backend", { commandLabel });
-  try {
-    await rawStdioMcpRequest(connection, "initialize", {
-      protocolVersion: "2024-11-05",
-      capabilities: {},
-      clientInfo: { name: "compliance-theater-neo4j-bridge", version: "0.1.0" }
-    }, 15_000);
-    writeStdioMcpMessage(connection, { jsonrpc: "2.0", method: "notifications/initialized", params: {} });
-    log("Neo4j MCP backend initialized", { commandLabel });
-    return connection;
-  } catch (error) {
-    connection.child.kill();
-    throw error;
-  }
-}
-
-async function connectNeo4jMcp(): Promise<StdioMcpConnection> {
-  if (neo4jRemote) {
-    return neo4jRemote;
-  }
-  await resolvedNeo4jSettings();
-  const attempts: Array<{ command: string; args: string[]; label: string }> = [
-    { command: "python", args: ["-m", "neo4j_mcp_server"], label: "python -m neo4j_mcp_server" },
-    { command: "uvx", args: ["neo4j-mcp-server"], label: "uvx neo4j-mcp-server" }
-  ];
-  const failures: string[] = [];
-  for (const attempt of attempts) {
-    try {
-      neo4jRemote = await startNeo4jMcpCandidate(attempt.command, attempt.args, attempt.label);
-      return neo4jRemote;
-    } catch (error) {
-      failures.push(`${attempt.label}: ${asError(error).message}`);
-      if (neo4jRemote) {
-        neo4jRemote.child.kill();
-        neo4jRemote = undefined;
-      }
-    }
-  }
-  throw new Error(`Neo4j MCP backend could not be started. Tried python -m neo4j_mcp_server and uvx neo4j-mcp-server. Details: ${failures.join(" | ")}`);
+  return requestRemote(method, params, freshTokenAfterBadRequest);
 }
 
 async function callNeo4jGraphTool(name: string, args: ToolArgs = {}, retried = false): Promise<AnyRecord> {
@@ -1951,16 +1068,12 @@ async function callNeo4jGraphTool(name: string, args: ToolArgs = {}, retried = f
   if (!upstreamName) {
     throw new Error(`Unknown Neo4j graph tool ${name}.`);
   }
-  const connection = await connectNeo4jMcp();
   try {
-    return await stdioMcpRequest(connection, "tools/call", {
-      name: upstreamName,
-      arguments: args
-    });
+    return await callNeo4jMcpTool(upstreamName, args);
   } catch (error) {
     const message = asError(error).message;
     if (!retried && /backend exited|failed to start|EPIPE|closed/i.test(message)) {
-      neo4jRemote = undefined;
+      clearNeo4jState();
       return callNeo4jGraphTool(name, args, true);
     }
     throw error;
@@ -2040,15 +1153,63 @@ function listTools(): ToolDefinition[] {
     return prefixToolDefinitions([...exposedDefaultRemoteTools, ...exposedCoreHelperTools], serverNameForToolset(toolset));
   }
   return [
-    ...prefixToolDefinitions(exposedDefaultRemoteTools, "compliance-theater"),
-    ...prefixToolDefinitions(exposedCoreHelperTools, "compliance-theater"),
-    ...prefixToolDefinitions(exposedMemoryTools, "compliance-theater-memory"),
-    ...prefixToolDefinitions(exposedUtilityTools, "compliance-theater-utils"),
-    ...prefixToolDefinitions(exposedTodoTools, "compliance-theater-todo"),
-    ...prefixToolDefinitions(exposedCaseWorkspaceTools, "compliance-theater-case-workspace"),
-    ...prefixToolDefinitions([...exposedSearchTools, ...exposedSearchHelperTools], "compliance-theater-search"),
-    ...prefixToolDefinitions(exposedCaseFileTools, "compliance-theater-case-files")
+    ...prefixToolDefinitions(exposedDefaultRemoteTools, "compliance_theater"),
+    ...prefixToolDefinitions(exposedCoreHelperTools, "compliance_theater"),
+    ...prefixToolDefinitions(exposedMemoryTools, "compliance_theater_memory"),
+    ...prefixToolDefinitions(exposedUtilityTools, "compliance_theater_utils"),
+    ...prefixToolDefinitions(exposedTodoTools, "compliance_theater_todo"),
+    ...prefixToolDefinitions(exposedCaseWorkspaceTools, "compliance_theater_case_workspace"),
+    ...prefixToolDefinitions([...exposedSearchTools, ...exposedSearchHelperTools], "compliance_theater_search"),
+    ...prefixToolDefinitions(exposedCaseFileTools, "compliance_theater_case_files")
   ];
+}
+
+function namespaceTools(serverName: ServerName): ToolDefinition[] {
+  if (serverName === "compliance_theater_memory") {
+    return exposedMemoryTools;
+  }
+  if (serverName === "compliance_theater_utils") {
+    return exposedUtilityTools;
+  }
+  if (serverName === "compliance_theater_todo") {
+    return exposedTodoTools;
+  }
+  if (serverName === "compliance_theater_case_workspace") {
+    return exposedCaseWorkspaceTools;
+  }
+  if (serverName === "compliance_theater_search") {
+    return [...exposedSearchTools, ...exposedSearchHelperTools];
+  }
+  if (serverName === "compliance_theater_case_files") {
+    return exposedCaseFileTools;
+  }
+  return [...exposedDefaultRemoteTools, ...exposedCoreHelperTools];
+}
+
+function namespaceNamesForToolset(): ServerName[] {
+  const toolset = configuredToolset();
+  if (toolset === "all") {
+    return serverNames;
+  }
+  return [serverNameForToolset(toolset)];
+}
+
+function toOpenAiFunctionTool(tool: ToolDefinition): OpenAiFunctionToolDefinition {
+  return {
+    type: "function",
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.inputSchema || objectSchema({})
+  };
+}
+
+function listOpenAiNamespaceTools(): OpenAiNamespaceToolDefinition[] {
+  return namespaceNamesForToolset().map((serverName) => ({
+    type: "namespace",
+    name: serverName,
+    description: namespaceDescriptions[serverName],
+    tools: namespaceTools(serverName).map(toOpenAiFunctionTool)
+  }));
 }
 
 function remoteToolIsCallable(name: string | undefined): boolean {
@@ -2098,8 +1259,19 @@ function helperToolIsCallable(name: string | undefined): boolean {
   return Boolean(localName && exposedHelperToolsForToolset().some((tool) => tool.name === localName));
 }
 
-async function listResources(): Promise<AnyRecord[]> {
-  return collectPaginated("resources/list", "resources");
+async function listResources(includeRemote = true): Promise<AnyRecord[]> {
+  if (configuredToolset() !== "default" && configuredToolset() !== "all") {
+    return collectPaginated("resources/list", "resources");
+  }
+  const localResources = await listLocalFileResources();
+  if (!includeRemote) {
+    return localResources;
+  }
+  const remoteResources = await collectPaginated("resources/list", "resources").catch((error) => {
+    log("remote resources/list failed while listing local file resources", { message: asError(error).message });
+    return [];
+  });
+  return [...localResources, ...remoteResources];
 }
 
 async function listResourceTemplates(): Promise<AnyRecord[]> {
@@ -2166,105 +1338,19 @@ function formatResourceDirectory(resources: AnyRecord[], templates: AnyRecord[])
   return lines.join("\n");
 }
 
-function sessionEndpointUrl(): string {
-  const explicit = optional("SESSION_STATUS_URL");
-  if (explicit) {
-    warnIfInsecureUrl(explicit, log, "Session status URL");
-    return explicit;
-  }
-  const parsed = new URL(required("SERVER_URL"));
-  parsed.pathname = "/api/auth/session";
-  parsed.search = "";
-  parsed.hash = "";
-  return parsed.toString();
-}
-
-function wrapEndpointUrl(): string {
-  const explicit = optional("WRAP_URL");
-  if (explicit) {
-    warnIfInsecureUrl(explicit, log, "Session wrap URL");
-    return explicit;
-  }
-  const parsed = new URL(required("SERVER_URL"));
-  parsed.pathname = "/api/auth/wrap";
-  parsed.search = "";
-  parsed.hash = "";
-  return parsed.toString();
-}
-
-function appEndpointUrl(pathname: string, query: Record<string, unknown> = {}): string {
-  const parsed = new URL(required("SERVER_URL"));
-  parsed.pathname = pathname;
-  parsed.search = "";
-  parsed.hash = "";
-  for (const [name, value] of Object.entries(query)) {
-    if (value !== undefined && value !== null && value !== "") {
-      parsed.searchParams.set(name, String(value));
-    }
-  }
-  return parsed.toString();
-}
-
-function memoryEndpointUrl(pathname: string, query?: Record<string, unknown>): string {
-  return appEndpointUrl(`/api/memory/${pathname.replace(/^\/+/, "")}`, query);
-}
-
-function documentUnitEndpointUrl(caseFileId: string | number): string {
-  return appEndpointUrl(`/api/document-unit/${encodeURIComponent(String(caseFileId))}`);
-}
-
-function documentUnitEmbeddingsEndpointUrl(
-  caseFileId: string | number,
-  modelSize: string,
-  index?: string | number
-): string {
-  const encodedId = encodeURIComponent(String(caseFileId));
-  const encodedIndex = index === undefined || index === null || index === ""
-    ? undefined
-    : encodeURIComponent(String(index));
-  return appEndpointUrl(
-    `/api/document-unit/${encodedId}/embeddings${encodedIndex === undefined ? "" : `/${encodedIndex}`}`,
-    { size: modelSize }
-  );
-}
-
-function documentUnitEmbeddingsEndpointPath(caseFileId: string | number, index?: string | number): string {
-  const encodedId = encodeURIComponent(String(caseFileId));
-  const encodedIndex = index === undefined || index === null || index === ""
-    ? undefined
-    : encodeURIComponent(String(index));
-  return `/api/document-unit/${encodedId}/embeddings${encodedIndex === undefined ? "" : `/${encodedIndex}`}`;
-}
-
-function aiEmbedEndpointUrl(): string {
-  return appEndpointUrl("/api/ai/embed");
-}
-
-function aiEmbedEndpointPath(): string {
-  return "/api/ai/embed";
-}
-
 async function clearCachedToken(): Promise<string> {
   const messages: string[] = [];
-  const activeRemote = remote;
-  const activeNeo4jRemote = neo4jRemote;
-  remote = undefined;
-  neo4jRemote = undefined;
-  neo4jSettingsCache = undefined;
-  neo4jAutoDiscoveryAttempted = false;
-  registeredClient = undefined;
-  if (activeRemote) {
-    try {
-      await activeRemote.reader.cancel();
-      messages.push("Closed in-memory MCP connection and cleared its wrapped session cookie.");
-    } catch (error) {
-      messages.push(`Cleared in-memory MCP connection state; reader close reported: ${asError(error).message}`);
-    }
+  const remoteMessage = await clearRemoteState();
+  const hadNeo4jRemote = clearNeo4jState();
+  resetAuthState();
+  clearAppToolCaches();
+  if (remoteMessage) {
+    messages.push(remoteMessage);
   } else {
     messages.push("Cleared in-memory auth/session state.");
   }
-  if (activeNeo4jRemote) {
-    activeNeo4jRemote.child.kill();
+  messages.push("Cleared in-memory query vector cache.");
+  if (hadNeo4jRemote) {
     messages.push("Closed in-memory Neo4j MCP backend connection.");
   }
 
@@ -2290,829 +1376,51 @@ async function clearCachedToken(): Promise<string> {
   return messages.join("\n");
 }
 
-async function currentAccessToken(): Promise<TokenInfo | undefined> {
-  const explicit = optional("ACCESS_TOKEN");
-  if (explicit) {
-    return { token: explicit, source: "env:ACCESS_TOKEN" };
-  }
-  const cached = await readCachedToken();
-  return cached?.access_token ? { token: cached.access_token, source: "cached-token", cached } : undefined;
-}
-
-function roleSummary(resourceAccess: AnyRecord | undefined): string {
-  if (!resourceAccess || typeof resourceAccess !== "object") {
-    return "none";
-  }
-  const entries = Object.entries(resourceAccess).map(([resourceName, details]) => {
-    const roles = Array.isArray(details) ? details : Array.isArray(details?.roles) ? details.roles : [];
-    return `${resourceName}: ${roles.join(", ") || "(no roles)"}`;
-  });
-  return entries.length ? entries.join("\n") : "none";
-}
-
-async function fetchSessionForAppSession(appSession: AppSession): Promise<JsonResponse> {
-  const url = sessionEndpointUrl();
-  const startedAt = Date.now();
-  const sessionCookie = appSessionCookieHeader(appSession);
-  if (!sessionCookie) {
-    throw new Error("Wrapped app session did not include a cookie header.");
-  }
-  const response = await fetchWithPolicy(url, {
-    headers: {
-      Accept: "application/json",
-      Cookie: sessionCookie
-    },
-    timeoutMs: httpTimeoutMs(),
-    retries: httpRetryCount(),
-    retryBaseMs: httpRetryBaseMs(),
-    logger: log
-  });
-  const text = await response.text();
-  let body;
-  try {
-    body = text ? JSON.parse(text) : {};
-  } catch {
-    body = {};
-  }
-  log("session status request completed", { url, status: response.status, durationMs: Date.now() - startedAt });
-  return { response, body, url };
-}
-
-async function metadataForToken(tokenInfo?: TokenInfo): Promise<OAuthMetadata> {
-  return tokenInfo?.cached?.metadata || discoverMetadata();
-}
-
-async function fetchUserInfoForToken(accessToken: string, metadata?: OAuthMetadata): Promise<JsonResponse | undefined> {
-  if (!metadata?.userinfo_endpoint) {
-    return undefined;
-  }
-  return fetchJsonResponse(metadata.userinfo_endpoint, {
-    headers: { Accept: "application/json", Authorization: `Bearer ${accessToken}` }
-  });
-}
-
-function tokenExpiryLine(tokenInfo?: TokenInfo): string {
-  const cached = tokenInfo?.cached;
-  if (!cached) {
-    return "- expires: (not provided)";
-  }
-  const expiresAt = tokenExpiresAt(cached, 0);
-  return expiresAt > 0 ? `- expires: ${new Date(expiresAt).toISOString()}` : "- expires: (not provided)";
-}
-
-function formatSessionReadiness(sessionResult?: JsonResponse): string[] {
-  if (!sessionResult) {
-    return ["App session:", "- status: not checked", "- detail: no session endpoint is configured"];
-  }
-  const { response, body, url } = sessionResult;
-  if (response.ok) {
-    return ["App session:", `- status: ${body?.status || "unknown"}`, `- endpoint: ${url}`];
-  }
-  return ["App session:", "- status: invalid", `- endpoint: ${url}`, `- HTTP: ${response.status}`, `- response: ${JSON.stringify(body)}`];
-}
-
-function formatUserInfoStatus(
-  userInfo: AnyRecord,
-  context: string,
-  tokenInfo?: TokenInfo,
-  sessionResult?: JsonResponse
-): string {
-  return [
-    `Auth status: authenticated (${context})`,
-    "OAuth userinfo endpoint: verified",
-    "",
-    "User:",
-    `- name: ${userInfo.name || "(unknown)"}`,
-    `- email: ${userInfo.email || "(unknown)"}`,
-    `- id: ${userInfo.sub || userInfo.id || "(unknown)"}`,
-    `- username: ${userInfo.preferred_username || "(not provided)"}`,
-    tokenExpiryLine(tokenInfo),
-    "",
-    ...formatSessionReadiness(sessionResult),
-    "",
-    "Permissions:",
-    roleSummary(userInfo.resource_access)
-  ].join("\n");
-}
-
-function parseFutureExpiry(value: string, label: string): number {
-  const expiresAt = Date.parse(value);
-  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) {
-    throw new Error(`Wrap response did not include a future ${label}.`);
-  }
-  return expiresAt;
-}
-
-function appSessionFromWrapResponse(body: AnyRecord): AppSession {
-  if (!body?.success || !body.token || !body.cookieName || !body.expiresAt) {
-    throw new Error("Wrap response did not include a wrapped app session token.");
-  }
-
-  return {
-    token: body.token,
-    cookie_name: body.cookieName,
-    expires_at: parseFutureExpiry(body.expiresAt, "session expiry"),
-    expires_at_iso: body.expiresAt,
-    source_token_expires_at: body.sourceTokenExpiresAt || undefined,
-    session_expires_at: body.sessionExpiresAt || undefined,
-    wrapped_at: Date.now()
-  };
-}
-
-function shouldPersistDerivedSession(token: Token): boolean {
-  return Boolean(token?.metadata || token?.cached_at);
-}
-
-async function wrapAccessToken(token: CachedToken): Promise<AppSession> {
-  const url = wrapEndpointUrl();
-  log("requesting wrapped app session", { url });
-  const body = await fetchJson(url, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${token.access_token}`
-    }
-  });
-  const appSession = appSessionFromWrapResponse(body);
-  const tokenWithAppSession = { ...token, app_session: appSession };
-  if (shouldPersistDerivedSession(token)) {
-    try {
-      await writeCachedToken(tokenWithAppSession);
-    } catch (error) {
-      log("could not persist wrapped app session; continuing with in-memory session", {
-        message: asError(error).message
-      });
-    }
-  }
-  log("wrapped app session acquired", {
-    url,
-    cookieName: appSession.cookie_name,
-    expiresAt: appSession.expires_at_iso
-  });
-  return appSession;
-}
-
-async function acquireAppSession(token: CachedToken): Promise<AppSession> {
-  if (isUsableCachedAppSession(token, tokenSkewMs())) {
-    log("using cached wrapped app session");
-    return token.app_session!;
-  }
-  return wrapAccessToken(token);
-}
-
-function requiredToolArgument(args: ToolArgs | undefined, name: string): any {
-  const value = args?.[name];
-  if (value === undefined || value === null || value === "") {
-    throw new Error(`${name} is required.`);
-  }
-  return value;
-}
-
-async function memoryApiRequest(method: string, url: string, body?: unknown): Promise<AnyRecord> {
-  const token = await acquireToken();
-  try {
-    return await memoryApiRequestWithToken(token, method, url, body);
-  } catch (error) {
-    if (!isHttpBadRequest(error)) {
-      throw error;
-    }
-    const freshToken = await freshTokenAfterBadRequest(`Memory API ${method} ${url} returned HTTP 400`);
-    return memoryApiRequestWithToken(freshToken, method, url, body);
-  }
-}
-
-async function memoryApiRequestWithToken(
-  token: CachedToken,
-  method: string,
-  url: string,
-  body?: unknown
-): Promise<AnyRecord> {
-  const appSession = await acquireAppSession(token);
-  const sessionCookie = appSessionCookieHeader(appSession);
-  if (!sessionCookie) {
-    throw new Error("Wrapped app session did not include a cookie header.");
-  }
-  const responseResult = await fetchJsonResponse(url, {
-    method,
-    headers: {
-      Accept: "application/json",
-      Cookie: sessionCookie,
-      ...(body === undefined ? {} : { "Content-Type": "application/json" })
-    },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) })
-  });
-  if (!responseResult.response.ok) {
-    const detail = responseResult.body?.message || responseResult.body?.error || `HTTP ${responseResult.response.status}`;
-    throw httpStatusError(`Memory API ${method} ${url} failed: ${detail}`, responseResult.response.status);
-  }
-  return responseResult.body;
-}
-
-async function appSessionJsonRequest(method: string, url: string, body?: unknown): Promise<AnyRecord> {
-  const token = await acquireToken();
-  try {
-    return await appSessionJsonRequestWithToken(token, method, url, body);
-  } catch (error) {
-    if (!isHttpBadRequest(error)) {
-      throw error;
-    }
-    const freshToken = await freshTokenAfterBadRequest(`App API ${method} ${url} returned HTTP 400`);
-    return appSessionJsonRequestWithToken(freshToken, method, url, body);
-  }
-}
-
-async function appSessionJsonRequestWithToken(
-  token: CachedToken,
-  method: string,
-  url: string,
-  body?: unknown
-): Promise<AnyRecord> {
-  const appSession = await acquireAppSession(token);
-  const sessionCookie = appSessionCookieHeader(appSession);
-  if (!sessionCookie) {
-    throw new Error("Wrapped app session did not include a cookie header.");
-  }
-  const responseResult = await fetchJsonResponse(url, {
-    method,
-    headers: {
-      Accept: "application/json",
-      Cookie: sessionCookie,
-      ...(body === undefined ? {} : { "Content-Type": "application/json" })
-    },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) })
-  });
-  if (!responseResult.response.ok) {
-    const detail = responseResult.body?.message || responseResult.body?.error || `HTTP ${responseResult.response.status}`;
-    throw httpStatusError(`App API ${method} ${url} failed: ${detail}`, responseResult.response.status);
-  }
-  return responseResult.body;
-}
-
-function appApiEndpointUrl(relativeUrl: string): string {
-  const trimmed = relativeUrl.trim();
-  if (!trimmed) {
-    throw new Error("url is required.");
-  }
-  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed) || trimmed.startsWith("//")) {
-    throw new Error("url must be relative to the Compliance Theater /api root.");
-  }
-
-  const withoutLeadingSlash = trimmed.replace(/^\/+/, "");
-  const apiRelative = withoutLeadingSlash.replace(/^api(?:\/|$)/i, "");
-  const server = new URL(required("SERVER_URL"));
-  const apiRoot = new URL("/api/", server.origin);
-  const target = new URL(apiRelative, apiRoot);
-  if (target.origin !== apiRoot.origin || !target.pathname.startsWith("/api/")) {
-    throw new Error("url must resolve inside the Compliance Theater /api root.");
-  }
-  return target.toString();
-}
-
-function normalizeHttpMethod(value: unknown): string {
-  const method = String(value || "GET").trim().toUpperCase();
-  if (!/^[A-Z][A-Z0-9_-]*$/.test(method)) {
-    throw new Error("method must be a valid HTTP method token.");
-  }
-  return method;
-}
-
-function hasToolData(args: ToolArgs): boolean {
-  return Object.prototype.hasOwnProperty.call(args, "data") && args.data !== undefined;
-}
-
-async function appSessionApiResponse(method: string, url: string, body?: unknown): Promise<AnyRecord> {
-  const token = await acquireToken();
-  const first = await appSessionApiResponseWithToken(token, method, url, body);
-  if (first.status !== 400) {
-    return first;
-  }
-  const freshToken = await freshTokenAfterBadRequest(`App API ${method} ${url} returned HTTP 400`);
-  return appSessionApiResponseWithToken(freshToken, method, url, body);
-}
-
-async function appSessionApiResponseWithToken(
-  token: CachedToken,
-  method: string,
-  url: string,
-  body?: unknown
-): Promise<AnyRecord> {
-  const appSession = await acquireAppSession(token);
-  const sessionCookie = appSessionCookieHeader(appSession);
-  if (!sessionCookie) {
-    throw new Error("Wrapped app session did not include a cookie header.");
-  }
-
-  const startedAt = Date.now();
-  const response = await fetchWithPolicy(url, {
-    method,
-    headers: {
-      Accept: "application/json, text/plain;q=0.9, */*;q=0.8",
-      Cookie: sessionCookie,
-      ...(body === undefined ? {} : { "Content-Type": "application/json" })
-    },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-    timeoutMs: httpTimeoutMs(),
-    retries: httpRetryCount(),
-    retryBaseMs: httpRetryBaseMs(),
-    logger: log
-  });
-  const text = await response.text();
-  let parsedBody: unknown = null;
-  let parsedJson = false;
-  try {
-    parsedBody = text ? JSON.parse(text) : null;
-    parsedJson = text.trim().length > 0;
-  } catch {
-    parsedBody = null;
-  }
-  log("App API call completed", {
-    url,
-    method,
-    status: response.status,
-    durationMs: Date.now() - startedAt
-  });
-  return {
-    ok: response.ok,
-    status: response.status,
-    statusText: response.statusText,
-    method,
-    url,
-    body: parsedBody,
-    text: parsedJson ? null : text
-  };
-}
-
-async function callApiTool(args: ToolArgs = {}): Promise<AnyRecord> {
-  const url = appApiEndpointUrl(String(requiredToolArgument(args, "url")));
-  const method = normalizeHttpMethod(args.method);
-  const includesBody = hasToolData(args);
-  if (includesBody && (method === "GET" || method === "HEAD")) {
-    throw new Error("data cannot be sent with GET or HEAD. Put query parameters in the url, or use POST/PUT/PATCH.");
-  }
-  return appSessionApiResponse(method, url, includesBody ? args.data : undefined);
-}
-
-async function readCaseFileTool(args: ToolArgs = {}): Promise<AnyRecord> {
-  const caseFileId = args.caseFileId ?? args.case_file_id ?? args.id;
-  if (caseFileId === undefined || caseFileId === null || caseFileId === "") {
-    throw new Error("caseFileId is required.");
-  }
-  return appSessionJsonRequest("GET", documentUnitEndpointUrl(caseFileId));
-}
-
-function caseFileIdsFromArgs(args: ToolArgs): Array<string | number> {
-  const ids: Array<string | number> = [];
-  if (args.caseFileId !== undefined && args.caseFileId !== null && args.caseFileId !== "") {
-    ids.push(args.caseFileId);
-  }
-  if (args.id !== undefined && args.id !== null && args.id !== "") {
-    ids.push(args.id);
-  }
-  if (Array.isArray(args.ids)) {
-    ids.push(...args.ids.filter((id) => id !== undefined && id !== null && id !== ""));
-  }
-  if (Array.isArray(args.requests)) {
-    ids.push(...args.requests
-      .map((request) => request?.caseFileId)
-      .filter((id) => id !== undefined && id !== null && id !== ""));
-  }
-  return ids;
-}
-
-function goalsRequestsFromArgs(args: ToolArgs): AnyRecord[] {
-  if (Array.isArray(args.requests) && args.requests.length > 0) {
-    return args.requests;
-  }
-  const ids = caseFileIdsFromArgs(args);
-  return ids.map((caseFileId) => ({ caseFileId }));
-}
-
-async function getCaseFileTool(args: ToolArgs = {}): Promise<AnyRecord> {
-  const mode = args.mode;
-  if (mode !== "direct" && mode !== "goals") {
-    throw new Error("mode is required and must be one of: direct, goals.");
-  }
-  if (mode === "direct") {
-    if (args.goals !== undefined || args.verbatim_fidelity !== undefined) {
-      throw new Error("direct mode does not accept goals or verbatim_fidelity. Use goals mode for preprocessing.");
-    }
-    const ids = caseFileIdsFromArgs(args);
-    if (ids.length === 0) {
-      throw new Error("direct mode requires caseFileId, id, ids, or requests.");
-    }
-    if (ids.length > 3) {
-      throw new Error("direct mode supports at most 3 case-file IDs. Use goals mode for larger batches.");
-    }
-    return {
-      mode,
-      items: await Promise.all(ids.map(async (caseFileId) => ({
-        caseFileId,
-        result: await readCaseFileTool({ caseFileId })
-      })))
-    };
-  }
-
-  const requests = goalsRequestsFromArgs(args);
-  if (requests.length === 0) {
-    throw new Error("goals mode requires requests, ids, caseFileId, or id.");
-  }
-  return {
-    mode,
-    result: await remoteRequest("tools/call", {
-      name: "getMultipleCaseFileDocuments",
-      arguments: {
-        requests,
-        ...(args.goals === undefined ? {} : { goals: args.goals }),
-        ...(args.verbatim_fidelity === undefined ? {} : { verbatim_fidelity: args.verbatim_fidelity })
-      }
-    })
-  };
-}
-
-async function amendCaseFileTool(args: ToolArgs = {}): Promise<AnyRecord> {
-  return remoteRequest("tools/call", {
-    name: "amendCaseFileDocument",
-    arguments: args
-  });
-}
-
-function requiredModelSize(args: ToolArgs): "large" | "small" {
-  const modelSize = args.modelSize ?? args.model_size ?? args.size;
-  if (modelSize !== "large" && modelSize !== "small") {
-    throw new Error("modelSize is required and must be one of: large, small.");
-  }
-  return modelSize;
-}
-
-function optionalModelSize(args: ToolArgs): "large" | "small" {
-  const modelSize = args.modelSize ?? args.model_size ?? args.size ?? "large";
-  if (modelSize !== "large" && modelSize !== "small") {
-    throw new Error("modelSize must be one of: large, small.");
-  }
-  return modelSize;
-}
-
-function isMissingEmbeddingResult(value: unknown): boolean {
-  if (value === null || value === undefined) {
-    return true;
-  }
-  if (typeof value === "string") {
-    return value.trim().length === 0;
-  }
-  if (Array.isArray(value)) {
-    return value.length === 0;
-  }
-  if (typeof value === "object") {
-    const record = value as AnyRecord;
-    if (record.isError === true && !record.value && !record.items && !record.result) {
-      return true;
-    }
-    if ("value" in record) {
-      return isMissingEmbeddingResult(record.value);
-    }
-    if ("result" in record) {
-      return isMissingEmbeddingResult(record.result);
-    }
-    if ("items" in record) {
-      return isMissingEmbeddingResult(record.items);
-    }
-    if ("embeddings" in record && isMissingEmbeddingResult(record.embeddings)) {
-      return true;
-    }
-    const meaningfulKeys = Object.keys(record).filter((key) => record[key] !== undefined && record[key] !== null);
-    if (meaningfulKeys.length === 0) {
-      return true;
-    }
-    if (meaningfulKeys.length === 1 && meaningfulKeys[0] === "isError" && record.isError === false) {
-      return true;
-    }
-  }
-  return false;
-}
-
-async function readEmbeddingsOrNull(caseFileId: string | number, modelSize: "large" | "small", index?: string | number) {
-  try {
-    const result = await appSessionJsonRequest("GET", documentUnitEmbeddingsEndpointUrl(caseFileId, modelSize, index));
-    return isMissingEmbeddingResult(result) ? null : result;
-  } catch (error) {
-    const status = httpStatusFromError(error);
-    if (status === 404 || status === 204) {
-      return null;
-    }
-    throw error;
-  }
-}
-
-async function generateEmbeddings(caseFileId: string | number, modelSize: "large" | "small") {
-  return appSessionJsonRequest("PUT", documentUnitEmbeddingsEndpointUrl(caseFileId, modelSize));
-}
-
-async function generateQueryVectors(text: string, modelSize: "large" | "small") {
-  return appSessionJsonRequest("POST", aiEmbedEndpointUrl(), {
-    text,
-    size: modelSize
-  });
-}
-
-type EmbeddingAction = "read" | "embed" | "embed-if-missing" | "query-vectors";
-
-function embeddingAction(args: ToolArgs): EmbeddingAction {
-  const rawAction = args.action;
-  const normalized = typeof rawAction === "string" ? rawAction.replace(/_/g, "-") : "";
-  if (
-    normalized === "read" ||
-    normalized === "embed" ||
-    normalized === "embed-if-missing" ||
-    normalized === "query-vectors"
-  ) {
-    return normalized;
-  }
-  throw new Error("action is required and must be one of: read, embed, embed-if-missing, query-vectors.");
-}
-
-async function manageCaseFileEmbeddingsTool(args: ToolArgs = {}): Promise<AnyRecord> {
-  const action = embeddingAction(args);
-  if (action === "query-vectors") {
-    const text = args.text ?? args.query ?? args.queryText ?? args.query_text;
-    if (typeof text !== "string" || text.trim() === "") {
-      throw new Error("text is required for query-vectors.");
-    }
-    const modelSize = optionalModelSize(args);
-    return {
-      action,
-      caseFileId: null,
-      modelSize,
-      index: null,
-      endpoint: aiEmbedEndpointPath(),
-      generated: true,
-      result: await generateQueryVectors(text, modelSize)
-    };
-  }
-
-  const caseFileId = args.caseFileId ?? args.case_file_id ?? args.documentId ?? args.docId ?? args.id;
-  if (caseFileId === undefined || caseFileId === null || caseFileId === "") {
-    throw new Error("caseFileId is required.");
-  }
-  const modelSize = requiredModelSize(args);
-  const index = args.index;
-  if (index !== undefined && index !== null && index !== "" && action !== "read" && action !== "embed-if-missing") {
-    throw new Error("index can only be used with action read or embed-if-missing.");
-  }
-
-  if (action === "read") {
-    return {
-      action,
-      caseFileId,
-      modelSize,
-      index: index ?? null,
-      endpoint: documentUnitEmbeddingsEndpointPath(caseFileId, index),
-      generated: false,
-      result: await readEmbeddingsOrNull(caseFileId, modelSize, index)
-    };
-  }
-
-  if (action === "embed") {
-    return {
-      action,
-      caseFileId,
-      modelSize,
-      index: null,
-      endpoint: documentUnitEmbeddingsEndpointPath(caseFileId),
-      generated: true,
-      result: await generateEmbeddings(caseFileId, modelSize)
-    };
-  }
-
-  const existing = await readEmbeddingsOrNull(caseFileId, modelSize, index);
-  if (existing !== null) {
-    return {
-      action,
-      caseFileId,
-      modelSize,
-      index: index ?? null,
-      endpoint: documentUnitEmbeddingsEndpointPath(caseFileId, index),
-      generated: false,
-      result: existing
-    };
-  }
-
-  return {
-    action,
-    caseFileId,
-    modelSize,
-    index: null,
-    endpoint: documentUnitEmbeddingsEndpointPath(caseFileId),
-    generated: true,
-    result: await generateEmbeddings(caseFileId, modelSize)
-  };
-}
-
-async function callMemoryTool(name: string, args: ToolArgs = {}): Promise<AnyRecord> {
-  switch (name) {
-    case "list":
-      return memoryApiRequest("GET", memoryEndpointUrl("memories/", {
-        app_id: args.app_id,
-        from_date: args.from_date,
-        to_date: args.to_date,
-        categories: args.categories,
-        search_query: args.search_query,
-        sort_column: args.sort_column,
-        sort_direction: args.sort_direction,
-        page: args.page,
-        size: args.size
-      }));
-    case "insert":
-      return memoryApiRequest("POST", memoryEndpointUrl("memories/"), {
-        text: requiredToolArgument(args, "text"),
-        ...(args.metadata === undefined ? {} : { metadata: args.metadata }),
-        ...(args.infer === undefined ? {} : { infer: args.infer }),
-        ...(args.app === undefined ? {} : { app: args.app })
-      });
-    case "categories":
-      return memoryApiRequest("GET", memoryEndpointUrl("memories/categories"));
-    case "get":
-      return memoryApiRequest(
-        "GET",
-        memoryEndpointUrl(`memories/${encodeURIComponent(requiredToolArgument(args, "memory_id"))}`)
-      );
-    case "update":
-      return memoryApiRequest(
-        "PUT",
-        memoryEndpointUrl(`memories/${encodeURIComponent(requiredToolArgument(args, "memory_id"))}`),
-        { memory_content: requiredToolArgument(args, "memory_content") }
-      );
-    case "search":
-      return memoryApiRequest("POST", memoryEndpointUrl("memories/search"), {
-        query: requiredToolArgument(args, "query"),
-        ...(args.numberOfHits === undefined ? {} : { numberOfHits: args.numberOfHits }),
-        ...(args.page === undefined ? {} : { page: args.page }),
-        ...(args.filters === undefined ? {} : { filters: args.filters })
-      });
-    case "related":
-      return memoryApiRequest(
-        "GET",
-        memoryEndpointUrl(`memories/${encodeURIComponent(requiredToolArgument(args, "memory_id"))}/related`, {
-          page: args.page,
-          size: args.size
-        })
-      );
-    default:
-      throw new Error(`Unknown memory tool ${name}`);
-  }
-}
-
-function formatSessionStatus(
-  sessionResult: JsonResponse,
-  context: string,
-  tokenInfo?: TokenInfo,
-  userInfoResult?: JsonResponse
-): string {
-  const session = sessionResult.body?.data || {};
-  const user = session.user || {};
-  const lines = [
-    `Auth status: authenticated (${context})`,
-    "App session endpoint: verified",
-    "",
-    "User:",
-    `- name: ${user.name || "(unknown)"}`,
-    `- email: ${user.email || "(unknown)"}`,
-    `- id: ${user.id || user.subject || "(unknown)"}`,
-    tokenExpiryLine(tokenInfo),
-    "",
-    ...formatSessionReadiness(sessionResult)
-  ];
-
-  if (userInfoResult?.response) {
-    lines.push(
-      "",
-      "OAuth userinfo:",
-      `- endpoint: ${userInfoResult.url}`,
-      `- HTTP: ${userInfoResult.response.status}`
-    );
-  }
-  return lines.join("\n");
-}
-
-async function verifiedAuthStatus(
-  accessToken: string,
-  context: string,
-  tokenInfo: TokenInfo = {}
-): Promise<string> {
-  let userInfoResult: JsonResponse | FailedResult | undefined;
-  try {
-    userInfoResult = await fetchUserInfoForToken(accessToken, await metadataForToken(tokenInfo));
-  } catch (error) {
-    userInfoResult = { error: asError(error) };
-  }
-
-  let appSession: AppSession | FailedResult;
-  try {
-    appSession = await acquireAppSession(tokenInfo.cached || { access_token: accessToken });
-  } catch (error) {
-    appSession = { error };
-  }
-  const sessionResult: SessionResult = "token" in appSession && appSession.token
-    ? await fetchSessionForAppSession(appSession).catch((error) => ({ error }))
-    : { error: appSession.error };
-  if (userInfoResult && "response" in userInfoResult && userInfoResult.response.ok) {
-    return formatUserInfoStatus(
-      userInfoResult.body,
-      context,
-      tokenInfo,
-      "response" in sessionResult ? sessionResult : undefined
-    );
-  }
-  if ("response" in sessionResult && isAuthenticatedSessionResult(sessionResult)) {
-    return formatSessionStatus(
-      sessionResult,
-      context,
-      tokenInfo,
-      userInfoResult && "response" in userInfoResult ? userInfoResult : undefined
-    );
-  }
-
-  const userInfoRejected = userInfoResult && "response" in userInfoResult && userInfoResult.response.status === 401;
-  const sessionRejected = "response" in sessionResult &&
-    (sessionResult.response.status === 401 || sessionResult.response.status === 403);
-  const lines = [
-    `${userInfoRejected || sessionRejected ? "Auth status: token unauthenticated" : "Auth status: unknown"} (${context})`
-  ];
-  if (userInfoResult && "response" in userInfoResult) {
-    lines.push(`OAuth userinfo endpoint ${userInfoResult.url} returned HTTP ${userInfoResult.response.status}.`);
-    lines.push(`Response: ${JSON.stringify(userInfoResult.body)}`);
-  } else if (userInfoResult && "error" in userInfoResult) {
-    lines.push(`OAuth userinfo verification failed: ${userInfoResult.error.message}`);
-  } else {
-    lines.push("OAuth metadata did not provide a userinfo endpoint.");
-  }
-  if ("response" in sessionResult) {
-    lines.push(...formatSessionReadiness(sessionResult));
-  } else if ("error" in sessionResult) {
-    lines.push(`App session check failed: ${sessionResult.error.message}`);
-  }
-  return lines.join("\n");
-}
-
-async function authStatusSummary(): Promise<string> {
-  const tokenInfo = await currentAccessToken();
-  if (!tokenInfo?.token) {
-    return "Auth status: unauthenticated (no cached or configured access token).";
-  }
-  return verifiedAuthStatus(tokenInfo.token, tokenInfo.source || "unknown", tokenInfo);
-}
-
-async function loginAndSummarizeStatus(): Promise<string> {
-  const metadata = await discoverMetadata();
-  const token = await deviceAuthorization(metadata);
-  if (!token?.access_token) {
-    throw new Error("Login flow did not return an access token.");
-  }
-  const acquired = { ...token, metadata };
-  await writeCachedToken(acquired);
-  return ["Login successful. Cached new access token.", "", await verifiedAuthStatus(acquired.access_token, "new-login", { cached: acquired })].join("\n");
-}
-
 async function callHelperTool(id: RpcId | undefined, name: string, args: ToolArgs = {}): Promise<void> {
   try {
     const toolset = configuredToolset();
     const localName = unprefixedToolName(name) || name;
     if (toolset === "memory" && memoryTools.some((tool) => tool.name === localName)) {
-      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callMemoryTool(localName, args)) });
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callMemoryTool(localName, args, freshTokenAfterBadRequest)) });
       return;
     }
 
     if (localName === "read_case_file") {
-      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await readCaseFileTool(args)) });
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await readCaseFileTool(args, freshTokenAfterBadRequest)) });
       return;
     }
 
     if (localName === "get") {
-      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await getCaseFileTool(args)) });
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await getCaseFileTool(args, remoteRequest, freshTokenAfterBadRequest)) });
       return;
     }
 
     if (localName === "amend") {
-      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await amendCaseFileTool(args)) });
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await amendCaseFileTool(args, remoteRequest)) });
       return;
     }
 
     if (localName === "embed") {
-      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await manageCaseFileEmbeddingsTool(args)) });
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await manageCaseFileEmbeddingsTool(args, freshTokenAfterBadRequest)) });
       return;
     }
 
     if (localName in graphToolAliases) {
-      sendToClient({ jsonrpc: "2.0", id, result: await callNeo4jGraphTool(localName, args) });
+      const generateQueryVectors = createGenerateQueryVectors(freshTokenAfterBadRequest);
+      const graphArgs = localName === "graph_read" || localName === "graph_write"
+        ? await materializeGraphVectorParams(args, generateQueryVectors)
+        : args;
+      sendToClient({ jsonrpc: "2.0", id, result: await callNeo4jGraphTool(localName, graphArgs) });
       return;
     }
 
     if (localName === "call_api") {
-      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callApiTool(args)) });
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callApiTool(args, freshTokenAfterBadRequest)) });
       return;
     }
 
     if (toolset !== "utils" && memoryTools.some((tool) => tool.name === localName)) {
-      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callMemoryTool(localName, args)) });
+      sendToClient({ jsonrpc: "2.0", id, result: jsonToolResult(await callMemoryTool(localName, args, freshTokenAfterBadRequest)) });
       return;
     }
 
@@ -3165,7 +1473,7 @@ function localInitializeResult(params: ToolArgs = {}): AnyRecord {
       prompts: {}
     },
     serverInfo: {
-      name: "compliance-theater-2000",
+      name: "compliance_theater_2000",
       version: "0.1.0"
     }
   };
@@ -3184,8 +1492,33 @@ async function handleClientRequest(message: JsonRpcMessage): Promise<void> {
   }
 
   if (message.method === "tools/list") {
-    sendToClient({ jsonrpc: "2.0", id: message.id, result: { tools: listTools() } });
+    sendToClient({
+      jsonrpc: "2.0",
+      id: message.id,
+      result: {
+        tools: listTools(),
+        openaiTools: listOpenAiNamespaceTools()
+      }
+    });
     return;
+  }
+
+  if (message.method === "tools/list_openai" || message.method === "tools/list/openai") {
+    sendToClient({ jsonrpc: "2.0", id: message.id, result: { tools: listOpenAiNamespaceTools() } });
+    return;
+  }
+
+  if (message.method === "resources/list") {
+    sendToClient({ jsonrpc: "2.0", id: message.id, result: { resources: await listResources(false) } });
+    return;
+  }
+
+  if (message.method === "resources/read" && (configuredToolset() === "default" || configuredToolset() === "all")) {
+    const localResource = await readLocalFileResource(String(message.params?.uri || ""));
+    if (localResource) {
+      sendToClient({ jsonrpc: "2.0", id: message.id, result: localResource });
+      return;
+    }
   }
 
   if (message.method === "tools/call") {
@@ -3242,7 +1575,7 @@ function bindJsonLines(
 async function main() {
   log("wrapper starting", { cwd: process.cwd(), node: process.version, argv: process.argv });
   log("resolved wrapper configuration", {
-    serverUrl: optional("SERVER_URL"),
+    serverUrl: serverUrl(),
     authIssuer: optional("AUTH_ISSUER"),
     wrapUrl: wrapEndpointUrl(),
     sessionStatusUrl: sessionEndpointUrl(),

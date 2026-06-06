@@ -8,14 +8,16 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const distRoot = join(packageRoot, "dist");
 const marketplaceRoot = join(packageRoot, "dist-marketplace");
 const marketplaceName = "compliance-theater-marketplace";
-const pluginName = "compliance-theater-2000";
+const pluginName = "compliance_theater_2000";
 
 const requiredPaths = [
   "src/.codex-plugin",
   "src/mcp/servers.mcp.json",
   "src/skills",
+  "src/_AGENTS.md",
   "src/scripts/entrypoint.ts",
   "src/scripts/runtime-utils.ts",
+  "../requirements.txt",
 ];
 
 const run = (command, args) =>
@@ -97,6 +99,7 @@ const main = async () => {
   await cp(join(packageRoot, "src", "skills"), join(distRoot, "skills"), {
     recursive: true,
   });
+  await cp(join(packageRoot, "src", "_AGENTS.md"), join(distRoot, "_AGENTS.md"));
   await mkdir(join(marketplaceRoot, "plugins"), { recursive: true });
   await cp(distRoot, join(marketplaceRoot, "plugins", pluginName), {
     recursive: true,

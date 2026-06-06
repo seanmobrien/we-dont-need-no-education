@@ -10,11 +10,40 @@ import "@testing-library/jest-dom";
 import Queries from "@testing-library/dom/types/queries";
 import React, { PropsWithChildren } from "react";
 import { act } from "react";
-import { QueryClient, QueryClientProvider } from "@compliance-theater/react-query-compat/runtime";
 import { SessionContext } from "@compliance-theater/types/components/auth/session-context";
 import { ChatPanelContext } from "@compliance-theater/types/components/ai/chat-panel/chat-panel-context";
 import type { ChatPanelContextValue } from "@compliance-theater/types/components/ai/chat-panel/types";
 import { ThemeProvider, type ThemeType } from "@compliance-theater/themes";
+
+type QueryClientLike = object;
+
+type ReactQueryTestRuntime = {
+  QueryClient: new (config?: unknown) => QueryClientLike;
+  QueryClientProvider: React.ComponentType<
+    PropsWithChildren<{ client: QueryClientLike }>
+  >;
+};
+
+const loadReactQueryTestRuntime = (): ReactQueryTestRuntime | undefined => {
+  try {
+    return require("@compliance-theater/react-query-compat/runtime") as ReactQueryTestRuntime;
+  } catch {
+    return undefined;
+  }
+};
+
+const QueryClientProviderOrFallback = ({
+  children,
+  client,
+}: PropsWithChildren<{ client?: QueryClientLike }>) => {
+  const runtime = loadReactQueryTestRuntime();
+  if (!runtime || !client) {
+    return <>{children}</>;
+  }
+
+  const Provider = runtime.QueryClientProvider;
+  return <Provider client={client}>{children}</Provider>;
+};
 
 const SessionProviderOrFallback = ({ children }: PropsWithChildren) => {
   let sessionData: unknown = null;
@@ -111,17 +140,27 @@ type CustomRenderOptions = RenderOptions & {
 };
 
 // Create a test QueryClient with disabled retries and logs
-const createTestQueryClient = () =>
-  new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
+const createTestQueryClient = () => {
+  const runtime = loadReactQueryTestRuntime();
+  if (!runtime) {
+    return undefined;
+  }
+
+  try {
+    return new runtime.QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
+        mutations: {
+          retry: false,
+        },
       },
-      mutations: {
-        retry: false,
-      },
-    },
-  });
+    });
+  } catch {
+    return undefined;
+  }
+};
 type WrapperProps = PropsWithChildren & {
   theme?: ThemeType;
   chatPanel?: boolean;
@@ -140,7 +179,7 @@ const AllTheProviders = ({
     );
   return (
     <>
-      <QueryClientProvider client={queryClient}>
+      <QueryClientProviderOrFallback client={queryClient}>
         <ChatPanelWrapper>
           <SessionProviderOrFallback>
             <ThemeProvider defaultTheme={theme ?? "dark"}>
@@ -148,7 +187,7 @@ const AllTheProviders = ({
             </ThemeProvider>
           </SessionProviderOrFallback>
         </ChatPanelWrapper>
-      </QueryClientProvider>
+      </QueryClientProviderOrFallback>
     </>
   );
 };

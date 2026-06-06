@@ -81,13 +81,13 @@ Each package extraction follows this pattern:
 After extracting each package, update all imports:
 
 - From: `@/lib/logger`
-- To: `@compliance-theater/logger`
+- To: `@compliance_theater/logger`
 
 Use this script pattern:
 
 ```bash
 find packages/app -type f \( -name "*.ts" -o -name "*.tsx" \) \
-  -exec sed -i 's|@/lib/logger|@compliance-theater/logger|g' {} \;
+  -exec sed -i 's|@/lib/logger|@compliance_theater/logger|g' {} \;
 ```
 
 ### Phase 6: Package.json Templates
@@ -96,7 +96,7 @@ Each package needs:
 
 ```Package.json
 {
-  "name": "@compliance-theater/[package-name]",
+  "name": "@compliance_theater/[package-name]",
   "version": "0.1.0",
   "private": true,
   "main": "./dist/index.js",
@@ -121,8 +121,8 @@ Each package needs:
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    // All @compliance-theater packages in the workspace should reference @compliance-theater/types
-    "@compliance-theater/types": "workspace:*"
+    // All @compliance_theater packages in the workspace should reference @compliance_theater/types
+    "@compliance_theater/types": "workspace:*"
     // Other Package-specific dependencies
   },
   "devDependencies": {
@@ -260,7 +260,7 @@ Create `web-ui/packages/[package-name]/package.json` using this template:
 
 ```package.json
 {
-  "name": "@compliance-theater/[package-name]",
+  "name": "@compliance_theater/[package-name]",
   "version": "0.1.0",
   "private": true,
   "main": "./dist/index.js",
@@ -285,8 +285,8 @@ Create `web-ui/packages/[package-name]/package.json` using this template:
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
   "dependencies": {
-    // All @compliance-theater packages in the workspace should reference @compliance-theater/types
-    "@compliance-theater/types": "workspace:*"
+    // All @compliance_theater packages in the workspace should reference @compliance_theater/types
+    "@compliance_theater/types": "workspace:*"
     // Other Package-specific dependencies
   },
   "devDependencies": {
@@ -310,7 +310,7 @@ Create `web-ui/packages/[package-name]/package.json` using this template:
 
 **Key points:**
 
-- **Name**: Always use `@compliance-theater/` scope
+- **Name**: Always use `@compliance_theater/` scope
 - **Exports**: The dual export pattern (`"."` and `"./*"`) allows importing both the main entry and submodules
 - **Workspace dependencies**: Use `workspace:*` protocol for referencing other monorepo packages
 - **Peer dependencies**: Use for optional external dependencies (e.g., Next.js, React) that may not be needed by all consumers
@@ -397,7 +397,7 @@ const config = {
     '@/instrumentation(.*)$':
       '<rootDir>/__mocks__/shared/setup/instrumentation.ts', // Mock instrumentation module
     // Keycloak providers mock
-    '^@compliance-theater/auth/lib/keycloak-provider$':
+    '^@compliance_theater/auth/lib/keycloak-provider$':
       '<rootDir>/__mocks__/shared/keycloak-provider.js', // Mock static file imports,
     // Metrics module mock
     '^@/lib/site-util/metrics.*$':
@@ -533,7 +533,7 @@ If the app package needs to use your new package, add it to `web-ui/packages/app
 ```package.json
 {
   "dependencies": {
-    "@compliance-theater/[package-name]": "workspace:*"
+    "@compliance_theater/[package-name]": "workspace:*"
   }
 }
 ```
@@ -566,10 +566,10 @@ yarn install
 
 ```bash
 # Build the package from the repository root
-yarn workspace @compliance-theater/[package-name] build
+yarn workspace @compliance_theater/[package-name] build
 
 # Run tests
-yarn workspace @compliance-theater/[package-name] test
+yarn workspace @compliance_theater/[package-name] test
 
 # Or run the full frontend build/test from the repository root:
 yarn build
@@ -582,10 +582,10 @@ In your application code (or other packages), import your new package:
 
 ```typescript
 // Named imports
-import { myFunction, MyType } from "@compliance-theater/[package-name]";
+import { myFunction, MyType } from "@compliance_theater/[package-name]";
 
 // Submodule imports (if you have multiple entry points)
-import { specificFunction } from "@compliance-theater/[package-name]/submodule";
+import { specificFunction } from "@compliance_theater/[package-name]/submodule";
 ```
 
 ##### Step 11: Verify End-to-End
@@ -604,8 +604,8 @@ Always reference local packages using the workspace protocol:
 ```json
 {
   "dependencies": {
-    "@compliance-theater/logger": "workspace:*",
-    "@compliance-theater/typescript": "workspace:*"
+    "@compliance_theater/logger": "workspace:*",
+    "@compliance_theater/typescript": "workspace:*"
   }
 }
 ```
@@ -618,7 +618,7 @@ In shared Jest config, map workspace packages to their `src` directories:
 
 ```javascript
 moduleNameMapper: {
-  "^@compliance-theater/logger(.*)$": "<rootDir>/../lib-logger/src$1",
+  "^@compliance_theater/logger(.*)$": "<rootDir>/../lib-logger/src$1",
 }
 ```
 
@@ -751,7 +751,7 @@ Use the repo's current versions when documenting or creating a compat package. F
 ```json
 // lib-auth-compat/package.json
 {
-  "name": "@compliance-theater/auth-compat",
+  "name": "@compliance_theater/auth-compat",
   "peerDependencies": {
     "next-auth": "^5.0.0-beta.30",
     "@auth/core": "0.41.1"
@@ -767,11 +767,11 @@ Use the repo's current versions when documenting or creating a compat package. F
 
 #### Troubleshooting
 
-##### "Cannot find module '@compliance-theater/[package-name]'"
+##### "Cannot find module '@compliance_theater/[package-name]'"
 
 1. Verify package is listed in `package.json` dependencies with `workspace:*`
 2. Run `yarn install` from the repository root
-3. Check that `node_modules/@compliance-theater/[package-name]` exists as a symlink
+3. Check that `node_modules/@compliance_theater/[package-name]` exists as a symlink
 4. Verify the package `exports` map includes `default` and `workspace-source` entries
 5. Rebuild the package: `yarn build`
 

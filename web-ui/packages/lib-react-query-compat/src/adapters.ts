@@ -6,15 +6,77 @@ import type {
   UseQueryResult,
   UseSuspenseQueryResult,
 } from './contracts';
-import type {
-  QueryFunctionContext as TanstackQueryFunctionContext,
-  QueryKey as TanstackQueryKey,
-  UseMutationResult as TanstackUseMutationResult,
-  UseQueryOptions as TanstackUseQueryOptions,
-  UseQueryResult as TanstackUseQueryResult,
-  UseSuspenseQueryOptions as TanstackUseSuspenseQueryOptions,
-  UseSuspenseQueryResult as TanstackUseSuspenseQueryResult,
-} from '@tanstack/react-query';
+
+type TanstackQueryKey = readonly unknown[];
+
+type TanstackQueryFunctionContext<TQueryKey extends TanstackQueryKey> = {
+  queryKey: TQueryKey;
+  signal?: AbortSignal;
+};
+
+type TanstackUseQueryOptions<
+  TQueryFnData,
+  TError,
+  _TData,
+  TQueryKey extends TanstackQueryKey,
+> = Omit<
+  CompatQueryOptions<TQueryFnData, TError, CompatQueryKey>,
+  'queryFn' | 'queryKey'
+> & {
+  queryKey: TQueryKey;
+  queryFn: (
+    context: TanstackQueryFunctionContext<TQueryKey>,
+  ) => Promise<TQueryFnData>;
+};
+
+type TanstackUseSuspenseQueryOptions<
+  TQueryFnData,
+  TError,
+  TData,
+  TQueryKey extends TanstackQueryKey,
+> = TanstackUseQueryOptions<TQueryFnData, TError, TData, TQueryKey>;
+
+type TanstackQueryResultBase = {
+  isFetching: boolean;
+  refetch: () => Promise<unknown>;
+};
+
+type TanstackUseQueryResult<TData, TError> = TanstackQueryResultBase & ({
+  data: TData;
+  error: null;
+  isError: false;
+  isLoading: false;
+  isSuccess: true;
+} | {
+  data: TData | undefined;
+  error: TError;
+  isError: true;
+  isLoading: false;
+  isSuccess: false;
+} | {
+  data: TData | undefined;
+  error: null;
+  isError: false;
+  isLoading: boolean;
+  isSuccess: false;
+});
+
+type TanstackUseSuspenseQueryResult<TData, TError> = TanstackQueryResultBase & {
+  data: TData;
+  error: TError | null;
+};
+
+type TanstackUseMutationResult<TData, TError, TVariables, TContext> = {
+  data: TData | undefined;
+  error: TError | null;
+  isError: boolean;
+  isPending: boolean;
+  isSuccess: boolean;
+  mutate: UseMutationResult<TData, TError, TVariables, TContext>['mutate'];
+  mutateAsync: UseMutationResult<TData, TError, TVariables, TContext>['mutateAsync'];
+  reset: () => void;
+  status: 'idle' | 'pending' | 'error' | 'success';
+};
 
 export const toTanstackQueryKey = (
   queryKey: CompatQueryKey,

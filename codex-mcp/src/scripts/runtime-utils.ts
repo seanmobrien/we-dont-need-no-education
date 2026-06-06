@@ -1,8 +1,10 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
+import { Agent, setGlobalDispatcher } from "undici";
 
 const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
 const RETRYABLE_ERROR_CODES = new Set(["ABORT_ERR", "ECONNRESET", "ECONNREFUSED", "ETIMEDOUT", "EAI_AGAIN"]);
+const RESOURCE_PREFIX = "MCP_COMPLIANCE_THEATER_RESOURCE_";
 
 export type Logger = (message: string, details?: unknown) => void;
 
@@ -52,6 +54,31 @@ export type SseConnection = {
   endpoint: string;
   reader: RpcReader;
 };
+
+export type HttpDispatcherOptions = {
+  connections: number;
+  pipelining: number;
+  keepAliveTimeout: number;
+  keepAliveMaxTimeout: number;
+};
+
+function envNumber(name: string, fallback: number, minimum = 0): number {
+  return parseNumber(process.env[`${RESOURCE_PREFIX}${name}`], fallback, minimum);
+}
+
+export function httpDispatcherOptionsFromEnv(): HttpDispatcherOptions {
+  const httpConnections = envNumber("HTTP_CONNECTIONS", 16, 1);
+  const httpPipelining = envNumber("HTTP_PIPELINING", 1, 1);
+  const httpKeepAliveTimeout = envNumber("HTTP_KEEPALIVE_TIMEOUT_MS", 10_000, 1);
+  return {
+    connections: httpConnections,
+    pipelining: httpPipelining,
+    keepAliveTimeout: httpKeepAliveTimeout,
+    keepAliveMaxTimeout: Math.max(httpKeepAliveTimeout, 60_000)
+  };
+}
+
+setGlobalDispatcher(new Agent(httpDispatcherOptionsFromEnv()));
 
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

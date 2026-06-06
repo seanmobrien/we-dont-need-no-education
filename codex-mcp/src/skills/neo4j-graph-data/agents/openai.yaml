@@ -1,0 +1,4 @@
+interface:
+  display_name: "Neo4j Graph Data"
+  short_description: "Use Compliance Theater Neo4j graph data."
+  default_prompt: "Use the Compliance Theater Neo4j graph to answer a case-file, policy, evidence, or relationship question."

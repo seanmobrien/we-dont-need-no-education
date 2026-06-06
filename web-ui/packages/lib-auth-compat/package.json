@@ -39,7 +39,7 @@
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@auth/core": "0.41.1",
     "@auth/drizzle-adapter": "^1.4.1",
     "next-auth": "^5.0.0-beta.30"
