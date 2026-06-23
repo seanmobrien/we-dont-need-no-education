@@ -6,8 +6,15 @@ import { CaseFileSearchOptions } from '../../tools/types';
 import { HybridSearchClient } from './HybridSearchBase';
 import { AiSearchResultEnvelope, HybridSearchPayload } from './types';
 import { IEmbeddingService } from '../embedding';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 
 declare module '@/lib/ai/services/search/HybridDocumentSearch' {
+  export type HybridDocumentSearchOptions = {
+    embeddingService?: IEmbeddingService;
+    authorizationContext?: string | LikeNextRequest;
+    enforceAuthorization?: boolean;
+  };
+
   /**
    * Concrete hybrid search client specializing in case file (email + attachment + derived
    * document unit) content. Provides filtering semantics for different logical document
@@ -44,7 +51,7 @@ declare module '@/lib/ai/services/search/HybridDocumentSearch' {
   }
 
   export class RoutedHybridDocumentSearch {
-    constructor(options?: { embeddingService?: IEmbeddingService });
+    constructor(options?: HybridDocumentSearchOptions);
     hybridSearch(
       query: string,
       options?: CaseFileSearchOptions,
@@ -57,7 +64,7 @@ declare module '@/lib/ai/services/search/HybridDocumentSearch' {
    *
    * @param options Optional configuration containing an `embeddingService` override.
    */
-  export const hybridDocumentSearchFactory: (options?: {
-    embeddingService?: IEmbeddingService;
-  }) => RoutedHybridDocumentSearch;
+  export const hybridDocumentSearchFactory: (
+    options?: HybridDocumentSearchOptions,
+  ) => RoutedHybridDocumentSearch;
 }

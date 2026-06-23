@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+import { createHash } from 'node:crypto';
 import {
   streamText,
   convertToModelMessages,
@@ -31,6 +32,20 @@ import { APP_MCP_TOOL_REGISTRY_CACHE_SALT } from '@/lib/ai/tools/mcp-tool-regist
 
 // Allow streaming responses up to 360 seconds
 //const maxDuration = 60 * 1000 * 360;
+
+const getSessionTokenKey = (): string => {
+  const url = new URL(env('NEXT_PUBLIC_HOSTNAME'));
+  return (
+    (url.protocol === 'https:' ? '__Secure-' : '') + 'authjs.session-token'
+  );
+};
+
+const getSessionFingerprint = (req: NextRequest): string => {
+  const sessionToken = req.cookies.get(getSessionTokenKey())?.value;
+  return sessionToken
+    ? createHash('sha256').update(sessionToken).digest('hex').slice(0, 16)
+    : 'anonymous';
+};
 
 /**
  * Safely disposes of tool providers, suppressing expected AbortErrors during cleanup.
@@ -74,7 +89,7 @@ const toolProviderFactory = async ({
       {
         writeEnabled,
         memoryDisabled,
-        toolCacheSalt: APP_MCP_TOOL_REGISTRY_CACHE_SALT,
+        toolCacheSalt: `${APP_MCP_TOOL_REGISTRY_CACHE_SALT}:${getSessionFingerprint(req)}`,
       },
       () =>
         setupDefaultTools({
@@ -163,7 +178,7 @@ export const POST = (req: NextRequest) => {
           memoryDisabled,
           writeEnabled,
           user: session?.user,
-          sessionId: chatHistoryId,
+          sessionId: threadId ?? chatHistoryId,
         });
         const chatHistoryContext = createUserChatHistoryContext({
           userId: session?.user?.id || 'anonymous',
@@ -320,7 +335,7 @@ export const POST = (req: NextRequest) => {
             memoryDisabled,
             writeEnabled,
             user: session?.user,
-            sessionId: chatHistoryId,
+            sessionId: threadId ?? chatHistoryId,
           })).tools,
         });
 
@@ -353,4 +368,3 @@ export const POST = (req: NextRequest) => {
     }
   )(req);
 };
-

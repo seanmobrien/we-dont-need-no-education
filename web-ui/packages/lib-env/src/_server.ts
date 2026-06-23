@@ -136,6 +136,8 @@ const buildRawInstance = () => {
     ),
     /** Maximum token threshold for AI batch processing. Example: '50000' */
     TOKEN_BATCH_THRESHOLD: process.env.TOKEN_BATCH_THRESHOLD,
+    /** Disables authorization enforcement in the AI search tool when set to 'true'. Example: 'true' */
+    AI_SEARCH_DISABLE_AUTHORIZATION: process.env.AI_SEARCH_DISABLE_AUTHORIZATION,
   };
   if (!raw.AUTH_KEYCLOAK_REDIRECT_URI) {
     raw.AUTH_KEYCLOAK_REDIRECT_URI = new URL(
@@ -326,6 +328,9 @@ const serverEnvSchema = z
       .describe(
         'Maximum cumulative token count (approx) per AI preprocessing batch when grouping case file documents with shared goals. Documents are accumulated until the next document would exceed this threshold, then a batch processing call is executed. Tuned to balance prompt size vs. parallelism. Override via env TOKEN_BATCH_THRESHOLD; defaults to 50,000 tokens. Example: 75000 for larger batches, 25000 for smaller batches',
       ),
+    AI_SEARCH_DISABLE_AUTHORIZATION: ZodProcessors.truthy().describe(
+      'When true, disables authorization enforcement in the AI case file search tool. Intended for local development only. Example: true',
+    ),
     AUTH_GOOGLE_ID: z
       .string()
       .describe(

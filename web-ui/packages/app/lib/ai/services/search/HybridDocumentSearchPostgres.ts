@@ -12,6 +12,7 @@ import {
   HybridSearchExecutionContext,
 } from './HybridSearchBase';
 import { IEmbeddingService } from '../embedding';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 
 type PostgresSearchRow = {
   document_id: number;
@@ -100,8 +101,17 @@ const toResultEnvelope = (
 };
 
 export class HybridDocumentSearchPostgres extends HybridSearchClient<CaseFileSearchOptions> {
-  constructor(options?: { embeddingService?: IEmbeddingService }) {
+  private readonly authorizationContext?: string | LikeNextRequest;
+  private readonly enforceAuthorization: boolean;
+
+  constructor(options?: {
+    embeddingService?: IEmbeddingService;
+    authorizationContext?: string | LikeNextRequest;
+    enforceAuthorization?: boolean;
+  }) {
     super(options);
+    this.authorizationContext = options?.authorizationContext;
+    this.enforceAuthorization = options?.enforceAuthorization === true;
   }
 
   protected async retrieveCandidates(
@@ -124,18 +134,22 @@ export class HybridDocumentSearchPostgres extends HybridSearchClient<CaseFileSea
     const vectorLiteral = toVectorLiteral(embeddingVector);
     const offset = Math.max(0, (page - 1) * topK);
     const threadIdFilter = parseOptionalInteger(threadId);
-    const accessibleUserIds = ((await getAccessibleUserIds(undefined)) ?? [])
-      .map((id) => Number(id))
-      .filter((id): id is number => Number.isSafeInteger(id))
-      .map((id) => Math.trunc(id));
-    if (accessibleUserIds.length === 0) {
+    const accessibleUserIds = this.enforceAuthorization
+      ? ((await getAccessibleUserIds(this.authorizationContext)) ?? [])
+          .map((id) => Number(id))
+          .filter((id): id is number => Number.isSafeInteger(id))
+          .map((id) => Math.trunc(id))
+      : [];
+    if (this.enforceAuthorization && accessibleUserIds.length === 0) {
       const errorMessage =
         'No credentials available for case-file search authorization context.';
       log((l) => l.warn(errorMessage));
       throw new Error(errorMessage);
     }
     const whereAccessibleCaseFiles =
-      sql`du.user_id IN ${sql(`(${accessibleUserIds.join(',')})`)}`;
+      this.enforceAuthorization && accessibleUserIds.length > 0
+        ? sql`du.user_id IN ${sql(`(${accessibleUserIds.join(',')})`)}`
+        : sql`TRUE`;
 
     const rows = await sql<PostgresSearchRow>`
       WITH scored_candidates AS (

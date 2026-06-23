@@ -26,11 +26,22 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
   ) {
     if (!embeddingServiceOrOptions) {
       this.embeddingService = new EmbeddingService();
-    } else if ('embeddingService' in embeddingServiceOrOptions) {
+    } else if (
+      typeof embeddingServiceOrOptions === 'object' &&
+      'embeddingService' in embeddingServiceOrOptions
+    ) {
       this.embeddingService =
         embeddingServiceOrOptions.embeddingService ?? new EmbeddingService();
-    } else if ('embed' in embeddingServiceOrOptions) {
+    } else if (
+      typeof embeddingServiceOrOptions === 'object' &&
+      'embed' in embeddingServiceOrOptions
+    ) {
       this.embeddingService = embeddingServiceOrOptions;
+    } else if (
+      typeof embeddingServiceOrOptions === 'object' &&
+      !Array.isArray(embeddingServiceOrOptions)
+    ) {
+      this.embeddingService = new EmbeddingService();
     } else {
       throw new Error(
         'Invalid argument: expected an IEmbeddingService or an object with embeddingService property',

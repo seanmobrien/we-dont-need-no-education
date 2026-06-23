@@ -39,8 +39,12 @@ import {
 } from '@compliance-theater/auth/lib/impersonation/impersonation-factory';
 import type { User } from '@compliance-theater/auth-compat';
 import { encodeJwt as encode, getToken } from '@compliance-theater/auth-compat/runtime';
+import { getAccessToken } from '@compliance-theater/auth/lib/access-token';
 import { getMem0EnabledFlag, getStreamingTransportFlag } from '../tool-flags';
 import { APP_MCP_TOOL_REGISTRY_CACHE_SALT } from '@/lib/ai/tools/mcp-tool-registry';
+
+const WRAPPED_ACCESS_TOKEN_CLAIM = 'ct_token_wrapper';
+const WRAPPED_ACCESS_TOKEN_CLAIM_VALUE = 'keycloak-access-token';
 
 /**
  * Builds a minimal header map for MCP client connections.
@@ -123,9 +127,14 @@ export const setupDefaultTools = async ({
       req,
       secret: env('AUTH_SECRET'),
     });
+    const accessToken = await getAccessToken(req);
     const encoded = token
       ? await encode({
-          token,
+          token: {
+            ...token,
+            [WRAPPED_ACCESS_TOKEN_CLAIM]: WRAPPED_ACCESS_TOKEN_CLAIM_VALUE,
+            ...(accessToken ? { access_token: accessToken } : {}),
+          },
           secret: env('AUTH_SECRET'),
           maxAge: 60 * 60,
           salt: 'bearer-token', // flavor for bearer token use

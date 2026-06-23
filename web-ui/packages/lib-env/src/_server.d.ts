@@ -323,6 +323,15 @@ export declare const serverEnvSchema: z.ZodObject<{
   TOKEN_BATCH_THRESHOLD: z.ZodDefault<z.ZodNumber>;
 
   /**
+   * When true, disables authorization enforcement in the AI case file search tool.
+   * Intended for local development only.
+   *
+   * @default false
+   * @example true
+   */
+  AI_SEARCH_DISABLE_AUTHORIZATION: z.ZodType<boolean, z.ZodEffectsDef<z.ZodBoolean>, unknown>;
+
+  /**
    * Google OAuth 2.0 client ID for authentication.
    *
    * @required

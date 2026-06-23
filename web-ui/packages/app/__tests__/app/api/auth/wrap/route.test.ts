@@ -78,6 +78,7 @@ describe('POST /api/auth/wrap', () => {
           email: 'user@example.com',
           account_id: 12,
           user_id: 12,
+          ct_token_wrapper: 'keycloak-access-token',
           access_token: 'verified-keycloak-token',
         }),
       }),

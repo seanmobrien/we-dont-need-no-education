@@ -21,7 +21,12 @@ import { drizDbWithInit } from '@compliance-theater/database/orm';
 
 import { auth } from '../../src/auth.node';
 import { extractToken } from '../../src/lib/utilities/extract-token';
-import { getAccessToken, normalizedAccessToken } from '../../src/lib/access-token';
+import {
+  getAccessToken,
+  normalizedAccessToken,
+  WRAPPED_ACCESS_TOKEN_CLAIM,
+  WRAPPED_ACCESS_TOKEN_CLAIM_VALUE,
+} from '../../src/lib/access-token';
 
 describe('access-token', () => {
   beforeEach(() => {
@@ -42,6 +47,51 @@ describe('access-token', () => {
     expect(drizDbWithInit).not.toHaveBeenCalled();
   });
 
+  it('unwraps an Auth.js Authorization bearer before returning the access token', async () => {
+    (extractToken as jest.Mock).mockResolvedValue({
+      sub: 'wrapped-provider-subject',
+      account_id: 88,
+      [WRAPPED_ACCESS_TOKEN_CLAIM]: WRAPPED_ACCESS_TOKEN_CLAIM_VALUE,
+      access_token: 'wrapped-keycloak-access-token',
+      exp: Math.floor(Date.now() / 1000) + 300,
+    });
+    const request = new Request('http://localhost/api/ai/tools/sse', {
+      headers: {
+        authorization: 'Bearer wrapped-authjs-token',
+      },
+    });
+
+    await expect(getAccessToken(request as never)).resolves.toBe(
+      'wrapped-keycloak-access-token',
+    );
+
+    expect(extractToken).toHaveBeenCalledWith(request);
+    expect(auth).not.toHaveBeenCalled();
+    expect(drizDbWithInit).not.toHaveBeenCalled();
+  });
+
+  it('keeps an unmarked Authorization bearer raw even when the decoded payload has access_token', async () => {
+    (extractToken as jest.Mock).mockResolvedValue({
+      sub: 'plain-provider-subject',
+      account_id: 88,
+      access_token: 'decoded-but-unmarked-access-token',
+      exp: Math.floor(Date.now() / 1000) + 300,
+    });
+    const request = new Request('http://localhost/api/ai/tools/sse', {
+      headers: {
+        authorization: 'Bearer unmarked-bearer-token',
+      },
+    });
+
+    await expect(getAccessToken(request as never)).resolves.toBe(
+      'unmarked-bearer-token',
+    );
+
+    expect(extractToken).toHaveBeenCalledWith(request);
+    expect(auth).not.toHaveBeenCalled();
+    expect(drizDbWithInit).not.toHaveBeenCalled();
+  });
+
   it('normalizes a raw Authorization bearer token from a request', async () => {
     const request = new Request('http://localhost/api/ai/tools/sse', {
       headers: {
@@ -54,6 +104,49 @@ describe('access-token', () => {
       userId: 0,
     });
 
+    expect(auth).not.toHaveBeenCalled();
+    expect(drizDbWithInit).not.toHaveBeenCalled();
+  });
+
+  it('normalizes an unwrapped Auth.js Authorization bearer from a request', async () => {
+    (extractToken as jest.Mock).mockResolvedValue({
+      sub: 'wrapped-provider-subject',
+      account_id: 88,
+      [WRAPPED_ACCESS_TOKEN_CLAIM]: WRAPPED_ACCESS_TOKEN_CLAIM_VALUE,
+      access_token: 'wrapped-keycloak-access-token',
+      exp: Math.floor(Date.now() / 1000) + 300,
+    });
+    const request = new Request('http://localhost/api/ai/tools/sse', {
+      headers: {
+        authorization: 'Bearer wrapped-authjs-token',
+      },
+    });
+
+    await expect(normalizedAccessToken(request as never)).resolves.toEqual({
+      accessToken: 'wrapped-keycloak-access-token',
+      userId: 88,
+    });
+
+    expect(extractToken).toHaveBeenCalledWith(request);
+    expect(auth).not.toHaveBeenCalled();
+    expect(drizDbWithInit).not.toHaveBeenCalled();
+  });
+
+  it('normalizes an unwrapped Auth.js bearer string', async () => {
+    (extractToken as jest.Mock).mockResolvedValue({
+      sub: 'wrapped-provider-subject',
+      account_id: 88,
+      [WRAPPED_ACCESS_TOKEN_CLAIM]: WRAPPED_ACCESS_TOKEN_CLAIM_VALUE,
+      access_token: 'wrapped-keycloak-access-token',
+      exp: Math.floor(Date.now() / 1000) + 300,
+    });
+
+    await expect(normalizedAccessToken('wrapped-authjs-token')).resolves.toEqual({
+      accessToken: 'wrapped-keycloak-access-token',
+      userId: 88,
+    });
+
+    expect(extractToken).toHaveBeenCalledWith(expect.any(Request));
     expect(auth).not.toHaveBeenCalled();
     expect(drizDbWithInit).not.toHaveBeenCalled();
   });

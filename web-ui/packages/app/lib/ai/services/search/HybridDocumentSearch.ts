@@ -13,6 +13,13 @@ import {
 import { IEmbeddingService } from '../embedding';
 import { HybridDocumentSearchPostgres } from './HybridDocumentSearchPostgres';
 import { augmentCaseFileResultsWithNeo4jSemantics } from './HybridDocumentNeo4jAugmentation';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
+
+export type HybridDocumentSearchOptions = {
+  embeddingService?: IEmbeddingService;
+  authorizationContext?: string | LikeNextRequest;
+  enforceAuthorization?: boolean;
+};
 
 const CASE_FILE_RETRIEVAL_PROVIDER_FLAG =
   'search_case_file_retrieval_provider' as const;
@@ -81,7 +88,7 @@ export class RoutedHybridDocumentSearch {
   readonly #azureClient: HybridDocumentSearch;
   readonly #postgresClient: HybridDocumentSearchPostgres;
 
-  constructor(options?: { embeddingService?: IEmbeddingService }) {
+  constructor(options?: HybridDocumentSearchOptions) {
     this.#azureClient = new HybridDocumentSearch(options);
     this.#postgresClient = new HybridDocumentSearchPostgres(options);
   }
@@ -114,6 +121,6 @@ export class RoutedHybridDocumentSearch {
   }
 }
 
-export const hybridDocumentSearchFactory = (options?: {
-  embeddingService?: IEmbeddingService;
-}) => new RoutedHybridDocumentSearch(options);
+export const hybridDocumentSearchFactory = (
+  options?: HybridDocumentSearchOptions,
+) => new RoutedHybridDocumentSearch(options);

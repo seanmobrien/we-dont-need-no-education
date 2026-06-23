@@ -13,6 +13,7 @@ const neo4jSessionCloseMock = jest.fn();
 const neo4jSessionMock = jest.fn();
 const neo4jDriverCloseMock = jest.fn();
 const neo4jDriverMock = jest.fn();
+const mockDefaultEmbed = jest.fn();
 
 jest.mock('../../../../../lib/fetch-service', () => ({
   resolveFetchService: jest.fn(
@@ -34,6 +35,12 @@ jest.mock('@compliance-theater/database/driver', () => ({
 
 jest.mock('@compliance-theater/auth/lib/resources/case-file/index', () => ({
   getAccessibleUserIds: jest.fn(),
+}));
+
+jest.mock('../../../../../lib/ai/services/embedding', () => ({
+  EmbeddingService: jest.fn().mockImplementation(() => ({
+    embed: mockDefaultEmbed,
+  })),
 }));
 
 jest.mock('neo4j-driver', () => ({
@@ -86,6 +93,8 @@ describe('Hybrid search provider routing', () => {
     (getFeatureFlag as jest.Mock).mockReset();
     (getAccessibleUserIds as jest.Mock).mockReset();
     (getAccessibleUserIds as jest.Mock).mockResolvedValue([123]);
+    mockDefaultEmbed.mockReset();
+    mockDefaultEmbed.mockResolvedValue([0.11, 0.22, 0.33]);
     neo4jRunMock.mockReset();
     neo4jExecuteReadMock.mockReset();
     neo4jExecuteReadMock.mockImplementation(
@@ -129,6 +138,15 @@ describe('Hybrid search provider routing', () => {
     expect(body.vectorQueries[0].k).toBe(50);
   });
 
+  test('accepts authorization-only case-file search options', () => {
+    expect(() =>
+      hybridDocumentSearchFactory({
+        authorizationContext: 'Bearer test-token',
+        enforceAuthorization: true,
+      }),
+    ).not.toThrow();
+  });
+
   test('keeps threadId string value in Azure filters', async () => {
     mockFlagProviders({ retrieval: 'azure', graph: 'none' });
     const embeddingService = makeEmbeddingService();
@@ -165,12 +183,17 @@ describe('Hybrid search provider routing', () => {
     ]);
     (pgDbWithInit as jest.Mock).mockResolvedValue(sql);
 
-    const client = hybridDocumentSearchFactory({ embeddingService });
+    const authorizationContext = 'Bearer test-token';
+    const client = hybridDocumentSearchFactory({
+      embeddingService,
+      authorizationContext,
+      enforceAuthorization: true,
+    });
     const result = await client.hybridSearch('query', { count: true });
 
     expect(fetchMock).not.toHaveBeenCalled();
     expect(pgDbWithInit).toHaveBeenCalledTimes(1);
-    expect(getAccessibleUserIds).toHaveBeenCalledWith(undefined);
+    expect(getAccessibleUserIds).toHaveBeenCalledWith(authorizationContext);
     expect(sql).toHaveBeenCalled();
     expect(result.results[0].id).toBe('42');
     expect(result.total).toBe(1);
@@ -183,7 +206,10 @@ describe('Hybrid search provider routing', () => {
     (pgDbWithInit as jest.Mock).mockResolvedValue(sql);
     (getAccessibleUserIds as jest.Mock).mockResolvedValue([]);
 
-    const client = hybridDocumentSearchFactory({ embeddingService });
+    const client = hybridDocumentSearchFactory({
+      embeddingService,
+      enforceAuthorization: true,
+    });
     await expect(client.hybridSearch('query', { count: true })).rejects.toThrow(
       /No credentials available for case-file search authorization context\./,
     );
