@@ -97,21 +97,21 @@ upsert_postgres_firewall_rule() {
 
   if az postgres flexible-server firewall-rule show \
     --resource-group "$RESOURCE_GROUP" \
-    --name "$POSTGRES_SERVER" \
-    --rule-name "$POSTGRES_RULE_NAME" >/dev/null 2>&1; then
+    --server-name "$POSTGRES_SERVER" \
+    --name "$POSTGRES_RULE_NAME" >/dev/null 2>&1; then
     echo "Updating PostgreSQL firewall rule '$POSTGRES_RULE_NAME'"
     az postgres flexible-server firewall-rule update \
       --resource-group "$RESOURCE_GROUP" \
-      --name "$POSTGRES_SERVER" \
-      --rule-name "$POSTGRES_RULE_NAME" \
+      --server-name "$POSTGRES_SERVER" \
+      --name "$POSTGRES_RULE_NAME" \
       --start-ip-address "$ip" \
       --end-ip-address "$ip" >/dev/null
   else
     echo "Creating PostgreSQL firewall rule '$POSTGRES_RULE_NAME'"
     az postgres flexible-server firewall-rule create \
       --resource-group "$RESOURCE_GROUP" \
-      --name "$POSTGRES_SERVER" \
-      --rule-name "$POSTGRES_RULE_NAME" \
+      --server-name "$POSTGRES_SERVER" \
+      --name "$POSTGRES_RULE_NAME" \
       --start-ip-address "$ip" \
       --end-ip-address "$ip" >/dev/null
   fi

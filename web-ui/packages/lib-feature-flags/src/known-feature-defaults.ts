@@ -153,6 +153,7 @@ export const AllFeatureFlagsDefault: KnownFeatureValueTypeMap = {
     },
   },
   mem0_mcp_tools_enabled: true,
+  keycloak_token_broker_v2: false,
   models_fetch_cache_ttl: 300,
   models_fetch_concurrency: 8,
   models_fetch_enhanced: DEFAULT_ENHANCED_FETCH_CONFIG,
