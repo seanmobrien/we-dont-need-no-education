@@ -61,7 +61,11 @@ function configuredNeo4jSettings(): Partial<Neo4jSettings> {
   };
 }
 
-function discoveredNeo4jSettings(config: AnyRecord): Neo4jSettings | undefined {
+function configuredNeo4jFallbackSettings(): Neo4jSettings | undefined {
+  return completeNeo4jSettings(configuredNeo4jSettings());
+}
+
+function discoveredNeo4jSettings(config: AnyRecord): Partial<Neo4jSettings> | undefined {
   const graphConfig = config?.mem0?.graph_store?.config;
   if (!graphConfig || typeof graphConfig !== "object") {
     return undefined;
@@ -72,10 +76,10 @@ function discoveredNeo4jSettings(config: AnyRecord): Neo4jSettings | undefined {
     PASSWORD: graphConfig.password,
     DATABASE: graphConfig.database
   };
-  if (Object.values(values).some((value) => typeof value !== "string" || value.trim() === "" || value.startsWith("env:"))) {
+  if (Object.values(values).every((value) => typeof value !== "string" || value.trim() === "" || value.startsWith("env:"))) {
     return undefined;
   }
-  return values as Neo4jSettings;
+  return values as Partial<Neo4jSettings>;
 }
 
 async function readCachedNeo4jSettings(): Promise<Neo4jSettings | undefined> {
@@ -145,9 +149,13 @@ async function discoverNeo4jSettings(): Promise<Neo4jSettings | undefined> {
   neo4jAutoDiscoveryAttempted = true;
   try {
     const config = await appSessionJsonRequest("GET", appEndpointUrl("/api/memory/config", { secrets: true }));
-    const settings = discoveredNeo4jSettings(config);
+    const discovered = discoveredNeo4jSettings(config);
+    const settings = completeNeo4jSettings({
+      ...configuredNeo4jSettings(),
+      ...discovered
+    });
     if (!settings) {
-      log("Neo4j graph credential discovery returned no concrete graph_store credentials");
+      log("Neo4j graph credential discovery returned no concrete graph_store credentials and plugin fallback is incomplete");
       return undefined;
     }
     const token = await acquireToken();
@@ -155,7 +163,7 @@ async function discoverNeo4jSettings(): Promise<Neo4jSettings | undefined> {
     return settings;
   } catch (error) {
     log("Neo4j graph credential discovery failed; falling back to plugin settings", { message: asError(error).message });
-    return undefined;
+    return configuredNeo4jFallbackSettings();
   }
 }
 
@@ -175,7 +183,7 @@ async function resolvedNeo4jSettings(): Promise<Neo4jSettings> {
       return discovered;
     }
   }
-  const configured = completeNeo4jSettings(configuredNeo4jSettings());
+  const configured = configuredNeo4jFallbackSettings();
   if (configured) {
     neo4jSettingsCache = configured;
     return configured;

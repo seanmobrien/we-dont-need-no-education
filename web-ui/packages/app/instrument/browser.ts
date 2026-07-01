@@ -130,12 +130,16 @@ const getAppInsights = () => {
             [appInsightState.reactPlugin.identifier]: { history: null },
             [appInsightState.clickPlugin.identifier]: {
               autoCapture: true,
-              contentName: callback.contentName.bind(callback),
-              pageName: callback.pageName.bind(callback),
+              callback: {
+                contentName: callback.contentName.bind(callback),
+                pageName: callback.pageName.bind(callback),
+              },
               clickEvents: true,
               dropInvalidEvents: false,
               urlCollectQuery: false,
-              useDefaultContentNameOrId: false,
+              dataTags: {
+                useDefaultContentNameOrId: true,
+              },
             },
           },
         },

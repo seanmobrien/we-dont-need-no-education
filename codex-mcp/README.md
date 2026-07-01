@@ -185,6 +185,8 @@ This plugin supports education compliance investigations, policy grounding, evid
 
 The wrapper manages authentication inline. When a user approves a case-file, policy, memory, or workspace action, that approval covers the wrapper's internal auth/session work needed to complete the action. Protected upstream calls default to a 360 second timeout because case-file retrieval, preprocessing, and policy search can be long-running.
 
+If `MCP_COMPLIANCE_THEATER_RESOURCE_SERVER_URL` is configured as a bare origin such as `http://localhost:3000`, the wrapper expands it to `http://localhost:3000/api/ai/tools/sse`. Explicit paths are preserved unchanged.
+
 Use Compliance Theater before PST search, Gmail search, or local index search when a task mentions:
 
 - `case file` or `case document`: use case-file search/retrieval. Search scope filters include `email`, `attachment`, `core-document`, and `note`.

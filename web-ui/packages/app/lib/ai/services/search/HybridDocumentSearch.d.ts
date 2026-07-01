@@ -6,8 +6,27 @@ import { CaseFileSearchOptions } from '../../tools/types';
 import { HybridSearchClient } from './HybridSearchBase';
 import { HybridSearchPayload } from './types';
 import { IEmbeddingService } from '../embedding';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
 
 declare module '@/lib/ai/services/search/HybridDocumentSearch' {
+  /**
+   * Options for constructing a case-file hybrid search client.
+   */
+  export type HybridDocumentSearchOptions = {
+    /**
+     * Optional embedding service override for tests or alternate vector providers.
+     */
+    embeddingService?: IEmbeddingService;
+    /**
+     * Optional request or bearer token used to resolve case-file entitlements.
+     */
+    authorizationContext?: string | LikeNextRequest;
+    /**
+     * When true, searches are filtered to the resolved accessible user IDs.
+     */
+    enforceAuthorization?: boolean;
+  };
+
   /**
    * Concrete hybrid search client specializing in case file (email + attachment + derived
    * document unit) content. Provides filtering semantics for different logical document
@@ -45,11 +64,11 @@ declare module '@/lib/ai/services/search/HybridDocumentSearch' {
 
   /**
    * Factory helper for creating a {@link HybridDocumentSearch} instance while optionally
-   * injecting a custom embedding service (for testing or alternate vector providers).
+   * injecting a custom embedding service and request authorization context.
    *
-   * @param options Optional configuration containing an `embeddingService` override.
+   * @param options Optional configuration for embedding and authorization behavior.
    */
-  export const hybridDocumentSearchFactory: (options?: {
-    embeddingService?: IEmbeddingService;
-  }) => HybridDocumentSearch;
+  export const hybridDocumentSearchFactory: (
+    options?: HybridDocumentSearchOptions,
+  ) => HybridDocumentSearch;
 }

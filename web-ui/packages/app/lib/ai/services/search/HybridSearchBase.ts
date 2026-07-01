@@ -17,6 +17,15 @@ type SearchMeta = {
   attributes: Array<{ key: string; value: unknown }>;
 };
 
+const DEFAULT_SEARCH_VECTOR_DIMENSIONS = 1536;
+
+const searchVectorDimensions = (): number => {
+  const parsed = Number(env('AZURE_AISEARCH_VECTOR_SIZE_SMALL'));
+  return Number.isInteger(parsed) && parsed > 0
+    ? parsed
+    : DEFAULT_SEARCH_VECTOR_DIMENSIONS;
+};
+
 export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
   protected static readonly parseId = (
     metadata: SearchMeta
@@ -145,11 +154,16 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
       }
   ) {
     if (!embeddingServiceOrOptions) {
-      this.embeddingService = new EmbeddingService();
+      this.embeddingService = new EmbeddingService(undefined, {
+        expectedDimensions: searchVectorDimensions(),
+      });
     } else {
       if ('embeddingService' in embeddingServiceOrOptions) {
         this.embeddingService =
-          embeddingServiceOrOptions.embeddingService ?? new EmbeddingService();
+          embeddingServiceOrOptions.embeddingService ??
+          new EmbeddingService(undefined, {
+            expectedDimensions: searchVectorDimensions(),
+          });
       } else if ('embed' in embeddingServiceOrOptions) {
         this.embeddingService = embeddingServiceOrOptions;
       } else {
@@ -227,7 +241,32 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
         },
         body: JSON.stringify(payload),
       });
-      const body = await res.json();
+      const rawBody = await res.text();
+      let body: {
+        error?: { code?: string; message?: string };
+        value?: Record<string, unknown>[];
+        '@odata.count'?: number;
+        '@odata.nextLink'?: string;
+      };
+      try {
+        body = rawBody ? JSON.parse(rawBody) : {};
+      } catch {
+        body = {
+          error: {
+            code: `HTTP ${res.status}`,
+            message: rawBody || res.statusText || 'Search request failed',
+          },
+        };
+      }
+      if (res.ok === false && !body.error) {
+        body = {
+          ...body,
+          error: {
+            code: `HTTP ${res.status}`,
+            message: res.statusText || rawBody || 'Search request failed',
+          },
+        };
+      }
       const elapsed = performance.now() - timer;
       const ret = HybridSearchClient.parseResponse(
         body,

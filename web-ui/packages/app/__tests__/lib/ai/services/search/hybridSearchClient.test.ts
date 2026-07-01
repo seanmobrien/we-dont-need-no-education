@@ -13,6 +13,8 @@ setupImpersonationMock();
 
 // Mock fetch module BEFORE importing SUTs so the implementation is captured.
 const fetchMock = jest.fn();
+const getAccessibleUserIdsMock = jest.fn();
+const embedMock = jest.fn();
 jest.mock('../../../../../lib/fetch-service', () => ({
   resolveFetchService: jest.fn(
     () =>
@@ -21,6 +23,22 @@ jest.mock('../../../../../lib/fetch-service', () => ({
           ...args,
         ),
   ),
+}));
+jest.mock(
+  '@compliance-theater/auth/lib/resources/case-file/case-file-helpers',
+  () => ({
+    getAccessibleUserIds: (...args: unknown[]) =>
+      getAccessibleUserIdsMock(...args),
+  }),
+);
+jest.mock('../../../../../lib/ai/aiModelFactory', () => ({
+  createEmbeddingModel: jest.fn(async () => ({
+    modelId: 'text-embedding-3-large',
+    provider: 'azure',
+  })),
+}));
+jest.mock('@compliance-theater/types/ai-sdk', () => ({
+  embed: (...args: unknown[]) => embedMock(...args),
 }));
 
 import { hybridDocumentSearchFactory } from '../../../../../lib/ai/services/search/HybridDocumentSearch';
@@ -77,6 +95,13 @@ class TestClient extends HybridSearchClient<TestOptions> {
 // Shared embedding service mock
 const makeEmbeddingService = () => ({
   embed: jest.fn().mockResolvedValue([0.11, 0.22, 0.33]),
+});
+const searchResponse = (body: unknown) => ({
+  ok: true,
+  status: 200,
+  statusText: 'OK',
+  text: async () => JSON.stringify(body),
+  headers: { get: jest.fn() },
 });
 describe('HybridSearchClient tests', () => {
   const mockConsole = hideConsoleOutput();
@@ -155,11 +180,12 @@ describe('HybridSearchClient tests', () => {
       (globalThis as { fetch?: typeof fetch }).fetch =
         fetchMock as unknown as typeof fetch;
       fetchMock.mockReset();
+      getAccessibleUserIdsMock.mockReset();
     });
 
     test('builds payload with vector k minimum of 50 when topK < 50', async () => {
       const embeddingService = makeEmbeddingService();
-      fetchMock.mockResolvedValue({ json: async () => ({ value: [] }) });
+      fetchMock.mockResolvedValue(searchResponse({ value: [] }));
       const client = hybridDocumentSearchFactory({ embeddingService });
       await client.hybridSearch('test query', { hitsPerPage: 5 });
       expect(embeddingService.embed).toHaveBeenCalledWith('test query');
@@ -170,7 +196,7 @@ describe('HybridSearchClient tests', () => {
 
     test('uses provided hitsPerPage as k when >= 50', async () => {
       const embeddingService = makeEmbeddingService();
-      fetchMock.mockResolvedValue({ json: async () => ({ value: [] }) });
+      fetchMock.mockResolvedValue(searchResponse({ value: [] }));
       const client = hybridDocumentSearchFactory({ embeddingService });
       await client.hybridSearch('long', { hitsPerPage: 80 });
       const body = JSON.parse(fetchMock.mock.calls[0][1].body);
@@ -179,7 +205,7 @@ describe('HybridSearchClient tests', () => {
 
     test('adds skip for page > 1', async () => {
       const embeddingService = makeEmbeddingService();
-      fetchMock.mockResolvedValue({ json: async () => ({ value: [] }) });
+      fetchMock.mockResolvedValue(searchResponse({ value: [] }));
       const client = hybridDocumentSearchFactory({ embeddingService });
       await client.hybridSearch('query', { hitsPerPage: 10, page: 3 });
       const body = JSON.parse(fetchMock.mock.calls[0][1].body);
@@ -188,7 +214,7 @@ describe('HybridSearchClient tests', () => {
 
     test('applies document scope & id filters (AND + OR logic)', async () => {
       const embeddingService = makeEmbeddingService();
-      fetchMock.mockResolvedValue({ json: async () => ({ value: [] }) });
+      fetchMock.mockResolvedValue(searchResponse({ value: [] }));
       const client = hybridDocumentSearchFactory({ embeddingService });
       const docOpts: CaseFileSearchOptions = {
         scope: ['email', 'attachment'],
@@ -203,6 +229,37 @@ describe('HybridSearchClient tests', () => {
       // AND between type grouping and email id
       expect(body.filter).toMatch(/\) and metadata\/attributes.*email_id/);
     });
+
+    test('adds accessible user filter when authorization is enforced', async () => {
+      const embeddingService = makeEmbeddingService();
+      getAccessibleUserIdsMock.mockResolvedValue([7, 11]);
+      fetchMock.mockResolvedValue(searchResponse({ value: [] }));
+      const requestContext = { headers: new Headers() };
+      const client = hybridDocumentSearchFactory({
+        embeddingService,
+        authorizationContext: requestContext,
+        enforceAuthorization: true,
+      });
+      await client.hybridSearch('query', { hitsPerPage: 5 });
+      const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+      expect(getAccessibleUserIdsMock).toHaveBeenCalledWith(requestContext);
+      expect(body.filter).toContain("a/key eq 'user_id'");
+      expect(body.filter).toContain("a/value eq '7'");
+      expect(body.filter).toContain("a/value eq '11'");
+    });
+
+    test('uses no-access filter when authorization has no credentials', async () => {
+      const embeddingService = makeEmbeddingService();
+      getAccessibleUserIdsMock.mockResolvedValue([]);
+      fetchMock.mockResolvedValue(searchResponse({ value: [] }));
+      const client = hybridDocumentSearchFactory({
+        embeddingService,
+        enforceAuthorization: true,
+      });
+      await client.hybridSearch('query', { hitsPerPage: 5 });
+      const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+      expect(body.filter).toContain('__no_access__');
+    });
   });
 
   describe('HybridPolicySearch.hybridSearch', () => {
@@ -214,7 +271,7 @@ describe('HybridSearchClient tests', () => {
 
     test('applies policy scope filter (OR of mapped values)', async () => {
       const embeddingService = makeEmbeddingService();
-      fetchMock.mockResolvedValue({ json: async () => ({ value: [] }) });
+      fetchMock.mockResolvedValue(searchResponse({ value: [] }));
       const client = hybridPolicySearchFactory({ embeddingService });
       const polOpts: PolicySearchOptions = {
         scope: ['state'],
@@ -224,6 +281,21 @@ describe('HybridSearchClient tests', () => {
       expect(body.filter).toMatch(/document_type/);
       // state maps to '2'
       expect(body.filter).toContain("'2'");
+    });
+
+    test('uses small search-vector dimensions for the default embedding service', async () => {
+      process.env.AZURE_AISEARCH_VECTOR_SIZE_SMALL = '1536';
+      embedMock.mockResolvedValue({ embedding: new Array(1536).fill(0.1) });
+      fetchMock.mockResolvedValue(searchResponse({ value: [] }));
+
+      const client = hybridPolicySearchFactory();
+      await client.hybridSearch('policy query', { hitsPerPage: 3 });
+
+      expect(embedMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          providerOptions: { openai: { dimensions: 1536 } },
+        }),
+      );
     });
   });
 

@@ -4,8 +4,32 @@ import { CaseFileSearchScopeType } from '../../tools/unions';
 import { HybridSearchClient } from './HybridSearchBase';
 import { HybridSearchPayload } from './types';
 import { IEmbeddingService } from '../embedding';
+import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file/case-file-helpers';
+import type { LikeNextRequest } from '@compliance-theater/types/lib/nextjs/types/like-nextrequest';
+
+export type HybridDocumentSearchOptions = {
+  embeddingService?: IEmbeddingService;
+  authorizationContext?: string | LikeNextRequest;
+  enforceAuthorization?: boolean;
+};
 
 export class HybridDocumentSearch extends HybridSearchClient<CaseFileSearchOptions> {
+  private readonly authorizationContext?: string | LikeNextRequest;
+  private readonly enforceAuthorization: boolean;
+  private accessibleUserIdsForCurrentSearch?: number[];
+
+  constructor(options?: IEmbeddingService | HybridDocumentSearchOptions) {
+    const searchOptions =
+      options && typeof options === 'object' && !('embed' in options);
+    super(searchOptions ? { embeddingService: options.embeddingService } : options);
+    if (searchOptions) {
+      this.authorizationContext = options.authorizationContext;
+      this.enforceAuthorization = options.enforceAuthorization === true;
+    } else {
+      this.enforceAuthorization = false;
+    }
+  }
+
   protected getSearchIndexName(): string {
     return env('AZURE_AISEARCH_DOCUMENTS_INDEX_NAME');
   }
@@ -89,9 +113,52 @@ export class HybridDocumentSearch extends HybridSearchClient<CaseFileSearchOptio
     if (filters.length > 0) {
       payload.filter = filters.join(' and ');
     }
+    if (this.enforceAuthorization) {
+      this.appendUserAuthorizationFilter(
+        payload,
+        this.accessibleUserIdsForCurrentSearch ?? [],
+      );
+    }
+  }
+
+  private appendUserAuthorizationFilter(
+    payload: HybridSearchPayload,
+    accessibleUserIds: number[],
+  ): void {
+    const authFilter =
+      accessibleUserIds.length === 0
+        ? `metadata/attributes/any(a: a/key eq 'user_id' and a/value eq '__no_access__')`
+        : `(${accessibleUserIds
+            .map(
+              (userId) =>
+                `metadata/attributes/any(a: a/key eq 'user_id' and a/value eq '${userId}')`,
+            )
+            .join(' or ')})`;
+    payload.filter = payload.filter
+      ? `${payload.filter} and ${authFilter}`
+      : authFilter;
+  }
+
+  public async hybridSearch(
+    naturalQuery: string,
+    options?: CaseFileSearchOptions,
+  ) {
+    if (!this.enforceAuthorization) {
+      return super.hybridSearch(naturalQuery, options);
+    }
+
+    const accessibleUserIds = await getAccessibleUserIds(
+      this.authorizationContext,
+    );
+    this.accessibleUserIdsForCurrentSearch = accessibleUserIds;
+    try {
+      return await super.hybridSearch(naturalQuery, options);
+    } finally {
+      this.accessibleUserIdsForCurrentSearch = undefined;
+    }
   }
 }
 
-export const hybridDocumentSearchFactory = (options?: {
-  embeddingService?: IEmbeddingService;
-}) => new HybridDocumentSearch(options);
+export const hybridDocumentSearchFactory = (
+  options?: HybridDocumentSearchOptions,
+) => new HybridDocumentSearch(options);

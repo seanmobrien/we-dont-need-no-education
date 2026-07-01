@@ -1,0 +1,26 @@
+diff --git a/dist/index.js b/dist/index.js
+index 11072f724e74ff9e0b4c3bfec04a6fafa1b0a7bd..78e7659d27b4456a7eb83f4b0b01adfd365594f8 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -650,7 +650,7 @@ function initializeMcpApiHandler(initializeServer, serverOptions = {}, config =
+           logger.log(`Published requests:${sessionId}`, serializedRequest);
+           timeout = setTimeout(() => chunkUILOG6SR_js.__async(this, null, function* () {
+             yield sendResponse(408, "Request timed out");
+-          }), 10 * 1e3);
++          }), (maxDuration != null ? maxDuration : 60) * 1e3);
+           res.on("close", () => chunkUILOG6SR_js.__async(this, null, function* () {
+             if (!hasResponded) {
+               hasResponded = true;
+diff --git a/dist/index.mjs b/dist/index.mjs
+index c1110409315d81bd1d440dc5910ba720c17f3722..6257a231c39e0c96db12516f58d4c46acd8d015a 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -644,7 +644,7 @@ function initializeMcpApiHandler(initializeServer, serverOptions = {}, config =
+           logger.log(`Published requests:${sessionId}`, serializedRequest);
+           timeout = setTimeout(() => __async(this, null, function* () {
+             yield sendResponse(408, "Request timed out");
+-          }), 10 * 1e3);
++          }), (maxDuration != null ? maxDuration : 60) * 1e3);
+           res.on("close", () => __async(this, null, function* () {
+             if (!hasResponded) {
+               hasResponded = true;

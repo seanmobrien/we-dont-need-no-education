@@ -7,6 +7,7 @@ export type KeycloakConfig = {
 export type TokenExchangeParams = {
   subjectToken: string;
   audience?: string;
+  requestedIssuer?: string;
   requestedTokenType?: string;
   scope?: string;
 };

@@ -9,6 +9,7 @@ Snapshot date: 2026-05-27. A live `graph_schema` call should still be attempted 
 - Treat type-specific IDs such as `attachment_id`, `action_id`, and `key_point_id` as aliases or metadata, not as separate primary IDs.
 - Preserve provenance using `source`, `source_table`, `last_graph_processed_at`, `import_status`, `embedding_status`, and related fields.
 - Use graph traversal to discover relevant evidence, then use case-file retrieval for full-fidelity text and quote work.
+- For case-theory requests, normalize user-facing theory names to `case_theory.theory_key` values and query the anchor relationship rather than attempting broad text search first.
 
 ## Core Labels
 
@@ -120,6 +121,60 @@ Latest observed email-thread state:
 - 31 `latest_inbound_email` and 31 `latest_outbound_email` convenience rollup relationships.
 - `latest_inbound_email` currently means `contacts.is_district_staff = true`; `latest_outbound_email` currently means `contacts.is_district_staff = false`. Check the relationship `direction_basis` before treating those as agency/non-agency semantics.
 
+### `case_theory`
+
+Anchor node for a named evidence theory. Use this when a user asks to "query theory X", "show the evidence for theory X", "pull the theory", or asks for a named analytical theory rather than a broad graph search.
+
+Key properties:
+
+- `theory_key`: stable snake_case key.
+
+Known anchor:
+
+```cypher
+(:case_theory {theory_key: "improper_records_supporting_correction_denial"})
+```
+
+Natural-language aliases:
+
+```json
+{
+  "improper records supporting correction denial": "improper_records_supporting_correction_denial",
+  "improper records support correction denial": "improper_records_supporting_correction_denial",
+  "correction denial improper records": "improper_records_supporting_correction_denial"
+}
+```
+
+Use a light normalization fallback when no explicit alias matches: lowercase the phrase, remove punctuation, replace whitespace with underscores, and compare against known `theory_key` values.
+
+### Correction Workspace Overlay Labels
+
+Correction-request and complaint drafting work should use quarantined overlay labels so draft analysis remains separate from established evidence and findings. Use snake_case labels as canonical to match the main graph schema. Older mixed-case draft labels may remain on existing nodes as compatibility aliases during migration.
+
+Overlay labels:
+
+- `correction_workspace`: one durable workspace root per correction/complaint workspace.
+- `correction_point_draft`: one draft correction point, target issue, or complaint point.
+- `target_statement_draft`: the challenged statement or premise.
+- `evidence_use_draft`: one row describing how source evidence is being used by a draft point.
+- `proposed_cure_draft`: requested correction, supplementation, production, reassessment, or complaint cure.
+- `research_task_draft`: unresolved research, exhibit-prep, request, or validation task.
+- `caveat_draft`: qualification or limitation that must remain attached to the point.
+- `exhibit_candidate_draft`: candidate exhibit or packet item.
+- `case_theory_draft`: draft cross-link to a local or graph-backed case theory.
+
+Required overlay properties:
+
+- `workspace_key`
+- `assertion_status`
+- `source_path` when derived from a local file
+- `created_from`
+- `updated_at` on nodes
+
+Allowed `assertion_status` values include `draft`, `candidate`, `enriched`, `correction_ready_with_caveat`, `research_required`, `dropped`, and `promoted`. `evidence_use_draft` may use `draft_evidence_use`; `references_source` relationships may use `draft_reference`.
+
+Draft overlays must not create `Violation`, `EstablishedFinding`, `PROVES`, `ESTABLISHES`, or `VIOLATES` unless a separate promotion pass explicitly promotes a supported claim.
+
 ### `policy_reference`
 
 Policy, legal, ethical, or practice reference used to ground compliance analysis.
@@ -198,6 +253,23 @@ Relationship types are lowercase snake_case. Key relationships:
 - `sent_to`: email document -> actor.
 - `owned_by`: document -> actor/user.
 - `migrated_embedding_from`: normalized document -> legacy embedding source.
+- `case_theory`: `case_file_document -> case_theory` anchor relationship. The relationship carries the evidence ordering and role for the theory.
+- `has_correction_point_draft`: `correction_workspace -> correction_point_draft`.
+- `targets_statement_draft`: `correction_point_draft -> target_statement_draft`.
+- `uses_evidence_draft`: `correction_point_draft -> evidence_use_draft`.
+- `references_source`: `evidence_use_draft -> source evidence node`, usually `case_file_document`.
+- `has_caveat_draft`: `correction_point_draft -> caveat_draft`.
+- `has_proposed_cure_draft`: `correction_point_draft -> proposed_cure_draft`.
+- `needs_research_draft`: `correction_point_draft -> research_task_draft`.
+- `cross_links_correction_draft`: `correction_point_draft -> correction_point_draft` or `case_theory_draft`.
+- `has_exhibit_candidate_draft`: `correction_point_draft -> exhibit_candidate_draft`.
+
+`case_theory` relationship properties:
+
+- `theory_key`: duplicates the target anchor key for direct relationship filtering.
+- `sequence`: numeric ordering for model-consumable evidence presentation.
+- `role`: how the document functions in the theory.
+- `note`: concise explanation of why the document matters.
 
 Latest observed relationship sync counts:
 
@@ -308,6 +380,32 @@ RETURN coalesce(s.subject_key, s.subject_id) AS subjectKey,
        left(coalesce(s.content, ''), 1000) AS definition
 ORDER BY documentCount DESC, subject
 ```
+
+### Case-Theory Retrieval
+
+Use this when the user asks for "query theory improper records supporting correction denial" or equivalent language. Resolve the natural-language phrase to `improper_records_supporting_correction_denial`, then run:
+
+```cypher
+MATCH (d:case_file_document)-[r:case_theory {theory_key: $theoryKey}]->(t:case_theory)
+RETURN r.sequence AS sequence,
+       r.role AS role,
+       d.case_file AS caseFile,
+       d.subject_or_title AS title,
+       d.email_sender_name AS sender,
+       coalesce(d.sent_timestamp, d.email_sent_timestamp, d.created_on) AS sentAt,
+       r.note AS note
+ORDER BY r.sequence
+```
+
+Use these parameters for the known theory:
+
+```json
+{
+  "theoryKey": "improper_records_supporting_correction_denial"
+}
+```
+
+When presenting results, preserve `sequence` order, group by `role` only if it helps readability, and cite `caseFile` IDs. Retrieve source documents by ID when the user needs exact text, quotes, or more context.
 
 ### Vector Search
 

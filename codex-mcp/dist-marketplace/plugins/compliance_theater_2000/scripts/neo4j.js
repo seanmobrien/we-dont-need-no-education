@@ -44,6 +44,9 @@ function configuredNeo4jSettings() {
         DATABASE: neo4jSetting("DATABASE")
     };
 }
+function configuredNeo4jFallbackSettings() {
+    return completeNeo4jSettings(configuredNeo4jSettings());
+}
 function discoveredNeo4jSettings(config) {
     const graphConfig = config?.mem0?.graph_store?.config;
     if (!graphConfig || typeof graphConfig !== "object") {
@@ -55,7 +58,7 @@ function discoveredNeo4jSettings(config) {
         PASSWORD: graphConfig.password,
         DATABASE: graphConfig.database
     };
-    if (Object.values(values).some((value) => typeof value !== "string" || value.trim() === "" || value.startsWith("env:"))) {
+    if (Object.values(values).every((value) => typeof value !== "string" || value.trim() === "" || value.startsWith("env:"))) {
         return undefined;
     }
     return values;
@@ -119,9 +122,13 @@ async function discoverNeo4jSettings() {
     neo4jAutoDiscoveryAttempted = true;
     try {
         const config = await appSessionJsonRequest("GET", (0, urls_1.appEndpointUrl)("/api/memory/config", { secrets: true }));
-        const settings = discoveredNeo4jSettings(config);
+        const discovered = discoveredNeo4jSettings(config);
+        const settings = completeNeo4jSettings({
+            ...configuredNeo4jSettings(),
+            ...discovered
+        });
         if (!settings) {
-            (0, config_1.log)("Neo4j graph credential discovery returned no concrete graph_store credentials");
+            (0, config_1.log)("Neo4j graph credential discovery returned no concrete graph_store credentials and plugin fallback is incomplete");
             return undefined;
         }
         const token = await (0, auth_1.acquireToken)();
@@ -130,7 +137,7 @@ async function discoverNeo4jSettings() {
     }
     catch (error) {
         (0, config_1.log)("Neo4j graph credential discovery failed; falling back to plugin settings", { message: (0, errors_1.asError)(error).message });
-        return undefined;
+        return configuredNeo4jFallbackSettings();
     }
 }
 async function resolvedNeo4jSettings() {
@@ -149,7 +156,7 @@ async function resolvedNeo4jSettings() {
             return discovered;
         }
     }
-    const configured = completeNeo4jSettings(configuredNeo4jSettings());
+    const configured = configuredNeo4jFallbackSettings();
     if (configured) {
         neo4jSettingsCache = configured;
         return configured;
