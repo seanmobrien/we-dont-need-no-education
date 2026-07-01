@@ -189,7 +189,7 @@
     "ai": "^5.0.23",
     "drizzle-orm": "^0.44.1",
     "got": "^14.4.9",
-    "mcp-handler": "1.1.0",
+    "mcp-handler": "patch:mcp-handler@npm%3A1.1.0#~/.yarn/patches/mcp-handler-npm-1.1.0-ecba07ff25.patch",
     "mitt": "^3.0.1",
     "next": "^15.5.12",
     "pg": ">=8",

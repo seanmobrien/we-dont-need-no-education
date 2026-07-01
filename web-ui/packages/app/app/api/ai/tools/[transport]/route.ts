@@ -27,6 +27,14 @@ type McpConfig = Exclude<Parameters<typeof createMcpHandler>[2], undefined>;
 type OnEventHandler = Exclude<McpConfig['onEvent'], undefined>;
 type McpEvent = FirstParameter<OnEventHandler>;
 
+const normalizeMcpMaxDurationSeconds = (value: unknown): number | undefined => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return undefined;
+  }
+  return parsed > 1000 ? Math.ceil(parsed / 1000) : parsed;
+};
+
 const makeErrorHandler = (server: McpServer, dscr: string) => {
   const oldHandler = server.server?.onerror;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -302,7 +310,9 @@ const handler = wrapRouteRequest(
 
     log((l) => l.debug('Calling MCP Tool route.', { transport }));
 
-    const maxDuration = (await wellKnownFlag('mcp_max_duration')).value;
+    const maxDuration = normalizeMcpMaxDurationSeconds(
+      (await wellKnownFlag('mcp_max_duration')).value
+    );
     const traceLevel = (await wellKnownFlag('mcp_trace_level')).value;
     const verboseLogs = ['debug', 'verbose', 'silly'].includes(traceLevel);
 
@@ -314,7 +324,7 @@ const handler = wrapRouteRequest(
           })
         );        
         log((l) => l.info('=== Registering MCP tools ==='));
-        registerAppMcpTools(server as MinimalMcpToolServer);
+        registerAppMcpTools(server as MinimalMcpToolServer, { req });
         server.server.onerror = makeErrorHandler(server, 'server');
       },
       {},

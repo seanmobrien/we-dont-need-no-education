@@ -1169,7 +1169,7 @@ __metadata:
     lodash: "npm:^4.17.21"
     lru-cache: "npm:^11.0.2"
     markdown-to-jsx: "npm:^7.0.0"
-    mcp-handler: "npm:^1.0.2"
+    mcp-handler: "patch:mcp-handler@npm%3A1.1.0#~/.yarn/patches/mcp-handler-npm-1.1.0-ecba07ff25.patch"
     mui-markdown: "npm:^2.0.1"
     next: "npm:^15.5.12"
     next-auth: "npm:^5.0.0-beta.30"
@@ -8014,7 +8014,7 @@ __metadata:
     jest-environment-jsdom: "npm:^30.0.5"
     jest-mock-extended: "npm:^4.0.0-beta1"
     jsdom: "npm:^26.1.0"
-    mcp-handler: "npm:1.1.0"
+    mcp-handler: "patch:mcp-handler@npm%3A1.1.0#~/.yarn/patches/mcp-handler-npm-1.1.0-ecba07ff25.patch"
     mitt: "npm:^3.0.1"
     next: "npm:^15.5.12"
     pg: "npm:>=8"
@@ -12947,7 +12947,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mcp-handler@npm:1.1.0, mcp-handler@npm:^1.0.2":
+"mcp-handler@npm:1.1.0":
   version: 1.1.0
   resolution: "mcp-handler@npm:1.1.0"
   dependencies:
@@ -12967,6 +12967,29 @@ __metadata:
     mcp-adapter: dist/cli/index.js
     mcp-handler: dist/cli/index.js
   checksum: 10/702fa4205f1d498880237f6829ee9d9693b542cbf0c22f87619daa82f32473fe2b595d27532fc1a063498316e96f1419bc7a03c15009df6bc897ceabbbd91577
+  languageName: node
+  linkType: hard
+
+"mcp-handler@patch:mcp-handler@npm%3A1.1.0#~/.yarn/patches/mcp-handler-npm-1.1.0-ecba07ff25.patch":
+  version: 1.1.0
+  resolution: "mcp-handler@patch:mcp-handler@npm%3A1.1.0#~/.yarn/patches/mcp-handler-npm-1.1.0-ecba07ff25.patch::version=1.1.0&hash=0836c8"
+  dependencies:
+    chalk: "npm:^5.3.0"
+    commander: "npm:^11.1.0"
+    redis: "npm:^4.6.0"
+  peerDependencies:
+    "@modelcontextprotocol/sdk": 1.26.0
+    next: ">=13.0.0"
+  peerDependenciesMeta:
+    "@modelcontextprotocol/sdk":
+      optional: false
+    next:
+      optional: true
+  bin:
+    create-mcp-route: dist/cli/index.js
+    mcp-adapter: dist/cli/index.js
+    mcp-handler: dist/cli/index.js
+  checksum: 10/b66cbeb1f5081e35c45d25f6d8977f9d5baeb201af5a137d49ccd7b3fb7cdb2ae9373e2ea9bfe69bf0a36ab41b55cbbb4d672f9c09b5cad6ec7ab4cb5da2638b
   languageName: node
   linkType: hard
 
