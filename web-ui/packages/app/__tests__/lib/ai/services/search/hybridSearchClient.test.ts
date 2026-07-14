@@ -264,6 +264,43 @@ describe('Hybrid search provider routing', () => {
     expect(neo4jRunMock).toHaveBeenCalledTimes(1);
   });
 
+  test('passes null defaults for optional neo4j filter params', async () => {
+    mockFlagProviders({ retrieval: 'azure', graph: 'neo4j' });
+    const embeddingService = makeEmbeddingService();
+    process.env.NEO4J_URI = 'neo4j://localhost:7687';
+    process.env.NEO4J_USERNAME = 'neo4j';
+    process.env.NEO4J_PASSWORD = 'test-password';
+    process.env.NEO4J_DATABASE = 'neo4j';
+    neo4jRunMock.mockResolvedValue({ records: [] });
+    fetchMock.mockResolvedValue({
+      json: async () => ({
+        value: [
+          {
+            id: '1',
+            content: 'first',
+            metadata: { attributes: [] },
+            '@search.score': 0.8,
+          },
+        ],
+      }),
+      headers: { get: () => null },
+    });
+
+    const client = hybridDocumentSearchFactory({ embeddingService });
+    await client.hybridSearch('query');
+
+    expect(neo4jRunMock).toHaveBeenCalledTimes(1);
+    const [, params] = neo4jRunMock.mock.calls[0];
+    expect(params).toEqual(
+      expect.objectContaining({
+        threadId: null,
+        attachmentId: null,
+        replyToDocumentId: null,
+        relatedToDocumentId: null,
+      }),
+    );
+  });
+
   test('does not tag graph augmentation metadata when Neo4j config is missing', async () => {
     mockFlagProviders({ retrieval: 'azure', graph: 'neo4j' });
     const embeddingService = makeEmbeddingService();

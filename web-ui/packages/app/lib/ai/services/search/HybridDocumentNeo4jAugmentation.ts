@@ -35,6 +35,9 @@ const asFiniteNumber = (value: unknown): number | undefined => {
   return undefined;
 };
 
+const asNullableInteger = (value: unknown): number | null =>
+  asInteger(value) ?? null;
+
 const getNeo4jConfig = ():
   | {
       uri: string;
@@ -91,10 +94,10 @@ const findScoreBoostsFromGraph = async (
         `,
         {
           documentIds,
-          threadId: asInteger(options?.threadId),
-          attachmentId: asInteger(options?.attachmentId),
-          replyToDocumentId: asInteger(options?.replyToDocumentId),
-          relatedToDocumentId: asInteger(options?.relatedToDocumentId),
+          threadId: asNullableInteger(options?.threadId),
+          attachmentId: asNullableInteger(options?.attachmentId),
+          replyToDocumentId: asNullableInteger(options?.replyToDocumentId),
+          relatedToDocumentId: asNullableInteger(options?.relatedToDocumentId),
         },
       ),
     );
