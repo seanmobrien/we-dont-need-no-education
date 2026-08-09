@@ -18,6 +18,8 @@ import {
   AiSearchResultEnvelopeSchema,
   CaseFileSearchOptionsSchema,
 } from './schemas/searchObjects';
+import { getCurrentMcpToolRequest } from './mcp-request-context';
+import { env } from '@compliance-theater/env';
 import z from 'zod';
 
 // OpenTelemetry Metrics for SearchCaseFile Tool
@@ -85,7 +87,13 @@ export const searchCaseFile = async (
   };
 
   try {
-    const client = hybridDocumentSearchFactory();
+    const authorizationContext = getCurrentMcpToolRequest();
+    const client = hybridDocumentSearchFactory({
+      authorizationContext,
+      enforceAuthorization:
+        authorizationContext != null &&
+        !env('AI_SEARCH_DISABLE_AUTHORIZATION'),
+    });
     const ret = await client.hybridSearch(query, options);
 
     const duration = Date.now() - startTime;

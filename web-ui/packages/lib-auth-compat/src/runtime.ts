@@ -14,8 +14,19 @@ import type {
 // ─── Lazy peer loaders ────────────────────────────────────────────────────────
 
 type NextAuthModule = {
-  default: (config: AuthConfig | ((request: Request | undefined) => Awaitable<AuthConfig>)) => NextAuthResult;
+  default?: NextAuthFactory | { default?: NextAuthFactory };
+  NextAuth?: NextAuthFactory;
 };
+
+type NextAuthServerModule = {
+  nextAuth: NextAuthFactory;
+};
+
+type KeycloakProviderServerModule = {
+  keycloakProvider: KeycloakProviderFactory;
+};
+
+type NextAuthFactory = (config: AuthConfig | ((request: Request | undefined) => Awaitable<AuthConfig>)) => NextAuthResult;
 
 type KeycloakProviderFactory = (options?: Record<string, unknown>) => Provider;
 
@@ -57,20 +68,59 @@ type DrizzleAdapterModule = {
   DrizzleAdapter: (db: unknown, options?: unknown) => Adapter;
 };
 
-let cachedNextAuth: NextAuthModule | undefined;
+let cachedNextAuth: NextAuthFactory | undefined;
 let cachedNextAuthReact: NextAuthReactModule | undefined;
 let cachedNextAuthJwt: NextAuthJwtModule | undefined;
 let cachedAuthCore: AuthCoreModule | undefined;
 let cachedDrizzleAdapter: DrizzleAdapterModule | undefined;
 let cachedKeycloakProvider: KeycloakProviderFactory | undefined;
 
-const loadNextAuth = (): NextAuthModule => {
+const getCallableExport = <TFunction extends (...args: any[]) => unknown>(
+  moduleValue: unknown,
+  packageName: string,
+): TFunction => {
+  const seen = new Set<unknown>();
+  const candidates = [moduleValue];
+
+  while (candidates.length > 0) {
+    const candidate = candidates.shift();
+    if (typeof candidate === 'function') {
+      return candidate as TFunction;
+    }
+
+    if (!candidate || typeof candidate !== 'object' || seen.has(candidate)) {
+      continue;
+    }
+
+    seen.add(candidate);
+    const moduleRecord = candidate as {
+      default?: unknown;
+      NextAuth?: unknown;
+    };
+    candidates.push(moduleRecord.default, moduleRecord.NextAuth);
+  }
+
+  throw new TypeError(`${packageName} did not expose a callable export`);
+};
+
+const loadNextAuth = (): NextAuthFactory => {
   if (cachedNextAuth) return cachedNextAuth;
   try {
-    cachedNextAuth = require('next-auth') as NextAuthModule;
+    cachedNextAuth = getCallableExport<NextAuthFactory>(
+      (require('./next-auth-server') as NextAuthServerModule).nextAuth,
+      'next-auth',
+    );
     return cachedNextAuth;
   } catch (error) {
-    throw new MissingNextAuthPeerError(error);
+    try {
+      cachedNextAuth = getCallableExport<NextAuthFactory>(
+        require('next-auth') as NextAuthModule,
+        'next-auth',
+      );
+      return cachedNextAuth;
+    } catch {
+      throw new MissingNextAuthPeerError(error);
+    }
   }
 };
 
@@ -117,18 +167,22 @@ const loadDrizzleAdapter = (): DrizzleAdapterModule => {
 const loadKeycloakProvider = (): KeycloakProviderFactory => {
   if (cachedKeycloakProvider) return cachedKeycloakProvider;
   try {
-    const keycloakModule = require('next-auth/providers/keycloak') as {
-      default?: KeycloakProviderFactory;
-    };
-
-    if (!keycloakModule.default) {
-      throw new TypeError('next-auth/providers/keycloak did not expose a default export');
-    }
-
-    cachedKeycloakProvider = keycloakModule.default;
+    cachedKeycloakProvider = getCallableExport<KeycloakProviderFactory>(
+      (require('./keycloak-provider-server') as KeycloakProviderServerModule)
+        .keycloakProvider,
+      'next-auth/providers/keycloak',
+    );
     return cachedKeycloakProvider;
   } catch (error) {
-    throw new MissingNextAuthPeerError(error);
+    try {
+      cachedKeycloakProvider = getCallableExport<KeycloakProviderFactory>(
+        require('next-auth/providers/keycloak'),
+        'next-auth/providers/keycloak',
+      );
+      return cachedKeycloakProvider;
+    } catch {
+      throw new MissingNextAuthPeerError(error);
+    }
   }
 };
 
@@ -141,8 +195,7 @@ const loadKeycloakProvider = (): KeycloakProviderFactory => {
 export const createNextAuth = (
   config: AuthConfig | ((request: Request | undefined) => Awaitable<AuthConfig>),
 ): NextAuthResult => {
-  const mod = loadNextAuth();
-  return mod.default(config);
+  return loadNextAuth()(config);
 };
 
 /**

@@ -49,9 +49,17 @@
     "lint": "yarn exec eslint src --ext .js,.jsx,.ts,.tsx --config ../../eslint.config.mjs",
     "build:clean": "rimraf dist tsconfig.tsbuildinfo"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@tanstack/react-query": "5.90.21",
     "@tanstack/react-query-devtools": "5.91.3"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-query": {
+      "optional": true
+    },
+    "@tanstack/react-query-devtools": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@swc/core": "^1.13.5",

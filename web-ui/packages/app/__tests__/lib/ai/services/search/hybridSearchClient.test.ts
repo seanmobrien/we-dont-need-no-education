@@ -3,16 +3,18 @@
  */
 
 import { setupImpersonationMock } from '../../../../jest.mock-impersonation';
-import { hideConsoleOutput } from '../../../../shared/test-utils';
 
 setupImpersonationMock();
 
-/**
- * Comprehensive tests for HybridSearchClient base behaviors and concrete subclasses.
- */
-
-// Mock fetch module BEFORE importing SUTs so the implementation is captured.
 const fetchMock = jest.fn();
+const neo4jRunMock = jest.fn();
+const neo4jExecuteReadMock = jest.fn();
+const neo4jSessionCloseMock = jest.fn();
+const neo4jSessionMock = jest.fn();
+const neo4jDriverCloseMock = jest.fn();
+const neo4jDriverMock = jest.fn();
+const mockDefaultEmbed = jest.fn();
+
 jest.mock('../../../../../lib/fetch-service', () => ({
   resolveFetchService: jest.fn(
     () =>
@@ -23,230 +25,326 @@ jest.mock('../../../../../lib/fetch-service', () => ({
   ),
 }));
 
+jest.mock('@compliance-theater/feature-flags/server', () => ({
+  getFeatureFlag: jest.fn(),
+}));
+
+jest.mock('@compliance-theater/database/driver', () => ({
+  pgDbWithInit: jest.fn(),
+}));
+
+jest.mock('@compliance-theater/auth/lib/resources/case-file/index', () => ({
+  getAccessibleUserIds: jest.fn(),
+}));
+
+jest.mock('../../../../../lib/ai/services/embedding', () => ({
+  EmbeddingService: jest.fn().mockImplementation(() => ({
+    embed: mockDefaultEmbed,
+  })),
+}));
+
+jest.mock('neo4j-driver', () => ({
+  __esModule: true,
+  default: {
+    driver: (...args: unknown[]) => neo4jDriverMock(...args),
+    auth: {
+      basic: jest.fn((username: string, password: string) => ({
+        username,
+        password,
+      })),
+    },
+    isInt: () => false,
+  },
+}));
+
 import { hybridDocumentSearchFactory } from '../../../../../lib/ai/services/search/HybridDocumentSearch';
 import { hybridPolicySearchFactory } from '../../../../../lib/ai/services/search/HybridPolicySearch';
-import { HybridSearchClient } from '../../../../../lib/ai/services/search/HybridSearchBase';
+import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
+import { pgDbWithInit } from '@compliance-theater/database/driver';
+import { getAccessibleUserIds } from '@compliance-theater/auth/lib/resources/case-file/index';
 
-// Minimal option types (avoid deep imports of tool unions if not needed for shapes)
-import type {
-  HybridSearchPayload,
-  AiSearchResultEnvelope,
-} from '../../../../../lib/ai/services/search/types';
-import type {
-  CaseFileSearchOptions,
-  PolicySearchOptions,
-} from '../../../../../lib/ai/tools/types';
-
-// Build a concrete test subclass to expose protected static parsing helpers.
-interface TestOptions {
-  count?: boolean;
-}
-class TestClient extends HybridSearchClient<TestOptions> {
-  protected getSearchIndexName(): string {
-    return 'test-index';
-  }
-
-  protected appendScopeFilter(_payload: HybridSearchPayload): void {
-    /* intentionally not used in test subclass */
-  }
-
-  // Expose static protected helpers for direct unit testing
-  static exposeParseId(meta: {
-    attributes: Array<{ key: string; value: unknown }>;
-  }) {
-    return (this as unknown as typeof HybridSearchClient).parseId(meta);
-  }
-  static exposeParseMetadata(meta: {
-    attributes: Array<{ key: string; value: unknown }>;
-  }) {
-    return (this as unknown as typeof HybridSearchClient).parseMetadata(meta);
-  }
-  static exposeParseResponse(
-    json: unknown,
-    query: string,
-    options: TestOptions,
-  ) {
-    return (this as unknown as typeof HybridSearchClient).parseResponse(
-      json as Record<string, unknown>,
-      query,
-      options,
-    );
-  }
-}
-
-// Shared embedding service mock
 const makeEmbeddingService = () => ({
   embed: jest.fn().mockResolvedValue([0.11, 0.22, 0.33]),
 });
-describe('HybridSearchClient tests', () => {
-  const mockConsole = hideConsoleOutput();
-  afterEach(() => {
-    mockConsole.dispose();
+
+const mockFlagProviders = ({
+  retrieval = 'azure',
+  graph = 'none',
+}: {
+  retrieval?: string;
+  graph?: string;
+} = {}) => {
+  (getFeatureFlag as jest.Mock).mockImplementation(async (flagName: string) => {
+    if (flagName === 'search_case_file_retrieval_provider') {
+      return retrieval;
+    }
+    if (flagName === 'search_case_file_graph_augmentation_provider') {
+      return graph;
+    }
+    return null;
   });
-  describe('HybridSearchClient static helpers', () => {
-    test('parseId extracts id when present', () => {
-      const id = TestClient.exposeParseId({
-        attributes: [{ key: 'id', value: 123 }],
-      });
-      expect(id).toBe('123');
+};
+
+describe('Hybrid search provider routing', () => {
+  beforeEach(() => {
+    (globalThis as { fetch?: typeof fetch }).fetch = fetchMock as typeof fetch;
+    fetchMock.mockReset();
+    (pgDbWithInit as jest.Mock).mockReset();
+    (getFeatureFlag as jest.Mock).mockReset();
+    (getAccessibleUserIds as jest.Mock).mockReset();
+    (getAccessibleUserIds as jest.Mock).mockResolvedValue([123]);
+    mockDefaultEmbed.mockReset();
+    mockDefaultEmbed.mockResolvedValue([0.11, 0.22, 0.33]);
+    neo4jRunMock.mockReset();
+    neo4jExecuteReadMock.mockReset();
+    neo4jExecuteReadMock.mockImplementation(
+      async (
+        callback: (tx: { run: typeof neo4jRunMock }) => unknown,
+      ) => callback({ run: neo4jRunMock }),
+    );
+    neo4jSessionCloseMock.mockReset();
+    neo4jSessionMock.mockReset();
+    neo4jSessionMock.mockReturnValue({
+      executeRead: neo4jExecuteReadMock,
+      close: neo4jSessionCloseMock,
+    });
+    neo4jDriverCloseMock.mockReset();
+    neo4jDriverMock.mockReset();
+    neo4jDriverMock.mockReturnValue({
+      session: neo4jSessionMock,
+      close: neo4jDriverCloseMock,
+    });
+    delete process.env.NEO4J_URI;
+    delete process.env.NEO4J_USERNAME;
+    delete process.env.NEO4J_PASSWORD;
+    delete process.env.NEO4J_DATABASE;
+  });
+
+  test('routes case-file search to Azure by default', async () => {
+    mockFlagProviders({ retrieval: 'azure', graph: 'none' });
+    const embeddingService = makeEmbeddingService();
+    fetchMock.mockResolvedValue({
+      json: async () => ({ value: [] }),
+      headers: { get: () => null },
     });
 
-    test('parseId returns undefined when absent', () => {
-      const id = TestClient.exposeParseId({
-        attributes: [{ key: 'other', value: 'x' }],
-      });
-      expect(id).toBeUndefined();
+    const client = hybridDocumentSearchFactory({ embeddingService });
+    await client.hybridSearch('test query', { hitsPerPage: 5 });
+
+    expect(embeddingService.embed).toHaveBeenCalledWith('test query');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(pgDbWithInit).not.toHaveBeenCalled();
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.vectorQueries[0].k).toBe(50);
+  });
+
+  test('accepts authorization-only case-file search options', () => {
+    expect(() =>
+      hybridDocumentSearchFactory({
+        authorizationContext: 'Bearer test-token',
+        enforceAuthorization: true,
+      }),
+    ).not.toThrow();
+  });
+
+  test('keeps threadId string value in Azure filters', async () => {
+    mockFlagProviders({ retrieval: 'azure', graph: 'none' });
+    const embeddingService = makeEmbeddingService();
+    fetchMock.mockResolvedValue({
+      json: async () => ({ value: [] }),
+      headers: { get: () => null },
     });
 
-    test('parseMetadata collapses sequentially numbered keys into arrays', () => {
-      const meta = TestClient.exposeParseMetadata({
-        attributes: [
-          { key: 'tag1', value: 'a' },
-          { key: 'tag2', value: 'b' },
-          { key: 'single', value: 'x' },
-          { key: 'single', value: 'y' }, // promotes to array
-          { key: 'other', value: 'z' },
-        ],
-      });
-      expect(meta).toEqual({ tag: ['a', 'b'], single: ['x', 'y'], other: 'z' });
-    });
+    const client = hybridDocumentSearchFactory({ embeddingService });
+    await client.hybridSearch('thread query', { threadId: '000123' });
 
-    test('parseResponse returns empty results on missing value array', () => {
-      const env = TestClient.exposeParseResponse({}, 'q', {});
-      expect(env).toEqual({ results: [] });
-    });
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.filter).toContain("a/key eq 'thread_id' and a/value eq '000123'");
+  });
 
-    test('parseResponse throws on error block', () => {
-      expect(() =>
-        TestClient.exposeParseResponse(
-          { error: { code: 'Bad', message: 'boom' } },
-          'q',
-          {},
-        ),
-      ).toThrow(/boom/);
-    });
+  test('routes case-file search to PostgreSQL when enabled', async () => {
+    mockFlagProviders({ retrieval: 'postgresql', graph: 'none' });
+    const embeddingService = makeEmbeddingService();
+    const sql = jest.fn().mockResolvedValue([
+      {
+        document_id: 42,
+        content: 'postgres row',
+        document_type: 'email',
+        email_id: 'f3f39fe9-9278-4f1e-8d56-4ea7349e76a2',
+        thread_id: 12,
+        attachment_id: null,
+        reply_to_document_id: null,
+        related_documents: [99],
+        lexical_score: 0.4,
+        vector_score: 0.6,
+        combined_score: 0.53,
+        total_count: 1,
+      },
+    ]);
+    (pgDbWithInit as jest.Mock).mockResolvedValue(sql);
 
-    test('parseResponse maps hits, total & continuationToken', () => {
-      const env: AiSearchResultEnvelope = TestClient.exposeParseResponse(
+    const authorizationContext = 'Bearer test-token';
+    const client = hybridDocumentSearchFactory({
+      embeddingService,
+      authorizationContext,
+      enforceAuthorization: true,
+    });
+    const result = await client.hybridSearch('query', { count: true });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(pgDbWithInit).toHaveBeenCalledTimes(1);
+    expect(getAccessibleUserIds).toHaveBeenCalledWith(authorizationContext);
+    expect(sql).toHaveBeenCalled();
+    expect(result.results[0].id).toBe('42');
+    expect(result.total).toBe(1);
+  });
+
+  test('throws when PostgreSQL routing has no authorization context', async () => {
+    mockFlagProviders({ retrieval: 'postgresql', graph: 'none' });
+    const embeddingService = makeEmbeddingService();
+    const sql = jest.fn();
+    (pgDbWithInit as jest.Mock).mockResolvedValue(sql);
+    (getAccessibleUserIds as jest.Mock).mockResolvedValue([]);
+
+    const client = hybridDocumentSearchFactory({
+      embeddingService,
+      enforceAuthorization: true,
+    });
+    await expect(client.hybridSearch('query', { count: true })).rejects.toThrow(
+      /No credentials available for case-file search authorization context\./,
+    );
+    expect(sql).not.toHaveBeenCalled();
+  });
+
+  test('applies graph augmentation reranking when neo4j mode is enabled', async () => {
+    mockFlagProviders({ retrieval: 'azure', graph: 'neo4j' });
+    const embeddingService = makeEmbeddingService();
+    process.env.NEO4J_URI = 'neo4j://localhost:7687';
+    process.env.NEO4J_USERNAME = 'neo4j';
+    process.env.NEO4J_PASSWORD = 'test-password';
+    process.env.NEO4J_DATABASE = 'neo4j';
+    neo4jRunMock.mockResolvedValue({
+      records: [
         {
-          value: [
-            {
-              id: 'fallback-id',
-              content: 'Hello',
-              metadata: { attributes: [{ key: 'id', value: 'meta-id' }] },
-              '@search.score': 5.5,
-            },
-          ],
-          '@odata.count': 42,
-          '@odata.nextLink': 'token123',
+          get: (field: string) =>
+            field === 'documentId' ? 2 : field === 'scoreBoost' ? 0.6 : null,
         },
-        'hello',
-        {},
-      );
-      expect(env.results).toHaveLength(1);
-      expect(env.results[0].id).toBe('meta-id');
-      expect(env.total).toBe(42);
-      expect(env.continuationToken).toBe('token123');
+      ],
     });
+    fetchMock.mockResolvedValue({
+      json: async () => ({
+        value: [
+          {
+            id: '1',
+            content: 'first',
+            metadata: {
+              attributes: [{ key: 'thread_id', value: '100' }],
+            },
+            '@search.score': 0.8,
+          },
+          {
+            id: '2',
+            content: 'second',
+            metadata: {
+              attributes: [{ key: 'thread_id', value: '200' }],
+            },
+            '@search.score': 0.7,
+          },
+        ],
+      }),
+      headers: { get: () => null },
+    });
+
+    const client = hybridDocumentSearchFactory({ embeddingService });
+    const result = await client.hybridSearch('query', { threadId: '200' });
+
+    expect(result.results[0].id).toBe('2');
+    expect(result.results[0].metadata?.graph_augmentation_provider).toBe('neo4j');
+    expect(neo4jDriverMock).toHaveBeenCalledTimes(1);
+    expect(neo4jRunMock).toHaveBeenCalledTimes(1);
   });
 
-  describe('HybridDocumentSearch.hybridSearch', () => {
-    beforeEach(() => {
-      (globalThis as { fetch?: typeof fetch }).fetch =
-        fetchMock as unknown as typeof fetch;
-      fetchMock.mockReset();
+  test('passes null defaults for optional neo4j filter params', async () => {
+    mockFlagProviders({ retrieval: 'azure', graph: 'neo4j' });
+    const embeddingService = makeEmbeddingService();
+    process.env.NEO4J_URI = 'neo4j://localhost:7687';
+    process.env.NEO4J_USERNAME = 'neo4j';
+    process.env.NEO4J_PASSWORD = 'test-password';
+    process.env.NEO4J_DATABASE = 'neo4j';
+    neo4jRunMock.mockResolvedValue({ records: [] });
+    fetchMock.mockResolvedValue({
+      json: async () => ({
+        value: [
+          {
+            id: '1',
+            content: 'first',
+            metadata: { attributes: [] },
+            '@search.score': 0.8,
+          },
+        ],
+      }),
+      headers: { get: () => null },
     });
 
-    test('builds payload with vector k minimum of 50 when topK < 50', async () => {
-      const embeddingService = makeEmbeddingService();
-      fetchMock.mockResolvedValue({ json: async () => ({ value: [] }) });
-      const client = hybridDocumentSearchFactory({ embeddingService });
-      await client.hybridSearch('test query', { hitsPerPage: 5 });
-      expect(embeddingService.embed).toHaveBeenCalledWith('test query');
-      const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-      expect(body.vectorQueries[0].k).toBe(50); // clamped
-      expect(body.top).toBe(5);
-    });
+    const client = hybridDocumentSearchFactory({ embeddingService });
+    await client.hybridSearch('query');
 
-    test('uses provided hitsPerPage as k when >= 50', async () => {
-      const embeddingService = makeEmbeddingService();
-      fetchMock.mockResolvedValue({ json: async () => ({ value: [] }) });
-      const client = hybridDocumentSearchFactory({ embeddingService });
-      await client.hybridSearch('long', { hitsPerPage: 80 });
-      const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-      expect(body.vectorQueries[0].k).toBe(80);
-    });
-
-    test('adds skip for page > 1', async () => {
-      const embeddingService = makeEmbeddingService();
-      fetchMock.mockResolvedValue({ json: async () => ({ value: [] }) });
-      const client = hybridDocumentSearchFactory({ embeddingService });
-      await client.hybridSearch('query', { hitsPerPage: 10, page: 3 });
-      const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-      expect(body.skip).toBe(20); // (page-1)*topK
-    });
-
-    test('applies document scope & id filters (AND + OR logic)', async () => {
-      const embeddingService = makeEmbeddingService();
-      fetchMock.mockResolvedValue({ json: async () => ({ value: [] }) });
-      const client = hybridDocumentSearchFactory({ embeddingService });
-      const docOpts: CaseFileSearchOptions = {
-        scope: ['email', 'attachment'],
-        emailId: 'E123',
-      } as unknown as CaseFileSearchOptions;
-      await client.hybridSearch('query', docOpts);
-      const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-      expect(body.filter).toMatch(/document_type/);
-      expect(body.filter).toMatch(/email_id/);
-      // Expect parentheses grouping for OR types
-      expect(body.filter).toMatch(/\(.*document_type.*or.*document_type.*\)/);
-      // AND between type grouping and email id
-      expect(body.filter).toMatch(/\) and metadata\/attributes.*email_id/);
-    });
+    expect(neo4jRunMock).toHaveBeenCalledTimes(1);
+    const [, params] = neo4jRunMock.mock.calls[0];
+    expect(params).toEqual(
+      expect.objectContaining({
+        threadId: null,
+        attachmentId: null,
+        replyToDocumentId: null,
+        relatedToDocumentId: null,
+      }),
+    );
   });
 
-  describe('HybridPolicySearch.hybridSearch', () => {
-    beforeEach(() => {
-      (globalThis as { fetch?: typeof fetch }).fetch =
-        fetchMock as unknown as typeof fetch;
-      fetchMock.mockReset();
+  test('does not tag graph augmentation metadata when Neo4j config is missing', async () => {
+    mockFlagProviders({ retrieval: 'azure', graph: 'neo4j' });
+    const embeddingService = makeEmbeddingService();
+    fetchMock.mockResolvedValue({
+      json: async () => ({
+        value: [
+          {
+            id: '1',
+            content: 'first',
+            metadata: { attributes: [] },
+            '@search.score': 0.8,
+          },
+        ],
+      }),
+      headers: { get: () => null },
     });
 
-    test('applies policy scope filter (OR of mapped values)', async () => {
-      const embeddingService = makeEmbeddingService();
-      fetchMock.mockResolvedValue({ json: async () => ({ value: [] }) });
-      const client = hybridPolicySearchFactory({ embeddingService });
-      const polOpts: PolicySearchOptions = {
-        scope: ['state'],
-      } as PolicySearchOptions;
-      await client.hybridSearch('policy query', polOpts);
-      const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-      expect(body.filter).toMatch(/document_type/);
-      // state maps to '2'
-      expect(body.filter).toContain("'2'");
-    });
+    const client = hybridDocumentSearchFactory({ embeddingService });
+    const result = await client.hybridSearch('query');
+
+    expect(result.results[0].metadata?.graph_augmentation_provider).toBeUndefined();
+    expect(neo4jDriverMock).not.toHaveBeenCalled();
+    expect(neo4jRunMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('HybridPolicySearch remains Azure-backed', () => {
+  beforeEach(() => {
+    (globalThis as { fetch?: typeof fetch }).fetch = fetchMock as typeof fetch;
+    fetchMock.mockReset();
   });
 
-  describe('HybridSearchClient.hybridSearch error handling', () => {
-    beforeEach(() => {
-      (globalThis as { fetch?: typeof fetch }).fetch =
-        fetchMock as unknown as typeof fetch;
-      fetchMock.mockReset();
+  test('applies mapped policy scope filters on Azure payload', async () => {
+    const embeddingService = makeEmbeddingService();
+    fetchMock.mockResolvedValue({
+      json: async () => ({ value: [] }),
+      headers: { get: () => null },
     });
 
-    test('wraps and rethrows fetch/network errors', async () => {
-      mockConsole.setup();
-      const embeddingService = makeEmbeddingService();
-      fetchMock.mockImplementation(() => {
-        throw new Error('network fail');
-      });
-      const client = hybridDocumentSearchFactory({ embeddingService });
-      let error: unknown | undefined = undefined;
-      await client.hybridSearch('fail query').catch((err) => (error = err));
-      expect(error).toBeDefined();
-      expect((error as { message: string; stack: string }).message).toContain(
-        'network fail',
-      );
-    });
+    const client = hybridPolicySearchFactory({ embeddingService });
+    await client.hybridSearch('policy query', { scope: ['state'] });
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+
+    expect(body.filter).toMatch(/document_type/);
+    expect(body.filter).toContain("'2'");
   });
 });

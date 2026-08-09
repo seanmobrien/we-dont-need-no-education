@@ -27,6 +27,27 @@ type McpConfig = Exclude<Parameters<typeof createMcpHandler>[2], undefined>;
 type OnEventHandler = Exclude<McpConfig['onEvent'], undefined>;
 type McpEvent = FirstParameter<OnEventHandler>;
 
+const MIN_MCP_HANDLER_DURATION_SECONDS = maxDuration;
+
+const normalizeMcpDurationSeconds = (value: unknown): number => {
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number(value)
+        : Number.NaN;
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return MIN_MCP_HANDLER_DURATION_SECONDS;
+  }
+
+  const seconds = numericValue > 1000
+    ? Math.ceil(numericValue / 1000)
+    : numericValue;
+
+  return Math.max(seconds, MIN_MCP_HANDLER_DURATION_SECONDS);
+};
+
 const makeErrorHandler = (server: McpServer, dscr: string) => {
   const oldHandler = server.server?.onerror;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -302,7 +323,10 @@ const handler = wrapRouteRequest(
 
     log((l) => l.debug('Calling MCP Tool route.', { transport }));
 
-    const maxDuration = (await wellKnownFlag('mcp_max_duration')).value;
+    const configuredMaxDuration = (await wellKnownFlag('mcp_max_duration')).value;
+    const mcpMaxDurationSeconds = normalizeMcpDurationSeconds(
+      configuredMaxDuration
+    );
     const traceLevel = (await wellKnownFlag('mcp_trace_level')).value;
     const verboseLogs = ['debug', 'verbose', 'silly'].includes(traceLevel);
 
@@ -314,17 +338,17 @@ const handler = wrapRouteRequest(
           })
         );        
         log((l) => l.info('=== Registering MCP tools ==='));
-        registerAppMcpTools(server as MinimalMcpToolServer);
+        registerAppMcpTools(server as MinimalMcpToolServer, { req });
         server.server.onerror = makeErrorHandler(server, 'server');
       },
       {},
       {
         redisUrl: process.env.REDIS_URL,
         basePath: `/api/ai/tools/`,
-        maxDuration,
+        maxDuration: mcpMaxDurationSeconds,
         verboseLogs,
         onEvent: verboseLogs ? onMcpEvent : undefined,
-      }
+      } satisfies McpConfig
     );
     // Call mcpHandler directly without await - it manages the SSE stream itself
     return mcpHandler(req);

@@ -13,7 +13,7 @@ import { SequentialThinkingServer, SEQUENTIAL_THINKING_TOOL  } from "./sequentia
 const server = new Server(
   {
     name: "sequential-thinking-server",
-    version: "0.2.0",
+    version: "0.2.1",
   },
   {
     capabilities: {

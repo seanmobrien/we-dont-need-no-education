@@ -60,6 +60,10 @@ const buildRawInstance = () => {
     AZURE_OPENAI_KEY_COMPLETIONS: process.env.AZURE_OPENAI_KEY_COMPLETIONS,
     AZURE_AISEARCH_POLICY_INDEX_NAME:
       process.env.AZURE_AISEARCH_POLICY_INDEX_NAME,
+    NEO4J_URI: process.env.NEO4J_URI,
+    NEO4J_USERNAME: process.env.NEO4J_USERNAME,
+    NEO4J_PASSWORD: process.env.NEO4J_PASSWORD,
+    NEO4J_DATABASE: process.env.NEO4J_DATABASE,
     AZURE_AISEARCH_VECTOR_SIZE_SMALL:
       process.env.AZURE_AISEARCH_VECTOR_SIZE_SMALL,
     AZURE_AISEARCH_VECTOR_SIZE_LARGE:
@@ -132,6 +136,8 @@ const buildRawInstance = () => {
     ),
     /** Maximum token threshold for AI batch processing. Example: '50000' */
     TOKEN_BATCH_THRESHOLD: process.env.TOKEN_BATCH_THRESHOLD,
+    /** Disables authorization enforcement in the AI search tool when set to 'true'. Example: 'true' */
+    AI_SEARCH_DISABLE_AUTHORIZATION: process.env.AI_SEARCH_DISABLE_AUTHORIZATION,
   };
   if (!raw.AUTH_KEYCLOAK_REDIRECT_URI) {
     raw.AUTH_KEYCLOAK_REDIRECT_URI = new URL(
@@ -269,6 +275,29 @@ const serverEnvSchema = z
       .describe(
         'Azure AI Search index name for storing policy document vectors and metadata. Example: policies-prod',
       ),
+    NEO4J_URI: ZodProcessors.url()
+      .optional()
+      .describe(
+        'Neo4j connection URI for optional case-file graph augmentation. Example: neo4j+s://my-graph.databases.neo4j.io',
+      ),
+    NEO4J_USERNAME: z
+      .string()
+      .optional()
+      .describe(
+        'Neo4j username used when graph augmentation is enabled. Example: neo4j',
+      ),
+    NEO4J_PASSWORD: z
+      .string()
+      .optional()
+      .describe(
+        'Neo4j password used when graph augmentation is enabled.',
+      ),
+    NEO4J_DATABASE: z
+      .string()
+      .optional()
+      .describe(
+        'Neo4j database name for case-file graph augmentation. Example: neo4j',
+      ),
     AZURE_AISEARCH_VECTOR_SIZE_SMALL: z
       .coerce.number()
       .default(1536)
@@ -299,6 +328,9 @@ const serverEnvSchema = z
       .describe(
         'Maximum cumulative token count (approx) per AI preprocessing batch when grouping case file documents with shared goals. Documents are accumulated until the next document would exceed this threshold, then a batch processing call is executed. Tuned to balance prompt size vs. parallelism. Override via env TOKEN_BATCH_THRESHOLD; defaults to 50,000 tokens. Example: 75000 for larger batches, 25000 for smaller batches',
       ),
+    AI_SEARCH_DISABLE_AUTHORIZATION: ZodProcessors.truthy().describe(
+      'When true, disables authorization enforcement in the AI case file search tool. Intended for local development only. Example: true',
+    ),
     AUTH_GOOGLE_ID: z
       .string()
       .describe(

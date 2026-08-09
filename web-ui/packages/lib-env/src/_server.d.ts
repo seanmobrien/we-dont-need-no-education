@@ -261,6 +261,26 @@ export declare const serverEnvSchema: z.ZodObject<{
   AZURE_AISEARCH_POLICY_INDEX_NAME: z.ZodString;
 
   /**
+   * Optional Neo4j connection URI used for graph augmentation.
+   */
+  NEO4J_URI: z.ZodOptional<z.ZodEffects<z.ZodString, string, string>>;
+
+  /**
+   * Optional Neo4j username used for graph augmentation.
+   */
+  NEO4J_USERNAME: z.ZodOptional<z.ZodString>;
+
+  /**
+   * Optional Neo4j password used for graph augmentation.
+   */
+  NEO4J_PASSWORD: z.ZodOptional<z.ZodString>;
+
+  /**
+   * Optional Neo4j database name used for graph augmentation.
+   */
+  NEO4J_DATABASE: z.ZodOptional<z.ZodString>;
+
+  /**
    * Vector dimension size for small embeddings in Azure AI Search.
    *
    * @default 1536
@@ -301,6 +321,15 @@ export declare const serverEnvSchema: z.ZodObject<{
    * @example 75000, 25000
    */
   TOKEN_BATCH_THRESHOLD: z.ZodDefault<z.ZodNumber>;
+
+  /**
+   * When true, disables authorization enforcement in the AI case file search tool.
+   * Intended for local development only.
+   *
+   * @default false
+   * @example true
+   */
+  AI_SEARCH_DISABLE_AUTHORIZATION: z.ZodType<boolean, z.ZodEffectsDef<z.ZodBoolean>, unknown>;
 
   /**
    * Google OAuth 2.0 client ID for authentication.

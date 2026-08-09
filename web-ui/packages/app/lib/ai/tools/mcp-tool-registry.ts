@@ -59,18 +59,20 @@ import {
     upsertDocumentSummaryCallback,
     upsertDocumentSummaryConfig,
 } from '@/lib/ai/tools/case-workspace/tool-callbacks';
+import { runWithMcpToolRequestContext } from './mcp-request-context';
+import type { NextRequest } from 'next/server';
 
 export type MinimalRegisterTool = (
     name: string,
     config: unknown,
-    handler: (input: unknown) => unknown
+    handler: (input: unknown, extra?: unknown) => unknown
 ) => void;
 
 export type MinimalMcpToolServer = {
     registerTool: MinimalRegisterTool;
 };
 
-type ToolHandler = (input: unknown) => unknown;
+type ToolHandler = (input: unknown, extra?: unknown) => unknown;
 
 type ToolDefinition = {
     name: string;
@@ -203,8 +205,15 @@ export const APP_MCP_TOOL_REGISTRY_CACHE_SALT = toolDefinitions
     .map((tool) => `${tool.name}:${getToolDescription(tool.config)}`)
     .join('|');
 
-export const registerAppMcpTools = (server: MinimalMcpToolServer): void => {
+export const registerAppMcpTools = (
+    server: MinimalMcpToolServer,
+    options: { req?: NextRequest } = {},
+): void => {
     for (const tool of toolDefinitions) {
-        server.registerTool(tool.name, tool.config, tool.handler);
+        server.registerTool(tool.name, tool.config, (input, extra) =>
+            runWithMcpToolRequestContext(options.req, () =>
+                tool.handler(input, extra)
+            )
+        );
     }
 };

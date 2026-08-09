@@ -69,4 +69,28 @@ describe('searchPolicyStore', () => {
       data: { query, options },
     });
   });
+
+  it('keeps policy search result contract Azure-shaped', async () => {
+    const expectedResult = {
+      results: [
+        {
+          id: 'policy-1',
+          content: 'Policy content',
+          score: 0.85,
+          metadata: { retrieval_provider: 'azure' },
+        },
+      ],
+    };
+    mockHybridSearch.mockResolvedValueOnce(expectedResult);
+
+    const result = await searchPolicyStore({
+      query: 'title ix',
+      options: { scope: ['federal'] } as any,
+    });
+
+    expect(mockHybridSearch).toHaveBeenCalledWith('title ix', {
+      scope: ['federal'],
+    });
+    expect(result).toEqual(toolCallbackResultFactory(expectedResult));
+  });
 });

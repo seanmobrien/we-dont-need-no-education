@@ -15,6 +15,8 @@ import { LoggedError } from '@compliance-theater/logger';
 import type { JWT } from '@compliance-theater/auth-compat';
 
 const accessTokenOnRequest: unique symbol = Symbol();
+export const WRAPPED_ACCESS_TOKEN_CLAIM = 'ct_token_wrapper';
+export const WRAPPED_ACCESS_TOKEN_CLAIM_VALUE = 'keycloak-access-token';
 
 type RequestWithAccessToken = LikeNextRequest & {
   [accessTokenOnRequest]?: RequestWithAccessTokenCache;
@@ -195,6 +197,13 @@ const mapAccountRecordToRequestTokens = (
   };
 };
 
+const isWrappedAccessTokenPayload = (
+  token: JWT | null | undefined,
+): boolean =>
+  (token as Record<string, unknown> | null | undefined)?.[
+    WRAPPED_ACCESS_TOKEN_CLAIM
+  ] === WRAPPED_ACCESS_TOKEN_CLAIM_VALUE;
+
 const getHeader = (
   headers: Headers | Record<string, string | string[] | undefined> | undefined,
   name: string,
@@ -239,6 +248,44 @@ const getAuthorizationBearerToken = (
   }
 
   return token;
+};
+
+const requestFromBearerToken = (bearerToken: string): Request =>
+  new Request('http://localhost/__auth/bearer-token', {
+    headers: {
+      authorization: `Bearer ${bearerToken}`,
+    },
+  });
+
+const getWrappedBearerRequestTokens = async (
+  bearerToken: string | undefined,
+  req?: LikeNextRequest,
+): Promise<RequestWithAccessTokenCache | undefined> => {
+  if (!bearerToken) {
+    return undefined;
+  }
+
+  const requestForExtraction =
+    req ?? (requestFromBearerToken(bearerToken) as unknown as LikeNextRequest);
+  let extracted: JWT | null = null;
+  try {
+    extracted = await extractToken(requestForExtraction as unknown as Request);
+  } catch {
+    extracted = null;
+  }
+
+  const requestTokens = mapExtractedTokenToRequestTokens(extracted);
+  if (!isWrappedAccessTokenPayload(extracted)) {
+    return undefined;
+  }
+  if (!requestTokens?.access_token) {
+    return undefined;
+  }
+
+  if (req) {
+    withRequestTokens(req, requestTokens);
+  }
+  return requestTokens;
 };
 
 export const withRequestTokens = (
@@ -397,8 +444,18 @@ export const getRequestTokens = async (req: LikeNextRequest | undefined) => {
   return token;
 };
 
-export const getAccessToken = async (req: LikeNextRequest | undefined) =>
-  getAuthorizationBearerToken(req) ?? (await getRequestTokens(req))?.access_token;
+export const getAccessToken = async (req: LikeNextRequest | undefined) => {
+  const bearerToken = getAuthorizationBearerToken(req);
+  const wrappedBearerTokens = await getWrappedBearerRequestTokens(
+    bearerToken,
+    req,
+  );
+  return (
+    wrappedBearerTokens?.access_token ??
+    bearerToken ??
+    (await getRequestTokens(req))?.access_token
+  );
+};
 
 export const getProviderAccountId = async (req: LikeNextRequest | undefined) =>
   (await getRequestTokens(req))?.providerAccountId;
@@ -433,6 +490,15 @@ export const normalizedAccessToken: AccessTokenOrRequestOverloadsExt = async (
     if (userAccessToken) {
       // Handle incoming access tokens
       if (typeof userAccessToken === 'string') {
+        const wrappedBearerTokens = await getWrappedBearerRequestTokens(
+          userAccessToken,
+        );
+        if (wrappedBearerTokens?.access_token) {
+          return {
+            accessToken: wrappedBearerTokens.access_token,
+            userId: skipUserId ? 0 : wrappedBearerTokens.userId,
+          };
+        }
         // This gets tricky - the user id in the token is the keycloak id, not the user_id...so we'll
         // need to pull it out of session, while allowing the caller to skip this step if they don't
         // need the user_id.
@@ -459,6 +525,16 @@ export const normalizedAccessToken: AccessTokenOrRequestOverloadsExt = async (
       // Otherwise pull token and user id from request with database fallback
       const bearerTokenFromRequest = getAuthorizationBearerToken(userAccessToken);
       if (bearerTokenFromRequest) {
+        const wrappedBearerTokens = await getWrappedBearerRequestTokens(
+          bearerTokenFromRequest,
+          userAccessToken,
+        );
+        if (wrappedBearerTokens?.access_token) {
+          return {
+            accessToken: wrappedBearerTokens.access_token,
+            userId: skipUserId ? 0 : wrappedBearerTokens.userId,
+          };
+        }
         return {
           accessToken: bearerTokenFromRequest,
           userId: 0,

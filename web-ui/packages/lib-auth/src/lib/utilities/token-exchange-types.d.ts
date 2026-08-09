@@ -94,6 +94,15 @@
     audience?: string;
 
     /**
+     * The identity provider alias to target for brokered token exchange.
+     *
+     * @remarks
+     * Keycloak uses `requested_issuer` for brokered exchanges against an
+     * external identity provider such as Google.
+     */
+    requestedIssuer?: string;
+
+    /**
      * The desired token type for the exchange response.
      *
      * @default `'urn:ietf:params:oauth:token-type:refresh_token'`

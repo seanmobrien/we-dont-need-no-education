@@ -1,5 +1,5 @@
 import { warnIfInsecureUrl } from "./runtime-utils";
-import { log, optional, required } from "./config";
+import { log, optional, serverUrl } from "./config";
 
 export function sessionEndpointUrl(): string {
   const explicit = optional("SESSION_STATUS_URL");
@@ -7,7 +7,7 @@ export function sessionEndpointUrl(): string {
     warnIfInsecureUrl(explicit, log, "Session status URL");
     return explicit;
   }
-  const parsed = new URL(required("SERVER_URL"));
+  const parsed = new URL(serverUrl());
   parsed.pathname = "/api/auth/session";
   parsed.search = "";
   parsed.hash = "";
@@ -20,7 +20,7 @@ export function wrapEndpointUrl(): string {
     warnIfInsecureUrl(explicit, log, "Session wrap URL");
     return explicit;
   }
-  const parsed = new URL(required("SERVER_URL"));
+  const parsed = new URL(serverUrl());
   parsed.pathname = "/api/auth/wrap";
   parsed.search = "";
   parsed.hash = "";
@@ -28,7 +28,7 @@ export function wrapEndpointUrl(): string {
 }
 
 export function appEndpointUrl(pathname: string, query: Record<string, unknown> = {}): string {
-  const parsed = new URL(required("SERVER_URL"));
+  const parsed = new URL(serverUrl());
   parsed.pathname = pathname;
   parsed.search = "";
   parsed.hash = "";

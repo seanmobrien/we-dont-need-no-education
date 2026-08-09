@@ -2,16 +2,29 @@
 
 import { getToken } from '@compliance-theater/auth-compat/runtime';
 import type { JWT } from '@compliance-theater/auth-compat';
+import { getFeatureFlag } from '@compliance-theater/feature-flags/server';
 import { NextRequest } from 'next/server';
 import type { NextApiRequest } from 'next';
 import { env } from '@compliance-theater/env';
 import { SingletonProvider } from '@compliance-theater/logger/singleton-provider';
+import { getRequestTokens } from '../access-token';
 import type { KeycloakConfig, TokenExchangeParams, TokenExchangeResponse, GoogleTokens } from './token-exchange-types';
 import { resolveFetchService } from './fetch-service';
 
 type TokenErrorPayload = {
   error?: string;
   error_description?: string;
+};
+
+type IdentityProviderDescriptor = {
+  alias?: unknown;
+  providerId?: unknown;
+};
+
+type ThrownHttpError = {
+  status?: number;
+  body?: string;
+  message?: string;
 };
 
 const isObjectRecord = (
@@ -52,6 +65,59 @@ const parseTokenErrorPayload = (body: unknown): TokenErrorPayload | undefined =>
   }
 
   return undefined;
+};
+
+const normalizeResponseBody = (body: unknown): string | undefined => {
+  if (typeof body === 'string') {
+    return body;
+  }
+  if (typeof Buffer !== 'undefined' && Buffer.isBuffer(body)) {
+    return body.toString('utf8');
+  }
+  if (body instanceof Uint8Array) {
+    return new TextDecoder().decode(body);
+  }
+  if (body && typeof body === 'object') {
+    try {
+      return JSON.stringify(body);
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+};
+
+const extractThrownHttpError = (error: unknown): ThrownHttpError | undefined => {
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
+
+  const response = (error as {
+    response?: {
+      status?: number;
+      statusCode?: number;
+      body?: unknown;
+    };
+    message?: string;
+  }).response;
+
+  if (!response) {
+    return undefined;
+  }
+
+  return {
+    status:
+      typeof response.status === 'number'
+        ? response.status
+        : typeof response.statusCode === 'number'
+          ? response.statusCode
+          : undefined,
+    body: normalizeResponseBody(response.body),
+    message:
+      typeof (error as { message?: string }).message === 'string'
+        ? (error as { message?: string }).message
+        : undefined,
+  };
 };
 
 export class TokenExchangeError extends Error {
@@ -117,10 +183,331 @@ export class KeycloakTokenExchange {
     }
   }
 
+  private hasExplicitGoogleProviderAlias(): boolean {
+    return [
+      process.env.AUTH_KEYCLOAK_GOOGLE_IDP_ALIAS,
+      process.env.AUTH_KEYCLOAK_GOOGLE_PROVIDER_ALIAS,
+    ].some(
+      (candidate) =>
+        typeof candidate === 'string' && candidate.trim().length > 0,
+    );
+  }
+
+  private getGoogleProviderAlias(): string {
+    const candidates = [
+      process.env.AUTH_KEYCLOAK_GOOGLE_IDP_ALIAS,
+      process.env.AUTH_KEYCLOAK_GOOGLE_PROVIDER_ALIAS,
+      'google',
+    ];
+
+    return (
+      candidates.find(
+        (candidate): candidate is string =>
+          typeof candidate === 'string' && candidate.trim().length > 0,
+      ) ?? 'google'
+    ).trim();
+  }
+
+  private getIdentityProvidersEndpoint(): string | undefined {
+    try {
+      const issuerUrl = new URL(this.config.issuer);
+      const pathParts = issuerUrl.pathname.split('/').filter(Boolean);
+      const realmsIndex = pathParts.findIndex((part) => part === 'realms');
+      const realm =
+        realmsIndex >= 0 && pathParts[realmsIndex + 1]
+          ? decodeURIComponent(pathParts[realmsIndex + 1]!)
+          : undefined;
+
+      if (!realm) {
+        return undefined;
+      }
+
+      return `${issuerUrl.origin}/admin/realms/${encodeURIComponent(
+        realm,
+      )}/identity-provider/instances`;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private getBrokerTokenEndpoint(providerAlias: string): string {
+    return `${this.config.issuer.replace(/\/$/, '')}/broker/${encodeURIComponent(
+      providerAlias,
+    )}/token`;
+  }
+
+  private async performRequest({
+    url,
+    method,
+    headers,
+    body,
+    errorCode,
+    errorPrefix,
+  }: {
+    url: string;
+    method: 'GET' | 'POST';
+    headers: Record<string, string>;
+    body?: string;
+    errorCode: string;
+    errorPrefix: string;
+  }): Promise<string> {
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+    }, 10000);
+
+    const fetch = resolveFetchService();
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers,
+        ...(body ? { body } : {}),
+        signal: abortController.signal,
+      });
+
+      const responseText = await response.text();
+      if (!response.ok) {
+        const errorData = parseTokenErrorPayload(responseText);
+        const errorMessage =
+          errorData?.error_description ||
+          errorData?.error ||
+          response.statusText ||
+          'Request failed';
+
+        throw new TokenExchangeError(
+          `${errorPrefix}: ${errorMessage}`,
+          errorCode,
+          response.status,
+          responseText,
+        );
+      }
+
+      return responseText;
+    } catch (error) {
+      if (error instanceof TokenExchangeError) {
+        throw error;
+      }
+
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new TokenExchangeError(
+          `${errorPrefix}: request timed out`,
+          errorCode,
+          undefined,
+          error,
+        );
+      }
+
+      const httpError = extractThrownHttpError(error);
+      if (httpError) {
+        const errorData = parseTokenErrorPayload(httpError.body);
+        throw new TokenExchangeError(
+          `${errorPrefix}: ${
+            errorData?.error_description ||
+            errorData?.error ||
+            httpError.message ||
+            'Request failed'
+          }`,
+          errorCode,
+          httpError.status,
+          httpError.body ?? error,
+        );
+      }
+
+      throw new TokenExchangeError(
+        `${errorPrefix}: ${error instanceof Error ? error.message : 'Unexpected error'}`,
+        errorCode,
+        undefined,
+        error,
+      );
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  private parseTokenResponse(
+    responseText: string,
+    errorCode: string,
+    status?: number,
+  ): TokenExchangeResponse {
+    let parsedResponse: unknown;
+    try {
+      parsedResponse = JSON.parse(responseText);
+    } catch (error) {
+      throw new TokenExchangeError(
+        'Invalid JSON response from Keycloak token endpoint',
+        errorCode,
+        status,
+        error,
+      );
+    }
+
+    if (!isObjectRecord(parsedResponse)) {
+      throw new TokenExchangeError(
+        'Invalid token response from Keycloak',
+        errorCode,
+        status,
+        parsedResponse,
+      );
+    }
+
+    return parsedResponse as TokenExchangeResponse;
+  }
+
+  private async getBrokeredGoogleTokens(
+    subjectToken: string,
+    providerAlias: string,
+  ): Promise<GoogleTokens> {
+    const responseText = await this.performRequest({
+      url: this.getBrokerTokenEndpoint(providerAlias),
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${subjectToken}`,
+      },
+      errorCode: 'BROKER_TOKEN_FAILED',
+      errorPrefix: 'Keycloak broker token retrieval failed',
+    });
+
+    return this.extractGoogleTokens(
+      this.parseTokenResponse(responseText, 'BROKER_TOKEN_FAILED'),
+    );
+  }
+
+  private async discoverGoogleProviderAlias(
+    subjectToken: string,
+  ): Promise<string | undefined> {
+    const identityProvidersEndpoint = this.getIdentityProvidersEndpoint();
+    if (!identityProvidersEndpoint) {
+      return undefined;
+    }
+
+    const responseText = await this.performRequest({
+      url: identityProvidersEndpoint,
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${subjectToken}`,
+      },
+      errorCode: 'IDENTITY_PROVIDER_DISCOVERY_FAILED',
+      errorPrefix: 'Keycloak identity provider discovery failed',
+    });
+
+    let parsedResponse: unknown;
+    try {
+      parsedResponse = JSON.parse(responseText);
+    } catch (error) {
+      throw new TokenExchangeError(
+        'Invalid JSON response from Keycloak identity provider discovery',
+        'IDENTITY_PROVIDER_DISCOVERY_FAILED',
+        undefined,
+        error,
+      );
+    }
+
+    if (!Array.isArray(parsedResponse)) {
+      throw new TokenExchangeError(
+        'Invalid identity provider response from Keycloak',
+        'IDENTITY_PROVIDER_DISCOVERY_FAILED',
+        undefined,
+        parsedResponse,
+      );
+    }
+
+    const googleProvider = (parsedResponse as IdentityProviderDescriptor[]).find(
+      (provider) => {
+        const alias =
+          typeof provider.alias === 'string'
+            ? provider.alias.trim().toLowerCase()
+            : '';
+        const providerId =
+          typeof provider.providerId === 'string'
+            ? provider.providerId.trim().toLowerCase()
+            : '';
+
+        return (
+          providerId === 'google' ||
+          providerId.includes('google') ||
+          alias === 'google' ||
+          alias.includes('google')
+        );
+      },
+    );
+
+    return typeof googleProvider?.alias === 'string' &&
+      googleProvider.alias.trim().length > 0
+      ? googleProvider.alias.trim()
+      : undefined;
+  }
+
+  private formatAttemptError(context: string, error: unknown): string {
+    if (error instanceof TokenExchangeError) {
+      return `${context}: ${error.message}`;
+    }
+    if (error instanceof Error) {
+      return `${context}: ${error.message}`;
+    }
+    return `${context}: unexpected error`;
+  }
+
+  private async isKeycloakTokenBrokerV2Enabled(): Promise<boolean> {
+    return (await getFeatureFlag('keycloak_token_broker_v2')) === true;
+  }
+
+  private async exchangeForBrokeredGoogleTokens({
+    subjectToken,
+    requestedIssuer,
+    requestedTokenType,
+    scope,
+  }: Required<Pick<TokenExchangeParams, 'subjectToken' | 'requestedIssuer'>> &
+    Pick<TokenExchangeParams, 'requestedTokenType' | 'scope'>): Promise<GoogleTokens> {
+    const requestParams = {
+      grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
+      client_id: this.config.clientId,
+      client_secret: this.config.clientSecret,
+      subject_token: subjectToken,
+      subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
+      requested_token_type:
+        requestedTokenType ??
+        'urn:ietf:params:oauth:token-type:refresh_token',
+      requested_issuer: requestedIssuer,
+      ...(scope && { scope }),
+    };
+
+    const formBody = new URLSearchParams();
+    Object.entries(requestParams).forEach(([key, value]) => {
+      if (typeof value === 'string' && value.length > 0) {
+        formBody.set(key, value);
+      }
+    });
+
+    const responseText = await this.performRequest({
+      url: this.tokenEndpoint,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formBody.toString(),
+      errorCode: 'BROKER_EXCHANGE_FAILED',
+      errorPrefix: 'Keycloak broker token exchange failed',
+    });
+
+    return this.extractGoogleTokens(
+      this.parseTokenResponse(responseText, 'BROKER_EXCHANGE_FAILED'),
+    );
+  }
+
   async extractKeycloakToken(
     req: NextRequest | NextApiRequest
   ): Promise<string> {
     try {
+      const requestTokens = await getRequestTokens(
+        req as Parameters<typeof getRequestTokens>[0]
+      );
+      if (requestTokens?.access_token) {
+        return requestTokens.access_token;
+      }
+
       const authSecret = [
         process.env.AUTH_SECRET,
         process.env.NEXTAUTH_SECRET,
@@ -185,96 +572,27 @@ export class KeycloakTokenExchange {
       ...(params.scope && { scope: params.scope }),
     };
 
-    try {
-      const formBody = new URLSearchParams();
-      Object.entries(requestParams).forEach(([key, value]) => {
-        if (typeof value === 'string' && value.length > 0) {
-          formBody.set(key, value);
-        }
-      });
-
-      const abortController = new AbortController();
-      const timeoutId = setTimeout(() => {
-        abortController.abort();
-      }, 10000);
-
-      const fetch = resolveFetchService();
-      let response: Response;
-      try {
-        response = await fetch(this.tokenEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: formBody.toString(),
-          signal: abortController.signal,
-        });
-      } finally {
-        clearTimeout(timeoutId);
+    const formBody = new URLSearchParams();
+    Object.entries(requestParams).forEach(([key, value]) => {
+      if (typeof value === 'string' && value.length > 0) {
+        formBody.set(key, value);
       }
+    });
 
-      const responseText = await response.text();
-      if (!response.ok) {
-        const errorData = parseTokenErrorPayload(responseText);
-        const errorMessage =
-          errorData?.error_description ||
-          errorData?.error ||
-          response.statusText ||
-          'Token exchange request failed';
+    const responseText = await this.performRequest({
+      url: this.tokenEndpoint,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formBody.toString(),
+      errorCode: 'EXCHANGE_FAILED',
+      errorPrefix: 'Keycloak token exchange failed',
+    });
 
-        throw new TokenExchangeError(
-          `Keycloak token exchange failed: ${errorMessage}`,
-          'EXCHANGE_FAILED',
-          response.status,
-          responseText
-        );
-      }
-
-      let parsedResponse: unknown;
-      try {
-        parsedResponse = JSON.parse(responseText);
-      } catch (error) {
-        throw new TokenExchangeError(
-          'Invalid JSON response from Keycloak token endpoint',
-          'INVALID_TOKEN_RESPONSE',
-          response.status,
-          error
-        );
-      }
-
-      if (!isObjectRecord(parsedResponse)) {
-        throw new TokenExchangeError(
-          'Invalid token response from Keycloak',
-          'INVALID_TOKEN_RESPONSE',
-          response.status,
-          parsedResponse
-        );
-      }
-
-      return this.extractGoogleTokens(parsedResponse as TokenExchangeResponse);
-    } catch (error) {
-      // Re-throw TokenExchangeError instances as-is
-      if (error instanceof TokenExchangeError) {
-        throw error;
-      }
-
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw new TokenExchangeError(
-          'Keycloak token exchange request timed out',
-          'EXCHANGE_FAILED',
-          undefined,
-          error
-        );
-      }
-
-      throw new TokenExchangeError(
-        `Keycloak token exchange failed: ${error instanceof Error ? error.message : 'Unexpected error'
-        }`,
-        'EXCHANGE_FAILED',
-        undefined,
-        error
-      );
-    }
+    return this.extractGoogleTokens(
+      this.parseTokenResponse(responseText, 'INVALID_TOKEN_RESPONSE'),
+    );
   }
 
   private extractGoogleTokens(response: TokenExchangeResponse): GoogleTokens {
@@ -298,10 +616,91 @@ export class KeycloakTokenExchange {
     audience?: string
   ): Promise<GoogleTokens> {
     const keycloakToken = await this.extractKeycloakToken(req);
-    return this.exchangeForGoogleTokens({
-      subjectToken: keycloakToken,
-      audience,
-    });
+    const useBrokerV2Flow = await this.isKeycloakTokenBrokerV2Enabled();
+    if (!useBrokerV2Flow) {
+      return this.exchangeForGoogleTokens({
+        subjectToken: keycloakToken,
+        audience,
+      });
+    }
+
+    const attemptedErrors: string[] = [];
+    const tryBrokerFlows = async (
+      providerAlias: string,
+    ): Promise<GoogleTokens | undefined> => {
+      try {
+        return await this.getBrokeredGoogleTokens(keycloakToken, providerAlias);
+      } catch (error) {
+        attemptedErrors.push(
+          this.formatAttemptError(`broker token (${providerAlias})`, error),
+        );
+      }
+
+      try {
+        return await this.exchangeForBrokeredGoogleTokens({
+          subjectToken: keycloakToken,
+          requestedIssuer: providerAlias,
+        });
+      } catch (error) {
+        attemptedErrors.push(
+          this.formatAttemptError(
+            `broker exchange (${providerAlias})`,
+            error,
+          ),
+        );
+      }
+
+      return undefined;
+    };
+
+    const configuredAlias = this.getGoogleProviderAlias();
+    const configuredAliasTokens = await tryBrokerFlows(configuredAlias);
+    if (configuredAliasTokens) {
+      return configuredAliasTokens;
+    }
+
+    if (!this.hasExplicitGoogleProviderAlias()) {
+      try {
+        const discoveredAlias = await this.discoverGoogleProviderAlias(
+          keycloakToken,
+        );
+        if (discoveredAlias && discoveredAlias !== configuredAlias) {
+          const discoveredAliasTokens = await tryBrokerFlows(discoveredAlias);
+          if (discoveredAliasTokens) {
+            return discoveredAliasTokens;
+          }
+        }
+      } catch (error) {
+        attemptedErrors.push(
+          this.formatAttemptError('identity provider discovery', error),
+        );
+      }
+    }
+
+    try {
+      return await this.exchangeForGoogleTokens({
+        subjectToken: keycloakToken,
+        audience: audience ?? configuredAlias,
+      });
+    } catch (error) {
+      if (attemptedErrors.length > 0) {
+        const finalMessage =
+          error instanceof TokenExchangeError
+            ? error.message
+            : error instanceof Error
+              ? error.message
+              : 'Unexpected error';
+        throw new TokenExchangeError(
+          `${finalMessage}; prior attempts: ${attemptedErrors.join(' | ')}`,
+          error instanceof TokenExchangeError
+            ? error.code
+            : 'EXCHANGE_FAILED',
+          error instanceof TokenExchangeError ? error.status : undefined,
+          error,
+        );
+      }
+      throw error;
+    }
   }
 }
 

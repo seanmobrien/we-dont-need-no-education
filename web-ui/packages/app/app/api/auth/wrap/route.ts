@@ -10,6 +10,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 const AUTH_SESSION_MAX_AGE_SECONDS = 30 * 60;
+const WRAPPED_ACCESS_TOKEN_CLAIM = 'ct_token_wrapper';
+const WRAPPED_ACCESS_TOKEN_CLAIM_VALUE = 'keycloak-access-token';
 
 const toEpochSeconds = (epochTimeSecondsOrMilliseconds: number): number => {
   return epochTimeSecondsOrMilliseconds > 1_000_000_000_000
@@ -82,6 +84,7 @@ const buildWrappedToken = ({
     user_id: numericAccountId,
     resource_access: sourceToken.resource_access,
     authorization: sourceToken.authorization,
+    [WRAPPED_ACCESS_TOKEN_CLAIM]: WRAPPED_ACCESS_TOKEN_CLAIM_VALUE,
     access_token: bearerToken,
     expires_at: wrappedExpiresAt,
     exp: wrappedExpiresAt,
