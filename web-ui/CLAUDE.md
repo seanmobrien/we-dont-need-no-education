@@ -7,7 +7,7 @@ This file provides guidance to Claude Code when working with code in the `web-ui
 ### Technology Stack
 
 - **Framework**: Next.js 15 with App Router and TypeScript
-- **UI Library**: Material UI 7.x with custom theming system
+- **UI Library**: Material UI 9.x with custom theming system
 - **Database**: PostgreSQL with Drizzle ORM for type-safe queries
 - **Authentication**: NextAuth.js 5.x with Azure AD and Google providers
 - **AI Integration**: Vercel AI SDK with Azure OpenAI and Google Gemini providers

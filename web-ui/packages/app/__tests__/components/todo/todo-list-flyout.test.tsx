@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import {
-  render,
+  render as rtlRender,
   screen,
   fireEvent,
   waitFor,
@@ -12,6 +12,7 @@ import {
 } from '../../shared/test-utils';
 import { TodoListFlyout } from '../../../components/todo/todo-list-flyout';
 import { QueryClient, QueryClientProvider } from '@compliance-theater/react-query-compat/runtime';
+import Menu from '@mui/material/Menu';
 
 // Mock the useTodoLists hook
 jest.mock('../../../lib/hooks/use-todo', () => ({
@@ -34,6 +35,15 @@ describe('TodoListFlyout', () => {
 
     jest.restoreAllMocks();
   });
+
+  // Helper to wrap component in Menu context for MUI v9 compatibility
+  const render = (ui: React.ReactElement) => {
+    return rtlRender(
+      <Menu open={true} anchorEl={document.body}>
+        {ui}
+      </Menu>
+    );
+  };
 
   const TestWrapper = () => {
     const [isOpen, setIsOpen] = useState(false);
